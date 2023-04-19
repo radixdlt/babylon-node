@@ -33,17 +33,17 @@ export interface ValidatorSetSubstate {
      */
     substate_type: ValidatorSetSubstateSubstateTypeEnum;
     /**
-     * An integer between `0` and `10^10`, marking the epoch the validator set is a part of
-     * @type {number}
-     * @memberof ValidatorSetSubstate
-     */
-    epoch: number;
-    /**
      * 
      * @type {Array<ActiveValidator>}
      * @memberof ValidatorSetSubstate
      */
     validator_set: Array<ActiveValidator>;
+    /**
+     * An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+     * @type {number}
+     * @memberof ValidatorSetSubstate
+     */
+    epoch: number;
 }
 
 
@@ -62,8 +62,8 @@ export type ValidatorSetSubstateSubstateTypeEnum = typeof ValidatorSetSubstateSu
 export function instanceOfValidatorSetSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
-    isInstance = isInstance && "epoch" in value;
     isInstance = isInstance && "validator_set" in value;
+    isInstance = isInstance && "epoch" in value;
 
     return isInstance;
 }
@@ -79,8 +79,8 @@ export function ValidatorSetSubstateFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'substate_type': json['substate_type'],
-        'epoch': json['epoch'],
         'validator_set': ((json['validator_set'] as Array<any>).map(ActiveValidatorFromJSON)),
+        'epoch': json['epoch'],
     };
 }
 
@@ -94,8 +94,8 @@ export function ValidatorSetSubstateToJSON(value?: ValidatorSetSubstate | null):
     return {
         
         'substate_type': value.substate_type,
-        'epoch': value.epoch,
         'validator_set': ((value.validator_set as Array<any>).map(ActiveValidatorToJSON)),
+        'epoch': value.epoch,
     };
 }
 

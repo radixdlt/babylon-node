@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface EcdsaSecp256k1SignatureAllOf {
     /**
-     * 
-     * @type {string}
-     * @memberof EcdsaSecp256k1SignatureAllOf
-     */
-    key_type?: EcdsaSecp256k1SignatureAllOfKeyTypeEnum;
-    /**
      * A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
      * @type {string}
      * @memberof EcdsaSecp256k1SignatureAllOf
      */
     signature_hex: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EcdsaSecp256k1SignatureAllOf
+     */
+    key_type?: EcdsaSecp256k1SignatureAllOfKeyTypeEnum;
 }
 
 
@@ -63,8 +63,8 @@ export function EcdsaSecp256k1SignatureAllOfFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
         'signature_hex': json['signature_hex'],
+        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
     };
 }
 
@@ -77,8 +77,8 @@ export function EcdsaSecp256k1SignatureAllOfToJSON(value?: EcdsaSecp256k1Signatu
     }
     return {
         
-        'key_type': value.key_type,
         'signature_hex': value.signature_hex,
+        'key_type': value.key_type,
     };
 }
 

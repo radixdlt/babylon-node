@@ -20,6 +20,12 @@ import { exists, mapValues } from '../runtime';
  */
 export interface BlueprintFunctionTargetIdentifierAllOf {
     /**
+     * The Bech32m-encoded human readable version of the package address
+     * @type {string}
+     * @memberof BlueprintFunctionTargetIdentifierAllOf
+     */
+    package_address: string;
+    /**
      * 
      * @type {string}
      * @memberof BlueprintFunctionTargetIdentifierAllOf
@@ -31,12 +37,6 @@ export interface BlueprintFunctionTargetIdentifierAllOf {
      * @memberof BlueprintFunctionTargetIdentifierAllOf
      */
     function_name: string;
-    /**
-     * The Bech32m-encoded human readable version of the package address
-     * @type {string}
-     * @memberof BlueprintFunctionTargetIdentifierAllOf
-     */
-    package_address: string;
     /**
      * 
      * @type {string}
@@ -60,9 +60,9 @@ export type BlueprintFunctionTargetIdentifierAllOfTypeEnum = typeof BlueprintFun
  */
 export function instanceOfBlueprintFunctionTargetIdentifierAllOf(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
     isInstance = isInstance && "function_name" in value;
-    isInstance = isInstance && "package_address" in value;
 
     return isInstance;
 }
@@ -77,9 +77,9 @@ export function BlueprintFunctionTargetIdentifierAllOfFromJSONTyped(json: any, i
     }
     return {
         
+        'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
         'function_name': json['function_name'],
-        'package_address': json['package_address'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -93,9 +93,9 @@ export function BlueprintFunctionTargetIdentifierAllOfToJSON(value?: BlueprintFu
     }
     return {
         
+        'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
         'function_name': value.function_name,
-        'package_address': value.package_address,
         'type': value.type,
     };
 }

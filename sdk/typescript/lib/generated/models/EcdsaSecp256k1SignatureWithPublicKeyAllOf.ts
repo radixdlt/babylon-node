@@ -28,16 +28,16 @@ import {
 export interface EcdsaSecp256k1SignatureWithPublicKeyAllOf {
     /**
      * 
-     * @type {string}
-     * @memberof EcdsaSecp256k1SignatureWithPublicKeyAllOf
-     */
-    key_type?: EcdsaSecp256k1SignatureWithPublicKeyAllOfKeyTypeEnum;
-    /**
-     * 
      * @type {EcdsaSecp256k1Signature}
      * @memberof EcdsaSecp256k1SignatureWithPublicKeyAllOf
      */
     recoverable_signature: EcdsaSecp256k1Signature;
+    /**
+     * 
+     * @type {string}
+     * @memberof EcdsaSecp256k1SignatureWithPublicKeyAllOf
+     */
+    key_type?: EcdsaSecp256k1SignatureWithPublicKeyAllOfKeyTypeEnum;
 }
 
 
@@ -70,8 +70,8 @@ export function EcdsaSecp256k1SignatureWithPublicKeyAllOfFromJSONTyped(json: any
     }
     return {
         
-        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
         'recoverable_signature': EcdsaSecp256k1SignatureFromJSON(json['recoverable_signature']),
+        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
     };
 }
 
@@ -84,8 +84,8 @@ export function EcdsaSecp256k1SignatureWithPublicKeyAllOfToJSON(value?: EcdsaSec
     }
     return {
         
-        'key_type': value.key_type,
         'recoverable_signature': EcdsaSecp256k1SignatureToJSON(value.recoverable_signature),
+        'key_type': value.key_type,
     };
 }
 

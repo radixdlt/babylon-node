@@ -28,12 +28,6 @@ import {
 export interface PackageFunctionAccessRule {
     /**
      * 
-     * @type {AccessRule}
-     * @memberof PackageFunctionAccessRule
-     */
-    access_rule: AccessRule;
-    /**
-     * 
      * @type {string}
      * @memberof PackageFunctionAccessRule
      */
@@ -44,6 +38,12 @@ export interface PackageFunctionAccessRule {
      * @memberof PackageFunctionAccessRule
      */
     function_name: string;
+    /**
+     * 
+     * @type {AccessRule}
+     * @memberof PackageFunctionAccessRule
+     */
+    access_rule: AccessRule;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface PackageFunctionAccessRule {
  */
 export function instanceOfPackageFunctionAccessRule(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rule" in value;
     isInstance = isInstance && "blueprint" in value;
     isInstance = isInstance && "function_name" in value;
+    isInstance = isInstance && "access_rule" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function PackageFunctionAccessRuleFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
-        'access_rule': AccessRuleFromJSON(json['access_rule']),
         'blueprint': json['blueprint'],
         'function_name': json['function_name'],
+        'access_rule': AccessRuleFromJSON(json['access_rule']),
     };
 }
 
@@ -83,9 +83,9 @@ export function PackageFunctionAccessRuleToJSON(value?: PackageFunctionAccessRul
     }
     return {
         
-        'access_rule': AccessRuleToJSON(value.access_rule),
         'blueprint': value.blueprint,
         'function_name': value.function_name,
+        'access_rule': AccessRuleToJSON(value.access_rule),
     };
 }
 

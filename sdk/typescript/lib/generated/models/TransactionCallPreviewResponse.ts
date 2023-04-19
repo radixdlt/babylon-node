@@ -33,11 +33,11 @@ import {
  */
 export interface TransactionCallPreviewResponse {
     /**
-     * Error message (only present if status is Failed or Rejected)
-     * @type {string}
+     * 
+     * @type {TransactionStatus}
      * @memberof TransactionCallPreviewResponse
      */
-    error_message?: string;
+    status: TransactionStatus;
     /**
      * 
      * @type {SborData}
@@ -45,11 +45,11 @@ export interface TransactionCallPreviewResponse {
      */
     output?: SborData;
     /**
-     * 
-     * @type {TransactionStatus}
+     * Error message (only present if status is Failed or Rejected)
+     * @type {string}
      * @memberof TransactionCallPreviewResponse
      */
-    status: TransactionStatus;
+    error_message?: string;
 }
 
 /**
@@ -72,9 +72,9 @@ export function TransactionCallPreviewResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
         
-        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
-        'output': !exists(json, 'output') ? undefined : SborDataFromJSON(json['output']),
         'status': TransactionStatusFromJSON(json['status']),
+        'output': !exists(json, 'output') ? undefined : SborDataFromJSON(json['output']),
+        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
     };
 }
 
@@ -87,9 +87,9 @@ export function TransactionCallPreviewResponseToJSON(value?: TransactionCallPrev
     }
     return {
         
-        'error_message': value.error_message,
-        'output': SborDataToJSON(value.output),
         'status': TransactionStatusToJSON(value.status),
+        'output': SborDataToJSON(value.output),
+        'error_message': value.error_message,
     };
 }
 

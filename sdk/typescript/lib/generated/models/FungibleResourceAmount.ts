@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface FungibleResourceAmount {
     /**
-     * The Bech32m-encoded human readable version of the resource address
-     * @type {string}
-     * @memberof FungibleResourceAmount
-     */
-    resource_address: string;
-    /**
      * 
      * @type {string}
      * @memberof FungibleResourceAmount
      */
     resource_type: FungibleResourceAmountResourceTypeEnum;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof FungibleResourceAmount
+     */
+    resource_address: string;
     /**
      * The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources).
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
@@ -55,8 +55,8 @@ export type FungibleResourceAmountResourceTypeEnum = typeof FungibleResourceAmou
  */
 export function instanceOfFungibleResourceAmount(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "resource_type" in value;
+    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "amount" in value;
 
     return isInstance;
@@ -72,8 +72,8 @@ export function FungibleResourceAmountFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'resource_address': json['resource_address'],
         'resource_type': json['resource_type'],
+        'resource_address': json['resource_address'],
         'amount': json['amount'],
     };
 }
@@ -87,8 +87,8 @@ export function FungibleResourceAmountToJSON(value?: FungibleResourceAmount | nu
     }
     return {
         
-        'resource_address': value.resource_address,
         'resource_type': value.resource_type,
+        'resource_address': value.resource_address,
         'amount': value.amount,
     };
 }

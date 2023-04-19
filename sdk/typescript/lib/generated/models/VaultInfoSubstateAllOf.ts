@@ -27,17 +27,17 @@ import {
  */
 export interface VaultInfoSubstateAllOf {
     /**
-     * The Bech32m-encoded human readable version of the resource address
-     * @type {string}
-     * @memberof VaultInfoSubstateAllOf
-     */
-    resource_address: string;
-    /**
      * 
      * @type {ResourceType}
      * @memberof VaultInfoSubstateAllOf
      */
     resource_type: ResourceType;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof VaultInfoSubstateAllOf
+     */
+    resource_address: string;
     /**
      * 
      * @type {string}
@@ -61,8 +61,8 @@ export type VaultInfoSubstateAllOfSubstateTypeEnum = typeof VaultInfoSubstateAll
  */
 export function instanceOfVaultInfoSubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "resource_type" in value;
+    isInstance = isInstance && "resource_address" in value;
 
     return isInstance;
 }
@@ -77,8 +77,8 @@ export function VaultInfoSubstateAllOfFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'resource_address': json['resource_address'],
         'resource_type': ResourceTypeFromJSON(json['resource_type']),
+        'resource_address': json['resource_address'],
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -92,8 +92,8 @@ export function VaultInfoSubstateAllOfToJSON(value?: VaultInfoSubstateAllOf | nu
     }
     return {
         
-        'resource_address': value.resource_address,
         'resource_type': ResourceTypeToJSON(value.resource_type),
+        'resource_address': value.resource_address,
         'substate_type': value.substate_type,
     };
 }

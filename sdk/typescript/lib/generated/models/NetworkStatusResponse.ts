@@ -31,7 +31,7 @@ export interface NetworkStatusResponse {
      * @type {CommittedStateIdentifier}
      * @memberof NetworkStatusResponse
      */
-    current_state_identifier: CommittedStateIdentifier;
+    pre_genesis_state_identifier: CommittedStateIdentifier;
     /**
      * 
      * @type {CommittedStateIdentifier}
@@ -43,7 +43,7 @@ export interface NetworkStatusResponse {
      * @type {CommittedStateIdentifier}
      * @memberof NetworkStatusResponse
      */
-    pre_genesis_state_identifier: CommittedStateIdentifier;
+    current_state_identifier: CommittedStateIdentifier;
 }
 
 /**
@@ -51,8 +51,8 @@ export interface NetworkStatusResponse {
  */
 export function instanceOfNetworkStatusResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "current_state_identifier" in value;
     isInstance = isInstance && "pre_genesis_state_identifier" in value;
+    isInstance = isInstance && "current_state_identifier" in value;
 
     return isInstance;
 }
@@ -67,9 +67,9 @@ export function NetworkStatusResponseFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'current_state_identifier': CommittedStateIdentifierFromJSON(json['current_state_identifier']),
-        'post_genesis_state_identifier': !exists(json, 'post_genesis_state_identifier') ? undefined : CommittedStateIdentifierFromJSON(json['post_genesis_state_identifier']),
         'pre_genesis_state_identifier': CommittedStateIdentifierFromJSON(json['pre_genesis_state_identifier']),
+        'post_genesis_state_identifier': !exists(json, 'post_genesis_state_identifier') ? undefined : CommittedStateIdentifierFromJSON(json['post_genesis_state_identifier']),
+        'current_state_identifier': CommittedStateIdentifierFromJSON(json['current_state_identifier']),
     };
 }
 
@@ -82,9 +82,9 @@ export function NetworkStatusResponseToJSON(value?: NetworkStatusResponse | null
     }
     return {
         
-        'current_state_identifier': CommittedStateIdentifierToJSON(value.current_state_identifier),
-        'post_genesis_state_identifier': CommittedStateIdentifierToJSON(value.post_genesis_state_identifier),
         'pre_genesis_state_identifier': CommittedStateIdentifierToJSON(value.pre_genesis_state_identifier),
+        'post_genesis_state_identifier': CommittedStateIdentifierToJSON(value.post_genesis_state_identifier),
+        'current_state_identifier': CommittedStateIdentifierToJSON(value.current_state_identifier),
     };
 }
 

@@ -28,16 +28,16 @@ import {
 export interface GroupedAuthEntry {
     /**
      * 
-     * @type {AccessRule}
-     * @memberof GroupedAuthEntry
-     */
-    access_rule: AccessRule;
-    /**
-     * 
      * @type {string}
      * @memberof GroupedAuthEntry
      */
     group_name: string;
+    /**
+     * 
+     * @type {AccessRule}
+     * @memberof GroupedAuthEntry
+     */
+    access_rule: AccessRule;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface GroupedAuthEntry {
  */
 export function instanceOfGroupedAuthEntry(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rule" in value;
     isInstance = isInstance && "group_name" in value;
+    isInstance = isInstance && "access_rule" in value;
 
     return isInstance;
 }
@@ -61,8 +61,8 @@ export function GroupedAuthEntryFromJSONTyped(json: any, ignoreDiscriminator: bo
     }
     return {
         
-        'access_rule': AccessRuleFromJSON(json['access_rule']),
         'group_name': json['group_name'],
+        'access_rule': AccessRuleFromJSON(json['access_rule']),
     };
 }
 
@@ -75,8 +75,8 @@ export function GroupedAuthEntryToJSON(value?: GroupedAuthEntry | null): any {
     }
     return {
         
-        'access_rule': AccessRuleToJSON(value.access_rule),
         'group_name': value.group_name,
+        'access_rule': AccessRuleToJSON(value.access_rule),
     };
 }
 

@@ -31,12 +31,6 @@ export interface StatePackageResponse {
      * @type {Substate}
      * @memberof StatePackageResponse
      */
-    access_rules: Substate;
-    /**
-     * 
-     * @type {Substate}
-     * @memberof StatePackageResponse
-     */
     info: Substate;
     /**
      * 
@@ -44,6 +38,12 @@ export interface StatePackageResponse {
      * @memberof StatePackageResponse
      */
     royalty: Substate;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof StatePackageResponse
+     */
+    access_rules: Substate;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface StatePackageResponse {
  */
 export function instanceOfStatePackageResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rules" in value;
     isInstance = isInstance && "info" in value;
     isInstance = isInstance && "royalty" in value;
+    isInstance = isInstance && "access_rules" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function StatePackageResponseFromJSONTyped(json: any, ignoreDiscriminator
     }
     return {
         
-        'access_rules': SubstateFromJSON(json['access_rules']),
         'info': SubstateFromJSON(json['info']),
         'royalty': SubstateFromJSON(json['royalty']),
+        'access_rules': SubstateFromJSON(json['access_rules']),
     };
 }
 
@@ -83,9 +83,9 @@ export function StatePackageResponseToJSON(value?: StatePackageResponse | null):
     }
     return {
         
-        'access_rules': SubstateToJSON(value.access_rules),
         'info': SubstateToJSON(value.info),
         'royalty': SubstateToJSON(value.royalty),
+        'access_rules': SubstateToJSON(value.access_rules),
     };
 }
 

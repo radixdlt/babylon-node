@@ -27,17 +27,17 @@ import {
  */
 export interface ResourceAmountBase {
     /**
-     * The Bech32m-encoded human readable version of the resource address
-     * @type {string}
-     * @memberof ResourceAmountBase
-     */
-    resource_address: string;
-    /**
      * 
      * @type {ResourceType}
      * @memberof ResourceAmountBase
      */
     resource_type: ResourceType;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof ResourceAmountBase
+     */
+    resource_address: string;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface ResourceAmountBase {
  */
 export function instanceOfResourceAmountBase(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "resource_type" in value;
+    isInstance = isInstance && "resource_address" in value;
 
     return isInstance;
 }
@@ -61,8 +61,8 @@ export function ResourceAmountBaseFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'resource_address': json['resource_address'],
         'resource_type': ResourceTypeFromJSON(json['resource_type']),
+        'resource_address': json['resource_address'],
     };
 }
 
@@ -75,8 +75,8 @@ export function ResourceAmountBaseToJSON(value?: ResourceAmountBase | null): any
     }
     return {
         
-        'resource_address': value.resource_address,
         'resource_type': ResourceTypeToJSON(value.resource_type),
+        'resource_address': value.resource_address,
     };
 }
 

@@ -40,16 +40,16 @@ export interface PackageRoyaltySubstate {
     substate_type: PackageRoyaltySubstateSubstateTypeEnum;
     /**
      * 
-     * @type {Array<BlueprintRoyaltyConfig>}
-     * @memberof PackageRoyaltySubstate
-     */
-    blueprint_royalties: Array<BlueprintRoyaltyConfig>;
-    /**
-     * 
      * @type {EntityReference}
      * @memberof PackageRoyaltySubstate
      */
     vault_entity?: EntityReference;
+    /**
+     * 
+     * @type {Array<BlueprintRoyaltyConfig>}
+     * @memberof PackageRoyaltySubstate
+     */
+    blueprint_royalties: Array<BlueprintRoyaltyConfig>;
 }
 
 
@@ -84,8 +84,8 @@ export function PackageRoyaltySubstateFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'substate_type': json['substate_type'],
-        'blueprint_royalties': ((json['blueprint_royalties'] as Array<any>).map(BlueprintRoyaltyConfigFromJSON)),
         'vault_entity': !exists(json, 'vault_entity') ? undefined : EntityReferenceFromJSON(json['vault_entity']),
+        'blueprint_royalties': ((json['blueprint_royalties'] as Array<any>).map(BlueprintRoyaltyConfigFromJSON)),
     };
 }
 
@@ -99,8 +99,8 @@ export function PackageRoyaltySubstateToJSON(value?: PackageRoyaltySubstate | nu
     return {
         
         'substate_type': value.substate_type,
-        'blueprint_royalties': ((value.blueprint_royalties as Array<any>).map(BlueprintRoyaltyConfigToJSON)),
         'vault_entity': EntityReferenceToJSON(value.vault_entity),
+        'blueprint_royalties': ((value.blueprint_royalties as Array<any>).map(BlueprintRoyaltyConfigToJSON)),
     };
 }
 

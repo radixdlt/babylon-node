@@ -144,7 +144,7 @@ def prepare_schema_for_generation(original_schema_file, api_schema_temp_filename
     split_out_inherited_discriminated_types(schema)
 
     with open(api_schema_temp_filename, 'w') as file:
-        yaml.dump(schema, file)
+        yaml.dump(schema, file, sort_keys=False)
 
 def generate_models(prepared_spec_file, tmp_client_folder, out_location):
     safe_os_remove(tmp_client_folder, True)

@@ -38,12 +38,6 @@ export interface EpochManagerSubstate {
      */
     epoch: number;
     /**
-     * 
-     * @type {number}
-     * @memberof EpochManagerSubstate
-     */
-    num_unstake_epochs: number;
-    /**
      * An integer between `0` and `10^10`, marking the current round in an epoch
      * @type {number}
      * @memberof EpochManagerSubstate
@@ -55,6 +49,12 @@ export interface EpochManagerSubstate {
      * @memberof EpochManagerSubstate
      */
     rounds_per_epoch: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof EpochManagerSubstate
+     */
+    num_unstake_epochs: number;
 }
 
 
@@ -75,9 +75,9 @@ export function instanceOfEpochManagerSubstate(value: object): boolean {
     isInstance = isInstance && "substate_type" in value;
     isInstance = isInstance && "address" in value;
     isInstance = isInstance && "epoch" in value;
-    isInstance = isInstance && "num_unstake_epochs" in value;
     isInstance = isInstance && "round" in value;
     isInstance = isInstance && "rounds_per_epoch" in value;
+    isInstance = isInstance && "num_unstake_epochs" in value;
 
     return isInstance;
 }
@@ -95,9 +95,9 @@ export function EpochManagerSubstateFromJSONTyped(json: any, ignoreDiscriminator
         'substate_type': json['substate_type'],
         'address': json['address'],
         'epoch': json['epoch'],
-        'num_unstake_epochs': json['num_unstake_epochs'],
         'round': json['round'],
         'rounds_per_epoch': json['rounds_per_epoch'],
+        'num_unstake_epochs': json['num_unstake_epochs'],
     };
 }
 
@@ -113,9 +113,9 @@ export function EpochManagerSubstateToJSON(value?: EpochManagerSubstate | null):
         'substate_type': value.substate_type,
         'address': value.address,
         'epoch': value.epoch,
-        'num_unstake_epochs': value.num_unstake_epochs,
         'round': value.round,
         'rounds_per_epoch': value.rounds_per_epoch,
+        'num_unstake_epochs': value.num_unstake_epochs,
     };
 }
 

@@ -31,13 +31,13 @@ export interface StateResourceResponse {
      * @type {Substate}
      * @memberof StateResourceResponse
      */
-    access_rules: Substate;
+    manager: Substate;
     /**
      * 
      * @type {Substate}
      * @memberof StateResourceResponse
      */
-    manager: Substate;
+    access_rules: Substate;
     /**
      * 
      * @type {Substate}
@@ -51,8 +51,8 @@ export interface StateResourceResponse {
  */
 export function instanceOfStateResourceResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rules" in value;
     isInstance = isInstance && "manager" in value;
+    isInstance = isInstance && "access_rules" in value;
     isInstance = isInstance && "vault_access_rules" in value;
 
     return isInstance;
@@ -68,8 +68,8 @@ export function StateResourceResponseFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'access_rules': SubstateFromJSON(json['access_rules']),
         'manager': SubstateFromJSON(json['manager']),
+        'access_rules': SubstateFromJSON(json['access_rules']),
         'vault_access_rules': SubstateFromJSON(json['vault_access_rules']),
     };
 }
@@ -83,8 +83,8 @@ export function StateResourceResponseToJSON(value?: StateResourceResponse | null
     }
     return {
         
-        'access_rules': SubstateToJSON(value.access_rules),
         'manager': SubstateToJSON(value.manager),
+        'access_rules': SubstateToJSON(value.access_rules),
         'vault_access_rules': SubstateToJSON(value.vault_access_rules),
     };
 }

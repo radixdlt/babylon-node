@@ -20,6 +20,12 @@ import { exists, mapValues } from '../runtime';
  */
 export interface ObjectTypeInfoDetailsAllOf {
     /**
+     * The Bech32m-encoded human readable version of the package address
+     * @type {string}
+     * @memberof ObjectTypeInfoDetailsAllOf
+     */
+    package_address: string;
+    /**
      * 
      * @type {string}
      * @memberof ObjectTypeInfoDetailsAllOf
@@ -31,12 +37,6 @@ export interface ObjectTypeInfoDetailsAllOf {
      * @memberof ObjectTypeInfoDetailsAllOf
      */
     global: boolean;
-    /**
-     * The Bech32m-encoded human readable version of the package address
-     * @type {string}
-     * @memberof ObjectTypeInfoDetailsAllOf
-     */
-    package_address: string;
     /**
      * 
      * @type {string}
@@ -60,9 +60,9 @@ export type ObjectTypeInfoDetailsAllOfTypeEnum = typeof ObjectTypeInfoDetailsAll
  */
 export function instanceOfObjectTypeInfoDetailsAllOf(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
     isInstance = isInstance && "global" in value;
-    isInstance = isInstance && "package_address" in value;
 
     return isInstance;
 }
@@ -77,9 +77,9 @@ export function ObjectTypeInfoDetailsAllOfFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
+        'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
         'global': json['global'],
-        'package_address': json['package_address'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -93,9 +93,9 @@ export function ObjectTypeInfoDetailsAllOfToJSON(value?: ObjectTypeInfoDetailsAl
     }
     return {
         
+        'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
         'global': value.global,
-        'package_address': value.package_address,
         'type': value.type,
     };
 }

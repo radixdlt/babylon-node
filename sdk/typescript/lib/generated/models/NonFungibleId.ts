@@ -27,6 +27,15 @@ import {
  */
 export interface NonFungibleId {
     /**
+     * The simple string representation of the non-fungible id.
+     * For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
+     * A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
+     * under the given resource address.
+     * @type {string}
+     * @memberof NonFungibleId
+     */
+    simple_rep: string;
+    /**
      * 
      * @type {NonFungibleIdType}
      * @memberof NonFungibleId
@@ -38,15 +47,6 @@ export interface NonFungibleId {
      * @memberof NonFungibleId
      */
     sbor_hex: string;
-    /**
-     * The simple string representation of the non-fungible id.
-     * For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
-     * A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
-     * under the given resource address.
-     * @type {string}
-     * @memberof NonFungibleId
-     */
-    simple_rep: string;
 }
 
 /**
@@ -54,9 +54,9 @@ export interface NonFungibleId {
  */
 export function instanceOfNonFungibleId(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "simple_rep" in value;
     isInstance = isInstance && "id_type" in value;
     isInstance = isInstance && "sbor_hex" in value;
-    isInstance = isInstance && "simple_rep" in value;
 
     return isInstance;
 }
@@ -71,9 +71,9 @@ export function NonFungibleIdFromJSONTyped(json: any, ignoreDiscriminator: boole
     }
     return {
         
+        'simple_rep': json['simple_rep'],
         'id_type': NonFungibleIdTypeFromJSON(json['id_type']),
         'sbor_hex': json['sbor_hex'],
-        'simple_rep': json['simple_rep'],
     };
 }
 
@@ -86,9 +86,9 @@ export function NonFungibleIdToJSON(value?: NonFungibleId | null): any {
     }
     return {
         
+        'simple_rep': value.simple_rep,
         'id_type': NonFungibleIdTypeToJSON(value.id_type),
         'sbor_hex': value.sbor_hex,
-        'simple_rep': value.simple_rep,
     };
 }
 

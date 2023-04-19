@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface EddsaEd25519SignatureAllOf {
     /**
-     * 
-     * @type {string}
-     * @memberof EddsaEd25519SignatureAllOf
-     */
-    key_type?: EddsaEd25519SignatureAllOfKeyTypeEnum;
-    /**
      * A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
      * @type {string}
      * @memberof EddsaEd25519SignatureAllOf
      */
     signature_hex: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EddsaEd25519SignatureAllOf
+     */
+    key_type?: EddsaEd25519SignatureAllOfKeyTypeEnum;
 }
 
 
@@ -63,8 +63,8 @@ export function EddsaEd25519SignatureAllOfFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
         'signature_hex': json['signature_hex'],
+        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
     };
 }
 
@@ -77,8 +77,8 @@ export function EddsaEd25519SignatureAllOfToJSON(value?: EddsaEd25519SignatureAl
     }
     return {
         
-        'key_type': value.key_type,
         'signature_hex': value.signature_hex,
+        'key_type': value.key_type,
     };
 }
 

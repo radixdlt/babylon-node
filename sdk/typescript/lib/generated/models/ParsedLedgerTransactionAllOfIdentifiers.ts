@@ -26,11 +26,11 @@ export interface ParsedLedgerTransactionAllOfIdentifiers {
      */
     intent_hash?: string;
     /**
-     * The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `Blake2b-256(ledger_transaction_bytes)`
+     * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`
      * @type {string}
      * @memberof ParsedLedgerTransactionAllOfIdentifiers
      */
-    ledger_hash: string;
+    signatures_hash?: string;
     /**
      * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
      * @type {string}
@@ -38,11 +38,11 @@ export interface ParsedLedgerTransactionAllOfIdentifiers {
      */
     payload_hash?: string;
     /**
-     * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`
+     * The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `Blake2b-256(ledger_transaction_bytes)`
      * @type {string}
      * @memberof ParsedLedgerTransactionAllOfIdentifiers
      */
-    signatures_hash?: string;
+    ledger_hash: string;
 }
 
 /**
@@ -66,9 +66,9 @@ export function ParsedLedgerTransactionAllOfIdentifiersFromJSONTyped(json: any, 
     return {
         
         'intent_hash': !exists(json, 'intent_hash') ? undefined : json['intent_hash'],
-        'ledger_hash': json['ledger_hash'],
-        'payload_hash': !exists(json, 'payload_hash') ? undefined : json['payload_hash'],
         'signatures_hash': !exists(json, 'signatures_hash') ? undefined : json['signatures_hash'],
+        'payload_hash': !exists(json, 'payload_hash') ? undefined : json['payload_hash'],
+        'ledger_hash': json['ledger_hash'],
     };
 }
 
@@ -82,9 +82,9 @@ export function ParsedLedgerTransactionAllOfIdentifiersToJSON(value?: ParsedLedg
     return {
         
         'intent_hash': value.intent_hash,
-        'ledger_hash': value.ledger_hash,
-        'payload_hash': value.payload_hash,
         'signatures_hash': value.signatures_hash,
+        'payload_hash': value.payload_hash,
+        'ledger_hash': value.ledger_hash,
     };
 }
 

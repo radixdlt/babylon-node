@@ -45,11 +45,18 @@ export interface NonFungibleResourceManagerSubstate {
      */
     substate_type: NonFungibleResourceManagerSubstateSubstateTypeEnum;
     /**
-     * The field names of the NF Metadata which are mutable.
-     * @type {Array<string>}
+     * 
+     * @type {NonFungibleIdType}
      * @memberof NonFungibleResourceManagerSubstate
      */
-    non_fungible_data_mutable_fields: Array<string>;
+    non_fungible_id_type: NonFungibleIdType;
+    /**
+     * The string-encoded decimal representing the total supply of this resource.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * @type {string}
+     * @memberof NonFungibleResourceManagerSubstate
+     */
+    total_supply: string;
     /**
      * 
      * @type {EntityReference}
@@ -63,18 +70,11 @@ export interface NonFungibleResourceManagerSubstate {
      */
     non_fungible_data_type_index: LocalTypeIndex;
     /**
-     * 
-     * @type {NonFungibleIdType}
+     * The field names of the NF Metadata which are mutable.
+     * @type {Array<string>}
      * @memberof NonFungibleResourceManagerSubstate
      */
-    non_fungible_id_type: NonFungibleIdType;
-    /**
-     * The string-encoded decimal representing the total supply of this resource.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-     * @type {string}
-     * @memberof NonFungibleResourceManagerSubstate
-     */
-    total_supply: string;
+    non_fungible_data_mutable_fields: Array<string>;
 }
 
 
@@ -93,11 +93,11 @@ export type NonFungibleResourceManagerSubstateSubstateTypeEnum = typeof NonFungi
 export function instanceOfNonFungibleResourceManagerSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
-    isInstance = isInstance && "non_fungible_data_mutable_fields" in value;
-    isInstance = isInstance && "non_fungible_data_table" in value;
-    isInstance = isInstance && "non_fungible_data_type_index" in value;
     isInstance = isInstance && "non_fungible_id_type" in value;
     isInstance = isInstance && "total_supply" in value;
+    isInstance = isInstance && "non_fungible_data_table" in value;
+    isInstance = isInstance && "non_fungible_data_type_index" in value;
+    isInstance = isInstance && "non_fungible_data_mutable_fields" in value;
 
     return isInstance;
 }
@@ -113,11 +113,11 @@ export function NonFungibleResourceManagerSubstateFromJSONTyped(json: any, ignor
     return {
         
         'substate_type': json['substate_type'],
-        'non_fungible_data_mutable_fields': json['non_fungible_data_mutable_fields'],
-        'non_fungible_data_table': EntityReferenceFromJSON(json['non_fungible_data_table']),
-        'non_fungible_data_type_index': LocalTypeIndexFromJSON(json['non_fungible_data_type_index']),
         'non_fungible_id_type': NonFungibleIdTypeFromJSON(json['non_fungible_id_type']),
         'total_supply': json['total_supply'],
+        'non_fungible_data_table': EntityReferenceFromJSON(json['non_fungible_data_table']),
+        'non_fungible_data_type_index': LocalTypeIndexFromJSON(json['non_fungible_data_type_index']),
+        'non_fungible_data_mutable_fields': json['non_fungible_data_mutable_fields'],
     };
 }
 
@@ -131,11 +131,11 @@ export function NonFungibleResourceManagerSubstateToJSON(value?: NonFungibleReso
     return {
         
         'substate_type': value.substate_type,
-        'non_fungible_data_mutable_fields': value.non_fungible_data_mutable_fields,
-        'non_fungible_data_table': EntityReferenceToJSON(value.non_fungible_data_table),
-        'non_fungible_data_type_index': LocalTypeIndexToJSON(value.non_fungible_data_type_index),
         'non_fungible_id_type': NonFungibleIdTypeToJSON(value.non_fungible_id_type),
         'total_supply': value.total_supply,
+        'non_fungible_data_table': EntityReferenceToJSON(value.non_fungible_data_table),
+        'non_fungible_data_type_index': LocalTypeIndexToJSON(value.non_fungible_data_type_index),
+        'non_fungible_data_mutable_fields': value.non_fungible_data_mutable_fields,
     };
 }
 

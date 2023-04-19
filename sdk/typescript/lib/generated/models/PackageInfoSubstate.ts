@@ -34,10 +34,10 @@ export interface PackageInfoSubstate {
     substate_type: PackageInfoSubstateSubstateTypeEnum;
     /**
      * 
-     * @type {Array<string>}
+     * @type {PackageSchema}
      * @memberof PackageInfoSubstate
      */
-    dependent_components: Array<string>;
+    package_schema: PackageSchema;
     /**
      * 
      * @type {Array<string>}
@@ -46,10 +46,10 @@ export interface PackageInfoSubstate {
     dependent_resources: Array<string>;
     /**
      * 
-     * @type {PackageSchema}
+     * @type {Array<string>}
      * @memberof PackageInfoSubstate
      */
-    package_schema: PackageSchema;
+    dependent_components: Array<string>;
 }
 
 
@@ -68,9 +68,9 @@ export type PackageInfoSubstateSubstateTypeEnum = typeof PackageInfoSubstateSubs
 export function instanceOfPackageInfoSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
-    isInstance = isInstance && "dependent_components" in value;
-    isInstance = isInstance && "dependent_resources" in value;
     isInstance = isInstance && "package_schema" in value;
+    isInstance = isInstance && "dependent_resources" in value;
+    isInstance = isInstance && "dependent_components" in value;
 
     return isInstance;
 }
@@ -86,9 +86,9 @@ export function PackageInfoSubstateFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'substate_type': json['substate_type'],
-        'dependent_components': json['dependent_components'],
-        'dependent_resources': json['dependent_resources'],
         'package_schema': PackageSchemaFromJSON(json['package_schema']),
+        'dependent_resources': json['dependent_resources'],
+        'dependent_components': json['dependent_components'],
     };
 }
 
@@ -102,9 +102,9 @@ export function PackageInfoSubstateToJSON(value?: PackageInfoSubstate | null): a
     return {
         
         'substate_type': value.substate_type,
-        'dependent_components': value.dependent_components,
-        'dependent_resources': value.dependent_resources,
         'package_schema': PackageSchemaToJSON(value.package_schema),
+        'dependent_resources': value.dependent_resources,
+        'dependent_components': value.dependent_components,
     };
 }
 

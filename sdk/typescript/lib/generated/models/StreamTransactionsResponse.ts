@@ -27,18 +27,18 @@ import {
  */
 export interface StreamTransactionsResponse {
     /**
-     * An integer between `0` and `10000`, giving the total count of transactions in the returned response
-     * @type {number}
-     * @memberof StreamTransactionsResponse
-     */
-    count: number;
-    /**
      * An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
      * This matches the `from_state_version` in the request.
      * @type {number}
      * @memberof StreamTransactionsResponse
      */
     from_state_version: number;
+    /**
+     * An integer between `0` and `10000`, giving the total count of transactions in the returned response
+     * @type {number}
+     * @memberof StreamTransactionsResponse
+     */
+    count: number;
     /**
      * An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
      * @type {number}
@@ -58,8 +58,8 @@ export interface StreamTransactionsResponse {
  */
 export function instanceOfStreamTransactionsResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "count" in value;
     isInstance = isInstance && "from_state_version" in value;
+    isInstance = isInstance && "count" in value;
     isInstance = isInstance && "max_ledger_state_version" in value;
     isInstance = isInstance && "transactions" in value;
 
@@ -76,8 +76,8 @@ export function StreamTransactionsResponseFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'count': json['count'],
         'from_state_version': json['from_state_version'],
+        'count': json['count'],
         'max_ledger_state_version': json['max_ledger_state_version'],
         'transactions': ((json['transactions'] as Array<any>).map(CommittedTransactionFromJSON)),
     };
@@ -92,8 +92,8 @@ export function StreamTransactionsResponseToJSON(value?: StreamTransactionsRespo
     }
     return {
         
-        'count': value.count,
         'from_state_version': value.from_state_version,
+        'count': value.count,
         'max_ledger_state_version': value.max_ledger_state_version,
         'transactions': ((value.transactions as Array<any>).map(CommittedTransactionToJSON)),
     };

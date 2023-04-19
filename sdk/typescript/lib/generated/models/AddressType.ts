@@ -28,22 +28,10 @@ import {
 export interface AddressType {
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof AddressType
      */
-    address_byte_length: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof AddressType
-     */
-    address_byte_prefix: number;
-    /**
-     * 
-     * @type {EntityType}
-     * @memberof AddressType
-     */
-    entity_type: EntityType;
+    subtype: AddressTypeSubtypeEnum;
     /**
      * 
      * @type {string}
@@ -52,10 +40,22 @@ export interface AddressType {
     hrp_prefix: string;
     /**
      * 
-     * @type {string}
+     * @type {EntityType}
      * @memberof AddressType
      */
-    subtype: AddressTypeSubtypeEnum;
+    entity_type: EntityType;
+    /**
+     * 
+     * @type {number}
+     * @memberof AddressType
+     */
+    address_byte_prefix: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof AddressType
+     */
+    address_byte_length: number;
 }
 
 
@@ -86,11 +86,11 @@ export type AddressTypeSubtypeEnum = typeof AddressTypeSubtypeEnum[keyof typeof 
  */
 export function instanceOfAddressType(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "address_byte_length" in value;
-    isInstance = isInstance && "address_byte_prefix" in value;
-    isInstance = isInstance && "entity_type" in value;
-    isInstance = isInstance && "hrp_prefix" in value;
     isInstance = isInstance && "subtype" in value;
+    isInstance = isInstance && "hrp_prefix" in value;
+    isInstance = isInstance && "entity_type" in value;
+    isInstance = isInstance && "address_byte_prefix" in value;
+    isInstance = isInstance && "address_byte_length" in value;
 
     return isInstance;
 }
@@ -105,11 +105,11 @@ export function AddressTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean
     }
     return {
         
-        'address_byte_length': json['address_byte_length'],
-        'address_byte_prefix': json['address_byte_prefix'],
-        'entity_type': EntityTypeFromJSON(json['entity_type']),
-        'hrp_prefix': json['hrp_prefix'],
         'subtype': json['subtype'],
+        'hrp_prefix': json['hrp_prefix'],
+        'entity_type': EntityTypeFromJSON(json['entity_type']),
+        'address_byte_prefix': json['address_byte_prefix'],
+        'address_byte_length': json['address_byte_length'],
     };
 }
 
@@ -122,11 +122,11 @@ export function AddressTypeToJSON(value?: AddressType | null): any {
     }
     return {
         
-        'address_byte_length': value.address_byte_length,
-        'address_byte_prefix': value.address_byte_prefix,
-        'entity_type': EntityTypeToJSON(value.entity_type),
-        'hrp_prefix': value.hrp_prefix,
         'subtype': value.subtype,
+        'hrp_prefix': value.hrp_prefix,
+        'entity_type': EntityTypeToJSON(value.entity_type),
+        'address_byte_prefix': value.address_byte_prefix,
+        'address_byte_length': value.address_byte_length,
     };
 }
 

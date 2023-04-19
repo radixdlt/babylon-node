@@ -27,19 +27,6 @@ import {
  */
 export interface ResourceChange {
     /**
-     * The string-encoded decimal representing the XRD amount put or taken from the vault.
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-     * @type {string}
-     * @memberof ResourceChange
-     */
-    amount: string;
-    /**
-     * 
-     * @type {EntityReference}
-     * @memberof ResourceChange
-     */
-    component_entity: EntityReference;
-    /**
      * The Bech32m-encoded human readable version of the resource address
      * @type {string}
      * @memberof ResourceChange
@@ -50,7 +37,20 @@ export interface ResourceChange {
      * @type {EntityReference}
      * @memberof ResourceChange
      */
+    component_entity: EntityReference;
+    /**
+     * 
+     * @type {EntityReference}
+     * @memberof ResourceChange
+     */
     vault_entity: EntityReference;
+    /**
+     * The string-encoded decimal representing the XRD amount put or taken from the vault.
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * @type {string}
+     * @memberof ResourceChange
+     */
+    amount: string;
 }
 
 /**
@@ -58,10 +58,10 @@ export interface ResourceChange {
  */
 export function instanceOfResourceChange(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "amount" in value;
-    isInstance = isInstance && "component_entity" in value;
     isInstance = isInstance && "resource_address" in value;
+    isInstance = isInstance && "component_entity" in value;
     isInstance = isInstance && "vault_entity" in value;
+    isInstance = isInstance && "amount" in value;
 
     return isInstance;
 }
@@ -76,10 +76,10 @@ export function ResourceChangeFromJSONTyped(json: any, ignoreDiscriminator: bool
     }
     return {
         
-        'amount': json['amount'],
-        'component_entity': EntityReferenceFromJSON(json['component_entity']),
         'resource_address': json['resource_address'],
+        'component_entity': EntityReferenceFromJSON(json['component_entity']),
         'vault_entity': EntityReferenceFromJSON(json['vault_entity']),
+        'amount': json['amount'],
     };
 }
 
@@ -92,10 +92,10 @@ export function ResourceChangeToJSON(value?: ResourceChange | null): any {
     }
     return {
         
-        'amount': value.amount,
-        'component_entity': EntityReferenceToJSON(value.component_entity),
         'resource_address': value.resource_address,
+        'component_entity': EntityReferenceToJSON(value.component_entity),
         'vault_entity': EntityReferenceToJSON(value.vault_entity),
+        'amount': value.amount,
     };
 }
 

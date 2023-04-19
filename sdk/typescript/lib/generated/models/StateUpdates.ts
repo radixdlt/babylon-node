@@ -46,6 +46,12 @@ export interface StateUpdates {
     created_substates: Array<NewSubstateVersion>;
     /**
      * 
+     * @type {Array<NewSubstateVersion>}
+     * @memberof StateUpdates
+     */
+    updated_substates: Array<NewSubstateVersion>;
+    /**
+     * 
      * @type {Array<DeletedSubstateVersionRef>}
      * @memberof StateUpdates
      */
@@ -56,12 +62,6 @@ export interface StateUpdates {
      * @memberof StateUpdates
      */
     new_global_entities: Array<GlobalEntityReference>;
-    /**
-     * 
-     * @type {Array<NewSubstateVersion>}
-     * @memberof StateUpdates
-     */
-    updated_substates: Array<NewSubstateVersion>;
 }
 
 /**
@@ -70,9 +70,9 @@ export interface StateUpdates {
 export function instanceOfStateUpdates(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "created_substates" in value;
+    isInstance = isInstance && "updated_substates" in value;
     isInstance = isInstance && "deleted_substates" in value;
     isInstance = isInstance && "new_global_entities" in value;
-    isInstance = isInstance && "updated_substates" in value;
 
     return isInstance;
 }
@@ -88,9 +88,9 @@ export function StateUpdatesFromJSONTyped(json: any, ignoreDiscriminator: boolea
     return {
         
         'created_substates': ((json['created_substates'] as Array<any>).map(NewSubstateVersionFromJSON)),
+        'updated_substates': ((json['updated_substates'] as Array<any>).map(NewSubstateVersionFromJSON)),
         'deleted_substates': ((json['deleted_substates'] as Array<any>).map(DeletedSubstateVersionRefFromJSON)),
         'new_global_entities': ((json['new_global_entities'] as Array<any>).map(GlobalEntityReferenceFromJSON)),
-        'updated_substates': ((json['updated_substates'] as Array<any>).map(NewSubstateVersionFromJSON)),
     };
 }
 
@@ -104,9 +104,9 @@ export function StateUpdatesToJSON(value?: StateUpdates | null): any {
     return {
         
         'created_substates': ((value.created_substates as Array<any>).map(NewSubstateVersionToJSON)),
+        'updated_substates': ((value.updated_substates as Array<any>).map(NewSubstateVersionToJSON)),
         'deleted_substates': ((value.deleted_substates as Array<any>).map(DeletedSubstateVersionRefToJSON)),
         'new_global_entities': ((value.new_global_entities as Array<any>).map(GlobalEntityReferenceToJSON)),
-        'updated_substates': ((value.updated_substates as Array<any>).map(NewSubstateVersionToJSON)),
     };
 }
 

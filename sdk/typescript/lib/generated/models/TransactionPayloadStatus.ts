@@ -20,12 +20,6 @@ import { exists, mapValues } from '../runtime';
  */
 export interface TransactionPayloadStatus {
     /**
-     * An explanation for the error, if failed or rejected
-     * @type {string}
-     * @memberof TransactionPayloadStatus
-     */
-    error_message?: string;
-    /**
      * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
      * @type {string}
      * @memberof TransactionPayloadStatus
@@ -38,6 +32,12 @@ export interface TransactionPayloadStatus {
      * @memberof TransactionPayloadStatus
      */
     status: TransactionPayloadStatusStatusEnum;
+    /**
+     * An explanation for the error, if failed or rejected
+     * @type {string}
+     * @memberof TransactionPayloadStatus
+     */
+    error_message?: string;
 }
 
 
@@ -76,9 +76,9 @@ export function TransactionPayloadStatusFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
         
-        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
         'payload_hash': json['payload_hash'],
         'status': json['status'],
+        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
     };
 }
 
@@ -91,9 +91,9 @@ export function TransactionPayloadStatusToJSON(value?: TransactionPayloadStatus 
     }
     return {
         
-        'error_message': value.error_message,
         'payload_hash': value.payload_hash,
         'status': value.status,
+        'error_message': value.error_message,
     };
 }
 

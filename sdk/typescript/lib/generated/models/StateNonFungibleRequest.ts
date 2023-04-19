@@ -26,6 +26,12 @@ export interface StateNonFungibleRequest {
      */
     network: string;
     /**
+     * The Bech32m-encoded human readable version of the resource's global address
+     * @type {string}
+     * @memberof StateNonFungibleRequest
+     */
+    resource_address: string;
+    /**
      * The simple string representation of the non-fungible id.
      * For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
      * A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
@@ -34,12 +40,6 @@ export interface StateNonFungibleRequest {
      * @memberof StateNonFungibleRequest
      */
     non_fungible_id: string;
-    /**
-     * The Bech32m-encoded human readable version of the resource's global address
-     * @type {string}
-     * @memberof StateNonFungibleRequest
-     */
-    resource_address: string;
 }
 
 /**
@@ -48,8 +48,8 @@ export interface StateNonFungibleRequest {
 export function instanceOfStateNonFungibleRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "non_fungible_id" in value;
     isInstance = isInstance && "resource_address" in value;
+    isInstance = isInstance && "non_fungible_id" in value;
 
     return isInstance;
 }
@@ -65,8 +65,8 @@ export function StateNonFungibleRequestFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'network': json['network'],
-        'non_fungible_id': json['non_fungible_id'],
         'resource_address': json['resource_address'],
+        'non_fungible_id': json['non_fungible_id'],
     };
 }
 
@@ -80,8 +80,8 @@ export function StateNonFungibleRequestToJSON(value?: StateNonFungibleRequest | 
     return {
         
         'network': value.network,
-        'non_fungible_id': value.non_fungible_id,
         'resource_address': value.resource_address,
+        'non_fungible_id': value.non_fungible_id,
     };
 }
 

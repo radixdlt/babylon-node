@@ -33,19 +33,18 @@ export interface LtsTransactionSubmitRejectedErrorDetailsAllOf {
      */
     error_message: string;
     /**
-     * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
-     * Only present if the rejection isn't permanent.
-     * @type {number}
-     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
-     */
-    invalid_from_epoch?: number;
-    /**
      * Whether (true) this rejected status has just been calculated fresh, or (false) the status is from the pending
      * transaction result cache.
      * @type {boolean}
      * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
      */
     is_fresh: boolean;
+    /**
+     * Whether the rejection of this payload is known to be permanent.
+     * @type {boolean}
+     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
+     */
+    is_payload_rejection_permanent: boolean;
     /**
      * Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
      * being permanent, as it implies any payloads containing the intent will also be permanently rejected.
@@ -54,18 +53,18 @@ export interface LtsTransactionSubmitRejectedErrorDetailsAllOf {
      */
     is_intent_rejection_permanent: boolean;
     /**
-     * Whether the rejection of this payload is known to be permanent.
-     * @type {boolean}
-     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
-     */
-    is_payload_rejection_permanent: boolean;
-    /**
      * Whether the cached rejection of this intent is due to the intent already having been committed.
      * If so, see the /transaction/receipt endpoint for further information.
      * @type {boolean}
      * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
      */
     is_rejected_because_intent_already_committed: boolean;
+    /**
+     * 
+     * @type {Instant}
+     * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
+     */
+    retry_from_timestamp?: Instant;
     /**
      * An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction.
      * Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
@@ -74,11 +73,12 @@ export interface LtsTransactionSubmitRejectedErrorDetailsAllOf {
      */
     retry_from_epoch?: number;
     /**
-     * 
-     * @type {Instant}
+     * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+     * Only present if the rejection isn't permanent.
+     * @type {number}
      * @memberof LtsTransactionSubmitRejectedErrorDetailsAllOf
      */
-    retry_from_timestamp?: Instant;
+    invalid_from_epoch?: number;
     /**
      * 
      * @type {string}
@@ -104,8 +104,8 @@ export function instanceOfLtsTransactionSubmitRejectedErrorDetailsAllOf(value: o
     let isInstance = true;
     isInstance = isInstance && "error_message" in value;
     isInstance = isInstance && "is_fresh" in value;
-    isInstance = isInstance && "is_intent_rejection_permanent" in value;
     isInstance = isInstance && "is_payload_rejection_permanent" in value;
+    isInstance = isInstance && "is_intent_rejection_permanent" in value;
     isInstance = isInstance && "is_rejected_because_intent_already_committed" in value;
 
     return isInstance;
@@ -122,13 +122,13 @@ export function LtsTransactionSubmitRejectedErrorDetailsAllOfFromJSONTyped(json:
     return {
         
         'error_message': json['error_message'],
-        'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
         'is_fresh': json['is_fresh'],
-        'is_intent_rejection_permanent': json['is_intent_rejection_permanent'],
         'is_payload_rejection_permanent': json['is_payload_rejection_permanent'],
+        'is_intent_rejection_permanent': json['is_intent_rejection_permanent'],
         'is_rejected_because_intent_already_committed': json['is_rejected_because_intent_already_committed'],
-        'retry_from_epoch': !exists(json, 'retry_from_epoch') ? undefined : json['retry_from_epoch'],
         'retry_from_timestamp': !exists(json, 'retry_from_timestamp') ? undefined : InstantFromJSON(json['retry_from_timestamp']),
+        'retry_from_epoch': !exists(json, 'retry_from_epoch') ? undefined : json['retry_from_epoch'],
+        'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -143,13 +143,13 @@ export function LtsTransactionSubmitRejectedErrorDetailsAllOfToJSON(value?: LtsT
     return {
         
         'error_message': value.error_message,
-        'invalid_from_epoch': value.invalid_from_epoch,
         'is_fresh': value.is_fresh,
-        'is_intent_rejection_permanent': value.is_intent_rejection_permanent,
         'is_payload_rejection_permanent': value.is_payload_rejection_permanent,
+        'is_intent_rejection_permanent': value.is_intent_rejection_permanent,
         'is_rejected_because_intent_already_committed': value.is_rejected_because_intent_already_committed,
-        'retry_from_epoch': value.retry_from_epoch,
         'retry_from_timestamp': InstantToJSON(value.retry_from_timestamp),
+        'retry_from_epoch': value.retry_from_epoch,
+        'invalid_from_epoch': value.invalid_from_epoch,
         'type': value.type,
     };
 }

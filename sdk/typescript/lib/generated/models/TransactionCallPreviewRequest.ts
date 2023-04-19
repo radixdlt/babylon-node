@@ -27,12 +27,6 @@ import {
  */
 export interface TransactionCallPreviewRequest {
     /**
-     * Argument list
-     * @type {Array<string>}
-     * @memberof TransactionCallPreviewRequest
-     */
-    arguments: Array<string>;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof TransactionCallPreviewRequest
@@ -44,6 +38,12 @@ export interface TransactionCallPreviewRequest {
      * @memberof TransactionCallPreviewRequest
      */
     target: TargetIdentifier;
+    /**
+     * Argument list
+     * @type {Array<string>}
+     * @memberof TransactionCallPreviewRequest
+     */
+    arguments: Array<string>;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface TransactionCallPreviewRequest {
  */
 export function instanceOfTransactionCallPreviewRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "arguments" in value;
     isInstance = isInstance && "network" in value;
     isInstance = isInstance && "target" in value;
+    isInstance = isInstance && "arguments" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function TransactionCallPreviewRequestFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
-        'arguments': json['arguments'],
         'network': json['network'],
         'target': TargetIdentifierFromJSON(json['target']),
+        'arguments': json['arguments'],
     };
 }
 
@@ -83,9 +83,9 @@ export function TransactionCallPreviewRequestToJSON(value?: TransactionCallPrevi
     }
     return {
         
-        'arguments': value.arguments,
         'network': value.network,
         'target': TargetIdentifierToJSON(value.target),
+        'arguments': value.arguments,
     };
 }
 

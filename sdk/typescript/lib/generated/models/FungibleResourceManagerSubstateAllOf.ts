@@ -26,18 +26,18 @@ export interface FungibleResourceManagerSubstateAllOf {
      */
     divisibility: number;
     /**
-     * 
-     * @type {string}
-     * @memberof FungibleResourceManagerSubstateAllOf
-     */
-    substate_type?: FungibleResourceManagerSubstateAllOfSubstateTypeEnum;
-    /**
      * The string-encoded decimal representing the total supply of this resource.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
      * @memberof FungibleResourceManagerSubstateAllOf
      */
     total_supply: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FungibleResourceManagerSubstateAllOf
+     */
+    substate_type?: FungibleResourceManagerSubstateAllOfSubstateTypeEnum;
 }
 
 
@@ -72,8 +72,8 @@ export function FungibleResourceManagerSubstateAllOfFromJSONTyped(json: any, ign
     return {
         
         'divisibility': json['divisibility'],
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
         'total_supply': json['total_supply'],
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
@@ -87,8 +87,8 @@ export function FungibleResourceManagerSubstateAllOfToJSON(value?: FungibleResou
     return {
         
         'divisibility': value.divisibility,
-        'substate_type': value.substate_type,
         'total_supply': value.total_supply,
+        'substate_type': value.substate_type,
     };
 }
 

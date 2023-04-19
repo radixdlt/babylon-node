@@ -45,17 +45,11 @@ export interface ValidatorSubstate {
      */
     epoch_manager_address: string;
     /**
-     * 
-     * @type {boolean}
-     * @memberof ValidatorSubstate
-     */
-    is_registered: boolean;
-    /**
-     * The Bech32m-encoded human readable version of the resource address
+     * The Bech32m-encoded human readable version of the component address
      * @type {string}
      * @memberof ValidatorSubstate
      */
-    liquid_stake_unit_resource_address: string;
+    validator_address: string;
     /**
      * 
      * @type {EcdsaSecp256k1PublicKey}
@@ -69,6 +63,18 @@ export interface ValidatorSubstate {
      */
     stake_vault: EntityReference;
     /**
+     * 
+     * @type {EntityReference}
+     * @memberof ValidatorSubstate
+     */
+    unstake_vault: EntityReference;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof ValidatorSubstate
+     */
+    liquid_stake_unit_resource_address: string;
+    /**
      * The Bech32m-encoded human readable version of the resource address
      * @type {string}
      * @memberof ValidatorSubstate
@@ -76,16 +82,10 @@ export interface ValidatorSubstate {
     unstake_claim_token_resource_address: string;
     /**
      * 
-     * @type {EntityReference}
+     * @type {boolean}
      * @memberof ValidatorSubstate
      */
-    unstake_vault: EntityReference;
-    /**
-     * The Bech32m-encoded human readable version of the component address
-     * @type {string}
-     * @memberof ValidatorSubstate
-     */
-    validator_address: string;
+    is_registered: boolean;
 }
 
 
@@ -105,13 +105,13 @@ export function instanceOfValidatorSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
     isInstance = isInstance && "epoch_manager_address" in value;
-    isInstance = isInstance && "is_registered" in value;
-    isInstance = isInstance && "liquid_stake_unit_resource_address" in value;
+    isInstance = isInstance && "validator_address" in value;
     isInstance = isInstance && "public_key" in value;
     isInstance = isInstance && "stake_vault" in value;
-    isInstance = isInstance && "unstake_claim_token_resource_address" in value;
     isInstance = isInstance && "unstake_vault" in value;
-    isInstance = isInstance && "validator_address" in value;
+    isInstance = isInstance && "liquid_stake_unit_resource_address" in value;
+    isInstance = isInstance && "unstake_claim_token_resource_address" in value;
+    isInstance = isInstance && "is_registered" in value;
 
     return isInstance;
 }
@@ -128,13 +128,13 @@ export function ValidatorSubstateFromJSONTyped(json: any, ignoreDiscriminator: b
         
         'substate_type': json['substate_type'],
         'epoch_manager_address': json['epoch_manager_address'],
-        'is_registered': json['is_registered'],
-        'liquid_stake_unit_resource_address': json['liquid_stake_unit_resource_address'],
+        'validator_address': json['validator_address'],
         'public_key': EcdsaSecp256k1PublicKeyFromJSON(json['public_key']),
         'stake_vault': EntityReferenceFromJSON(json['stake_vault']),
-        'unstake_claim_token_resource_address': json['unstake_claim_token_resource_address'],
         'unstake_vault': EntityReferenceFromJSON(json['unstake_vault']),
-        'validator_address': json['validator_address'],
+        'liquid_stake_unit_resource_address': json['liquid_stake_unit_resource_address'],
+        'unstake_claim_token_resource_address': json['unstake_claim_token_resource_address'],
+        'is_registered': json['is_registered'],
     };
 }
 
@@ -149,13 +149,13 @@ export function ValidatorSubstateToJSON(value?: ValidatorSubstate | null): any {
         
         'substate_type': value.substate_type,
         'epoch_manager_address': value.epoch_manager_address,
-        'is_registered': value.is_registered,
-        'liquid_stake_unit_resource_address': value.liquid_stake_unit_resource_address,
+        'validator_address': value.validator_address,
         'public_key': EcdsaSecp256k1PublicKeyToJSON(value.public_key),
         'stake_vault': EntityReferenceToJSON(value.stake_vault),
-        'unstake_claim_token_resource_address': value.unstake_claim_token_resource_address,
         'unstake_vault': EntityReferenceToJSON(value.unstake_vault),
-        'validator_address': value.validator_address,
+        'liquid_stake_unit_resource_address': value.liquid_stake_unit_resource_address,
+        'unstake_claim_token_resource_address': value.unstake_claim_token_resource_address,
+        'is_registered': value.is_registered,
     };
 }
 

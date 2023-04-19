@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsTransactionStatusRequest {
     /**
-     * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
-     * @type {string}
-     * @memberof LtsTransactionStatusRequest
-     */
-    intent_hash: string;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof LtsTransactionStatusRequest
      */
     network: string;
+    /**
+     * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
+     * @type {string}
+     * @memberof LtsTransactionStatusRequest
+     */
+    intent_hash: string;
 }
 
 /**
@@ -38,8 +38,8 @@ export interface LtsTransactionStatusRequest {
  */
 export function instanceOfLtsTransactionStatusRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "intent_hash" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "intent_hash" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function LtsTransactionStatusRequestFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
-        'intent_hash': json['intent_hash'],
         'network': json['network'],
+        'intent_hash': json['intent_hash'],
     };
 }
 
@@ -68,8 +68,8 @@ export function LtsTransactionStatusRequestToJSON(value?: LtsTransactionStatusRe
     }
     return {
         
-        'intent_hash': value.intent_hash,
         'network': value.network,
+        'intent_hash': value.intent_hash,
     };
 }
 

@@ -39,17 +39,11 @@ export interface ValidatorSubstateAllOf {
      */
     epoch_manager_address: string;
     /**
-     * 
-     * @type {boolean}
-     * @memberof ValidatorSubstateAllOf
-     */
-    is_registered: boolean;
-    /**
-     * The Bech32m-encoded human readable version of the resource address
+     * The Bech32m-encoded human readable version of the component address
      * @type {string}
      * @memberof ValidatorSubstateAllOf
      */
-    liquid_stake_unit_resource_address: string;
+    validator_address: string;
     /**
      * 
      * @type {EcdsaSecp256k1PublicKey}
@@ -64,10 +58,16 @@ export interface ValidatorSubstateAllOf {
     stake_vault: EntityReference;
     /**
      * 
+     * @type {EntityReference}
+     * @memberof ValidatorSubstateAllOf
+     */
+    unstake_vault: EntityReference;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
      * @type {string}
      * @memberof ValidatorSubstateAllOf
      */
-    substate_type?: ValidatorSubstateAllOfSubstateTypeEnum;
+    liquid_stake_unit_resource_address: string;
     /**
      * The Bech32m-encoded human readable version of the resource address
      * @type {string}
@@ -76,16 +76,16 @@ export interface ValidatorSubstateAllOf {
     unstake_claim_token_resource_address: string;
     /**
      * 
-     * @type {EntityReference}
+     * @type {boolean}
      * @memberof ValidatorSubstateAllOf
      */
-    unstake_vault: EntityReference;
+    is_registered: boolean;
     /**
-     * The Bech32m-encoded human readable version of the component address
+     * 
      * @type {string}
      * @memberof ValidatorSubstateAllOf
      */
-    validator_address: string;
+    substate_type?: ValidatorSubstateAllOfSubstateTypeEnum;
 }
 
 
@@ -104,13 +104,13 @@ export type ValidatorSubstateAllOfSubstateTypeEnum = typeof ValidatorSubstateAll
 export function instanceOfValidatorSubstateAllOf(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "epoch_manager_address" in value;
-    isInstance = isInstance && "is_registered" in value;
-    isInstance = isInstance && "liquid_stake_unit_resource_address" in value;
+    isInstance = isInstance && "validator_address" in value;
     isInstance = isInstance && "public_key" in value;
     isInstance = isInstance && "stake_vault" in value;
-    isInstance = isInstance && "unstake_claim_token_resource_address" in value;
     isInstance = isInstance && "unstake_vault" in value;
-    isInstance = isInstance && "validator_address" in value;
+    isInstance = isInstance && "liquid_stake_unit_resource_address" in value;
+    isInstance = isInstance && "unstake_claim_token_resource_address" in value;
+    isInstance = isInstance && "is_registered" in value;
 
     return isInstance;
 }
@@ -126,14 +126,14 @@ export function ValidatorSubstateAllOfFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'epoch_manager_address': json['epoch_manager_address'],
-        'is_registered': json['is_registered'],
-        'liquid_stake_unit_resource_address': json['liquid_stake_unit_resource_address'],
+        'validator_address': json['validator_address'],
         'public_key': EcdsaSecp256k1PublicKeyFromJSON(json['public_key']),
         'stake_vault': EntityReferenceFromJSON(json['stake_vault']),
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
-        'unstake_claim_token_resource_address': json['unstake_claim_token_resource_address'],
         'unstake_vault': EntityReferenceFromJSON(json['unstake_vault']),
-        'validator_address': json['validator_address'],
+        'liquid_stake_unit_resource_address': json['liquid_stake_unit_resource_address'],
+        'unstake_claim_token_resource_address': json['unstake_claim_token_resource_address'],
+        'is_registered': json['is_registered'],
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
@@ -147,14 +147,14 @@ export function ValidatorSubstateAllOfToJSON(value?: ValidatorSubstateAllOf | nu
     return {
         
         'epoch_manager_address': value.epoch_manager_address,
-        'is_registered': value.is_registered,
-        'liquid_stake_unit_resource_address': value.liquid_stake_unit_resource_address,
+        'validator_address': value.validator_address,
         'public_key': EcdsaSecp256k1PublicKeyToJSON(value.public_key),
         'stake_vault': EntityReferenceToJSON(value.stake_vault),
-        'substate_type': value.substate_type,
-        'unstake_claim_token_resource_address': value.unstake_claim_token_resource_address,
         'unstake_vault': EntityReferenceToJSON(value.unstake_vault),
-        'validator_address': value.validator_address,
+        'liquid_stake_unit_resource_address': value.liquid_stake_unit_resource_address,
+        'unstake_claim_token_resource_address': value.unstake_claim_token_resource_address,
+        'is_registered': value.is_registered,
+        'substate_type': value.substate_type,
     };
 }
 

@@ -26,6 +26,13 @@ export interface TransactionParseRequest {
      */
     network: string;
     /**
+     * A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction,
+     * a signed transaction intent an unsigned transaction intent, or a transaction manifest.
+     * @type {string}
+     * @memberof TransactionParseRequest
+     */
+    payload_hex: string;
+    /**
      * The type of transaction payload that should be assumed. If omitted, "Any" is used - where the payload is
      * attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger.
      * @type {string}
@@ -33,12 +40,12 @@ export interface TransactionParseRequest {
      */
     parse_mode?: TransactionParseRequestParseModeEnum;
     /**
-     * A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction,
-     * a signed transaction intent an unsigned transaction intent, or a transaction manifest.
+     * The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction.
+     * This is only relevant for Notarized payloads. If omitted, "Static" is used.
      * @type {string}
      * @memberof TransactionParseRequest
      */
-    payload_hex: string;
+    validation_mode?: TransactionParseRequestValidationModeEnum;
     /**
      * The amount of information to return in the response.
      * "Basic" includes the type, validity information, and any relevant identifiers.
@@ -48,13 +55,6 @@ export interface TransactionParseRequest {
      * @memberof TransactionParseRequest
      */
     response_mode?: TransactionParseRequestResponseModeEnum;
-    /**
-     * The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction.
-     * This is only relevant for Notarized payloads. If omitted, "Static" is used.
-     * @type {string}
-     * @memberof TransactionParseRequest
-     */
-    validation_mode?: TransactionParseRequestValidationModeEnum;
 }
 
 
@@ -74,21 +74,21 @@ export type TransactionParseRequestParseModeEnum = typeof TransactionParseReques
 /**
  * @export
  */
-export const TransactionParseRequestResponseModeEnum = {
-    Basic: 'Basic',
-    Full: 'Full'
-} as const;
-export type TransactionParseRequestResponseModeEnum = typeof TransactionParseRequestResponseModeEnum[keyof typeof TransactionParseRequestResponseModeEnum];
-
-/**
- * @export
- */
 export const TransactionParseRequestValidationModeEnum = {
     None: 'None',
     Static: 'Static',
     Full: 'Full'
 } as const;
 export type TransactionParseRequestValidationModeEnum = typeof TransactionParseRequestValidationModeEnum[keyof typeof TransactionParseRequestValidationModeEnum];
+
+/**
+ * @export
+ */
+export const TransactionParseRequestResponseModeEnum = {
+    Basic: 'Basic',
+    Full: 'Full'
+} as const;
+export type TransactionParseRequestResponseModeEnum = typeof TransactionParseRequestResponseModeEnum[keyof typeof TransactionParseRequestResponseModeEnum];
 
 
 /**
@@ -113,10 +113,10 @@ export function TransactionParseRequestFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'network': json['network'],
-        'parse_mode': !exists(json, 'parse_mode') ? undefined : json['parse_mode'],
         'payload_hex': json['payload_hex'],
-        'response_mode': !exists(json, 'response_mode') ? undefined : json['response_mode'],
+        'parse_mode': !exists(json, 'parse_mode') ? undefined : json['parse_mode'],
         'validation_mode': !exists(json, 'validation_mode') ? undefined : json['validation_mode'],
+        'response_mode': !exists(json, 'response_mode') ? undefined : json['response_mode'],
     };
 }
 
@@ -130,10 +130,10 @@ export function TransactionParseRequestToJSON(value?: TransactionParseRequest | 
     return {
         
         'network': value.network,
-        'parse_mode': value.parse_mode,
         'payload_hex': value.payload_hex,
-        'response_mode': value.response_mode,
+        'parse_mode': value.parse_mode,
         'validation_mode': value.validation_mode,
+        'response_mode': value.response_mode,
     };
 }
 

@@ -33,18 +33,6 @@ import {
  */
 export interface FeeSummary {
     /**
-     * A breakdown of where the execution cost went.
-     * @type {{ [key: string]: number; }}
-     * @memberof FeeSummary
-     */
-    cost_unit_execution_breakdown: { [key: string]: number; };
-    /**
-     * An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
-     * @type {number}
-     * @memberof FeeSummary
-     */
-    cost_unit_limit: number;
-    /**
      * The string-encoded decimal representing the XRD price of a single cost unit.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
@@ -52,23 +40,29 @@ export interface FeeSummary {
      */
     cost_unit_price: string;
     /**
-     * An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-     * @type {number}
-     * @memberof FeeSummary
-     */
-    cost_units_consumed: number;
-    /**
      * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
      * @type {number}
      * @memberof FeeSummary
      */
     tip_percentage: number;
     /**
-     * A breakdown of where the royalties were paid to.
-     * @type {Array<RoyaltyPayment>}
+     * An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
+     * @type {number}
      * @memberof FeeSummary
      */
-    xrd_royalty_receivers: Array<RoyaltyPayment>;
+    cost_unit_limit: number;
+    /**
+     * An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
+     * @type {number}
+     * @memberof FeeSummary
+     */
+    cost_units_consumed: number;
+    /**
+     * A breakdown of where the execution cost went.
+     * @type {{ [key: string]: number; }}
+     * @memberof FeeSummary
+     */
+    cost_unit_execution_breakdown: { [key: string]: number; };
     /**
      * The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
@@ -96,6 +90,12 @@ export interface FeeSummary {
      * @memberof FeeSummary
      */
     xrd_vault_payments: Array<VaultPayment>;
+    /**
+     * A breakdown of where the royalties were paid to.
+     * @type {Array<RoyaltyPayment>}
+     * @memberof FeeSummary
+     */
+    xrd_royalty_receivers: Array<RoyaltyPayment>;
 }
 
 /**
@@ -103,16 +103,16 @@ export interface FeeSummary {
  */
 export function instanceOfFeeSummary(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "cost_unit_execution_breakdown" in value;
-    isInstance = isInstance && "cost_unit_limit" in value;
     isInstance = isInstance && "cost_unit_price" in value;
-    isInstance = isInstance && "cost_units_consumed" in value;
     isInstance = isInstance && "tip_percentage" in value;
-    isInstance = isInstance && "xrd_royalty_receivers" in value;
+    isInstance = isInstance && "cost_unit_limit" in value;
+    isInstance = isInstance && "cost_units_consumed" in value;
+    isInstance = isInstance && "cost_unit_execution_breakdown" in value;
     isInstance = isInstance && "xrd_total_execution_cost" in value;
     isInstance = isInstance && "xrd_total_royalty_cost" in value;
     isInstance = isInstance && "xrd_total_tipped" in value;
     isInstance = isInstance && "xrd_vault_payments" in value;
+    isInstance = isInstance && "xrd_royalty_receivers" in value;
 
     return isInstance;
 }
@@ -127,16 +127,16 @@ export function FeeSummaryFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     }
     return {
         
-        'cost_unit_execution_breakdown': json['cost_unit_execution_breakdown'],
-        'cost_unit_limit': json['cost_unit_limit'],
         'cost_unit_price': json['cost_unit_price'],
-        'cost_units_consumed': json['cost_units_consumed'],
         'tip_percentage': json['tip_percentage'],
-        'xrd_royalty_receivers': ((json['xrd_royalty_receivers'] as Array<any>).map(RoyaltyPaymentFromJSON)),
+        'cost_unit_limit': json['cost_unit_limit'],
+        'cost_units_consumed': json['cost_units_consumed'],
+        'cost_unit_execution_breakdown': json['cost_unit_execution_breakdown'],
         'xrd_total_execution_cost': json['xrd_total_execution_cost'],
         'xrd_total_royalty_cost': json['xrd_total_royalty_cost'],
         'xrd_total_tipped': json['xrd_total_tipped'],
         'xrd_vault_payments': ((json['xrd_vault_payments'] as Array<any>).map(VaultPaymentFromJSON)),
+        'xrd_royalty_receivers': ((json['xrd_royalty_receivers'] as Array<any>).map(RoyaltyPaymentFromJSON)),
     };
 }
 
@@ -149,16 +149,16 @@ export function FeeSummaryToJSON(value?: FeeSummary | null): any {
     }
     return {
         
-        'cost_unit_execution_breakdown': value.cost_unit_execution_breakdown,
-        'cost_unit_limit': value.cost_unit_limit,
         'cost_unit_price': value.cost_unit_price,
-        'cost_units_consumed': value.cost_units_consumed,
         'tip_percentage': value.tip_percentage,
-        'xrd_royalty_receivers': ((value.xrd_royalty_receivers as Array<any>).map(RoyaltyPaymentToJSON)),
+        'cost_unit_limit': value.cost_unit_limit,
+        'cost_units_consumed': value.cost_units_consumed,
+        'cost_unit_execution_breakdown': value.cost_unit_execution_breakdown,
         'xrd_total_execution_cost': value.xrd_total_execution_cost,
         'xrd_total_royalty_cost': value.xrd_total_royalty_cost,
         'xrd_total_tipped': value.xrd_total_tipped,
         'xrd_vault_payments': ((value.xrd_vault_payments as Array<any>).map(VaultPaymentToJSON)),
+        'xrd_royalty_receivers': ((value.xrd_royalty_receivers as Array<any>).map(RoyaltyPaymentToJSON)),
     };
 }
 

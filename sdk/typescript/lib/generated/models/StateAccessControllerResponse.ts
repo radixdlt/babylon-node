@@ -43,25 +43,25 @@ export interface StateAccessControllerResponse {
      * @type {Substate}
      * @memberof StateAccessControllerResponse
      */
-    access_rules: Substate;
-    /**
-     * Any descendent nodes owned directly or indirectly by the component
-     * @type {Array<StateComponentDescendentId>}
-     * @memberof StateAccessControllerResponse
-     */
-    descendent_ids: Array<StateComponentDescendentId>;
+    state: Substate;
     /**
      * 
      * @type {Substate}
      * @memberof StateAccessControllerResponse
      */
-    state: Substate;
+    access_rules: Substate;
     /**
      * Any vaults owned directly or indirectly by the component
      * @type {Array<ResourceAmount>}
      * @memberof StateAccessControllerResponse
      */
     state_owned_vaults: Array<ResourceAmount>;
+    /**
+     * Any descendent nodes owned directly or indirectly by the component
+     * @type {Array<StateComponentDescendentId>}
+     * @memberof StateAccessControllerResponse
+     */
+    descendent_ids: Array<StateComponentDescendentId>;
 }
 
 /**
@@ -69,10 +69,10 @@ export interface StateAccessControllerResponse {
  */
 export function instanceOfStateAccessControllerResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rules" in value;
-    isInstance = isInstance && "descendent_ids" in value;
     isInstance = isInstance && "state" in value;
+    isInstance = isInstance && "access_rules" in value;
     isInstance = isInstance && "state_owned_vaults" in value;
+    isInstance = isInstance && "descendent_ids" in value;
 
     return isInstance;
 }
@@ -87,10 +87,10 @@ export function StateAccessControllerResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
-        'access_rules': SubstateFromJSON(json['access_rules']),
-        'descendent_ids': ((json['descendent_ids'] as Array<any>).map(StateComponentDescendentIdFromJSON)),
         'state': SubstateFromJSON(json['state']),
+        'access_rules': SubstateFromJSON(json['access_rules']),
         'state_owned_vaults': ((json['state_owned_vaults'] as Array<any>).map(ResourceAmountFromJSON)),
+        'descendent_ids': ((json['descendent_ids'] as Array<any>).map(StateComponentDescendentIdFromJSON)),
     };
 }
 
@@ -103,10 +103,10 @@ export function StateAccessControllerResponseToJSON(value?: StateAccessControlle
     }
     return {
         
-        'access_rules': SubstateToJSON(value.access_rules),
-        'descendent_ids': ((value.descendent_ids as Array<any>).map(StateComponentDescendentIdToJSON)),
         'state': SubstateToJSON(value.state),
+        'access_rules': SubstateToJSON(value.access_rules),
         'state_owned_vaults': ((value.state_owned_vaults as Array<any>).map(ResourceAmountToJSON)),
+        'descendent_ids': ((value.descendent_ids as Array<any>).map(StateComponentDescendentIdToJSON)),
     };
 }
 

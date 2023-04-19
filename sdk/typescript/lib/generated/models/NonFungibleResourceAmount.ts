@@ -27,17 +27,17 @@ import {
  */
 export interface NonFungibleResourceAmount {
     /**
-     * The Bech32m-encoded human readable version of the resource address
-     * @type {string}
-     * @memberof NonFungibleResourceAmount
-     */
-    resource_address: string;
-    /**
      * 
      * @type {string}
      * @memberof NonFungibleResourceAmount
      */
     resource_type: NonFungibleResourceAmountResourceTypeEnum;
+    /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof NonFungibleResourceAmount
+     */
+    resource_address: string;
     /**
      * 
      * @type {Array<NonFungibleId>}
@@ -61,8 +61,8 @@ export type NonFungibleResourceAmountResourceTypeEnum = typeof NonFungibleResour
  */
 export function instanceOfNonFungibleResourceAmount(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "resource_type" in value;
+    isInstance = isInstance && "resource_address" in value;
     isInstance = isInstance && "non_fungible_ids" in value;
 
     return isInstance;
@@ -78,8 +78,8 @@ export function NonFungibleResourceAmountFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
-        'resource_address': json['resource_address'],
         'resource_type': json['resource_type'],
+        'resource_address': json['resource_address'],
         'non_fungible_ids': ((json['non_fungible_ids'] as Array<any>).map(NonFungibleIdFromJSON)),
     };
 }
@@ -93,8 +93,8 @@ export function NonFungibleResourceAmountToJSON(value?: NonFungibleResourceAmoun
     }
     return {
         
-        'resource_address': value.resource_address,
         'resource_type': value.resource_type,
+        'resource_address': value.resource_address,
         'non_fungible_ids': ((value.non_fungible_ids as Array<any>).map(NonFungibleIdToJSON)),
     };
 }

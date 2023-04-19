@@ -33,18 +33,6 @@ import {
  */
 export interface KeyValueStoreSchema {
     /**
-     * Whether the key value store can own any children.
-     * @type {boolean}
-     * @memberof KeyValueStoreSchema
-     */
-    can_own: boolean;
-    /**
-     * 
-     * @type {LocalTypeIndex}
-     * @memberof KeyValueStoreSchema
-     */
-    key_type: LocalTypeIndex;
-    /**
      * 
      * @type {SborData}
      * @memberof KeyValueStoreSchema
@@ -55,7 +43,19 @@ export interface KeyValueStoreSchema {
      * @type {LocalTypeIndex}
      * @memberof KeyValueStoreSchema
      */
+    key_type: LocalTypeIndex;
+    /**
+     * 
+     * @type {LocalTypeIndex}
+     * @memberof KeyValueStoreSchema
+     */
     value_type: LocalTypeIndex;
+    /**
+     * Whether the key value store can own any children.
+     * @type {boolean}
+     * @memberof KeyValueStoreSchema
+     */
+    can_own: boolean;
 }
 
 /**
@@ -63,10 +63,10 @@ export interface KeyValueStoreSchema {
  */
 export function instanceOfKeyValueStoreSchema(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "can_own" in value;
-    isInstance = isInstance && "key_type" in value;
     isInstance = isInstance && "schema" in value;
+    isInstance = isInstance && "key_type" in value;
     isInstance = isInstance && "value_type" in value;
+    isInstance = isInstance && "can_own" in value;
 
     return isInstance;
 }
@@ -81,10 +81,10 @@ export function KeyValueStoreSchemaFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'can_own': json['can_own'],
-        'key_type': LocalTypeIndexFromJSON(json['key_type']),
         'schema': SborDataFromJSON(json['schema']),
+        'key_type': LocalTypeIndexFromJSON(json['key_type']),
         'value_type': LocalTypeIndexFromJSON(json['value_type']),
+        'can_own': json['can_own'],
     };
 }
 
@@ -97,10 +97,10 @@ export function KeyValueStoreSchemaToJSON(value?: KeyValueStoreSchema | null): a
     }
     return {
         
-        'can_own': value.can_own,
-        'key_type': LocalTypeIndexToJSON(value.key_type),
         'schema': SborDataToJSON(value.schema),
+        'key_type': LocalTypeIndexToJSON(value.key_type),
         'value_type': LocalTypeIndexToJSON(value.value_type),
+        'can_own': value.can_own,
     };
 }
 

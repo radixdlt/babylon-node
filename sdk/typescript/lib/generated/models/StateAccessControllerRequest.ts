@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface StateAccessControllerRequest {
     /**
-     * The Bech32m-encoded human readable version of the component address
-     * @type {string}
-     * @memberof StateAccessControllerRequest
-     */
-    controller_address: string;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof StateAccessControllerRequest
      */
     network: string;
+    /**
+     * The Bech32m-encoded human readable version of the component address
+     * @type {string}
+     * @memberof StateAccessControllerRequest
+     */
+    controller_address: string;
 }
 
 /**
@@ -38,8 +38,8 @@ export interface StateAccessControllerRequest {
  */
 export function instanceOfStateAccessControllerRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "controller_address" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "controller_address" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function StateAccessControllerRequestFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'controller_address': json['controller_address'],
         'network': json['network'],
+        'controller_address': json['controller_address'],
     };
 }
 
@@ -68,8 +68,8 @@ export function StateAccessControllerRequestToJSON(value?: StateAccessController
     }
     return {
         
-        'controller_address': value.controller_address,
         'network': value.network,
+        'controller_address': value.controller_address,
     };
 }
 

@@ -34,24 +34,6 @@ import {
 export interface NewSubstateVersion {
     /**
      * 
-     * @type {Substate}
-     * @memberof NewSubstateVersion
-     */
-    substate_data: Substate;
-    /**
-     * The hex-encoded Blake2b-256 hash of the substate data bytes
-     * @type {string}
-     * @memberof NewSubstateVersion
-     */
-    substate_data_hash: string;
-    /**
-     * The hex-encoded, SBOR-encoded substate data bytes
-     * @type {string}
-     * @memberof NewSubstateVersion
-     */
-    substate_hex: string;
-    /**
-     * 
      * @type {SubstateId}
      * @memberof NewSubstateVersion
      */
@@ -62,6 +44,24 @@ export interface NewSubstateVersion {
      * @memberof NewSubstateVersion
      */
     version: number;
+    /**
+     * The hex-encoded, SBOR-encoded substate data bytes
+     * @type {string}
+     * @memberof NewSubstateVersion
+     */
+    substate_hex: string;
+    /**
+     * The hex-encoded Blake2b-256 hash of the substate data bytes
+     * @type {string}
+     * @memberof NewSubstateVersion
+     */
+    substate_data_hash: string;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof NewSubstateVersion
+     */
+    substate_data: Substate;
 }
 
 /**
@@ -69,11 +69,11 @@ export interface NewSubstateVersion {
  */
 export function instanceOfNewSubstateVersion(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "substate_data" in value;
-    isInstance = isInstance && "substate_data_hash" in value;
-    isInstance = isInstance && "substate_hex" in value;
     isInstance = isInstance && "substate_id" in value;
     isInstance = isInstance && "version" in value;
+    isInstance = isInstance && "substate_hex" in value;
+    isInstance = isInstance && "substate_data_hash" in value;
+    isInstance = isInstance && "substate_data" in value;
 
     return isInstance;
 }
@@ -88,11 +88,11 @@ export function NewSubstateVersionFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'substate_data': SubstateFromJSON(json['substate_data']),
-        'substate_data_hash': json['substate_data_hash'],
-        'substate_hex': json['substate_hex'],
         'substate_id': SubstateIdFromJSON(json['substate_id']),
         'version': json['version'],
+        'substate_hex': json['substate_hex'],
+        'substate_data_hash': json['substate_data_hash'],
+        'substate_data': SubstateFromJSON(json['substate_data']),
     };
 }
 
@@ -105,11 +105,11 @@ export function NewSubstateVersionToJSON(value?: NewSubstateVersion | null): any
     }
     return {
         
-        'substate_data': SubstateToJSON(value.substate_data),
-        'substate_data_hash': value.substate_data_hash,
-        'substate_hex': value.substate_hex,
         'substate_id': SubstateIdToJSON(value.substate_id),
         'version': value.version,
+        'substate_hex': value.substate_hex,
+        'substate_data_hash': value.substate_data_hash,
+        'substate_data': SubstateToJSON(value.substate_data),
     };
 }
 

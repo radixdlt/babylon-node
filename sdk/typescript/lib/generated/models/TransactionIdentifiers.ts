@@ -26,17 +26,17 @@ export interface TransactionIdentifiers {
      */
     intent_hash: string;
     /**
-     * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
-     * @type {string}
-     * @memberof TransactionIdentifiers
-     */
-    payload_hash: string;
-    /**
      * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`
      * @type {string}
      * @memberof TransactionIdentifiers
      */
     signatures_hash: string;
+    /**
+     * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
+     * @type {string}
+     * @memberof TransactionIdentifiers
+     */
+    payload_hash: string;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface TransactionIdentifiers {
 export function instanceOfTransactionIdentifiers(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "intent_hash" in value;
-    isInstance = isInstance && "payload_hash" in value;
     isInstance = isInstance && "signatures_hash" in value;
+    isInstance = isInstance && "payload_hash" in value;
 
     return isInstance;
 }
@@ -62,8 +62,8 @@ export function TransactionIdentifiersFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'intent_hash': json['intent_hash'],
-        'payload_hash': json['payload_hash'],
         'signatures_hash': json['signatures_hash'],
+        'payload_hash': json['payload_hash'],
     };
 }
 
@@ -77,8 +77,8 @@ export function TransactionIdentifiersToJSON(value?: TransactionIdentifiers | nu
     return {
         
         'intent_hash': value.intent_hash,
-        'payload_hash': value.payload_hash,
         'signatures_hash': value.signatures_hash,
+        'payload_hash': value.payload_hash,
     };
 }
 

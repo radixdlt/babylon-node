@@ -20,12 +20,6 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LocalTypeIndex {
     /**
-     * Either the well known identifier, of the schema-local index, depending on the kind.
-     * @type {number}
-     * @memberof LocalTypeIndex
-     */
-    index: number;
-    /**
      * The location against which to resolve this type reference against a given schema.
      * WellKnown indicates the index is a pointer to a well known scrypto type with that id.
      * SchemaLocal indicates the index is a pointer into the given schema.
@@ -33,6 +27,12 @@ export interface LocalTypeIndex {
      * @memberof LocalTypeIndex
      */
     kind: LocalTypeIndexKindEnum;
+    /**
+     * Either the well known identifier, of the schema-local index, depending on the kind.
+     * @type {number}
+     * @memberof LocalTypeIndex
+     */
+    index: number;
 }
 
 
@@ -51,8 +51,8 @@ export type LocalTypeIndexKindEnum = typeof LocalTypeIndexKindEnum[keyof typeof 
  */
 export function instanceOfLocalTypeIndex(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "index" in value;
     isInstance = isInstance && "kind" in value;
+    isInstance = isInstance && "index" in value;
 
     return isInstance;
 }
@@ -67,8 +67,8 @@ export function LocalTypeIndexFromJSONTyped(json: any, ignoreDiscriminator: bool
     }
     return {
         
-        'index': json['index'],
         'kind': json['kind'],
+        'index': json['index'],
     };
 }
 
@@ -81,8 +81,8 @@ export function LocalTypeIndexToJSON(value?: LocalTypeIndex | null): any {
     }
     return {
         
-        'index': value.index,
         'kind': value.kind,
+        'index': value.index,
     };
 }
 

@@ -40,16 +40,16 @@ export interface ParsedSignedTransactionIntent {
     type: ParsedSignedTransactionIntentTypeEnum;
     /**
      * 
-     * @type {ParsedSignedTransactionIntentAllOfIdentifiers}
-     * @memberof ParsedSignedTransactionIntent
-     */
-    identifiers: ParsedSignedTransactionIntentAllOfIdentifiers;
-    /**
-     * 
      * @type {SignedTransactionIntent}
      * @memberof ParsedSignedTransactionIntent
      */
     signed_intent?: SignedTransactionIntent;
+    /**
+     * 
+     * @type {ParsedSignedTransactionIntentAllOfIdentifiers}
+     * @memberof ParsedSignedTransactionIntent
+     */
+    identifiers: ParsedSignedTransactionIntentAllOfIdentifiers;
 }
 
 
@@ -84,8 +84,8 @@ export function ParsedSignedTransactionIntentFromJSONTyped(json: any, ignoreDisc
     return {
         
         'type': json['type'],
-        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
         'signed_intent': !exists(json, 'signed_intent') ? undefined : SignedTransactionIntentFromJSON(json['signed_intent']),
+        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
     };
 }
 
@@ -99,8 +99,8 @@ export function ParsedSignedTransactionIntentToJSON(value?: ParsedSignedTransact
     return {
         
         'type': value.type,
-        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
         'signed_intent': SignedTransactionIntentToJSON(value.signed_intent),
+        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
     };
 }
 

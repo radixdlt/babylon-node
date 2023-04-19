@@ -23,18 +23,18 @@ import { exists, mapValues } from '../runtime';
  */
 export interface ParsedNotarizedTransactionAllOfValidationError {
     /**
+     * The error message.
+     * @type {string}
+     * @memberof ParsedNotarizedTransactionAllOfValidationError
+     */
+    reason: string;
+    /**
      * Whether the error is known to be permanent, or not.
      * This relates to whether the transaction would be rejected permanently or temporarily if submitted.
      * @type {boolean}
      * @memberof ParsedNotarizedTransactionAllOfValidationError
      */
     is_permanent: boolean;
-    /**
-     * The error message.
-     * @type {string}
-     * @memberof ParsedNotarizedTransactionAllOfValidationError
-     */
-    reason: string;
 }
 
 /**
@@ -42,8 +42,8 @@ export interface ParsedNotarizedTransactionAllOfValidationError {
  */
 export function instanceOfParsedNotarizedTransactionAllOfValidationError(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "is_permanent" in value;
     isInstance = isInstance && "reason" in value;
+    isInstance = isInstance && "is_permanent" in value;
 
     return isInstance;
 }
@@ -58,8 +58,8 @@ export function ParsedNotarizedTransactionAllOfValidationErrorFromJSONTyped(json
     }
     return {
         
-        'is_permanent': json['is_permanent'],
         'reason': json['reason'],
+        'is_permanent': json['is_permanent'],
     };
 }
 
@@ -72,8 +72,8 @@ export function ParsedNotarizedTransactionAllOfValidationErrorToJSON(value?: Par
     }
     return {
         
-        'is_permanent': value.is_permanent,
         'reason': value.reason,
+        'is_permanent': value.is_permanent,
     };
 }
 

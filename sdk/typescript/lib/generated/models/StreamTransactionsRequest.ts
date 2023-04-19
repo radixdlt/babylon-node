@@ -20,6 +20,12 @@ import { exists, mapValues } from '../runtime';
  */
 export interface StreamTransactionsRequest {
     /**
+     * The logical name of the network
+     * @type {string}
+     * @memberof StreamTransactionsRequest
+     */
+    network: string;
+    /**
      * An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
      * @type {number}
      * @memberof StreamTransactionsRequest
@@ -31,12 +37,6 @@ export interface StreamTransactionsRequest {
      * @memberof StreamTransactionsRequest
      */
     limit: number;
-    /**
-     * The logical name of the network
-     * @type {string}
-     * @memberof StreamTransactionsRequest
-     */
-    network: string;
 }
 
 /**
@@ -44,9 +44,9 @@ export interface StreamTransactionsRequest {
  */
 export function instanceOfStreamTransactionsRequest(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "network" in value;
     isInstance = isInstance && "from_state_version" in value;
     isInstance = isInstance && "limit" in value;
-    isInstance = isInstance && "network" in value;
 
     return isInstance;
 }
@@ -61,9 +61,9 @@ export function StreamTransactionsRequestFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
+        'network': json['network'],
         'from_state_version': json['from_state_version'],
         'limit': json['limit'],
-        'network': json['network'],
     };
 }
 
@@ -76,9 +76,9 @@ export function StreamTransactionsRequestToJSON(value?: StreamTransactionsReques
     }
     return {
         
+        'network': value.network,
         'from_state_version': value.from_state_version,
         'limit': value.limit,
-        'network': value.network,
     };
 }
 

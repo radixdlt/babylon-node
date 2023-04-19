@@ -27,18 +27,6 @@ import {
  */
 export interface LtsStreamTransactionOutcomesResponse {
     /**
-     * A committed transaction outcomes list starting from the `from_state_version` (inclusive).
-     * @type {Array<LtsCommittedTransactionOutcome>}
-     * @memberof LtsStreamTransactionOutcomesResponse
-     */
-    committed_transaction_outcomes: Array<LtsCommittedTransactionOutcome>;
-    /**
-     * An integer between `0` and `10000`, giving the total count of transactions in the returned response
-     * @type {number}
-     * @memberof LtsStreamTransactionOutcomesResponse
-     */
-    count: number;
-    /**
      * An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
      * This matches the `from_state_version` in the request.
      * @type {number}
@@ -46,11 +34,23 @@ export interface LtsStreamTransactionOutcomesResponse {
      */
     from_state_version: number;
     /**
+     * An integer between `0` and `10000`, giving the total count of transactions in the returned response
+     * @type {number}
+     * @memberof LtsStreamTransactionOutcomesResponse
+     */
+    count: number;
+    /**
      * An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
      * @type {number}
      * @memberof LtsStreamTransactionOutcomesResponse
      */
     max_ledger_state_version: number;
+    /**
+     * A committed transaction outcomes list starting from the `from_state_version` (inclusive).
+     * @type {Array<LtsCommittedTransactionOutcome>}
+     * @memberof LtsStreamTransactionOutcomesResponse
+     */
+    committed_transaction_outcomes: Array<LtsCommittedTransactionOutcome>;
 }
 
 /**
@@ -58,10 +58,10 @@ export interface LtsStreamTransactionOutcomesResponse {
  */
 export function instanceOfLtsStreamTransactionOutcomesResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "committed_transaction_outcomes" in value;
-    isInstance = isInstance && "count" in value;
     isInstance = isInstance && "from_state_version" in value;
+    isInstance = isInstance && "count" in value;
     isInstance = isInstance && "max_ledger_state_version" in value;
+    isInstance = isInstance && "committed_transaction_outcomes" in value;
 
     return isInstance;
 }
@@ -76,10 +76,10 @@ export function LtsStreamTransactionOutcomesResponseFromJSONTyped(json: any, ign
     }
     return {
         
-        'committed_transaction_outcomes': ((json['committed_transaction_outcomes'] as Array<any>).map(LtsCommittedTransactionOutcomeFromJSON)),
-        'count': json['count'],
         'from_state_version': json['from_state_version'],
+        'count': json['count'],
         'max_ledger_state_version': json['max_ledger_state_version'],
+        'committed_transaction_outcomes': ((json['committed_transaction_outcomes'] as Array<any>).map(LtsCommittedTransactionOutcomeFromJSON)),
     };
 }
 
@@ -92,10 +92,10 @@ export function LtsStreamTransactionOutcomesResponseToJSON(value?: LtsStreamTran
     }
     return {
         
-        'committed_transaction_outcomes': ((value.committed_transaction_outcomes as Array<any>).map(LtsCommittedTransactionOutcomeToJSON)),
-        'count': value.count,
         'from_state_version': value.from_state_version,
+        'count': value.count,
         'max_ledger_state_version': value.max_ledger_state_version,
+        'committed_transaction_outcomes': ((value.committed_transaction_outcomes as Array<any>).map(LtsCommittedTransactionOutcomeToJSON)),
     };
 }
 

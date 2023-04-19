@@ -43,31 +43,19 @@ export interface StateComponentResponse {
      * @type {Substate}
      * @memberof StateComponentResponse
      */
-    access_rules: Substate;
-    /**
-     * 
-     * @type {Substate}
-     * @memberof StateComponentResponse
-     */
-    account?: Substate;
-    /**
-     * Any descendent nodes owned directly or indirectly by the component
-     * @type {Array<StateComponentDescendentId>}
-     * @memberof StateComponentResponse
-     */
-    descendent_ids: Array<StateComponentDescendentId>;
-    /**
-     * 
-     * @type {Substate}
-     * @memberof StateComponentResponse
-     */
     info: Substate;
     /**
      * 
      * @type {Substate}
      * @memberof StateComponentResponse
      */
-    royalty_accumulator?: Substate;
+    state?: Substate;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof StateComponentResponse
+     */
+    account?: Substate;
     /**
      * 
      * @type {Substate}
@@ -79,13 +67,25 @@ export interface StateComponentResponse {
      * @type {Substate}
      * @memberof StateComponentResponse
      */
-    state?: Substate;
+    royalty_accumulator?: Substate;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof StateComponentResponse
+     */
+    access_rules: Substate;
     /**
      * Any vaults owned directly or indirectly by the component
      * @type {Array<ResourceAmount>}
      * @memberof StateComponentResponse
      */
     state_owned_vaults: Array<ResourceAmount>;
+    /**
+     * Any descendent nodes owned directly or indirectly by the component
+     * @type {Array<StateComponentDescendentId>}
+     * @memberof StateComponentResponse
+     */
+    descendent_ids: Array<StateComponentDescendentId>;
 }
 
 /**
@@ -93,10 +93,10 @@ export interface StateComponentResponse {
  */
 export function instanceOfStateComponentResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rules" in value;
-    isInstance = isInstance && "descendent_ids" in value;
     isInstance = isInstance && "info" in value;
+    isInstance = isInstance && "access_rules" in value;
     isInstance = isInstance && "state_owned_vaults" in value;
+    isInstance = isInstance && "descendent_ids" in value;
 
     return isInstance;
 }
@@ -111,14 +111,14 @@ export function StateComponentResponseFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'access_rules': SubstateFromJSON(json['access_rules']),
-        'account': !exists(json, 'account') ? undefined : SubstateFromJSON(json['account']),
-        'descendent_ids': ((json['descendent_ids'] as Array<any>).map(StateComponentDescendentIdFromJSON)),
         'info': SubstateFromJSON(json['info']),
-        'royalty_accumulator': !exists(json, 'royalty_accumulator') ? undefined : SubstateFromJSON(json['royalty_accumulator']),
-        'royalty_config': !exists(json, 'royalty_config') ? undefined : SubstateFromJSON(json['royalty_config']),
         'state': !exists(json, 'state') ? undefined : SubstateFromJSON(json['state']),
+        'account': !exists(json, 'account') ? undefined : SubstateFromJSON(json['account']),
+        'royalty_config': !exists(json, 'royalty_config') ? undefined : SubstateFromJSON(json['royalty_config']),
+        'royalty_accumulator': !exists(json, 'royalty_accumulator') ? undefined : SubstateFromJSON(json['royalty_accumulator']),
+        'access_rules': SubstateFromJSON(json['access_rules']),
         'state_owned_vaults': ((json['state_owned_vaults'] as Array<any>).map(ResourceAmountFromJSON)),
+        'descendent_ids': ((json['descendent_ids'] as Array<any>).map(StateComponentDescendentIdFromJSON)),
     };
 }
 
@@ -131,14 +131,14 @@ export function StateComponentResponseToJSON(value?: StateComponentResponse | nu
     }
     return {
         
-        'access_rules': SubstateToJSON(value.access_rules),
-        'account': SubstateToJSON(value.account),
-        'descendent_ids': ((value.descendent_ids as Array<any>).map(StateComponentDescendentIdToJSON)),
         'info': SubstateToJSON(value.info),
-        'royalty_accumulator': SubstateToJSON(value.royalty_accumulator),
-        'royalty_config': SubstateToJSON(value.royalty_config),
         'state': SubstateToJSON(value.state),
+        'account': SubstateToJSON(value.account),
+        'royalty_config': SubstateToJSON(value.royalty_config),
+        'royalty_accumulator': SubstateToJSON(value.royalty_accumulator),
+        'access_rules': SubstateToJSON(value.access_rules),
         'state_owned_vaults': ((value.state_owned_vaults as Array<any>).map(ResourceAmountToJSON)),
+        'descendent_ids': ((value.descendent_ids as Array<any>).map(StateComponentDescendentIdToJSON)),
     };
 }
 

@@ -27,17 +27,17 @@ import {
  */
 export interface ErrorResponseBase {
     /**
-     * A numeric code corresponding to the given HTTP error code.
-     * @type {number}
-     * @memberof ErrorResponseBase
-     */
-    code: number;
-    /**
      * 
      * @type {ErrorResponseType}
      * @memberof ErrorResponseBase
      */
     error_type: ErrorResponseType;
+    /**
+     * A numeric code corresponding to the given HTTP error code.
+     * @type {number}
+     * @memberof ErrorResponseBase
+     */
+    code: number;
     /**
      * A human-readable error message.
      * @type {string}
@@ -57,8 +57,8 @@ export interface ErrorResponseBase {
  */
 export function instanceOfErrorResponseBase(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "error_type" in value;
+    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "message" in value;
 
     return isInstance;
@@ -74,8 +74,8 @@ export function ErrorResponseBaseFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'code': json['code'],
         'error_type': ErrorResponseTypeFromJSON(json['error_type']),
+        'code': json['code'],
         'message': json['message'],
         'trace_id': !exists(json, 'trace_id') ? undefined : json['trace_id'],
     };
@@ -90,8 +90,8 @@ export function ErrorResponseBaseToJSON(value?: ErrorResponseBase | null): any {
     }
     return {
         
-        'code': value.code,
         'error_type': ErrorResponseTypeToJSON(value.error_type),
+        'code': value.code,
         'message': value.message,
         'trace_id': value.trace_id,
     };

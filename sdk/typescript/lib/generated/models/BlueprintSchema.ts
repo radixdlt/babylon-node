@@ -39,18 +39,6 @@ import {
  */
 export interface BlueprintSchema {
     /**
-     * A map from the event name to the local type index for the event payload under the blueprint schema.
-     * @type {{ [key: string]: LocalTypeIndex; }}
-     * @memberof BlueprintSchema
-     */
-    event_definitions: { [key: string]: LocalTypeIndex; };
-    /**
-     * A map from the function name to the FunctionDefinition
-     * @type {{ [key: string]: FunctionDefinition; }}
-     * @memberof BlueprintSchema
-     */
-    function_definitions: { [key: string]: FunctionDefinition; };
-    /**
      * 
      * @type {SborData}
      * @memberof BlueprintSchema
@@ -62,6 +50,18 @@ export interface BlueprintSchema {
      * @memberof BlueprintSchema
      */
     substates: Array<LocalTypeIndex>;
+    /**
+     * A map from the function name to the FunctionDefinition
+     * @type {{ [key: string]: FunctionDefinition; }}
+     * @memberof BlueprintSchema
+     */
+    function_definitions: { [key: string]: FunctionDefinition; };
+    /**
+     * A map from the event name to the local type index for the event payload under the blueprint schema.
+     * @type {{ [key: string]: LocalTypeIndex; }}
+     * @memberof BlueprintSchema
+     */
+    event_definitions: { [key: string]: LocalTypeIndex; };
 }
 
 /**
@@ -69,10 +69,10 @@ export interface BlueprintSchema {
  */
 export function instanceOfBlueprintSchema(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "event_definitions" in value;
-    isInstance = isInstance && "function_definitions" in value;
     isInstance = isInstance && "schema" in value;
     isInstance = isInstance && "substates" in value;
+    isInstance = isInstance && "function_definitions" in value;
+    isInstance = isInstance && "event_definitions" in value;
 
     return isInstance;
 }
@@ -87,10 +87,10 @@ export function BlueprintSchemaFromJSONTyped(json: any, ignoreDiscriminator: boo
     }
     return {
         
-        'event_definitions': (mapValues(json['event_definitions'], LocalTypeIndexFromJSON)),
-        'function_definitions': (mapValues(json['function_definitions'], FunctionDefinitionFromJSON)),
         'schema': SborDataFromJSON(json['schema']),
         'substates': ((json['substates'] as Array<any>).map(LocalTypeIndexFromJSON)),
+        'function_definitions': (mapValues(json['function_definitions'], FunctionDefinitionFromJSON)),
+        'event_definitions': (mapValues(json['event_definitions'], LocalTypeIndexFromJSON)),
     };
 }
 
@@ -103,10 +103,10 @@ export function BlueprintSchemaToJSON(value?: BlueprintSchema | null): any {
     }
     return {
         
-        'event_definitions': (mapValues(value.event_definitions, LocalTypeIndexToJSON)),
-        'function_definitions': (mapValues(value.function_definitions, FunctionDefinitionToJSON)),
         'schema': SborDataToJSON(value.schema),
         'substates': ((value.substates as Array<any>).map(LocalTypeIndexToJSON)),
+        'function_definitions': (mapValues(value.function_definitions, FunctionDefinitionToJSON)),
+        'event_definitions': (mapValues(value.event_definitions, LocalTypeIndexToJSON)),
     };
 }
 

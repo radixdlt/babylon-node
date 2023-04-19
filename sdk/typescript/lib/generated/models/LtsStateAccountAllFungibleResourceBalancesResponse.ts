@@ -27,6 +27,12 @@ import {
  */
 export interface LtsStateAccountAllFungibleResourceBalancesResponse {
     /**
+     * An integer between `1` and `10^13`, giving the state version at which the query was performed.
+     * @type {number}
+     * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
+     */
+    state_version: number;
+    /**
      * The Bech32m-encoded human readable version of the account's address
      * @type {string}
      * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
@@ -38,12 +44,6 @@ export interface LtsStateAccountAllFungibleResourceBalancesResponse {
      * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
      */
     fungible_resource_balances: Array<LtsFungibleResourceBalance>;
-    /**
-     * An integer between `1` and `10^13`, giving the state version at which the query was performed.
-     * @type {number}
-     * @memberof LtsStateAccountAllFungibleResourceBalancesResponse
-     */
-    state_version: number;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface LtsStateAccountAllFungibleResourceBalancesResponse {
  */
 export function instanceOfLtsStateAccountAllFungibleResourceBalancesResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "state_version" in value;
     isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "fungible_resource_balances" in value;
-    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function LtsStateAccountAllFungibleResourceBalancesResponseFromJSONTyped(
     }
     return {
         
+        'state_version': json['state_version'],
         'account_address': json['account_address'],
         'fungible_resource_balances': ((json['fungible_resource_balances'] as Array<any>).map(LtsFungibleResourceBalanceFromJSON)),
-        'state_version': json['state_version'],
     };
 }
 
@@ -83,9 +83,9 @@ export function LtsStateAccountAllFungibleResourceBalancesResponseToJSON(value?:
     }
     return {
         
+        'state_version': value.state_version,
         'account_address': value.account_address,
         'fungible_resource_balances': ((value.fungible_resource_balances as Array<any>).map(LtsFungibleResourceBalanceToJSON)),
-        'state_version': value.state_version,
     };
 }
 

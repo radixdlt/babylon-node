@@ -34,16 +34,16 @@ import {
 export interface ParsedTransactionIntentAllOf {
     /**
      * 
-     * @type {ParsedTransactionIntentAllOfIdentifiers}
-     * @memberof ParsedTransactionIntentAllOf
-     */
-    identifiers: ParsedTransactionIntentAllOfIdentifiers;
-    /**
-     * 
      * @type {TransactionIntent}
      * @memberof ParsedTransactionIntentAllOf
      */
     intent?: TransactionIntent;
+    /**
+     * 
+     * @type {ParsedTransactionIntentAllOfIdentifiers}
+     * @memberof ParsedTransactionIntentAllOf
+     */
+    identifiers: ParsedTransactionIntentAllOfIdentifiers;
     /**
      * 
      * @type {string}
@@ -82,8 +82,8 @@ export function ParsedTransactionIntentAllOfFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'identifiers': ParsedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
         'intent': !exists(json, 'intent') ? undefined : TransactionIntentFromJSON(json['intent']),
+        'identifiers': ParsedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -97,8 +97,8 @@ export function ParsedTransactionIntentAllOfToJSON(value?: ParsedTransactionInte
     }
     return {
         
-        'identifiers': ParsedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
         'intent': TransactionIntentToJSON(value.intent),
+        'identifiers': ParsedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
         'type': value.type,
     };
 }

@@ -34,16 +34,16 @@ import {
 export interface PackageFunctionAccessRulesSubstateAllOf {
     /**
      * 
-     * @type {AccessRule}
-     * @memberof PackageFunctionAccessRulesSubstateAllOf
-     */
-    default_auth: AccessRule;
-    /**
-     * 
      * @type {Array<PackageFunctionAccessRule>}
      * @memberof PackageFunctionAccessRulesSubstateAllOf
      */
     function_auth: Array<PackageFunctionAccessRule>;
+    /**
+     * 
+     * @type {AccessRule}
+     * @memberof PackageFunctionAccessRulesSubstateAllOf
+     */
+    default_auth: AccessRule;
     /**
      * 
      * @type {string}
@@ -67,8 +67,8 @@ export type PackageFunctionAccessRulesSubstateAllOfSubstateTypeEnum = typeof Pac
  */
 export function instanceOfPackageFunctionAccessRulesSubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "default_auth" in value;
     isInstance = isInstance && "function_auth" in value;
+    isInstance = isInstance && "default_auth" in value;
 
     return isInstance;
 }
@@ -83,8 +83,8 @@ export function PackageFunctionAccessRulesSubstateAllOfFromJSONTyped(json: any, 
     }
     return {
         
-        'default_auth': AccessRuleFromJSON(json['default_auth']),
         'function_auth': ((json['function_auth'] as Array<any>).map(PackageFunctionAccessRuleFromJSON)),
+        'default_auth': AccessRuleFromJSON(json['default_auth']),
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -98,8 +98,8 @@ export function PackageFunctionAccessRulesSubstateAllOfToJSON(value?: PackageFun
     }
     return {
         
-        'default_auth': AccessRuleToJSON(value.default_auth),
         'function_auth': ((value.function_auth as Array<any>).map(PackageFunctionAccessRuleToJSON)),
+        'default_auth': AccessRuleToJSON(value.default_auth),
         'substate_type': value.substate_type,
     };
 }

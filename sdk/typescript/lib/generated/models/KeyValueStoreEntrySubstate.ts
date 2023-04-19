@@ -39,18 +39,6 @@ export interface KeyValueStoreEntrySubstate {
      */
     substate_type: KeyValueStoreEntrySubstateSubstateTypeEnum;
     /**
-     * 
-     * @type {DataStruct}
-     * @memberof KeyValueStoreEntrySubstate
-     */
-    data_struct?: DataStruct;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof KeyValueStoreEntrySubstate
-     */
-    is_deleted: boolean;
-    /**
      * The hex-encoded bytes of its key
      * @type {string}
      * @memberof KeyValueStoreEntrySubstate
@@ -62,6 +50,18 @@ export interface KeyValueStoreEntrySubstate {
      * @memberof KeyValueStoreEntrySubstate
      */
     key_non_fungible_local_id?: NonFungibleId;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof KeyValueStoreEntrySubstate
+     */
+    is_deleted: boolean;
+    /**
+     * 
+     * @type {DataStruct}
+     * @memberof KeyValueStoreEntrySubstate
+     */
+    data_struct?: DataStruct;
 }
 
 
@@ -80,8 +80,8 @@ export type KeyValueStoreEntrySubstateSubstateTypeEnum = typeof KeyValueStoreEnt
 export function instanceOfKeyValueStoreEntrySubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
-    isInstance = isInstance && "is_deleted" in value;
     isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "is_deleted" in value;
 
     return isInstance;
 }
@@ -97,10 +97,10 @@ export function KeyValueStoreEntrySubstateFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'substate_type': json['substate_type'],
-        'data_struct': !exists(json, 'data_struct') ? undefined : DataStructFromJSON(json['data_struct']),
-        'is_deleted': json['is_deleted'],
         'key_hex': json['key_hex'],
         'key_non_fungible_local_id': !exists(json, 'key_non_fungible_local_id') ? undefined : NonFungibleIdFromJSON(json['key_non_fungible_local_id']),
+        'is_deleted': json['is_deleted'],
+        'data_struct': !exists(json, 'data_struct') ? undefined : DataStructFromJSON(json['data_struct']),
     };
 }
 
@@ -114,10 +114,10 @@ export function KeyValueStoreEntrySubstateToJSON(value?: KeyValueStoreEntrySubst
     return {
         
         'substate_type': value.substate_type,
-        'data_struct': DataStructToJSON(value.data_struct),
-        'is_deleted': value.is_deleted,
         'key_hex': value.key_hex,
         'key_non_fungible_local_id': NonFungibleIdToJSON(value.key_non_fungible_local_id),
+        'is_deleted': value.is_deleted,
+        'data_struct': DataStructToJSON(value.data_struct),
     };
 }
 

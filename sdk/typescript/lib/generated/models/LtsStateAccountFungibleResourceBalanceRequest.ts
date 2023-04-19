@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsStateAccountFungibleResourceBalanceRequest {
     /**
-     * The Bech32m-encoded human readable version of the account's address
-     * @type {string}
-     * @memberof LtsStateAccountFungibleResourceBalanceRequest
-     */
-    account_address: string;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof LtsStateAccountFungibleResourceBalanceRequest
      */
     network: string;
+    /**
+     * The Bech32m-encoded human readable version of the account's address
+     * @type {string}
+     * @memberof LtsStateAccountFungibleResourceBalanceRequest
+     */
+    account_address: string;
     /**
      * The Bech32m-encoded human readable version of the resource address
      * @type {string}
@@ -44,8 +44,8 @@ export interface LtsStateAccountFungibleResourceBalanceRequest {
  */
 export function instanceOfLtsStateAccountFungibleResourceBalanceRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "resource_address" in value;
 
     return isInstance;
@@ -61,8 +61,8 @@ export function LtsStateAccountFungibleResourceBalanceRequestFromJSONTyped(json:
     }
     return {
         
-        'account_address': json['account_address'],
         'network': json['network'],
+        'account_address': json['account_address'],
         'resource_address': json['resource_address'],
     };
 }
@@ -76,8 +76,8 @@ export function LtsStateAccountFungibleResourceBalanceRequestToJSON(value?: LtsS
     }
     return {
         
-        'account_address': value.account_address,
         'network': value.network,
+        'account_address': value.account_address,
         'resource_address': value.resource_address,
     };
 }

@@ -27,12 +27,6 @@ import {
  */
 export interface StateEpochResponse {
     /**
-     * 
-     * @type {Substate}
-     * @memberof StateEpochResponse
-     */
-    active_validator_set: Substate;
-    /**
      * An integer between `0` and `10^10`, marking the current epoch
      * @type {number}
      * @memberof StateEpochResponse
@@ -44,6 +38,12 @@ export interface StateEpochResponse {
      * @memberof StateEpochResponse
      */
     epoch_manager: Substate;
+    /**
+     * 
+     * @type {Substate}
+     * @memberof StateEpochResponse
+     */
+    active_validator_set: Substate;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface StateEpochResponse {
  */
 export function instanceOfStateEpochResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "active_validator_set" in value;
     isInstance = isInstance && "epoch" in value;
     isInstance = isInstance && "epoch_manager" in value;
+    isInstance = isInstance && "active_validator_set" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function StateEpochResponseFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'active_validator_set': SubstateFromJSON(json['active_validator_set']),
         'epoch': json['epoch'],
         'epoch_manager': SubstateFromJSON(json['epoch_manager']),
+        'active_validator_set': SubstateFromJSON(json['active_validator_set']),
     };
 }
 
@@ -83,9 +83,9 @@ export function StateEpochResponseToJSON(value?: StateEpochResponse | null): any
     }
     return {
         
-        'active_validator_set': SubstateToJSON(value.active_validator_set),
         'epoch': value.epoch,
         'epoch_manager': SubstateToJSON(value.epoch_manager),
+        'active_validator_set': SubstateToJSON(value.active_validator_set),
     };
 }
 

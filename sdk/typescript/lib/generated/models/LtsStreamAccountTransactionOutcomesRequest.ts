@@ -20,6 +20,12 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsStreamAccountTransactionOutcomesRequest {
     /**
+     * The logical name of the network
+     * @type {string}
+     * @memberof LtsStreamAccountTransactionOutcomesRequest
+     */
+    network: string;
+    /**
      * The Bech32m-encoded human readable version of the account's address
      * @type {string}
      * @memberof LtsStreamAccountTransactionOutcomesRequest
@@ -37,12 +43,6 @@ export interface LtsStreamAccountTransactionOutcomesRequest {
      * @memberof LtsStreamAccountTransactionOutcomesRequest
      */
     limit: number;
-    /**
-     * The logical name of the network
-     * @type {string}
-     * @memberof LtsStreamAccountTransactionOutcomesRequest
-     */
-    network: string;
 }
 
 /**
@@ -50,10 +50,10 @@ export interface LtsStreamAccountTransactionOutcomesRequest {
  */
 export function instanceOfLtsStreamAccountTransactionOutcomesRequest(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "network" in value;
     isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "from_state_version" in value;
     isInstance = isInstance && "limit" in value;
-    isInstance = isInstance && "network" in value;
 
     return isInstance;
 }
@@ -68,10 +68,10 @@ export function LtsStreamAccountTransactionOutcomesRequestFromJSONTyped(json: an
     }
     return {
         
+        'network': json['network'],
         'account_address': json['account_address'],
         'from_state_version': json['from_state_version'],
         'limit': json['limit'],
-        'network': json['network'],
     };
 }
 
@@ -84,10 +84,10 @@ export function LtsStreamAccountTransactionOutcomesRequestToJSON(value?: LtsStre
     }
     return {
         
+        'network': value.network,
         'account_address': value.account_address,
         'from_state_version': value.from_state_version,
         'limit': value.limit,
-        'network': value.network,
     };
 }
 

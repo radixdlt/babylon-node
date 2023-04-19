@@ -33,6 +33,12 @@ import {
  */
 export interface CommittedTransaction {
     /**
+     * An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+     * @type {number}
+     * @memberof CommittedTransaction
+     */
+    state_version: number;
+    /**
      * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
      * This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
      * @type {string}
@@ -51,12 +57,6 @@ export interface CommittedTransaction {
      * @memberof CommittedTransaction
      */
     receipt: TransactionReceipt;
-    /**
-     * An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
-     * @type {number}
-     * @memberof CommittedTransaction
-     */
-    state_version: number;
 }
 
 /**
@@ -64,10 +64,10 @@ export interface CommittedTransaction {
  */
 export function instanceOfCommittedTransaction(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "state_version" in value;
     isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "ledger_transaction" in value;
     isInstance = isInstance && "receipt" in value;
-    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
@@ -82,10 +82,10 @@ export function CommittedTransactionFromJSONTyped(json: any, ignoreDiscriminator
     }
     return {
         
+        'state_version': json['state_version'],
         'accumulator_hash': json['accumulator_hash'],
         'ledger_transaction': LedgerTransactionFromJSON(json['ledger_transaction']),
         'receipt': TransactionReceiptFromJSON(json['receipt']),
-        'state_version': json['state_version'],
     };
 }
 
@@ -98,10 +98,10 @@ export function CommittedTransactionToJSON(value?: CommittedTransaction | null):
     }
     return {
         
+        'state_version': value.state_version,
         'accumulator_hash': value.accumulator_hash,
         'ledger_transaction': LedgerTransactionToJSON(value.ledger_transaction),
         'receipt': TransactionReceiptToJSON(value.receipt),
-        'state_version': value.state_version,
     };
 }
 

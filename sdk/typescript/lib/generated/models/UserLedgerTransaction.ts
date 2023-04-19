@@ -27,17 +27,17 @@ import {
  */
 export interface UserLedgerTransaction {
     /**
-     * The hex-encoded full ledger transaction payload
-     * @type {string}
-     * @memberof UserLedgerTransaction
-     */
-    payload_hex: string;
-    /**
      * 
      * @type {string}
      * @memberof UserLedgerTransaction
      */
     type: UserLedgerTransactionTypeEnum;
+    /**
+     * The hex-encoded full ledger transaction payload
+     * @type {string}
+     * @memberof UserLedgerTransaction
+     */
+    payload_hex: string;
     /**
      * 
      * @type {NotarizedTransaction}
@@ -61,8 +61,8 @@ export type UserLedgerTransactionTypeEnum = typeof UserLedgerTransactionTypeEnum
  */
 export function instanceOfUserLedgerTransaction(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "notarized_transaction" in value;
 
     return isInstance;
@@ -78,8 +78,8 @@ export function UserLedgerTransactionFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'payload_hex': json['payload_hex'],
         'type': json['type'],
+        'payload_hex': json['payload_hex'],
         'notarized_transaction': NotarizedTransactionFromJSON(json['notarized_transaction']),
     };
 }
@@ -93,8 +93,8 @@ export function UserLedgerTransactionToJSON(value?: UserLedgerTransaction | null
     }
     return {
         
-        'payload_hex': value.payload_hex,
         'type': value.type,
+        'payload_hex': value.payload_hex,
         'notarized_transaction': NotarizedTransactionToJSON(value.notarized_transaction),
     };
 }

@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface TransactionManifest {
     /**
-     * A map of the hex-encoded blob hash, to hex-encoded blob content
-     * @type {{ [key: string]: string; }}
-     * @memberof TransactionManifest
-     */
-    blobs_hex: { [key: string]: string; };
-    /**
      * The decompiled transaction manifest instructions
      * @type {string}
      * @memberof TransactionManifest
      */
     instructions: string;
+    /**
+     * A map of the hex-encoded blob hash, to hex-encoded blob content
+     * @type {{ [key: string]: string; }}
+     * @memberof TransactionManifest
+     */
+    blobs_hex: { [key: string]: string; };
 }
 
 /**
@@ -38,8 +38,8 @@ export interface TransactionManifest {
  */
 export function instanceOfTransactionManifest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "blobs_hex" in value;
     isInstance = isInstance && "instructions" in value;
+    isInstance = isInstance && "blobs_hex" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function TransactionManifestFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'blobs_hex': json['blobs_hex'],
         'instructions': json['instructions'],
+        'blobs_hex': json['blobs_hex'],
     };
 }
 
@@ -68,8 +68,8 @@ export function TransactionManifestToJSON(value?: TransactionManifest | null): a
     }
     return {
         
-        'blobs_hex': value.blobs_hex,
         'instructions': value.instructions,
+        'blobs_hex': value.blobs_hex,
     };
 }
 

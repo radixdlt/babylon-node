@@ -24,6 +24,12 @@ export interface TransactionPreviewRequestFlags {
      * @type {boolean}
      * @memberof TransactionPreviewRequestFlags
      */
+    unlimited_loan: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TransactionPreviewRequestFlags
+     */
     assume_all_signature_proofs: boolean;
     /**
      * 
@@ -37,12 +43,6 @@ export interface TransactionPreviewRequestFlags {
      * @memberof TransactionPreviewRequestFlags
      */
     permit_invalid_header_epoch: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof TransactionPreviewRequestFlags
-     */
-    unlimited_loan: boolean;
 }
 
 /**
@@ -50,10 +50,10 @@ export interface TransactionPreviewRequestFlags {
  */
 export function instanceOfTransactionPreviewRequestFlags(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "unlimited_loan" in value;
     isInstance = isInstance && "assume_all_signature_proofs" in value;
     isInstance = isInstance && "permit_duplicate_intent_hash" in value;
     isInstance = isInstance && "permit_invalid_header_epoch" in value;
-    isInstance = isInstance && "unlimited_loan" in value;
 
     return isInstance;
 }
@@ -68,10 +68,10 @@ export function TransactionPreviewRequestFlagsFromJSONTyped(json: any, ignoreDis
     }
     return {
         
+        'unlimited_loan': json['unlimited_loan'],
         'assume_all_signature_proofs': json['assume_all_signature_proofs'],
         'permit_duplicate_intent_hash': json['permit_duplicate_intent_hash'],
         'permit_invalid_header_epoch': json['permit_invalid_header_epoch'],
-        'unlimited_loan': json['unlimited_loan'],
     };
 }
 
@@ -84,10 +84,10 @@ export function TransactionPreviewRequestFlagsToJSON(value?: TransactionPreviewR
     }
     return {
         
+        'unlimited_loan': value.unlimited_loan,
         'assume_all_signature_proofs': value.assume_all_signature_proofs,
         'permit_duplicate_intent_hash': value.permit_duplicate_intent_hash,
         'permit_invalid_header_epoch': value.permit_invalid_header_epoch,
-        'unlimited_loan': value.unlimited_loan,
     };
 }
 

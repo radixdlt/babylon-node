@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface StateComponentRequest {
     /**
-     * The Bech32m-encoded human readable version of the component's global address
-     * @type {string}
-     * @memberof StateComponentRequest
-     */
-    component_address: string;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof StateComponentRequest
      */
     network: string;
+    /**
+     * The Bech32m-encoded human readable version of the component's global address
+     * @type {string}
+     * @memberof StateComponentRequest
+     */
+    component_address: string;
 }
 
 /**
@@ -38,8 +38,8 @@ export interface StateComponentRequest {
  */
 export function instanceOfStateComponentRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "component_address" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "component_address" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function StateComponentRequestFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'component_address': json['component_address'],
         'network': json['network'],
+        'component_address': json['component_address'],
     };
 }
 
@@ -68,8 +68,8 @@ export function StateComponentRequestToJSON(value?: StateComponentRequest | null
     }
     return {
         
-        'component_address': value.component_address,
         'network': value.network,
+        'component_address': value.component_address,
     };
 }
 

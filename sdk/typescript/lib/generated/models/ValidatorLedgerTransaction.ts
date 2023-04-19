@@ -27,17 +27,17 @@ import {
  */
 export interface ValidatorLedgerTransaction {
     /**
-     * The hex-encoded full ledger transaction payload
-     * @type {string}
-     * @memberof ValidatorLedgerTransaction
-     */
-    payload_hex: string;
-    /**
      * 
      * @type {string}
      * @memberof ValidatorLedgerTransaction
      */
     type: ValidatorLedgerTransactionTypeEnum;
+    /**
+     * The hex-encoded full ledger transaction payload
+     * @type {string}
+     * @memberof ValidatorLedgerTransaction
+     */
+    payload_hex: string;
     /**
      * 
      * @type {ValidatorTransaction}
@@ -61,8 +61,8 @@ export type ValidatorLedgerTransactionTypeEnum = typeof ValidatorLedgerTransacti
  */
 export function instanceOfValidatorLedgerTransaction(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "validator_transaction" in value;
 
     return isInstance;
@@ -78,8 +78,8 @@ export function ValidatorLedgerTransactionFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'payload_hex': json['payload_hex'],
         'type': json['type'],
+        'payload_hex': json['payload_hex'],
         'validator_transaction': ValidatorTransactionFromJSON(json['validator_transaction']),
     };
 }
@@ -93,8 +93,8 @@ export function ValidatorLedgerTransactionToJSON(value?: ValidatorLedgerTransact
     }
     return {
         
-        'payload_hex': value.payload_hex,
         'type': value.type,
+        'payload_hex': value.payload_hex,
         'validator_transaction': ValidatorTransactionToJSON(value.validator_transaction),
     };
 }

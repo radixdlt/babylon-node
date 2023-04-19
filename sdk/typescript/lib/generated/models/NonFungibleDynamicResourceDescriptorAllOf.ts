@@ -27,17 +27,17 @@ import {
  */
 export interface NonFungibleDynamicResourceDescriptorAllOf {
     /**
-     * 
-     * @type {NonFungibleId}
-     * @memberof NonFungibleDynamicResourceDescriptorAllOf
-     */
-    non_fungible_id: NonFungibleId;
-    /**
      * The Bech32m-encoded human readable version of the resource address
      * @type {string}
      * @memberof NonFungibleDynamicResourceDescriptorAllOf
      */
     resource_address: string;
+    /**
+     * 
+     * @type {NonFungibleId}
+     * @memberof NonFungibleDynamicResourceDescriptorAllOf
+     */
+    non_fungible_id: NonFungibleId;
     /**
      * 
      * @type {string}
@@ -61,8 +61,8 @@ export type NonFungibleDynamicResourceDescriptorAllOfTypeEnum = typeof NonFungib
  */
 export function instanceOfNonFungibleDynamicResourceDescriptorAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "non_fungible_id" in value;
     isInstance = isInstance && "resource_address" in value;
+    isInstance = isInstance && "non_fungible_id" in value;
 
     return isInstance;
 }
@@ -77,8 +77,8 @@ export function NonFungibleDynamicResourceDescriptorAllOfFromJSONTyped(json: any
     }
     return {
         
-        'non_fungible_id': NonFungibleIdFromJSON(json['non_fungible_id']),
         'resource_address': json['resource_address'],
+        'non_fungible_id': NonFungibleIdFromJSON(json['non_fungible_id']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -92,8 +92,8 @@ export function NonFungibleDynamicResourceDescriptorAllOfToJSON(value?: NonFungi
     }
     return {
         
-        'non_fungible_id': NonFungibleIdToJSON(value.non_fungible_id),
         'resource_address': value.resource_address,
+        'non_fungible_id': NonFungibleIdToJSON(value.non_fungible_id),
         'type': value.type,
     };
 }

@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface BasicErrorResponse {
     /**
-     * A numeric code corresponding to the given HTTP error code.
-     * @type {number}
-     * @memberof BasicErrorResponse
-     */
-    code: number;
-    /**
      * 
      * @type {string}
      * @memberof BasicErrorResponse
      */
     error_type: BasicErrorResponseErrorTypeEnum;
+    /**
+     * A numeric code corresponding to the given HTTP error code.
+     * @type {number}
+     * @memberof BasicErrorResponse
+     */
+    code: number;
     /**
      * A human-readable error message.
      * @type {string}
@@ -60,8 +60,8 @@ export type BasicErrorResponseErrorTypeEnum = typeof BasicErrorResponseErrorType
  */
 export function instanceOfBasicErrorResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "error_type" in value;
+    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "message" in value;
 
     return isInstance;
@@ -77,8 +77,8 @@ export function BasicErrorResponseFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'code': json['code'],
         'error_type': json['error_type'],
+        'code': json['code'],
         'message': json['message'],
         'trace_id': !exists(json, 'trace_id') ? undefined : json['trace_id'],
     };
@@ -93,8 +93,8 @@ export function BasicErrorResponseToJSON(value?: BasicErrorResponse | null): any
     }
     return {
         
-        'code': value.code,
         'error_type': value.error_type,
+        'code': value.code,
         'message': value.message,
         'trace_id': value.trace_id,
     };

@@ -33,11 +33,11 @@ import {
  */
 export interface StateComponentDescendentId {
     /**
-     * Depth under component
-     * @type {number}
+     * 
+     * @type {SubstateId}
      * @memberof StateComponentDescendentId
      */
-    depth: number;
+    parent: SubstateId;
     /**
      * 
      * @type {EntityReference}
@@ -45,11 +45,11 @@ export interface StateComponentDescendentId {
      */
     entity: EntityReference;
     /**
-     * 
-     * @type {SubstateId}
+     * Depth under component
+     * @type {number}
      * @memberof StateComponentDescendentId
      */
-    parent: SubstateId;
+    depth: number;
 }
 
 /**
@@ -57,9 +57,9 @@ export interface StateComponentDescendentId {
  */
 export function instanceOfStateComponentDescendentId(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "depth" in value;
-    isInstance = isInstance && "entity" in value;
     isInstance = isInstance && "parent" in value;
+    isInstance = isInstance && "entity" in value;
+    isInstance = isInstance && "depth" in value;
 
     return isInstance;
 }
@@ -74,9 +74,9 @@ export function StateComponentDescendentIdFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'depth': json['depth'],
-        'entity': EntityReferenceFromJSON(json['entity']),
         'parent': SubstateIdFromJSON(json['parent']),
+        'entity': EntityReferenceFromJSON(json['entity']),
+        'depth': json['depth'],
     };
 }
 
@@ -89,9 +89,9 @@ export function StateComponentDescendentIdToJSON(value?: StateComponentDescenden
     }
     return {
         
-        'depth': value.depth,
-        'entity': EntityReferenceToJSON(value.entity),
         'parent': SubstateIdToJSON(value.parent),
+        'entity': EntityReferenceToJSON(value.entity),
+        'depth': value.depth,
     };
 }
 

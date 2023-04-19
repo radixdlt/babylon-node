@@ -27,11 +27,11 @@ import {
  */
 export interface GlobalEntityReference {
     /**
-     * 
-     * @type {EntityReference}
+     * The hex-encoded bytes of the entity's global address
+     * @type {string}
      * @memberof GlobalEntityReference
      */
-    entity_reference: EntityReference;
+    global_address_hex: string;
     /**
      * The Bech32m-encoded human readable version of the entity's global address
      * @type {string}
@@ -39,11 +39,11 @@ export interface GlobalEntityReference {
      */
     global_address: string;
     /**
-     * The hex-encoded bytes of the entity's global address
-     * @type {string}
+     * 
+     * @type {EntityReference}
      * @memberof GlobalEntityReference
      */
-    global_address_hex: string;
+    entity_reference: EntityReference;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface GlobalEntityReference {
  */
 export function instanceOfGlobalEntityReference(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity_reference" in value;
-    isInstance = isInstance && "global_address" in value;
     isInstance = isInstance && "global_address_hex" in value;
+    isInstance = isInstance && "global_address" in value;
+    isInstance = isInstance && "entity_reference" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function GlobalEntityReferenceFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'entity_reference': EntityReferenceFromJSON(json['entity_reference']),
-        'global_address': json['global_address'],
         'global_address_hex': json['global_address_hex'],
+        'global_address': json['global_address'],
+        'entity_reference': EntityReferenceFromJSON(json['entity_reference']),
     };
 }
 
@@ -83,9 +83,9 @@ export function GlobalEntityReferenceToJSON(value?: GlobalEntityReference | null
     }
     return {
         
-        'entity_reference': EntityReferenceToJSON(value.entity_reference),
-        'global_address': value.global_address,
         'global_address_hex': value.global_address_hex,
+        'global_address': value.global_address,
+        'entity_reference': EntityReferenceToJSON(value.entity_reference),
     };
 }
 

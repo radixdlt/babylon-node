@@ -57,23 +57,29 @@ import {
  */
 export interface TransactionReceipt {
     /**
-     * Error message (only present if status is `Failed` or `Rejected`)
-     * @type {string}
-     * @memberof TransactionReceipt
-     */
-    error_message?: string;
-    /**
      * 
-     * @type {Array<Event>}
+     * @type {TransactionStatus}
      * @memberof TransactionReceipt
      */
-    events?: Array<Event>;
+    status: TransactionStatus;
     /**
      * 
      * @type {FeeSummary}
      * @memberof TransactionReceipt
      */
     fee_summary?: FeeSummary;
+    /**
+     * 
+     * @type {StateUpdates}
+     * @memberof TransactionReceipt
+     */
+    state_updates: StateUpdates;
+    /**
+     * 
+     * @type {Array<Event>}
+     * @memberof TransactionReceipt
+     */
+    events?: Array<Event>;
     /**
      * 
      * @type {NextEpoch}
@@ -87,17 +93,11 @@ export interface TransactionReceipt {
      */
     output?: Array<SborData>;
     /**
-     * 
-     * @type {StateUpdates}
+     * Error message (only present if status is `Failed` or `Rejected`)
+     * @type {string}
      * @memberof TransactionReceipt
      */
-    state_updates: StateUpdates;
-    /**
-     * 
-     * @type {TransactionStatus}
-     * @memberof TransactionReceipt
-     */
-    status: TransactionStatus;
+    error_message?: string;
 }
 
 /**
@@ -105,8 +105,8 @@ export interface TransactionReceipt {
  */
 export function instanceOfTransactionReceipt(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "state_updates" in value;
     isInstance = isInstance && "status" in value;
+    isInstance = isInstance && "state_updates" in value;
 
     return isInstance;
 }
@@ -121,13 +121,13 @@ export function TransactionReceiptFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
-        'events': !exists(json, 'events') ? undefined : ((json['events'] as Array<any>).map(EventFromJSON)),
+        'status': TransactionStatusFromJSON(json['status']),
         'fee_summary': !exists(json, 'fee_summary') ? undefined : FeeSummaryFromJSON(json['fee_summary']),
+        'state_updates': StateUpdatesFromJSON(json['state_updates']),
+        'events': !exists(json, 'events') ? undefined : ((json['events'] as Array<any>).map(EventFromJSON)),
         'next_epoch': !exists(json, 'next_epoch') ? undefined : NextEpochFromJSON(json['next_epoch']),
         'output': !exists(json, 'output') ? undefined : ((json['output'] as Array<any>).map(SborDataFromJSON)),
-        'state_updates': StateUpdatesFromJSON(json['state_updates']),
-        'status': TransactionStatusFromJSON(json['status']),
+        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
     };
 }
 
@@ -140,13 +140,13 @@ export function TransactionReceiptToJSON(value?: TransactionReceipt | null): any
     }
     return {
         
-        'error_message': value.error_message,
-        'events': value.events === undefined ? undefined : ((value.events as Array<any>).map(EventToJSON)),
+        'status': TransactionStatusToJSON(value.status),
         'fee_summary': FeeSummaryToJSON(value.fee_summary),
+        'state_updates': StateUpdatesToJSON(value.state_updates),
+        'events': value.events === undefined ? undefined : ((value.events as Array<any>).map(EventToJSON)),
         'next_epoch': NextEpochToJSON(value.next_epoch),
         'output': value.output === undefined ? undefined : ((value.output as Array<any>).map(SborDataToJSON)),
-        'state_updates': StateUpdatesToJSON(value.state_updates),
-        'status': TransactionStatusToJSON(value.status),
+        'error_message': value.error_message,
     };
 }
 

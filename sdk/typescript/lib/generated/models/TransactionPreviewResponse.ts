@@ -46,6 +46,12 @@ export interface TransactionPreviewResponse {
     encoded_receipt: string;
     /**
      * 
+     * @type {TransactionReceipt}
+     * @memberof TransactionPreviewResponse
+     */
+    receipt: TransactionReceipt;
+    /**
+     * 
      * @type {Array<InstructionResourceChanges>}
      * @memberof TransactionPreviewResponse
      */
@@ -56,12 +62,6 @@ export interface TransactionPreviewResponse {
      * @memberof TransactionPreviewResponse
      */
     logs: Array<TransactionPreviewResponseLogsInner>;
-    /**
-     * 
-     * @type {TransactionReceipt}
-     * @memberof TransactionPreviewResponse
-     */
-    receipt: TransactionReceipt;
 }
 
 /**
@@ -70,9 +70,9 @@ export interface TransactionPreviewResponse {
 export function instanceOfTransactionPreviewResponse(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "encoded_receipt" in value;
+    isInstance = isInstance && "receipt" in value;
     isInstance = isInstance && "instruction_resource_changes" in value;
     isInstance = isInstance && "logs" in value;
-    isInstance = isInstance && "receipt" in value;
 
     return isInstance;
 }
@@ -88,9 +88,9 @@ export function TransactionPreviewResponseFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'encoded_receipt': json['encoded_receipt'],
+        'receipt': TransactionReceiptFromJSON(json['receipt']),
         'instruction_resource_changes': ((json['instruction_resource_changes'] as Array<any>).map(InstructionResourceChangesFromJSON)),
         'logs': ((json['logs'] as Array<any>).map(TransactionPreviewResponseLogsInnerFromJSON)),
-        'receipt': TransactionReceiptFromJSON(json['receipt']),
     };
 }
 
@@ -104,9 +104,9 @@ export function TransactionPreviewResponseToJSON(value?: TransactionPreviewRespo
     return {
         
         'encoded_receipt': value.encoded_receipt,
+        'receipt': TransactionReceiptToJSON(value.receipt),
         'instruction_resource_changes': ((value.instruction_resource_changes as Array<any>).map(InstructionResourceChangesToJSON)),
         'logs': ((value.logs as Array<any>).map(TransactionPreviewResponseLogsInnerToJSON)),
-        'receipt': TransactionReceiptToJSON(value.receipt),
     };
 }
 

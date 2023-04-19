@@ -34,16 +34,16 @@ import {
 export interface MethodAuthMutabilityEntry {
     /**
      * 
-     * @type {AccessRule}
-     * @memberof MethodAuthMutabilityEntry
-     */
-    access_rule: AccessRule;
-    /**
-     * 
      * @type {LocalMethodReference}
      * @memberof MethodAuthMutabilityEntry
      */
     method: LocalMethodReference;
+    /**
+     * 
+     * @type {AccessRule}
+     * @memberof MethodAuthMutabilityEntry
+     */
+    access_rule: AccessRule;
 }
 
 /**
@@ -51,8 +51,8 @@ export interface MethodAuthMutabilityEntry {
  */
 export function instanceOfMethodAuthMutabilityEntry(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rule" in value;
     isInstance = isInstance && "method" in value;
+    isInstance = isInstance && "access_rule" in value;
 
     return isInstance;
 }
@@ -67,8 +67,8 @@ export function MethodAuthMutabilityEntryFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
-        'access_rule': AccessRuleFromJSON(json['access_rule']),
         'method': LocalMethodReferenceFromJSON(json['method']),
+        'access_rule': AccessRuleFromJSON(json['access_rule']),
     };
 }
 
@@ -81,8 +81,8 @@ export function MethodAuthMutabilityEntryToJSON(value?: MethodAuthMutabilityEntr
     }
     return {
         
-        'access_rule': AccessRuleToJSON(value.access_rule),
         'method': LocalMethodReferenceToJSON(value.method),
+        'access_rule': AccessRuleToJSON(value.access_rule),
     };
 }
 

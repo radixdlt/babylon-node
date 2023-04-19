@@ -27,42 +27,17 @@ import {
  */
 export interface TransactionHeader {
     /**
-     * An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
+     * 
      * @type {number}
      * @memberof TransactionHeader
      */
-    cost_unit_limit: number;
-    /**
-     * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected.
-     * In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
-     * @type {number}
-     * @memberof TransactionHeader
-     */
-    end_epoch_exclusive: number;
+    version: number;
     /**
      * The logical id of the network
      * @type {number}
      * @memberof TransactionHeader
      */
     network_id: number;
-    /**
-     * A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
-     * @type {string}
-     * @memberof TransactionHeader
-     */
-    nonce: string;
-    /**
-     * Specifies whether the notary's signature should be included in transaction signers list
-     * @type {boolean}
-     * @memberof TransactionHeader
-     */
-    notary_as_signatory: boolean;
-    /**
-     * 
-     * @type {PublicKey}
-     * @memberof TransactionHeader
-     */
-    notary_public_key: PublicKey;
     /**
      * An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted.
      * In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
@@ -71,17 +46,42 @@ export interface TransactionHeader {
      */
     start_epoch_inclusive: number;
     /**
+     * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected.
+     * In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
+     * @type {number}
+     * @memberof TransactionHeader
+     */
+    end_epoch_exclusive: number;
+    /**
+     * A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
+     * @type {string}
+     * @memberof TransactionHeader
+     */
+    nonce: string;
+    /**
+     * 
+     * @type {PublicKey}
+     * @memberof TransactionHeader
+     */
+    notary_public_key: PublicKey;
+    /**
+     * Specifies whether the notary's signature should be included in transaction signers list
+     * @type {boolean}
+     * @memberof TransactionHeader
+     */
+    notary_as_signatory: boolean;
+    /**
+     * An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
+     * @type {number}
+     * @memberof TransactionHeader
+     */
+    cost_unit_limit: number;
+    /**
      * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
      * @type {number}
      * @memberof TransactionHeader
      */
     tip_percentage: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionHeader
-     */
-    version: number;
 }
 
 /**
@@ -89,15 +89,15 @@ export interface TransactionHeader {
  */
 export function instanceOfTransactionHeader(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "cost_unit_limit" in value;
-    isInstance = isInstance && "end_epoch_exclusive" in value;
-    isInstance = isInstance && "network_id" in value;
-    isInstance = isInstance && "nonce" in value;
-    isInstance = isInstance && "notary_as_signatory" in value;
-    isInstance = isInstance && "notary_public_key" in value;
-    isInstance = isInstance && "start_epoch_inclusive" in value;
-    isInstance = isInstance && "tip_percentage" in value;
     isInstance = isInstance && "version" in value;
+    isInstance = isInstance && "network_id" in value;
+    isInstance = isInstance && "start_epoch_inclusive" in value;
+    isInstance = isInstance && "end_epoch_exclusive" in value;
+    isInstance = isInstance && "nonce" in value;
+    isInstance = isInstance && "notary_public_key" in value;
+    isInstance = isInstance && "notary_as_signatory" in value;
+    isInstance = isInstance && "cost_unit_limit" in value;
+    isInstance = isInstance && "tip_percentage" in value;
 
     return isInstance;
 }
@@ -112,15 +112,15 @@ export function TransactionHeaderFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'cost_unit_limit': json['cost_unit_limit'],
-        'end_epoch_exclusive': json['end_epoch_exclusive'],
-        'network_id': json['network_id'],
-        'nonce': json['nonce'],
-        'notary_as_signatory': json['notary_as_signatory'],
-        'notary_public_key': PublicKeyFromJSON(json['notary_public_key']),
-        'start_epoch_inclusive': json['start_epoch_inclusive'],
-        'tip_percentage': json['tip_percentage'],
         'version': json['version'],
+        'network_id': json['network_id'],
+        'start_epoch_inclusive': json['start_epoch_inclusive'],
+        'end_epoch_exclusive': json['end_epoch_exclusive'],
+        'nonce': json['nonce'],
+        'notary_public_key': PublicKeyFromJSON(json['notary_public_key']),
+        'notary_as_signatory': json['notary_as_signatory'],
+        'cost_unit_limit': json['cost_unit_limit'],
+        'tip_percentage': json['tip_percentage'],
     };
 }
 
@@ -133,15 +133,15 @@ export function TransactionHeaderToJSON(value?: TransactionHeader | null): any {
     }
     return {
         
-        'cost_unit_limit': value.cost_unit_limit,
-        'end_epoch_exclusive': value.end_epoch_exclusive,
-        'network_id': value.network_id,
-        'nonce': value.nonce,
-        'notary_as_signatory': value.notary_as_signatory,
-        'notary_public_key': PublicKeyToJSON(value.notary_public_key),
-        'start_epoch_inclusive': value.start_epoch_inclusive,
-        'tip_percentage': value.tip_percentage,
         'version': value.version,
+        'network_id': value.network_id,
+        'start_epoch_inclusive': value.start_epoch_inclusive,
+        'end_epoch_exclusive': value.end_epoch_exclusive,
+        'nonce': value.nonce,
+        'notary_public_key': PublicKeyToJSON(value.notary_public_key),
+        'notary_as_signatory': value.notary_as_signatory,
+        'cost_unit_limit': value.cost_unit_limit,
+        'tip_percentage': value.tip_percentage,
     };
 }
 

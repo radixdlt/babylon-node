@@ -39,12 +39,6 @@ export interface NotarizedTransaction {
      */
     hash: string;
     /**
-     * 
-     * @type {Signature}
-     * @memberof NotarizedTransaction
-     */
-    notary_signature: Signature;
-    /**
      * The hex-encoded full notarized transaction payload
      * @type {string}
      * @memberof NotarizedTransaction
@@ -56,6 +50,12 @@ export interface NotarizedTransaction {
      * @memberof NotarizedTransaction
      */
     signed_intent: SignedTransactionIntent;
+    /**
+     * 
+     * @type {Signature}
+     * @memberof NotarizedTransaction
+     */
+    notary_signature: Signature;
 }
 
 /**
@@ -64,9 +64,9 @@ export interface NotarizedTransaction {
 export function instanceOfNotarizedTransaction(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "hash" in value;
-    isInstance = isInstance && "notary_signature" in value;
     isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "signed_intent" in value;
+    isInstance = isInstance && "notary_signature" in value;
 
     return isInstance;
 }
@@ -82,9 +82,9 @@ export function NotarizedTransactionFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'hash': json['hash'],
-        'notary_signature': SignatureFromJSON(json['notary_signature']),
         'payload_hex': json['payload_hex'],
         'signed_intent': SignedTransactionIntentFromJSON(json['signed_intent']),
+        'notary_signature': SignatureFromJSON(json['notary_signature']),
     };
 }
 
@@ -98,9 +98,9 @@ export function NotarizedTransactionToJSON(value?: NotarizedTransaction | null):
     return {
         
         'hash': value.hash,
-        'notary_signature': SignatureToJSON(value.notary_signature),
         'payload_hex': value.payload_hex,
         'signed_intent': SignedTransactionIntentToJSON(value.signed_intent),
+        'notary_signature': SignatureToJSON(value.notary_signature),
     };
 }
 

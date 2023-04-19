@@ -34,12 +34,6 @@ import {
 export interface EddsaEd25519SignatureWithPublicKeyAllOf {
     /**
      * 
-     * @type {string}
-     * @memberof EddsaEd25519SignatureWithPublicKeyAllOf
-     */
-    key_type?: EddsaEd25519SignatureWithPublicKeyAllOfKeyTypeEnum;
-    /**
-     * 
      * @type {EddsaEd25519PublicKey}
      * @memberof EddsaEd25519SignatureWithPublicKeyAllOf
      */
@@ -50,6 +44,12 @@ export interface EddsaEd25519SignatureWithPublicKeyAllOf {
      * @memberof EddsaEd25519SignatureWithPublicKeyAllOf
      */
     signature: EddsaEd25519Signature;
+    /**
+     * 
+     * @type {string}
+     * @memberof EddsaEd25519SignatureWithPublicKeyAllOf
+     */
+    key_type?: EddsaEd25519SignatureWithPublicKeyAllOfKeyTypeEnum;
 }
 
 
@@ -83,9 +83,9 @@ export function EddsaEd25519SignatureWithPublicKeyAllOfFromJSONTyped(json: any, 
     }
     return {
         
-        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
         'public_key': EddsaEd25519PublicKeyFromJSON(json['public_key']),
         'signature': EddsaEd25519SignatureFromJSON(json['signature']),
+        'key_type': !exists(json, 'key_type') ? undefined : json['key_type'],
     };
 }
 
@@ -98,9 +98,9 @@ export function EddsaEd25519SignatureWithPublicKeyAllOfToJSON(value?: EddsaEd255
     }
     return {
         
-        'key_type': value.key_type,
         'public_key': EddsaEd25519PublicKeyToJSON(value.public_key),
         'signature': EddsaEd25519SignatureToJSON(value.signature),
+        'key_type': value.key_type,
     };
 }
 

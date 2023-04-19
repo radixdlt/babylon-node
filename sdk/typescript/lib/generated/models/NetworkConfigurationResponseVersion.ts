@@ -24,13 +24,13 @@ export interface NetworkConfigurationResponseVersion {
      * @type {string}
      * @memberof NetworkConfigurationResponseVersion
      */
-    api_version: string;
+    core_version: string;
     /**
      * 
      * @type {string}
      * @memberof NetworkConfigurationResponseVersion
      */
-    core_version: string;
+    api_version: string;
 }
 
 /**
@@ -38,8 +38,8 @@ export interface NetworkConfigurationResponseVersion {
  */
 export function instanceOfNetworkConfigurationResponseVersion(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "api_version" in value;
     isInstance = isInstance && "core_version" in value;
+    isInstance = isInstance && "api_version" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function NetworkConfigurationResponseVersionFromJSONTyped(json: any, igno
     }
     return {
         
-        'api_version': json['api_version'],
         'core_version': json['core_version'],
+        'api_version': json['api_version'],
     };
 }
 
@@ -68,8 +68,8 @@ export function NetworkConfigurationResponseVersionToJSON(value?: NetworkConfigu
     }
     return {
         
-        'api_version': value.api_version,
         'core_version': value.core_version,
+        'api_version': value.api_version,
     };
 }
 

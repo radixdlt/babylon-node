@@ -33,17 +33,29 @@ import {
  */
 export interface TransactionPreviewRequest {
     /**
+     * The logical name of the network
+     * @type {string}
+     * @memberof TransactionPreviewRequest
+     */
+    network: string;
+    /**
+     * A text-representation of a transaction manifest
+     * @type {string}
+     * @memberof TransactionPreviewRequest
+     */
+    manifest: string;
+    /**
      * An array of hex-encoded blob data (optional)
      * @type {Array<string>}
      * @memberof TransactionPreviewRequest
      */
     blobs_hex?: Array<string>;
     /**
-     * An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
+     * An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    cost_unit_limit: number;
+    start_epoch_inclusive: number;
     /**
      * An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
      * @type {number}
@@ -52,28 +64,10 @@ export interface TransactionPreviewRequest {
     end_epoch_exclusive: number;
     /**
      * 
-     * @type {TransactionPreviewRequestFlags}
+     * @type {PublicKey}
      * @memberof TransactionPreviewRequest
      */
-    flags: TransactionPreviewRequestFlags;
-    /**
-     * A text-representation of a transaction manifest
-     * @type {string}
-     * @memberof TransactionPreviewRequest
-     */
-    manifest: string;
-    /**
-     * The logical name of the network
-     * @type {string}
-     * @memberof TransactionPreviewRequest
-     */
-    network: string;
-    /**
-     * A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
-     * @type {string}
-     * @memberof TransactionPreviewRequest
-     */
-    nonce: string;
+    notary_public_key?: PublicKey;
     /**
      * Whether the notary should count as a signatory (optional, default false)
      * @type {boolean}
@@ -81,11 +75,23 @@ export interface TransactionPreviewRequest {
      */
     notary_as_signatory?: boolean;
     /**
-     * 
-     * @type {PublicKey}
+     * An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
+     * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    notary_public_key?: PublicKey;
+    cost_unit_limit: number;
+    /**
+     * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+     * @type {number}
+     * @memberof TransactionPreviewRequest
+     */
+    tip_percentage: number;
+    /**
+     * A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
+     * @type {string}
+     * @memberof TransactionPreviewRequest
+     */
+    nonce: string;
     /**
      * A list of public keys to be used as transaction signers
      * @type {Array<PublicKey>}
@@ -93,17 +99,11 @@ export interface TransactionPreviewRequest {
      */
     signer_public_keys: Array<PublicKey>;
     /**
-     * An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
-     * @type {number}
+     * 
+     * @type {TransactionPreviewRequestFlags}
      * @memberof TransactionPreviewRequest
      */
-    start_epoch_inclusive: number;
-    /**
-     * An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-     * @type {number}
-     * @memberof TransactionPreviewRequest
-     */
-    tip_percentage: number;
+    flags: TransactionPreviewRequestFlags;
 }
 
 /**
@@ -111,15 +111,15 @@ export interface TransactionPreviewRequest {
  */
 export function instanceOfTransactionPreviewRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "cost_unit_limit" in value;
-    isInstance = isInstance && "end_epoch_exclusive" in value;
-    isInstance = isInstance && "flags" in value;
-    isInstance = isInstance && "manifest" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "manifest" in value;
+    isInstance = isInstance && "start_epoch_inclusive" in value;
+    isInstance = isInstance && "end_epoch_exclusive" in value;
+    isInstance = isInstance && "cost_unit_limit" in value;
+    isInstance = isInstance && "tip_percentage" in value;
     isInstance = isInstance && "nonce" in value;
     isInstance = isInstance && "signer_public_keys" in value;
-    isInstance = isInstance && "start_epoch_inclusive" in value;
-    isInstance = isInstance && "tip_percentage" in value;
+    isInstance = isInstance && "flags" in value;
 
     return isInstance;
 }
@@ -134,18 +134,18 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
-        'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
-        'cost_unit_limit': json['cost_unit_limit'],
-        'end_epoch_exclusive': json['end_epoch_exclusive'],
-        'flags': TransactionPreviewRequestFlagsFromJSON(json['flags']),
-        'manifest': json['manifest'],
         'network': json['network'],
-        'nonce': json['nonce'],
-        'notary_as_signatory': !exists(json, 'notary_as_signatory') ? undefined : json['notary_as_signatory'],
-        'notary_public_key': !exists(json, 'notary_public_key') ? undefined : PublicKeyFromJSON(json['notary_public_key']),
-        'signer_public_keys': ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
+        'manifest': json['manifest'],
+        'blobs_hex': !exists(json, 'blobs_hex') ? undefined : json['blobs_hex'],
         'start_epoch_inclusive': json['start_epoch_inclusive'],
+        'end_epoch_exclusive': json['end_epoch_exclusive'],
+        'notary_public_key': !exists(json, 'notary_public_key') ? undefined : PublicKeyFromJSON(json['notary_public_key']),
+        'notary_as_signatory': !exists(json, 'notary_as_signatory') ? undefined : json['notary_as_signatory'],
+        'cost_unit_limit': json['cost_unit_limit'],
         'tip_percentage': json['tip_percentage'],
+        'nonce': json['nonce'],
+        'signer_public_keys': ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
+        'flags': TransactionPreviewRequestFlagsFromJSON(json['flags']),
     };
 }
 
@@ -158,18 +158,18 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
     }
     return {
         
-        'blobs_hex': value.blobs_hex,
-        'cost_unit_limit': value.cost_unit_limit,
-        'end_epoch_exclusive': value.end_epoch_exclusive,
-        'flags': TransactionPreviewRequestFlagsToJSON(value.flags),
-        'manifest': value.manifest,
         'network': value.network,
-        'nonce': value.nonce,
-        'notary_as_signatory': value.notary_as_signatory,
-        'notary_public_key': PublicKeyToJSON(value.notary_public_key),
-        'signer_public_keys': ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
+        'manifest': value.manifest,
+        'blobs_hex': value.blobs_hex,
         'start_epoch_inclusive': value.start_epoch_inclusive,
+        'end_epoch_exclusive': value.end_epoch_exclusive,
+        'notary_public_key': PublicKeyToJSON(value.notary_public_key),
+        'notary_as_signatory': value.notary_as_signatory,
+        'cost_unit_limit': value.cost_unit_limit,
         'tip_percentage': value.tip_percentage,
+        'nonce': value.nonce,
+        'signer_public_keys': ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
+        'flags': TransactionPreviewRequestFlagsToJSON(value.flags),
     };
 }
 

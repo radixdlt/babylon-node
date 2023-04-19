@@ -20,17 +20,17 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsStateAccountAllFungibleResourceBalancesRequest {
     /**
-     * The Bech32m-encoded human readable version of the account's address
-     * @type {string}
-     * @memberof LtsStateAccountAllFungibleResourceBalancesRequest
-     */
-    account_address: string;
-    /**
      * The logical name of the network
      * @type {string}
      * @memberof LtsStateAccountAllFungibleResourceBalancesRequest
      */
     network: string;
+    /**
+     * The Bech32m-encoded human readable version of the account's address
+     * @type {string}
+     * @memberof LtsStateAccountAllFungibleResourceBalancesRequest
+     */
+    account_address: string;
 }
 
 /**
@@ -38,8 +38,8 @@ export interface LtsStateAccountAllFungibleResourceBalancesRequest {
  */
 export function instanceOfLtsStateAccountAllFungibleResourceBalancesRequest(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "account_address" in value;
 
     return isInstance;
 }
@@ -54,8 +54,8 @@ export function LtsStateAccountAllFungibleResourceBalancesRequestFromJSONTyped(j
     }
     return {
         
-        'account_address': json['account_address'],
         'network': json['network'],
+        'account_address': json['account_address'],
     };
 }
 
@@ -68,8 +68,8 @@ export function LtsStateAccountAllFungibleResourceBalancesRequestToJSON(value?: 
     }
     return {
         
-        'account_address': value.account_address,
         'network': value.network,
+        'account_address': value.account_address,
     };
 }
 

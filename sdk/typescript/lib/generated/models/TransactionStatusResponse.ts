@@ -39,6 +39,12 @@ export interface TransactionStatusResponse {
      */
     intent_status: TransactionIntentStatus;
     /**
+     * An explanation as to why the intent status is resolved as it is.
+     * @type {string}
+     * @memberof TransactionStatusResponse
+     */
+    status_description: string;
+    /**
      * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
      * Only present if the intent status is InMempool or Unknown and we know about a payload.
      * @type {number}
@@ -51,12 +57,6 @@ export interface TransactionStatusResponse {
      * @memberof TransactionStatusResponse
      */
     known_payloads: Array<TransactionPayloadStatus>;
-    /**
-     * An explanation as to why the intent status is resolved as it is.
-     * @type {string}
-     * @memberof TransactionStatusResponse
-     */
-    status_description: string;
 }
 
 /**
@@ -65,8 +65,8 @@ export interface TransactionStatusResponse {
 export function instanceOfTransactionStatusResponse(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "intent_status" in value;
-    isInstance = isInstance && "known_payloads" in value;
     isInstance = isInstance && "status_description" in value;
+    isInstance = isInstance && "known_payloads" in value;
 
     return isInstance;
 }
@@ -82,9 +82,9 @@ export function TransactionStatusResponseFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'intent_status': TransactionIntentStatusFromJSON(json['intent_status']),
+        'status_description': json['status_description'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
         'known_payloads': ((json['known_payloads'] as Array<any>).map(TransactionPayloadStatusFromJSON)),
-        'status_description': json['status_description'],
     };
 }
 
@@ -98,9 +98,9 @@ export function TransactionStatusResponseToJSON(value?: TransactionStatusRespons
     return {
         
         'intent_status': TransactionIntentStatusToJSON(value.intent_status),
+        'status_description': value.status_description,
         'invalid_from_epoch': value.invalid_from_epoch,
         'known_payloads': ((value.known_payloads as Array<any>).map(TransactionPayloadStatusToJSON)),
-        'status_description': value.status_description,
     };
 }
 

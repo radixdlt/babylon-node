@@ -27,6 +27,12 @@ import {
  */
 export interface ValidatorSetSubstateAllOf {
     /**
+     * 
+     * @type {Array<ActiveValidator>}
+     * @memberof ValidatorSetSubstateAllOf
+     */
+    validator_set: Array<ActiveValidator>;
+    /**
      * An integer between `0` and `10^10`, marking the epoch the validator set is a part of
      * @type {number}
      * @memberof ValidatorSetSubstateAllOf
@@ -38,12 +44,6 @@ export interface ValidatorSetSubstateAllOf {
      * @memberof ValidatorSetSubstateAllOf
      */
     substate_type?: ValidatorSetSubstateAllOfSubstateTypeEnum;
-    /**
-     * 
-     * @type {Array<ActiveValidator>}
-     * @memberof ValidatorSetSubstateAllOf
-     */
-    validator_set: Array<ActiveValidator>;
 }
 
 
@@ -61,8 +61,8 @@ export type ValidatorSetSubstateAllOfSubstateTypeEnum = typeof ValidatorSetSubst
  */
 export function instanceOfValidatorSetSubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "epoch" in value;
     isInstance = isInstance && "validator_set" in value;
+    isInstance = isInstance && "epoch" in value;
 
     return isInstance;
 }
@@ -77,9 +77,9 @@ export function ValidatorSetSubstateAllOfFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
+        'validator_set': ((json['validator_set'] as Array<any>).map(ActiveValidatorFromJSON)),
         'epoch': json['epoch'],
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
-        'validator_set': ((json['validator_set'] as Array<any>).map(ActiveValidatorFromJSON)),
     };
 }
 
@@ -92,9 +92,9 @@ export function ValidatorSetSubstateAllOfToJSON(value?: ValidatorSetSubstateAllO
     }
     return {
         
+        'validator_set': ((value.validator_set as Array<any>).map(ActiveValidatorToJSON)),
         'epoch': value.epoch,
         'substate_type': value.substate_type,
-        'validator_set': ((value.validator_set as Array<any>).map(ActiveValidatorToJSON)),
     };
 }
 

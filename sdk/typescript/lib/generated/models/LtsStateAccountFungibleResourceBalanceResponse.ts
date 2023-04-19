@@ -27,6 +27,12 @@ import {
  */
 export interface LtsStateAccountFungibleResourceBalanceResponse {
     /**
+     * An integer between `1` and `10^13`, giving the state version at which the query was performed.
+     * @type {number}
+     * @memberof LtsStateAccountFungibleResourceBalanceResponse
+     */
+    state_version: number;
+    /**
      * The Bech32m-encoded human readable version of the account's address
      * @type {string}
      * @memberof LtsStateAccountFungibleResourceBalanceResponse
@@ -38,12 +44,6 @@ export interface LtsStateAccountFungibleResourceBalanceResponse {
      * @memberof LtsStateAccountFungibleResourceBalanceResponse
      */
     fungible_resource_balance: LtsFungibleResourceBalance;
-    /**
-     * An integer between `1` and `10^13`, giving the state version at which the query was performed.
-     * @type {number}
-     * @memberof LtsStateAccountFungibleResourceBalanceResponse
-     */
-    state_version: number;
 }
 
 /**
@@ -51,9 +51,9 @@ export interface LtsStateAccountFungibleResourceBalanceResponse {
  */
 export function instanceOfLtsStateAccountFungibleResourceBalanceResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "state_version" in value;
     isInstance = isInstance && "account_address" in value;
     isInstance = isInstance && "fungible_resource_balance" in value;
-    isInstance = isInstance && "state_version" in value;
 
     return isInstance;
 }
@@ -68,9 +68,9 @@ export function LtsStateAccountFungibleResourceBalanceResponseFromJSONTyped(json
     }
     return {
         
+        'state_version': json['state_version'],
         'account_address': json['account_address'],
         'fungible_resource_balance': LtsFungibleResourceBalanceFromJSON(json['fungible_resource_balance']),
-        'state_version': json['state_version'],
     };
 }
 
@@ -83,9 +83,9 @@ export function LtsStateAccountFungibleResourceBalanceResponseToJSON(value?: Lts
     }
     return {
         
+        'state_version': value.state_version,
         'account_address': value.account_address,
         'fungible_resource_balance': LtsFungibleResourceBalanceToJSON(value.fungible_resource_balance),
-        'state_version': value.state_version,
     };
 }
 

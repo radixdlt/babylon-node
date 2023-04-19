@@ -37,6 +37,12 @@ import {
  */
 export interface LtsCommittedTransactionOutcome {
     /**
+     * An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+     * @type {number}
+     * @memberof LtsCommittedTransactionOutcome
+     */
+    state_version: number;
+    /**
      * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
      * This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
      * @type {string}
@@ -44,12 +50,11 @@ export interface LtsCommittedTransactionOutcome {
      */
     accumulator_hash: string;
     /**
-     * The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
-     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-     * @type {string}
+     * 
+     * @type {LtsCommittedTransactionStatus}
      * @memberof LtsCommittedTransactionOutcome
      */
-    fee: string;
+    status: LtsCommittedTransactionStatus;
     /**
      * A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
      * which owns the vaults which were updated.
@@ -58,17 +63,12 @@ export interface LtsCommittedTransactionOutcome {
      */
     fungible_entity_balance_changes: Array<LtsEntityFungibleBalanceChanges>;
     /**
-     * An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
-     * @type {number}
+     * The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
+     * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+     * @type {string}
      * @memberof LtsCommittedTransactionOutcome
      */
-    state_version: number;
-    /**
-     * 
-     * @type {LtsCommittedTransactionStatus}
-     * @memberof LtsCommittedTransactionOutcome
-     */
-    status: LtsCommittedTransactionStatus;
+    fee: string;
 }
 
 /**
@@ -76,11 +76,11 @@ export interface LtsCommittedTransactionOutcome {
  */
 export function instanceOfLtsCommittedTransactionOutcome(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "accumulator_hash" in value;
-    isInstance = isInstance && "fee" in value;
-    isInstance = isInstance && "fungible_entity_balance_changes" in value;
     isInstance = isInstance && "state_version" in value;
+    isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "status" in value;
+    isInstance = isInstance && "fungible_entity_balance_changes" in value;
+    isInstance = isInstance && "fee" in value;
 
     return isInstance;
 }
@@ -95,11 +95,11 @@ export function LtsCommittedTransactionOutcomeFromJSONTyped(json: any, ignoreDis
     }
     return {
         
-        'accumulator_hash': json['accumulator_hash'],
-        'fee': json['fee'],
-        'fungible_entity_balance_changes': ((json['fungible_entity_balance_changes'] as Array<any>).map(LtsEntityFungibleBalanceChangesFromJSON)),
         'state_version': json['state_version'],
+        'accumulator_hash': json['accumulator_hash'],
         'status': LtsCommittedTransactionStatusFromJSON(json['status']),
+        'fungible_entity_balance_changes': ((json['fungible_entity_balance_changes'] as Array<any>).map(LtsEntityFungibleBalanceChangesFromJSON)),
+        'fee': json['fee'],
     };
 }
 
@@ -112,11 +112,11 @@ export function LtsCommittedTransactionOutcomeToJSON(value?: LtsCommittedTransac
     }
     return {
         
-        'accumulator_hash': value.accumulator_hash,
-        'fee': value.fee,
-        'fungible_entity_balance_changes': ((value.fungible_entity_balance_changes as Array<any>).map(LtsEntityFungibleBalanceChangesToJSON)),
         'state_version': value.state_version,
+        'accumulator_hash': value.accumulator_hash,
         'status': LtsCommittedTransactionStatusToJSON(value.status),
+        'fungible_entity_balance_changes': ((value.fungible_entity_balance_changes as Array<any>).map(LtsEntityFungibleBalanceChangesToJSON)),
+        'fee': value.fee,
     };
 }
 

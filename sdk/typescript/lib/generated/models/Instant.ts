@@ -20,18 +20,18 @@ import { exists, mapValues } from '../runtime';
  */
 export interface Instant {
     /**
+     * An integer between `0` and `10^14`, marking the unix timestamp in ms.
+     * @type {number}
+     * @memberof Instant
+     */
+    unix_timestamp_ms: number;
+    /**
      * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
      * EG: `2023-01-26T18:30:09.453Z`.
      * @type {string}
      * @memberof Instant
      */
     date_time: string;
-    /**
-     * An integer between `0` and `10^14`, marking the unix timestamp in ms.
-     * @type {number}
-     * @memberof Instant
-     */
-    unix_timestamp_ms: number;
 }
 
 /**
@@ -39,8 +39,8 @@ export interface Instant {
  */
 export function instanceOfInstant(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "date_time" in value;
     isInstance = isInstance && "unix_timestamp_ms" in value;
+    isInstance = isInstance && "date_time" in value;
 
     return isInstance;
 }
@@ -55,8 +55,8 @@ export function InstantFromJSONTyped(json: any, ignoreDiscriminator: boolean): I
     }
     return {
         
-        'date_time': json['date_time'],
         'unix_timestamp_ms': json['unix_timestamp_ms'],
+        'date_time': json['date_time'],
     };
 }
 
@@ -69,8 +69,8 @@ export function InstantToJSON(value?: Instant | null): any {
     }
     return {
         
-        'date_time': value.date_time,
         'unix_timestamp_ms': value.unix_timestamp_ms,
+        'date_time': value.date_time,
     };
 }
 

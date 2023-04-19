@@ -26,6 +26,12 @@ export interface ObjectTypeInfoDetails {
      */
     type: ObjectTypeInfoDetailsTypeEnum;
     /**
+     * The Bech32m-encoded human readable version of the package address
+     * @type {string}
+     * @memberof ObjectTypeInfoDetails
+     */
+    package_address: string;
+    /**
      * 
      * @type {string}
      * @memberof ObjectTypeInfoDetails
@@ -37,12 +43,6 @@ export interface ObjectTypeInfoDetails {
      * @memberof ObjectTypeInfoDetails
      */
     global: boolean;
-    /**
-     * The Bech32m-encoded human readable version of the package address
-     * @type {string}
-     * @memberof ObjectTypeInfoDetails
-     */
-    package_address: string;
 }
 
 
@@ -61,9 +61,9 @@ export type ObjectTypeInfoDetailsTypeEnum = typeof ObjectTypeInfoDetailsTypeEnum
 export function instanceOfObjectTypeInfoDetails(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
     isInstance = isInstance && "global" in value;
-    isInstance = isInstance && "package_address" in value;
 
     return isInstance;
 }
@@ -79,9 +79,9 @@ export function ObjectTypeInfoDetailsFromJSONTyped(json: any, ignoreDiscriminato
     return {
         
         'type': json['type'],
+        'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
         'global': json['global'],
-        'package_address': json['package_address'],
     };
 }
 
@@ -95,9 +95,9 @@ export function ObjectTypeInfoDetailsToJSON(value?: ObjectTypeInfoDetails | null
     return {
         
         'type': value.type,
+        'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
         'global': value.global,
-        'package_address': value.package_address,
     };
 }
 

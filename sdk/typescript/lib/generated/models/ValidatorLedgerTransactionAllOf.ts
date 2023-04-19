@@ -28,16 +28,16 @@ import {
 export interface ValidatorLedgerTransactionAllOf {
     /**
      * 
-     * @type {string}
-     * @memberof ValidatorLedgerTransactionAllOf
-     */
-    type?: ValidatorLedgerTransactionAllOfTypeEnum;
-    /**
-     * 
      * @type {ValidatorTransaction}
      * @memberof ValidatorLedgerTransactionAllOf
      */
     validator_transaction: ValidatorTransaction;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatorLedgerTransactionAllOf
+     */
+    type?: ValidatorLedgerTransactionAllOfTypeEnum;
 }
 
 
@@ -70,8 +70,8 @@ export function ValidatorLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDi
     }
     return {
         
-        'type': !exists(json, 'type') ? undefined : json['type'],
         'validator_transaction': ValidatorTransactionFromJSON(json['validator_transaction']),
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
@@ -84,8 +84,8 @@ export function ValidatorLedgerTransactionAllOfToJSON(value?: ValidatorLedgerTra
     }
     return {
         
-        'type': value.type,
         'validator_transaction': ValidatorTransactionToJSON(value.validator_transaction),
+        'type': value.type,
     };
 }
 

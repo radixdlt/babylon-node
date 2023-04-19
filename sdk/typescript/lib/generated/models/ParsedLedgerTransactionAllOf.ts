@@ -34,16 +34,16 @@ import {
 export interface ParsedLedgerTransactionAllOf {
     /**
      * 
-     * @type {ParsedLedgerTransactionAllOfIdentifiers}
-     * @memberof ParsedLedgerTransactionAllOf
-     */
-    identifiers: ParsedLedgerTransactionAllOfIdentifiers;
-    /**
-     * 
      * @type {LedgerTransaction}
      * @memberof ParsedLedgerTransactionAllOf
      */
     ledger_transaction?: LedgerTransaction;
+    /**
+     * 
+     * @type {ParsedLedgerTransactionAllOfIdentifiers}
+     * @memberof ParsedLedgerTransactionAllOf
+     */
+    identifiers: ParsedLedgerTransactionAllOfIdentifiers;
     /**
      * 
      * @type {string}
@@ -82,8 +82,8 @@ export function ParsedLedgerTransactionAllOfFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'identifiers': ParsedLedgerTransactionAllOfIdentifiersFromJSON(json['identifiers']),
         'ledger_transaction': !exists(json, 'ledger_transaction') ? undefined : LedgerTransactionFromJSON(json['ledger_transaction']),
+        'identifiers': ParsedLedgerTransactionAllOfIdentifiersFromJSON(json['identifiers']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -97,8 +97,8 @@ export function ParsedLedgerTransactionAllOfToJSON(value?: ParsedLedgerTransacti
     }
     return {
         
-        'identifiers': ParsedLedgerTransactionAllOfIdentifiersToJSON(value.identifiers),
         'ledger_transaction': LedgerTransactionToJSON(value.ledger_transaction),
+        'identifiers': ParsedLedgerTransactionAllOfIdentifiersToJSON(value.identifiers),
         'type': value.type,
     };
 }

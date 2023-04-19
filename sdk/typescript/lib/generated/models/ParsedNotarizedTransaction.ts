@@ -46,16 +46,16 @@ export interface ParsedNotarizedTransaction {
     type: ParsedNotarizedTransactionTypeEnum;
     /**
      * 
-     * @type {ParsedNotarizedTransactionAllOfIdentifiers}
-     * @memberof ParsedNotarizedTransaction
-     */
-    identifiers: ParsedNotarizedTransactionAllOfIdentifiers;
-    /**
-     * 
      * @type {NotarizedTransaction}
      * @memberof ParsedNotarizedTransaction
      */
     notarized_transaction?: NotarizedTransaction;
+    /**
+     * 
+     * @type {ParsedNotarizedTransactionAllOfIdentifiers}
+     * @memberof ParsedNotarizedTransaction
+     */
+    identifiers: ParsedNotarizedTransactionAllOfIdentifiers;
     /**
      * 
      * @type {ParsedNotarizedTransactionAllOfValidationError}
@@ -96,8 +96,8 @@ export function ParsedNotarizedTransactionFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'type': json['type'],
-        'identifiers': ParsedNotarizedTransactionAllOfIdentifiersFromJSON(json['identifiers']),
         'notarized_transaction': !exists(json, 'notarized_transaction') ? undefined : NotarizedTransactionFromJSON(json['notarized_transaction']),
+        'identifiers': ParsedNotarizedTransactionAllOfIdentifiersFromJSON(json['identifiers']),
         'validation_error': !exists(json, 'validation_error') ? undefined : ParsedNotarizedTransactionAllOfValidationErrorFromJSON(json['validation_error']),
     };
 }
@@ -112,8 +112,8 @@ export function ParsedNotarizedTransactionToJSON(value?: ParsedNotarizedTransact
     return {
         
         'type': value.type,
-        'identifiers': ParsedNotarizedTransactionAllOfIdentifiersToJSON(value.identifiers),
         'notarized_transaction': NotarizedTransactionToJSON(value.notarized_transaction),
+        'identifiers': ParsedNotarizedTransactionAllOfIdentifiersToJSON(value.identifiers),
         'validation_error': ParsedNotarizedTransactionAllOfValidationErrorToJSON(value.validation_error),
     };
 }

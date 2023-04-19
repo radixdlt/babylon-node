@@ -34,16 +34,16 @@ import {
 export interface MethodAuthEntry {
     /**
      * 
-     * @type {AccessRuleReference}
-     * @memberof MethodAuthEntry
-     */
-    access_rule_reference: AccessRuleReference;
-    /**
-     * 
      * @type {LocalMethodReference}
      * @memberof MethodAuthEntry
      */
     method: LocalMethodReference;
+    /**
+     * 
+     * @type {AccessRuleReference}
+     * @memberof MethodAuthEntry
+     */
+    access_rule_reference: AccessRuleReference;
 }
 
 /**
@@ -51,8 +51,8 @@ export interface MethodAuthEntry {
  */
 export function instanceOfMethodAuthEntry(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "access_rule_reference" in value;
     isInstance = isInstance && "method" in value;
+    isInstance = isInstance && "access_rule_reference" in value;
 
     return isInstance;
 }
@@ -67,8 +67,8 @@ export function MethodAuthEntryFromJSONTyped(json: any, ignoreDiscriminator: boo
     }
     return {
         
-        'access_rule_reference': AccessRuleReferenceFromJSON(json['access_rule_reference']),
         'method': LocalMethodReferenceFromJSON(json['method']),
+        'access_rule_reference': AccessRuleReferenceFromJSON(json['access_rule_reference']),
     };
 }
 
@@ -81,8 +81,8 @@ export function MethodAuthEntryToJSON(value?: MethodAuthEntry | null): any {
     }
     return {
         
-        'access_rule_reference': AccessRuleReferenceToJSON(value.access_rule_reference),
         'method': LocalMethodReferenceToJSON(value.method),
+        'access_rule_reference': AccessRuleReferenceToJSON(value.access_rule_reference),
     };
 }
 

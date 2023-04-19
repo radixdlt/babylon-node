@@ -40,16 +40,16 @@ export interface ParsedLedgerTransaction {
     type: ParsedLedgerTransactionTypeEnum;
     /**
      * 
-     * @type {ParsedLedgerTransactionAllOfIdentifiers}
-     * @memberof ParsedLedgerTransaction
-     */
-    identifiers: ParsedLedgerTransactionAllOfIdentifiers;
-    /**
-     * 
      * @type {LedgerTransaction}
      * @memberof ParsedLedgerTransaction
      */
     ledger_transaction?: LedgerTransaction;
+    /**
+     * 
+     * @type {ParsedLedgerTransactionAllOfIdentifiers}
+     * @memberof ParsedLedgerTransaction
+     */
+    identifiers: ParsedLedgerTransactionAllOfIdentifiers;
 }
 
 
@@ -84,8 +84,8 @@ export function ParsedLedgerTransactionFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'type': json['type'],
-        'identifiers': ParsedLedgerTransactionAllOfIdentifiersFromJSON(json['identifiers']),
         'ledger_transaction': !exists(json, 'ledger_transaction') ? undefined : LedgerTransactionFromJSON(json['ledger_transaction']),
+        'identifiers': ParsedLedgerTransactionAllOfIdentifiersFromJSON(json['identifiers']),
     };
 }
 
@@ -99,8 +99,8 @@ export function ParsedLedgerTransactionToJSON(value?: ParsedLedgerTransaction | 
     return {
         
         'type': value.type,
-        'identifiers': ParsedLedgerTransactionAllOfIdentifiersToJSON(value.identifiers),
         'ledger_transaction': LedgerTransactionToJSON(value.ledger_transaction),
+        'identifiers': ParsedLedgerTransactionAllOfIdentifiersToJSON(value.identifiers),
     };
 }
 

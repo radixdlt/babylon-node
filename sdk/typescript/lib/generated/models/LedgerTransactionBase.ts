@@ -27,17 +27,17 @@ import {
  */
 export interface LedgerTransactionBase {
     /**
-     * The hex-encoded full ledger transaction payload
-     * @type {string}
-     * @memberof LedgerTransactionBase
-     */
-    payload_hex: string;
-    /**
      * 
      * @type {LedgerTransactionType}
      * @memberof LedgerTransactionBase
      */
     type: LedgerTransactionType;
+    /**
+     * The hex-encoded full ledger transaction payload
+     * @type {string}
+     * @memberof LedgerTransactionBase
+     */
+    payload_hex: string;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface LedgerTransactionBase {
  */
 export function instanceOfLedgerTransactionBase(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "payload_hex" in value;
 
     return isInstance;
 }
@@ -61,8 +61,8 @@ export function LedgerTransactionBaseFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
-        'payload_hex': json['payload_hex'],
         'type': LedgerTransactionTypeFromJSON(json['type']),
+        'payload_hex': json['payload_hex'],
     };
 }
 
@@ -75,8 +75,8 @@ export function LedgerTransactionBaseToJSON(value?: LedgerTransactionBase | null
     }
     return {
         
-        'payload_hex': value.payload_hex,
         'type': LedgerTransactionTypeToJSON(value.type),
+        'payload_hex': value.payload_hex,
     };
 }
 

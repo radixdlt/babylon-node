@@ -39,12 +39,6 @@ export interface FunctionEventEmitterIdentifier {
      */
     type: FunctionEventEmitterIdentifierTypeEnum;
     /**
-     * Blueprint name.
-     * @type {string}
-     * @memberof FunctionEventEmitterIdentifier
-     */
-    blueprint_name: string;
-    /**
      * 
      * @type {EntityReference}
      * @memberof FunctionEventEmitterIdentifier
@@ -56,6 +50,12 @@ export interface FunctionEventEmitterIdentifier {
      * @memberof FunctionEventEmitterIdentifier
      */
     module_type: ModuleType;
+    /**
+     * Blueprint name.
+     * @type {string}
+     * @memberof FunctionEventEmitterIdentifier
+     */
+    blueprint_name: string;
 }
 
 
@@ -74,9 +74,9 @@ export type FunctionEventEmitterIdentifierTypeEnum = typeof FunctionEventEmitter
 export function instanceOfFunctionEventEmitterIdentifier(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
-    isInstance = isInstance && "blueprint_name" in value;
     isInstance = isInstance && "entity" in value;
     isInstance = isInstance && "module_type" in value;
+    isInstance = isInstance && "blueprint_name" in value;
 
     return isInstance;
 }
@@ -92,9 +92,9 @@ export function FunctionEventEmitterIdentifierFromJSONTyped(json: any, ignoreDis
     return {
         
         'type': json['type'],
-        'blueprint_name': json['blueprint_name'],
         'entity': EntityReferenceFromJSON(json['entity']),
         'module_type': ModuleTypeFromJSON(json['module_type']),
+        'blueprint_name': json['blueprint_name'],
     };
 }
 
@@ -108,9 +108,9 @@ export function FunctionEventEmitterIdentifierToJSON(value?: FunctionEventEmitte
     return {
         
         'type': value.type,
-        'blueprint_name': value.blueprint_name,
         'entity': EntityReferenceToJSON(value.entity),
         'module_type': ModuleTypeToJSON(value.module_type),
+        'blueprint_name': value.blueprint_name,
     };
 }
 

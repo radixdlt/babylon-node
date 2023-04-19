@@ -34,16 +34,16 @@ import {
 export interface Event {
     /**
      * 
-     * @type {SborData}
-     * @memberof Event
-     */
-    data: SborData;
-    /**
-     * 
      * @type {EventTypeIdentifier}
      * @memberof Event
      */
     type: EventTypeIdentifier;
+    /**
+     * 
+     * @type {SborData}
+     * @memberof Event
+     */
+    data: SborData;
 }
 
 /**
@@ -51,8 +51,8 @@ export interface Event {
  */
 export function instanceOfEvent(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "data" in value;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "data" in value;
 
     return isInstance;
 }
@@ -67,8 +67,8 @@ export function EventFromJSONTyped(json: any, ignoreDiscriminator: boolean): Eve
     }
     return {
         
-        'data': SborDataFromJSON(json['data']),
         'type': EventTypeIdentifierFromJSON(json['type']),
+        'data': SborDataFromJSON(json['data']),
     };
 }
 
@@ -81,8 +81,8 @@ export function EventToJSON(value?: Event | null): any {
     }
     return {
         
-        'data': SborDataToJSON(value.data),
         'type': EventTypeIdentifierToJSON(value.type),
+        'data': SborDataToJSON(value.data),
     };
 }
 

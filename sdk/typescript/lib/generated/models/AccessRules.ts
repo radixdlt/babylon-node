@@ -46,16 +46,10 @@ import {
 export interface AccessRules {
     /**
      * 
-     * @type {AccessRule}
+     * @type {Array<MethodAuthEntry>}
      * @memberof AccessRules
      */
-    default_auth: AccessRule;
-    /**
-     * 
-     * @type {AccessRule}
-     * @memberof AccessRules
-     */
-    default_auth_mutability: AccessRule;
+    method_auth: Array<MethodAuthEntry>;
     /**
      * 
      * @type {Array<GroupedAuthEntry>}
@@ -64,22 +58,28 @@ export interface AccessRules {
     grouped_auth: Array<GroupedAuthEntry>;
     /**
      * 
-     * @type {Array<GroupedAuthEntry>}
+     * @type {AccessRule}
      * @memberof AccessRules
      */
-    grouped_auth_mutability: Array<GroupedAuthEntry>;
-    /**
-     * 
-     * @type {Array<MethodAuthEntry>}
-     * @memberof AccessRules
-     */
-    method_auth: Array<MethodAuthEntry>;
+    default_auth: AccessRule;
     /**
      * 
      * @type {Array<MethodAuthMutabilityEntry>}
      * @memberof AccessRules
      */
     method_auth_mutability: Array<MethodAuthMutabilityEntry>;
+    /**
+     * 
+     * @type {Array<GroupedAuthEntry>}
+     * @memberof AccessRules
+     */
+    grouped_auth_mutability: Array<GroupedAuthEntry>;
+    /**
+     * 
+     * @type {AccessRule}
+     * @memberof AccessRules
+     */
+    default_auth_mutability: AccessRule;
 }
 
 /**
@@ -87,12 +87,12 @@ export interface AccessRules {
  */
 export function instanceOfAccessRules(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "default_auth" in value;
-    isInstance = isInstance && "default_auth_mutability" in value;
-    isInstance = isInstance && "grouped_auth" in value;
-    isInstance = isInstance && "grouped_auth_mutability" in value;
     isInstance = isInstance && "method_auth" in value;
+    isInstance = isInstance && "grouped_auth" in value;
+    isInstance = isInstance && "default_auth" in value;
     isInstance = isInstance && "method_auth_mutability" in value;
+    isInstance = isInstance && "grouped_auth_mutability" in value;
+    isInstance = isInstance && "default_auth_mutability" in value;
 
     return isInstance;
 }
@@ -107,12 +107,12 @@ export function AccessRulesFromJSONTyped(json: any, ignoreDiscriminator: boolean
     }
     return {
         
-        'default_auth': AccessRuleFromJSON(json['default_auth']),
-        'default_auth_mutability': AccessRuleFromJSON(json['default_auth_mutability']),
-        'grouped_auth': ((json['grouped_auth'] as Array<any>).map(GroupedAuthEntryFromJSON)),
-        'grouped_auth_mutability': ((json['grouped_auth_mutability'] as Array<any>).map(GroupedAuthEntryFromJSON)),
         'method_auth': ((json['method_auth'] as Array<any>).map(MethodAuthEntryFromJSON)),
+        'grouped_auth': ((json['grouped_auth'] as Array<any>).map(GroupedAuthEntryFromJSON)),
+        'default_auth': AccessRuleFromJSON(json['default_auth']),
         'method_auth_mutability': ((json['method_auth_mutability'] as Array<any>).map(MethodAuthMutabilityEntryFromJSON)),
+        'grouped_auth_mutability': ((json['grouped_auth_mutability'] as Array<any>).map(GroupedAuthEntryFromJSON)),
+        'default_auth_mutability': AccessRuleFromJSON(json['default_auth_mutability']),
     };
 }
 
@@ -125,12 +125,12 @@ export function AccessRulesToJSON(value?: AccessRules | null): any {
     }
     return {
         
-        'default_auth': AccessRuleToJSON(value.default_auth),
-        'default_auth_mutability': AccessRuleToJSON(value.default_auth_mutability),
-        'grouped_auth': ((value.grouped_auth as Array<any>).map(GroupedAuthEntryToJSON)),
-        'grouped_auth_mutability': ((value.grouped_auth_mutability as Array<any>).map(GroupedAuthEntryToJSON)),
         'method_auth': ((value.method_auth as Array<any>).map(MethodAuthEntryToJSON)),
+        'grouped_auth': ((value.grouped_auth as Array<any>).map(GroupedAuthEntryToJSON)),
+        'default_auth': AccessRuleToJSON(value.default_auth),
         'method_auth_mutability': ((value.method_auth_mutability as Array<any>).map(MethodAuthMutabilityEntryToJSON)),
+        'grouped_auth_mutability': ((value.grouped_auth_mutability as Array<any>).map(GroupedAuthEntryToJSON)),
+        'default_auth_mutability': AccessRuleToJSON(value.default_auth_mutability),
     };
 }
 

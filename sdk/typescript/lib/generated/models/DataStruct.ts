@@ -40,6 +40,12 @@ import {
 export interface DataStruct {
     /**
      * 
+     * @type {SborData}
+     * @memberof DataStruct
+     */
+    struct_data: SborData;
+    /**
+     * 
      * @type {Array<EntityReference>}
      * @memberof DataStruct
      */
@@ -50,12 +56,6 @@ export interface DataStruct {
      * @memberof DataStruct
      */
     referenced_entities: Array<GlobalEntityReference>;
-    /**
-     * 
-     * @type {SborData}
-     * @memberof DataStruct
-     */
-    struct_data: SborData;
 }
 
 /**
@@ -63,9 +63,9 @@ export interface DataStruct {
  */
 export function instanceOfDataStruct(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "struct_data" in value;
     isInstance = isInstance && "owned_entities" in value;
     isInstance = isInstance && "referenced_entities" in value;
-    isInstance = isInstance && "struct_data" in value;
 
     return isInstance;
 }
@@ -80,9 +80,9 @@ export function DataStructFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     }
     return {
         
+        'struct_data': SborDataFromJSON(json['struct_data']),
         'owned_entities': ((json['owned_entities'] as Array<any>).map(EntityReferenceFromJSON)),
         'referenced_entities': ((json['referenced_entities'] as Array<any>).map(GlobalEntityReferenceFromJSON)),
-        'struct_data': SborDataFromJSON(json['struct_data']),
     };
 }
 
@@ -95,9 +95,9 @@ export function DataStructToJSON(value?: DataStruct | null): any {
     }
     return {
         
+        'struct_data': SborDataToJSON(value.struct_data),
         'owned_entities': ((value.owned_entities as Array<any>).map(EntityReferenceToJSON)),
         'referenced_entities': ((value.referenced_entities as Array<any>).map(GlobalEntityReferenceToJSON)),
-        'struct_data': SborDataToJSON(value.struct_data),
     };
 }
 

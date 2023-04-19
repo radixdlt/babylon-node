@@ -20,18 +20,18 @@ import { exists, mapValues } from '../runtime';
  */
 export interface CommittedStateIdentifier {
     /**
+     * An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
+     * @type {number}
+     * @memberof CommittedStateIdentifier
+     */
+    state_version: number;
+    /**
      * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
      * This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
      * @type {string}
      * @memberof CommittedStateIdentifier
      */
     accumulator_hash: string;
-    /**
-     * An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
-     * @type {number}
-     * @memberof CommittedStateIdentifier
-     */
-    state_version: number;
 }
 
 /**
@@ -39,8 +39,8 @@ export interface CommittedStateIdentifier {
  */
 export function instanceOfCommittedStateIdentifier(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "state_version" in value;
+    isInstance = isInstance && "accumulator_hash" in value;
 
     return isInstance;
 }
@@ -55,8 +55,8 @@ export function CommittedStateIdentifierFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
         
-        'accumulator_hash': json['accumulator_hash'],
         'state_version': json['state_version'],
+        'accumulator_hash': json['accumulator_hash'],
     };
 }
 
@@ -69,8 +69,8 @@ export function CommittedStateIdentifierToJSON(value?: CommittedStateIdentifier 
     }
     return {
         
-        'accumulator_hash': value.accumulator_hash,
         'state_version': value.state_version,
+        'accumulator_hash': value.accumulator_hash,
     };
 }
 

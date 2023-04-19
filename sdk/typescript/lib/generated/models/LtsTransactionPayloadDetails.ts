@@ -27,12 +27,6 @@ import {
  */
 export interface LtsTransactionPayloadDetails {
     /**
-     * An explanation for the error, if failed or rejected
-     * @type {string}
-     * @memberof LtsTransactionPayloadDetails
-     */
-    error_message?: string;
-    /**
      * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
      * @type {string}
      * @memberof LtsTransactionPayloadDetails
@@ -44,6 +38,12 @@ export interface LtsTransactionPayloadDetails {
      * @memberof LtsTransactionPayloadDetails
      */
     status: LtsTransactionPayloadStatus;
+    /**
+     * An explanation for the error, if failed or rejected
+     * @type {string}
+     * @memberof LtsTransactionPayloadDetails
+     */
+    error_message?: string;
 }
 
 /**
@@ -67,9 +67,9 @@ export function LtsTransactionPayloadDetailsFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
         'payload_hash': json['payload_hash'],
         'status': LtsTransactionPayloadStatusFromJSON(json['status']),
+        'error_message': !exists(json, 'error_message') ? undefined : json['error_message'],
     };
 }
 
@@ -82,9 +82,9 @@ export function LtsTransactionPayloadDetailsToJSON(value?: LtsTransactionPayload
     }
     return {
         
-        'error_message': value.error_message,
         'payload_hash': value.payload_hash,
         'status': LtsTransactionPayloadStatusToJSON(value.status),
+        'error_message': value.error_message,
     };
 }
 

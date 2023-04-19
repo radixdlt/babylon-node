@@ -20,18 +20,18 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsFungibleResourceBalance {
     /**
+     * The Bech32m-encoded human readable version of the resource address
+     * @type {string}
+     * @memberof LtsFungibleResourceBalance
+     */
+    fungible_resource_address: string;
+    /**
      * The string-encoded decimal representing the amount of the fungible resource.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
      * @memberof LtsFungibleResourceBalance
      */
     amount: string;
-    /**
-     * The Bech32m-encoded human readable version of the resource address
-     * @type {string}
-     * @memberof LtsFungibleResourceBalance
-     */
-    fungible_resource_address: string;
 }
 
 /**
@@ -39,8 +39,8 @@ export interface LtsFungibleResourceBalance {
  */
 export function instanceOfLtsFungibleResourceBalance(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "amount" in value;
     isInstance = isInstance && "fungible_resource_address" in value;
+    isInstance = isInstance && "amount" in value;
 
     return isInstance;
 }
@@ -55,8 +55,8 @@ export function LtsFungibleResourceBalanceFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'amount': json['amount'],
         'fungible_resource_address': json['fungible_resource_address'],
+        'amount': json['amount'],
     };
 }
 
@@ -69,8 +69,8 @@ export function LtsFungibleResourceBalanceToJSON(value?: LtsFungibleResourceBala
     }
     return {
         
-        'amount': value.amount,
         'fungible_resource_address': value.fungible_resource_address,
+        'amount': value.amount,
     };
 }
 

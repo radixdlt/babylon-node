@@ -32,12 +32,6 @@ export interface EpochManagerSubstateAllOf {
      */
     epoch: number;
     /**
-     * 
-     * @type {number}
-     * @memberof EpochManagerSubstateAllOf
-     */
-    num_unstake_epochs: number;
-    /**
      * An integer between `0` and `10^10`, marking the current round in an epoch
      * @type {number}
      * @memberof EpochManagerSubstateAllOf
@@ -49,6 +43,12 @@ export interface EpochManagerSubstateAllOf {
      * @memberof EpochManagerSubstateAllOf
      */
     rounds_per_epoch: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof EpochManagerSubstateAllOf
+     */
+    num_unstake_epochs: number;
     /**
      * 
      * @type {string}
@@ -74,9 +74,9 @@ export function instanceOfEpochManagerSubstateAllOf(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "address" in value;
     isInstance = isInstance && "epoch" in value;
-    isInstance = isInstance && "num_unstake_epochs" in value;
     isInstance = isInstance && "round" in value;
     isInstance = isInstance && "rounds_per_epoch" in value;
+    isInstance = isInstance && "num_unstake_epochs" in value;
 
     return isInstance;
 }
@@ -93,9 +93,9 @@ export function EpochManagerSubstateAllOfFromJSONTyped(json: any, ignoreDiscrimi
         
         'address': json['address'],
         'epoch': json['epoch'],
-        'num_unstake_epochs': json['num_unstake_epochs'],
         'round': json['round'],
         'rounds_per_epoch': json['rounds_per_epoch'],
+        'num_unstake_epochs': json['num_unstake_epochs'],
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -111,9 +111,9 @@ export function EpochManagerSubstateAllOfToJSON(value?: EpochManagerSubstateAllO
         
         'address': value.address,
         'epoch': value.epoch,
-        'num_unstake_epochs': value.num_unstake_epochs,
         'round': value.round,
         'rounds_per_epoch': value.rounds_per_epoch,
+        'num_unstake_epochs': value.num_unstake_epochs,
         'substate_type': value.substate_type,
     };
 }

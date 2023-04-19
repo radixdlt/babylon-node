@@ -27,17 +27,17 @@ import {
  */
 export interface RoyaltyConfig {
     /**
-     * An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
-     * @type {number}
-     * @memberof RoyaltyConfig
-     */
-    default_rule: number;
-    /**
      * The royalty rules by method
      * @type {Array<MethodRoyaltyRule>}
      * @memberof RoyaltyConfig
      */
     method_rules: Array<MethodRoyaltyRule>;
+    /**
+     * An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
+     * @type {number}
+     * @memberof RoyaltyConfig
+     */
+    default_rule: number;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface RoyaltyConfig {
  */
 export function instanceOfRoyaltyConfig(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "default_rule" in value;
     isInstance = isInstance && "method_rules" in value;
+    isInstance = isInstance && "default_rule" in value;
 
     return isInstance;
 }
@@ -61,8 +61,8 @@ export function RoyaltyConfigFromJSONTyped(json: any, ignoreDiscriminator: boole
     }
     return {
         
-        'default_rule': json['default_rule'],
         'method_rules': ((json['method_rules'] as Array<any>).map(MethodRoyaltyRuleFromJSON)),
+        'default_rule': json['default_rule'],
     };
 }
 
@@ -75,8 +75,8 @@ export function RoyaltyConfigToJSON(value?: RoyaltyConfig | null): any {
     }
     return {
         
-        'default_rule': value.default_rule,
         'method_rules': ((value.method_rules as Array<any>).map(MethodRoyaltyRuleToJSON)),
+        'default_rule': value.default_rule,
     };
 }
 

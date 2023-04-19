@@ -27,17 +27,17 @@ import {
  */
 export interface RoundUpdateValidatorTransactionAllOf {
     /**
-     * An integer between `0` and `10^10`, marking the consensus epoch.
-     * @type {number}
-     * @memberof RoundUpdateValidatorTransactionAllOf
-     */
-    consensus_epoch: number;
-    /**
      * 
      * @type {Instant}
      * @memberof RoundUpdateValidatorTransactionAllOf
      */
     proposer_timestamp: Instant;
+    /**
+     * An integer between `0` and `10^10`, marking the consensus epoch.
+     * @type {number}
+     * @memberof RoundUpdateValidatorTransactionAllOf
+     */
+    consensus_epoch: number;
     /**
      * An integer between `0` and `10^10`, marking the consensus round in the epoch
      * @type {number}
@@ -67,8 +67,8 @@ export type RoundUpdateValidatorTransactionAllOfTypeEnum = typeof RoundUpdateVal
  */
 export function instanceOfRoundUpdateValidatorTransactionAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "consensus_epoch" in value;
     isInstance = isInstance && "proposer_timestamp" in value;
+    isInstance = isInstance && "consensus_epoch" in value;
     isInstance = isInstance && "round_in_epoch" in value;
 
     return isInstance;
@@ -84,8 +84,8 @@ export function RoundUpdateValidatorTransactionAllOfFromJSONTyped(json: any, ign
     }
     return {
         
-        'consensus_epoch': json['consensus_epoch'],
         'proposer_timestamp': InstantFromJSON(json['proposer_timestamp']),
+        'consensus_epoch': json['consensus_epoch'],
         'round_in_epoch': json['round_in_epoch'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
@@ -100,8 +100,8 @@ export function RoundUpdateValidatorTransactionAllOfToJSON(value?: RoundUpdateVa
     }
     return {
         
-        'consensus_epoch': value.consensus_epoch,
         'proposer_timestamp': InstantToJSON(value.proposer_timestamp),
+        'consensus_epoch': value.consensus_epoch,
         'round_in_epoch': value.round_in_epoch,
         'type': value.type,
     };

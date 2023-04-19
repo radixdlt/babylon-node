@@ -31,7 +31,7 @@ export interface FunctionDefinition {
      * @type {string}
      * @memberof FunctionDefinition
      */
-    export_name: string;
+    receiver: FunctionDefinitionReceiverEnum;
     /**
      * 
      * @type {LocalTypeIndex}
@@ -49,7 +49,7 @@ export interface FunctionDefinition {
      * @type {string}
      * @memberof FunctionDefinition
      */
-    receiver: FunctionDefinitionReceiverEnum;
+    export_name: string;
 }
 
 
@@ -69,10 +69,10 @@ export type FunctionDefinitionReceiverEnum = typeof FunctionDefinitionReceiverEn
  */
 export function instanceOfFunctionDefinition(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "export_name" in value;
+    isInstance = isInstance && "receiver" in value;
     isInstance = isInstance && "input" in value;
     isInstance = isInstance && "output" in value;
-    isInstance = isInstance && "receiver" in value;
+    isInstance = isInstance && "export_name" in value;
 
     return isInstance;
 }
@@ -87,10 +87,10 @@ export function FunctionDefinitionFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'export_name': json['export_name'],
+        'receiver': json['receiver'],
         'input': LocalTypeIndexFromJSON(json['input']),
         'output': LocalTypeIndexFromJSON(json['output']),
-        'receiver': json['receiver'],
+        'export_name': json['export_name'],
     };
 }
 
@@ -103,10 +103,10 @@ export function FunctionDefinitionToJSON(value?: FunctionDefinition | null): any
     }
     return {
         
-        'export_name': value.export_name,
+        'receiver': value.receiver,
         'input': LocalTypeIndexToJSON(value.input),
         'output': LocalTypeIndexToJSON(value.output),
-        'receiver': value.receiver,
+        'export_name': value.export_name,
     };
 }
 

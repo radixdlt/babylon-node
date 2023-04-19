@@ -27,11 +27,11 @@ import {
  */
 export interface MetadataEntrySubstateAllOf {
     /**
-     * 
-     * @type {DataStruct}
+     * The hex-encoded bytes of its key
+     * @type {string}
      * @memberof MetadataEntrySubstateAllOf
      */
-    data_struct?: DataStruct;
+    key_hex: string;
     /**
      * 
      * @type {boolean}
@@ -39,11 +39,11 @@ export interface MetadataEntrySubstateAllOf {
      */
     is_deleted: boolean;
     /**
-     * The hex-encoded bytes of its key
-     * @type {string}
+     * 
+     * @type {DataStruct}
      * @memberof MetadataEntrySubstateAllOf
      */
-    key_hex: string;
+    data_struct?: DataStruct;
     /**
      * 
      * @type {string}
@@ -67,8 +67,8 @@ export type MetadataEntrySubstateAllOfSubstateTypeEnum = typeof MetadataEntrySub
  */
 export function instanceOfMetadataEntrySubstateAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "is_deleted" in value;
     isInstance = isInstance && "key_hex" in value;
+    isInstance = isInstance && "is_deleted" in value;
 
     return isInstance;
 }
@@ -83,9 +83,9 @@ export function MetadataEntrySubstateAllOfFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'data_struct': !exists(json, 'data_struct') ? undefined : DataStructFromJSON(json['data_struct']),
-        'is_deleted': json['is_deleted'],
         'key_hex': json['key_hex'],
+        'is_deleted': json['is_deleted'],
+        'data_struct': !exists(json, 'data_struct') ? undefined : DataStructFromJSON(json['data_struct']),
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -99,9 +99,9 @@ export function MetadataEntrySubstateAllOfToJSON(value?: MetadataEntrySubstateAl
     }
     return {
         
-        'data_struct': DataStructToJSON(value.data_struct),
-        'is_deleted': value.is_deleted,
         'key_hex': value.key_hex,
+        'is_deleted': value.is_deleted,
+        'data_struct': DataStructToJSON(value.data_struct),
         'substate_type': value.substate_type,
     };
 }

@@ -27,17 +27,17 @@ import {
  */
 export interface EntityReference {
     /**
-     * The hex-encoded bytes of the entity id.
-     * @type {string}
-     * @memberof EntityReference
-     */
-    entity_id_hex: string;
-    /**
      * 
      * @type {EntityType}
      * @memberof EntityReference
      */
     entity_type: EntityType;
+    /**
+     * The hex-encoded bytes of the entity id.
+     * @type {string}
+     * @memberof EntityReference
+     */
+    entity_id_hex: string;
 }
 
 /**
@@ -45,8 +45,8 @@ export interface EntityReference {
  */
 export function instanceOfEntityReference(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity_id_hex" in value;
     isInstance = isInstance && "entity_type" in value;
+    isInstance = isInstance && "entity_id_hex" in value;
 
     return isInstance;
 }
@@ -61,8 +61,8 @@ export function EntityReferenceFromJSONTyped(json: any, ignoreDiscriminator: boo
     }
     return {
         
-        'entity_id_hex': json['entity_id_hex'],
         'entity_type': EntityTypeFromJSON(json['entity_type']),
+        'entity_id_hex': json['entity_id_hex'],
     };
 }
 
@@ -75,8 +75,8 @@ export function EntityReferenceToJSON(value?: EntityReference | null): any {
     }
     return {
         
-        'entity_id_hex': value.entity_id_hex,
         'entity_type': EntityTypeToJSON(value.entity_type),
+        'entity_id_hex': value.entity_id_hex,
     };
 }
 

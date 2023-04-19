@@ -27,17 +27,17 @@ import {
  */
 export interface TransactionSubmitErrorResponse {
     /**
-     * A numeric code corresponding to the given HTTP error code.
-     * @type {number}
-     * @memberof TransactionSubmitErrorResponse
-     */
-    code: number;
-    /**
      * 
      * @type {string}
      * @memberof TransactionSubmitErrorResponse
      */
     error_type: TransactionSubmitErrorResponseErrorTypeEnum;
+    /**
+     * A numeric code corresponding to the given HTTP error code.
+     * @type {number}
+     * @memberof TransactionSubmitErrorResponse
+     */
+    code: number;
     /**
      * A human-readable error message.
      * @type {string}
@@ -73,8 +73,8 @@ export type TransactionSubmitErrorResponseErrorTypeEnum = typeof TransactionSubm
  */
 export function instanceOfTransactionSubmitErrorResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "error_type" in value;
+    isInstance = isInstance && "code" in value;
     isInstance = isInstance && "message" in value;
 
     return isInstance;
@@ -90,8 +90,8 @@ export function TransactionSubmitErrorResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
         
-        'code': json['code'],
         'error_type': json['error_type'],
+        'code': json['code'],
         'message': json['message'],
         'trace_id': !exists(json, 'trace_id') ? undefined : json['trace_id'],
         'details': !exists(json, 'details') ? undefined : TransactionSubmitErrorDetailsFromJSON(json['details']),
@@ -107,8 +107,8 @@ export function TransactionSubmitErrorResponseToJSON(value?: TransactionSubmitEr
     }
     return {
         
-        'code': value.code,
         'error_type': value.error_type,
+        'code': value.code,
         'message': value.message,
         'trace_id': value.trace_id,
         'details': TransactionSubmitErrorDetailsToJSON(value.details),

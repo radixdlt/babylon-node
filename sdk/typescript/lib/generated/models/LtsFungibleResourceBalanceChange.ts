@@ -20,18 +20,18 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsFungibleResourceBalanceChange {
     /**
+     * The Bech32m-encoded human readable version of the fungible resource's global address
+     * @type {string}
+     * @memberof LtsFungibleResourceBalanceChange
+     */
+    fungible_resource_address: string;
+    /**
      * The string-encoded decimal representing the amount of change for the fungible resource.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
      * @memberof LtsFungibleResourceBalanceChange
      */
     balance_change: string;
-    /**
-     * The Bech32m-encoded human readable version of the fungible resource's global address
-     * @type {string}
-     * @memberof LtsFungibleResourceBalanceChange
-     */
-    fungible_resource_address: string;
 }
 
 /**
@@ -39,8 +39,8 @@ export interface LtsFungibleResourceBalanceChange {
  */
 export function instanceOfLtsFungibleResourceBalanceChange(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "balance_change" in value;
     isInstance = isInstance && "fungible_resource_address" in value;
+    isInstance = isInstance && "balance_change" in value;
 
     return isInstance;
 }
@@ -55,8 +55,8 @@ export function LtsFungibleResourceBalanceChangeFromJSONTyped(json: any, ignoreD
     }
     return {
         
-        'balance_change': json['balance_change'],
         'fungible_resource_address': json['fungible_resource_address'],
+        'balance_change': json['balance_change'],
     };
 }
 
@@ -69,8 +69,8 @@ export function LtsFungibleResourceBalanceChangeToJSON(value?: LtsFungibleResour
     }
     return {
         
-        'balance_change': value.balance_change,
         'fungible_resource_address': value.fungible_resource_address,
+        'balance_change': value.balance_change,
     };
 }
 

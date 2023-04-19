@@ -45,6 +45,12 @@ import {
  */
 export interface SubstateId {
     /**
+     * 
+     * @type {EntityType}
+     * @memberof SubstateId
+     */
+    entity_type: EntityType;
+    /**
      * The hex-encoded bytes of the entity id.
      * @type {string}
      * @memberof SubstateId
@@ -52,22 +58,16 @@ export interface SubstateId {
     entity_id_hex: string;
     /**
      * 
-     * @type {EntityType}
-     * @memberof SubstateId
-     */
-    entity_type: EntityType;
-    /**
-     * 
      * @type {ModuleType}
      * @memberof SubstateId
      */
     module_type: ModuleType;
     /**
-     * The hex-encoded bytes of the substate key, under the entity
-     * @type {string}
+     * 
+     * @type {SubstateType}
      * @memberof SubstateId
      */
-    substate_key_hex: string;
+    substate_type: SubstateType;
     /**
      * 
      * @type {SubstateKeyType}
@@ -75,11 +75,11 @@ export interface SubstateId {
      */
     substate_key_type: SubstateKeyType;
     /**
-     * 
-     * @type {SubstateType}
+     * The hex-encoded bytes of the substate key, under the entity
+     * @type {string}
      * @memberof SubstateId
      */
-    substate_type: SubstateType;
+    substate_key_hex: string;
 }
 
 /**
@@ -87,12 +87,12 @@ export interface SubstateId {
  */
 export function instanceOfSubstateId(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity_id_hex" in value;
     isInstance = isInstance && "entity_type" in value;
+    isInstance = isInstance && "entity_id_hex" in value;
     isInstance = isInstance && "module_type" in value;
-    isInstance = isInstance && "substate_key_hex" in value;
-    isInstance = isInstance && "substate_key_type" in value;
     isInstance = isInstance && "substate_type" in value;
+    isInstance = isInstance && "substate_key_type" in value;
+    isInstance = isInstance && "substate_key_hex" in value;
 
     return isInstance;
 }
@@ -107,12 +107,12 @@ export function SubstateIdFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     }
     return {
         
-        'entity_id_hex': json['entity_id_hex'],
         'entity_type': EntityTypeFromJSON(json['entity_type']),
+        'entity_id_hex': json['entity_id_hex'],
         'module_type': ModuleTypeFromJSON(json['module_type']),
-        'substate_key_hex': json['substate_key_hex'],
-        'substate_key_type': SubstateKeyTypeFromJSON(json['substate_key_type']),
         'substate_type': SubstateTypeFromJSON(json['substate_type']),
+        'substate_key_type': SubstateKeyTypeFromJSON(json['substate_key_type']),
+        'substate_key_hex': json['substate_key_hex'],
     };
 }
 
@@ -125,12 +125,12 @@ export function SubstateIdToJSON(value?: SubstateId | null): any {
     }
     return {
         
-        'entity_id_hex': value.entity_id_hex,
         'entity_type': EntityTypeToJSON(value.entity_type),
+        'entity_id_hex': value.entity_id_hex,
         'module_type': ModuleTypeToJSON(value.module_type),
-        'substate_key_hex': value.substate_key_hex,
-        'substate_key_type': SubstateKeyTypeToJSON(value.substate_key_type),
         'substate_type': SubstateTypeToJSON(value.substate_type),
+        'substate_key_type': SubstateKeyTypeToJSON(value.substate_key_type),
+        'substate_key_hex': value.substate_key_hex,
     };
 }
 

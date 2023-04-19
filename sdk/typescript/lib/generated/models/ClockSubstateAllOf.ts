@@ -28,16 +28,16 @@ import {
 export interface ClockSubstateAllOf {
     /**
      * 
-     * @type {string}
-     * @memberof ClockSubstateAllOf
-     */
-    substate_type?: ClockSubstateAllOfSubstateTypeEnum;
-    /**
-     * 
      * @type {Instant}
      * @memberof ClockSubstateAllOf
      */
     timestamp_rounded_down_to_minute: Instant;
+    /**
+     * 
+     * @type {string}
+     * @memberof ClockSubstateAllOf
+     */
+    substate_type?: ClockSubstateAllOfSubstateTypeEnum;
 }
 
 
@@ -70,8 +70,8 @@ export function ClockSubstateAllOfFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
         'timestamp_rounded_down_to_minute': InstantFromJSON(json['timestamp_rounded_down_to_minute']),
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
@@ -84,8 +84,8 @@ export function ClockSubstateAllOfToJSON(value?: ClockSubstateAllOf | null): any
     }
     return {
         
-        'substate_type': value.substate_type,
         'timestamp_rounded_down_to_minute': InstantToJSON(value.timestamp_rounded_down_to_minute),
+        'substate_type': value.substate_type,
     };
 }
 

@@ -34,16 +34,16 @@ import {
 export interface ParsedSignedTransactionIntentAllOf {
     /**
      * 
-     * @type {ParsedSignedTransactionIntentAllOfIdentifiers}
-     * @memberof ParsedSignedTransactionIntentAllOf
-     */
-    identifiers: ParsedSignedTransactionIntentAllOfIdentifiers;
-    /**
-     * 
      * @type {SignedTransactionIntent}
      * @memberof ParsedSignedTransactionIntentAllOf
      */
     signed_intent?: SignedTransactionIntent;
+    /**
+     * 
+     * @type {ParsedSignedTransactionIntentAllOfIdentifiers}
+     * @memberof ParsedSignedTransactionIntentAllOf
+     */
+    identifiers: ParsedSignedTransactionIntentAllOfIdentifiers;
     /**
      * 
      * @type {string}
@@ -82,8 +82,8 @@ export function ParsedSignedTransactionIntentAllOfFromJSONTyped(json: any, ignor
     }
     return {
         
-        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
         'signed_intent': !exists(json, 'signed_intent') ? undefined : SignedTransactionIntentFromJSON(json['signed_intent']),
+        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersFromJSON(json['identifiers']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -97,8 +97,8 @@ export function ParsedSignedTransactionIntentAllOfToJSON(value?: ParsedSignedTra
     }
     return {
         
-        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
         'signed_intent': SignedTransactionIntentToJSON(value.signed_intent),
+        'identifiers': ParsedSignedTransactionIntentAllOfIdentifiersToJSON(value.identifiers),
         'type': value.type,
     };
 }

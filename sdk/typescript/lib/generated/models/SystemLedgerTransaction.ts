@@ -27,17 +27,17 @@ import {
  */
 export interface SystemLedgerTransaction {
     /**
-     * The hex-encoded full ledger transaction payload
-     * @type {string}
-     * @memberof SystemLedgerTransaction
-     */
-    payload_hex: string;
-    /**
      * 
      * @type {string}
      * @memberof SystemLedgerTransaction
      */
     type: SystemLedgerTransactionTypeEnum;
+    /**
+     * The hex-encoded full ledger transaction payload
+     * @type {string}
+     * @memberof SystemLedgerTransaction
+     */
+    payload_hex: string;
     /**
      * 
      * @type {SystemTransaction}
@@ -61,8 +61,8 @@ export type SystemLedgerTransactionTypeEnum = typeof SystemLedgerTransactionType
  */
 export function instanceOfSystemLedgerTransaction(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "payload_hex" in value;
     isInstance = isInstance && "system_transaction" in value;
 
     return isInstance;
@@ -78,8 +78,8 @@ export function SystemLedgerTransactionFromJSONTyped(json: any, ignoreDiscrimina
     }
     return {
         
-        'payload_hex': json['payload_hex'],
         'type': json['type'],
+        'payload_hex': json['payload_hex'],
         'system_transaction': SystemTransactionFromJSON(json['system_transaction']),
     };
 }
@@ -93,8 +93,8 @@ export function SystemLedgerTransactionToJSON(value?: SystemLedgerTransaction | 
     }
     return {
         
-        'payload_hex': value.payload_hex,
         'type': value.type,
+        'payload_hex': value.payload_hex,
         'system_transaction': SystemTransactionToJSON(value.system_transaction),
     };
 }

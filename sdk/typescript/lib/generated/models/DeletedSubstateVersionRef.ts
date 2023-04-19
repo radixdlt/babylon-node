@@ -27,17 +27,17 @@ import {
  */
 export interface DeletedSubstateVersionRef {
     /**
-     * The hex-encoded Blake2b-256 hash of the substate data bytes
-     * @type {string}
-     * @memberof DeletedSubstateVersionRef
-     */
-    substate_data_hash: string;
-    /**
      * 
      * @type {SubstateId}
      * @memberof DeletedSubstateVersionRef
      */
     substate_id: SubstateId;
+    /**
+     * The hex-encoded Blake2b-256 hash of the substate data bytes
+     * @type {string}
+     * @memberof DeletedSubstateVersionRef
+     */
+    substate_data_hash: string;
     /**
      * An integer between `0` and `10^13`, counting the number of times the substate was updated
      * @type {number}
@@ -51,8 +51,8 @@ export interface DeletedSubstateVersionRef {
  */
 export function instanceOfDeletedSubstateVersionRef(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "substate_data_hash" in value;
     isInstance = isInstance && "substate_id" in value;
+    isInstance = isInstance && "substate_data_hash" in value;
     isInstance = isInstance && "version" in value;
 
     return isInstance;
@@ -68,8 +68,8 @@ export function DeletedSubstateVersionRefFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
-        'substate_data_hash': json['substate_data_hash'],
         'substate_id': SubstateIdFromJSON(json['substate_id']),
+        'substate_data_hash': json['substate_data_hash'],
         'version': json['version'],
     };
 }
@@ -83,8 +83,8 @@ export function DeletedSubstateVersionRefToJSON(value?: DeletedSubstateVersionRe
     }
     return {
         
-        'substate_data_hash': value.substate_data_hash,
         'substate_id': SubstateIdToJSON(value.substate_id),
+        'substate_data_hash': value.substate_data_hash,
         'version': value.version,
     };
 }

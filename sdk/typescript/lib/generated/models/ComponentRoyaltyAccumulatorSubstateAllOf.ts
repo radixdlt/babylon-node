@@ -28,16 +28,16 @@ import {
 export interface ComponentRoyaltyAccumulatorSubstateAllOf {
     /**
      * 
-     * @type {string}
-     * @memberof ComponentRoyaltyAccumulatorSubstateAllOf
-     */
-    substate_type?: ComponentRoyaltyAccumulatorSubstateAllOfSubstateTypeEnum;
-    /**
-     * 
      * @type {EntityReference}
      * @memberof ComponentRoyaltyAccumulatorSubstateAllOf
      */
     vault_entity?: EntityReference;
+    /**
+     * 
+     * @type {string}
+     * @memberof ComponentRoyaltyAccumulatorSubstateAllOf
+     */
+    substate_type?: ComponentRoyaltyAccumulatorSubstateAllOfSubstateTypeEnum;
 }
 
 
@@ -69,8 +69,8 @@ export function ComponentRoyaltyAccumulatorSubstateAllOfFromJSONTyped(json: any,
     }
     return {
         
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
         'vault_entity': !exists(json, 'vault_entity') ? undefined : EntityReferenceFromJSON(json['vault_entity']),
+        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
 
@@ -83,8 +83,8 @@ export function ComponentRoyaltyAccumulatorSubstateAllOfToJSON(value?: Component
     }
     return {
         
-        'substate_type': value.substate_type,
         'vault_entity': EntityReferenceToJSON(value.vault_entity),
+        'substate_type': value.substate_type,
     };
 }
 

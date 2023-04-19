@@ -33,6 +33,18 @@ import {
  */
 export interface LtsTransactionStatusResponse {
     /**
+     * 
+     * @type {LtsTransactionIntentStatus}
+     * @memberof LtsTransactionStatusResponse
+     */
+    intent_status: LtsTransactionIntentStatus;
+    /**
+     * An explanation as to why the intent status is resolved as it is.
+     * @type {string}
+     * @memberof LtsTransactionStatusResponse
+     */
+    status_description: string;
+    /**
      * An integer between `1` and `10^13`, giving the resultant state version when the transaction was committed.
      * This is only present if the intent was committed (as a Success or Failure).
      * This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up
@@ -41,12 +53,6 @@ export interface LtsTransactionStatusResponse {
      * @memberof LtsTransactionStatusResponse
      */
     committed_state_version?: number;
-    /**
-     * 
-     * @type {LtsTransactionIntentStatus}
-     * @memberof LtsTransactionStatusResponse
-     */
-    intent_status: LtsTransactionIntentStatus;
     /**
      * An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
      * Only present if the intent status is InMempool or Unknown and we know about a payload.
@@ -60,12 +66,6 @@ export interface LtsTransactionStatusResponse {
      * @memberof LtsTransactionStatusResponse
      */
     known_payloads: Array<LtsTransactionPayloadDetails>;
-    /**
-     * An explanation as to why the intent status is resolved as it is.
-     * @type {string}
-     * @memberof LtsTransactionStatusResponse
-     */
-    status_description: string;
 }
 
 /**
@@ -74,8 +74,8 @@ export interface LtsTransactionStatusResponse {
 export function instanceOfLtsTransactionStatusResponse(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "intent_status" in value;
-    isInstance = isInstance && "known_payloads" in value;
     isInstance = isInstance && "status_description" in value;
+    isInstance = isInstance && "known_payloads" in value;
 
     return isInstance;
 }
@@ -90,11 +90,11 @@ export function LtsTransactionStatusResponseFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'committed_state_version': !exists(json, 'committed_state_version') ? undefined : json['committed_state_version'],
         'intent_status': LtsTransactionIntentStatusFromJSON(json['intent_status']),
+        'status_description': json['status_description'],
+        'committed_state_version': !exists(json, 'committed_state_version') ? undefined : json['committed_state_version'],
         'invalid_from_epoch': !exists(json, 'invalid_from_epoch') ? undefined : json['invalid_from_epoch'],
         'known_payloads': ((json['known_payloads'] as Array<any>).map(LtsTransactionPayloadDetailsFromJSON)),
-        'status_description': json['status_description'],
     };
 }
 
@@ -107,11 +107,11 @@ export function LtsTransactionStatusResponseToJSON(value?: LtsTransactionStatusR
     }
     return {
         
-        'committed_state_version': value.committed_state_version,
         'intent_status': LtsTransactionIntentStatusToJSON(value.intent_status),
+        'status_description': value.status_description,
+        'committed_state_version': value.committed_state_version,
         'invalid_from_epoch': value.invalid_from_epoch,
         'known_payloads': ((value.known_payloads as Array<any>).map(LtsTransactionPayloadDetailsToJSON)),
-        'status_description': value.status_description,
     };
 }
 

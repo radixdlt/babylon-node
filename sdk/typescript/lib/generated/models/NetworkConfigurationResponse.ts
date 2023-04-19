@@ -40,10 +40,10 @@ import {
 export interface NetworkConfigurationResponse {
     /**
      * 
-     * @type {Array<AddressType>}
+     * @type {NetworkConfigurationResponseVersion}
      * @memberof NetworkConfigurationResponse
      */
-    address_types: Array<AddressType>;
+    version: NetworkConfigurationResponseVersion;
     /**
      * The logical name of the network
      * @type {string}
@@ -51,23 +51,23 @@ export interface NetworkConfigurationResponse {
      */
     network: string;
     /**
-     * The network suffix used for Bech32m HRPs used for addressing.
-     * @type {string}
-     * @memberof NetworkConfigurationResponse
-     */
-    network_hrp_suffix: string;
-    /**
      * The logical id of the network
      * @type {number}
      * @memberof NetworkConfigurationResponse
      */
     network_id: number;
     /**
-     * 
-     * @type {NetworkConfigurationResponseVersion}
+     * The network suffix used for Bech32m HRPs used for addressing.
+     * @type {string}
      * @memberof NetworkConfigurationResponse
      */
-    version: NetworkConfigurationResponseVersion;
+    network_hrp_suffix: string;
+    /**
+     * 
+     * @type {Array<AddressType>}
+     * @memberof NetworkConfigurationResponse
+     */
+    address_types: Array<AddressType>;
     /**
      * 
      * @type {NetworkConfigurationResponseWellKnownAddresses}
@@ -81,11 +81,11 @@ export interface NetworkConfigurationResponse {
  */
 export function instanceOfNetworkConfigurationResponse(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "address_types" in value;
-    isInstance = isInstance && "network" in value;
-    isInstance = isInstance && "network_hrp_suffix" in value;
-    isInstance = isInstance && "network_id" in value;
     isInstance = isInstance && "version" in value;
+    isInstance = isInstance && "network" in value;
+    isInstance = isInstance && "network_id" in value;
+    isInstance = isInstance && "network_hrp_suffix" in value;
+    isInstance = isInstance && "address_types" in value;
     isInstance = isInstance && "well_known_addresses" in value;
 
     return isInstance;
@@ -101,11 +101,11 @@ export function NetworkConfigurationResponseFromJSONTyped(json: any, ignoreDiscr
     }
     return {
         
-        'address_types': ((json['address_types'] as Array<any>).map(AddressTypeFromJSON)),
-        'network': json['network'],
-        'network_hrp_suffix': json['network_hrp_suffix'],
-        'network_id': json['network_id'],
         'version': NetworkConfigurationResponseVersionFromJSON(json['version']),
+        'network': json['network'],
+        'network_id': json['network_id'],
+        'network_hrp_suffix': json['network_hrp_suffix'],
+        'address_types': ((json['address_types'] as Array<any>).map(AddressTypeFromJSON)),
         'well_known_addresses': NetworkConfigurationResponseWellKnownAddressesFromJSON(json['well_known_addresses']),
     };
 }
@@ -119,11 +119,11 @@ export function NetworkConfigurationResponseToJSON(value?: NetworkConfigurationR
     }
     return {
         
-        'address_types': ((value.address_types as Array<any>).map(AddressTypeToJSON)),
-        'network': value.network,
-        'network_hrp_suffix': value.network_hrp_suffix,
-        'network_id': value.network_id,
         'version': NetworkConfigurationResponseVersionToJSON(value.version),
+        'network': value.network,
+        'network_id': value.network_id,
+        'network_hrp_suffix': value.network_hrp_suffix,
+        'address_types': ((value.address_types as Array<any>).map(AddressTypeToJSON)),
         'well_known_addresses': NetworkConfigurationResponseWellKnownAddressesToJSON(value.well_known_addresses),
     };
 }

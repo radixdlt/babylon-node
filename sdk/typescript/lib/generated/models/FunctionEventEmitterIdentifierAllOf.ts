@@ -33,12 +33,6 @@ import {
  */
 export interface FunctionEventEmitterIdentifierAllOf {
     /**
-     * Blueprint name.
-     * @type {string}
-     * @memberof FunctionEventEmitterIdentifierAllOf
-     */
-    blueprint_name: string;
-    /**
      * 
      * @type {EntityReference}
      * @memberof FunctionEventEmitterIdentifierAllOf
@@ -50,6 +44,12 @@ export interface FunctionEventEmitterIdentifierAllOf {
      * @memberof FunctionEventEmitterIdentifierAllOf
      */
     module_type: ModuleType;
+    /**
+     * Blueprint name.
+     * @type {string}
+     * @memberof FunctionEventEmitterIdentifierAllOf
+     */
+    blueprint_name: string;
     /**
      * 
      * @type {string}
@@ -73,9 +73,9 @@ export type FunctionEventEmitterIdentifierAllOfTypeEnum = typeof FunctionEventEm
  */
 export function instanceOfFunctionEventEmitterIdentifierAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "blueprint_name" in value;
     isInstance = isInstance && "entity" in value;
     isInstance = isInstance && "module_type" in value;
+    isInstance = isInstance && "blueprint_name" in value;
 
     return isInstance;
 }
@@ -90,9 +90,9 @@ export function FunctionEventEmitterIdentifierAllOfFromJSONTyped(json: any, igno
     }
     return {
         
-        'blueprint_name': json['blueprint_name'],
         'entity': EntityReferenceFromJSON(json['entity']),
         'module_type': ModuleTypeFromJSON(json['module_type']),
+        'blueprint_name': json['blueprint_name'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -106,9 +106,9 @@ export function FunctionEventEmitterIdentifierAllOfToJSON(value?: FunctionEventE
     }
     return {
         
-        'blueprint_name': value.blueprint_name,
         'entity': EntityReferenceToJSON(value.entity),
         'module_type': ModuleTypeToJSON(value.module_type),
+        'blueprint_name': value.blueprint_name,
         'type': value.type,
     };
 }
