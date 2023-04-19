@@ -244,6 +244,8 @@ pub mod lts_transaction_construction_response;
 pub use self::lts_transaction_construction_response::LtsTransactionConstructionResponse;
 pub mod lts_transaction_intent_status;
 pub use self::lts_transaction_intent_status::LtsTransactionIntentStatus;
+pub mod lts_transaction_payload_details;
+pub use self::lts_transaction_payload_details::LtsTransactionPayloadDetails;
 pub mod lts_transaction_payload_status;
 pub use self::lts_transaction_payload_status::LtsTransactionPayloadStatus;
 pub mod lts_transaction_status_request;

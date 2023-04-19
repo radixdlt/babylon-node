@@ -1,0 +1,46 @@
+name: Publish TypeScript Core API SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version_number:
+        description: "Package version number"
+        required: true
+  # For now, let's just deploy it manually, to avoid issues with needing to keep its version numbers
+  # in-sync with the node, which doesn't really make sense
+  # release:
+  #   types: [published]
+
+jobs:
+  publish-gateway-sdk-npmjs:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ./sdk/typescript
+
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - name: Use Node.js
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
+        with:
+          node-version: "18.x"
+          registry-url: "https://registry.npmjs.org"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build @radixdlt/babylon-core-api-sdk
+        run: |
+          yarn
+          yarn build
+
+      - name: Update package.json version
+        uses: jossef/action-set-json-field@2a0f7d953b580b828717daf4de7fafc7e4135e97
+        with:
+          file: ./sdk/typescript/package.json
+          field: version
+          value: ${{ github.event.inputs.package_version_number || github.event.release.tag_name }}
+
+      - run: |
+          npm config set access public
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
