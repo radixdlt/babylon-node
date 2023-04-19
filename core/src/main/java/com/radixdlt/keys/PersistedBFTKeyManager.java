@@ -79,7 +79,6 @@ public final class PersistedBFTKeyManager {
 
   public PersistedBFTKeyManager(String nodeKeyPath, boolean createNodeKeyIfMissing) {
     this.ecKeyPair = loadNodeKey(nodeKeyPath, createNodeKeyIfMissing);
-    ;
   }
 
   private static ECKeyPair loadNodeKey(String nodeKeyPath, boolean createNodeKeyIfMissing) {
