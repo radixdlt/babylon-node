@@ -13,7 +13,7 @@ The node makes use of some persistent data, which is set up to be stored as dock
 
 The ledger database is stored in a docker volume called `ledger-data`.
 
-Sometimes if updating to a new version of the node, a ledger wipe is needed. To wipe the ledger, run: `docker volume rm testnet-node_ledger-data` to remove the `ledger-data` volume.
+Sometimes if updating to a new version of the node, a ledger wipe is needed. To wipe the ledger, run: `docker volume rm radixdlt-testnet-babylon-node_ledger-data` to remove the `ledger-data` volume.
 
 ### Key Pair
 
