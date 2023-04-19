@@ -18,7 +18,6 @@ target/
 
 # eclipse stuff
 bin/
-lib/
 .settings/
 .project/
 .classpath/

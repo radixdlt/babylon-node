@@ -1,13 +1,20 @@
 import fetch from "node-fetch";
+import http from 'node:http';
+import https from 'node:http';
+
 import { CoreApiClient, LtsCommittedTransactionStatus, LtsTransactionIntentStatus, ResponseError } from "../lib";
 
 // These tests are assumed to run against a running local node, with Core API bound to 3333.
 
 async function newCoreApiClient(): Promise<CoreApiClient> {
     return await CoreApiClient.initialize({
+        // Note - in nodeJS, you may need to use 127.0.0.1 instead of localhost
         basePath: "http://127.0.0.1:3333/core",
-        fetch,
         logicalNetworkName: "localnet",
+        // Configuration for node-fetch
+        fetch,
+        httpAgent: new http.Agent({ keepAlive: true }),
+        httpsAgent: new https.Agent({ keepAlive: true }),
     });
 }
 

@@ -16,12 +16,18 @@ The client checks that it can connect to the Core API at `initialize` time. If y
 
 ```typescript
 import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS
+import http from 'node:http';
+import https from 'node:http';
 import { CoreApiClient} from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
-    basePath: "http://localhost:3333/core",
-    fetch,
+    // Note - in nodeJS, you may need to use 127.0.0.1 instead of localhost
+    basePath: "http://127.0.0.1:3333/core",
     logicalNetworkName: "kisharnet",
+    fetch,
+    // Configuration for fixing issues with node-fetch
+    httpAgent: new http.Agent({ keepAlive: true }),
+    httpsAgent: new https.Agent({ keepAlive: true }),
 });
 
 ```
