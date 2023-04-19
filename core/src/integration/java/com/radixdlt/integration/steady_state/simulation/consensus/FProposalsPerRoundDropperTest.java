@@ -104,7 +104,10 @@ import org.junit.runners.Parameterized.Parameters;
 public class FProposalsPerRoundDropperTest {
   @Parameters
   public static Collection<Object[]> testParameters() {
-    return Arrays.asList(new Object[][] {{4}, {10}});
+    return Arrays.asList(
+        new Object[][] { // TODO(wip): bring back just the 4, 10.
+          {4}, {4}, {4}, {4}, {4}, {5}, {5}, {10}, {10}, {10}, {20}
+        });
   }
 
   private final Builder bftTestBuilder;
@@ -113,10 +116,7 @@ public class FProposalsPerRoundDropperTest {
     bftTestBuilder =
         SimulationTest.builder()
             .numPhysicalNodes(numNodes)
-            .networkModules(
-                NetworkOrdering.inOrder(),
-                NetworkLatencies.fixed(10),
-                NetworkDroppers.fNodesAllReceivedProposalsDropped())
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     NodeStorageConfig.none(),
@@ -136,6 +136,7 @@ public class FProposalsPerRoundDropperTest {
       given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
     SimulationTest test =
         bftTestBuilder
+            .addNetworkModule(NetworkDroppers.fNodesAllReceivedProposalsDropped())
             .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Override
@@ -160,7 +161,10 @@ public class FProposalsPerRoundDropperTest {
   @Test
   public void
       given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
-    SimulationTest test = bftTestBuilder.build();
+    SimulationTest test =
+        bftTestBuilder
+            .addNetworkModule(NetworkDroppers.fNodesAllReceivedProposalsDropped())
+            .build();
     final var runningTest = test.run(Duration.of(45, ChronoUnit.SECONDS));
     final var checkResults = runningTest.awaitCompletion();
     assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
@@ -179,6 +183,7 @@ public class FProposalsPerRoundDropperTest {
   public void dropping_sync_adversary_with_no_timeout_scheduler_should_cause_timeouts() {
     SimulationTest test =
         bftTestBuilder
+            .addNetworkModule(NetworkDroppers.fNodesAllReceivedProposalsDropped())
             .addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
             .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
