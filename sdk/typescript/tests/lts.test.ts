@@ -5,7 +5,7 @@ import { CoreApiClient, LtsCommittedTransactionStatus, LtsTransactionIntentStatu
 
 async function newCoreApiClient(): Promise<CoreApiClient> {
     return await CoreApiClient.initialize({
-        basePath: "http://localhost:3333/core",
+        basePath: "http://127.0.0.1:3333/core",
         fetch,
         logicalNetworkName: "localnet",
     });
@@ -23,7 +23,7 @@ async function expectError<T>(promise: Promise<unknown>, errorType: Constructabl
         if (e instanceof errorType) {
             return e;
         }
-        throw new Error(`Error was not of type ${errorType.name}`, { cause: e });
+        throw new Error(`Error was not of type ${errorType.name}, but was: ${e}`, { cause: e });
     }
 }
 
