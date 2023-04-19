@@ -234,8 +234,8 @@ function isFormData(value: any): value is FormData {
 export class ResponseError extends Error {
     override name: "ResponseError" = "ResponseError";
 
-    constructor(public fetchResponse: Response, public status: number, public errorResponse: ErrorResponse | undefined) {
-        super(errorResponse ? JSON.stringify(errorResponse) : `Unknown error occurred`);
+    constructor(public fetchResponse: Response, public status: number, public errorResponse: ErrorResponse | undefined, errorText?: string) {
+        super(errorResponse ? JSON.stringify(errorResponse) : errorText || `Unknown error occurred`);
     }
 
     static async from(fetchResponse: Response): Promise<ResponseError> {
@@ -244,11 +244,16 @@ export class ResponseError extends Error {
             const errorResponse = await fetchResponse.json() as ErrorResponse;
             return new ResponseError(fetchResponse, status, errorResponse);
         } catch (e) {
-            return new ResponseError(fetchResponse, status, undefined);
+            try {
+                const errorText = await fetchResponse.text();
+                return new ResponseError(fetchResponse, status, undefined, errorText);
+            }
+            catch (e2) {
+                return new ResponseError(fetchResponse, status, undefined);
+            }
         }
     }
 }
-
 
 export class RequiredError extends Error {
     override name: "RequiredError" = "RequiredError";
