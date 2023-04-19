@@ -114,12 +114,12 @@ task buildRustForDocker(type: Exec) {
     project.logger.lifecycle("Building for own target: $target")
     project.logger.lifecycle("Building for own docker platform: $dockerPlatform")
 
+    workingDir rootProject.projectDir
+    def outputDir = "core-rust/target/$target/${project.property("rustBinaryBuildType")}"
+
     // Trigger a custom error message on failure...
     ignoreExitValue true
     if (project.hasProperty('ci')) {
-        workingDir rootProject.projectDir
-        def outputDir= "core-rust/target/$target"
-        def innerOutputDir = "$outputDir/${project.property("rustBinaryBuildType")}"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
         def rustCacheRepo = "europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/babylon-node"
         def envRustProfile =
@@ -133,10 +133,9 @@ task buildRustForDocker(type: Exec) {
         project.logger.lifecycle("- tag: $tag")
         project.logger.lifecycle("- cacheRef: $cacheRef")
         def dockerMultiStageCmd = """
-            set -x
+            set -ex
 
             if [ -d $outputDir ]; then rm -Rf $outputDir; fi
-            if [ -d $innerOutputDir ]; then rm -Rf $innerOutputDir; fi
             export DOCKER_BUILDKIT=1
 
             docker buildx build \
@@ -148,7 +147,7 @@ task buildRustForDocker(type: Exec) {
                 --platform $dockerPlatform \
                 --tag $tag \
                 --target library-container \
-                --output type=local,dest=$innerOutputDir/ \
+                --output type=local,dest=$outputDir/ \
                 .
 
             [ -f $innerOutputDir/libcorerust.so ]
@@ -157,12 +156,21 @@ task buildRustForDocker(type: Exec) {
         commandLine 'sh', '-c', dockerMultiStageCmd
     } else {
         def envRustProfile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
+        // Change clean to "TRUE" to clear out the current build cache - eg if there is some corruption in the volume
+        def clean = "FALSE"
         def dockerComposeRun = """
-            docker compose -f ../docker/local-cached-rust-build.yaml build
-            docker compose -f ../docker/local-cached-rust-build.yaml run \\
-                --rm \\
-                --env TARGET=$target \\
-                --env RUST_PROFILE=$envRustProfile \\
+            set -ex
+
+            docker compose -f ./docker/local-cached-rust-build.yaml build
+
+            docker compose -f ./docker/local-cached-rust-build.yaml run \
+                --rm \
+                --env CARGO_CLEAN=$clean \
+                --env TARGET=$target \
+                --env RUST_PROFILE=$envRustProfile \
+                --env BINARY_BUILD_TYPE=$rustBinaryBuildType \
+                --env BUILD_ARTIFACT=libcorerust.so \
+                --volume "${rootProject.projectDir}/$outputDir:/output" \
                 build-rust
             """
         commandLine 'sh', '-c', dockerComposeRun

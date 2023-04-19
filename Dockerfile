@@ -1,7 +1,11 @@
-##### ARGUMENTS:
-# - TARGETPLATFORM - automatic assignment via `docker build --platform xyz`
-# - RUST_PROFILE - defaults to release
-
+##### BUILD ARGS
+#
+# For the standard build:
+# - TARGETPLATFORM - provided automatically, specified via `docker build --platform xyz`
+# - RUST_PROFILE - optional - either `debug` or `release` - defaults to release
+#
+# There are no args for the local rust builder.
+#
 ##### LAYER: java-builder
 # The base for building the Java application
 FROM debian:11-slim AS java-build-stage
@@ -51,18 +55,21 @@ FROM debian:11-slim as library-build-stage-base
 WORKDIR /app
 
 # Install dependencies needed for building the Rust library
-RUN apt-get update; apt-get upgrade -y && \
-  apt install -y \
-  build-essential=12.9 \
-  curl=7.74.0-1.3+deb11u7 \
-  g++-aarch64-linux-gnu \
-  g++-x86-64-linux-gnu \
-  libc6-dev-arm64-cross=2.31-9cross4 \
-  libclang-dev=1:11.0-51+nmu5 \
-  libssl-dev=1.1.1n-0+deb11u4 \
-  pkg-config=0.29.2-1
+RUN apt-get update \
+  && apt-get -y --no-install-recommends install \
+    build-essential=12.9 \
+    curl=7.74.0-1.3+deb11u7 \
+    g++-aarch64-linux-gnu \
+    g++-x86-64-linux-gnu \
+    libc6-dev-arm64-cross=2.31-9cross4 \
+    libclang-dev=1:11.0-51+nmu5 \
+    libssl-dev=1.1.1n-0+deb11u4 \
+    pkg-config=0.29.2-1 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh rustup.sh -y --target aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
+
 RUN $HOME/.cargo/bin/cargo install sccache
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
@@ -75,17 +82,18 @@ ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 # It allows us to use volumes at runtime to cache the build dependencies and artifacts.
 FROM library-build-stage-base as library-builder-local
 WORKDIR /app
-ARG TARGET
-ARG RUST_PROFILE
+
+COPY docker/scripts/cargo_local_build.sh /opt/radixdlt/cargo_local_build.sh
 
 COPY core-rust ./
-CMD $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
+
+# See cargo_local_build.sh script for environment variables to provide
+CMD ["/opt/radixdlt/cargo_local_build.sh"]
 
 ##### LAYER: library-build-stage-cache-packages
 # This layer allows us to cache the compilation of all our rust dependencies in a Docker layer
 FROM library-build-stage-base as library-build-stage-cache-packages
-ARG TARGETPLATFORM
-ARG RUST_PROFILE=release
+
 WORKDIR /app
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
@@ -103,6 +111,9 @@ COPY core-rust/state-manager/Cargo.toml ./state-manager
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
 
 COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
+
+ARG TARGETPLATFORM
+ARG RUST_PROFILE=release
 RUN /opt/radixdlt/cargo_build_by_platform.sh $TARGETPLATFORM $RUST_PROFILE
 
 ##### LAYER: library-build-stage
@@ -115,6 +126,8 @@ RUN rm -rf state-manager core-rust core-api-server
 # Copy across all the code (docker ignore excepted)
 COPY core-rust ./
 
+ARG TARGETPLATFORM
+ARG RUST_PROFILE=release
 RUN /opt/radixdlt/cargo_build_by_platform.sh $TARGETPLATFORM $RUST_PROFILE
 
 ##### LAYER: library-container
@@ -133,16 +146,16 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - libssl-dev is needed for encryption methods used in the keystore.ks
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
-RUN apt-get update -y && \
-    apt-get -y --no-install-recommends install \
+RUN apt-get update -y \
+  && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.6+10-1~deb11u1 \
     unzip=6.0-26+deb11u1 \
     daemontools=1:0.76-7 \
     libssl-dev=1.1.1n-0+deb11u4 \
     software-properties-common=0.96.20.2-2.1 \
-    gettext-base=0.21-4 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    gettext-base=0.21-4 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY docker/scripts/fix-vulnerabilities.sh /tmp
 RUN /tmp/fix-vulnerabilities.sh
