@@ -80,9 +80,11 @@ fn handle_lts_transaction_status_internal(
         };
 
         let (payload_status, outcome, error_message) = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => {
-                (models::LtsTransactionPayloadStatus::CommittedSuccess, "SUCCESS", None)
-            }
+            LedgerTransactionOutcome::Success(_) => (
+                models::LtsTransactionPayloadStatus::CommittedSuccess,
+                "SUCCESS",
+                None,
+            ),
             LedgerTransactionOutcome::Failure(reason) => (
                 models::LtsTransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
