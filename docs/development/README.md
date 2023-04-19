@@ -109,9 +109,9 @@ docker build . -t radixdlt/babylon-node
 If local testing is required, the artifacts can be produced locally with docker aswell by specifying the build target and outputting the result. 
 
 The different targets are:
-- `binary-builder` - the container that builds the application. Target this to debug any errors during the build process of the java application
-- `binary-container` - an empty container with only the java build artifacts.
-- `library-builder` - the container that builds the application. Target this to debug any errors during the build process of the rust application/library
+- `java-builder` - the container that builds the java application. Target this to debug any errors during the build process of the java application
+- `java-container` - an empty container with only the java build artifacts.
+- `library-builder` - the container that builds the rust native library. Target this to debug any errors during the build process of the rust application/library
 - `library-container` - an empty container with only the rust build artifacts. This is a library necessary for the java application to run
 
 - `app-container` - (default) a container that runs the babylon-node application with all dependencies installed. Configuration still needs to be added by the user. See `docker/node-1.yml` for an example configuration.

@@ -29,9 +29,6 @@ echo "||> Loading environment variables for $validators validators"
 # If the below line errors with a syntax error, see what's going wrong by adding echo "$ENV_TO_LOAD"
 eval "$ENV_TO_LOAD"
 
-echo "||> Building the code and debian image"
-${reporoot}/gradlew -p "${reporoot}" deb4docker
-
 echo "||> Killing all running docker containers"
 docker compose -f "${dockerfile}" down | tee docker.log
 

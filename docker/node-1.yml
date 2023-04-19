@@ -1,4 +1,5 @@
 version: '2.1'
+name: radixdlt-babylon-node-1-core-network
 services:
   core0:
     extends:

@@ -111,57 +111,62 @@ task buildRustForDocker(type: Exec) {
         dockerPlatform = "linux/arm64"
         tagSuffix = "linux-arm64"
     }
-    project.logger.lifecycle('Using following target: ')
-    project.logger.lifecycle(target)
-    project.logger.lifecycle('Using following docker platform: ')
-    project.logger.lifecycle(dockerPlatform)
+    project.logger.lifecycle("Building for own target: $target")
+    project.logger.lifecycle("Building for own docker platform: $dockerPlatform")
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
-    if (project.hasProperty('ci')){
-        project.logger.lifecycle('Running in CI: ')
+    if (project.hasProperty('ci')) {
         workingDir rootProject.projectDir
-        def outputDir="core-rust/target/$target"
+        def outputDir= "core-rust/target/$target"
+        def innerOutputDir = "$outputDir/${project.property("rustBinaryBuildType")}"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
         def rustCacheRepo = "europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/babylon-node"
-        def env_rust_profile =
+        def envRustProfile =
                 (project.property("rustBinaryBuildType") == "" || project.property("rustBinaryBuildType") == null) ? "release"
                 : project.property("rustBinaryBuildType") == "debug" ? "dev"
                 : project.property("rustBinaryBuildType")
         def cacheTag = project.properties['cacheBranch'] ?: "latest"
+        def cacheRef = "$rustCacheRepo:$cacheTag-$target-$envRustProfile"
+        def tag = "$rustBuilderRepo:$cacheTag"
+        project.logger.lifecycle("Running build in CI:")
+        project.logger.lifecycle("- tag: $tag")
+        project.logger.lifecycle("- cacheRef: $cacheRef")
         def dockerMultiStageCmd = """
-             set -x
+            set -x
 
-             if [ -d $outputDir ]; then rm -Rf $outputDir; fi
-             export DOCKER_BUILDKIT=1
+            if [ -d $outputDir ]; then rm -Rf $outputDir; fi
+            if [ -d $innerOutputDir ]; then rm -Rf $innerOutputDir; fi
+            export DOCKER_BUILDKIT=1
 
-             docker buildx build \
+            docker buildx build \
                 --file Dockerfile \
-                --build-arg RUST_PROFILE=$env_rust_profile \
+                --build-arg RUST_PROFILE=$envRustProfile \
                 --build-arg BUILDKIT_INLINE_CACHE=1 \
-                --cache-from type=registry,ref=$rustCacheRepo:$cacheTag-$target-$env_rust_profile \
-                --cache-to type=registry,ref=$rustCacheRepo:$cacheTag-$target-$env_rust_profile,mode=max \
+                --cache-from type=registry,ref=$cacheRef \
+                --cache-to type=registry,ref=$cacheRef,mode=max \
                 --platform $dockerPlatform \
-                --tag $rustBuilderRepo:$cacheTag \
+                --tag $tag \
                 --target library-container \
-                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ \
+                --output type=local,dest=$innerOutputDir/ \
                 .
 
-             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
-                """
+            [ -f $innerOutputDir/libcorerust.so ]
+            """
 
         commandLine 'sh', '-c', dockerMultiStageCmd
-    } else{
-        project.logger.lifecycle('Not running in CI!')
-        def env_rust_profile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
+    } else {
+        def envRustProfile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
         def dockerComposeRun = """
-            docker compose -f ../docker/rust-builder/build-sm.yaml build
-            docker compose -f ../docker/rust-builder/build-sm.yaml run \\
-                --env TARGET=$target --env RUST_PROFILE=$env_rust_profile build-sm
+            docker compose -f ../docker/local-cached-rust-build.yaml build
+            docker compose -f ../docker/local-cached-rust-build.yaml run \\
+                --rm \\
+                --env TARGET=$target \\
+                --env RUST_PROFILE=$envRustProfile \\
+                build-rust
             """
         commandLine 'sh', '-c', dockerComposeRun
     }
-
 
     doLast {
         if (executionResult.get().getExitValue() != 0) {
