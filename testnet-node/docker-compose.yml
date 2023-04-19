@@ -1,11 +1,11 @@
 version: '2.2'
+name: radixdlt-testnet-babylon-node
 services:
   core:
     build:
       context: ..
       dockerfile: Dockerfile
     # image: radixdlt/babylon-node:rcnet-v1-c6360105d-build-2
-    container_name: radix-testnet-babylon-node
     init: true
     ulimits:
       nofile:
