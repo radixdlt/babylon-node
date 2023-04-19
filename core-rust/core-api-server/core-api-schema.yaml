@@ -83,6 +83,7 @@ servers:
 x-tagGroups:
   - name: Overview
     tags:
+      - SDKs
       - SubAPIs
       - Concepts
       - Construction
@@ -95,6 +96,16 @@ x-tagGroups:
       - State
       - Stream
 tags:
+  - name: SDKs
+    x-displayName: SDKs
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |
+      The following SDKs are currently available for the Core API:
+      - Typescript: [@radixdlt/babylon-core-api-sdk](https://www.npmjs.com/package/@radixdlt/babylon-core-api-sdk)
+
+      For other languages, you can use a HTTP client of your choice and code the JSON models yourself.
+      You could also consider using an Open API generator, but unless you have experience with battling the gremlins in Open API generators,
+      it may be more trouble than it's worth.
   - name: SubAPIs
     x-displayName: Sub-APIs
     x-traitTag: true # Don't display endpoints under this tag
@@ -3132,8 +3143,8 @@ components:
         known_payloads:
           type: array
           items:
-            $ref: "#/components/schemas/LtsTransactionPayloadStatus"
-    LtsTransactionPayloadStatus:
+            $ref: "#/components/schemas/LtsTransactionPayloadDetails"
+    LtsTransactionPayloadDetails:
       type: object
       required:
         - payload_hash
@@ -3142,17 +3153,7 @@ components:
         payload_hash:
           $ref: "#/components/schemas/PayloadHash"
         status:
-          type: string
-          description: |
-            The status of the transaction payload, as per this node.
-            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentlyRejected
-            - TransientlyRejected
-            - InMempool
-            - NotInMempool
+          $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
@@ -3169,6 +3170,18 @@ components:
         - NotSeen
         - FateUncertain
         - FateUncertainButLikelyRejection
+    LtsTransactionPayloadStatus:
+      type: string
+      description: |
+        The status of the transaction payload, as per this node.
+        A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentlyRejected
+        - TransientlyRejected
+        - InMempool
+        - NotInMempool
 ####################################
 # REQUEST: /lts/transaction/submit #
 ####################################
@@ -3425,9 +3438,10 @@ components:
             $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
     LtsCommittedTransactionStatus:
       type: string
+      # These should align with LtsTransactionIntentStatus / LtsTransactionPayloadStatus
       enum:
-        - Succeeded
-        - Failed
+        - Success
+        - Failure
       description: The status of the transaction
     LtsCommittedTransactionOutcome:
       description: |

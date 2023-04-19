@@ -13,25 +13,25 @@
 /// The status of the transaction
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum LtsCommittedTransactionStatus {
-    #[serde(rename = "Succeeded")]
-    Succeeded,
-    #[serde(rename = "Failed")]
-    Failed,
+    #[serde(rename = "Success")]
+    Success,
+    #[serde(rename = "Failure")]
+    Failure,
 
 }
 
 impl ToString for LtsCommittedTransactionStatus {
     fn to_string(&self) -> String {
         match self {
-            Self::Succeeded => String::from("Succeeded"),
-            Self::Failed => String::from("Failed"),
+            Self::Success => String::from("Success"),
+            Self::Failure => String::from("Failure"),
         }
     }
 }
 
 impl Default for LtsCommittedTransactionStatus {
     fn default() -> LtsCommittedTransactionStatus {
-        Self::Succeeded
+        Self::Success
     }
 }
 
