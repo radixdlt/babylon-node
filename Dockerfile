@@ -84,6 +84,8 @@ CMD $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
 ##### LAYER: library-build-stage-cache-packages
 # This layer allows us to cache the compilation of all our rust dependencies in a Docker layer
 FROM library-build-stage-base as library-build-stage-cache-packages
+ARG TARGETPLATFORM
+ARG RUST_PROFILE=release
 WORKDIR /app
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
@@ -100,16 +102,12 @@ COPY core-rust/core-rust/Cargo.toml ./core-rust
 COPY core-rust/state-manager/Cargo.toml ./state-manager
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
 
+COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
+RUN /opt/radixdlt/cargo_build_by_platform.sh $TARGETPLATFORM $RUST_PROFILE
+
 ##### LAYER: library-build-stage
 # The actual build of the library
 FROM library-build-stage-cache-packages as library-build-stage
-ARG TARGETPLATFORM
-ARG RUST_PROFILE=release
-WORKDIR /app
-
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
-ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 # Tidy up from the previous layer
 RUN rm -rf state-manager core-rust core-api-server
@@ -117,7 +115,6 @@ RUN rm -rf state-manager core-rust core-api-server
 # Copy across all the code (docker ignore excepted)
 COPY core-rust ./
 
-COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
 RUN /opt/radixdlt/cargo_build_by_platform.sh $TARGETPLATFORM $RUST_PROFILE
 
 ##### LAYER: library-container
