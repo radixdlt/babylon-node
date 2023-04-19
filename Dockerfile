@@ -45,19 +45,19 @@ USER nobody
 FROM scratch AS binary-container
 COPY --from=binary-build-stage /radixdlt/core/build/distributions /
 
-FROM ubuntu:22.04 as base
+FROM debian:11-slim as base
 WORKDIR /app
 
 RUN apt-get update; apt-get upgrade -y && \
   apt install -y \
-  build-essential=12.9ubuntu3 \
-  curl=7.81.0-1ubuntu1.10 \
-  g++-aarch64-linux-gnu=4:11.2.0-1ubuntu1 \
-  g++-x86-64-linux-gnu=4:11.2.0-1ubuntu1 \
-  libc6-dev-arm64-cross=2.35-0ubuntu1cross3 \
-  libclang-dev=1:14.0-55~exp2 \
-  libssl-dev=3.0.2-0ubuntu1.8 \
-  pkg-config=0.29.2-1ubuntu3
+  build-essential=12.9 \
+  curl=7.74.0-1.3+deb11u7 \
+  g++-aarch64-linux-gnu \
+  g++-x86-64-linux-gnu \
+  libc6-dev-arm64-cross=2.31-9cross4 \
+  libclang-dev=1:11.0-51+nmu5 \
+  libssl-dev=1.1.1n-0+deb11u4 \
+  pkg-config=0.29.2-1
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh rustup.sh -y --target aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
 RUN $HOME/.cargo/bin/cargo install sccache
