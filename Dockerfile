@@ -52,8 +52,8 @@ RUN apt-get update; apt-get upgrade -y && \
   apt install -y \
   build-essential=12.9 \
   curl=7.74.0-1.3+deb11u7 \
-  g++-aarch64-linux-gnu=4:10.2.1-1 \
-  g++-x86-64-linux-gnu=4:10.2.1-1 \
+  g++-aarch64-linux-gnu \
+  g++-x86-64-linux-gnu \
   libc6-dev-arm64-cross=2.31-9cross4 \
   libclang-dev=1:11.0-51+nmu5 \
   libssl-dev=1.1.1n-0+deb11u4 \
