@@ -62,118 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation;
+package com.radixdlt.harness.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.harness.simulation.network.*;
 import com.radixdlt.p2p.NodeId;
-import java.util.Random;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-public final class NetworkDroppers {
-  // TODO: This doesn't work with epochs yet
-  public static Module fRandomProposalsPerRoundDropped() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(
-          ImmutableList<BFTValidatorId> nodes, Random random) {
-        return new FRandomProposalDroppersEachRound(nodes, random);
-      }
-    };
+/** Drops all proposals addressed to a static maximum adversarial node subset. */
+public class FStaticProposalDroppers implements Predicate<SimulationNetwork.MessageInTransit> {
+
+  private final Set<NodeId> dropperNodeIds;
+
+  public FStaticProposalDroppers(ImmutableList<BFTValidatorId> validatorSet) {
+    this.dropperNodeIds =
+        validatorSet.stream()
+            .limit((validatorSet.size() - 1) / 3)
+            .map(id -> NodeId.fromPublicKey(id.getKey()))
+            .collect(Collectors.toSet());
   }
 
-  // TODO: This doesn't work with epochs yet
-  public static Module fNodesAllReceivedProposalsDropped() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTValidatorId> nodes) {
-        return new FStaticProposalDroppers(nodes);
-      }
-    };
-  }
-
-  public static Module dropAllMessagesForOneNode(long durationMillis, long timeBetweenMillis) {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTValidatorId> nodes) {
-        return msg -> {
-          if (msg.getSender().equals(msg.getReceiver())) {
-            return false;
-          }
-
-          if (!msg.getSender().equals(NodeId.fromPublicKey(nodes.get(0).getKey()))
-              && !msg.getReceiver().equals(NodeId.fromPublicKey(nodes.get(0).getKey()))) {
-            return false;
-          }
-
-          long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
-          return current < durationMillis;
-        };
-      }
-    };
-  }
-
-  public static Module randomVotesAndRoundTimeoutsDropped(double drops) {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(Random random) {
-        return new MessageDropper(random, drops, Vote.class);
-      }
-    };
-  }
-
-  public static Module oneNodePerEpochLedgerStatusUpdateDropped() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper() {
-        return new OneNodePerEpochLedgerStatusUpdateDropper();
-      }
-    };
-  }
-
-  public static Module bftSyncMessagesDropped(double dropRate) {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(Random random) {
-        return new MessageDropper(
-            random,
-            dropRate,
-            GetVerticesResponse.class,
-            GetVerticesErrorResponse.class,
-            GetVerticesRequest.class);
-      }
-    };
-  }
-
-  public static Module bftSyncMessagesDropped() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper() {
-        return new MessageDropper(
-            GetVerticesResponse.class, GetVerticesErrorResponse.class, GetVerticesRequest.class);
-      }
-    };
-  }
-
-  public static Module dropAllProposals() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper() {
-        return new MessageDropper(Proposal.class);
-      }
-    };
-  }
-
-  private NetworkDroppers() {
-    throw new UnsupportedOperationException("Cannot instantiate.");
+  @Override
+  public boolean test(SimulationNetwork.MessageInTransit msg) {
+    return msg.getContent() instanceof Proposal && this.dropperNodeIds.contains(msg.getReceiver());
   }
 }

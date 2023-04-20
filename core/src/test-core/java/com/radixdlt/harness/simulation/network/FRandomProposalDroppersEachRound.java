@@ -79,22 +79,18 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Drops one proposal per round */
-public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.MessageInTransit> {
+public class FRandomProposalDroppersEachRound
+    implements Predicate<SimulationNetwork.MessageInTransit> {
   private final ConcurrentHashMap<Round, Set<NodeId>> proposalToDrop = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Round, Integer> proposalCount = new ConcurrentHashMap<>();
   private final ImmutableList<BFTValidatorId> validatorSet;
   private final Random random;
   private final int faultySize;
 
-  public FProposalsPerRoundDropper(ImmutableList<BFTValidatorId> validatorSet, Random random) {
+  public FRandomProposalDroppersEachRound(
+      ImmutableList<BFTValidatorId> validatorSet, Random random) {
     this.validatorSet = validatorSet;
     this.random = random;
-    this.faultySize = (validatorSet.size() - 1) / 3;
-  }
-
-  public FProposalsPerRoundDropper(ImmutableList<BFTValidatorId> validatorSet) {
-    this.validatorSet = validatorSet;
-    this.random = null;
     this.faultySize = (validatorSet.size() - 1) / 3;
   }
 
@@ -107,9 +103,7 @@ public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.Me
               round,
               v -> {
                 final List<BFTValidatorId> nodes = Lists.newArrayList(validatorSet);
-                if (random != null) {
-                  Collections.shuffle(nodes, random);
-                }
+                Collections.shuffle(nodes, random);
                 return nodes.subList(0, faultySize).stream()
                     .map(n -> NodeId.fromPublicKey(n.getKey()))
                     .collect(Collectors.toSet());
