@@ -74,7 +74,7 @@ before attempting to run the node, as during Babylon development, we make no gua
 
 If you wish to run a local network, this is best done in Docker - see [../docker](../../docker).
 
-Note that the docker build can take a while, so it may be easier to use a native running approach instead.
+Note that the docker build can take a while - even incremental builds with sccache seem to take 5 minutes - so it may be easier to use a native running approach instead.
 
 #### Integration tests (native)
 
@@ -95,46 +95,3 @@ If you meet this issue, check following configuration options:
  - `Project Structure -> Project Settings -> Modules`, make sure that every module has `Language Level` set to `17 (Preview) - Pattern matching for switch (Project default)`  
  - `Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`, make sure that `Gradle JVM` is set to `Project JDK`. 
 
-### Building with docker
-
-![The structure of the docker image](babylon-node-docker-build.png)
-
-
-The application can be build using a single Dockerfile:
-
-```
-docker build . -t radixdlt/babylon-node 
-```
-
-If local testing is required, the artifacts can be produced locally with docker aswell by specifying the build target and outputting the result. 
-
-The different targets are:
-- `binary-builder` - the container that builds the application. Target this to debug any errors during the build process of the java application
-- `binary-container` - an empty container with only the java build artifacts.
-- `library-builder` - the container that builds the application. Target this to debug any errors during the build process of the rust application/library
-- `library-container` - an empty container with only the rust build artifacts. This is a library necessary for the java application to run
-
-- `app-container` - (default) a container that runs the babylon-node application with all dependencies installed. Configuration still needs to be added by the user. See `docker/node-1.yml` for an example configuration.
-
-Example core-rust/libcorerust.so:
-
-```
-docker build  . \
-    -t radixdlt/babylon-node:local-test-core-rust \
-    --target library-container \
-    --output ./outputs
-ls outputs 
-libcorerust.so
-```
-
-Example core/java-binary/*.jar
-
-```
-docker build  . \
-    -t radixdlt/babylon-node:local-test-core \
-    --target binary-container \
-    --output ./outputs
-ls outputs 
-core-SNAPSHOT-<BRANCH>-<GITSHA10>.tgz 
-core-SNAPSHOT-<BRANCH>-<GITSHA10>.zip
-```

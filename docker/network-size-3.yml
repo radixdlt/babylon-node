@@ -1,6 +1,8 @@
 version: '2.1'
+name: radixdlt-babylon-node-network-size-3
 services:
   core0:
+    container_name: radixdlt-babylon-node-0
     extends:
       file: core.yml
       service: core
@@ -18,6 +20,7 @@ services:
       - "50505:50505" # JDWP Port for Java debugging
       # Gossip port on 30000 can be called by other nodes inside docker, but isn't exposed outside docker
   core1:
+    container_name: radixdlt-babylon-node-1
     extends:
       file: core.yml
       service: core
@@ -35,6 +38,7 @@ services:
       - "9012:9011"
       - "50506:50505"
   core2:
+    container_name: radixdlt-babylon-node-2
     extends:
       file: core.yml
       service: core

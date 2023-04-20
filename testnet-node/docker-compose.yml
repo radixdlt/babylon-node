@@ -1,7 +1,8 @@
 version: '2.2'
-name: radixdlt-testnet-babylon-node
+name: radixdlt-babylon-node-testnet-node
 services:
   core:
+    container_name: radixdlt-kisharnet-node
     build:
       context: ..
       dockerfile: Dockerfile

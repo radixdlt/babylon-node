@@ -23,12 +23,8 @@ A keystore containing a keypair is automatically generated on startup and stored
 
 
 ## Getting started
-1. Install `docker` and `docker-compose`
-2. Run `docker-compose up` in this folder
-
-Tested with:
-- `Docker` version 20.10+
-- `docker-compose` version 1.25+
+1. Install `docker` version 20.10+ and `docker-compose` version 1.25+
+2. Run `./run.sh` in this folder to `docker compose up --build`
 
 ## Local builds
 If you decide you want to run using locally built images (i.e. you want to add & test your own custom endpoint) change
@@ -41,4 +37,5 @@ with
             context: ..
             dockerfile: Dockerfile
 ```
-And run using `docker-compose up --build`.
+
+And then `./run.sh` in this folder.

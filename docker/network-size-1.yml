@@ -1,6 +1,8 @@
 version: '2.1'
+name: radixdlt-babylon-node-network-size-1
 services:
-  core0:
+  core1:
+    container_name: radixdlt-babylon-node-0
     extends:
       file: core.yml
       service: core
