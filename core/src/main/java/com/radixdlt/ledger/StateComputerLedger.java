@@ -207,7 +207,16 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 
-    if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+    // The `commit()` operation may concurrently advance the ledger, so let's only read out the
+    // (immutable) accumulator state once.
+    // (we do not rely on any other state, and the Rust side of the prepare operation is properly
+    // synchronized there, which means we can carry on without the lock).
+    final AccumulatorState againstAccumulatorState;
+    synchronized (this.commitAndAdvanceLedgerLock) {
+      againstAccumulatorState = this.currentLedgerHeader.getHeader().getAccumulatorState();
+    }
+
+    if (againstAccumulatorState.getStateVersion() > parentAccumulatorState.getStateVersion()) {
       return Optional.empty();
     }
 
@@ -222,15 +231,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader,
               ImmutableList.of(),
               ImmutableMap.of(),
-              timeSupplier.currentTime()));
+              this.timeSupplier.currentTime()));
     }
 
     // It's possible that this function is called with a list of vertices which starts with some
     // committed vertices
     // By matching on the accumulator, we remove the already committed vertices from the
     // "previous" list
-    final var committedAccumulatorHash =
-        this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
+    final var committedAccumulatorHash = againstAccumulatorState.getAccumulatorHash();
     // Whether any of the `previous` vertices has matched
     // against the committed accumulator hash.
     // `previous` vertices following the first matched vertex (including itself)
@@ -269,7 +277,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     // Now we verify the payload hashes of the extension match the start of the proposal
     var extensionMatchesAccumulator =
         this.verifier.verify(
-            this.currentLedgerHeader.getAccumulatorState(),
+            againstAccumulatorState,
             verticesInExtension.stream()
                 .flatMap(v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
                 .collect(ImmutableList.toImmutableList()),
@@ -280,7 +288,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     }
 
     final StateComputerResult result =
-        stateComputer.prepare(
+        this.stateComputer.prepare(
             committedAccumulatorHash,
             verticesInExtension,
             vertex.getTransactions(),
@@ -308,7 +316,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             ledgerHeader,
             result.getSuccessfullyExecutedTransactions(),
             result.getFailedTransactions(),
-            timeSupplier.currentTime()));
+            this.timeSupplier.currentTime()));
   }
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
