@@ -41,6 +41,7 @@ ENV PATH=/opt/gradle-7.2/bin:$PATH
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 RUN mkdir -p /radixdlt
+# Copy misc files at the repo root
 COPY ./*.* /radixdlt/
 COPY ./gradle /radixdlt/gradle
 COPY ./common /radixdlt/common
