@@ -209,7 +209,9 @@ COPY docker/config/ /home/radixdlt/
 # Add script to install optional network utils - but don't run it
 COPY docker/build_scripts/install_network_utils.sh /opt/radixdlt/install_network_utils.sh
 
-# Configure the ssh message
+# Configure the welcome message when a shell is started.
+# Docker defaults to using /bin/sh, so we can't use .bashrc and have to hook into ENV instead
+ENV ENV=/etc/environment
 COPY docker/build_scripts/configure_motd.sh /tmp
 RUN /tmp/configure_motd.sh
 
