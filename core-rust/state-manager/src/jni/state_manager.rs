@@ -79,6 +79,9 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
+use crate::transaction::{
+    CommitableTransactionValidator, ExecutionConfigurator, TransactionPreviewer,
+};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
@@ -132,6 +135,8 @@ pub struct JNIStateManager {
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
+    pub commitable_transaction_validator: Arc<CommitableTransactionValidator<StateManagerDatabase>>,
+    pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
     pub metric_registry: Registry,
 }
 
@@ -150,26 +155,40 @@ impl JNIStateManager {
                 MempoolConfig { max_size: 10 }
             }
         };
-
-        let metric_registry = Registry::new();
-
         let network = config.network_definition;
+        let logging_config = config.logging_config;
+
         let database = Arc::new(parking_lot::const_rwlock(
             StateManagerDatabase::from_config(config.db_config),
         ));
+        let metric_registry = Registry::new();
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
             mempool_config,
             &metric_registry,
         )));
+        let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
+        let commitable_transaction_validator = Arc::new(CommitableTransactionValidator::new(
+            &network,
+            database.clone(),
+            execution_configurator.clone(),
+        ));
+        let transaction_previewer = Arc::new(TransactionPreviewer::new(
+            &network,
+            database.clone(),
+            execution_configurator.clone(),
+        ));
+
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
 
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
-            network.clone(),
+            &network,
             database.clone(),
             mempool.clone(),
+            execution_configurator,
+            commitable_transaction_validator.clone(),
             mempool_relay_dispatcher,
-            config.logging_config,
+            logging_config,
             &metric_registry,
         )));
 
@@ -178,6 +197,8 @@ impl JNIStateManager {
             state_manager,
             database,
             mempool,
+            commitable_transaction_validator,
+            transaction_previewer,
             metric_registry,
         };
 

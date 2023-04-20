@@ -68,6 +68,7 @@ use crate::{
 };
 use radix_engine::types::*;
 use std::fmt;
+use std::ops::Range;
 
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 use transaction::model::{
@@ -724,11 +725,10 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
-    pub start_epoch_inclusive: u64,
-    pub end_epoch_exclusive: u64,
+    pub explicit_epoch_range: Option<Range<u64>>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,

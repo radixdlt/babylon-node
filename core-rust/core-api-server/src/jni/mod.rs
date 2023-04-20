@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::core_api::{create_server, CoreApiServerConfig};
+use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState};
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
 use futures::FutureExt;
@@ -70,17 +70,13 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use parking_lot::RwLock;
-use radix_engine_common::network::NetworkDefinition;
 use state_manager::jni::java_structure::JavaStructure;
-use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
+use state_manager::jni::state_manager::JNIStateManager;
 use state_manager::jni::utils::*;
 use std::str;
-use std::sync::{Arc, MutexGuard};
+use std::sync::MutexGuard;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use state_manager::simple_mempool::SimpleMempool;
-use state_manager::store::StateManagerDatabase;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -93,10 +89,7 @@ pub struct RunningServer {
 
 pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
-    pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
-    pub database: Arc<RwLock<StateManagerDatabase>>,
-    pub mempool: Arc<RwLock<SimpleMempool>>,
+    pub state: CoreApiState,
     pub running_server: Option<RunningServer>,
 }
 
@@ -109,18 +102,17 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     j_config: jbyteArray,
 ) {
     let state = JNIStateManager::get_state(&env, j_state_manager);
-    let network = state.network.clone();
-    let state_manager = state.state_manager.clone();
-    let database = state.database.clone();
-    let mempool = state.mempool.clone();
     let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
-    let config = CoreApiServerConfig::from_java(&config_bytes).unwrap();
     let jni_core_api_server = JNICoreApiServer {
-        config,
-        network,
-        state_manager,
-        database,
-        mempool,
+        config: CoreApiServerConfig::from_java(&config_bytes).unwrap(),
+        state: CoreApiState {
+            network: state.network.clone(),
+            state_manager: state.state_manager.clone(),
+            database: state.database.clone(),
+            mempool: state.mempool.clone(),
+            commitable_transaction_validator: state.commitable_transaction_validator.clone(),
+            transaction_previewer: state.transaction_previewer.clone(),
+        },
         running_server: None,
     };
 
@@ -147,11 +139,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
         .unwrap();
 
     let config = &jni_core_api_server.config;
-
-    let network = jni_core_api_server.network.clone();
-    let state_manager = jni_core_api_server.state_manager.clone();
-    let database = jni_core_api_server.database.clone();
-    let mempool = jni_core_api_server.mempool.clone();
+    let state = jni_core_api_server.state.clone();
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
@@ -181,15 +169,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
             }
         }
 
-        create_server(
-            &bind_addr,
-            shutdown_signal_receiver.map(|_| ()),
-            network,
-            state_manager,
-            database,
-            mempool,
-        )
-        .await;
+        create_server(&bind_addr, shutdown_signal_receiver.map(|_| ()), state).await;
     });
 
     jni_core_api_server.running_server = Some(RunningServer {

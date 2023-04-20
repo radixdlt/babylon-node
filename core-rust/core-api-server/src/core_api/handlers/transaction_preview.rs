@@ -5,6 +5,7 @@ use radix_engine::{
 };
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
+use std::ops::Range;
 
 use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
@@ -19,9 +20,8 @@ pub(crate) async fn handle_transaction_preview(
 
     let preview_request = extract_preview_request(&state.network, request)?;
 
-    let state_manager = state.state_manager.read();
-
-    let result = state_manager
+    let result = state
+        .transaction_previewer
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
@@ -56,10 +56,12 @@ fn extract_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        start_epoch_inclusive: extract_api_epoch(request.start_epoch_inclusive)
-            .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
-        end_epoch_exclusive: extract_api_epoch(request.end_epoch_exclusive)
-            .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
+        explicit_epoch_range: Some(Range {
+            start: extract_api_epoch(request.start_epoch_inclusive)
+                .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
+            end: extract_api_epoch(request.end_epoch_exclusive)
+                .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
+        }),
         notary_public_key: request
             .notary_public_key
             .map(|pk| {
