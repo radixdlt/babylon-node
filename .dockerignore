@@ -1,5 +1,6 @@
 # Radix node root folders to ignore
 /sdk/
+/testnet-node/
 
 # Radix non-versioned files
 /**/RADIXDB/

@@ -41,8 +41,17 @@ ENV PATH=/opt/gradle-7.2/bin:$PATH
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 RUN mkdir -p /radixdlt
-# Copy misc files at the repo root
-COPY ./*.* /radixdlt/
+# Copy the relevant files at the repo root
+# I wish we could just avoid pulling in the rust here, but https://github.com/moby/moby/issues/15771
+COPY \
+  build.gradle \
+  gradlew \
+  gradlew.bat \
+  settings.gradle \
+  sonar-project.properties \
+  gradle.properties \
+  licence-header.txt \
+  /radixdlt/
 COPY ./gradle /radixdlt/gradle
 COPY ./common /radixdlt/common
 COPY ./core /radixdlt/core
