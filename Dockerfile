@@ -85,14 +85,15 @@ RUN apt-get update \
     libc6-dev-arm64-cross=2.31-9cross4 \
     libclang-dev=1:11.0-51+nmu5 \
     libssl-dev=1.1.1n-0+deb11u4 \
-    pkg-config=0.29.2-1
+    pkg-config=0.29.2-1 \
+  && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
   && sh rustup.sh -y --target 1.68.2-aarch64-unknown-linux-gnu 1.68.2-x86_64-unknown-linux-gnu
 
-RUN $HOME/.cargo/bin/cargo install sccache
+RUN "$HOME/.cargo/bin/cargo" install sccache
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
@@ -123,13 +124,13 @@ FROM library-build-stage-base as library-build-stage-cache-packages
 WORKDIR /app
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
-RUN USER=root $HOME/.cargo/bin/cargo init --lib --name dummy --vcs none .
-RUN USER=root mkdir -p ./state-manager/src
-RUN USER=root mkdir -p ./core-rust/src
-RUN USER=root mkdir -p ./core-api-server/src
-RUN USER=root touch ./state-manager/src/lib.rs
-RUN USER=root touch ./core-rust/src/lib.rs
-RUN USER=root touch ./core-api-server/src/lib.rs
+RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
+  && mkdir -p ./state-manager/src \
+  && mkdir -p ./core-rust/src \
+  && mkdir -p ./core-api-server/src \
+  && touch ./state-manager/src/lib.rs \
+  && touch ./core-rust/src/lib.rs \
+  && touch ./core-api-server/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
 COPY core-rust/core-rust/Cargo.toml ./core-rust
