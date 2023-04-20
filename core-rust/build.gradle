@@ -150,7 +150,7 @@ task buildRustForDocker(type: Exec) {
                 --output type=local,dest=$outputDir/ \
                 .
 
-            [ -f $innerOutputDir/libcorerust.so ]
+            [ -f $outputDir/libcorerust.so ]
             """
 
         commandLine 'sh', '-c', dockerMultiStageCmd

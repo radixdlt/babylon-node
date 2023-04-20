@@ -177,7 +177,7 @@ pub async fn create_server<F>(
     axum::Server::bind(&bind_addr)
         .serve(prefixed_router.into_make_service())
         .with_graceful_shutdown(shutdown_signal)
-        .await
+        .await 
         .unwrap();
 }
 
