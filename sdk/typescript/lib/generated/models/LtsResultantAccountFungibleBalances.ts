@@ -13,67 +13,60 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { LtsFungibleResourceBalanceChange } from './LtsFungibleResourceBalanceChange';
+import type { LtsResultantFungibleBalance } from './LtsResultantFungibleBalance';
 import {
-    LtsFungibleResourceBalanceChangeFromJSON,
-    LtsFungibleResourceBalanceChangeFromJSONTyped,
-    LtsFungibleResourceBalanceChangeToJSON,
-} from './LtsFungibleResourceBalanceChange';
+    LtsResultantFungibleBalanceFromJSON,
+    LtsResultantFungibleBalanceFromJSONTyped,
+    LtsResultantFungibleBalanceToJSON,
+} from './LtsResultantFungibleBalance';
 
 /**
  * 
  * @export
- * @interface LtsEntityFungibleBalanceChanges
+ * @interface LtsResultantAccountFungibleBalances
  */
-export interface LtsEntityFungibleBalanceChanges {
+export interface LtsResultantAccountFungibleBalances {
     /**
-     * The Bech32m-encoded human readable version of the entity's address
+     * The Bech32m-encoded human readable version of the account's address
      * @type {string}
-     * @memberof LtsEntityFungibleBalanceChanges
+     * @memberof LtsResultantAccountFungibleBalances
      */
-    entity_address: string;
+    account_address: string;
     /**
      * 
-     * @type {LtsFungibleResourceBalanceChange}
-     * @memberof LtsEntityFungibleBalanceChanges
+     * @type {Array<LtsResultantFungibleBalance>}
+     * @memberof LtsResultantAccountFungibleBalances
      */
-    fee_balance_change?: LtsFungibleResourceBalanceChange;
-    /**
-     * 
-     * @type {Array<LtsFungibleResourceBalanceChange>}
-     * @memberof LtsEntityFungibleBalanceChanges
-     */
-    non_fee_balance_changes: Array<LtsFungibleResourceBalanceChange>;
+    resultant_balances: Array<LtsResultantFungibleBalance>;
 }
 
 /**
- * Check if a given object implements the LtsEntityFungibleBalanceChanges interface.
+ * Check if a given object implements the LtsResultantAccountFungibleBalances interface.
  */
-export function instanceOfLtsEntityFungibleBalanceChanges(value: object): boolean {
+export function instanceOfLtsResultantAccountFungibleBalances(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity_address" in value;
-    isInstance = isInstance && "non_fee_balance_changes" in value;
+    isInstance = isInstance && "account_address" in value;
+    isInstance = isInstance && "resultant_balances" in value;
 
     return isInstance;
 }
 
-export function LtsEntityFungibleBalanceChangesFromJSON(json: any): LtsEntityFungibleBalanceChanges {
-    return LtsEntityFungibleBalanceChangesFromJSONTyped(json, false);
+export function LtsResultantAccountFungibleBalancesFromJSON(json: any): LtsResultantAccountFungibleBalances {
+    return LtsResultantAccountFungibleBalancesFromJSONTyped(json, false);
 }
 
-export function LtsEntityFungibleBalanceChangesFromJSONTyped(json: any, ignoreDiscriminator: boolean): LtsEntityFungibleBalanceChanges {
+export function LtsResultantAccountFungibleBalancesFromJSONTyped(json: any, ignoreDiscriminator: boolean): LtsResultantAccountFungibleBalances {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'entity_address': json['entity_address'],
-        'fee_balance_change': !exists(json, 'fee_balance_change') ? undefined : LtsFungibleResourceBalanceChangeFromJSON(json['fee_balance_change']),
-        'non_fee_balance_changes': ((json['non_fee_balance_changes'] as Array<any>).map(LtsFungibleResourceBalanceChangeFromJSON)),
+        'account_address': json['account_address'],
+        'resultant_balances': ((json['resultant_balances'] as Array<any>).map(LtsResultantFungibleBalanceFromJSON)),
     };
 }
 
-export function LtsEntityFungibleBalanceChangesToJSON(value?: LtsEntityFungibleBalanceChanges | null): any {
+export function LtsResultantAccountFungibleBalancesToJSON(value?: LtsResultantAccountFungibleBalances | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -82,9 +75,8 @@ export function LtsEntityFungibleBalanceChangesToJSON(value?: LtsEntityFungibleB
     }
     return {
         
-        'entity_address': value.entity_address,
-        'fee_balance_change': LtsFungibleResourceBalanceChangeToJSON(value.fee_balance_change),
-        'non_fee_balance_changes': ((value.non_fee_balance_changes as Array<any>).map(LtsFungibleResourceBalanceChangeToJSON)),
+        'account_address': value.account_address,
+        'resultant_balances': ((value.resultant_balances as Array<any>).map(LtsResultantFungibleBalanceToJSON)),
     };
 }
 

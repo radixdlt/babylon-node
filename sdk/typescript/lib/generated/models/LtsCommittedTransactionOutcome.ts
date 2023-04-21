@@ -25,6 +25,18 @@ import {
     LtsEntityFungibleBalanceChangesFromJSONTyped,
     LtsEntityFungibleBalanceChangesToJSON,
 } from './LtsEntityFungibleBalanceChanges';
+import type { LtsResultantAccountFungibleBalances } from './LtsResultantAccountFungibleBalances';
+import {
+    LtsResultantAccountFungibleBalancesFromJSON,
+    LtsResultantAccountFungibleBalancesFromJSONTyped,
+    LtsResultantAccountFungibleBalancesToJSON,
+} from './LtsResultantAccountFungibleBalances';
+import type { TransactionIdentifiers } from './TransactionIdentifiers';
+import {
+    TransactionIdentifiersFromJSON,
+    TransactionIdentifiersFromJSONTyped,
+    TransactionIdentifiersToJSON,
+} from './TransactionIdentifiers';
 
 /**
  * For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
@@ -51,6 +63,12 @@ export interface LtsCommittedTransactionOutcome {
     accumulator_hash: string;
     /**
      * 
+     * @type {TransactionIdentifiers}
+     * @memberof LtsCommittedTransactionOutcome
+     */
+    user_transaction_identifiers?: TransactionIdentifiers;
+    /**
+     * 
      * @type {LtsCommittedTransactionStatus}
      * @memberof LtsCommittedTransactionOutcome
      */
@@ -63,12 +81,20 @@ export interface LtsCommittedTransactionOutcome {
      */
     fungible_entity_balance_changes: Array<LtsEntityFungibleBalanceChanges>;
     /**
+     * THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2.
+     * A list of the resultant balances of any account balances changed in this transaction.
+     * Only balances for accounts are returned, not any other kind of entity.
+     * @type {Array<LtsResultantAccountFungibleBalances>}
+     * @memberof LtsCommittedTransactionOutcome
+     */
+    resultant_account_fungible_balances: Array<LtsResultantAccountFungibleBalances>;
+    /**
      * The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
      * @memberof LtsCommittedTransactionOutcome
      */
-    fee: string;
+    total_fee: string;
 }
 
 /**
@@ -80,7 +106,8 @@ export function instanceOfLtsCommittedTransactionOutcome(value: object): boolean
     isInstance = isInstance && "accumulator_hash" in value;
     isInstance = isInstance && "status" in value;
     isInstance = isInstance && "fungible_entity_balance_changes" in value;
-    isInstance = isInstance && "fee" in value;
+    isInstance = isInstance && "resultant_account_fungible_balances" in value;
+    isInstance = isInstance && "total_fee" in value;
 
     return isInstance;
 }
@@ -97,9 +124,11 @@ export function LtsCommittedTransactionOutcomeFromJSONTyped(json: any, ignoreDis
         
         'state_version': json['state_version'],
         'accumulator_hash': json['accumulator_hash'],
+        'user_transaction_identifiers': !exists(json, 'user_transaction_identifiers') ? undefined : TransactionIdentifiersFromJSON(json['user_transaction_identifiers']),
         'status': LtsCommittedTransactionStatusFromJSON(json['status']),
         'fungible_entity_balance_changes': ((json['fungible_entity_balance_changes'] as Array<any>).map(LtsEntityFungibleBalanceChangesFromJSON)),
-        'fee': json['fee'],
+        'resultant_account_fungible_balances': ((json['resultant_account_fungible_balances'] as Array<any>).map(LtsResultantAccountFungibleBalancesFromJSON)),
+        'total_fee': json['total_fee'],
     };
 }
 
@@ -114,9 +143,11 @@ export function LtsCommittedTransactionOutcomeToJSON(value?: LtsCommittedTransac
         
         'state_version': value.state_version,
         'accumulator_hash': value.accumulator_hash,
+        'user_transaction_identifiers': TransactionIdentifiersToJSON(value.user_transaction_identifiers),
         'status': LtsCommittedTransactionStatusToJSON(value.status),
         'fungible_entity_balance_changes': ((value.fungible_entity_balance_changes as Array<any>).map(LtsEntityFungibleBalanceChangesToJSON)),
-        'fee': value.fee,
+        'resultant_account_fungible_balances': ((value.resultant_account_fungible_balances as Array<any>).map(LtsResultantAccountFungibleBalancesToJSON)),
+        'total_fee': value.total_fee,
     };
 }
 

@@ -129,6 +129,8 @@ export * from './LtsCommittedTransactionStatus';
 export * from './LtsEntityFungibleBalanceChanges';
 export * from './LtsFungibleResourceBalance';
 export * from './LtsFungibleResourceBalanceChange';
+export * from './LtsResultantAccountFungibleBalances';
+export * from './LtsResultantFungibleBalance';
 export * from './LtsStateAccountAllFungibleResourceBalancesRequest';
 export * from './LtsStateAccountAllFungibleResourceBalancesResponse';
 export * from './LtsStateAccountFungibleResourceBalanceRequest';

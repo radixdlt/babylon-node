@@ -250,7 +250,6 @@ export class ResponseError extends Error {
 }
 
 {{! RADIX CHANGES: Remove irrelevant FetchError }}
-
 export class RequiredError extends Error {
     override name: "RequiredError" = "RequiredError";
     constructor(public field: string, msg?: string) {

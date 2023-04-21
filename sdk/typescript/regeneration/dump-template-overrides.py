@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import urllib.request, logging, subprocess, os, shutil
 
 logger = logging.getLogger()

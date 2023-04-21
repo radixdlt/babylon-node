@@ -136,6 +136,8 @@ models/LtsCommittedTransactionStatus.ts
 models/LtsEntityFungibleBalanceChanges.ts
 models/LtsFungibleResourceBalance.ts
 models/LtsFungibleResourceBalanceChange.ts
+models/LtsResultantAccountFungibleBalances.ts
+models/LtsResultantFungibleBalance.ts
 models/LtsStateAccountAllFungibleResourceBalancesRequest.ts
 models/LtsStateAccountAllFungibleResourceBalancesResponse.ts
 models/LtsStateAccountFungibleResourceBalanceRequest.ts
