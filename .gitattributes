@@ -1,6 +1,14 @@
 #
 # https://help.github.com/articles/dealing-with-line-endings/
 #
-# These are explicitly windows files and should use crlf
-*.bat           text eol=crlf
+
+# The following enforces "eol" as "lf" by default for all files:
+# This ensures autocrlf doesn't change them, which prevents some issues with
+# the Dockerfile caused by having `core.autocrlf` set to true, notably:
+# * Issues when interpreting the .sh files
+# * Issues with Java files failing spotless apply
+* eol=lf
+
+# Except the following files which as explicit windows files should use crlf
+*.bat text eol=crlf
 
