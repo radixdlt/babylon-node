@@ -93,10 +93,6 @@ public class RustStateComputer {
     this.mempool = new RustMempool(metrics, stateManager);
 
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.verifyFunc =
-        Natives.builder(stateManager, RustStateComputer::verify)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "verify")))
-            .build(new TypeToken<>() {});
     this.prepareGenesisFunc =
         Natives.builder(stateManager, RustStateComputer::prepareGenesis)
             .measure(timer.label(new MethodId(RustStateComputer.class, "prepareGenesis")))
@@ -136,14 +132,6 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(
         maxCount, maxPayloadSizeBytes, transactionToExclude);
   }
-
-  public Result<Tuple.Tuple0, String> verify(RawNotarizedTransaction transaction) {
-    return verifyFunc.call(transaction);
-  }
-
-  private final Natives.Call1<RawNotarizedTransaction, Result<Tuple.Tuple0, String>> verifyFunc;
-
-  private static native byte[] verify(StateManager stateManager, byte[] payload);
 
   public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
     return prepareGenesisFunc.call(prepareGenesisRequest);

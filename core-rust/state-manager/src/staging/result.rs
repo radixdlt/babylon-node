@@ -119,27 +119,39 @@ impl ProcessedTransactionReceipt {
         }
     }
 
-    pub fn expect_commit(&self, description: &str) -> &ProcessedCommitResult {
+    pub fn expect_commit<S: Into<String>>(&self, description: S) -> &ProcessedCommitResult {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => commit,
             ProcessedTransactionReceipt::Reject(reject) => {
-                panic!("Transaction ({description}) was rejected: {reject:?}")
+                panic!(
+                    "Transaction ({}) was rejected: {:?}",
+                    description.into(),
+                    reject
+                )
             }
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!("Transaction ({description}) was aborted: {abort:?}")
+                panic!(
+                    "Transaction ({}) was aborted: {:?}",
+                    description.into(),
+                    abort
+                )
             }
         }
     }
 
-    pub fn expect_commit_or_reject(
+    pub fn expect_commit_or_reject<S: Into<String>>(
         &self,
-        description: &str,
+        description: S,
     ) -> Result<&ProcessedCommitResult, &RejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject),
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!("Transaction ({description}) was aborted: {abort:?}")
+                panic!(
+                    "Transaction ({}) was aborted: {:?}",
+                    description.into(),
+                    abort
+                )
             }
         }
     }
@@ -196,10 +208,14 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn check_success(&self, description: &str) {
+    pub fn check_success<S: Into<String>>(&self, description: S) {
         let local_detailed_outcome = &self.local_receipt.local_execution.outcome;
         if let DetailedTransactionOutcome::Failure(error) = local_detailed_outcome {
-            panic!("Transaction ({description}) was failed: {error:?}")
+            panic!(
+                "Transaction ({}) was failed: {:?}",
+                description.into(),
+                error
+            )
         }
     }
 

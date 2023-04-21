@@ -6,11 +6,14 @@ use std::ops::Deref;
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
-use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
+use state_manager::transaction::{
+    CommitableTransactionValidator, LedgerTransaction, UserTransactionValidator,
+};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
+use state_manager::store::StateManagerDatabase;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
 };
@@ -24,7 +27,8 @@ pub struct ParseContext<'a> {
     mapping_context: MappingContext,
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
-    state_manager: &'a ActualStateManager,
+    user_transaction_validator: UserTransactionValidator,
+    commitable_transaction_validator: &'a CommitableTransactionValidator<StateManagerDatabase>,
 }
 
 pub(crate) async fn handle_transaction_parse(
@@ -36,13 +40,12 @@ pub(crate) async fn handle_transaction_parse(
     let bytes =
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
-    let state_manager = state.state_manager.read();
-
     let context = ParseContext {
         mapping_context: MappingContext::new(&state.network),
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
-        state_manager: state_manager.deref(),
+        user_transaction_validator: UserTransactionValidator::new(&state.network),
+        commitable_transaction_validator: state.commitable_transaction_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
@@ -148,7 +151,6 @@ fn attempt_parsing_as_notarized_transaction(
         ValidationMode::_Static => {
             let validation = Some(
                 context
-                    .state_manager
                     .user_transaction_validator
                     .validate_and_create_executable(&parsed, bytes.len())
                     .map(|_| ())
@@ -162,8 +164,8 @@ fn attempt_parsing_as_notarized_transaction(
         ValidationMode::Full => {
             let validation = Some(
                 context
-                    .state_manager
-                    .check_for_rejection_uncached(&parsed, bytes.len()),
+                    .commitable_transaction_validator
+                    .check_for_rejection(&parsed, bytes.len()),
             );
             ParsedNotarizedTransaction {
                 transaction: parsed,

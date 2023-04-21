@@ -13,7 +13,7 @@ use radix_engine_interface::manifest_args;
 use radix_engine_interface::{
     blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
 };
-use state_manager::query::StateManagerSubstateQueries;
+
 use state_manager::PreviewRequest;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
@@ -79,12 +79,8 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    let state_manager = state.state_manager.read();
-
-    let database = state.database.read();
-    let epoch = database.get_epoch();
-
-    let result = state_manager
+    let result = state
+        .transaction_previewer
         .preview(PreviewRequest {
             manifest: TransactionManifest {
                 instructions: vec![
@@ -97,8 +93,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 ],
                 blobs: vec![],
             },
-            start_epoch_inclusive: epoch,
-            end_epoch_exclusive: epoch + 100,
+            explicit_epoch_range: None,
             notary_public_key: None,
             notary_as_signatory: true,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,

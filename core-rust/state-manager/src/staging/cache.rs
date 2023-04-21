@@ -76,7 +76,8 @@ use crate::{
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
-use radix_engine::transaction::TransactionReceipt;
+
+use crate::transaction::TransactionLogic;
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReNodeModulePayload, ReadableTreeStore, TreeNode,
@@ -89,10 +90,6 @@ pub struct ExecutionCache {
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
     key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
-}
-
-pub trait TransactionLogic<S> {
-    fn execute_on(&self, store: &S) -> TransactionReceipt;
 }
 
 impl ExecutionCache {
