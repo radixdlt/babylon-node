@@ -24,15 +24,13 @@ pub(crate) async fn handle_lts_transaction_status(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let state_manager = state.state_manager.read();
+    let pending_transaction_result_cache = state.pending_transaction_result_cache.read();
+    let mut known_pending_payloads =
+        pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
+    drop(pending_transaction_result_cache);
+
     let database = state.database.read();
-
     let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
-
-    let mut known_pending_payloads = state_manager
-        .pending_transaction_result_cache
-        .peek_all_known_payloads_for_intent(&intent_hash);
-
     let current_epoch = database.get_epoch();
 
     let invalid_from_epoch = known_pending_payloads
@@ -53,9 +51,12 @@ pub(crate) async fn handle_lts_transaction_status(
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
-        let receipt = database
+        let local_detailed_outcome = database
             .get_committed_transaction_receipt(txn_state_version)
-            .expect("Txn receipt is missing");
+            .expect("Txn receipt is missing")
+            .local_execution
+            .outcome;
+        drop(database);
 
         let payload_hash = txn
             .user()
@@ -65,21 +66,20 @@ pub(crate) async fn handle_lts_transaction_status(
         // Remove the committed payload from the rejection list if it's present
         known_pending_payloads.remove(&payload_hash);
 
-        let (intent_status, payload_status, outcome, error_message) =
-            match receipt.local_execution.outcome {
-                DetailedTransactionOutcome::Success(_) => (
-                    LtsIntentStatus::CommittedSuccess,
-                    LtsPayloadStatus::CommittedSuccess,
-                    "SUCCESS",
-                    None,
-                ),
-                DetailedTransactionOutcome::Failure(reason) => (
-                    LtsIntentStatus::CommittedFailure,
-                    LtsPayloadStatus::CommittedFailure,
-                    "FAILURE",
-                    Some(format!("{reason:?}")),
-                ),
-            };
+        let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
+            DetailedTransactionOutcome::Success(_) => (
+                LtsIntentStatus::CommittedSuccess,
+                LtsPayloadStatus::CommittedSuccess,
+                "SUCCESS",
+                None,
+            ),
+            DetailedTransactionOutcome::Failure(reason) => (
+                LtsIntentStatus::CommittedFailure,
+                LtsPayloadStatus::CommittedFailure,
+                "FAILURE",
+                Some(format!("{reason:?}")),
+            ),
+        };
 
         let committed_payload = models::LtsTransactionPayloadStatus {
             payload_hash: to_api_payload_hash(&payload_hash),
@@ -103,6 +103,7 @@ pub(crate) async fn handle_lts_transaction_status(
 
     let mempool = state.mempool.read();
     let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
+    drop(mempool);
 
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes

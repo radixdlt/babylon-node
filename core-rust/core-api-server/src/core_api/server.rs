@@ -78,17 +78,21 @@ use state_manager::jni::state_manager::ActualStateManager;
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use handle_status_network_configuration as handle_provide_info_at_root_path;
+use state_manager::mempool_manager::MempoolManager;
 use state_manager::simple_mempool::SimpleMempool;
 use state_manager::store::StateManagerDatabase;
-use state_manager::transaction::{CommitableTransactionValidator, TransactionPreviewer};
+use state_manager::transaction::{CommitabilityValidator, TransactionPreviewer};
+use state_manager::PendingTransactionResultCache;
 
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
-    pub commitable_transaction_validator: Arc<CommitableTransactionValidator<StateManagerDatabase>>,
+    pub mempool_manager: Arc<MempoolManager>,
+    pub commitability_validator: Arc<CommitabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
 }
 

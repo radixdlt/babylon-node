@@ -1,7 +1,7 @@
 use parking_lot::RwLock;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::transaction::{
@@ -17,9 +17,12 @@ use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 
 use crate::query::StateManagerSubstateQueries;
 use crate::staging::ReadableStore;
-use crate::store::traits::TransactionIndex;
+use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ConfigType, ExecutionConfigurator, TransactionLogic};
-use crate::{HasIntentHash, IntentHash, PreviewRequest, RejectionReason};
+use crate::{
+    AtState, HasIntentHash, HasUserPayloadHash, IntentHash, PendingTransactionRecord,
+    PendingTransactionResultCache, PreviewRequest, RejectionReason, TransactionAttempt,
+};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -124,15 +127,15 @@ impl LedgerTransactionValidator {
 
 const UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
 
-/// A validator for `NotarizedTransaction`, deciding whether they would rejected or not-rejected
+/// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
 /// (i.e. "commitable") at a specific state of the `store`.
-pub struct CommitableTransactionValidator<S> {
+pub struct CommitabilityValidator<S> {
     store: Arc<RwLock<S>>,
     execution_configurator: Arc<ExecutionConfigurator>,
     user_transaction_validator: UserTransactionValidator,
 }
 
-impl<S> CommitableTransactionValidator<S> {
+impl<S> CommitabilityValidator<S> {
     pub fn new(
         network: &NetworkDefinition,
         store: Arc<RwLock<S>>,
@@ -146,13 +149,13 @@ impl<S> CommitableTransactionValidator<S> {
     }
 }
 
-impl<S> CommitableTransactionValidator<S>
+impl<S> CommitabilityValidator<S>
 where
     S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
 {
-    /// Validates the transaction (`UserTransactionValidator`) and executes it up to fee loan, to
-    /// determine whether it would be rejected given the current state of the substate store.
+    /// Validates the transaction (with `UserTransactionValidator`) and executes it up to fee loan,
+    /// to determine whether it would be rejected given the current state of the substate store.
     pub fn check_for_rejection(
         &self,
         transaction: &NotarizedTransaction,
@@ -203,6 +206,105 @@ where
             .wrap(executable, ConfigType::Pending)
             .warn_after(UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD, logged_description);
         Ok(transaction_logic.execute_on(root_store))
+    }
+}
+
+/// A caching wrapper for a `CommitabilityValidator`.
+pub struct CachedCommitabilityValidator<S> {
+    store: Arc<RwLock<S>>,
+    commitability_validator: Arc<CommitabilityValidator<S>>,
+    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+}
+
+impl<S> CachedCommitabilityValidator<S> {
+    pub fn new(
+        store: Arc<RwLock<S>>,
+        commitability_validator: Arc<CommitabilityValidator<S>>,
+        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    ) -> Self {
+        Self {
+            store,
+            commitability_validator,
+            pending_transaction_result_cache,
+        }
+    }
+}
+
+impl<S> CachedCommitabilityValidator<S>
+where
+    S: ReadableStore + QueryableProofStore,
+    S: for<'a> TransactionIndex<&'a IntentHash>,
+{
+    /// Reads the transaction rejection status from the cache, else calculates it fresh, using
+    /// `CommitabilityValidator`.
+    ///
+    /// The result is stored in the cache.
+    /// If the transaction is freshly rejected, the caller should perform additional cleanup,
+    /// e.g. removing the transaction from the mempool.
+    ///
+    /// Its pending transaction record is returned, along with a boolean about whether the last
+    /// attempt was cached.
+    pub fn check_for_rejection_cached(
+        &self,
+        transaction: &NotarizedTransaction,
+    ) -> (PendingTransactionRecord, bool) {
+        let read_store = self.store.read();
+        let current_epoch = read_store.get_epoch();
+        let max_state_version = read_store.max_state_version();
+        drop(read_store);
+
+        let current_time = SystemTime::now();
+        let intent_hash = transaction.intent_hash();
+        let payload_hash = transaction.user_payload_hash();
+        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
+
+        // even though we only want to read the cache here, the LRU structs require a write lock
+        let mut write_pending_transaction_result_cache =
+            self.pending_transaction_result_cache.write();
+        let record_option = write_pending_transaction_result_cache.get_pending_transaction_record(
+            &intent_hash,
+            &payload_hash,
+            invalid_from_epoch,
+        );
+        drop(write_pending_transaction_result_cache);
+
+        if let Some(record) = record_option {
+            if !record.should_recalculate(current_epoch, current_time) {
+                return (record, true);
+            }
+        }
+
+        // TODO: Remove and use some sort of cache to store size
+        let payload_size = manifest_encode(transaction).unwrap().len();
+        let rejection = self
+            .commitability_validator
+            .check_for_rejection(transaction, payload_size)
+            .err();
+
+        let attempt = TransactionAttempt {
+            rejection,
+            against_state: AtState::Committed {
+                state_version: max_state_version,
+            },
+            timestamp: current_time,
+        };
+        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
+
+        let mut write_pending_transaction_result_cache =
+            self.pending_transaction_result_cache.write();
+        write_pending_transaction_result_cache.track_transaction_result(
+            intent_hash,
+            payload_hash,
+            invalid_from_epoch,
+            attempt,
+        );
+        // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
+        let new_pending_transaction_record = write_pending_transaction_result_cache
+            .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch)
+            .unwrap();
+        drop(write_pending_transaction_result_cache);
+
+        (new_pending_transaction_record, false)
     }
 }
 

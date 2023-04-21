@@ -9,7 +9,7 @@ use models::transaction_parse_response::TransactionParseResponse;
 
 use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
 use state_manager::transaction::{
-    CommitableTransactionValidator, LedgerTransaction, UserTransactionValidator,
+    CommitabilityValidator, LedgerTransaction, UserTransactionValidator,
 };
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
@@ -28,7 +28,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: UserTransactionValidator,
-    commitable_transaction_validator: &'a CommitableTransactionValidator<StateManagerDatabase>,
+    commitability_validator: &'a CommitabilityValidator<StateManagerDatabase>,
 }
 
 pub(crate) async fn handle_transaction_parse(
@@ -45,7 +45,7 @@ pub(crate) async fn handle_transaction_parse(
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
         user_transaction_validator: UserTransactionValidator::new(&state.network),
-        commitable_transaction_validator: state.commitable_transaction_validator.deref(),
+        commitability_validator: state.commitability_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
@@ -164,7 +164,7 @@ fn attempt_parsing_as_notarized_transaction(
         ValidationMode::Full => {
             let validation = Some(
                 context
-                    .commitable_transaction_validator
+                    .commitability_validator
                     .check_for_rejection(&parsed, bytes.len()),
             );
             ParsedNotarizedTransaction {

@@ -64,22 +64,18 @@
 
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 
-use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
 use crate::staging::{ExecutionCache, HashStructuresDiff, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::{
-    CommitableTransactionValidator, ConfigType, ExecutionConfigurator, LedgerTransaction,
-    LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
+    ConfigType, ExecutionConfigurator, LedgerTransaction, LedgerTransactionValidator,
+    UserTransactionValidator, ValidatorTransaction,
 };
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
-use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, IntentHash, MempoolAddError, PendingTransaction,
-};
+use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash};
 
 use ::transaction::errors::TransactionValidationError;
-use ::transaction::model::NotarizedTransaction;
 
 use parking_lot::RwLock;
 use prometheus::Registry;
@@ -96,12 +92,10 @@ use radix_engine::blueprints::epoch_manager::Validator;
 
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tracing::{error, info, warn};
 
-use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
+use crate::mempool_manager::MempoolManager;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tracing::{error, info};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -118,31 +112,24 @@ pub struct StateManagerLoggingConfig {
 const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
 pub struct StateManager<S> {
-    mempool: Arc<RwLock<SimpleMempool>>,
-    mempool_relay_dispatcher: MempoolRelayDispatcher,
     store: Arc<RwLock<S>>,
-    execution_cache: ExecutionCache,
+    mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
+    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    execution_cache: ExecutionCache,
     user_transaction_validator: UserTransactionValidator,
-    commitable_transaction_validator: Arc<CommitableTransactionValidator<S>>,
     ledger_transaction_validator: LedgerTransactionValidator,
-    pub pending_transaction_result_cache: PendingTransactionResultCache,
     ledger_metrics: LedgerMetrics,
     logging_config: StateManagerLoggingConfig,
 }
 
 impl<S: TransactionIdentifierLoader> StateManager<S> {
-    // TODO: the number of dependencies is indeed terrifying: the planned remaining refactors should
-    // get rid of the `mempool_relay_dispatcher` (i.e. pulled out together with `mempool`) and the
-    // `pending_transaction_result_cache` (which may also take `commitable_transaction_validator`).
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         network: &NetworkDefinition,
         store: Arc<RwLock<S>>,
-        mempool: Arc<RwLock<SimpleMempool>>,
+        mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<ExecutionConfigurator>,
-        commitable_transaction_validator: Arc<CommitableTransactionValidator<S>>,
-        mempool_relay_dispatcher: MempoolRelayDispatcher,
+        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         logging_config: LoggingConfig,
         metric_registry: &Registry,
     ) -> StateManager<S> {
@@ -152,16 +139,14 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             .accumulator_hash;
 
         StateManager {
-            mempool,
-            mempool_relay_dispatcher,
             store,
-            execution_cache: ExecutionCache::new(accumulator_hash),
+            mempool_manager,
             execution_configurator,
+            pending_transaction_result_cache,
+            execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator: UserTransactionValidator::new(network),
-            commitable_transaction_validator,
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
-            pending_transaction_result_cache: PendingTransactionResultCache::new(10000, 10000),
             ledger_metrics: LedgerMetrics::new(metric_registry),
         }
     }
@@ -169,18 +154,6 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
 
 pub enum StateManagerRejectReason {
     TransactionValidationError(TransactionValidationError),
-}
-
-/// A result of `StateManager::check_transactions_to_relay()`.
-pub struct PendingTransactionBatchCheckResult {
-    /// A subset of candidate transactions that is appropriate to relaying via a mempool sync.
-    pub to_relay: Vec<PendingTransaction>,
-    /// A subset of candidate transactions that was discovered to be invalid (and should be removed
-    /// from the mempool).
-    /// Note: this is not the same as "all candidate transactions except the ones selected to relay"
-    /// since some (valid or invalid) candidates might have not been considered at all (due to
-    /// mempool sync relay limits).
-    pub to_remove: Vec<PendingTransaction>,
 }
 
 #[derive(Debug)]
@@ -196,165 +169,6 @@ where
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
-    /// Adds the given transaction to the mempool (applying all the checks and caching, see
-    /// `check_for_rejection_and_add_to_mempool()`), and then triggers an unscheduled mempool sync
-    /// (propagating only this transaction to other nodes).
-    /// The triggering only takes place if the mempool did not already contain this transaction (to
-    /// prevent flooding). Any error encountered during the triggering will only be logged (as
-    /// `warn!`) and then ignored.
-    /// Although an arbitrary `MempoolAddSource` can be passed, this method is primarily meant for
-    /// relaying new transactions submitted via Core API.
-    pub fn add_to_mempool_and_trigger_relay(
-        &mut self,
-        source: MempoolAddSource,
-        transaction: NotarizedTransaction,
-    ) -> Result<(), MempoolAddError> {
-        self.check_for_rejection_and_add_to_mempool(source, transaction.clone())?;
-        if let Err(error) = self.mempool_relay_dispatcher.trigger_relay(transaction) {
-            warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
-        }
-        Ok(())
-    }
-
-    /// Checking if the transaction should be rejected requires full validation, ie:
-    /// * Static Validation
-    /// * Executing the transaction (up to loan repayment)
-    ///
-    /// We look for cached rejections first, to avoid this heavy lifting where we can
-    pub fn check_for_rejection_and_add_to_mempool(
-        &mut self,
-        source: MempoolAddSource,
-        unvalidated_transaction: NotarizedTransaction,
-    ) -> Result<(), MempoolAddError> {
-        // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
-        let mut write_mempool = self.mempool.write();
-        write_mempool.check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
-        drop(write_mempool);
-
-        let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
-        let result = record
-            .should_accept_into_mempool(was_cached)
-            .map_err(MempoolAddError::Rejected);
-
-        let mut write_mempool = self.mempool.write();
-        match &result {
-            Ok(_) => {
-                // Note - we purposefully don't save a validated transaction in the mempool:
-                // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
-                // * Moreover, the engine expects the validated transaction to be presently valid, else panics
-                // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
-                write_mempool.add_transaction(unvalidated_transaction.into(), source)?;
-            }
-            Err(error) => {
-                write_mempool.record_rejection(source, error);
-            }
-        };
-
-        result
-    }
-
-    /// Reads the transaction rejection status from the cache, else calculates it fresh, by
-    /// statically validating the transaction and then attempting to run it.
-    ///
-    /// The result is stored in the cache.
-    /// If the transaction is freshly rejected, the caller should perform additional cleanup,
-    /// e.g. removing the transaction from the mempool
-    ///
-    /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
-    fn check_for_rejection_with_caching(
-        &mut self,
-        transaction: &NotarizedTransaction,
-    ) -> (PendingTransactionRecord, bool) {
-        let read_store = self.store.read();
-        let current_epoch = read_store.get_epoch();
-        let max_state_version = read_store.max_state_version();
-
-        let current_time = SystemTime::now();
-        let intent_hash = transaction.intent_hash();
-        let payload_hash = transaction.user_payload_hash();
-        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
-
-        let record_option = self
-            .pending_transaction_result_cache
-            .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch);
-
-        if let Some(record) = record_option {
-            if !record.should_recalculate(current_epoch, current_time) {
-                return (record, true);
-            }
-        }
-
-        // TODO: Remove and use some sort of cache to store size
-        let payload_size = manifest_encode(transaction).unwrap().len();
-        let rejection = self
-            .commitable_transaction_validator
-            .check_for_rejection(transaction, payload_size)
-            .err();
-
-        let attempt = TransactionAttempt {
-            rejection,
-            against_state: AtState::Committed {
-                state_version: max_state_version,
-            },
-            timestamp: current_time,
-        };
-        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
-        self.pending_transaction_result_cache
-            .track_transaction_result(intent_hash, payload_hash, invalid_from_epoch, attempt);
-
-        // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
-        (
-            self.pending_transaction_result_cache
-                .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch)
-                .unwrap(),
-            false,
-        )
-    }
-
-    /// Checks the given candidate transactions for rejection and decides which ones should be
-    /// relayed via mempool sync, and which ones should be removed from mempool.
-    pub fn check_transactions_to_relay(
-        &mut self,
-        mut candidate_transactions: Vec<PendingTransaction>,
-        max_num_txns: usize,
-        max_payload_size_bytes: usize,
-    ) -> PendingTransactionBatchCheckResult {
-        candidate_transactions.shuffle(&mut thread_rng());
-
-        let mut to_relay = Vec::new();
-        let mut payload_size_so_far = 0usize;
-
-        // We (partially) cleanup the mempool on the occasion of getting the relay txns
-        // TODO: move this to a separate job
-        let mut to_remove = Vec::new();
-
-        for candidate_transaction in candidate_transactions.into_iter() {
-            let (record, _) = self.check_for_rejection_with_caching(&candidate_transaction.payload);
-            if record.latest_attempt.rejection.is_some() {
-                // Mark the transaction to be removed from the mempool
-                // (see the comment above about moving this to a separate job)
-                to_remove.push(candidate_transaction);
-            } else {
-                // Check the payload size limit
-                payload_size_so_far += candidate_transaction.payload_size;
-                if payload_size_so_far > max_payload_size_bytes {
-                    break;
-                }
-
-                // Add the transaction to response
-                to_relay.push(candidate_transaction);
-                if to_relay.len() >= max_num_txns {
-                    break;
-                }
-            }
-        }
-
-        PendingTransactionBatchCheckResult {
-            to_relay,
-            to_remove,
-        }
-    }
-
     // TODO: Update to prepare_system_transaction when we start to support forking
     pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
         let parsed_transaction =
@@ -402,10 +216,8 @@ where
 
         // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
         // in order to exclude them. This check will eventually live in the engine/executor.
-        let mut already_committed_or_prepared_intent_hashes: HashMap<
-            IntentHash,
-            AlreadyPreparedTransaction,
-        > = HashMap::new();
+        let mut already_committed_or_prepared_intent_hashes =
+            HashMap::<IntentHash, AlreadyPreparedTransaction>::new();
 
         let already_committed_proposed_intent_hashes = prepare_request
             .proposed_payloads
@@ -539,12 +351,12 @@ where
                             &intent_hash, state
                         ),
                     ));
-                    pending_transaction_results.push((
+                    pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
                         user_payload_hash,
                         invalid_at_epoch,
-                        Some(RejectionReason::IntentHashCommitted),
-                    ));
+                        rejection_reason: Some(RejectionReason::IntentHashCommitted),
+                    });
                     continue;
                 }
 
@@ -556,12 +368,12 @@ where
                     Ok(executable) => executable,
                     Err(error) => {
                         rejected_payloads.push((proposed_payload, format!("{:?}", &error)));
-                        pending_transaction_results.push((
+                        pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
                             user_payload_hash,
                             invalid_at_epoch,
-                            Some(RejectionReason::ValidationError(error)),
-                        ));
+                            rejection_reason: Some(RejectionReason::ValidationError(error)),
+                        });
                         continue;
                     }
                 };
@@ -589,24 +401,24 @@ where
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
                         committed.push(payload);
-                        pending_transaction_results.push((
+                        pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
                             user_payload_hash,
                             invalid_at_epoch,
-                            None,
-                        ));
+                            rejection_reason: None,
+                        });
                         next_epoch = commit.next_epoch();
                     }
                     Err(reject) => {
                         rejected_payloads.push((proposed_payload, format!("{:?}", reject)));
-                        pending_transaction_results.push((
+                        pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
                             user_payload_hash,
                             invalid_at_epoch,
-                            Some(RejectionReason::FromExecution(Box::new(
+                            rejection_reason: Some(RejectionReason::FromExecution(Box::new(
                                 reject.error.clone(),
                             ))),
-                        ));
+                        });
                     }
                 }
             }
@@ -620,36 +432,33 @@ where
 
         let pending_rejected_transactions = pending_transaction_results
             .iter()
-            .filter(|(_, _, _, rejection)| rejection.is_some())
-            .map(|(intent_hash, user_payload_hash, _, _)| (intent_hash, user_payload_hash))
+            .filter(|pending_result| pending_result.rejection_reason.is_some())
+            .map(|pending_result| {
+                (
+                    &pending_result.intent_hash,
+                    &pending_result.user_payload_hash,
+                )
+            })
             .collect::<Vec<_>>();
-        if !pending_rejected_transactions.is_empty() {
-            let mut write_mempool = self.mempool.write();
-            for (intent_hash, user_payload_hash) in pending_rejected_transactions {
-                // Removing transactions rejected during prepare from the mempool is a bit of overkill:
-                // just because transactions were rejected in this history doesn't mean this history will be committed.
-                //
-                // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-                write_mempool.remove_transaction(intent_hash, user_payload_hash);
-            }
-        }
+        self.mempool_manager
+            .remove_rejected(&pending_rejected_transactions);
 
-        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
-            pending_transaction_results.into_iter()
-        {
+        let mut write_pending_transaction_result_cache =
+            self.pending_transaction_result_cache.write();
+        for pending_transaction_result in pending_transaction_results {
             let attempt = TransactionAttempt {
-                rejection: rejection_option,
+                rejection: pending_transaction_result.rejection_reason,
                 against_state: pending_transaction_base_state.clone(),
                 timestamp: pending_transaction_timestamp,
             };
-            self.pending_transaction_result_cache
-                .track_transaction_result(
-                    intent_hash,
-                    user_payload_hash,
-                    invalid_at_epoch,
-                    attempt,
-                );
+            write_pending_transaction_result_cache.track_transaction_result(
+                pending_transaction_result.intent_hash,
+                pending_transaction_result.user_payload_hash,
+                pending_transaction_result.invalid_at_epoch,
+                attempt,
+            );
         }
+        drop(write_pending_transaction_result_cache);
 
         PrepareResult {
             committed,
@@ -837,6 +646,7 @@ where
             transaction_tree_slice: transaction_tree_slice_merger.into_slice(),
             receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
         });
+        drop(write_store);
 
         self.ledger_metrics
             .state_version
@@ -850,16 +660,17 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
-        let mut write_mempool = self.mempool.write();
-        write_mempool.handle_committed_transactions(&intent_hashes);
-        drop(write_mempool);
 
-        self.pending_transaction_result_cache
-            .track_committed_transactions(
-                SystemTime::now(),
-                commit_request_start_state_version,
-                intent_hashes,
-            );
+        self.mempool_manager.remove_committed(&intent_hashes);
+
+        let mut write_pending_transaction_result_cache =
+            self.pending_transaction_result_cache.write();
+        write_pending_transaction_result_cache.track_committed_transactions(
+            SystemTime::now(),
+            commit_request_start_state_version,
+            intent_hashes,
+        );
+        drop(write_pending_transaction_result_cache);
 
         Ok(())
     }
@@ -880,4 +691,11 @@ impl From<(BTreeMap<ComponentAddress, Validator>, u64)> for NextEpoch {
             epoch: next_epoch_result.1,
         }
     }
+}
+
+struct PendingTransactionResult {
+    pub intent_hash: IntentHash,
+    pub user_payload_hash: UserPayloadHash,
+    pub invalid_at_epoch: u64,
+    pub rejection_reason: Option<RejectionReason>,
 }

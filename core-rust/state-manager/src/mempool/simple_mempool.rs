@@ -64,8 +64,7 @@
 
 use crate::mempool::*;
 use crate::types::*;
-use crate::{MempoolMetrics, TakesMetricLabels};
-use prometheus::Registry;
+
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
@@ -98,16 +97,14 @@ pub struct SimpleMempool {
     max_size: u64,
     data: HashMap<UserPayloadHash, MempoolData>,
     intent_lookup: HashMap<IntentHash, HashSet<UserPayloadHash>>,
-    metrics: MempoolMetrics,
 }
 
 impl SimpleMempool {
-    pub fn new(config: MempoolConfig, metric_registry: &Registry) -> SimpleMempool {
+    pub fn new(config: MempoolConfig) -> SimpleMempool {
         SimpleMempool {
             max_size: config.max_size as u64,
             data: HashMap::new(),
             intent_lookup: HashMap::new(),
-            metrics: MempoolMetrics::new(metric_registry),
         }
     }
 }
@@ -138,25 +135,7 @@ impl SimpleMempool {
             })
             .or_insert_with(|| HashSet::from([payload_hash]));
 
-        self.metrics
-            .current_transactions
-            .set(self.get_count() as i64);
-        self.metrics.submission_added.with_label(source).inc();
-
         Ok(())
-    }
-
-    /// Bumps a metric representing rejected mempool submissions.
-    // TODO: this method lives here as a side-effect of extracting mempool responsibilities out of
-    // the StateManager. It does not interact with any mempool state (and thus e.g. should not
-    // require a lock on mempool), which suggests that another layer (or monitoring decorator)
-    // should exist on top of the mempool. This awaits a refactoring, which must first sort out the
-    // highly-coupled "check for rejection with caching" code.
-    pub fn record_rejection(&self, source: MempoolAddSource, error: &MempoolAddError) {
-        self.metrics
-            .submission_rejected
-            .with_two_labels(source, error)
-            .inc();
     }
 
     pub fn check_add_would_be_possible(
@@ -183,61 +162,8 @@ impl SimpleMempool {
         Ok(())
     }
 
-    pub fn handle_committed_transactions(
-        &mut self,
-        intent_hashes: &[IntentHash],
-    ) -> Vec<MempoolData> {
-        let removed = intent_hashes
-            .iter()
-            .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
-            .flat_map(|payload_hashes| payload_hashes.into_iter())
-            .map(|payload_hash| {
-                self.data
-                    .remove(&payload_hash)
-                    .expect("Mempool intent hash lookup out of sync on handle committed")
-            })
-            .collect::<Vec<MempoolData>>();
-        removed
-            .iter()
-            .filter(|data| data.source == MempoolAddSource::CoreApi)
-            .map(|data| data.added_at.elapsed().as_secs_f64())
-            .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
-        self.metrics
-            .current_transactions
-            .set(self.get_count() as i64);
-        removed
-    }
-
     pub fn get_count(&self) -> u64 {
         self.data.len().try_into().unwrap()
-    }
-
-    pub fn get_proposal_transactions(
-        &self,
-        max_count: u64,
-        max_payload_size_bytes: u64,
-        user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
-    ) -> Vec<PendingTransaction> {
-        let mut payload_size_so_far = 0u64;
-        self.data
-            .iter()
-            .filter_map(|(tid, data)| {
-                if !user_payload_hashes_to_exclude.contains(tid) {
-                    Some(data.transaction.clone())
-                } else {
-                    None
-                }
-            })
-            .filter_map(|tx| {
-                if payload_size_so_far + tx.payload_size as u64 <= max_payload_size_bytes {
-                    payload_size_so_far += tx.payload_size as u64;
-                    Some(tx)
-                } else {
-                    None
-                }
-            })
-            .take(max_count as usize)
-            .collect()
     }
 
     pub fn get_all_transactions(&self) -> Vec<PendingTransaction> {
@@ -266,11 +192,21 @@ impl SimpleMempool {
             if payload_lookup.is_empty() {
                 self.intent_lookup.remove(intent_hash);
             }
-            self.metrics
-                .current_transactions
-                .set(self.get_count() as i64);
         }
         removed
+    }
+
+    pub fn remove_transactions(&mut self, intent_hash: &IntentHash) -> Vec<MempoolData> {
+        self.intent_lookup
+            .remove(intent_hash)
+            .iter()
+            .flat_map(|payload_hashes| payload_hashes.iter())
+            .map(|payload_hash| {
+                self.data
+                    .remove(payload_hash)
+                    .expect("Mempool intent hash lookup out of sync on remove committed")
+            })
+            .collect()
     }
 
     pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {
@@ -375,10 +311,10 @@ mod tests {
         let tv2 = create_fake_pending_transaction(2, 0);
         let tv3 = create_fake_pending_transaction(3, 0);
 
-        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 }, &Registry::new());
+        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
-        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
+        let rc = mp.get_all_transactions();
         let get = rc;
         assert!(get.is_empty());
 
@@ -387,24 +323,7 @@ mod tests {
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv1.payload_hash));
-        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
-        let get = rc;
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv1));
-
-        let rc = mp.get_proposal_transactions(
-            3,
-            u64::MAX,
-            &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
-        );
-        let get = rc;
-        assert!(get.is_empty());
-
-        let rc = mp.get_proposal_transactions(
-            3,
-            u64::MAX,
-            &HashSet::from([tv2.payload_hash, tv3.payload_hash]),
-        );
+        let rc = mp.get_all_transactions();
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
@@ -420,46 +339,20 @@ mod tests {
         assert!(mp.data.contains_key(&tv1.payload_hash));
         assert!(mp.data.contains_key(&tv2.payload_hash));
 
-        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
+        let rc = mp.get_all_transactions();
         let get = rc;
         assert_eq!(get.len(), 2);
         assert!(get.contains(&tv1));
         assert!(get.contains(&tv2));
 
-        let rc = mp.get_proposal_transactions(
-            3,
-            u64::MAX,
-            &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
-        );
-        let get = rc;
-        assert!(get.is_empty());
-
-        let rc = mp.get_proposal_transactions(
-            3,
-            u64::MAX,
-            &HashSet::from([tv2.payload_hash, tv3.payload_hash]),
-        );
-        let get = rc;
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv1));
-
-        let rc = mp.get_proposal_transactions(
-            3,
-            u64::MAX,
-            &HashSet::from([tv1.payload_hash, tv3.payload_hash]),
-        );
-        let get = rc;
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv2));
-
-        let rem = mp.handle_committed_transactions(&Vec::from([tv1.intent_hash]));
+        let rem = mp.remove_transactions(&tv1.intent_hash);
         assert!(rem.iter().any(|d| d.transaction == tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv2.payload_hash));
         assert!(!mp.data.contains_key(&tv1.payload_hash));
 
-        let rem = mp.handle_committed_transactions(&Vec::from([tv2.intent_hash]));
+        let rem = mp.remove_transactions(&tv2.intent_hash);
         assert!(rem.iter().any(|d| d.transaction == tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
@@ -467,12 +360,9 @@ mod tests {
         assert!(!mp.data.contains_key(&tv1.payload_hash));
 
         // mempool is empty. Should return no transactions.
-        let rem = mp.handle_committed_transactions(&Vec::from([
-            tv3.intent_hash,
-            tv2.intent_hash,
-            tv1.intent_hash,
-        ]));
-        assert!(rem.is_empty());
+        assert!(mp.remove_transactions(&tv3.intent_hash).is_empty());
+        assert!(mp.remove_transactions(&tv2.intent_hash).is_empty());
+        assert!(mp.remove_transactions(&tv1.intent_hash).is_empty());
     }
 
     #[test]
@@ -483,7 +373,7 @@ mod tests {
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2);
 
-        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 10 }, &Registry::new());
+        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 10 });
         mp.add_transaction(intent_1_payload_1.clone(), MempoolAddSource::CoreApi)
             .unwrap();
         mp.add_transaction(intent_1_payload_2.clone(), MempoolAddSource::CoreApi)
@@ -536,7 +426,7 @@ mod tests {
         mp.add_transaction(intent_2_payload_1, MempoolAddSource::MempoolSync)
             .unwrap();
 
-        mp.handle_committed_transactions(&[intent_1_payload_2.intent_hash]);
+        mp.remove_transactions(&intent_1_payload_2.intent_hash);
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
                 .len(),
@@ -550,7 +440,7 @@ mod tests {
                 .len(),
             2
         );
-        mp.handle_committed_transactions(&[intent_2_payload_2.intent_hash]);
+        mp.remove_transactions(&intent_2_payload_2.intent_hash);
         assert_eq!(mp.get_count(), 0);
     }
 }
