@@ -13,7 +13,6 @@ import {
   LtsTransactionStatusRequest,
   LtsTransactionStatusResponse,
   LtsTransactionSubmitMempoolFullErrorDetails,
-  LtsTransactionSubmitPostRequest,
   LtsTransactionSubmitRejectedErrorDetails,
   LtsTransactionSubmitRequest,
   LtsTransactionSubmitResponse,
