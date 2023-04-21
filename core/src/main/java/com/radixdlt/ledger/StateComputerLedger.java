@@ -363,42 +363,47 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   private void commit(
       CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
     final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
-    if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
-      return;
-    }
 
-    var verifiedExtension =
-        verifier.verifyAndGetExtension(
-            this.currentLedgerHeader.getAccumulatorState(),
-            committedTransactionsWithProof.getTransactions(),
-            RawLedgerTransaction::getPayloadHash,
-            committedTransactionsWithProof.getProof().getAccumulatorState());
+    final int extensionTransactionCount; // for metrics purposes only
+    synchronized (this.commitAndAdvanceLedgerLock) {
+      final LedgerProof againstLedgerHeader = this.currentLedgerHeader;
 
-    if (verifiedExtension.isEmpty()) {
-      throw new ByzantineQuorumException(
-          "Accumulator failure " + currentLedgerHeader + " " + committedTransactionsWithProof);
-    }
+      if (this.headerComparator.compare(nextHeader, againstLedgerHeader) <= 0) {
+        return;
+      }
 
-    var transactions = verifiedExtension.get();
-    if (vertexStore == null) {
-      this.metrics.ledger().syncTransactionsProcessed().inc(transactions.size());
-    } else {
-      this.metrics.ledger().bftTransactionsProcessed().inc(transactions.size());
-    }
+      var verifiedExtension =
+          verifier.verifyAndGetExtension(
+              againstLedgerHeader.getAccumulatorState(),
+              committedTransactionsWithProof.getTransactions(),
+              RawLedgerTransaction::getPayloadHash,
+              committedTransactionsWithProof.getProof().getAccumulatorState());
 
-    var extensionToCommit =
-        CommittedTransactionsWithProof.create(
-            transactions, committedTransactionsWithProof.getProof());
+      if (verifiedExtension.isEmpty()) {
+        throw new ByzantineQuorumException(
+            "Accumulator failure " + againstLedgerHeader + " " + committedTransactionsWithProof);
+      }
 
-    synchronized (commitAndAdvanceLedgerLock) {
+      var transactions = verifiedExtension.get();
+      var extensionToCommit =
+          CommittedTransactionsWithProof.create(
+              transactions, committedTransactionsWithProof.getProof());
+
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStore);
 
       // TODO: move all of the following to post-persist event handling (while considering the
       // synchronization theoretically needed here).
       this.currentLedgerHeader = nextHeader;
+
+      extensionTransactionCount = transactions.size();
     }
 
-    this.metrics.ledger().stateVersion().set(this.currentLedgerHeader.getStateVersion());
+    this.metrics.ledger().stateVersion().set(nextHeader.getStateVersion());
+    if (vertexStore == null) {
+      this.metrics.ledger().syncTransactionsProcessed().inc(extensionTransactionCount);
+    } else {
+      this.metrics.ledger().bftTransactionsProcessed().inc(extensionTransactionCount);
+    }
   }
 }
