@@ -74,6 +74,7 @@ export interface LtsCommittedTransactionOutcome {
      */
     status: LtsCommittedTransactionStatus;
     /**
+     * THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2.
      * A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
      * which owns the vaults which were updated.
      * @type {Array<LtsEntityFungibleBalanceChanges>}
