@@ -66,6 +66,7 @@ use crate::types::UserPayloadHash;
 use crate::utils::IsAccountExt;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::mem::size_of;
 
 use crate::store::traits::*;
 use crate::{
@@ -981,21 +982,21 @@ impl AccountChangeIndexExtension for RocksDBStore {
         let account_bytes = account.to_vec();
 
         let mut account_change_iter = self.db.iterator_cf(
-            self.cf_handle(&TxnReceiptByStateVersion),
+            self.cf_handle(&AccountChangeStateVersions),
             IteratorMode::From(&key, Direction::Forward),
         );
 
-        let mut res = Vec::new();
-        while res.len() < limit {
+        let mut results = Vec::new();
+        while results.len() < limit {
             match account_change_iter.next() {
                 Some(entry) => {
                     let (key, _value) = entry.unwrap();
-                    let (address_bytes, state_version_bytes) = key.split_at(key.len() - 4);
+                    let (address_bytes, state_version_bytes) = key.split_at(key.len() - size_of::<u64>());
                     let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
                     if address_bytes != account_bytes {
                         break;
                     }
-                    res.push(state_version);
+                    results.push(state_version);
                 }
                 None => {
                     break;
@@ -1003,6 +1004,6 @@ impl AccountChangeIndexExtension for RocksDBStore {
             }
         }
 
-        res
+        results
     }
 }

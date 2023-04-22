@@ -377,16 +377,16 @@ impl AccountChangeIndexExtension for StateManagerDatabase {
 
     fn get_state_versions_for_account(
         &self,
-        account: Address,
+        address: Address,
         start_state_version_inclusive: u64,
         limit: usize,
     ) -> Vec<u64> {
         match self {
             StateManagerDatabase::InMemory(store) => {
-                store.get_state_versions_for_account(account, start_state_version_inclusive, limit)
+                store.get_state_versions_for_account(address, start_state_version_inclusive, limit)
             }
             StateManagerDatabase::RocksDB(store) => {
-                store.get_state_versions_for_account(account, start_state_version_inclusive, limit)
+                store.get_state_versions_for_account(address, start_state_version_inclusive, limit)
             }
         }
     }
