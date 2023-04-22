@@ -334,8 +334,8 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
     assertThat(submitResponse.getDuplicate()).isFalse();
 
-    long messagesProcessedPerAttempt = 100;
-    long attempts = 100;
+    int messagesProcessedPerAttempt = 20;
+    long attempts = 50;
 
     LtsTransactionStatusResponse statusResponse = null;
     for (long i = 0; i < attempts; i++) {
@@ -357,7 +357,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
         case COMMITTEDFAILURE -> throw new RuntimeException("Transaction got committed as failure");
         case PERMANENTREJECTION -> throw new RuntimeException(
             "Transaction got permanently rejected");
-        default -> test.runForCount(100);
+        default -> test.runForCount(messagesProcessedPerAttempt);
       }
     }
     throw new RuntimeException(
