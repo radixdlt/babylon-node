@@ -1,6 +1,11 @@
-use radix_engine::{transaction::BalanceChange, types::{Decimal, IndexMap, RADIX_TOKEN, Address, ResourceAddress}};
+use radix_engine::{
+    transaction::BalanceChange,
+    types::{Address, Decimal, IndexMap, ResourceAddress, RADIX_TOKEN},
+};
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LedgerTransactionReceipt, SubstateChanges, transaction::LedgerTransaction, HasIntentHash, HasSignaturesHash, HasUserPayloadHash,
+    transaction::LedgerTransaction, CommittedTransactionIdentifiers, HasIntentHash,
+    HasSignaturesHash, HasUserPayloadHash, LedgerTransactionOutcome, LedgerTransactionReceipt,
+    SubstateChanges,
 };
 
 use crate::core_api::*;
@@ -18,7 +23,8 @@ pub fn to_api_lts_committed_transaction_outcome(
     };
 
     // TODO: add total tip payed to validator when it is implemented
-    let total_fee = receipt.fee_summary.total_royalty_cost_xrd + receipt.fee_summary.total_execution_cost_xrd;
+    let total_fee =
+        receipt.fee_summary.total_royalty_cost_xrd + receipt.fee_summary.total_execution_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(identifiers.state_version)?,
@@ -31,11 +37,15 @@ pub fn to_api_lts_committed_transaction_outcome(
             })
         }),
         status,
-        fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(&context, total_fee, &receipt.state_update_summary.balance_changes),
-        resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
-            &context,
+        fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
+            context,
+            total_fee,
             &receipt.state_update_summary.balance_changes,
-            &receipt.substate_changes
+        ),
+        resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
+            context,
+            &receipt.state_update_summary.balance_changes,
+            &receipt.substate_changes,
         ),
         total_fee: to_api_decimal(&total_fee),
     })
@@ -61,7 +71,7 @@ pub fn to_api_lts_fungible_balance_changes(
     let mut biggest_xrd_debit = Option::<(Decimal, Address)>::None;
 
     for (entity_address, resource_changes) in balance_changes.iter() {
-        for(resource_address, balance_change) in resource_changes {
+        for (resource_address, balance_change) in resource_changes {
             if *resource_address == RADIX_TOKEN {
                 let balance_change = get_fungible_balance(balance_change).unwrap();
                 if balance_change == total_fee_balance_change && exact_fee_debit.is_none() {
@@ -75,7 +85,11 @@ pub fn to_api_lts_fungible_balance_changes(
         }
     }
 
-    let (assumed_fee_payer, assumed_fee_balance_change) = match (exact_fee_debit, biggest_xrd_debit, total_fee_balance_change == net_xrd_balance_change) {
+    let (assumed_fee_payer, assumed_fee_balance_change) = match (
+        exact_fee_debit,
+        biggest_xrd_debit,
+        total_fee_balance_change == net_xrd_balance_change,
+    ) {
         // If an entity debited the exact fee - it's probably that entity
         // - This covers the case where entity X paid the fee but didn't otherwise transfer XRD
         (Some(entity_address), _, true) => (Some(entity_address), total_fee_balance_change),
@@ -97,24 +111,35 @@ pub fn to_api_lts_fungible_balance_changes(
                         resource_address: to_api_resource_address(context, &RADIX_TOKEN),
                         balance_change: to_api_decimal(&assumed_fee_balance_change),
                     })),
-                    non_fee_balance_changes: resource_changes.iter()
+                    non_fee_balance_changes: resource_changes
+                        .iter()
                         .filter_map(|(resource_address, balance_change)| {
                             if *resource_address == RADIX_TOKEN {
-                                let fungible_balance_change = get_fungible_balance(balance_change).unwrap();
-                                let non_fee_balance_change = fungible_balance_change - assumed_fee_balance_change;
+                                let fungible_balance_change =
+                                    get_fungible_balance(balance_change).unwrap();
+                                let non_fee_balance_change =
+                                    fungible_balance_change - assumed_fee_balance_change;
                                 if non_fee_balance_change == Decimal::ZERO {
                                     return None;
                                 }
                                 return Some(models::LtsFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(context, resource_address),
+                                    resource_address: to_api_resource_address(
+                                        context,
+                                        resource_address,
+                                    ),
                                     balance_change: to_api_decimal(&non_fee_balance_change),
                                 });
                             }
                             match balance_change {
-                                BalanceChange::Fungible(balance_change) => Some(models::LtsFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(context, resource_address),
-                                    balance_change: to_api_decimal(balance_change),
-                                }),
+                                BalanceChange::Fungible(balance_change) => {
+                                    Some(models::LtsFungibleResourceBalanceChange {
+                                        resource_address: to_api_resource_address(
+                                            context,
+                                            resource_address,
+                                        ),
+                                        balance_change: to_api_decimal(balance_change),
+                                    })
+                                }
                                 BalanceChange::NonFungible { .. } => None,
                             }
                         })
@@ -124,15 +149,19 @@ pub fn to_api_lts_fungible_balance_changes(
                 models::LtsEntityFungibleBalanceChanges {
                     entity_address: to_api_address(context, entity_address),
                     fee_balance_change: None,
-                    non_fee_balance_changes: resource_changes.iter()
-                        .filter_map(|(resource_address, balance_change)| {
-                            match balance_change {
-                                BalanceChange::Fungible(balance_change) => Some(models::LtsFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(context, resource_address),
+                    non_fee_balance_changes: resource_changes
+                        .iter()
+                        .filter_map(|(resource_address, balance_change)| match balance_change {
+                            BalanceChange::Fungible(balance_change) => {
+                                Some(models::LtsFungibleResourceBalanceChange {
+                                    resource_address: to_api_resource_address(
+                                        context,
+                                        resource_address,
+                                    ),
                                     balance_change: to_api_decimal(balance_change),
-                                }),
-                                BalanceChange::NonFungible { .. } => None,
+                                })
                             }
+                            BalanceChange::NonFungible { .. } => None,
                         })
                         .collect(),
                 }
@@ -151,7 +180,7 @@ pub fn to_api_lts_resultant_account_fungible_balances(
     // Also, for release/rcnet-v1 compatibility, we don't save _old_ state when we update substates.
     // So we can't even compare diffs.
     // So let's just give up and say in the docs that it'll be coming later.
-    return vec![];
+    vec![]
 }
 
 pub fn get_fungible_balance(balance_change: &BalanceChange) -> Option<Decimal> {

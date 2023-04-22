@@ -137,52 +137,62 @@ public final class REv2TestTransactions {
   }
 
   public static String constructTransferBetweenAccountsFeeFromSender(
-          NetworkDefinition networkDefinition,
-          ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress fromAccount,
+      ResourceAddress resource,
+      Decimal amount,
+      ComponentAddress toAccount) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
     final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
     final var resourceAddress = addressing.encodeResourceAddress(resource);
     return String.format(
-            """
+        """
             CALL_METHOD Address("%s") "lock_fee" Decimal("100");
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
             CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
             """,
-            fromAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
+        fromAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
   }
 
   public static String constructTransferBetweenAccountsFeeFromReceiver(
-          NetworkDefinition networkDefinition,
-          ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress fromAccount,
+      ResourceAddress resource,
+      Decimal amount,
+      ComponentAddress toAccount) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
     final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
     final var resourceAddress = addressing.encodeResourceAddress(resource);
     return String.format(
-            """
+        """
             CALL_METHOD Address("%s") "lock_fee" Decimal("100");
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
             CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
             """,
-            toAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
+        toAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
   }
 
   public static String constructTransferBetweenAccountsFeeFromFaucet(
-          NetworkDefinition networkDefinition, ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress fromAccount,
+      ResourceAddress resource,
+      Decimal amount,
+      ComponentAddress toAccount) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
-            addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
     final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
     final var resourceAddress = addressing.encodeResourceAddress(resource);
     return String.format(
-            """
+        """
             CALL_METHOD Address("%s") "lock_fee" Decimal("100");
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
             CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
             """,
-            faucetAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
+        faucetAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
   }
 
   public static String constructDepositFromFaucetManifest(
@@ -338,10 +348,22 @@ public final class REv2TestTransactions {
         accountAddress);
   }
 
-  public static NotarizedTransactionBuilder buildTransactionWithDefaultNotary(NetworkDefinition networkDefinition, String manifest, long fromEpoch, long nonce, List<ECKeyPair> signatories) {
+  public static NotarizedTransactionBuilder buildTransactionWithDefaultNotary(
+      NetworkDefinition networkDefinition,
+      String manifest,
+      long fromEpoch,
+      long nonce,
+      List<ECKeyPair> signatories) {
     final var header =
-            TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey(), false);
-    final var intent = TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+        TransactionHeader.defaults(
+            networkDefinition,
+            fromEpoch,
+            100,
+            nonce,
+            DEFAULT_NOTARY.getPublicKey().toPublicKey(),
+            false);
+    final var intent =
+        TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
     return new NotarizedTransactionBuilder(intent, DEFAULT_NOTARY, signatories);
   }
 

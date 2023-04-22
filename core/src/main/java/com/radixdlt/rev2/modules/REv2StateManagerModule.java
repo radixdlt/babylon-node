@@ -171,7 +171,9 @@ public final class REv2StateManagerModule extends AbstractModule {
               var network = Network.ofId(networkId).orElseThrow();
               final REv2DatabaseConfig databaseConfigToUse;
               var databasePath = rocksDbConfig.databasePath() + key.toString();
-              databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath, rocksDbConfig.enableAccountChangeIndex());
+              databaseConfigToUse =
+                  REv2DatabaseConfig.rocksDB(
+                      databasePath, rocksDbConfig.enableAccountChangeIndex());
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),

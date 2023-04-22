@@ -991,7 +991,8 @@ impl AccountChangeIndexExtension for RocksDBStore {
             match account_change_iter.next() {
                 Some(entry) => {
                     let (key, _value) = entry.unwrap();
-                    let (address_bytes, state_version_bytes) = key.split_at(key.len() - size_of::<u64>());
+                    let (address_bytes, state_version_bytes) =
+                        key.split_at(key.len() - size_of::<u64>());
                     let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
                     if address_bytes != account_bytes {
                         break;

@@ -34,9 +34,8 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
     let mapping_context = MappingContext::new(&state_manager.network);
     let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let account_address =
-        extract_component_address(&extraction_context, &request.account_address)
-            .map_err(|err| err.into_response_error("account_address"))?;
+    let account_address = extract_component_address(&extraction_context, &request.account_address)
+        .map_err(|err| err.into_response_error("account_address"))?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
