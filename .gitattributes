@@ -12,3 +12,5 @@
 # Except the following files which as explicit windows files should use crlf
 *.bat text eol=crlf
 
+# Except PNG files which shouldn't be treated as text
+*.png -text
