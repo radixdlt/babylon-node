@@ -34,7 +34,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
     let mapping_context = MappingContext::new(&state_manager.network);
     let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let component_address =
+    let account_address =
         extract_component_address(&extraction_context, &request.account_address)
             .map_err(|err| err.into_response_error("account_address"))?;
 
@@ -67,7 +67,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
     let max_state_version = state_manager.store().max_state_version();
 
     let state_versions = state_manager.store().get_state_versions_for_account(
-        Address::Component(component_address),
+        Address::Component(account_address),
         from_state_version,
         limit,
     );
@@ -77,6 +77,10 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
         .map(|state_version| {
             Ok(to_api_lts_committed_transaction_outcome(
                 &mapping_context,
+                state_manager
+                    .store()
+                    .get_committed_transaction(*state_version)
+                    .expect("Transaction store corrupted"),
                 state_manager
                     .store()
                     .get_committed_transaction_receipt(*state_version)

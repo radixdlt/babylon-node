@@ -111,9 +111,9 @@ public final class REv2TestTransactions {
     var manifest =
         String.format(
             """
-        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-        CLEAR_AUTH_ZONE;
-    """,
+            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+            CLEAR_AUTH_ZONE;
+            """,
             faucetAddress);
     var header = TransactionHeader.defaults(network, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
@@ -130,10 +130,59 @@ public final class REv2TestTransactions {
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     return String.format(
         """
-                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                    CREATE_ACCOUNT Enum("AccessRule::AllowAll");
-                    """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CREATE_ACCOUNT Enum("AccessRule::AllowAll");
+        """,
         faucetAddress);
+  }
+
+  public static String constructTransferBetweenAccountsFeeFromSender(
+          NetworkDefinition networkDefinition,
+          ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var resourceAddress = addressing.encodeResourceAddress(resource);
+    return String.format(
+            """
+            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+            CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
+            CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+            """,
+            fromAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
+  }
+
+  public static String constructTransferBetweenAccountsFeeFromReceiver(
+          NetworkDefinition networkDefinition,
+          ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var resourceAddress = addressing.encodeResourceAddress(resource);
+    return String.format(
+            """
+            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+            CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
+            CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+            """,
+            toAccountAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
+  }
+
+  public static String constructTransferBetweenAccountsFeeFromFaucet(
+          NetworkDefinition networkDefinition, ComponentAddress fromAccount, ResourceAddress resource, Decimal amount, ComponentAddress toAccount) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+            addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var fromAccountAddress = addressing.encodeAccountAddress(fromAccount);
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var resourceAddress = addressing.encodeResourceAddress(resource);
+    return String.format(
+            """
+            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+            CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
+            CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+            """,
+            faucetAddress, fromAccountAddress, resourceAddress, amount, toAccountAddress);
   }
 
   public static String constructDepositFromFaucetManifest(
@@ -143,10 +192,10 @@ public final class REv2TestTransactions {
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     return String.format(
         """
-                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                    CALL_METHOD Address("%s") "free";
-                    CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
-                    """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "free";
+        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+        """,
         faucetAddress, faucetAddress, addressing.encodeAccountAddress(to));
   }
 
@@ -163,10 +212,10 @@ public final class REv2TestTransactions {
             Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
     return String.format(
         """
-                        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                        CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("9900");
-                        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
-                        """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("9900");
+        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+        """,
         fromAddress, fromAddress, xrdAddress, accountAddress);
   }
 
@@ -178,9 +227,9 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                            CREATE_VALIDATOR Bytes("%s") Enum("AccessRule::AllowAll");
-                            """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CREATE_VALIDATOR Bytes("%s") Enum("AccessRule::AllowAll");
+        """,
         faucetAddress, key.toHex());
   }
 
@@ -193,9 +242,9 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                        CALL_METHOD Address("%s") "register";
-                        """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "register";
+        """,
         faucetAddress, componentAddress);
   }
 
@@ -208,9 +257,9 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                            CALL_METHOD Address("%s") "unregister";
-                            """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "unregister";
+        """,
         faucetAddress, componentAddress);
   }
 
@@ -226,12 +275,12 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD Address("%s") "free";
-                                TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
-                                CALL_METHOD Address("%s") "stake" Bucket("xrd");
-                                CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
-                                """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "free";
+        TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
+        CALL_METHOD Address("%s") "stake" Bucket("xrd");
+        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+        """,
         faucetAddress, faucetAddress, xrdAddress, validatorHrpAddress, toAccountAddress);
   }
 
@@ -249,12 +298,12 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("1");
-                                TAKE_FROM_WORKTOP Address("%s") Bucket("lp_token");
-                                CALL_METHOD Address("%s") "unstake" Bucket("lp_token");
-                                CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
-                                """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("1");
+        TAKE_FROM_WORKTOP Address("%s") Bucket("lp_token");
+        CALL_METHOD Address("%s") "unstake" Bucket("lp_token");
+        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+        """,
         faucetAddress, accountAddress, lpAddress, lpAddress, validatorHrpAddress, accountAddress);
   }
 
@@ -273,13 +322,13 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                                    CALL_METHOD Address("%s") "withdraw" Address("%s");
-                                    TAKE_FROM_WORKTOP Address("%s") Bucket("unstake");
-                                    CALL_METHOD Address("%s") "claim_xrd" Bucket("unstake");
-                                    TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
-                                    CALL_METHOD Address("%s") "deposit" Bucket("xrd");
-                                    """,
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "withdraw" Address("%s");
+        TAKE_FROM_WORKTOP Address("%s") Bucket("unstake");
+        CALL_METHOD Address("%s") "claim_xrd" Bucket("unstake");
+        TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
+        CALL_METHOD Address("%s") "deposit" Bucket("xrd");
+        """,
         faucetAddress,
         accountAddress,
         unstakeResourceAddress,
@@ -287,6 +336,13 @@ public final class REv2TestTransactions {
         validatorHrpAddress,
         xrdAddress,
         accountAddress);
+  }
+
+  public static NotarizedTransactionBuilder buildTransactionWithDefaultNotary(NetworkDefinition networkDefinition, String manifest, long fromEpoch, long nonce, List<ECKeyPair> signatories) {
+    final var header =
+            TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey(), false);
+    final var intent = TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+    return new NotarizedTransactionBuilder(intent, DEFAULT_NOTARY, signatories);
   }
 
   public static byte[] constructDepositFromFaucetIntent(

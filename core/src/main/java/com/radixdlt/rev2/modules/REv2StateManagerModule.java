@@ -162,7 +162,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Override
   public void configure() {
-    if (testing && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
+    if (testing && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDbConfig) {
       install(
           new AbstractModule() {
             @Provides
@@ -170,8 +170,8 @@ public final class REv2StateManagerModule extends AbstractModule {
             private StateManager stateManager(@Self ECDSASecp256k1PublicKey key) {
               var network = Network.ofId(networkId).orElseThrow();
               final REv2DatabaseConfig databaseConfigToUse;
-              var databasePath = rocksDB.databasePath() + key.toString();
-              databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath, false);
+              var databasePath = rocksDbConfig.databasePath() + key.toString();
+              databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath, rocksDbConfig.enableAccountChangeIndex());
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),
