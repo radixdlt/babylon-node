@@ -25,11 +25,11 @@ pub struct LtsTransactionStatusResponse {
     #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
     pub invalid_from_epoch: Option<i64>,
     #[serde(rename = "known_payloads")]
-    pub known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadStatus>,
+    pub known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadDetails>,
 }
 
 impl LtsTransactionStatusResponse {
-    pub fn new(intent_status: crate::core_api::generated::models::LtsTransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadStatus>) -> LtsTransactionStatusResponse {
+    pub fn new(intent_status: crate::core_api::generated::models::LtsTransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadDetails>) -> LtsTransactionStatusResponse {
         LtsTransactionStatusResponse {
             intent_status,
             status_description,

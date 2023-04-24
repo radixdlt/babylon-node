@@ -118,7 +118,7 @@ public final class REv2LargeTransactionTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                         REV2ProposerConfig.mempool(
                             10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(200, 10, 1000))));

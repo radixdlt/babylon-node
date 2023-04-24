@@ -130,7 +130,7 @@ public class REv2RejectedTransactionMempoolTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
   }

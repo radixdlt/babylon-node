@@ -92,8 +92,9 @@ public final class Keys {
    *
    * @param keyStore Key store path.
    */
-  public static ECKeyPair readNodeKey(String keyStore) throws IOException, CryptoException {
-    return readKey(keyStore, "node", "RADIX_NODE_KEYSTORE_PASSWORD", false);
+  public static ECKeyPair readNodeKey(String keyStore, boolean createIfMissing)
+      throws IOException, CryptoException {
+    return readKey(keyStore, "node", "RADIX_NODE_KEYSTORE_PASSWORD", createIfMissing);
   }
 
   /**

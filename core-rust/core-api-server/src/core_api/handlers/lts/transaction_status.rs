@@ -17,8 +17,6 @@ pub(crate) async fn handle_lts_transaction_status(
     core_api_read_handler(state, request, handle_lts_transaction_status_internal)
 }
 
-use models::lts_transaction_payload_status::Status as LtsPayloadStatus;
-
 fn handle_lts_transaction_status_internal(
     state_manager: &ActualStateManager,
     request: models::LtsTransactionStatusRequest,
@@ -82,17 +80,19 @@ fn handle_lts_transaction_status_internal(
         };
 
         let (payload_status, outcome, error_message) = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => {
-                (LtsPayloadStatus::CommittedSuccess, "SUCCESS", None)
-            }
+            LedgerTransactionOutcome::Success(_) => (
+                models::LtsTransactionPayloadStatus::CommittedSuccess,
+                "SUCCESS",
+                None,
+            ),
             LedgerTransactionOutcome::Failure(reason) => (
-                LtsPayloadStatus::CommittedFailure,
+                models::LtsTransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
                 Some(format!("{reason:?}")),
             ),
         };
 
-        let committed_payload = models::LtsTransactionPayloadStatus {
+        let committed_payload = models::LtsTransactionPayloadDetails {
             payload_hash: to_api_payload_hash(&payload_hash),
             status: payload_status,
             error_message,
@@ -120,9 +120,9 @@ fn handle_lts_transaction_status_internal(
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes
             .iter()
-            .map(|payload_hash| models::LtsTransactionPayloadStatus {
+            .map(|payload_hash| models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_payload_hash(payload_hash),
-                status: LtsPayloadStatus::InMempool,
+                status: models::LtsTransactionPayloadStatus::InMempool,
                 error_message: None,
             })
             .collect::<Vec<_>>();
@@ -167,7 +167,7 @@ fn handle_lts_transaction_status_internal(
         } else {
             let any_payloads_not_rejected = known_payloads
                 .iter()
-                .any(|p| p.status == LtsPayloadStatus::NotInMempool);
+                .any(|p| p.status == models::LtsTransactionPayloadStatus::NotInMempool);
             if any_payloads_not_rejected {
                 (models::LtsTransactionIntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
             } else {
@@ -190,16 +190,16 @@ fn handle_lts_transaction_status_internal(
 
 fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
-) -> Vec<models::LtsTransactionPayloadStatus> {
+) -> Vec<models::LtsTransactionPayloadDetails> {
     known_rejected_payloads
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
             let rejection_reason_to_use = transaction_record
                 .most_applicable_status()
                 .unwrap_or(&RejectionReason::IntentHashCommitted);
-            models::LtsTransactionPayloadStatus {
+            models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_payload_hash(&payload_hash),
-                status: LtsPayloadStatus::PermanentlyRejected,
+                status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(rejection_reason_to_use.to_string()),
             }
         })
@@ -208,23 +208,23 @@ fn map_rejected_payloads_due_to_known_commit(
 
 fn map_pending_payloads_not_in_mempool(
     known_payloads_not_in_mempool: HashMap<UserPayloadHash, PendingTransactionRecord>,
-) -> Vec<models::LtsTransactionPayloadStatus> {
+) -> Vec<models::LtsTransactionPayloadDetails> {
     known_payloads_not_in_mempool
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
             match transaction_record.most_applicable_status() {
-                Some(reason) => models::LtsTransactionPayloadStatus {
+                Some(reason) => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_payload_hash(&payload_hash),
                     status: if reason.is_permanent_for_payload() {
-                        LtsPayloadStatus::PermanentlyRejected
+                        models::LtsTransactionPayloadStatus::PermanentlyRejected
                     } else {
-                        LtsPayloadStatus::TransientlyRejected
+                        models::LtsTransactionPayloadStatus::TransientlyRejected
                     },
                     error_message: Some(reason.to_string()),
                 },
-                None => models::LtsTransactionPayloadStatus {
+                None => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_payload_hash(&payload_hash),
-                    status: LtsPayloadStatus::NotInMempool,
+                    status: models::LtsTransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },
             }

@@ -108,7 +108,7 @@ public final class REv2GenesisTest {
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             INITIAL_STAKE,
                             UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.inMemory(),
+                        REv2DatabaseConfig.inMemory(false),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, 0, MempoolRelayConfig.of())))));
   }

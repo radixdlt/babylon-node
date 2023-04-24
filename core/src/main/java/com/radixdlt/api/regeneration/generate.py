@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import urllib.request, logging, subprocess, os, shutil
 
 # Inspired by https://github.com/radixdlt/radixdlt-python-clients

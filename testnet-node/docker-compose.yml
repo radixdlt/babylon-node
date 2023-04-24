@@ -1,0 +1,45 @@
+version: '2.2'
+name: radixdlt-babylon-node-testnet-node
+services:
+  core:
+    container_name: radixdlt-kisharnet-node
+    #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
+    image: radixdlt/babylon-node:rcnet-v1.1-682b897
+    # build:
+    #   context: ..
+    #   dockerfile: Dockerfile
+    init: true
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock: -1
+    restart: unless-stopped
+    mem_limit: 12000m
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "127.0.0.1:3333:3333"   # Core API - binds to localhost:3333
+      - "127.0.0.1:3334:3334"   # System API - binds to localhost:3334
+      - "127.0.0.1:3335:3335"   # Prometheus API - binds to localhost:3335
+      - "127.0.0.1:9011:9011"   # JMX Port for Java debugging - binds to localhost:9001
+      - "127.0.0.1:50505:50505" # JDWP Port for Java debugging - binds to localhost:50505
+      - "127.0.0.1:30000:30000" # Gossip port - binds to localhost:30000
+    environment:
+      JAVA_OPTS: --enable-preview -server -Xms8g -Xmx8g  -XX:MaxDirectMemorySize=2048m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+      RADIXDLT_LOG_LEVEL: info
+      RADIXDLT_VALIDATOR_KEY_LOCATION: /home/radixdlt/key/node.ks
+      RADIXDLT_NODE_KEY_CREATE_IF_MISSING: true
+      RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE: true
+      RADIX_NODE_KEYSTORE_PASSWORD: password
+      # "Kisharnet" - Babylon RCNetV1 network params
+      RADIXDLT_NETWORK_ID: 12
+      RADIXDLT_NETWORK_SEEDS_REMOTE: radix://node_tdx_c_1qvmhdlpvu3ym369ehjcmnmuam79vhs03gv0nqwhusewmvnjlfth3jpgr5ga@54.229.1.127,radix://node_tdx_c_1qfz58amtc2x8jz33uzfj9ymn8t2thhuatrt9w67he2w9x2f6eve4g20qctn@15.206.142.82,radix://node_tdx_c_1qtvxv7259j0l48gycv0zdze6he56c5sx4vjhljc7jsgkxaamnf3kccv4k4w@3.234.147.175,radix://node_tdx_c_1q2axr7xr4utg3a7hxstxdfjd7udqxzp5dqf6vgg0d0krmyrvzw775xa6nu4@3.24.207.200
+      RADIXDLT_GENESIS_TXN: 02d86679542c9ffa9d04c31e268b3abe69ac5206ab257fcb1e94116377bb9a636c033776fc2ce449b8e8b9bcb1b9ef9ddf8acbc1f1431f303afc865db64e5f4aef19024543f76bc28c790a31e0932293733ad4bbdf9d58d6576bd7ca9c53293acb335402ba61f8c3af1688f7d7341666a64df71a0308346813a6210f6bec3d906c13bdea
+    volumes:
+      - ledger-data:/home/radixdlt/RADIXDB
+      - key-data:/home/radixdlt/key
+
+volumes:
+  ledger-data:
+  key-data:

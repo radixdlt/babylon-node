@@ -140,7 +140,7 @@ public final class SanityTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), roundsPerEpoch),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                         REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))));

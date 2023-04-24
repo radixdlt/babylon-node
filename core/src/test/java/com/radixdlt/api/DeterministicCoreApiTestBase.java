@@ -71,6 +71,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -97,6 +98,7 @@ import org.junit.rules.TemporaryFolder;
 public abstract class DeterministicCoreApiTestBase {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
+  public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
   public static String networkLogicalName = networkDefinition.logical_name();
   protected int coreApiPort = FreePortFinder.findFreeLocalPort();
 
@@ -136,7 +138,7 @@ public abstract class DeterministicCoreApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
-                            REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                            REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), true),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
@@ -212,6 +214,10 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected StateApi getStateApi() {
     return new StateApi(apiClient);
+  }
+
+  protected LtsApi getLtsApi() {
+    return new LtsApi(apiClient);
   }
 
   protected DeterministicCoreApiTestBase() {}
