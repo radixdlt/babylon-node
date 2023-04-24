@@ -28,24 +28,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsFungibleResourceBalanceChange
+ * LtsResultantFungibleBalance
  */
 @JsonPropertyOrder({
-  LtsFungibleResourceBalanceChange.JSON_PROPERTY_RESOURCE_ADDRESS,
-  LtsFungibleResourceBalanceChange.JSON_PROPERTY_BALANCE_CHANGE
+  LtsResultantFungibleBalance.JSON_PROPERTY_RESOURCE_ADDRESS,
+  LtsResultantFungibleBalance.JSON_PROPERTY_RESULTANT_BALANCE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsFungibleResourceBalanceChange {
+public class LtsResultantFungibleBalance {
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_BALANCE_CHANGE = "balance_change";
-  private String balanceChange;
+  public static final String JSON_PROPERTY_RESULTANT_BALANCE = "resultant_balance";
+  private String resultantBalance;
 
-  public LtsFungibleResourceBalanceChange() { 
+  public LtsResultantFungibleBalance() { 
   }
 
-  public LtsFungibleResourceBalanceChange resourceAddress(String resourceAddress) {
+  public LtsResultantFungibleBalance resourceAddress(String resourceAddress) {
     this.resourceAddress = resourceAddress;
     return this;
   }
@@ -71,34 +71,34 @@ public class LtsFungibleResourceBalanceChange {
   }
 
 
-  public LtsFungibleResourceBalanceChange balanceChange(String balanceChange) {
-    this.balanceChange = balanceChange;
+  public LtsResultantFungibleBalance resultantBalance(String resultantBalance) {
+    this.resultantBalance = resultantBalance;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return balanceChange
+   * The string-encoded decimal representing the resultant balance of the fungible resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return resultantBalance
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGE)
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the resultant balance of the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBalanceChange() {
-    return balanceChange;
+  public String getResultantBalance() {
+    return resultantBalance;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGE)
+  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBalanceChange(String balanceChange) {
-    this.balanceChange = balanceChange;
+  public void setResultantBalance(String resultantBalance) {
+    this.resultantBalance = resultantBalance;
   }
 
 
   /**
-   * Return true if this LtsFungibleResourceBalanceChange object is equal to o.
+   * Return true if this LtsResultantFungibleBalance object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +108,22 @@ public class LtsFungibleResourceBalanceChange {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsFungibleResourceBalanceChange ltsFungibleResourceBalanceChange = (LtsFungibleResourceBalanceChange) o;
-    return Objects.equals(this.resourceAddress, ltsFungibleResourceBalanceChange.resourceAddress) &&
-        Objects.equals(this.balanceChange, ltsFungibleResourceBalanceChange.balanceChange);
+    LtsResultantFungibleBalance ltsResultantFungibleBalance = (LtsResultantFungibleBalance) o;
+    return Objects.equals(this.resourceAddress, ltsResultantFungibleBalance.resourceAddress) &&
+        Objects.equals(this.resultantBalance, ltsResultantFungibleBalance.resultantBalance);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, balanceChange);
+    return Objects.hash(resourceAddress, resultantBalance);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsFungibleResourceBalanceChange {\n");
+    sb.append("class LtsResultantFungibleBalance {\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    balanceChange: ").append(toIndentedString(balanceChange)).append("\n");
+    sb.append("    resultantBalance: ").append(toIndentedString(resultantBalance)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -16,15 +16,18 @@ pub struct LtsEntityFungibleBalanceChanges {
     /// The Bech32m-encoded human readable version of the entity's address
     #[serde(rename = "entity_address")]
     pub entity_address: String,
-    #[serde(rename = "fungible_resource_balance_changes")]
-    pub fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
+    #[serde(rename = "fee_balance_change", skip_serializing_if = "Option::is_none")]
+    pub fee_balance_change: Option<Box<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>>,
+    #[serde(rename = "non_fee_balance_changes")]
+    pub non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
 }
 
 impl LtsEntityFungibleBalanceChanges {
-    pub fn new(entity_address: String, fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
+    pub fn new(entity_address: String, non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
         LtsEntityFungibleBalanceChanges {
             entity_address,
-            fungible_resource_balance_changes,
+            fee_balance_change: None,
+            non_fee_balance_changes,
         }
     }
 }

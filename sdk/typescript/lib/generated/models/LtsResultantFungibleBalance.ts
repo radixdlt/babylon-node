@@ -16,51 +16,51 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface LtsFungibleResourceBalanceChange
+ * @interface LtsResultantFungibleBalance
  */
-export interface LtsFungibleResourceBalanceChange {
+export interface LtsResultantFungibleBalance {
     /**
      * The Bech32m-encoded human readable version of the fungible resource's address
      * @type {string}
-     * @memberof LtsFungibleResourceBalanceChange
+     * @memberof LtsResultantFungibleBalance
      */
     resource_address: string;
     /**
-     * The string-encoded decimal representing the amount of change for the fungible resource.
+     * The string-encoded decimal representing the resultant balance of the fungible resource.
      * A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
      * @type {string}
-     * @memberof LtsFungibleResourceBalanceChange
+     * @memberof LtsResultantFungibleBalance
      */
-    balance_change: string;
+    resultant_balance: string;
 }
 
 /**
- * Check if a given object implements the LtsFungibleResourceBalanceChange interface.
+ * Check if a given object implements the LtsResultantFungibleBalance interface.
  */
-export function instanceOfLtsFungibleResourceBalanceChange(value: object): boolean {
+export function instanceOfLtsResultantFungibleBalance(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "resource_address" in value;
-    isInstance = isInstance && "balance_change" in value;
+    isInstance = isInstance && "resultant_balance" in value;
 
     return isInstance;
 }
 
-export function LtsFungibleResourceBalanceChangeFromJSON(json: any): LtsFungibleResourceBalanceChange {
-    return LtsFungibleResourceBalanceChangeFromJSONTyped(json, false);
+export function LtsResultantFungibleBalanceFromJSON(json: any): LtsResultantFungibleBalance {
+    return LtsResultantFungibleBalanceFromJSONTyped(json, false);
 }
 
-export function LtsFungibleResourceBalanceChangeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LtsFungibleResourceBalanceChange {
+export function LtsResultantFungibleBalanceFromJSONTyped(json: any, ignoreDiscriminator: boolean): LtsResultantFungibleBalance {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
         'resource_address': json['resource_address'],
-        'balance_change': json['balance_change'],
+        'resultant_balance': json['resultant_balance'],
     };
 }
 
-export function LtsFungibleResourceBalanceChangeToJSON(value?: LtsFungibleResourceBalanceChange | null): any {
+export function LtsResultantFungibleBalanceToJSON(value?: LtsResultantFungibleBalance | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -70,7 +70,7 @@ export function LtsFungibleResourceBalanceChangeToJSON(value?: LtsFungibleResour
     return {
         
         'resource_address': value.resource_address,
-        'balance_change': value.balance_change,
+        'resultant_balance': value.resultant_balance,
     };
 }
 

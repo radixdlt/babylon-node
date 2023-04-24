@@ -22,83 +22,91 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LtsResultantFungibleBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsFungibleResourceBalanceChange
+ * LtsResultantAccountFungibleBalances
  */
 @JsonPropertyOrder({
-  LtsFungibleResourceBalanceChange.JSON_PROPERTY_RESOURCE_ADDRESS,
-  LtsFungibleResourceBalanceChange.JSON_PROPERTY_BALANCE_CHANGE
+  LtsResultantAccountFungibleBalances.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsResultantAccountFungibleBalances.JSON_PROPERTY_RESULTANT_BALANCES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsFungibleResourceBalanceChange {
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+public class LtsResultantAccountFungibleBalances {
+  public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
+  private String accountAddress;
 
-  public static final String JSON_PROPERTY_BALANCE_CHANGE = "balance_change";
-  private String balanceChange;
+  public static final String JSON_PROPERTY_RESULTANT_BALANCES = "resultant_balances";
+  private List<LtsResultantFungibleBalance> resultantBalances = new ArrayList<>();
 
-  public LtsFungibleResourceBalanceChange() { 
+  public LtsResultantAccountFungibleBalances() { 
   }
 
-  public LtsFungibleResourceBalanceChange resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public LtsResultantAccountFungibleBalances accountAddress(String accountAddress) {
+    this.accountAddress = accountAddress;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the fungible resource&#39;s address 
-   * @return resourceAddress
+   * The Bech32m-encoded human readable version of the account&#39;s address
+   * @return accountAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the fungible resource's address ")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the account's address")
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public String getAccountAddress() {
+    return accountAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setAccountAddress(String accountAddress) {
+    this.accountAddress = accountAddress;
   }
 
 
-  public LtsFungibleResourceBalanceChange balanceChange(String balanceChange) {
-    this.balanceChange = balanceChange;
+  public LtsResultantAccountFungibleBalances resultantBalances(List<LtsResultantFungibleBalance> resultantBalances) {
+    this.resultantBalances = resultantBalances;
+    return this;
+  }
+
+  public LtsResultantAccountFungibleBalances addResultantBalancesItem(LtsResultantFungibleBalance resultantBalancesItem) {
+    this.resultantBalances.add(resultantBalancesItem);
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return balanceChange
+   * Get resultantBalances
+   * @return resultantBalances
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBalanceChange() {
-    return balanceChange;
+  public List<LtsResultantFungibleBalance> getResultantBalances() {
+    return resultantBalances;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BALANCE_CHANGE)
+  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBalanceChange(String balanceChange) {
-    this.balanceChange = balanceChange;
+  public void setResultantBalances(List<LtsResultantFungibleBalance> resultantBalances) {
+    this.resultantBalances = resultantBalances;
   }
 
 
   /**
-   * Return true if this LtsFungibleResourceBalanceChange object is equal to o.
+   * Return true if this LtsResultantAccountFungibleBalances object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +116,22 @@ public class LtsFungibleResourceBalanceChange {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsFungibleResourceBalanceChange ltsFungibleResourceBalanceChange = (LtsFungibleResourceBalanceChange) o;
-    return Objects.equals(this.resourceAddress, ltsFungibleResourceBalanceChange.resourceAddress) &&
-        Objects.equals(this.balanceChange, ltsFungibleResourceBalanceChange.balanceChange);
+    LtsResultantAccountFungibleBalances ltsResultantAccountFungibleBalances = (LtsResultantAccountFungibleBalances) o;
+    return Objects.equals(this.accountAddress, ltsResultantAccountFungibleBalances.accountAddress) &&
+        Objects.equals(this.resultantBalances, ltsResultantAccountFungibleBalances.resultantBalances);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, balanceChange);
+    return Objects.hash(accountAddress, resultantBalances);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsFungibleResourceBalanceChange {\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    balanceChange: ").append(toIndentedString(balanceChange)).append("\n");
+    sb.append("class LtsResultantAccountFungibleBalances {\n");
+    sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
+    sb.append("    resultantBalances: ").append(toIndentedString(resultantBalances)).append("\n");
     sb.append("}");
     return sb.toString();
   }
