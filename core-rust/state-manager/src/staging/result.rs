@@ -276,6 +276,7 @@ pub struct HashStructuresDiff {
     pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
 }
 
+#[derive(Clone)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,

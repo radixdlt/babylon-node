@@ -135,7 +135,7 @@ pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
     pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
@@ -201,7 +201,7 @@ impl JNIStateManager {
         ));
 
         // Build the state manager.
-        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
+        let state_manager = Arc::new(StateManager::new(
             &network,
             database.clone(),
             mempool_manager.clone(),
@@ -209,7 +209,7 @@ impl JNIStateManager {
             pending_transaction_result_cache.clone(),
             logging_config,
             &metric_registry,
-        )));
+        ));
 
         let jni_state_manager = JNIStateManager {
             network,
@@ -243,10 +243,7 @@ impl JNIStateManager {
             .unwrap()
     }
 
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<RwLock<ActualStateManager>> {
+    pub fn get_state_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<ActualStateManager> {
         Self::get_state(env, j_state_manager).state_manager.clone()
     }
 

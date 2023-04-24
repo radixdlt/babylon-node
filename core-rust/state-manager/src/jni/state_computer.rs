@@ -84,8 +84,6 @@ use crate::query::{ResourceAccounter, StateManagerSubstateQueries};
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
-use super::state_manager::ActualStateManager;
-
 //
 // JNI Interface
 //
@@ -97,19 +95,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGene
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_prepare_genesis(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareGenesisRequest,
-) -> JavaPrepareGenesisResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare_genesis(prepare_request.into());
-
-    result.into()
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |prepare_request: JavaPrepareGenesisRequest| -> JavaPrepareGenesisResult {
+            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let result = state_manager.prepare_genesis(prepare_request.into());
+            result.into()
+        },
+    )
 }
 
 #[no_mangle]
@@ -119,19 +113,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_prepare(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareRequest,
-) -> JavaPrepareResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare(prepare_request.into());
-
-    result.into()
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |prepare_request: JavaPrepareRequest| -> JavaPrepareResult {
+            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let result = state_manager.prepare(prepare_request.into());
+            result.into()
+        },
+    )
 }
 
 #[no_mangle]
@@ -141,17 +131,14 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_commit)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_commit(
-    state_manager: &mut ActualStateManager,
-    args: JavaCommitRequest,
-) -> Result<(), CommitError> {
-    let commit_request = args;
-
-    state_manager.commit(commit_request.into())
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |commit_request: JavaCommitRequest| -> Result<(), CommitError> {
+            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            state_manager.commit(commit_request.into())
+        },
+    )
 }
 
 #[no_mangle]
