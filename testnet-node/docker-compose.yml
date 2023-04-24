@@ -3,10 +3,11 @@ name: radixdlt-babylon-node-testnet-node
 services:
   core:
     container_name: radixdlt-kisharnet-node
-    build:
-      context: ..
-      dockerfile: Dockerfile
-    # image: radixdlt/babylon-node:rcnet-v1-c6360105d-build-2
+    #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
+    image: radixdlt/babylon-node:rcnet-v1.1-682b897
+    # build:
+    #   context: ..
+    #   dockerfile: Dockerfile
     init: true
     ulimits:
       nofile:
