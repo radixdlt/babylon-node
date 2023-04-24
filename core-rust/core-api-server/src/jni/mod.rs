@@ -76,20 +76,17 @@ use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
 use std::str;
 use std::sync::{Arc, MutexGuard};
-use tokio::runtime::Runtime as TokioRuntime;
-
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
+use tokio::runtime::Runtime;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
 pub struct RunningServer {
-    pub tokio_runtime: TokioRuntime,
     pub shutdown_signal_sender: Sender<()>,
 }
 
 pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
+    pub runtime: Arc<Runtime>,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub running_server: Option<RunningServer>,
 }
@@ -103,10 +100,12 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     j_config: jbyteArray,
 ) {
     let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+    let runtime = JNIStateManager::get_runtime(&env, j_state_manager);
     let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
     let config = CoreApiServerConfig::from_java(&config_bytes).unwrap();
     let jni_core_api_server = JNICoreApiServer {
         config,
+        runtime,
         state_manager,
         running_server: None,
     };
@@ -125,8 +124,6 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
-    let tokio_runtime = TokioRuntime::new().unwrap();
-
     let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
 
     let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
@@ -136,35 +133,10 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     let config = &jni_core_api_server.config;
 
     let state_manager = jni_core_api_server.state_manager.clone();
+    let runtime = &jni_core_api_server.runtime;
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
-    tokio_runtime.spawn(async move {
-        match std::env::var("JAEGER_AGENT_ENDPOINT") {
-            Ok(jaeger_agent_endpoint) => {
-                let tracer = opentelemetry_jaeger::new_agent_pipeline()
-                    .with_endpoint(jaeger_agent_endpoint)
-                    .with_auto_split_batch(true)
-                    .with_service_name("core_api")
-                    .install_batch(opentelemetry::runtime::Tokio)
-                    .unwrap();
-
-                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-
-                // Trying to initialize a global logger here, and carry on if this fails.
-                let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::INFO)
-                    .with(opentelemetry)
-                    .with(tracing_subscriber::fmt::layer())
-                    .try_init();
-            }
-            Err(_) => {
-                let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::INFO)
-                    .with(tracing_subscriber::fmt::layer())
-                    .try_init();
-            }
-        }
-
+    runtime.spawn(async move {
         create_server(
             &bind_addr,
             shutdown_signal_receiver.map(|_| ()),
@@ -174,7 +146,6 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     });
 
     jni_core_api_server.running_server = Some(RunningServer {
-        tokio_runtime,
         shutdown_signal_sender,
     });
 }
