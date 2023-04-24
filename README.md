@@ -6,8 +6,9 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 
 ## Integrators
 
-If you're looking to run a node for developing an integration, see [details on running a testnet node for development](testnet-node/README.md)
-and the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
+To run a node against our latest test environment, install docker and run `./testnet-node/run.sh`. See further [details on running a testnet node for development here](testnet-node/README.md).
+
+Also check out the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
 ## Subdirectories
 
