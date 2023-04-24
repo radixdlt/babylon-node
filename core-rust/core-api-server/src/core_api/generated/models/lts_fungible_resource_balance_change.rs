@@ -13,18 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsFungibleResourceBalanceChange {
-    /// The Bech32m-encoded human readable version of the fungible resource's global address
-    #[serde(rename = "fungible_resource_address")]
-    pub fungible_resource_address: String,
+    /// The Bech32m-encoded human readable version of the fungible resource's address 
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
     /// The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "balance_change")]
     pub balance_change: String,
 }
 
 impl LtsFungibleResourceBalanceChange {
-    pub fn new(fungible_resource_address: String, balance_change: String) -> LtsFungibleResourceBalanceChange {
+    pub fn new(resource_address: String, balance_change: String) -> LtsFungibleResourceBalanceChange {
         LtsFungibleResourceBalanceChange {
-            fungible_resource_address,
+            resource_address,
             balance_change,
         }
     }

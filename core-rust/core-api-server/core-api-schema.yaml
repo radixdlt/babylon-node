@@ -83,6 +83,7 @@ servers:
 x-tagGroups:
   - name: Overview
     tags:
+      - SDKs
       - SubAPIs
       - Concepts
       - Construction
@@ -95,6 +96,16 @@ x-tagGroups:
       - State
       - Stream
 tags:
+  - name: SDKs
+    x-displayName: SDKs
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |
+      The following SDKs are currently available for the Core API:
+      - Typescript: [@radixdlt/babylon-core-api-sdk](https://www.npmjs.com/package/@radixdlt/babylon-core-api-sdk)
+
+      For other languages, you can use a HTTP client of your choice and code the JSON models yourself.
+      You could also consider using an Open API generator, but unless you have experience with battling the gremlins in Open API generators,
+      it may be more trouble than it's worth.
   - name: SubAPIs
     x-displayName: Sub-APIs
     x-traitTag: true # Don't display endpoints under this tag
@@ -3148,8 +3159,8 @@ components:
         known_payloads:
           type: array
           items:
-            $ref: "#/components/schemas/LtsTransactionPayloadStatus"
-    LtsTransactionPayloadStatus:
+            $ref: "#/components/schemas/LtsTransactionPayloadDetails"
+    LtsTransactionPayloadDetails:
       type: object
       required:
         - payload_hash
@@ -3158,17 +3169,7 @@ components:
         payload_hash:
           $ref: "#/components/schemas/PayloadHash"
         status:
-          type: string
-          description: |
-            The status of the transaction payload, as per this node.
-            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentlyRejected
-            - TransientlyRejected
-            - InMempool
-            - NotInMempool
+          $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
@@ -3185,6 +3186,18 @@ components:
         - NotSeen
         - FateUncertain
         - FateUncertainButLikelyRejection
+    LtsTransactionPayloadStatus:
+      type: string
+      description: |
+        The status of the transaction payload, as per this node.
+        A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentlyRejected
+        - TransientlyRejected
+        - InMempool
+        - NotInMempool
 ####################################
 # REQUEST: /lts/transaction/submit #
 ####################################
@@ -3441,9 +3454,10 @@ components:
             $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
     LtsCommittedTransactionStatus:
       type: string
+      # These should align with LtsTransactionIntentStatus / LtsTransactionPayloadStatus
       enum:
-        - Succeeded
-        - Failed
+        - Success
+        - Failure
       description: The status of the transaction
     LtsCommittedTransactionOutcome:
       description: |
@@ -3458,7 +3472,8 @@ components:
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
-        - fee
+        - resultant_account_fungible_balances
+        - total_fee
       properties:
         state_version:
           type: integer
@@ -3473,16 +3488,28 @@ components:
           description: |
             The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
             This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+        user_transaction_identifiers:
+          description: Only present if the transaction is a user-submitted notarized transaction.
+          $ref: "#/components/schemas/TransactionIdentifiers"
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
           description: |
+            THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2.
             A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
             which owns the vaults which were updated.
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
-        fee:
+        resultant_account_fungible_balances:
+          description: |
+            THIS CURRENTLY RETURNS AN EMPTY LIST. THIS FEATURE WILL BE COMING AT RCNET-V2.
+            A list of the resultant balances of any account balances changed in this transaction.
+            Only balances for accounts are returned, not any other kind of entity.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsResultantAccountFungibleBalances"
+        total_fee:
           type: string
           description: |
             The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
@@ -3491,28 +3518,62 @@ components:
       type: object
       required:
         - entity_address
-        - fungible_resource_balance_changes
+        - non_fee_balance_changes
       properties:
         entity_address:
           type: string
           description: The Bech32m-encoded human readable version of the entity's address
-        fungible_resource_balance_changes:
+        fee_balance_change:
+          $ref: "#/components/schemas/LtsFungibleResourceBalanceChange"
+          description: |
+            If present, this field indicates the entity contributed to the payment of the fee.
+            The change in balance will always be negative.
+        non_fee_balance_changes:
           type: array
           items:
             $ref: "#/components/schemas/LtsFungibleResourceBalanceChange"
     LtsFungibleResourceBalanceChange:
       type: object
       required:
-        - fungible_resource_address
+        - resource_address
         - balance_change
       properties:
-        fungible_resource_address:
+        resource_address:
           type: string
-          description: The Bech32m-encoded human readable version of the fungible resource's global address
+          description: |
+            The Bech32m-encoded human readable version of the fungible resource's address
         balance_change:
           type: string
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsResultantAccountFungibleBalances:
+      type: object
+      required:
+        - account_address
+        - resultant_balances
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resultant_balances:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsResultantFungibleBalance"
+    LtsResultantFungibleBalance:
+      type: object
+      required:
+        - resource_address
+        - resultant_balance
+      properties:
+        resource_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable version of the fungible resource's address
+        resultant_balance:
+          type: string
+          description: |
+            The string-encoded decimal representing the resultant balance of the fungible resource.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 #####################################################
 # REQUEST: /lts/stream/account-transaction-outcomes #

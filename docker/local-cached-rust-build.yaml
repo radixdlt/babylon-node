@@ -1,0 +1,19 @@
+name: radixdlt-babylon-node-rust-builder
+services:
+  build-rust:
+    environment:
+      - TARGET=x86_64-unknown-linux-gnu
+      - RUST_PROFILE=release
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      target: library-builder-local
+    volumes:
+      - target-cache:/app/target # Allow caching incremental compilation artifacts
+      - cargo-cache-registry:/root/.cargo/registry # Cache cargo downloads from the registry
+      - cargo-cache-git:/root/.cargo/git # Cache cargo git checkouts
+
+volumes:
+  cargo-cache-registry:
+  cargo-cache-git:
+  target-cache:
