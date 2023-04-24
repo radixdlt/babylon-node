@@ -207,92 +207,90 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 
-    // The `commit()` operation may concurrently advance the ledger, so let's only read out the
-    // (immutable) accumulator state once.
-    // (we do not rely on any other state, and the Rust side of the prepare operation is properly
-    // synchronized there, which means we can carry on without the lock).
-    final AccumulatorState againstAccumulatorState;
+    final StateComputerResult result;
     synchronized (this.commitAndAdvanceLedgerLock) {
-      againstAccumulatorState = this.currentLedgerHeader.getHeader().getAccumulatorState();
-    }
+      final AccumulatorState againstAccumulatorState =
+          this.currentLedgerHeader.getHeader().getAccumulatorState();
 
-    if (againstAccumulatorState.getStateVersion() > parentAccumulatorState.getStateVersion()) {
-      return Optional.empty();
-    }
-
-    if (parentHeader.isEndOfEpoch()) {
-      // Don't execute any transactions and commit to the same LedgerHeader
-      // if in the process of an epoch change. Updates to LedgerHeader here
-      // may cause a disagreement on the next epoch initial vertex if a TC
-      // occurs for example.
-      return Optional.of(
-          new ExecutedVertex(
-              vertexWithHash,
-              parentHeader,
-              ImmutableList.of(),
-              ImmutableMap.of(),
-              this.timeSupplier.currentTime()));
-    }
-
-    // It's possible that this function is called with a list of vertices which starts with some
-    // committed vertices
-    // By matching on the accumulator, we remove the already committed vertices from the
-    // "previous" list
-    final var committedAccumulatorHash = againstAccumulatorState.getAccumulatorHash();
-    // Whether any of the `previous` vertices has matched
-    // against the committed accumulator hash.
-    // `previous` vertices following the first matched vertex (including itself)
-    // are included in extension (`verticesInExtension`)
-    var committedAccumulatorHasMatchedStartOfAPreviousVertex = false;
-    var verticesInExtension = new ArrayList<ExecutedVertex>();
-    for (var previousVertex : previous) {
-      var previousVertexParentAccumulatorHash =
-          previousVertex
-              .vertex()
-              .getParentHeader()
-              .getLedgerHeader()
-              .getAccumulatorState()
-              .getAccumulatorHash();
-      if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
-        committedAccumulatorHasMatchedStartOfAPreviousVertex = true;
+      if (againstAccumulatorState.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+        return Optional.empty();
       }
-      if (committedAccumulatorHasMatchedStartOfAPreviousVertex) {
-        verticesInExtension.add(previousVertex);
+
+      if (parentHeader.isEndOfEpoch()) {
+        // Don't execute any transactions and commit to the same LedgerHeader
+        // if in the process of an epoch change. Updates to LedgerHeader here
+        // may cause a disagreement on the next epoch initial vertex if a TC
+        // occurs for example.
+        return Optional.of(
+            new ExecutedVertex(
+                vertexWithHash,
+                parentHeader,
+                ImmutableList.of(),
+                ImmutableMap.of(),
+                this.timeSupplier.currentTime()));
       }
+
+      // It's possible that this function is called with a list of vertices which starts with some
+      // committed vertices
+      // By matching on the accumulator, we remove the already committed vertices from the
+      // "previous" list
+      final var committedAccumulatorHash = againstAccumulatorState.getAccumulatorHash();
+      // Whether any of the `previous` vertices has matched
+      // against the committed accumulator hash.
+      // `previous` vertices following the first matched vertex (including itself)
+      // are included in extension (`verticesInExtension`)
+      var committedAccumulatorHasMatchedStartOfAPreviousVertex = false;
+      var verticesInExtension = new ArrayList<ExecutedVertex>();
+      for (var previousVertex : previous) {
+        var previousVertexParentAccumulatorHash =
+            previousVertex
+                .vertex()
+                .getParentHeader()
+                .getLedgerHeader()
+                .getAccumulatorState()
+                .getAccumulatorHash();
+        if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
+          committedAccumulatorHasMatchedStartOfAPreviousVertex = true;
+        }
+        if (committedAccumulatorHasMatchedStartOfAPreviousVertex) {
+          verticesInExtension.add(previousVertex);
+        }
+      }
+
+      final var vertexMatchesAccumulator =
+          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
+
+      // Check that ledger's accumulator state has been matched
+      // against any previous vertex's parent (extension not empty)
+      // or the parent of the "vertex" itself (extension empty).
+      if (!committedAccumulatorHasMatchedStartOfAPreviousVertex && !vertexMatchesAccumulator) {
+        // This could trigger if the vertices don't line up with the committed state.
+        // In other words, they don't provide a valid partial path from the committed state to the
+        // start of the proposal.
+        return Optional.empty();
+      }
+
+      // Now we verify the payload hashes of the extension match the start of the proposal
+      var extensionMatchesAccumulator =
+          this.verifier.verify(
+              againstAccumulatorState,
+              verticesInExtension.stream()
+                  .flatMap(
+                      v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
+                  .collect(ImmutableList.toImmutableList()),
+              parentAccumulatorState);
+
+      if (!extensionMatchesAccumulator) {
+        return Optional.empty();
+      }
+
+      result =
+          this.stateComputer.prepare(
+              committedAccumulatorHash,
+              verticesInExtension,
+              vertex.getTransactions(),
+              RoundDetails.fromVertex(vertexWithHash));
     }
-
-    final var vertexMatchesAccumulator =
-        committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
-
-    // Check that ledger's accumulator state has been matched
-    // against any previous vertex's parent (extension not empty)
-    // or the parent of the "vertex" itself (extension empty).
-    if (!committedAccumulatorHasMatchedStartOfAPreviousVertex && !vertexMatchesAccumulator) {
-      // This could trigger if the vertices don't line up with the committed state.
-      // In other words, they don't provide a valid partial path from the committed state to the
-      // start of the proposal.
-      return Optional.empty();
-    }
-
-    // Now we verify the payload hashes of the extension match the start of the proposal
-    var extensionMatchesAccumulator =
-        this.verifier.verify(
-            againstAccumulatorState,
-            verticesInExtension.stream()
-                .flatMap(v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
-                .collect(ImmutableList.toImmutableList()),
-            parentAccumulatorState);
-
-    if (!extensionMatchesAccumulator) {
-      return Optional.empty();
-    }
-
-    final StateComputerResult result =
-        this.stateComputer.prepare(
-            committedAccumulatorHash,
-            verticesInExtension,
-            vertex.getTransactions(),
-            RoundDetails.fromVertex(vertexWithHash));
 
     AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
     for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
