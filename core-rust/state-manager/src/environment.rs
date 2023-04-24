@@ -62,26 +62,44 @@
  * permissions under this License.
  */
 
-extern crate core;
+use tokio::runtime::Runtime;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
-mod accumulator_tree;
-mod environment;
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod staging;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
-mod utils;
+pub fn setup_tracing(runtime: &Runtime, jaeger_agent_endpoint: Option<String>) {
+    // TODO: increasing this or leaving [`opentelemetry_jaeger`] with the default value will not
+    // work for MacOS (by default, max UDP datagram size is 9216). Since this is not (yet) used
+    // in production, minimum value that works on most systems is used (for local testing out of
+    // the box). This needs a way of figuring this value at runtime (cross-platform and
+    // preferrably nicer than binary searching it) and/or pass through a configuration parameter.
+    let max_udp_packet_size = 9216;
+    runtime.spawn(async move {
+        match jaeger_agent_endpoint {
+            Some(jaeger_agent_endpoint) => {
+                let tracer = opentelemetry_jaeger::new_agent_pipeline()
+                    .with_endpoint(jaeger_agent_endpoint)
+                    // default value can be bigger than the supported one (i.e. MacOS)
+                    .with_max_packet_size(max_udp_packet_size)
+                    .with_auto_split_batch(true)
+                    .with_service_name("babylon-node")
+                    .install_batch(opentelemetry::runtime::Tokio)
+                    .unwrap();
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+                // Trying to initialize a global logger here, and carry on if this fails.
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::INFO)
+                    .with(opentelemetry)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+            None => {
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::INFO)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+        }
+    });
+}

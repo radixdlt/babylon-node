@@ -955,9 +955,11 @@ impl AccountChangeIndexExtension for RocksDBStore {
         let mut last_processed_state_version =
             self.account_change_index_last_processed_state_version();
 
-        if last_processed_state_version < last_state_version {
-            info!("Account Change Index is behind at state version {last_processed_state_version} out of {last_state_version}. Catching up ...");
+        if last_processed_state_version == last_state_version {
+            return;
         }
+
+        info!("Account Change Index is behind at state version {last_processed_state_version} out of {last_state_version}. Catching up ...");
 
         while last_processed_state_version < last_state_version {
             last_processed_state_version = self.update_account_change_index_from_store(
