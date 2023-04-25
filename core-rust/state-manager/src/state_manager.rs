@@ -191,7 +191,6 @@ where
                 .wrap(executable, ConfigType::Genesis)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, logged_description),
         );
-
         let commit = processed.expect_commit(logged_description);
         commit.check_success(logged_description);
         let validator_set = commit
@@ -331,7 +330,6 @@ where
         committed.push(manifest_encode(&ledger_round_update).unwrap());
 
         let mut rejected_payloads = Vec::new();
-
         let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
 
@@ -341,16 +339,17 @@ where
                 break;
             }
 
-            let parsed =
-                match UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+            let parsing_result =
+                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
                     &proposed_payload,
-                ) {
-                    Ok(parsed) => parsed,
-                    Err(error) => {
-                        rejected_payloads.push((proposed_payload, format!("{error:?}")));
-                        continue;
-                    }
-                };
+                );
+            let parsed = match parsing_result {
+                Ok(parsed) => parsed,
+                Err(error) => {
+                    rejected_payloads.push((proposed_payload, format!("{error:?}")));
+                    continue;
+                }
+            };
 
             let intent_hash = parsed.intent_hash();
             let user_payload_hash = parsed.user_payload_hash();
