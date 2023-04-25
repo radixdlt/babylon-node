@@ -164,7 +164,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 mempoolAddSuccessEventDispatcher.dispatch(success);
               } catch (MempoolFullException | MempoolDuplicateException ignored) {
               } catch (MempoolRejectedException e) {
-                log.error(e);
+                log.debug(e);
               }
             });
   }
