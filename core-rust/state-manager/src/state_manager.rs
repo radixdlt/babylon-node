@@ -190,14 +190,16 @@ where
                 .wrap(executable, ConfigType::Genesis)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, logged_description),
         );
-
         let commit = processed.expect_commit(logged_description);
         commit.check_success(logged_description);
+        let validator_set = commit
+            .next_epoch()
+            .map(|next_epoch| next_epoch.validator_set);
+        let ledger_hashes = commit.hash_structures_diff.ledger_hashes;
+
         PrepareGenesisResult {
-            validator_set: commit
-                .next_epoch()
-                .map(|next_epoch| next_epoch.validator_set),
-            ledger_hashes: commit.hash_structures_diff.ledger_hashes,
+            validator_set,
+            ledger_hashes,
         }
     }
 
@@ -314,112 +316,114 @@ where
                 .wrap(executable, ConfigType::Regular)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
         );
-
         let round_update_commit = processed_round_update.expect_commit(&logged_description);
         round_update_commit.check_success(logged_description);
         state_tracker.update(&round_update_commit.hash_structures_diff);
+        let mut next_epoch = round_update_commit.next_epoch();
+
         committed.push(manifest_encode(&ledger_round_update).unwrap());
 
-        let mut next_epoch = round_update_commit.next_epoch();
         let mut rejected_payloads = Vec::new();
-
         let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
 
-        // Don't process any additional transactions if next epoch has occurred
-        if next_epoch.is_none() {
-            for proposed_payload in prepare_request.proposed_payloads {
-                let parsed =
-                    match UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-                        &proposed_payload,
-                    ) {
-                        Ok(parsed) => parsed,
-                        Err(error) => {
-                            rejected_payloads.push((proposed_payload, format!("{error:?}")));
-                            continue;
-                        }
-                    };
+        for proposed_payload in prepare_request.proposed_payloads {
+            // Don't process any additional transactions if next epoch has occurred
+            if next_epoch.is_some() {
+                break;
+            }
 
-                let intent_hash = parsed.intent_hash();
-                let user_payload_hash = parsed.user_payload_hash();
-                let invalid_at_epoch = parsed.signed_intent.intent.header.end_epoch_exclusive;
-                if let Some(state) = already_committed_or_prepared_intent_hashes.get(&intent_hash) {
-                    rejected_payloads.push((
-                        proposed_payload,
-                        format!(
-                            "Duplicate intent hash: {:?}, state: {:?}",
-                            &intent_hash, state
-                        ),
-                    ));
+            let parsing_result =
+                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+                    &proposed_payload,
+                );
+            let parsed = match parsing_result {
+                Ok(parsed) => parsed,
+                Err(error) => {
+                    rejected_payloads.push((proposed_payload, format!("{error:?}")));
+                    continue;
+                }
+            };
+
+            let intent_hash = parsed.intent_hash();
+            let user_payload_hash = parsed.user_payload_hash();
+            let invalid_at_epoch = parsed.signed_intent.intent.header.end_epoch_exclusive;
+            if let Some(state) = already_committed_or_prepared_intent_hashes.get(&intent_hash) {
+                rejected_payloads.push((
+                    proposed_payload,
+                    format!(
+                        "Duplicate intent hash: {:?}, state: {:?}",
+                        &intent_hash, state
+                    ),
+                ));
+                pending_transaction_results.push(PendingTransactionResult {
+                    intent_hash,
+                    user_payload_hash,
+                    invalid_at_epoch,
+                    rejection_reason: Some(RejectionReason::IntentHashCommitted),
+                });
+                continue;
+            }
+
+            let validate_result = self
+                .user_transaction_validator
+                .validate_and_create_executable(&parsed, proposed_payload.len());
+
+            let executable = match validate_result {
+                Ok(executable) => executable,
+                Err(error) => {
+                    rejected_payloads.push((proposed_payload, format!("{:?}", &error)));
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
                         user_payload_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::IntentHashCommitted),
+                        rejection_reason: Some(RejectionReason::ValidationError(error)),
                     });
                     continue;
                 }
+            };
 
-                let validate_result = self
-                    .user_transaction_validator
-                    .validate_and_create_executable(&parsed, proposed_payload.len());
+            let (payload, hash) = LedgerTransaction::User(parsed.clone())
+                .create_payload_and_hash()
+                .unwrap();
 
-                let executable = match validate_result {
-                    Ok(executable) => executable,
-                    Err(error) => {
-                        rejected_payloads.push((proposed_payload, format!("{:?}", &error)));
-                        pending_transaction_results.push(PendingTransactionResult {
-                            intent_hash,
-                            user_payload_hash,
-                            invalid_at_epoch,
-                            rejection_reason: Some(RejectionReason::ValidationError(error)),
-                        });
-                        continue;
-                    }
-                };
+            let logged_description = format!("newly proposed {}", hash);
+            let processed = self.execution_cache.execute_transaction(
+                read_store.deref(),
+                &epoch_identifiers,
+                state_tracker.latest_transaction_identifiers(),
+                &hash,
+                &self
+                    .execution_configurator
+                    .wrap(executable, ConfigType::Regular)
+                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
+            );
 
-                let (payload, hash) = LedgerTransaction::User(parsed.clone())
-                    .create_payload_and_hash()
-                    .unwrap();
+            match processed.expect_commit_or_reject(logged_description) {
+                Ok(commit) => {
+                    state_tracker.update(&commit.hash_structures_diff);
+                    next_epoch = commit.next_epoch();
 
-                let logged_description = format!("newly proposed {}", hash);
-                let processed = self.execution_cache.execute_transaction(
-                    read_store.deref(),
-                    &epoch_identifiers,
-                    state_tracker.latest_transaction_identifiers(),
-                    &hash,
-                    &self
-                        .execution_configurator
-                        .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
-                );
+                    already_committed_or_prepared_intent_hashes
+                        .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
+                    committed.push(payload);
+                    pending_transaction_results.push(PendingTransactionResult {
+                        intent_hash,
+                        user_payload_hash,
+                        invalid_at_epoch,
+                        rejection_reason: None,
+                    });
+                }
+                Err(reject) => {
+                    let error = reject.error.clone();
 
-                match processed.expect_commit_or_reject(logged_description) {
-                    Ok(commit) => {
-                        state_tracker.update(&commit.hash_structures_diff);
-
-                        already_committed_or_prepared_intent_hashes
-                            .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
-                        committed.push(payload);
-                        pending_transaction_results.push(PendingTransactionResult {
-                            intent_hash,
-                            user_payload_hash,
-                            invalid_at_epoch,
-                            rejection_reason: None,
-                        });
-                        next_epoch = commit.next_epoch();
-                    }
-                    Err(reject) => {
-                        rejected_payloads.push((proposed_payload, format!("{:?}", reject)));
-                        pending_transaction_results.push(PendingTransactionResult {
-                            intent_hash,
-                            user_payload_hash,
-                            invalid_at_epoch,
-                            rejection_reason: Some(RejectionReason::FromExecution(Box::new(
-                                reject.error.clone(),
-                            ))),
-                        });
-                    }
+                    rejected_payloads.push((proposed_payload, format!("{:?}", error)));
+                    pending_transaction_results.push(PendingTransactionResult {
+                        intent_hash,
+                        user_payload_hash,
+                        invalid_at_epoch,
+                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(error))),
+                    });
                 }
             }
         }
@@ -586,40 +590,38 @@ where
                     .wrap(executable, ConfigType::Regular)
                     .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
             );
-
             let commit = processed.expect_commit(logged_description);
 
-            let is_last_transaction_in_request = i == (commit_transactions_len - 1);
-            if !is_last_transaction_in_request && commit.next_epoch().is_some() {
-                return Err(CommitError::MissingEpochProof);
-            }
+            let hash_structures_diff = &commit.hash_structures_diff;
+            state_tracker.update(hash_structures_diff);
+            let next_epoch = commit.next_epoch();
+            let state_hash_tree_diff = hash_structures_diff.state_hash_tree_diff.clone();
+            let transaction_tree_slice = hash_structures_diff.transaction_tree_diff.slice.clone();
+            let receipt_tree_slice = hash_structures_diff.receipt_tree_diff.slice.clone();
+            let local_receipt = commit.local_receipt.clone();
 
-            // TODO: verify that `result.next_epoch == commit_ledger_header.next_epoch`
-            // (currently it would fail for some of our tests which create genesis proof
-            // directly, without caring about validator addresses)
+            Self::check_epoch_proof_match(
+                commit_ledger_header,
+                next_epoch,
+                i == (commit_transactions_len - 1),
+            )?;
 
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
                 intent_hashes.push(intent_hash);
             }
 
-            let hash_structures_diff = &commit.hash_structures_diff;
-            state_tracker.update(hash_structures_diff);
+            let transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
+            substate_store_update.apply(&local_receipt.on_ledger.substate_changes);
+            state_tree_update.add(transaction_identifiers.state_version, state_hash_tree_diff);
+            transaction_tree_slice_merger.append(transaction_tree_slice);
+            receipt_tree_slice_merger.append(receipt_tree_slice);
 
             committed_transaction_bundles.push((
                 transaction,
-                commit.local_receipt.clone(),
-                state_tracker.latest_transaction_identifiers().clone(),
+                local_receipt,
+                transaction_identifiers,
             ));
-
-            substate_store_update.apply(&commit.local_receipt.on_ledger.substate_changes);
-            state_tree_update.add(
-                state_tracker.latest_transaction_identifiers().state_version,
-                &hash_structures_diff.state_hash_tree_diff,
-            );
-            transaction_tree_slice_merger
-                .append(hash_structures_diff.transaction_tree_diff.slice.clone());
-            receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice.clone());
         }
 
         let commit_ledger_hashes = &commit_ledger_header.hashes;
@@ -672,6 +674,50 @@ where
         );
         drop(write_pending_transaction_result_cache);
 
+        Ok(())
+    }
+
+    fn check_epoch_proof_match(
+        commit_ledger_header: &LedgerHeader,
+        opt_transaction_next_epoch: Option<NextEpoch>,
+        is_last_transaction_in_request: bool,
+    ) -> Result<(), CommitError> {
+        if is_last_transaction_in_request {
+            match &commit_ledger_header.next_epoch {
+                Some(proof_next_epoch) => {
+                    if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
+                        if transaction_next_epoch != *proof_next_epoch {
+                            error!(
+                                "computed next epoch differs from the one in proof ({:?} != {:?})",
+                                transaction_next_epoch, proof_next_epoch
+                            );
+                            return Err(CommitError::EpochProofMismatch);
+                        }
+                    } else {
+                        error!(
+                            "computed no next epoch, but proof contains {:?}",
+                            proof_next_epoch
+                        );
+                        return Err(CommitError::SuperfluousEpochProof);
+                    }
+                }
+                None => {
+                    if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
+                        error!(
+                            "no next epoch in proof, but last transaction in batch computed {:?}",
+                            transaction_next_epoch
+                        );
+                        return Err(CommitError::MissingEpochProof);
+                    }
+                }
+            };
+        } else if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
+            error!(
+                "non-last transaction in batch computed {:?}",
+                transaction_next_epoch
+            );
+            return Err(CommitError::MissingEpochProof);
+        }
         Ok(())
     }
 }
