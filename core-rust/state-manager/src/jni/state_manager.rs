@@ -80,10 +80,13 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use tokio::runtime::Runtime;
 
+use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::transaction::{
-    CommitableTransactionValidator, ExecutionConfigurator, TransactionPreviewer,
+    CachedCommitabilityValidator, CommitabilityValidator, ExecutionConfigurator,
+    TransactionPreviewer,
 };
+use crate::PendingTransactionResultCache;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
@@ -137,8 +140,10 @@ pub struct JNIStateManager {
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
-    pub commitable_transaction_validator: Arc<CommitableTransactionValidator<StateManagerDatabase>>,
+    pub mempool_manager: Arc<MempoolManager>,
+    pub commitability_validator: Arc<CommitabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
     pub metric_registry: Registry,
 }
@@ -169,32 +174,46 @@ impl JNIStateManager {
             StateManagerDatabase::from_config(config.db_config),
         ));
         let metric_registry = Registry::new();
-        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
-            mempool_config,
-            &metric_registry,
-        )));
         let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
-        let commitable_transaction_validator = Arc::new(CommitableTransactionValidator::new(
+        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
+            PendingTransactionResultCache::new(10000, 10000),
+        ));
+        let commitability_validator = Arc::new(CommitabilityValidator::new(
             &network,
             database.clone(),
             execution_configurator.clone(),
         ));
+        let cached_commitability_validator = CachedCommitabilityValidator::new(
+            database.clone(),
+            commitability_validator.clone(),
+            pending_transaction_result_cache.clone(),
+        );
+        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
+            mempool_config,
+        )));
+        let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
+        let mempool_manager = Arc::new(MempoolManager::new(
+            mempool.clone(),
+            mempool_relay_dispatcher,
+            cached_commitability_validator,
+            &metric_registry,
+        ));
+        // TODO(resolve during code review): the previewer is not needed by StateManager itself; it
+        // is stored in JniStateManager only to be transferred to the CoreApiState - is there a more
+        // elegant way here than Arc?
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
             database.clone(),
             execution_configurator.clone(),
         ));
 
-        let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
-
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             &network,
             database.clone(),
-            mempool.clone(),
+            mempool_manager.clone(),
             execution_configurator,
-            commitable_transaction_validator.clone(),
-            mempool_relay_dispatcher,
+            pending_transaction_result_cache.clone(),
             logging_config,
             &metric_registry,
         )));
@@ -204,8 +223,10 @@ impl JNIStateManager {
             network,
             state_manager,
             database,
+            pending_transaction_result_cache,
             mempool,
-            commitable_transaction_validator,
+            mempool_manager,
+            commitability_validator,
             transaction_previewer,
             metric_registry,
         };
@@ -250,6 +271,12 @@ impl JNIStateManager {
 
     pub fn get_runtime(env: &JNIEnv, j_state_manager: JObject) -> Arc<Runtime> {
         Self::get_state(env, j_state_manager).runtime.clone()
+    }
+
+    pub fn get_mempool_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<MempoolManager> {
+        Self::get_state(env, j_state_manager)
+            .mempool_manager
+            .clone()
     }
 }
 

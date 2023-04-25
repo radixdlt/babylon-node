@@ -172,7 +172,7 @@ pub mod commit {
             }
         }
 
-        pub fn apply(&mut self, changes: &Vec<SubstateChange>) {
+        pub fn apply(&mut self, changes: &[SubstateChange]) {
             for change in changes {
                 let id = &change.substate_id;
                 match &change.action {
@@ -215,13 +215,13 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: u64, diff: &StateHashTreeDiff) {
+        pub fn add(&mut self, at_state_version: u64, diff: StateHashTreeDiff) {
             self.new_re_node_layer_nodes
-                .extend(diff.new_re_node_layer_nodes.clone());
+                .extend(diff.new_re_node_layer_nodes);
             self.new_substate_layer_nodes
-                .extend(diff.new_substate_layer_nodes.clone());
+                .extend(diff.new_substate_layer_nodes);
             self.stale_node_keys_at_state_version
-                .push((at_state_version, diff.stale_hash_tree_node_keys.clone()));
+                .push((at_state_version, diff.stale_hash_tree_node_keys));
         }
     }
 

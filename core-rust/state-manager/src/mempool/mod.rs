@@ -161,6 +161,7 @@ pub struct MempoolConfig {
     pub max_size: u32,
 }
 
+pub mod mempool_manager;
 pub mod mempool_relay_dispatcher;
 pub mod pending_transaction_result_cache;
 pub mod simple_mempool;
