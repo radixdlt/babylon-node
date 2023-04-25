@@ -111,6 +111,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             2, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(5000, 10, 3000L))));

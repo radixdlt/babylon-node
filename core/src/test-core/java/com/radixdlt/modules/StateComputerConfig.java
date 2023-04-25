@@ -106,18 +106,21 @@ public sealed interface StateComputerConfig {
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, enableAccountChangeIndex, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, genesis, databaseType, proposerConfig, false);
+    return new REv2StateComputerConfig(
+        networkId, genesis, databaseType, enableAccountChangeIndex, proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -161,6 +164,7 @@ public sealed interface StateComputerConfig {
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)
       implements StateComputerConfig {}

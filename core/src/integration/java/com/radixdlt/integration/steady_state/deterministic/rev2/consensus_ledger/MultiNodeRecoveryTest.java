@@ -144,6 +144,7 @@ public final class MultiNodeRecoveryTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             NUM_VALIDATORS, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
   }

@@ -410,7 +410,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         0,
                         0,
                         rev2Config.databaseType(),
-                        false,
+                        rev2Config.enableAccountChangeIndex(),
                         Option.none(),
                         rev2Config.debugLogging()));
               }
@@ -423,7 +423,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         mempool.maxNumTransactionsPerProposal(),
                         mempool.maxProposalTotalTxnsPayloadSize(),
                         rev2Config.databaseType(),
-                        false,
+                        rev2Config.enableAccountChangeIndex(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));
               }

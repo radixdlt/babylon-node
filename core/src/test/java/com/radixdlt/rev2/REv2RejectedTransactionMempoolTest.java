@@ -133,6 +133,7 @@ public class REv2RejectedTransactionMempoolTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
   }

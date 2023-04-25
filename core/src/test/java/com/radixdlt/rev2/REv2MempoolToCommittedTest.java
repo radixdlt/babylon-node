@@ -123,6 +123,7 @@ public class REv2MempoolToCommittedTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, 1, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

@@ -102,6 +102,7 @@ public class REv2IncreasingEpochTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));
   }
 

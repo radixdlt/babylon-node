@@ -110,10 +110,19 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000);
+    return buildRunningServerTest(1000000, false);
+  }
+
+  protected DeterministicTest buildRunningServerTest(boolean enableAccountChangeIndex) {
+    return buildRunningServerTest(1000000, enableAccountChangeIndex);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
+    return buildRunningServerTest(roundsPerEpoch, false);
+  }
+
+  protected DeterministicTest buildRunningServerTest(
+      int roundsPerEpoch, boolean enableAccountChangeIndex) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -141,6 +150,7 @@ public abstract class DeterministicCoreApiTestBase {
                             TransactionBuilder.createGenesisWithNumValidators(
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                            enableAccountChangeIndex,
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));

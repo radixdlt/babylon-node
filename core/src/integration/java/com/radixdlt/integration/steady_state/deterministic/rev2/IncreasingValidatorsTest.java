@@ -121,6 +121,7 @@ public final class IncreasingValidatorsTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             2, 2 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

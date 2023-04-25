@@ -120,6 +120,7 @@ public final class REv2MempoolFillAndEmptyTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
+                        false,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

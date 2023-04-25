@@ -214,6 +214,7 @@ public final class MultiNodeRebootTest {
                     TransactionBuilder.createGenesisWithNumValidators(
                         numValidators, Decimal.of(1), this.roundsPerEpoch),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                    false,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
                 SyncRelayConfig.of(5000, 10, 5000L))));

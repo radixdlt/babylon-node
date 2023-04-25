@@ -84,7 +84,7 @@ import org.junit.Test;
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(true)) {
 
       var faucetAddress = ScryptoConstants.FAUCET_COMPONENT_ADDRESS;
       var faucetAddressStr = addressing.encodeNormalComponentAddress(faucetAddress);
