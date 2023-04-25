@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::utils::jni_sbor_coded_call;
 use bech32::{FromBase32, ToBase32, Variant};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -69,21 +70,19 @@ use jni::JNIEnv;
 use radix_engine::types::ComponentAddress;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
-use super::utils::jni_static_sbor_call;
-
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_encode_bech32m)
+    jni_sbor_coded_call(&env, request_payload, do_encode_bech32m)
 }
 
 fn do_encode_bech32m((hrp, full_data): (String, Vec<u8>)) -> Result<String, String> {
     let base32_data = full_data.to_base32();
 
-    let address = bech32::encode(&hrp, base32_data, bech32::Variant::Bech32m)
+    let address = bech32::encode(&hrp, base32_data, Variant::Bech32m)
         .map_err(|e| format!("Unable to encode bech32m address: {e:?}"))?;
 
     Ok(address)
@@ -95,7 +94,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_decode_bech32m)
+    jni_sbor_coded_call(&env, request_payload, do_decode_bech32m)
 }
 
 fn do_decode_bech32m(address: String) -> Result<(String, Vec<u8>), String> {
@@ -123,7 +122,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_virtual_account_address)
+    jni_sbor_coded_call(&env, request_payload, do_virtual_account_address)
 }
 
 fn do_virtual_account_address(key: EcdsaSecp256k1PublicKey) -> ComponentAddress {

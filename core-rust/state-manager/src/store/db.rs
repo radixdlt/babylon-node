@@ -62,8 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::java_structure::*;
-
 use crate::store::traits::CommitBundle;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
@@ -84,7 +82,7 @@ use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
     LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
-use radix_engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine::types::*;
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]

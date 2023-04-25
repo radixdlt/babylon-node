@@ -64,12 +64,11 @@
 
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+
+use crate::jni::java_structure::{StructFromJava, StructToJava};
 
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
-
-use super::java_structure::JavaStructure;
 
 pub fn jni_jbytearray_to_vector(
     env: &JNIEnv,
@@ -93,63 +92,24 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
         .expect("Can't convert &[u8] back to jbyteArray - likely due to OOM")
 }
 
-pub fn jni_static_sbor_call<
-    Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoCategorize + ScryptoEncode + ScryptoDecode,
->(
-    env: JNIEnv,
-    request_payload: jbyteArray,
-    method: impl FnOnce(Args) -> Response,
-) -> jbyteArray {
-    let response_result = jni_static_sbor_call_inner(&env, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
-}
-
-#[tracing::instrument(skip_all)]
-fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
-    env: &JNIEnv,
-    request_payload: jbyteArray,
-    method: impl FnOnce(Args) -> Response,
-) -> StateManagerResult<Response> {
-    let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
-    let args = Args::from_java(&vec_payload)?;
-
-    let response = method(args);
-    Ok(response)
-}
-
-pub fn jni_static_sbor_call_flatten_result<
-    Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoCategorize + ScryptoDecode + ScryptoEncode,
->(
-    env: JNIEnv,
-    request_payload: jbyteArray,
-    method: impl FnOnce(Args) -> StateManagerResult<Response>,
-) -> jbyteArray {
-    let response_result = jni_static_sbor_call_flatten_result_inner(&env, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
-}
-
-fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: JavaStructure>(
-    env: &JNIEnv,
-    request_payload: jbyteArray,
-    method: impl FnOnce(Args) -> StateManagerResult<Response>,
-) -> StateManagerResult<Response> {
-    let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
-    let args = Args::from_java(&vec_payload)?;
-
-    let response = method(args)?;
-    Ok(response)
-}
-
 #[tracing::instrument(skip_all)]
 pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> Response,
 ) -> jbyteArray {
+    jni_sbor_coded_fallible_call(env, encoded_request, |args| Ok(method(args)))
+}
+
+#[tracing::instrument(skip_all)]
+pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+    env: &JNIEnv,
+    encoded_request: jbyteArray,
+    method: impl FnOnce(Args) -> StateManagerResult<Response>,
+) -> jbyteArray {
     let result = jni_jbytearray_to_vector(env, encoded_request)
-        .and_then(|bytes| scrypto_decode(&bytes).map_err(StateManagerError::from))
-        .map(method);
-    jni_slice_to_jbytearray(env, &scrypto_encode(&result).unwrap())
+        .and_then(|bytes| Args::from_java(&bytes))
+        .map(method)
+        .and_then(|result| result);
+    jni_slice_to_jbytearray(env, &result.to_java().unwrap())
 }

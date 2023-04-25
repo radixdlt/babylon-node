@@ -64,7 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
-use crate::jni::java_structure::JavaStructure;
+use crate::jni::java_structure::StructFromJava;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;

@@ -70,13 +70,13 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::JNIStateManager;
 use state_manager::jni::utils::*;
 use std::str;
 use std::sync::MutexGuard;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use state_manager::jni::java_structure::StructFromJava;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
