@@ -44,14 +44,14 @@ export class LTS {
    *
    * Unless `acceptableSyncDelaySeconds` is set to `null`,
    * this method will throw an error if the node is not synced up within
-   * `acceptableSyncDelaySeconds` (defaults to 60) of the current time.
+   * `acceptableSyncDelaySeconds` (defaults to 120) of the current time.
    *
    * @returns metadata for transaction construction - such as the current epoch
    */
   public async getConstructionMetadata(parameters?: {
     acceptableSyncDelaySeconds: number | null;
   }): Promise<LtsTransactionConstructionResponse> {
-    const { acceptableSyncDelaySeconds = 60 } = parameters ?? {};
+    const { acceptableSyncDelaySeconds = 120 } = parameters ?? {};
     const response = await this.innerClient.ltsTransactionConstructionPost({
       ltsTransactionConstructionRequest: {
         network: this.logicalNetworkName,
