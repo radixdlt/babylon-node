@@ -126,6 +126,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
                     TransactionBuilder.createGenesisWithNumValidators(
                         NUM_VALIDATORS, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                    false,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
                 SyncRelayConfig.of(5000, 10, 5000L)));
