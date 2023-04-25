@@ -25,8 +25,8 @@ parking_lot = { version = "0.12" }
 #
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"] }
 transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"]  }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
 radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
 radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }

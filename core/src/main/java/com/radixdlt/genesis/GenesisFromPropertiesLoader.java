@@ -88,6 +88,8 @@ import org.json.JSONObject;
 public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network network) {
   private static final Logger log = LogManager.getLogger();
 
+  // TODO: remove/cleanup
+
   // Genesis parameters for XRD allocation for testnets
   private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
       Set.of(

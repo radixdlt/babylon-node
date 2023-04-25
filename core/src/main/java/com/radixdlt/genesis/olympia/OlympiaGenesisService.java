@@ -72,6 +72,7 @@ import com.google.inject.Inject;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.genesis.olympia.OlympiaEndStateApiClient.OlympiaEndStateResponse;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIRDeserializer;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIRSerializationException;
@@ -133,11 +134,12 @@ public final class OlympiaGenesisService {
             newSingleThreadScheduledExecutor(ThreadFactories.threads("OlympiaGenesisService")));
 
     final var completableFuture = new CompletableFuture<GenesisData>();
-    this.executor.orElseThrow().execute(() -> poll(completableFuture));
+    // TODO: Fixme :)
+//    this.executor.orElseThrow().execute(() -> poll(completableFuture));
     return completableFuture;
   }
 
-  private void poll(CompletableFuture<GenesisData> completableFuture) {
+  private void poll(CompletableFuture<GenesisData2> completableFuture) {
     final OlympiaEndStateResponse response;
     try {
       response = olympiaEndStateApiClient.getOlympiaEndState();
