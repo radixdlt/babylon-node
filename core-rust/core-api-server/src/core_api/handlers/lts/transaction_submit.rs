@@ -18,10 +18,9 @@ pub(crate) async fn handle_lts_transaction_submit(
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let mut state_manager = state.state_manager.write();
-
-    let result = state_manager
-        .add_to_mempool_and_trigger_relay(MempoolAddSource::CoreApi, notarized_transaction);
+    let result = state
+        .mempool_manager
+        .add_and_trigger_relay(MempoolAddSource::CoreApi, notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::LtsTransactionSubmitResponse::new(false)),

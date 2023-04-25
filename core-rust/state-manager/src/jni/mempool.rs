@@ -64,7 +64,7 @@
 
 use std::collections::HashSet;
 
-use crate::jni::state_manager::{ActualStateManager, JNIStateManager};
+use crate::jni::state_manager::JNIStateManager;
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -92,25 +92,20 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_add)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_add(
-    state_manager: &mut ActualStateManager,
-    transaction: JavaRawTransaction,
-) -> Result<(), MempoolAddErrorJava> {
-    let notarized_transaction =
-        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-            &transaction.payload,
-        )?;
-
-    state_manager
-        .check_for_rejection_and_add_to_mempool(
-            MempoolAddSource::MempoolSync,
-            notarized_transaction,
-        )
-        .map_err(Into::into)
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |transaction: JavaRawTransaction| -> Result<(), MempoolAddErrorJava> {
+            let notarized_transaction =
+                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+                    &transaction.payload,
+                )?;
+            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
+            mempool_manager
+                .add_if_commitable(MempoolAddSource::MempoolSync, notarized_transaction)
+                .map_err(|error| error.into())
+        },
+    )
 }
 
 #[no_mangle]
@@ -130,16 +125,15 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
                 .map(|hash| UserPayloadHash::from_raw_bytes(hash.into_bytes()))
                 .collect();
 
-            let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
-            let read_mempool = mempool.read();
-            read_mempool
+            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
+            mempool_manager
                 .get_proposal_transactions(
                     request.max_count.into(),
                     request.max_payload_size_bytes.into(),
                     &user_payload_hashes_to_exclude,
                 )
                 .into_iter()
-                .map(|t| t.into())
+                .map(|pending_transaction| pending_transaction.into())
                 .collect()
         },
     )
@@ -170,31 +164,10 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
         &env,
         request_payload,
         |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaRawTransaction> {
-            let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
-            let read_mempool = mempool.read();
-            let candidate_transactions = read_mempool.get_all_transactions();
-            drop(read_mempool);
-
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            let mut write_state_manager = state_manager.write();
-            let checked_transactions = write_state_manager.check_transactions_to_relay(
-                candidate_transactions,
-                max_num_txns.try_into().unwrap(),
-                max_payload_size_bytes.try_into().unwrap(),
-            );
-
-            if !checked_transactions.to_remove.is_empty() {
-                let mut write_mempool = mempool.write();
-                for transaction_to_remove in checked_transactions.to_remove {
-                    write_mempool.remove_transaction(
-                        &transaction_to_remove.intent_hash,
-                        &transaction_to_remove.payload_hash,
-                    );
-                }
-            }
-
-            checked_transactions
-                .to_relay
+            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
+            let transactions_to_relay =
+                mempool_manager.get_relay_transactions(max_num_txns, max_payload_size_bytes);
+            transactions_to_relay
                 .into_iter()
                 .map(|transaction_to_relay| transaction_to_relay.into())
                 .collect()
