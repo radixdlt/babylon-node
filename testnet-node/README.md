@@ -9,10 +9,12 @@ The node connects to the latest public testnet (as of April/May 2023, this is RC
 Documentation for integrators is available [here](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
 ## Getting started
-1. Install `docker` version 20.10+
-2. Run `./run.sh` in this folder, or run `docker compose up --build`.
-   * NOTE: This uses [the recommended `docker compose` command](https://docs.docker.com/compose/compose-v2/), rather than the legacy `docker-compose`. If you see an error such as `compose is not a command`, please ensure you are running docker 20.10 or above.
-3. The node will start syncing. You can see how close to synced-up you are by running this query and examining the `ledger_clock.date_time` field:
+1. Install `docker` version 20.10+ with `docker compose` - either by installing docker desktop, or by installing [plain docker and the compose CLI extension](https://docs.docker.com/compose/install/).
+2. Ensure `docker compose` runs successfully
+3. Run `./run.sh` in this folder, or run `docker compose up --build`.
+   * NOTE: This uses [the recommended `docker compose` command](https://docs.docker.com/compose/compose-v2/), rather than the legacy `docker-compose`.
+   * If you see an error such as `compose is not a command`, please ensure you are running docker with the compose extension as above.
+4. The node will start syncing. You can see how close to synced-up you are by running this query and examining the `ledger_clock.date_time` field:
 ```sh
 curl \
   'http://localhost:3333/core/lts/transaction/construction' \
