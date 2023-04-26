@@ -114,7 +114,6 @@ public final class SimpleFuzzerTransactionsTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

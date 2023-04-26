@@ -114,7 +114,6 @@ public final class REv2GenesisTest {
                             INITIAL_STAKE,
                             UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        false,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, 0, MempoolRelayConfig.of())))));
   }

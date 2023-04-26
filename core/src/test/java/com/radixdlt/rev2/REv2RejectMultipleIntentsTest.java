@@ -119,7 +119,6 @@ public final class REv2RejectMultipleIntentsTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 

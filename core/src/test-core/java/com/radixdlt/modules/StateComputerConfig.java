@@ -123,6 +123,15 @@ public sealed interface StateComputerConfig {
         networkId, genesis, databaseType, enableAccountChangeIndex, proposerConfig, false);
   }
 
+  static StateComputerConfig rev2(
+      int networkId,
+      RawLedgerTransaction genesis,
+      REv2StateManagerModule.DatabaseType databaseType,
+      REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(
+        networkId, genesis, databaseType, false, proposerConfig, false);
+  }
+
   sealed interface MockedMempoolConfig {
     static MockedMempoolConfig noMempool() {
       return new NoMempool();

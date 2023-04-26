@@ -128,7 +128,6 @@ public class REv2SyncTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(200, 10, 2000))));
   }

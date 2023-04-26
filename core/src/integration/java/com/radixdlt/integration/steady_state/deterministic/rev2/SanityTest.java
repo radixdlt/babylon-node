@@ -143,7 +143,6 @@ public final class SanityTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))));

@@ -121,7 +121,6 @@ public final class REv2LargeTransactionTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.mempool(
                             10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(200, 10, 1000))));

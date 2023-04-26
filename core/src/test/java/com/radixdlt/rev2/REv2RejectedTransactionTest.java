@@ -131,7 +131,6 @@ public final class REv2RejectedTransactionTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        false,
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
