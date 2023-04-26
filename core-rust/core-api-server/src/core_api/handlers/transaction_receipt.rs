@@ -3,7 +3,7 @@ use crate::core_api::*;
 
 use state_manager::store::traits::*;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_receipt(
     state: State<CoreApiState>,
     Json(request): Json<models::TransactionReceiptRequest>,

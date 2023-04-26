@@ -4,7 +4,7 @@ use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::QueryableTransactionStore;
 use state_manager::CommittedTransactionIdentifiers;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
     state: State<CoreApiState>,
     Json(request): Json<models::NetworkStatusRequest>,

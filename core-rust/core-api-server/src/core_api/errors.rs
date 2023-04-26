@@ -2,6 +2,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+
 use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 
@@ -88,7 +89,9 @@ impl<E: ErrorDetails> IntoResponse for ResponseError<E> {
             self.trace.map(|x| x.0),
         );
 
-        (self.status_code, Json(body)).into_response()
+        let mut response = (self.status_code, Json(body.clone())).into_response();
+        response.extensions_mut().insert(body);
+        response
     }
 }
 

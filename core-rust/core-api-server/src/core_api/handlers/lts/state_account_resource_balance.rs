@@ -9,7 +9,7 @@ use radix_engine::{
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStateAccountFungibleResourceBalanceRequest>,
