@@ -20,6 +20,8 @@ curl \
   -d '{ "network": "kisharnet" }'
 ```
 
+Note: we recommend updating the docker limits to at least 4 CPUs, 4GB RAM and 100GB disk size.
+
 ## Node volumes
 
 The node makes use of some persistent data, which is set up to be stored as docker volumes.
@@ -49,3 +51,12 @@ with
 ```
 
 And then `./run.sh` in this folder.
+
+## Debugging
+
+It might happen that you stumble across: 
+```
+com.sleepycat.je.DiskLimitException: (JE 18.3.12) Disk usage is not within je.maxDisk or je.freeDisk limits and write operations are prohibited: maxDiskLimit=0 freeDiskLimit=5,368,709,120 adjustedMaxDiskLimit=0 maxDiskOverage=0 freeDiskShortage=28,782,592 diskFreeSpace=5,339,926,528 availableLogSize=-28,782,592 totalLogSize=1,915,298 activeLogSize=1,915,298 reservedLogSize=0 protectedLogSize=0 protectedLogSizeMap={}
+```
+
+This means you have (almost) reached the virtual disk memory limit of docker. You simply need to increase the limit. 
