@@ -148,6 +148,7 @@ pub mod commit {
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
     use std::collections::{HashMap, HashSet};
+    use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
@@ -159,9 +160,18 @@ pub mod commit {
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
     }
 
+    // TODO(engine-merge): placeholder enum; remove
+    pub enum DatabaseUpdate {
+        Set(Vec<u8>),
+        Delete,
+    }
+
     pub struct SubstateStoreUpdate {
+        // TODO(engine-merge): remove
         pub upserted: HashMap<SubstateId, OutputValue>,
         pub deleted_ids: HashSet<SubstateId>,
+
+        pub updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
     }
 
     impl SubstateStoreUpdate {
@@ -169,6 +179,7 @@ pub mod commit {
             Self {
                 upserted: HashMap::new(),
                 deleted_ids: HashSet::new(),
+                updates: IndexMap::new(),
             }
         }
 

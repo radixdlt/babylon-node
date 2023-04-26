@@ -67,6 +67,9 @@ mod in_memory;
 mod rocks_db;
 pub mod traits;
 
-pub use db::{DatabaseConfig, StateManagerDatabase};
+pub use db::{
+    decode_substate_id, encode_substate_id, DatabaseConfig, ListableSubstateStore,
+    StateManagerDatabase,
+};
 pub use in_memory::InMemoryStore;
 pub use rocks_db::RocksDBStore;

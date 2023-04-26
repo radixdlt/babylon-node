@@ -65,6 +65,7 @@
 mod cache;
 pub mod epoch_handling;
 mod result;
+mod sorted_kv_merge_iterator;
 mod stage_tree;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;

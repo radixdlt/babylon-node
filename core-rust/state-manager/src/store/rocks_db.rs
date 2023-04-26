@@ -121,6 +121,7 @@ enum RocksDBColumnFamily {
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
+use crate::store::db::{decode_substate_id, encode_substate_id, ListableSubstateStore};
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
@@ -345,6 +346,7 @@ impl CommitStore for RocksDBStore {
             );
         }
 
+        // TODO(engine-merge): remove
         for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
             batch.put_cf(
                 self.cf_handle(&Substates),
@@ -352,11 +354,27 @@ impl CommitStore for RocksDBStore {
                 scrypto_encode(&substate).unwrap(),
             );
         }
+
+        // TODO(engine-merge): remove
         for substate_id in commit_bundle.substate_store_update.deleted_ids {
             batch.delete_cf(
                 self.cf_handle(&Substates),
                 scrypto_encode(&substate_id).unwrap(),
             );
+        }
+
+        for (index_id, updates_within_index) in commit_bundle.substate_store_update.updates {
+            for (key, update) in updates_within_index {
+                let substate_id = encode_substate_id(&index_id, &key);
+                match update {
+                    DatabaseUpdate::Set(value) => {
+                        batch.put_cf(self.cf_handle(&Substates), substate_id, value)
+                    }
+                    DatabaseUpdate::Delete => {
+                        batch.delete_cf(self.cf_handle(&Substates), substate_id)
+                    }
+                }
+            }
         }
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
@@ -716,6 +734,32 @@ impl QueryableProofStore for RocksDBStore {
 
     fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
         self.get_last(&LedgerProofByEpoch)
+    }
+}
+
+impl ListableSubstateStore for RocksDBStore {
+    fn list_substates(
+        &self,
+        index_id: &Vec<u8>,
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        let index_id = index_id.clone();
+        let start = encode_substate_id(&index_id, &vec![0]);
+        let iter = self
+            .db
+            .iterator_cf(
+                self.cf_handle(&Substates),
+                IteratorMode::From(&start, Direction::Forward),
+            )
+            .map(|kv| {
+                let (k, v) = kv.unwrap();
+                let (index, key) =
+                    decode_substate_id(k.as_ref()).expect("Failed to decode substate ID");
+                (index, key, v)
+            })
+            .take_while(move |(index, ..)| index_id.eq(index))
+            .map(|(_, key, value)| (key, value.as_ref().to_vec()));
+
+        Box::new(iter)
     }
 }
 

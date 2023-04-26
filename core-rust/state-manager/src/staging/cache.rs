@@ -64,6 +64,7 @@
 
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
+use std::collections::Bound::{Included, Unbounded};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::staging::{
@@ -75,8 +76,11 @@ use crate::{
     LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
+use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
 
+use crate::staging::sorted_kv_merge_iterator::SortedKvMergeIterator;
+use crate::store::{decode_substate_id, encode_substate_id, ListableSubstateStore};
 use crate::transaction::TransactionLogic;
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_stores::hash_tree::tree_store::{
@@ -197,6 +201,31 @@ impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for StagedStore<'s, S> 
     }
 }
 
+impl<'s, S: ListableSubstateStore> ListableSubstateStore for StagedStore<'s, S> {
+    fn list_substates(
+        &self,
+        index_id: &Vec<u8>,
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        let root_iter = self.root.list_substates(index_id);
+
+        let overlay_iter = {
+            let start = encode_substate_id(index_id, &vec![0]);
+            let index_id = index_id.clone();
+            self.overlay
+                .substate_values2
+                .range((Included(start), Unbounded))
+                .map(|(k, v)| {
+                    let (index, key) = decode_substate_id(k).expect("Failed to decode substate ID");
+                    (index, key, v)
+                })
+                .take_while(move |(index, ..)| index_id.eq(index))
+                .map(|(_, key, value)| (key, value.clone()))
+        };
+
+        Box::new(SortedKvMergeIterator::new(overlay_iter, root_iter))
+    }
+}
+
 impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> ReadableTreeStore<ReNodeModulePayload>
     for StagedStore<'s, S>
 {
@@ -287,7 +316,10 @@ impl<K, N> AccuTreeDiff<K, N> {
 
 #[derive(Clone)]
 pub struct ImmutableStore {
+    // TODO(engine-merge):: remove
     substate_values: ImmutableHashMap<SubstateId, OutputValue>,
+
+    substate_values2: ImmutableOrdMap<Vec<u8>, Vec<u8>>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<SubstateOffset>>,
     transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
@@ -298,6 +330,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
             substate_values: ImmutableHashMap::new(),
+            substate_values2: ImmutableOrdMap::new(),
             re_node_layer_nodes: ImmutableHashMap::new(),
             substate_layer_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
