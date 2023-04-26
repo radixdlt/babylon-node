@@ -90,11 +90,12 @@ public enum Network {
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Node integration network, after Gilgamesh
   // - enkinet = Misc Network 1, after Enki / Enkidu
-  // - hammunet = Misc Network 2, after Hammurabi (typically a twin / staging Network for testing new releases to the
-  //              primary public environment)
+  // - hammunet = Misc Network 2, after Hammurabi (typically a twin / staging Network for testing
+  // new releases to the primary public environment)
   // - nergalnet = A Network for DevOps testing, after the Mesopotamian god Nergal
   // - mardunet = Network Gateway integration network, after the Babylonian god Marduk
-  // - dumunet = A network for load testing, after the Mesopotamian god Dumuzid, the god of shepherds
+  // - dumunet = A network for load testing, after the Mesopotamian god Dumuzid, the god of
+  // shepherds
   GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_", GenesisSource.fromConfiguration),
   ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_", GenesisSource.fromConfiguration),
   HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_", GenesisSource.fromConfiguration),
