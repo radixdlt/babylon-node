@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::utils::{jni_sbor_coded_call, jni_sbor_coded_fallible_call};
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
@@ -81,15 +82,13 @@ use transaction::model::{
     NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
 };
 
-use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
-
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManifest(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_compile_manifest)
+    jni_sbor_coded_call(&env, request_payload, do_compile_manifest)
 }
 
 fn do_compile_manifest(
@@ -106,7 +105,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
+    jni_sbor_coded_call(&env, request_payload, do_create_genesis_ledger_transaction)
 }
 
 #[allow(clippy::type_complexity)]
@@ -140,7 +139,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_intent_bytes)
+    jni_sbor_coded_call(&env, request_payload, do_create_intent_bytes)
 }
 
 // To ensure that any change to TransactionHeader is picked up as a compile error,
@@ -192,7 +191,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_create_signed_intent_bytes)
+    jni_sbor_coded_fallible_call(&env, request_payload, do_create_signed_intent_bytes)
 }
 
 fn do_create_signed_intent_bytes(
@@ -210,7 +209,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
+    jni_sbor_coded_fallible_call(&env, request_payload, do_create_notarized_bytes)
 }
 
 fn do_create_notarized_bytes(
@@ -228,7 +227,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_ledger)
+    jni_sbor_coded_fallible_call(&env, request_payload, do_user_transaction_to_ledger)
 }
 
 fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
@@ -244,8 +243,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionB
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(
-        env,
+    jni_sbor_coded_fallible_call(
+        &env,
         request_payload,
         do_transaction_bytes_to_notarized_transaction_bytes,
     )

@@ -65,21 +65,25 @@
 use crate::result::StateManagerResult;
 use radix_engine::types::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 
-pub use sbor::{Categorize, Decode, Encode};
+pub use sbor::{Decode, Encode};
 
-pub trait JavaStructure {
+pub trait StructFromJava {
     fn from_java(data: &[u8]) -> StateManagerResult<Self>
     where
         Self: Sized;
+}
 
+pub trait StructToJava {
     fn to_java(&self) -> StateManagerResult<Vec<u8>>;
 }
 
-impl<T: ScryptoEncode + ScryptoDecode> JavaStructure for T {
+impl<T: ScryptoDecode> StructFromJava for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
         Ok(scrypto_decode(data)?)
     }
+}
 
+impl<T: ScryptoEncode> StructToJava for T {
     fn to_java(&self) -> StateManagerResult<Vec<u8>> {
         Ok(scrypto_encode(self)?)
     }
@@ -88,14 +92,14 @@ impl<T: ScryptoEncode + ScryptoDecode> JavaStructure for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::{Categorize, Decode, Encode};
+    use sbor::{Decode, Encode};
 
-    #[derive(Debug, Categorize, Encode, Decode, PartialEq, Eq)]
+    #[derive(Debug, Encode, Decode, PartialEq, Eq)]
     pub struct TypeA {
         bytes_a: Vec<u8>,
     }
 
-    #[derive(Debug, Categorize, Encode, Decode, PartialEq, Eq)]
+    #[derive(Debug, Encode, Decode, PartialEq, Eq)]
     pub struct TypeB {
         bytes_b: Vec<u8>,
         a: TypeA,

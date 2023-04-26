@@ -93,7 +93,7 @@ use state_manager::PendingTransactionResultCache;
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,

@@ -65,7 +65,7 @@
 use std::sync::{Arc, MutexGuard};
 
 use crate::environment::setup_tracing;
-use crate::jni::java_structure::JavaStructure;
+use crate::jni::java_structure::StructFromJava;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
@@ -138,7 +138,7 @@ pub type ActualStateManager = StateManager<StateManagerDatabase>;
 pub struct JNIStateManager {
     pub runtime: Arc<Runtime>,
     pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
@@ -208,7 +208,7 @@ impl JNIStateManager {
         ));
 
         // Build the state manager.
-        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
+        let state_manager = Arc::new(StateManager::new(
             &network,
             database.clone(),
             mempool_manager.clone(),
@@ -216,7 +216,7 @@ impl JNIStateManager {
             pending_transaction_result_cache.clone(),
             logging_config,
             &metric_registry,
-        )));
+        ));
 
         let jni_state_manager = JNIStateManager {
             runtime: Arc::new(runtime),
@@ -251,10 +251,7 @@ impl JNIStateManager {
             .unwrap()
     }
 
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<RwLock<ActualStateManager>> {
+    pub fn get_state_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<ActualStateManager> {
         Self::get_state(env, j_state_manager).state_manager.clone()
     }
 
@@ -267,10 +264,6 @@ impl JNIStateManager {
 
     pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<SimpleMempool>> {
         Self::get_state(env, j_state_manager).mempool.clone()
-    }
-
-    pub fn get_runtime(env: &JNIEnv, j_state_manager: JObject) -> Arc<Runtime> {
-        Self::get_state(env, j_state_manager).runtime.clone()
     }
 
     pub fn get_mempool_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<MempoolManager> {
