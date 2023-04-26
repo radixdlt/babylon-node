@@ -31,13 +31,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LtsFungibleResourceBalanceChange
  */
 @JsonPropertyOrder({
-  LtsFungibleResourceBalanceChange.JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS,
+  LtsFungibleResourceBalanceChange.JSON_PROPERTY_RESOURCE_ADDRESS,
   LtsFungibleResourceBalanceChange.JSON_PROPERTY_BALANCE_CHANGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsFungibleResourceBalanceChange {
-  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS = "fungible_resource_address";
-  private String fungibleResourceAddress;
+  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
+  private String resourceAddress;
 
   public static final String JSON_PROPERTY_BALANCE_CHANGE = "balance_change";
   private String balanceChange;
@@ -45,29 +45,29 @@ public class LtsFungibleResourceBalanceChange {
   public LtsFungibleResourceBalanceChange() { 
   }
 
-  public LtsFungibleResourceBalanceChange fungibleResourceAddress(String fungibleResourceAddress) {
-    this.fungibleResourceAddress = fungibleResourceAddress;
+  public LtsFungibleResourceBalanceChange resourceAddress(String resourceAddress) {
+    this.resourceAddress = resourceAddress;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the fungible resource&#39;s global address
-   * @return fungibleResourceAddress
+   * The Bech32m-encoded human readable version of the fungible resource&#39;s address 
+   * @return resourceAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the fungible resource's global address")
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the fungible resource's address ")
+  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getFungibleResourceAddress() {
-    return fungibleResourceAddress;
+  public String getResourceAddress() {
+    return resourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFungibleResourceAddress(String fungibleResourceAddress) {
-    this.fungibleResourceAddress = fungibleResourceAddress;
+  public void setResourceAddress(String resourceAddress) {
+    this.resourceAddress = resourceAddress;
   }
 
 
@@ -109,20 +109,20 @@ public class LtsFungibleResourceBalanceChange {
       return false;
     }
     LtsFungibleResourceBalanceChange ltsFungibleResourceBalanceChange = (LtsFungibleResourceBalanceChange) o;
-    return Objects.equals(this.fungibleResourceAddress, ltsFungibleResourceBalanceChange.fungibleResourceAddress) &&
+    return Objects.equals(this.resourceAddress, ltsFungibleResourceBalanceChange.resourceAddress) &&
         Objects.equals(this.balanceChange, ltsFungibleResourceBalanceChange.balanceChange);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fungibleResourceAddress, balanceChange);
+    return Objects.hash(resourceAddress, balanceChange);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsFungibleResourceBalanceChange {\n");
-    sb.append("    fungibleResourceAddress: ").append(toIndentedString(fungibleResourceAddress)).append("\n");
+    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
     sb.append("    balanceChange: ").append(toIndentedString(balanceChange)).append("\n");
     sb.append("}");
     return sb.toString();

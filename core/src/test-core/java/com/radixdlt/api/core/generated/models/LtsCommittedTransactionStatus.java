@@ -29,9 +29,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum LtsCommittedTransactionStatus {
   
-  SUCCEEDED("Succeeded"),
+  SUCCESS("Success"),
   
-  FAILED("Failed");
+  FAILURE("Failure");
 
   private String value;
 

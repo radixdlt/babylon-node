@@ -38,9 +38,10 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let committed_transaction_outcomes = txns
         .into_iter()
-        .map(|(_ledger_transaction, receipt, identifiers)| {
+        .map(|(ledger_transaction, receipt, identifiers)| {
             Ok(to_api_lts_committed_transaction_outcome(
                 &mapping_context,
+                ledger_transaction,
                 receipt,
                 identifiers,
             )?)

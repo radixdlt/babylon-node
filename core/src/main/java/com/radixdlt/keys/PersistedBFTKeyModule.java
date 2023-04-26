@@ -86,8 +86,9 @@ public final class PersistedBFTKeyModule extends AbstractModule {
   @Singleton
   PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
     var nodeKeyPath = properties.get("node.key.path", "node.ks");
+    var createNodeKeyIfMissing = properties.get("node.key.create_if_missing", false);
 
-    return new PersistedBFTKeyManager(nodeKeyPath);
+    return new PersistedBFTKeyManager(nodeKeyPath, createNodeKeyIfMissing);
   }
 
   @Provides

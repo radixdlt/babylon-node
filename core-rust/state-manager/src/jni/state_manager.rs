@@ -64,6 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
+use crate::environment::setup_tracing;
 use crate::jni::java_structure::JavaStructure;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
@@ -77,6 +78,7 @@ use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
+use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
@@ -134,6 +136,7 @@ pub struct StateManagerConfig {
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
+    pub runtime: Arc<Runtime>,
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
@@ -149,6 +152,10 @@ impl JNIStateManager {
     pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
+
+        let runtime = Runtime::new().unwrap();
+
+        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
 
         // Build the basic subcomponents.
         let mempool_config = match config.mempool_config {
@@ -212,6 +219,7 @@ impl JNIStateManager {
         )));
 
         let jni_state_manager = JNIStateManager {
+            runtime: Arc::new(runtime),
             network,
             state_manager,
             database,
@@ -259,6 +267,10 @@ impl JNIStateManager {
 
     pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<SimpleMempool>> {
         Self::get_state(env, j_state_manager).mempool.clone()
+    }
+
+    pub fn get_runtime(env: &JNIEnv, j_state_manager: JObject) -> Arc<Runtime> {
+        Self::get_state(env, j_state_manager).runtime.clone()
     }
 
     pub fn get_mempool_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<MempoolManager> {

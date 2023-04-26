@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LtsTransactionIntentStatus;
-import com.radixdlt.api.core.generated.models.LtsTransactionPayloadStatus;
+import com.radixdlt.api.core.generated.models.LtsTransactionPayloadDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class LtsTransactionStatusResponse {
   private Long invalidFromEpoch;
 
   public static final String JSON_PROPERTY_KNOWN_PAYLOADS = "known_payloads";
-  private List<LtsTransactionPayloadStatus> knownPayloads = new ArrayList<>();
+  private List<LtsTransactionPayloadDetails> knownPayloads = new ArrayList<>();
 
   public LtsTransactionStatusResponse() { 
   }
@@ -169,12 +169,12 @@ public class LtsTransactionStatusResponse {
   }
 
 
-  public LtsTransactionStatusResponse knownPayloads(List<LtsTransactionPayloadStatus> knownPayloads) {
+  public LtsTransactionStatusResponse knownPayloads(List<LtsTransactionPayloadDetails> knownPayloads) {
     this.knownPayloads = knownPayloads;
     return this;
   }
 
-  public LtsTransactionStatusResponse addKnownPayloadsItem(LtsTransactionPayloadStatus knownPayloadsItem) {
+  public LtsTransactionStatusResponse addKnownPayloadsItem(LtsTransactionPayloadDetails knownPayloadsItem) {
     this.knownPayloads.add(knownPayloadsItem);
     return this;
   }
@@ -188,14 +188,14 @@ public class LtsTransactionStatusResponse {
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsTransactionPayloadStatus> getKnownPayloads() {
+  public List<LtsTransactionPayloadDetails> getKnownPayloads() {
     return knownPayloads;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKnownPayloads(List<LtsTransactionPayloadStatus> knownPayloads) {
+  public void setKnownPayloads(List<LtsTransactionPayloadDetails> knownPayloads) {
     this.knownPayloads = knownPayloads;
   }
 

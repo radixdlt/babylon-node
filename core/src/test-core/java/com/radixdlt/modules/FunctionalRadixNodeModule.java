@@ -407,7 +407,12 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        0, 0, rev2Config.databaseType(), Option.none(), rev2Config.debugLogging()));
+                        0,
+                        0,
+                        rev2Config.databaseType(),
+                        rev2Config.enableAccountChangeIndex(),
+                        Option.none(),
+                        rev2Config.debugLogging()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(10000));
@@ -418,6 +423,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         mempool.maxNumTransactionsPerProposal(),
                         mempool.maxProposalTotalTxnsPayloadSize(),
                         rev2Config.databaseType(),
+                        rev2Config.enableAccountChangeIndex(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));
               }

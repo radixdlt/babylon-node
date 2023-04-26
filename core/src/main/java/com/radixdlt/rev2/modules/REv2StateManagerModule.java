@@ -102,6 +102,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int maxProposalTotalTxnsPayloadSize;
   private final int maxUncommittedUserTransactionsTotalPayloadSize;
   private final DatabaseType databaseType;
+  private final boolean enableAccountChangeIndex;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
 
@@ -110,6 +111,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
@@ -117,6 +119,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.maxUncommittedUserTransactionsTotalPayloadSize =
         maxUncommittedUserTransactionsTotalPayloadSize;
     this.databaseType = databaseType;
+    this.enableAccountChangeIndex = enableAccountChangeIndex;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
   }
@@ -126,12 +129,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
         maxUncommittedUserTransactionsTotalPayloadSize,
         databaseType,
+        enableAccountChangeIndex,
         mempoolConfig,
         false);
   }
@@ -140,6 +145,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       DatabaseType databaseType,
+      boolean enableAccountChangeIndex,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
@@ -147,6 +153,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         maxProposalTotalTxnsPayloadSize,
         maxProposalTotalTxnsPayloadSize * 5,
         databaseType,
+        enableAccountChangeIndex,
         mempoolConfig,
         debugLogging);
   }
@@ -164,14 +171,15 @@ public final class REv2StateManagerModule extends AbstractModule {
             @Singleton
             REv2DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
               return REv2DatabaseConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath());
+                  new File(nodeStorageLocation, "rocks_db").getPath(), enableAccountChangeIndex);
             }
           });
       case IN_MEMORY -> install(
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(REv2DatabaseConfig.class).toInstance(REv2DatabaseConfig.inMemory());
+              bind(REv2DatabaseConfig.class)
+                  .toInstance(REv2DatabaseConfig.inMemory(enableAccountChangeIndex));
             }
           });
     }

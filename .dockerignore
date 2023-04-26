@@ -1,2 +1,78 @@
-**/target/
-**/build/
+# Radix node root folders to ignore
+/sdk/
+/testnet-node/
+
+# Radix non-versioned files
+/**/RADIXDB/
+/**/RADIXDB_TEST/
+/**/logs/
+/**/logger.config
+/**/*.ks
+/**/*.key
+/**/*.wallet
+
+# General build artifacts
+/**/target/
+/**/build/
+/**/.cargo/
+/**/recipe.json
+/**/.gitattributes
+/**/.gitignore
+/**/.dockerignore
+/**/recipe.json
+/**/.vscode
+/**/.github
+/**/docs
+/**/README.md
+/**/LICENSE
+
+# Gradle related
+/**/build/
+/**/.gradle/
+/**/bin/
+/**/lib/
+/**/.settings/
+/**/.project/
+/**/.classpath/
+/**/.project
+/**/.classpath
+
+# IntelliJ related
+/**/.idea/
+/**/*.iml
+/**/out/
+/**/emunie-json/out/
+/**/api.users
+
+# other
+/**/.DS_Store
+/**/*.bak
+/**/*.log
+/**/*.orig
+/**/*.deb
+/**/*.tar
+/**/.env 
+/**/*.swo
+/**/*.swp
+/**/*~
+# ignore jar files, but keep Gradle wrapper
+/**/*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# node
+/**/node_modules/
+/**/package-lock.json
+/**/.yarn/
+/**/dist/
+
+# auto-generated doc
+/**/resources/documentation/*.html
+/**/resources/markdown
+
+/**/configs/
+/**/outputs/
+
+/**/CODE_OF_CONDUCT.md
+/**/CONTRIBUTING.md
+/**/Dockerfile
+/**/Dockerfile.*

@@ -1,5 +1,8 @@
 use crate::core_api::*;
-use state_manager::store::traits::QueryableProofStore;
+use radix_engine::types::Address;
+use state_manager::store::traits::{
+    extensions::AccountChangeIndexExtension, QueryableProofStore, QueryableTransactionStore,
+};
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
@@ -8,10 +11,22 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 ) -> Result<Json<models::LtsStreamAccountTransactionOutcomesResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
 
-    let _from_state_version: u64 = extract_api_state_version(request.from_state_version)
+    if !request.account_address.starts_with("account_") {
+        return Err(client_error(
+            "Only component addresses starting with account_ work with this endpoint.",
+        ));
+    }
+
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
+
+    let account_address = extract_component_address(&extraction_context, &request.account_address)
+        .map_err(|err| err.into_response_error("account_address"))?;
+
+    let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
-    let limit: u64 = request
+    let limit: usize = request
         .limit
         .try_into()
         .map_err(|_| client_error("limit cannot be negative"))?;
@@ -28,7 +43,48 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
     let database = state.database.read();
 
-    let _max_state_version = database.max_state_version();
+    if !database.is_account_change_index_enabled() {
+        return Err(server_error(
+            "This endpoint requires that the AccountChangeIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config and restart the node. \
+            Please note the index catchup build will take some time.",
+        ));
+    }
 
-    Err(not_implemented("Endpoint not implemented yet"))
+    let max_state_version = database.max_state_version();
+
+    let state_versions = database.get_state_versions_for_account(
+        Address::Component(account_address),
+        from_state_version,
+        limit,
+    );
+
+    let committed_transaction_outcomes = state_versions
+        .iter()
+        .map(|state_version| {
+            Ok(to_api_lts_committed_transaction_outcome(
+                &mapping_context,
+                database
+                    .get_committed_transaction(*state_version)
+                    .expect("Transaction store corrupted"),
+                database
+                    .get_committed_transaction_receipt(*state_version)
+                    .expect("Transaction receipt index corrupted"),
+                database
+                    .get_committed_transaction_identifiers(*state_version)
+                    .expect("Transaction identifiers index corrupted"),
+            )?)
+        })
+        .collect::<Result<Vec<models::LtsCommittedTransactionOutcome>, ResponseError<()>>>()?;
+
+    Ok(models::LtsStreamAccountTransactionOutcomesResponse {
+        from_state_version: to_api_state_version(from_state_version)?,
+        count: state_versions
+            .len()
+            .try_into()
+            .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?,
+        max_ledger_state_version: to_api_state_version(max_state_version)?,
+        committed_transaction_outcomes,
+    })
+    .map(Json)
 }
