@@ -92,7 +92,6 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
         .expect("Can't convert &[u8] back to jbyteArray - likely due to OOM")
 }
 
-#[tracing::instrument(skip_all)]
 pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
@@ -101,7 +100,6 @@ pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     jni_sbor_coded_fallible_call(env, encoded_request, |args| Ok(method(args)))
 }
 
-#[tracing::instrument(skip_all)]
 pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
