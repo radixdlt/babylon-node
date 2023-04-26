@@ -20,6 +20,8 @@ curl \
   -d '{ "network": "kisharnet" }'
 ```
 
+Note: we recommend updating the docker limits to at least 4 CPUs, 4GB RAM and 100GB disk size.
+
 ## Node volumes
 
 The node makes use of some persistent data, which is set up to be stored as docker volumes.
