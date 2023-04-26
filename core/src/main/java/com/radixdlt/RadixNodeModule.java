@@ -220,6 +220,7 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
 
     install(
         REv2StateManagerModule.create(
@@ -227,6 +228,7 @@ public final class RadixNodeModule extends AbstractModule {
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
             MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
+            enableAccountChangeIndex,
             Option.some(mempoolConfig)));
 
     // Recovery

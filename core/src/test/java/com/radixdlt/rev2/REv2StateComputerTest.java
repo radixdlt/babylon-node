@@ -101,6 +101,7 @@ public class REv2StateComputerTest {
             10 * 1024 * 1024,
             50 * 1024 * 1024,
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
+            true,
             Option.none()),
         new AbstractModule() {
           @Override

@@ -72,6 +72,7 @@ fi
 
 
 echo "version: '2.1'" >${file_name}
+echo "name: 'radixdlt-babylon-node-${validators}-core-network'" >${file_name}
 echo "services:" >>${file_name}
 
 for ((i=0;i<$validators;i++));

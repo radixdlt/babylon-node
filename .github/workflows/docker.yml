@@ -20,6 +20,119 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  join_multiarch_image_gcr:
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    name: Join Multiarch Image
+    runs-on: ubuntu-latest
+    needs:
+      - build_push_container_gcr
+      # - build_push_container_gcr_arm
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: auth
+        uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          token_format: access_token
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce'
+      - name: 'Register gcloud as Docker credential helper'
+        run: |
+          gcloud auth configure-docker -q
+      - name: Login to Artifact Registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          registry: europe-west2-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Install and Configure Buildx
+        run: |
+          wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
+          echo "---- Configure Docker plugins ----"
+          mkdir -p /home/runner/.docker/cli-plugins/
+          mv buildx-v0.10.4.linux-amd64 /home/runner/.docker/cli-plugins/docker-buildx
+          chmod +x /home/runner/.docker/cli-plugins/docker-buildx
+          echo "---- Create build context ----"
+          docker context create babylon-node
+          docker buildx create babylon-node --use
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            eu.gcr.io/dev-container-repo/babylon-node
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+      - name: Join multiarch images
+        run: |
+          docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
+            eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} 
+#           eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
+
+  join_multiarch_image_dockerhub:
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    environment: release
+    name: Join Multiarch Image Dockerhub
+    runs-on: ubuntu-latest
+    needs:
+      - build_push_container_dockerhub
+      - build_push_container_dockerhub_arm
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      ## Dockerhub
+      # This is version v1.7.0
+      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v1.7.0
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+          aws-region: eu-west-2
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: aws-actions/aws-secretsmanager-get-secrets@v1
+        with:
+          secret-ids: |
+            DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
+          parse-json-secrets: true
+      # This is version v2.1.0
+      # https://github.com/docker/login-action/releases/tag/v2.1.0
+      - name: Login to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - name: Install and Configure Buildx
+        run: |
+          wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
+          echo "---- Configure Docker plugins ----"
+          mkdir -p /home/runner/.docker/cli-plugins/
+          mv buildx-v0.10.4.linux-amd64 /home/runner/.docker/cli-plugins/docker-buildx
+          chmod +x /home/runner/.docker/cli-plugins/docker-buildx
+          echo "---- Create build context ----"
+          docker context create babylon-node
+          docker buildx create babylon-node --use
+      - name: Join multiarch images
+        run: |
+          docker buildx imagetools create -t docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }} \
+            docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}-arm64 \
+            docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}-amd64
+
   build_deb:
     name: Build debian package
     runs-on: babylon-runner
@@ -68,14 +181,32 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          token_format: access_token
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce'
       - name: 'Register gcloud as Docker credential helper'
         run: |
           gcloud auth configure-docker -q
+      - name: Login to Artifact Registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          registry: europe-west2-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Install and Configure Buildx
+        run: |
+          wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
+          echo "---- Configure Docker plugins ----"
+          mkdir -p /home/runner/.docker/cli-plugins/
+          mv buildx-v0.10.4.linux-amd64 /home/runner/.docker/cli-plugins/docker-buildx
+          chmod +x /home/runner/.docker/cli-plugins/docker-buildx
+          echo "---- Create build context ----"
+          docker context create babylon-node
+          docker buildx create babylon-node --use
       - name: Create deb package
         run: |
-          sudo apt-get update && sudo apt-get install make
+          sudo apt-get update && sudo apt-get install -y make
           cd core && make build-core
       - name: Upload generated debian package
         uses: actions/upload-artifact@v3.1.0
@@ -83,9 +214,8 @@ jobs:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
 
-  build_push_container:
-    name: (GCR) Docker
-    needs: build_deb
+  build_push_container_gcr:
+    name: (GCR) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -99,20 +229,45 @@ jobs:
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
         type=sha
-      context: "docker"
-      dockerfile: "./docker/Dockerfile.core"
-      platforms: "linux/amd64,linux/arm64"
-      restore_artifact: "true"
-      artifact_name: "deb4docker"
-      artifact_location: "docker"
+      context: "."
+      flavor: |
+        suffix=-amd64
+      dockerfile: "./Dockerfile"
+      platforms: "linux/amd64"
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+  # build_push_container_gcr_arm:
+  #   name: (GCR) Docker ARM
+  #   uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+  #   with:
+  #     runs_on: babylon-node-arm
+  #     image_registry: "eu.gcr.io"
+  #     image_organization: "dev-container-repo"
+  #     image_name: "babylon-node"
+  #     tags: |
+  #       type=ref,event=branch
+  #       type=ref,event=pr
+  #       type=semver,pattern={{version}}
+  #       type=semver,pattern={{major}}.{{minor}}
+  #       type=semver,pattern={{major}}
+  #       type=sha
+  #     flavor: |
+  #       suffix=-arm64
+  #     context: "."
+  #     dockerfile: "./Dockerfile"
+  #     platforms: "linux/arm64"
+  #     cache_tag_suffix: arm64
+  #     provenance: "false"
+  #   secrets:
+  #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+  #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
   build_push_container_dockerhub:
     if: github.event_name == 'release'
-    name: (DockerHub) Docker
-    needs: build_deb
+    name: (DockerHub) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       environment: release
@@ -121,13 +276,37 @@ jobs:
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
-      context: "docker"
-      dockerfile: "./docker/Dockerfile.core"
-      platforms: "linux/amd64,linux/arm64"
-      restore_artifact: "true"
-      artifact_name: "deb4docker"
-      artifact_location: "docker"
+      flavor: |
+        suffix=-amd64
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/amd64"
       enable_dockerhub: "true"
+      provenance: "false"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_push_container_dockerhub_arm:
+    if: github.event_name == 'release'
+    name: (DockerHub) Docker ARM
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      environment: release
+      runs_on: babylon-node-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node"
+      tag: ${{ github.event.release.tag_name }}
+      flavor: |
+        suffix=-arm64
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/arm64"
+      enable_dockerhub: "true"
+      cache_tag_suffix: arm64
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}

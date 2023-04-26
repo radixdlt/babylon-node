@@ -117,20 +117,20 @@ where
             post(lts::handle_lts_transaction_submit),
         )
         .route(
-            "/lts/stream/account-transactions-basic-outcomes",
-            post(lts::handle_lts_stream_account_transaction_outcomes),
-        )
-        .route(
-            "/lts/stream/transactions-basic-outcomes",
-            post(lts::handle_lts_stream_transaction_outcomes),
-        )
-        .route(
             "/lts/state/account-all-fungible-resource-balances",
             post(lts::handle_lts_state_account_all_fungible_resource_balances),
         )
         .route(
             "/lts/state/account-fungible-resource-balance",
             post(lts::handle_lts_state_account_fungible_resource_balance),
+        )
+        .route(
+            "/lts/stream/transaction-outcomes",
+            post(lts::handle_lts_stream_transaction_outcomes),
+        )
+        .route(
+            "/lts/stream/account-transaction-outcomes",
+            post(lts::handle_lts_stream_account_transaction_outcomes),
         )
         // Status Sub-API
         .route(

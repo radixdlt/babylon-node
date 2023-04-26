@@ -74,7 +74,7 @@ before attempting to run the node, as during Babylon development, we make no gua
 
 If you wish to run a local network, this is best done in Docker - see [../docker](../../docker).
 
-Note that the docker build can take a while, so it may be easier to use a native running approach instead.
+Note that the docker build can take a while - even incremental builds with sccache seem to take 5 minutes - so it may be easier to use a native running approach instead.
 
 #### Integration tests (native)
 
@@ -94,3 +94,4 @@ If you meet this issue, check following configuration options:
  - `Project Structure -> Project Settings -> Project`, make sure `Project SDK` and `Project Language Level` is set to `17 (Preview) - Pattern matching for switch`.
  - `Project Structure -> Project Settings -> Modules`, make sure that every module has `Language Level` set to `17 (Preview) - Pattern matching for switch (Project default)`  
  - `Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`, make sure that `Gradle JVM` is set to `Project JDK`. 
+
