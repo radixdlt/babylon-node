@@ -80,25 +80,28 @@ public enum Network {
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  // - kisharnet = Babylon RCNetV1, after Kishar (from the Babylonian Creation Story)
-  // - ansharnet = Babylon RCNetV2, after Anshar (from the Babylonian Creation Story)
+  // - kisharnet = Babylon RCnet-V1, after Kishar (from the Babylonian Creation Story)
+  // - ansharnet = Babylon RCnet-V2, after Anshar (from the Babylonian Creation Story)
   ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_", GenesisSource.fromConfiguration),
   NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_", GenesisSource.fromConfiguration),
   KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_", GenesisSource.fromConfiguration),
   ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_", GenesisSource.fromConfiguration),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
-  // - gilganet = Integration, after Gilgamesh
+  // - gilganet = Node integration network, after Gilgamesh
   // - enkinet = Misc Network 1, after Enki / Enkidu
-  // - hammunet = Misc Network 2, after Hammurabi
+  // - hammunet = Misc Network 2, after Hammurabi (typically a twin / staging Network for testing
+  // new releases to the primary public environment)
   // - nergalnet = A Network for DevOps testing, after the Mesopotamian god Nergal
-  // - mardunet = A staging Network for testing new releases to the primary public environment,
-  //              after the Babylonian god Marduk
+  // - mardunet = Network Gateway integration network, after the Babylonian god Marduk
+  // - dumunet = A network for load testing, after the Mesopotamian god Dumuzid, the god of
+  // shepherds
   GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_", GenesisSource.fromConfiguration),
   ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_", GenesisSource.fromConfiguration),
   HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_", GenesisSource.fromConfiguration),
   NERGALNET(35 /* 0x23 */, "nergalnet", "tdx_23_", GenesisSource.fromConfiguration),
   MARDUNET(36 /* 0x24 */, "mardunet", "tdx_24_", GenesisSource.fromConfiguration),
+  DUMUNET(37 /* 0x25 */, "dumunet", "tdx_25_", GenesisSource.fromConfiguration),
 
   /// Ephemeral Networks (start with 0xF)
   // - localnet = The network used when running locally in development
