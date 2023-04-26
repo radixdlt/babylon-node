@@ -14,7 +14,8 @@
       "require": "./dist/babylon-core-api-sdk.umd.js"
     }
   },
-  "types": "./dist/index.d.ts",
+  "description": "A client for the RadixDLT Babylon Core API",
+  "types": "./dist/lib/index.d.ts",
   "scripts": {
     "dev": "vite serve sandbox",
     "build": "vite build && yarn build:types",

@@ -6,18 +6,25 @@ The `CoreApiClient` is the main exported object. It currently includes high-leve
 
 For querying other sub-APIs, for now, use methods on `coreApiClient.LowLevel.X` where `X` is each of the different sub-APIs.
 
+## End-to-end examples
+
+See [here for a full end-to-end example working with the TypeScript Radix Engine Toolkit](https://github.com/radixdlt/typescript-radix-engine-toolkit/tree/main/examples/core-e2e-example).
+
 ## Client creation
 
 Behind the scenes, this library uses the fetch API:
 * If in an environment where `fetch` is not available, a polyfill must be used (see eg [node-fetch](https://www.npmjs.com/package/node-fetch)).
+  If using node you will likely want to add the following dependencies:
+  * `node-fetch` version `^2.7.3` (as `3.x` can only be imported as an ESModule).
+  * `@types/node-fetch` version `^2.6.3`
 * If in a browser, pass `window.fetch` into the `fetch` parameter.
 
 The client checks that it can connect to the Core API at `initialize` time. If you'd rather, you can use `initializeUnchecked` which skips this check.
 
 ```typescript
-import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS
-import http from 'node:http';
-import https from 'node:http';
+import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
+import http from "node:http";
+import https from "node:http";
 import { CoreApiClient} from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
