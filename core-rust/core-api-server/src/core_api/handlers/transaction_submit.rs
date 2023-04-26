@@ -4,7 +4,7 @@ use hyper::StatusCode;
 use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
 
-#[tracing::instrument(level = "debug", skip(state), err(Debug))]
+#[tracing::instrument(level = "debug", skip(state))]
 pub(crate) async fn handle_transaction_submit(
     State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionSubmitRequest>,

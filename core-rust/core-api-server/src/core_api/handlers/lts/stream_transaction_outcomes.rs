@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use state_manager::store::traits::{QueryableProofStore, QueryableTransactionStore};
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStreamTransactionOutcomesRequest>,

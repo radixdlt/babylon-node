@@ -12,7 +12,7 @@ use state_manager::mempool::pending_transaction_result_cache::PendingTransaction
 use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
 
-#[tracing::instrument(err(Debug), skip(state))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_transaction_status(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsTransactionStatusRequest>,

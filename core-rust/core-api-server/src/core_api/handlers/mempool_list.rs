@@ -1,6 +1,6 @@
 use crate::core_api::*;
 
-#[tracing::instrument(level = "debug", skip(state), err(Debug))]
+#[tracing::instrument(level = "debug", skip(state))]
 pub(crate) async fn handle_mempool_list(
     State(state): State<CoreApiState>,
     Json(request): Json<models::MempoolListRequest>,

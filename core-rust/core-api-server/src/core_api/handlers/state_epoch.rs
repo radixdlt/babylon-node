@@ -4,7 +4,7 @@ use radix_engine::types::{EpochManagerOffset, SubstateOffset, EPOCH_MANAGER};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use std::ops::Deref;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_state_epoch(
     state: State<CoreApiState>,
     Json(request): Json<models::StateEpochRequest>,
