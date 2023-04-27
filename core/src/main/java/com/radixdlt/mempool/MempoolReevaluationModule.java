@@ -64,16 +64,58 @@
 
 package com.radixdlt.mempool;
 
-import java.util.List;
+import com.google.inject.*;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.*;
+import java.time.Duration;
 
-/**
- * Basic mempool functionality.
- *
- * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
- */
-public interface Mempool<RawTx, ProcessedTx> extends MempoolReader<RawTx>, MempoolInserter<RawTx> {
+/** Module configuring a periodic reevaluation of commitable transactions waiting in the mempool. */
+public final class MempoolReevaluationModule extends AbstractModule {
 
-  void handleTransactionsCommitted(List<ProcessedTx> transactions);
+  private final Duration reevaluationInterval;
+  private final int maxReevaluatedCount;
 
-  int getCount();
+  public MempoolReevaluationModule(Duration reevaluationInterval, int maxReevaluatedCount) {
+    this.reevaluationInterval = reevaluationInterval;
+    this.maxReevaluatedCount = maxReevaluatedCount;
+  }
+
+  @Override
+  public void configure() {
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(MempoolReevaluationTrigger.class);
+  }
+
+  @Provides
+  @Singleton
+  private EventProducer<MempoolReevaluationTrigger> eventProducer(
+      ScheduledEventDispatcher<MempoolReevaluationTrigger> dispatcher) {
+    return new EventProducer<>(
+        MempoolReevaluationTrigger::create, dispatcher, this.reevaluationInterval.toMillis());
+  }
+
+  @ProvidesIntoSet
+  private StartProcessorOnRunner mempoolReevaluatorStart(
+      EventProducer<MempoolReevaluationTrigger> dispatcher) {
+    return new StartProcessorOnRunner(Runners.MEMPOOL, dispatcher::start);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> processor(
+      EventProducer<MempoolReevaluationTrigger> eventProducer) {
+    return new EventProcessorOnRunner<>(
+        Runners.MEMPOOL, MempoolReevaluationTrigger.class, eventProducer);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> mempoolReevaluationTriggerProcessor(
+      MempoolReevaluator mempoolReevaluator) {
+    return new EventProcessorOnRunner<>(
+        Runners.MEMPOOL,
+        MempoolReevaluationTrigger.class,
+        event -> mempoolReevaluator.reevaluateTransactionCommitability(maxReevaluatedCount));
+  }
 }

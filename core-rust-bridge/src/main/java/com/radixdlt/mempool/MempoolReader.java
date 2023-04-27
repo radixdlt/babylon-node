@@ -67,7 +67,11 @@ package com.radixdlt.mempool;
 import java.util.List;
 
 public interface MempoolReader<RawTx> {
+
   List<RawTx> getTransactionsToRelay(int maxNumTxns, int maxTotalTxnsPayloadSize);
+
+  List<RawTx> getTransactionsForProposal(
+      int maxCount, int maxPayloadSizeBytes, List<RawTx> transactionsToExclude);
 
   int getCount();
 }

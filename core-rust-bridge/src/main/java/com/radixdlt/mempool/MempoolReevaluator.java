@@ -64,16 +64,7 @@
 
 package com.radixdlt.mempool;
 
-import java.util.List;
+public interface MempoolReevaluator {
 
-/**
- * Basic mempool functionality.
- *
- * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
- */
-public interface Mempool<RawTx, ProcessedTx> extends MempoolReader<RawTx>, MempoolInserter<RawTx> {
-
-  void handleTransactionsCommitted(List<ProcessedTx> transactions);
-
-  int getCount();
+  void reevaluateTransactionCommitability(int maxReevaluatedCount);
 }

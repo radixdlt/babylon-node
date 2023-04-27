@@ -110,24 +110,26 @@ public final class SimpleMempool
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int count, List<RawNotarizedTransaction> preparedTransactions) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<RawNotarizedTransaction> transactions = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<RawNotarizedTransaction> i = values.iterator();
-      while (transactions.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!preparedTransactions.contains(a)) {
-          transactions.add(a);
-        }
+      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> preparedTransactions) {
+    List<RawNotarizedTransaction> transactions = Lists.newArrayList();
+    var candidates = new ArrayList<>(this.data);
+    Collections.shuffle(candidates, random);
+    int payloadSize = 0;
+    for (var candidate : candidates) {
+      if (preparedTransactions.contains(candidate)) {
+        continue;
       }
-      return transactions;
-    } else {
-      return Collections.emptyList();
+      int newPayloadSize = payloadSize + candidate.getPayload().length;
+      if (newPayloadSize > maxPayloadSizeBytes) {
+        continue;
+      }
+      payloadSize = newPayloadSize;
+      transactions.add(candidate);
+      if (transactions.size() >= maxCount) {
+        break;
+      }
     }
+    return transactions;
   }
 
   @Override

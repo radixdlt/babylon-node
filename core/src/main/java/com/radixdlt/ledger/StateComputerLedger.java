@@ -133,9 +133,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   public interface StateComputer {
-    void addToMempool(MempoolAdd mempoolAdd, NodeId origin);
+    void addToMempool(MempoolAdd mempoolAdd, NodeId origin); // TODO(wip)
 
-    List<RawNotarizedTransaction> getTransactionsForProposal(
+    List<RawNotarizedTransaction> getTransactionsForProposal( // TODO(wip)
         List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
