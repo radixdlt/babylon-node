@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
+use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
@@ -72,7 +72,6 @@ use radix_engine::transaction::{
     TransactionResult,
 };
 use radix_engine_common::crypto::hash;
-use radix_engine_common::types::NodeId;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_stores::jmt_support::JmtMapper;
 
@@ -82,7 +81,7 @@ use radix_engine_stores::hash_tree::tree_store::{
 use radix_engine_stores::hash_tree::DbId;
 
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_stores::interface::DatabaseMapper;
+use radix_engine_stores::interface::{DatabaseMapper, DatabaseUpdate};
 use crate::staging::ReadableStore;
 
 pub enum ProcessedTransactionReceipt {
@@ -175,16 +174,24 @@ impl ProcessedCommitResult {
 
         let mut substate_changes = Vec::new();
         for ((node_id, module_id), updates_within_index) in commit_result.state_updates.system_updates.clone() {
-            for (substate_key, value) in updates_within_index {
+            for (substate_key, update) in updates_within_index {
                 let index_id = M::map_to_db_index(&node_id, module_id.clone());
                 let substate_db_key = M::map_to_db_key(&substate_key);
-                let prev_substate_opt = store.get_substate(&index_id, &substate_db_key);
+
+                let change_action = match update {
+                    DatabaseUpdate::Set(value) =>
+                        match store.get_substate(&index_id, &substate_db_key) {
+                            Some(_) => ChangeAction::Create(value),
+                            None => ChangeAction::Update(value),
+                        },
+                    DatabaseUpdate::Delete => ChangeAction::Delete
+                };
 
                 substate_changes.push(SubstateChange {
                     node_id,
                     module_id,
                     substate_key,
-                    action: ChangeAction::Delete
+                    action: change_action
                 });
             }
         }

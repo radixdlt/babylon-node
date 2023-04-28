@@ -23,14 +23,15 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-e3740fd29" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "substate-layout-a9d515aa9" }
 
 jni = "0.19.0"
 

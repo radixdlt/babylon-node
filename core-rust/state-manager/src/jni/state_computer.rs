@@ -72,7 +72,7 @@ use crate::{
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine_stores::query::ResourceAccounter;
+use radix_engine_queries::query::ResourceAccounter;
 use radix_engine::types::*;
 use std::ops::Deref;
 
@@ -83,6 +83,9 @@ use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::QueryableTransactionStore;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
+use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine_stores::interface::SubstateDatabase;
 
 use super::state_manager::ActualStateManager;
 
@@ -221,23 +224,20 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
         &env,
         request_payload,
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
-            /*
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let substate_id = SubstateId(
-                RENodeId::GlobalObject(validator_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Validator(ValidatorOffset::Validator),
-            );
-            let output = read_store.get_substate(&substate_id).unwrap();
-            let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+            let validator_substate: ValidatorSubstate = read_store
+                .get_mapped_substate::<JmtMapper, ValidatorSubstate>(
+                    validator_address.as_node_id(),
+                    SysModuleId::Object.into(),
+                    &ValidatorOffset::Validator.into(),
+                )
+                .unwrap();
+
             JavaValidatorInfo {
                 lp_token_address: validator_substate.liquidity_token,
                 unstake_resource: validator_substate.unstake_nft,
             }
-             */
-            // TODO: fixme
-            panic!("FIXME");
         },
     )
 }

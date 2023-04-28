@@ -144,7 +144,6 @@ pub mod commit {
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
     use radix_engine_stores::hash_tree::tree_store::{IndexPayload, NodeKey, TreeNode};
-    use radix_engine_stores::interface::{DatabaseUpdate, DatabaseUpdates};
     use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {

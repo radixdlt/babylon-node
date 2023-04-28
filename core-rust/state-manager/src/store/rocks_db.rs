@@ -75,7 +75,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
 use radix_engine_stores::interface::{
-    decode_substate_id, encode_substate_id, DatabaseMapper, DatabaseUpdate, SubstateDatabase,
+    decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase,
 };
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,

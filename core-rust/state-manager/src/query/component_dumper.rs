@@ -69,7 +69,7 @@ use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::math::Decimal;
 use std::collections::{BTreeMap, BTreeSet};
 use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::query::{StateTreeTraverser, StateTreeVisitor};
+use radix_engine_queries::query::{StateTreeTraverser, StateTreeVisitor};
 
 pub enum VaultData {
     Fungible {

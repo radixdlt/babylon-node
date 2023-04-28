@@ -319,6 +319,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-queries",
  "radix-engine-stores",
  "sbor",
  "serde",
@@ -944,9 +945,9 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36eb31c1778188ae1e64398743890d0877fef36d11521ac60406b42016e8c2cf"
+checksum = "2e8776872cdc2f073ccaab02e336fa321328c1e02646ebcb9d2108d0baab480d"
 
 [[package]]
 name = "lock_api"
@@ -1043,7 +1044,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1349,7 +1350,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "bitflags",
  "colored",
@@ -1375,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "bech32",
  "blake2",
@@ -1395,12 +1396,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1411,7 +1412,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "bitflags",
  "hex",
@@ -1425,9 +1426,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-queries"
+version = "0.10.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine",
+ "radix-engine-constants",
+ "radix-engine-interface",
+ "radix-engine-stores",
+ "sbor",
+ "transaction",
+ "utils",
+]
+
+[[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "hex",
  "itertools",
@@ -1438,7 +1455,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "fixedstr",
 ]
@@ -1559,7 +1576,7 @@ checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
 [[package]]
 name = "resources-tracker-macro"
 version = "0.1.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1630,7 +1647,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1644,7 +1661,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1653,7 +1670,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1680,7 +1697,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto-schema"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -1882,6 +1899,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-queries",
  "radix-engine-stores",
  "rand 0.8.5",
  "rocksdb",
@@ -2148,7 +2166,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2197,7 +2215,7 @@ checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
 [[package]]
 name = "utils"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e3740fd29#e3740fd2932bfd19f2216fcba2268b6d730e030a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=substate-layout-a9d515aa9#a9d515aa96a742d9fb6ab48af1f2f34decdd5b65"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

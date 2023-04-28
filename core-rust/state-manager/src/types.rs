@@ -62,9 +62,8 @@
  * permissions under this License.
  */
 
-use crate::{accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome, SubstateChange, ChangeAction};
+use crate::{accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome, SubstateChange};
 use radix_engine::types::*;
-use radix_engine_stores::interface::DatabaseUpdate;
 use std::fmt;
 use std::ops::Range;
 
