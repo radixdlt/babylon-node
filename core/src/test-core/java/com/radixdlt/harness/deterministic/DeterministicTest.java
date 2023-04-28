@@ -87,6 +87,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.statecomputer.RustStateComputer;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.List;
@@ -482,5 +484,9 @@ public final class DeterministicTest implements AutoCloseable {
 
   public List<Integer> getLiveNodeIndices() {
     return this.nodes.getLiveNodeIndices();
+  }
+
+  public ComponentAddress faucetAddress() {
+    return getInstance(0, RustStateComputer.class).getFaucetAddress();
   }
 }

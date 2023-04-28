@@ -75,6 +75,7 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
@@ -88,6 +89,8 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,8 +104,8 @@ public final class RadixNode {
   }
 
   public static RadixNode start(
-      RuntimeProperties properties, Network network, RawLedgerTransaction genesisTxn) {
-    log.info("Starting Radix node (genesis transaction: {})", genesisTxn.getPayloadHash());
+      RuntimeProperties properties, Network network, Optional<GenesisData2> genesisTxn) {
+//    log.info("Starting Radix node (genesis transaction: {})", genesisTxn.getPayloadHash());
 
     final var injector = Guice.createInjector(new RadixNodeModule(properties, network, genesisTxn));
 

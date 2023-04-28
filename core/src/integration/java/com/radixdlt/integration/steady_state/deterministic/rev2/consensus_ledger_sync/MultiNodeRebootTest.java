@@ -73,6 +73,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -84,8 +85,10 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
@@ -191,7 +194,9 @@ public final class MultiNodeRebootTest {
   }
 
   private DeterministicTest createTest(
-      SafetyRecoveryConfig safetyRecoveryConfig, Module overrideModule) {
+      TransactionGenerator<RawNotarizedTransaction> transactionGenerator,
+      SafetyRecoveryConfig safetyRecoveryConfig,
+      Module overrideModule) {
     var builder =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
@@ -215,7 +220,7 @@ public final class MultiNodeRebootTest {
                         numValidators, Decimal.of(1), this.roundsPerEpoch),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1)),
+                        transactionGenerator, 1)),
                 SyncRelayConfig.of(5000, 10, 5000L))));
   }
 
@@ -228,7 +233,10 @@ public final class MultiNodeRebootTest {
       NodeLivenessController nodeLivenessController,
       SafetyRecoveryConfig safetyRecoveryConfig,
       Module overrideModule) {
-    try (var test = createTest(safetyRecoveryConfig, overrideModule)) {
+    final var transactionGenerator = new REV2TransactionGenerator();
+    try (var test = createTest(transactionGenerator, safetyRecoveryConfig, overrideModule)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
 
       for (int testRound = 0; testRound < numTestRounds; testRound++) {

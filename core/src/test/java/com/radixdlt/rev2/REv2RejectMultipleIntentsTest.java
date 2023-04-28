@@ -122,9 +122,9 @@ public final class REv2RejectMultipleIntentsTest {
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
-  private static byte[] createValidIntentBytes(long nonce) {
+  private static byte[] createValidIntentBytes(ComponentAddress faucet, long nonce) {
     return REv2TestTransactions.constructValidIntentBytes(
-        NETWORK_DEFINITION, 0, nonce, NOTARY.getPublicKey().toPublicKey());
+        NETWORK_DEFINITION, faucet, 0, nonce, NOTARY.getPublicKey().toPublicKey());
   }
 
   private static RawNotarizedTransaction createValidTransactionWithSigs(
@@ -154,9 +154,11 @@ public final class REv2RejectMultipleIntentsTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var fixedIntent1 = createValidIntentBytes(1);
-      var fixedIntent2 = createValidIntentBytes(2);
-      var fixedIntent3 = createValidIntentBytes(3);
+      final var faucet = test.faucetAddress();
+
+      var fixedIntent1 = createValidIntentBytes(faucet, 1);
+      var fixedIntent2 = createValidIntentBytes(faucet, 2);
+      var fixedIntent3 = createValidIntentBytes(faucet, 3);
 
       // Signatures aren't deterministic so create signed transactions up front
       var fixedIntent1Transactions =

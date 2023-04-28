@@ -62,11 +62,9 @@
  * permissions under this License.
  */
 
-use crate::{
-    accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
-    LedgerTransactionOutcome,
-};
+use crate::{accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome, SubstateChange, ChangeAction};
 use radix_engine::types::*;
+use radix_engine_stores::interface::DatabaseUpdate;
 use std::fmt;
 use std::ops::Range;
 
@@ -221,12 +219,11 @@ pub struct SubstateChangeHash([u8; Self::LENGTH]);
 impl SubstateChangeHash {
     pub const LENGTH: usize = 32;
 
-    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
-        Self(hash_bytes)
-    }
-
-    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
+    pub fn from_substate_change(
+        substate_change: &SubstateChange,
+    ) -> SubstateChangeHash {
+        let hashed_bytes = hash(scrypto_encode(&substate_change).unwrap()).0;
+        SubstateChangeHash(hashed_bytes)
     }
 }
 
@@ -339,7 +336,7 @@ pub struct ConsensusReceipt {
     /// The high-level outcome from the `LedgerTransactionReceipt`.
     pub outcome: LedgerTransactionOutcome,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
-    /// `substate_changes` (see `SubstateChange::get_hash()`).
+    /// `state_updates`.
     pub substate_change_root: SubstateChangeHash,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `application_events` (see `ApplicationEvent::get_hash()`).

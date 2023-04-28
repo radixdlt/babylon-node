@@ -93,6 +93,8 @@ import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.Optional;
+
 /** Manages the functional components of a node */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -397,9 +399,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
-            var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-
-            install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
+            install(new REv2LedgerRecoveryModule(Optional.of(rev2Config.genesis())));
             install(new REv2ConsensusRecoveryModule());
 
             switch (rev2Config.proposerConfig()) {

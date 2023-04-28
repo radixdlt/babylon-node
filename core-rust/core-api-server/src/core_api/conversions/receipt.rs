@@ -16,6 +16,7 @@ use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
 use radix_engine_interface::blueprints::resource::ResourceType;
 
 use std::collections::{BTreeMap, HashMap};
+use radix_engine_stores::interface::DatabaseUpdate;
 
 use state_manager::{
     ApplicationEvent, ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome,
@@ -117,17 +118,18 @@ pub fn to_api_receipt(
     let mut unfiltered_creations = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for substate_change in receipt.on_ledger.substate_changes {
-        let id = substate_change.substate_id;
-        match substate_change.action {
-            ChangeAction::Create(value) => {
-                unfiltered_creations.push((id, value));
-            }
-            ChangeAction::Update(value) => {
-                updated_substates.push(to_api_new_substate_version(context, id, value)?);
-            }
-            ChangeAction::Delete(version) => {
-                deleted_substates.push(to_api_deleted_substate(id, version)?);
+    for (index_id, updates_within_index) in receipt.on_ledger.state_updates.database_updates {
+        for (key, update) in updates_within_index {
+            match update {
+                // ChangeAction::Create(value) => {
+                //     unfiltered_creations.push(((index_id, key), value));
+                // }
+                DatabaseUpdate::Set(value) => {
+                    updated_substates.push(to_api_new_substate_version(context, index_id, key, value)?);
+                }
+                DatabaseUpdate::Delete => {
+                    deleted_substates.push(to_api_deleted_substate(index_id, key)?);
+                }
             }
         }
     }
@@ -187,8 +189,9 @@ pub fn to_api_receipt(
 #[tracing::instrument(skip_all)]
 pub fn to_api_new_substate_version(
     context: &MappingContext,
-    substate_id: SubstateId,
-    output_value: OutputValue,
+    index_id: Vec<u8>,
+    substate_key: Vec<u8>,
+    value: Vec<u8>,
 ) -> Result<models::NewSubstateVersion, MappingError> {
     let substate_bytes =
         scrypto_encode(&output_value.substate).map_err(|err| MappingError::SborEncodeError {
@@ -214,8 +217,8 @@ pub fn to_api_new_substate_version(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
-    substate_id: SubstateId,
-    deleted_substate: DeletedSubstateVersion,
+    index_id: Vec<u8>,
+    substate_key: Vec<u8>,
 ) -> Result<models::DeletedSubstateVersionRef, MappingError> {
     Ok(models::DeletedSubstateVersionRef {
         substate_id: Box::new(to_api_substate_id(substate_id)?),

@@ -71,6 +71,7 @@ import static com.radixdlt.rev2.ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENT
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -90,6 +91,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,7 +99,7 @@ import org.junit.rules.TemporaryFolder;
 
 public final class RandomValidatorsTest {
   private static final int NUM_VALIDATORS = 30;
-  private static final RawLedgerTransaction GENESIS =
+  private static final GenesisData2 GENESIS =
       TransactionBuilder.createGenesisWithNumValidators(
           NUM_VALIDATORS / 2, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
 
@@ -128,12 +130,17 @@ public final class RandomValidatorsTest {
   @Test
   public void normal_run_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
+      final var faucet = test.faucetAddress();
+
       test.startAllNodes();
 
       var random = new Random(12345);
 
       var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
       var validators = new HashMap<Integer, ComponentAddress>();
+      // TODO: Fixme
+      final var componentAddresses = List.<ComponentAddress>of();
+      /*
       var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
       var componentAddresses =
           genesis.newComponentAddresses().stream()
@@ -141,6 +148,8 @@ public final class RandomValidatorsTest {
                   componentAddress ->
                       componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
               .toList();
+
+       */
       for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
         validators.put(i, componentAddresses.get(i));
       }
@@ -162,6 +171,7 @@ public final class RandomValidatorsTest {
             var txn =
                 REv2TestTransactions.constructCreateValidatorTransaction(
                     NetworkDefinition.INT_TEST_NET,
+                    faucet,
                     0,
                     random.nextInt(1000000),
                     PrivateKeys.ofNumeric(randomValidatorIndex + 1));
@@ -190,6 +200,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructRegisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -199,6 +210,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructUnregisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -208,6 +220,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructStakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -219,6 +232,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructUnstakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       validatorInfo.lpTokenAddress(),
@@ -231,6 +245,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructClaimXrdTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,

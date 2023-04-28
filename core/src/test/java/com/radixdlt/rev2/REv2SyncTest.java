@@ -72,6 +72,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -81,8 +82,10 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
@@ -112,7 +115,7 @@ public class REv2SyncTest {
     this.roundsPerEpoch = roundsPerEpoch;
   }
 
-  private DeterministicTest buildTest() {
+  private DeterministicTest buildTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(2, true))
         .messageSelector(firstSelector())
@@ -128,7 +131,7 @@ public class REv2SyncTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
+                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 1)),
                     SyncRelayConfig.of(200, 10, 2000))));
   }
 
@@ -143,9 +146,13 @@ public class REv2SyncTest {
   }
 
   private void test_sync_n_txns(int n) {
-    try (var test = buildTest()) {
-      // Arrange: n transactions committed - across a number of rounds
+    final var transactionGenerator = new REV2TransactionGenerator();
+    try (var test = buildTest(transactionGenerator)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
+
+      // Arrange: n transactions committed - across a number of rounds
       test.runUntilState(
           nodeAt(0, atOrOverStateVersion(n)), onlyConsensusEventsAndSelfLedgerUpdates());
 

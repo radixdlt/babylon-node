@@ -88,9 +88,7 @@ pub mod vertex {
 }
 
 pub mod substate {
-    pub use radix_engine::ledger::{
-        QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
-    };
+    pub use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
 }
 
 pub mod transactions {
@@ -141,13 +139,12 @@ pub mod proofs {
 }
 
 pub mod commit {
+    use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
-    use radix_engine::ledger::OutputValue;
-    use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
-    use std::collections::{HashMap, HashSet};
+    use radix_engine_stores::hash_tree::tree_store::{IndexPayload, NodeKey, TreeNode};
+    use radix_engine_stores::interface::{DatabaseUpdate, DatabaseUpdates};
     use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {
@@ -160,47 +157,21 @@ pub mod commit {
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
     }
 
-    // TODO(engine-merge): placeholder enum; remove
-    pub enum DatabaseUpdate {
-        Set(Vec<u8>),
-        Delete,
-    }
-
     pub struct SubstateStoreUpdate {
-        // TODO(engine-merge): remove
-        pub upserted: HashMap<SubstateId, OutputValue>,
-        pub deleted_ids: HashSet<SubstateId>,
-
-        pub updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
+        pub updates: IndexMap<(NodeId, ModuleId, SubstateKey), ChangeAction>,
     }
 
     impl SubstateStoreUpdate {
         pub fn new() -> Self {
             Self {
-                upserted: HashMap::new(),
-                deleted_ids: HashSet::new(),
                 updates: IndexMap::new(),
             }
         }
 
-        pub fn apply(&mut self, changes: &[SubstateChange]) {
-            for change in changes {
-                let id = &change.substate_id;
-                match &change.action {
-                    ChangeAction::Create(value) => {
-                        self.deleted_ids.remove(id);
-                        self.upserted.insert(id.clone(), value.clone());
-                    }
-                    ChangeAction::Update(value) => {
-                        self.upserted.insert(id.clone(), value.clone());
-                    }
-                    ChangeAction::Delete(_) => {
-                        let previous_value = self.upserted.remove(id);
-                        if previous_value.is_none() {
-                            self.deleted_ids.insert(id.clone());
-                        }
-                    }
-                }
+        pub fn apply(&mut self, substate_changes: Vec<SubstateChange>) {
+            for substate_change in substate_changes {
+                let substate_id = (substate_change.node_id, substate_change.module_id, substate_change.substate_key);
+                self.updates.insert(substate_id, substate_change.action);
             }
         }
     }
@@ -212,8 +183,8 @@ pub mod commit {
     }
 
     pub struct HashTreeUpdate {
-        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
-        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
+        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<IndexPayload>)>,
+        pub new_substate_layer_nodes: Vec<(NodeKey,  TreeNode<()>)>,
         pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
     }
 

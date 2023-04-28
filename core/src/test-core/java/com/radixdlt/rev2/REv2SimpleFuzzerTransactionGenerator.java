@@ -81,23 +81,28 @@ import java.util.Random;
  */
 public final class REv2SimpleFuzzerTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
-  private static final Addressing ADDRESSING = Addressing.ofNetwork(Network.LOCALSIMULATOR);
-  private static final String SIM_FAUCET_ADDRESS =
-      ADDRESSING.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-
+  private final Addressing addressing;
   private final Random random;
   private int transactionNonce = 0;
+  private String faucetAddress;
 
-  public REv2SimpleFuzzerTransactionGenerator(Random random) {
+  public REv2SimpleFuzzerTransactionGenerator(NetworkDefinition networkDefinition, Random random) {
+    this.addressing = Addressing.ofNetwork(networkDefinition);
     this.random = random;
+  }
+
+  // This is a bit of a hack to supply the faucet address after executing the genesis
+  // TODO: figure out something better
+  public void setFaucetAddress(ComponentAddress faucet) {
+    this.faucetAddress = addressing.encodeNormalComponentAddress(faucet);
   }
 
   private String nextInstruction() {
     return switch (random.nextInt(4)) {
       case 0 -> String.format(
           "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
-          SIM_FAUCET_ADDRESS);
-      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", SIM_FAUCET_ADDRESS);
+          faucetAddress);
+      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", faucetAddress);
       case 2 -> "CREATE_ACCOUNT Enum(\"AccessRule::AllowAll\");";
       default -> {
         ComponentAddress accountAddress =
@@ -106,7 +111,7 @@ public final class REv2SimpleFuzzerTransactionGenerator
             """
                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                 """,
-            ADDRESSING.encodeAccountAddress(accountAddress));
+            addressing.encodeAccountAddress(accountAddress));
       }
     };
   }

@@ -87,6 +87,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -125,10 +126,10 @@ public final class REv2MempoolFillAndEmptyTest {
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
-  private final REV2TransactionGenerator transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
-
   private void fillAndEmptyMempool(DeterministicTest test) {
+    final var transactionGenerator = new REV2TransactionGenerator();
+    transactionGenerator.setFaucetAddress(test.faucetAddress());
+
     var rateLimiter = RateLimiter.create(0.5);
     var mempoolReader =
         test.getInstance(0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));

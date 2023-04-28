@@ -94,6 +94,11 @@ use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
 
 use crate::mempool_manager::MempoolManager;
+use radix_engine::system::bootstrap::{
+    create_genesis_wrap_up_transaction, create_system_bootstrap_transaction,
+    GenesisDataChunk,
+};
+use radix_engine_common::crypto::Hash;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
 
@@ -169,40 +174,6 @@ where
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
-    // TODO: Update to prepare_system_transaction when we start to support forking
-    pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
-        let parsed_transaction =
-            LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
-                .expect("Already prepared transactions should be decodeable");
-        let executable = self
-            .ledger_transaction_validator
-            .validate_and_create_executable(&parsed_transaction)
-            .expect("Failed to validate genesis");
-
-        let logged_description = "genesis";
-        let processed = self.execution_cache.execute_transaction(
-            self.store.read().deref(),
-            &EpochTransactionIdentifiers::pre_genesis(),
-            &CommittedTransactionIdentifiers::pre_genesis(),
-            &parsed_transaction.get_hash(),
-            &self
-                .execution_configurator
-                .wrap(executable, ConfigType::Genesis)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, logged_description),
-        );
-        let commit = processed.expect_commit(logged_description);
-        commit.check_success(logged_description);
-        let validator_set = commit
-            .next_epoch()
-            .map(|next_epoch| next_epoch.validator_set);
-        let ledger_hashes = commit.hash_structures_diff.ledger_hashes;
-
-        PrepareGenesisResult {
-            validator_set,
-            ledger_hashes,
-        }
-    }
-
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let read_store = self.store.read();
         let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
@@ -506,9 +477,158 @@ impl<'db, S> StateManager<S>
 where
     S: CommitStore,
     S: ReadableStore,
+    S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
-    pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
+    pub fn execute_genesis(
+        &mut self,
+        _genesis_data_chunks: Vec<GenesisDataChunk>,
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> LedgerProof {
+        let mut state_version = 0;
+        let mut accumulator_hash = AccumulatorHash::pre_genesis();
+
+        let system_bootstrap_transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        );
+
+        let system_bootstrap_ledger_transaction =
+            LedgerTransaction::System(system_bootstrap_transaction);
+
+        let (system_bootstrap_ledger_payload, system_bootstrap_txn_hash) =
+            system_bootstrap_ledger_transaction
+                .create_payload_and_hash()
+                .unwrap();
+
+        let system_bootstrap_prepare_request = PrepareRequest {
+            parent_accumulator: accumulator_hash,
+            prepared_vertices: vec![],
+            proposed_payloads: vec![system_bootstrap_ledger_payload],
+            consensus_epoch: 0,
+            round_number: 0,
+            proposer_timestamp_ms: 0, /* TODO: add genesis timestamp */
+        };
+
+        let system_bootstrap_prepare_result = self.prepare(system_bootstrap_prepare_request);
+
+        // TODO: assert no rejected and a single committed in prepare result
+
+        state_version += 1;
+        accumulator_hash = accumulator_hash.accumulate(&system_bootstrap_txn_hash);
+
+        let system_bootstrap_commit_request = CommitRequest {
+            transaction_payloads: system_bootstrap_prepare_result.committed,
+            proof: LedgerProof {
+                opaque: Hash([0; Hash::LENGTH]),
+                ledger_header: LedgerHeader {
+                    epoch: 0,
+                    round: 0,
+                    accumulator_state: AccumulatorState {
+                        state_version,
+                        accumulator_hash,
+                    },
+                    hashes: system_bootstrap_prepare_result.ledger_hashes,
+                    consensus_parent_round_timestamp_ms: 0, /* TODO: add genesis timestamp */
+                    proposer_timestamp_ms: 0,               /* TODO: add genesis timestamp */
+                    next_epoch: system_bootstrap_prepare_result.next_epoch,
+                },
+                timestamped_signatures: vec![],
+            },
+            vertex_store: None,
+        };
+
+        let system_bootstrap_commit_receipts = self
+            .commit(system_bootstrap_commit_request)
+            .expect("System bootstrap commit failed");
+
+        let system_bootstrap_receipt = system_bootstrap_commit_receipts
+            .get(0)
+            .expect("Missing system bootstrap local receipt");
+
+        let genesis_helper = system_bootstrap_receipt
+            .local_execution
+            .state_update_summary
+            .new_components
+            .last()
+            .unwrap()
+            .clone();
+
+        // TODO: execute data ingestion transactions with chunks
+        let mut next_nonce = 1;
+
+        let genesis_wrap_up_transaction =
+            create_genesis_wrap_up_transaction(&genesis_helper, next_nonce);
+
+        let genesis_wrap_up_ledger_transaction =
+            LedgerTransaction::System(genesis_wrap_up_transaction);
+
+        let (genesis_wrap_up_ledger_payload, genesis_wrap_up_txn_hash) =
+            genesis_wrap_up_ledger_transaction
+                .create_payload_and_hash()
+                .unwrap();
+
+        let genesis_wrap_up_prepare_request = PrepareRequest {
+            parent_accumulator: accumulator_hash,
+            prepared_vertices: vec![],
+            proposed_payloads: vec![genesis_wrap_up_ledger_payload],
+            consensus_epoch: 0,
+            round_number: 0,
+            proposer_timestamp_ms: 0, /* TODO: add genesis timestamp */
+        };
+
+        let genesis_wrap_up_prepare_result = self.prepare(genesis_wrap_up_prepare_request);
+
+        // TODO: assert no rejected and a single committed in prepare result
+
+        state_version += 1;
+        accumulator_hash = accumulator_hash.accumulate(&genesis_wrap_up_txn_hash);
+
+        let genesis_wrap_up_ledger_header = LedgerHeader {
+            epoch: 0,
+            round: 0,
+            accumulator_state: AccumulatorState {
+                state_version,
+                accumulator_hash,
+            },
+            hashes: genesis_wrap_up_prepare_result.ledger_hashes,
+            consensus_parent_round_timestamp_ms: 0, /* TODO: add genesis timestamp */
+            proposer_timestamp_ms: 0,               /* TODO: add genesis timestamp */
+            next_epoch: genesis_wrap_up_prepare_result.next_epoch,
+        };
+
+        let genesis_wrap_up_commit_request = CommitRequest {
+            transaction_payloads: genesis_wrap_up_prepare_result.committed,
+            proof: LedgerProof {
+                opaque: Hash([0; Hash::LENGTH]),
+                ledger_header: genesis_wrap_up_ledger_header.clone(),
+                timestamped_signatures: vec![],
+            },
+            vertex_store: None,
+        };
+
+        let _genesis_wrap_up_receipt = self
+            .commit(genesis_wrap_up_commit_request)
+            .expect("Genesis wrap up commit failed")
+            .get(0)
+            .expect("Missing genesis wrap up local receipt");
+
+        LedgerProof {
+            opaque: Hash([0; Hash::LENGTH]),
+            ledger_header: genesis_wrap_up_ledger_header,
+            timestamped_signatures: vec![],
+        }
+    }
+
+    pub fn commit(
+        &'db mut self,
+        commit_request: CommitRequest,
+    ) -> Result<Vec<LocalTransactionReceipt>, CommitError> {
         let commit_transactions_len = commit_request.transaction_payloads.len();
         if commit_transactions_len == 0 {
             panic!("cannot commit 0 transactions from request {commit_request:?}");
@@ -561,6 +681,7 @@ where
         let mut receipt_tree_slice_merger = AccuTreeSliceMerger::new(transaction_tree_len);
         let mut intent_hashes = Vec::new();
 
+        let mut result_receipts = vec![];
         for (i, transaction) in parsed_transactions.into_iter().enumerate() {
             if let LedgerTransaction::System(..) = transaction {
                 // TODO: Cleanup and use real system transaction logic
@@ -612,10 +733,12 @@ where
             }
 
             let transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
-            substate_store_update.apply(&local_receipt.on_ledger.substate_changes);
+            substate_store_update.apply(local_receipt.on_ledger.substate_changes.clone());
             state_tree_update.add(transaction_identifiers.state_version, state_hash_tree_diff);
             transaction_tree_slice_merger.append(transaction_tree_slice);
             receipt_tree_slice_merger.append(receipt_tree_slice);
+
+            result_receipts.push(local_receipt.clone());
 
             committed_transaction_bundles.push((
                 transaction,
@@ -674,7 +797,7 @@ where
         );
         drop(write_pending_transaction_result_cache);
 
-        Ok(())
+        Ok(result_receipts)
     }
 
     fn check_epoch_proof_match(

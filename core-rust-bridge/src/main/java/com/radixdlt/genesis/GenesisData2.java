@@ -62,81 +62,23 @@
  * permissions under this License.
  */
 
-use radix_engine::blueprints::resource::VaultInfoSubstate;
-use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::types::{Decimal, RENodeId, ResourceAddress, SubstateId};
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
-};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+package com.radixdlt.genesis;
 
-use super::component_state_tree_traverser::*;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
-    substate_store: &'s S,
-    accounting: Accounting,
-}
+// TODO(engine-merge): temporary placeholder
+public record GenesisData2(
+  ImmutableList<GenesisDataChunk> chunks,
+  UInt64 initialEpoch,
+  UInt32 maxValidators,
+  UInt64 roundsPerEpoch,
+  UInt64 numUnstakeEpochs
+) {
 
-impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
-    pub fn new(substate_store: &'s S) -> Self {
-        ResourceAccounter {
-            substate_store,
-            accounting: Accounting::new(),
-        }
-    }
+  // TODO: add sbor codec
 
-    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeTraverserError> {
-        let mut state_tree_visitor =
-            ComponentStateTreeTraverser::new(self.substate_store, &mut self.accounting, 100);
-        state_tree_visitor.traverse_all_descendents(None, node_id)
-    }
 
-    pub fn into_map(self) -> HashMap<ResourceAddress, Decimal> {
-        self.accounting.balances
-    }
-}
-
-struct Accounting {
-    balances: HashMap<ResourceAddress, Decimal>,
-}
-
-impl Accounting {
-    pub fn new() -> Self {
-        Accounting {
-            balances: HashMap::new(),
-        }
-    }
-
-    pub fn add_vault(&mut self, resource_address: ResourceAddress, amount: Decimal) {
-        match self.balances.entry(resource_address) {
-            Entry::Occupied(mut e) => {
-                let new_amount = amount + *e.get();
-                e.insert(new_amount);
-            }
-            Entry::Vacant(e) => {
-                e.insert(amount);
-            }
-        }
-    }
-}
-
-impl StateTreeVisitor for Accounting {
-    fn visit_fungible_vault(
-        &mut self,
-        _parent_id: Option<&SubstateId>,
-        info: &VaultInfoSubstate,
-        liquid: &LiquidFungibleResource,
-    ) {
-        self.add_vault(info.resource_address, liquid.amount());
-    }
-
-    fn visit_non_fungible_vault(
-        &mut self,
-        _parent_id: Option<&SubstateId>,
-        info: &VaultInfoSubstate,
-        liquid: &LiquidNonFungibleResource,
-    ) {
-        self.add_vault(info.resource_address, liquid.amount());
-    }
+  public record GenesisDataChunk() { }
 }

@@ -72,15 +72,15 @@ use crate::{
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
-use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine_stores::query::ResourceAccounter;
 use radix_engine::types::*;
 use std::ops::Deref;
 
 use crate::jni::common_types::JavaHashCode;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::query::{ResourceAccounter, StateManagerSubstateQueries};
+use crate::query::StateManagerSubstateQueries;
+use crate::store::traits::QueryableTransactionStore;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
@@ -91,23 +91,29 @@ use super::state_manager::ActualStateManager;
 //
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_execute_genesis)
 }
 
 #[tracing::instrument(skip_all)]
-fn do_prepare_genesis(
+fn do_execute_genesis(
     state_manager: &mut ActualStateManager,
-    args: JavaPrepareGenesisRequest,
-) -> JavaPrepareGenesisResult {
-    let prepare_request = args;
+    args: JavaGenesisData,
+) -> JavaLedgerProof {
+    let genesis_data = args;
 
-    let result = state_manager.prepare_genesis(prepare_request.into());
+    let result = state_manager.execute_genesis(
+        vec![], /* TODO */
+        genesis_data.initial_epoch,
+        genesis_data.max_validators,
+        genesis_data.rounds_per_epoch,
+        genesis_data.num_unstake_epochs,
+    );
 
     result.into()
 }
@@ -151,7 +157,9 @@ fn do_commit(
 ) -> Result<(), CommitError> {
     let commit_request = args;
 
-    state_manager.commit(commit_request.into())
+    state_manager
+        .commit(commit_request.into())
+        .map(|_unused| ())
 }
 
 #[no_mangle]
@@ -165,17 +173,41 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
         &env,
         request_payload,
         |component_address: ComponentAddress| -> Decimal {
+            let node_id = component_address.as_node_id();
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let mut resource_accounter = ResourceAccounter::new(read_store.deref());
-            let resources = resource_accounter
-                .add_resources(RENodeId::GlobalObject(component_address.into()))
-                .map_or(None, |()| Some(resource_accounter.into_map()));
-            resources
-                .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
+            let mut accounter = ResourceAccounter::new(read_store.deref());
+            accounter.traverse(node_id.clone());
+            let balances = accounter.close().balances;
+            balances.get(&RADIX_TOKEN)
+                .cloned()
                 .unwrap_or_else(Decimal::zero)
         },
     )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_faucetAddress(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |()| -> ComponentAddress {
+        // TODO: this won't work with the current genesis
+        // update radix engine genesis so that faucet is created in the
+        // system bootstrap txn (rather than the wrap up txn)
+        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let read_store = database.read();
+        let system_bootstrap_receipt = read_store.get_committed_transaction_receipt(1).unwrap();
+        system_bootstrap_receipt
+            .local_execution
+            .state_update_summary
+            .new_components
+            .last()
+            .unwrap()
+            .clone()
+    })
 }
 
 #[no_mangle]
@@ -189,6 +221,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
         &env,
         request_payload,
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
+            /*
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
             let substate_id = SubstateId(
@@ -202,6 +235,9 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
                 lp_token_address: validator_substate.liquidity_token,
                 unstake_resource: validator_substate.unstake_nft,
             }
+             */
+            // TODO: fixme
+            panic!("FIXME");
         },
     )
 }
@@ -221,6 +257,18 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
 }
 
 pub fn export_extern_functions() {}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaGenesisDataChunk {}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaGenesisData {
+    pub chunks: Vec<JavaGenesisDataChunk>,
+    pub initial_epoch: u64,
+    pub max_validators: u32,
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
+}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaCommitRequest {

@@ -64,19 +64,16 @@
 
 use crate::result::StateManagerResult;
 use crate::transaction::{
-    create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
-    create_notarized_bytes, create_signed_intent_bytes, LedgerTransaction,
+    create_intent_bytes, create_manifest, create_notarized_bytes, create_signed_intent_bytes,
+    LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{ComponentAddress, PublicKey};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine::types::PublicKey;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
-use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use std::collections::BTreeMap;
 use transaction::model::{
     NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
 };
@@ -98,40 +95,6 @@ fn do_compile_manifest(
     create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{err:?}"))
         .map(|manifest| manifest_encode(&manifest).unwrap())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesisLedgerTransaction(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
-}
-
-#[allow(clippy::type_complexity)]
-fn do_create_genesis_ledger_transaction(
-    (
-        validator_set_and_stake_owners,
-        account_xrd_allocations,
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    ): (
-        BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-        BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
-        u64,
-        u64,
-        u64,
-    ),
-) -> Vec<u8> {
-    create_genesis_ledger_transaction_bytes(
-        validator_set_and_stake_owners,
-        account_xrd_allocations,
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    )
 }
 
 #[no_mangle]

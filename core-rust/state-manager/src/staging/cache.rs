@@ -72,20 +72,22 @@ use crate::staging::{
     StateHashTreeDiff,
 };
 use crate::{
-    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
+    AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
     LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 use im::ordmap::OrdMap as ImmutableOrdMap;
-use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
 
 use crate::staging::sorted_kv_merge_iterator::SortedKvMergeIterator;
-use crate::store::{decode_substate_id, encode_substate_id, ListableSubstateStore};
 use crate::transaction::TransactionLogic;
-use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
+use crate::receipt::ChangeAction;
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReNodeModulePayload, ReadableTreeStore, TreeNode,
+    IndexPayload, NodeKey, ReadableTreeStore, TreeNode,
 };
+use radix_engine_stores::interface::{
+    decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase,
+};
+use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
@@ -129,7 +131,8 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = transaction.execute_on(&staged_store);
-                let processed = ProcessedTransactionReceipt::process(
+
+                let processed = ProcessedTransactionReceipt::process::<StagedStore<S>, JmtMapper>( /* TODO: move JmtMapper type param to higher level */
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
@@ -191,17 +194,16 @@ impl<'s, S> StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for StagedStore<'s, S> {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
+    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
+        let substate_id = encode_substate_id(&index_id, &key);
         self.overlay
             .substate_values
-            .get(substate_id)
+            .get(&substate_id)
             .cloned()
-            .or_else(|| self.root.get_substate(substate_id))
+            .or_else(|| self.root.get_substate(index_id, key))
     }
-}
 
-impl<'s, S: ListableSubstateStore> ListableSubstateStore for StagedStore<'s, S> {
     fn list_substates(
         &self,
         index_id: &Vec<u8>,
@@ -212,7 +214,7 @@ impl<'s, S: ListableSubstateStore> ListableSubstateStore for StagedStore<'s, S> 
             let start = encode_substate_id(index_id, &vec![0]);
             let index_id = index_id.clone();
             self.overlay
-                .substate_values2
+                .substate_values
                 .range((Included(start), Unbounded))
                 .map(|(k, v)| {
                     let (index, key) = decode_substate_id(k).expect("Failed to decode substate ID");
@@ -226,10 +228,10 @@ impl<'s, S: ListableSubstateStore> ListableSubstateStore for StagedStore<'s, S> 
     }
 }
 
-impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> ReadableTreeStore<ReNodeModulePayload>
+impl<'s, S: ReadableTreeStore<IndexPayload>> ReadableTreeStore<IndexPayload>
     for StagedStore<'s, S>
 {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<IndexPayload>> {
         self.overlay
             .re_node_layer_nodes
             .get(key)
@@ -238,10 +240,8 @@ impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> ReadableTreeStore<ReNodeModu
     }
 }
 
-impl<'s, S: ReadableTreeStore<SubstateOffset>> ReadableTreeStore<SubstateOffset>
-    for StagedStore<'s, S>
-{
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for StagedStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option< TreeNode<()>> {
         self.overlay
             .substate_layer_nodes
             .get(key)
@@ -316,12 +316,9 @@ impl<K, N> AccuTreeDiff<K, N> {
 
 #[derive(Clone)]
 pub struct ImmutableStore {
-    // TODO(engine-merge):: remove
-    substate_values: ImmutableHashMap<SubstateId, OutputValue>,
-
-    substate_values2: ImmutableOrdMap<Vec<u8>, Vec<u8>>,
-    re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
-    substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<SubstateOffset>>,
+    substate_values: ImmutableOrdMap<Vec<u8>, Vec<u8>>,
+    re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<IndexPayload>>,
+    substate_layer_nodes: ImmutableHashMap<NodeKey,  TreeNode<()>>,
     transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptTreeHash>>,
 }
@@ -329,8 +326,7 @@ pub struct ImmutableStore {
 impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
-            substate_values: ImmutableHashMap::new(),
-            substate_values2: ImmutableOrdMap::new(),
+            substate_values: ImmutableOrdMap::new(),
             re_node_layer_nodes: ImmutableHashMap::new(),
             substate_layer_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
@@ -340,15 +336,23 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let substate_changes = &commit.local_receipt.on_ledger.substate_changes;
+            let substate_changes = &commit
+                .local_receipt
+                .on_ledger
+                .substate_changes;
             for substate_change in substate_changes {
-                let id = &substate_change.substate_id;
+                // TODO: JMT mapper as param>
+                let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(&substate_change.node_id, substate_change.module_id.clone());
+                let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_change.substate_key);
+                let substate_id = encode_substate_id(&index_id, &substate_db_key);
                 match &substate_change.action {
                     ChangeAction::Create(value) | ChangeAction::Update(value) => {
-                        self.substate_values.insert(id.clone(), value.clone())
+                        self.substate_values.insert(substate_id, value.clone());
                     }
-                    ChangeAction::Delete(_) => self.substate_values.remove(id),
-                };
+                    ChangeAction::Delete => {
+                        self.substate_values.remove(&substate_id);
+                    }
+                }
             }
             let hash_structures_diff = &commit.hash_structures_diff;
             let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;

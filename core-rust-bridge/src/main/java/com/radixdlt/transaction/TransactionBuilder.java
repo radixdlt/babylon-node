@@ -66,9 +66,11 @@ package com.radixdlt.transaction;
 
 import static com.radixdlt.lang.Tuple.tuple;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
@@ -80,6 +82,7 @@ import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Map;
@@ -91,67 +94,64 @@ public final class TransactionBuilder {
     System.loadLibrary("corerust");
   }
 
-  public static RawLedgerTransaction createGenesis(
+  // TODO: rename/move elsewhere
+  public static GenesisData2 createGenesis(
       Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
           validatorSetAndStakeOwners,
       Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       UInt64 initialEpoch,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
-    return RawLedgerTransaction.create(
-        createGenesisFunc.call(
-            tuple(
-                validatorSetAndStakeOwners,
-                accountXrdAllocations,
-                initialEpoch,
-                roundsPerEpoch,
-                numUnstakeEpochs)));
+    return new GenesisData2(
+            ImmutableList.of(), // TODO: fixme
+            initialEpoch,
+            UInt32.fromNonNegativeInt(100),
+            roundsPerEpoch,
+            numUnstakeEpochs
+    );
   }
 
-  public static RawLedgerTransaction createGenesis(
+  // TODO: rename/move elsewhere
+  public static GenesisData2 createGenesis(
       ECDSASecp256k1PublicKey validator,
       Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       Decimal initialStake,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
-    final var stakingAccount = Address.virtualAccountAddress(validator);
-    return RawLedgerTransaction.create(
-        createGenesisFunc.call(
-            tuple(
-                Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
-                accountXrdAllocations,
-                UInt64.fromNonNegativeLong(1),
-                roundsPerEpoch,
-                numUnstakeEpochs)));
+    return new GenesisData2(
+          ImmutableList.of(), // TODO: fixme
+          UInt64.fromNonNegativeLong(0),
+          UInt32.fromNonNegativeInt(100),
+          roundsPerEpoch,
+          numUnstakeEpochs
+  );
   }
 
-  public static RawLedgerTransaction createGenesisWithNumValidators(
+  // TODO: move elsewhere and rename
+  public static GenesisData2 createGenesisWithNumValidators(
       long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
-    return createGenesisWithNumValidatorsAndXrdAlloc(
-        numValidators, Map.of(), initialStake, roundsPerEpoch);
+    return new GenesisData2(
+        ImmutableList.of(), // TODO: fixme
+        UInt64.fromNonNegativeLong(0),
+        UInt32.fromNonNegativeInt(100),
+        roundsPerEpoch,
+        UInt64.fromNonNegativeLong(10)
+    );
   }
 
-  public static RawLedgerTransaction createGenesisWithNumValidatorsAndXrdAlloc(
+  // TODO: move elsewhere and rename
+  public static GenesisData2 createGenesisWithNumValidatorsAndXrdAlloc(
       long numValidators,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdAlloc,
       Decimal initialStake,
       UInt64 roundsPerEpoch) {
-
-    final var stakingAccount =
-        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
-    var validators =
-        PrivateKeys.numeric(1)
-            .limit(numValidators)
-            .map(ECKeyPair::getPublicKey)
-            .collect(Collectors.toMap(k -> k, k -> Tuple.tuple(initialStake, stakingAccount)));
-    return RawLedgerTransaction.create(
-        createGenesisFunc.call(
-            tuple(
-                validators,
-                xrdAlloc,
-                UInt64.fromNonNegativeLong(1),
-                roundsPerEpoch,
-                UInt64.fromNonNegativeLong(1))));
+    return new GenesisData2(
+            ImmutableList.of(), // TODO: fixme
+            UInt64.fromNonNegativeLong(0),
+            UInt32.fromNonNegativeInt(100),
+            roundsPerEpoch,
+            UInt64.fromNonNegativeLong(10)
+    );
   }
 
   public static byte[] compileManifest(
@@ -184,20 +184,6 @@ public final class TransactionBuilder {
           Natives.builder(TransactionBuilder::compileManifest).build(new TypeToken<>() {});
 
   private static native byte[] compileManifest(byte[] payload);
-
-  private static final Natives.Call1<
-          Tuple.Tuple5<
-              Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
-              Map<ECDSASecp256k1PublicKey, Decimal>,
-              UInt64,
-              UInt64,
-              UInt64>,
-          byte[]>
-      createGenesisFunc =
-          Natives.builder(TransactionBuilder::createGenesisLedgerTransaction)
-              .build(new TypeToken<>() {});
-
-  private static native byte[] createGenesisLedgerTransaction(byte[] requestPayload);
 
   private static final Natives.Call1<
           Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,

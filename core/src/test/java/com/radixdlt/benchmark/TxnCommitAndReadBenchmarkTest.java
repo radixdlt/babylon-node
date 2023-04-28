@@ -74,6 +74,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.REv2TestTransactions.NotarizedTransactionBuilder;
@@ -113,7 +114,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         final var proof = LedgerProof.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
         final var commitRequest =
             new CommitRequest(
-                createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
+                createUniqueTransactions(test.faucetAddress(), NUM_TXNS_IN_A_COMMIT, i),
                 REv2ToConsensus.ledgerProof(proof),
                 Option.none());
         stateComputer.commit(commitRequest);
@@ -189,7 +190,10 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   }
 
   private List<RawLedgerTransaction> createUniqueTransactions(
-      int numTransactions, int notaryPrivKeySeed) throws PrivateKeyException, PublicKeyException {
+      ComponentAddress faucet,
+      int numTransactions,
+      int notaryPrivKeySeed
+  ) throws PrivateKeyException, PublicKeyException {
     final List<RawLedgerTransaction> res = new ArrayList<>();
     final byte[] prvBytes = new byte[ECKeyPair.BYTES];
     final byte[] seedBytes = Longs.toByteArray(notaryPrivKeySeed + 1);
@@ -198,7 +202,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     for (int i = 0; i < numTransactions; i++) {
       final var intentBytes =
           REv2TestTransactions.constructValidIntentBytes(
-              NetworkDefinition.INT_TEST_NET, 0, i, notary.getPublicKey().toPublicKey());
+              NetworkDefinition.INT_TEST_NET, faucet, 0, i, notary.getPublicKey().toPublicKey());
       final var rawTransaction =
           new NotarizedTransactionBuilder(intentBytes, notary, List.of()).constructRawTransaction();
       res.add(

@@ -80,8 +80,10 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -94,10 +96,8 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SimpleFuzzerTransactionsTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
 
-  private DeterministicTest createTest() {
+  private DeterministicTest createTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
@@ -124,8 +124,10 @@ public final class SimpleFuzzerTransactionsTest {
           + " ErrorBeforeFeeLoanRepaid(KernelError(WasmError(WasmError(Trap(Trap { kind:"
           + " Unreachable })))))")
   public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
-    // Arrange
-    try (var test = createTest()) {
+    final var transactionGenerator =
+      new REv2SimpleFuzzerTransactionGenerator(NetworkDefinition.LOCAL_SIMULATOR, new Random(12345));
+    try (var test = createTest(transactionGenerator)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Run
       test.startAllNodes();

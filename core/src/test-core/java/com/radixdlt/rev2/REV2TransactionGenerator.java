@@ -71,6 +71,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 public final class REV2TransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
+  private ComponentAddress faucet;
 
   public REV2TransactionGenerator() {
     this.networkDefinition = NetworkDefinition.INT_TEST_NET;
@@ -82,9 +83,15 @@ public final class REV2TransactionGenerator
 
   private int currentTransactionNonce = 1;
 
+  // This is a bit of a hack to supply the faucet address after executing the genesis
+  // TODO: figure out something better
+  public void setFaucetAddress(ComponentAddress faucet) {
+    this.faucet = faucet;
+  }
+
   @Override
   public RawNotarizedTransaction nextTransaction() {
     return REv2TestTransactions.constructDepositFromFaucetTransaction(
-        networkDefinition, 0, currentTransactionNonce++);
+        networkDefinition, faucet, 0, currentTransactionNonce++);
   }
 }

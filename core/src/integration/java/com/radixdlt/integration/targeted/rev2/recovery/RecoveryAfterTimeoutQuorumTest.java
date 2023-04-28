@@ -89,6 +89,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
@@ -114,6 +115,8 @@ public final class RecoveryAfterTimeoutQuorumTest {
             .messageMutator(dropProposalForHalfNodesAtRound(TIMEOUT_QUORUM_ROUND))
             .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
 
+    final var transactionGenerator = new REV2TransactionGenerator();
+
     final var functionalNodeModule =
         new FunctionalRadixNodeModule(
             NodeStorageConfig.tempFolder(folder),
@@ -127,10 +130,12 @@ public final class RecoveryAfterTimeoutQuorumTest {
                         NUM_VALIDATORS, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1)),
+                        transactionGenerator, 1)),
                 SyncRelayConfig.of(5000, 10, 5000L)));
 
     try (var test = builder.functionalNodeModule(functionalNodeModule)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
 
       // Run until the round that's expected to form a timeout quorum

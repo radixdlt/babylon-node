@@ -73,11 +73,18 @@ import java.util.List;
 public final class REv2LargeTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
+  private ComponentAddress faucet;
 
   private int currentKey = 1;
 
   public REv2LargeTransactionGenerator(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
+  }
+
+  // This is a bit of a hack to supply the faucet address after executing the genesis
+  // TODO: figure out something better
+  public void setFaucetAddress(ComponentAddress faucet) {
+    this.faucet = faucet;
   }
 
   @Override
@@ -88,7 +95,7 @@ public final class REv2LargeTransactionGenerator
     var size = (int) (Math.random() * 924 * 1024) + 100 * 1024;
     var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
-            networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);
+            networkDefinition, faucet, 0, 1, notary.getPublicKey().toPublicKey(), size);
     return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of());
   }
 }

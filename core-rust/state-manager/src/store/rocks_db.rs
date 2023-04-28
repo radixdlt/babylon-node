@@ -63,31 +63,25 @@
  */
 
 use crate::types::UserPayloadHash;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 
 use crate::store::traits::*;
-use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt,
-    ReceiptTreeHash, TransactionTreeHash,
-};
-use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{
-    scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset,
-};
-use radix_engine_interface::api::types::NodeModuleId;
+use crate::{AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash};
+use radix_engine::types::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
+use radix_engine_stores::interface::{
+    decode_substate_id, encode_substate_id, DatabaseMapper, DatabaseUpdate, SubstateDatabase,
+};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
+use radix_engine_stores::jmt_support::JmtMapper;
 use tracing::{error, warn};
 
 use crate::transaction::LedgerTransaction;
@@ -121,7 +115,6 @@ enum RocksDBColumnFamily {
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::db::{decode_substate_id, encode_substate_id, ListableSubstateStore};
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
@@ -346,33 +339,16 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        // TODO(engine-merge): remove
-        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
-            batch.put_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-                scrypto_encode(&substate).unwrap(),
-            );
-        }
-
-        // TODO(engine-merge): remove
-        for substate_id in commit_bundle.substate_store_update.deleted_ids {
-            batch.delete_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-            );
-        }
-
-        for (index_id, updates_within_index) in commit_bundle.substate_store_update.updates {
-            for (key, update) in updates_within_index {
-                let substate_id = encode_substate_id(&index_id, &key);
-                match update {
-                    DatabaseUpdate::Set(value) => {
-                        batch.put_cf(self.cf_handle(&Substates), substate_id, value)
-                    }
-                    DatabaseUpdate::Delete => {
-                        batch.delete_cf(self.cf_handle(&Substates), substate_id)
-                    }
+        for ((node_id, module_id, substate_key), change_action) in commit_bundle.substate_store_update.updates {
+            let mut db_key = vec![];
+            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_index(&node_id, module_id.clone()));
+            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_key));
+            match change_action {
+                ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                    batch.put_cf(self.cf_handle(&Substates), db_key, value)
+                }
+                ChangeAction::Delete => {
+                    batch.delete_cf(self.cf_handle(&Substates), db_key)
                 }
             }
         }
@@ -737,7 +713,14 @@ impl QueryableProofStore for RocksDBStore {
     }
 }
 
-impl ListableSubstateStore for RocksDBStore {
+impl SubstateDatabase for RocksDBStore {
+    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
+        let substate_id = encode_substate_id(&index_id, &key);
+        self.db
+            .get_cf(self.cf_handle(&Substates), substate_id)
+            .unwrap()
+    }
+
     fn list_substates(
         &self,
         index_id: &Vec<u8>,
@@ -763,12 +746,6 @@ impl ListableSubstateStore for RocksDBStore {
     }
 }
 
-impl ReadableSubstateStore for RocksDBStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.get_by_key(&Substates, &scrypto_encode(substate_id).unwrap())
-    }
-}
-
 impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.get_by_key(&StateHashTreeNodes, &encode_key(key))
@@ -790,46 +767,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
             &ReceiptAccuTreeSliceByStateVersion,
             &state_version.to_be_bytes(),
         )
-    }
-}
-
-impl QueryableSubstateStore for RocksDBStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(*kv_store_id),
-            NodeModuleId::SELF,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
-        ))
-        .unwrap();
-
-        let iter = self.db.iterator_cf(
-            self.cf_handle(&Substates),
-            IteratorMode::From(&id, Direction::Forward),
-        );
-        let mut items = HashMap::new();
-        for res in iter {
-            let (key, value) = res.unwrap();
-            let substate: OutputValue = scrypto_decode(&value).unwrap();
-            let substate_id: SubstateId = scrypto_decode(&key).unwrap();
-            if let SubstateId(
-                RENodeId::KeyValueStore(id),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ) = substate_id
-            {
-                if id == *kv_store_id {
-                    items.insert(key, substate.substate)
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            };
-        }
-        items
     }
 }
 

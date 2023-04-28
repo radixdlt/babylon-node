@@ -73,6 +73,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -83,8 +84,10 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
@@ -94,7 +97,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
   private static final long INITIAL_VERSION = 3L;
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest() {
+  private DeterministicTest createTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(2, true))
         .messageSelector(firstSelector())
@@ -112,13 +115,16 @@ public final class REv2ConsensusLedgerRecoveryTest {
                             2, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)),
+                            transactionGenerator, 1)),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
   public void recovery_should_work_when_consensus_is_behind_ledger() {
-    try (var test = createTest()) {
+    final var transactionGenerator = new REV2TransactionGenerator();
+    try (var test = createTest(transactionGenerator)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
 
       // Arrange: Situation where behindNode has consensus behind ledger

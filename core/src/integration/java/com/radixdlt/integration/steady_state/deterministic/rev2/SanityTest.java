@@ -87,6 +87,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -111,8 +112,6 @@ public final class SanityTest {
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private final boolean epochs;
   private final UInt64 roundsPerEpoch;
@@ -150,7 +149,10 @@ public final class SanityTest {
 
   @Test
   public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
+    final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest()) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
 
       // Run

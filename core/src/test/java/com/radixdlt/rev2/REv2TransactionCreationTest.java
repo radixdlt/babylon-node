@@ -92,6 +92,7 @@ public class REv2TransactionCreationTest {
     // This test is mostly used to create signed transactions in various varieties for manually
     // testing the Core API
     var network = NetworkDefinition.from(Network.LOCALNET);
+    var faucet = ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS; // doesn't matter in this test
     var fromEpoch = 1; // Needs to be >= 1
     var baseNonce = new Random().nextLong() & Long.MAX_VALUE;
 
@@ -113,40 +114,40 @@ public class REv2TransactionCreationTest {
 
     logTransaction(
         "Small valid transaction (Intent 1, Payload 1)",
-        constructSmallValidTransaction(network, fromEpoch, nonce1, 0));
+        constructSmallValidTransaction(network, faucet, fromEpoch, nonce1, 0));
     logTransaction(
         "Small valid transaction (Intent 1, Payload 2)",
-        constructSmallValidTransaction(network, fromEpoch, nonce1, 1));
+        constructSmallValidTransaction(network, faucet, fromEpoch, nonce1, 1));
     logTransaction(
         "Small valid transaction (Intent 1, Payload 3)",
-        constructSmallValidTransaction(network, fromEpoch, nonce1, 2));
+        constructSmallValidTransaction(network, faucet, fromEpoch, nonce1, 2));
     logTransaction(
         "Small valid transaction (Intent 2, Payload 1)",
-        constructSmallValidTransaction(network, fromEpoch, nonce2, 0));
+        constructSmallValidTransaction(network, faucet, fromEpoch, nonce2, 0));
 
     logTransaction(
         "New Account Transaction (Intent 1, Payload 1)",
-        constructNewAccountTransactionJava(network, fromEpoch, nonce1, 0));
+        constructNewAccountTransactionJava(network, faucet, fromEpoch, nonce1, 0));
     logTransaction(
         "New Account Transaction (Intent 1, Payload 2)",
-        constructNewAccountTransactionJava(network, fromEpoch, nonce1, 1));
+        constructNewAccountTransactionJava(network, faucet, fromEpoch, nonce1, 1));
     logTransaction(
         "New Account Transaction (Intent 2, Payload 1)",
-        constructNewAccountTransactionJava(network, fromEpoch, nonce2, 1));
+        constructNewAccountTransactionJava(network, faucet, fromEpoch, nonce2, 1));
 
     logTransaction(
         "Statically-invalid Transaction (Intent 1, Payload 1)",
-        constructStaticallyInvalidTransaction(network, fromEpoch, nonce1));
+        constructStaticallyInvalidTransaction(network, faucet, fromEpoch, nonce1));
 
     logTransaction(
         "Execution-invalid Transaction (Intent 1, Payload 1)",
-        constructExecutionInvalidTransaction(network, fromEpoch, nonce1, 0));
+        constructExecutionInvalidTransaction(network, faucet, fromEpoch, nonce1, 0));
     logTransaction(
         "Execution-invalid Transaction (Intent 1, Payload 2)",
-        constructExecutionInvalidTransaction(network, fromEpoch, nonce1, 1));
+        constructExecutionInvalidTransaction(network, faucet, fromEpoch, nonce1, 1));
     logTransaction(
         "Execution-invalid Transaction (Intent 1, Payload 3)",
-        constructExecutionInvalidTransaction(network, fromEpoch, nonce1, 2));
+        constructExecutionInvalidTransaction(network, faucet, fromEpoch, nonce1, 2));
   }
 
   private static void logTransaction(String description, TransactionInfo transactionInfo) {
@@ -168,20 +169,20 @@ public class REv2TransactionCreationTest {
   }
 
   public static TransactionInfo constructSmallValidTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
 
     final var intentBytes =
         REv2TestTransactions.constructValidIntentBytes(
-            networkDefinition, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, faucet, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
 
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
   public static TransactionInfo constructNewAccountTransactionJava(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
     final var intentBytes =
         REv2TestTransactions.constructDepositFromFaucetIntent(
-            networkDefinition, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, faucet, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
@@ -189,11 +190,11 @@ public class REv2TransactionCreationTest {
    * By using too low a cost unit cap to cover the loan
    */
   public static TransactionInfo constructStaticallyInvalidTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce) {
 
     final var intentBytes =
         REv2TestTransactions.constructValidIntentBytes(
-            networkDefinition, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, faucet, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
 
     final var duplicateSignatories = List.of(PrivateKeys.ofNumeric(1), PrivateKeys.ofNumeric(1));
 
@@ -204,9 +205,9 @@ public class REv2TransactionCreationTest {
    * By using too low a cost unit cap to cover the loan
    */
   public static TransactionInfo constructExecutionInvalidTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
 
-    final var manifest = REv2TestTransactions.constructDepositFromFaucetManifest(networkDefinition);
+    final var manifest = REv2TestTransactions.constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
 
     final var insufficientLimit = UInt32.fromNonNegativeInt(1000);
 

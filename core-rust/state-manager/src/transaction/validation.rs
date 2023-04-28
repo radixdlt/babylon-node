@@ -3,7 +3,6 @@ use std::ops::{Deref, Range};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::transaction::{
     AbortReason, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
@@ -14,6 +13,7 @@ use radix_engine_common::network::NetworkDefinition;
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
+use radix_engine_stores::interface::SubstateDatabase;
 
 use crate::query::StateManagerSubstateQueries;
 use crate::staging::ReadableStore;
@@ -331,7 +331,7 @@ impl<S> TransactionPreviewer<S> {
     }
 }
 
-impl<S: ReadableSubstateStore> TransactionPreviewer<S> {
+impl<S: SubstateDatabase> TransactionPreviewer<S> {
     /// Executes the transaction compiled from the given request in a preview mode.
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
         let read_store = self.store.read();

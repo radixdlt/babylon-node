@@ -65,8 +65,10 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempool;
@@ -83,9 +85,12 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class RustStateComputer {
   private final RustMempool mempool;
+  private Optional<ComponentAddress> cachedFaucetAddress;
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
@@ -93,9 +98,9 @@ public class RustStateComputer {
     this.mempool = new RustMempool(metrics, stateManager);
 
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.prepareGenesisFunc =
-        Natives.builder(stateManager, RustStateComputer::prepareGenesis)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "prepareGenesis")))
+    this.executeGenesisFunc =
+        Natives.builder(stateManager, RustStateComputer::executeGenesis)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "executeGenesis")))
             .build(new TypeToken<>() {});
     this.prepareFunc =
         Natives.builder(stateManager, RustStateComputer::prepare)
@@ -108,6 +113,10 @@ public class RustStateComputer {
     this.componentXrdAmountFunc =
         Natives.builder(stateManager, RustStateComputer::componentXrdAmount)
             .measure(timer.label(new MethodId(RustStateComputer.class, "componentXrdAmount")))
+            .build(new TypeToken<>() {});
+    this.faucetAddressFunc =
+        Natives.builder(stateManager, RustStateComputer::faucetAddress)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "faucetAddress")))
             .build(new TypeToken<>() {});
     this.validatorInfoFunc =
         Natives.builder(stateManager, RustStateComputer::validatorInfo)
@@ -133,13 +142,13 @@ public class RustStateComputer {
         maxCount, maxPayloadSizeBytes, transactionToExclude);
   }
 
-  public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
-    return prepareGenesisFunc.call(prepareGenesisRequest);
+  public LedgerProof executeGenesis(GenesisData2 genesisData) {
+    return executeGenesisFunc.call(genesisData);
   }
 
-  private final Natives.Call1<PrepareGenesisRequest, PrepareGenesisResult> prepareGenesisFunc;
+  private final Natives.Call1<GenesisData2, LedgerProof> executeGenesisFunc;
 
-  private static native byte[] prepareGenesis(StateManager stateManager, byte[] payload);
+  private static native byte[] executeGenesis(StateManager stateManager, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);
@@ -164,6 +173,18 @@ public class RustStateComputer {
   }
 
   private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, ComponentAddress> faucetAddressFunc;
+
+  public ComponentAddress getFaucetAddress() {
+    return cachedFaucetAddress.orElseGet(() -> {
+      final var addr = faucetAddressFunc.call(Unit.unit());
+      cachedFaucetAddress = Optional.of(addr);
+      return addr;
+    });
+  }
+
+  private static native byte[] faucetAddress(StateManager stateManager, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
 

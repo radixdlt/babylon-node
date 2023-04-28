@@ -128,9 +128,11 @@ public final class REv2GenesisTest {
       var stateReader = test.getInstance(0, REv2StateReader.class);
 
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
-      var genesis = transactionStore.getTransactionAtStateVersion(1).unwrap();
-      assertThat(genesis.newComponentAddresses())
-          .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+      var systemBootstrapGenesis = transactionStore.getTransactionAtStateVersion(1).unwrap();
+      // TODO: check what genesis data is used (num of chunks) and use a correct state version
+      var genesisWrapUp = transactionStore.getTransactionAtStateVersion(2).unwrap();
+      assertThat(genesisWrapUp.newComponentAddresses())
+          .contains(ScryptoConstants.);
 
       final var xrdLeftInFaucet =
           REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);

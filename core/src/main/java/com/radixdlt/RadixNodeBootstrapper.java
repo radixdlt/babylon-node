@@ -232,7 +232,7 @@ public final class RadixNodeBootstrapper {
                     executedTx.getPayloadHash())));
       }
 
-      final var radixNode = RadixNode.start(properties, network, executedTx);
+      final var radixNode = RadixNode.start(properties, network, Optional.empty());
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (configuredGenesisTransaction.isPresent()) {
       // The ledger isn't initialized, but there is a configured genesis transaction in properties
@@ -253,12 +253,12 @@ public final class RadixNodeBootstrapper {
                     genesisTx.getPayloadHash())));
       }
 
-      final var radixNode = RadixNode.start(properties, network, genesisTx);
+      final var radixNode = RadixNode.start(properties, network, Optional.empty() /* TODO: fixme (genesisTx) */);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (fixedNetworkGenesis.isPresent()) {
       // There's nothing on ledger and/or properties, so we can just use
       // the network fixed genesis without any additional validation
-      final var radixNode = RadixNode.start(properties, network, fixedNetworkGenesis.get());
+      final var radixNode = RadixNode.start(properties, network, Optional.empty() /* TODO: fixme fixedNetworkGenesis.get() */);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
@@ -374,7 +374,7 @@ public final class RadixNodeBootstrapper {
                   genesisData.validatorSetAndStakeOwners().size());
               final var genesisTxn =
                   genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
-              radixNodeFuture.complete(RadixNode.start(properties, network, genesisTxn));
+              radixNodeFuture.complete(RadixNode.start(properties, network, Optional.empty() /* TODO: fixme */));
             }
           });
     }

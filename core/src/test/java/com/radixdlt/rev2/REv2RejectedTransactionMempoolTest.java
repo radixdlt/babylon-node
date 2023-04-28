@@ -140,6 +140,8 @@ public class REv2RejectedTransactionMempoolTest {
   @Test
   public void initially_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(1)) {
+      final var faucet = test.faucetAddress();
+
       // Arrange
       test.startAllNodes();
       var rawRejectableTransaction =
@@ -151,7 +153,7 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Act: Submit valid transaction to mempool
       mempoolDispatcher.dispatch(
-          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(0, 0)));
+          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(faucet, 0, 0)));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
@@ -178,6 +180,8 @@ public class REv2RejectedTransactionMempoolTest {
   @Test
   public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
+      final var faucet = test.faucetAddress();
+
       // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
 
@@ -187,7 +191,7 @@ public class REv2RejectedTransactionMempoolTest {
               NetworkDefinition.INT_TEST_NET,
               0,
               0,
-              REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET),
+              REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET, faucet),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
@@ -201,7 +205,7 @@ public class REv2RejectedTransactionMempoolTest {
               0,
               0,
               REv2TestTransactions.constructDepositFromFaucetManifest(
-                  NetworkDefinition.INT_TEST_NET, accountAddress),
+                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());

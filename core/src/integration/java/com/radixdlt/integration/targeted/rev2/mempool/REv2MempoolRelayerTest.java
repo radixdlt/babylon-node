@@ -86,6 +86,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -94,8 +95,6 @@ import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
   private final int MEMPOOL_SIZE = 100;
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -120,7 +119,10 @@ public final class REv2MempoolRelayerTest {
 
   @Test
   public void relayer_fills_mempool_of_all_nodes() {
+    final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest()) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
 
       // Arrange: Fill node1 mempool

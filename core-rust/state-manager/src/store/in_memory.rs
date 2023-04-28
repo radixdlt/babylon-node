@@ -66,21 +66,17 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
-use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
-};
+use crate::{ChangeAction, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash};
 
 use crate::query::TransactionIdentifierLoader;
-use radix_engine::ledger::OutputValue;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
-use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
+use radix_engine_stores::interface::{CommittableSubstateDatabase, DatabaseMapper, DatabaseUpdate, SubstateDatabase};
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::collections::{BTreeMap, HashMap};
+use radix_engine_stores::jmt_support::JmtMapper;
+use utils::rust::collections::IndexMap;
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -94,7 +90,7 @@ pub struct InMemoryStore {
     proofs: BTreeMap<u64, LedgerProof>,
     epoch_proofs: BTreeMap<u64, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
-    substate_store: SerializedInMemorySubstateStore,
+    substate_store: InMemorySubstateDatabase,
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
@@ -113,7 +109,7 @@ impl InMemoryStore {
             proofs: BTreeMap::new(),
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
-            substate_store: SerializedInMemorySubstateStore::new(),
+            substate_store: InMemorySubstateDatabase::standard(),
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
@@ -193,9 +189,16 @@ impl TransactionIndex<&LedgerPayloadHash> for InMemoryStore {
     }
 }
 
-impl ReadableSubstateStore for InMemoryStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.substate_store.get_substate(substate_id)
+impl SubstateDatabase for InMemoryStore {
+    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
+        self.substate_store.get_substate(index_id, key)
+    }
+
+    fn list_substates(
+        &self,
+        index_id: &Vec<u8>,
+    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
+        self.substate_store.list_substates(index_id)
     }
 }
 
@@ -217,15 +220,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
     }
 }
 
-impl QueryableSubstateStore for InMemoryStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        self.substate_store.get_kv_store_entries(kv_store_id)
-    }
-}
-
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
         for (txn, receipt, identifiers) in commit_bundle.transactions {
@@ -241,10 +235,21 @@ impl CommitStore for InMemoryStore {
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
-        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
-            self.substate_store.put_substate(substate_id, substate);
+        let mut database_updates = IndexMap::new();
+        for ((node_id, module_id, substate_key), change_action) in commit_bundle.substate_store_update.updates {
+            let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(&node_id, module_id);
+            let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_key);
+            let updates_within_index = database_updates.entry(index_id).or_insert_with(|| IndexMap::new());
+
+            let update = match change_action {
+              ChangeAction::Create(value) | ChangeAction::Update(value) =>
+                DatabaseUpdate::Set(value),
+              ChangeAction::Delete =>
+                DatabaseUpdate::Delete
+            };
+            updates_within_index.insert(substate_db_key, update);
         }
-        // TODO: handle the `substate_store_update.deleted_ids` once the store is ready for it
+        self.substate_store.commit(&database_updates);
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)

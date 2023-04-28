@@ -69,6 +69,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -82,7 +83,9 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2LargeTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
@@ -100,7 +103,7 @@ import org.junit.rules.TemporaryFolder;
 public final class TransactionDBSizeStressTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest buildTest() {
+  private DeterministicTest buildTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -117,13 +120,16 @@ public final class TransactionDBSizeStressTest {
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(
-                            new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET),
+                            transactionGenerator,
                             1)))));
   }
 
   @Test
   public void committing_large_transactions_should_work() {
-    try (var test = buildTest()) {
+    final var transactionGenerator = new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET);
+    try (var test = buildTest(transactionGenerator)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
+
       test.startAllNodes();
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(20));
     }
