@@ -104,7 +104,7 @@ public final class MempoolReevaluationModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> processor(
+  private EventProcessorOnRunner<?> mempoolReevaluationTriggerProducerProcessor(
       EventProducer<MempoolReevaluationTrigger> eventProducer) {
     return new EventProcessorOnRunner<>(
         Runners.MEMPOOL, MempoolReevaluationTrigger.class, eventProducer);
