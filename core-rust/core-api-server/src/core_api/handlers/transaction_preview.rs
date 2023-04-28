@@ -1,13 +1,10 @@
 use crate::core_api::*;
-use radix_engine::{
-    transaction::{PreviewError, PreviewResult, TransactionResult},
-    types::RENodeId,
-};
+use radix_engine::transaction::{PreviewError, PreviewResult, TransactionResult};
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
 
-use state_manager::{LocalTransactionReceipt, PreviewRequest};
+use state_manager::{LocalTransactionReceipt, PreviewRequest, SubstateChange};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
@@ -88,9 +85,10 @@ fn extract_preview_request(
 
 fn to_api_response(
     context: &MappingContext,
-    result: PreviewResult,
+    result: (PreviewResult, Vec<SubstateChange>),
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
-    let receipt = result.receipt;
+    let receipt = result.0.receipt;
+    let substate_changes = result.1;
 
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
@@ -105,9 +103,7 @@ fn to_api_response(
                         Ok(models::ResourceChange {
                             resource_address: to_api_resource_address(context, &v.resource_address),
                             component_entity: Box::new(to_api_entity_reference(v.node_id)?),
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
-                                v.vault_id,
-                            ))?),
+                            vault_entity: Box::new(to_api_entity_reference(v.vault_id)?),
                             amount: to_api_decimal(&v.amount),
                         })
                     })
@@ -133,8 +129,11 @@ fn to_api_response(
                 )
                 .collect();
 
-            let local_receipt =
-                LocalTransactionReceipt::from((commit_result, receipt.execution_trace));
+            let local_receipt = LocalTransactionReceipt::from((
+                commit_result,
+                substate_changes,
+                receipt.execution_trace,
+            ));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,

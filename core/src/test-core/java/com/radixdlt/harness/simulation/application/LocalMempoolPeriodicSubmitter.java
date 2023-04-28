@@ -68,7 +68,6 @@ import com.radixdlt.harness.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -104,16 +103,13 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
   @Override
   public void start(RunningNetwork network) {
-    final var firstNode = network.getNodes().stream().findFirst().orElseThrow();
-    final var faucet = network.getInstance(RustStateComputer.class, firstNode).getFaucetAddress();
-
     if (transactionsDisposable != null) {
       return;
     }
 
     transactionsDisposable =
         Observable.interval(1, 10, TimeUnit.SECONDS)
-            .map(i -> transactionGenerator.nextTransaction(faucet))
+            .map(i -> transactionGenerator.nextTransaction())
             .flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
             .doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
             .subscribe(transactionsSubject::onNext);

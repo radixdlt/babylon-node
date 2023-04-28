@@ -126,13 +126,14 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var rustStateComputer = injector.getInstance(RustStateComputer.class);
     var genesis =
         TransactionBuilder.createGenesisWithNumValidators(
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     var accumulatorHash =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
-    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
+    var validTransaction = REv2TestTransactions.constructValidRawTransaction(rustStateComputer.getFaucetAddress(), 0, 0);
 
     // Act
     var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);

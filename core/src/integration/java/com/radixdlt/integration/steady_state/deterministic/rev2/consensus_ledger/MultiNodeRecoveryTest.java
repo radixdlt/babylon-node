@@ -83,7 +83,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -130,7 +129,8 @@ public final class MultiNodeRecoveryTest {
     this.roundsPerEpoch = roundsPerEpoch;
   }
 
-  private DeterministicTest createTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
+  private DeterministicTest createTest(
+      TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(randomSelector(random))
@@ -165,7 +165,7 @@ public final class MultiNodeRecoveryTest {
 
         // Reboot some count of random nodes
         var validatorIndices =
-                IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
+            IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
         Collections.shuffle(validatorIndices, random);
         var nodesToReboot = validatorIndices.subList(0, random.nextInt(NUM_VALIDATORS));
         logger.info("Rebooting round {} nodes: {}", i, nodesToReboot);

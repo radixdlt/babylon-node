@@ -67,7 +67,11 @@ use std::collections::HashSet;
 use std::fmt;
 
 use crate::store::traits::*;
-use crate::{AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash};
+use crate::{
+    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, HasIntentHash,
+    HasLedgerPayloadHash, HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof,
+    LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+};
 use radix_engine::types::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
@@ -77,11 +81,11 @@ use radix_engine_stores::hash_tree::tree_store::{
 use radix_engine_stores::interface::{
     decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase,
 };
+use radix_engine_stores::jmt_support::JmtMapper;
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
-use radix_engine_stores::jmt_support::JmtMapper;
 use tracing::{error, warn};
 
 use crate::transaction::LedgerTransaction;
@@ -339,17 +343,21 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        for ((node_id, module_id, substate_key), change_action) in commit_bundle.substate_store_update.updates {
+        for ((node_id, module_id, substate_key), change_action) in
+            commit_bundle.substate_store_update.updates
+        {
             let mut db_key = vec![];
-            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_index(&node_id, module_id.clone()));
-            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_key));
+            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_index(
+                &node_id, module_id,
+            ));
+            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_key(
+                &substate_key,
+            ));
             match change_action {
                 ChangeAction::Create(value) | ChangeAction::Update(value) => {
                     batch.put_cf(self.cf_handle(&Substates), db_key, value)
                 }
-                ChangeAction::Delete => {
-                    batch.delete_cf(self.cf_handle(&Substates), db_key)
-                }
+                ChangeAction::Delete => batch.delete_cf(self.cf_handle(&Substates), db_key),
             }
         }
 
@@ -715,7 +723,7 @@ impl QueryableProofStore for RocksDBStore {
 
 impl SubstateDatabase for RocksDBStore {
     fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
-        let substate_id = encode_substate_id(&index_id, &key);
+        let substate_id = encode_substate_id(index_id, key);
         self.db
             .get_cf(self.cf_handle(&Substates), substate_id)
             .unwrap()

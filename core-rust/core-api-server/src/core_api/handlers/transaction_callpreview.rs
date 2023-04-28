@@ -6,14 +6,15 @@ use models::{
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
-    types::{Decimal, FAUCET_COMPONENT},
+    types::Decimal,
 };
+use radix_engine_common::types::ComponentAddress;
+use radix_engine_common::types::NodeId;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::{
     blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
 };
-
 use state_manager::PreviewRequest;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
@@ -79,13 +80,15 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
+    // TODO: fixme
+    let faucet_address = ComponentAddress::new_or_panic([0; NodeId::LENGTH]);
     let result = state
         .transaction_previewer
         .preview(PreviewRequest {
             manifest: TransactionManifest {
                 instructions: vec![
                     Instruction::CallMethod {
-                        component_address: FAUCET_COMPONENT,
+                        component_address: faucet_address,
                         method_name: "lock_fee".to_string(),
                         args: manifest_args!(Decimal::from(100u32)),
                     },
@@ -114,7 +117,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })?;
 
     let (status, output, error) = {
-        match result.receipt.result {
+        match result.0.receipt.result {
             TransactionResult::Commit(c) => match c.outcome {
                 TransactionOutcome::Success(data) => {
                     let output = match data

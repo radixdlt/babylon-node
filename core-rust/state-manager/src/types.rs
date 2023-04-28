@@ -62,7 +62,10 @@
  * permissions under this License.
  */
 
-use crate::{accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome, SubstateChange};
+use crate::{
+    accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
+    LedgerTransactionOutcome, SubstateChange,
+};
 use radix_engine::types::*;
 use std::fmt;
 use std::ops::Range;
@@ -218,9 +221,7 @@ pub struct SubstateChangeHash([u8; Self::LENGTH]);
 impl SubstateChangeHash {
     pub const LENGTH: usize = 32;
 
-    pub fn from_substate_change(
-        substate_change: &SubstateChange,
-    ) -> SubstateChangeHash {
+    pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
         let hashed_bytes = hash(scrypto_encode(&substate_change).unwrap()).0;
         SubstateChangeHash(hashed_bytes)
     }

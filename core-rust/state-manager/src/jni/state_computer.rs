@@ -72,8 +72,8 @@ use crate::{
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine_queries::query::ResourceAccounter;
 use radix_engine::types::*;
+use radix_engine_queries::query::ResourceAccounter;
 use std::ops::Deref;
 
 use crate::jni::common_types::JavaHashCode;
@@ -83,9 +83,9 @@ use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::QueryableTransactionStore;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
-use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::jmt_support::JmtMapper;
 
 use super::state_manager::ActualStateManager;
 
@@ -180,9 +180,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
             let mut accounter = ResourceAccounter::new(read_store.deref());
-            accounter.traverse(node_id.clone());
+            accounter.traverse(*node_id);
             let balances = accounter.close().balances;
-            balances.get(&RADIX_TOKEN)
+            balances
+                .get(&RADIX_TOKEN)
                 .cloned()
                 .unwrap_or_else(Decimal::zero)
         },
@@ -203,13 +204,12 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_faucetAddre
         let database = JNIStateManager::get_database(&env, j_state_manager);
         let read_store = database.read();
         let system_bootstrap_receipt = read_store.get_committed_transaction_receipt(1).unwrap();
-        system_bootstrap_receipt
+        *system_bootstrap_receipt
             .local_execution
             .state_update_summary
             .new_components
             .last()
             .unwrap()
-            .clone()
     })
 }
 

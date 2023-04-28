@@ -68,6 +68,7 @@ import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransactio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
@@ -94,13 +95,7 @@ public final class RustMempoolTest {
   private static void initStateComputer(StateManager stateManager) {
     new LedgerInitializer(
             new RustStateComputer(new MetricsInitializer().initialize(), stateManager))
-        .prepareAndCommit(
-            TransactionBuilder.createGenesis(
-                Map.of(),
-                Map.of(),
-                UInt64.fromNonNegativeLong(1),
-                UInt64.fromNonNegativeLong(10),
-                UInt64.fromNonNegativeLong(1)));
+        .prepareAndCommit(GenesisData2.empty());
   }
 
   @Test
@@ -116,10 +111,12 @@ public final class RustMempoolTest {
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
-      var rustMempool = new RustMempool(metrics, stateManager);
-      var transaction1 = constructValidRawTransaction(0, 0);
-      var transaction2 = constructValidRawTransaction(0, 1);
-      var transaction3 = constructValidRawTransaction(0, 2);
+      final var rustMempool = new RustMempool(metrics, stateManager);
+      final var stateComputer = new RustStateComputer(metrics, stateManager);
+      final var faucet = stateComputer.getFaucetAddress();
+      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
+      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
+      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
 
       assertEquals(0, rustMempool.getCount());
 
@@ -178,10 +175,12 @@ public final class RustMempoolTest {
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
-      var rustMempool = new RustMempool(metrics, stateManager);
-      var transaction1 = constructValidRawTransaction(0, 0);
-      var transaction2 = constructValidRawTransaction(0, 1);
-      var transaction3 = constructValidRawTransaction(0, 2);
+      final var rustMempool = new RustMempool(metrics, stateManager);
+      final var stateComputer = new RustStateComputer(metrics, stateManager);
+      final var faucet = stateComputer.getFaucetAddress();
+      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
+      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
+      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -302,11 +301,12 @@ public final class RustMempoolTest {
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
-
-      var rustMempool = new RustMempool(metrics, stateManager);
-      var transaction1 = constructValidRawTransaction(0, 0);
-      var transaction2 = constructValidRawTransaction(0, 1);
-      var transaction3 = constructValidRawTransaction(0, 2);
+      final var rustMempool = new RustMempool(metrics, stateManager);
+      final var stateComputer = new RustStateComputer(metrics, stateManager);
+      final var faucet = stateComputer.getFaucetAddress();
+      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
+      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
+      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);

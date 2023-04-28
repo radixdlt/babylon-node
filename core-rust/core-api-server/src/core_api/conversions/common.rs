@@ -1,11 +1,7 @@
-use radix_engine::types::{scrypto_encode, ScryptoCustomTypeExtension, ScryptoEncode};
-use sbor::serde_serialization::{
-    SborPayloadWithoutSchema, SchemalessSerializationContext, SerializationMode,
-};
-use serde_json::to_value;
+use radix_engine::types::{scrypto_encode, ScryptoEncode};
+
 use state_manager::transaction::UserTransactionValidator;
 use transaction::model::NotarizedTransaction;
-use utils::ContextualSerialize;
 
 use crate::core_api::*;
 
@@ -32,13 +28,16 @@ pub fn to_api_sbor_data_from_encodable(
 }
 
 pub fn to_api_sbor_data_from_bytes(
-    context: &MappingContext,
+    _context: &MappingContext,
     scrypto_sbor_bytes: &[u8],
 ) -> Result<models::SborData, MappingError> {
+    // TODO: fixme
+    /*
     let json = to_value(
-        SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(scrypto_sbor_bytes)
-            .serializable(SchemalessSerializationContext {
-                mode: SerializationMode::Invertible,
+        BasicRawPayload::new_from_valid_slice_with_checks(scrypto_sbor_bytes)
+            .unwrap()
+            .serializable(SerializationParameters::Schemaless {
+                mode: SerializationMode::Programmatic,
                 custom_context: (&context.bech32_encoder).into(),
             }),
     )
@@ -46,9 +45,11 @@ pub fn to_api_sbor_data_from_bytes(
         decode_error: err.to_string(),
         bytes: scrypto_sbor_bytes.to_vec(),
     })?;
+     */
     Ok(models::SborData::new(
         to_hex(scrypto_sbor_bytes),
-        Some(json),
+        // Some(json), TODO: fixme
+        None,
     ))
 }
 

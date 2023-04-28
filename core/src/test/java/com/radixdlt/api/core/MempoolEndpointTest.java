@@ -78,7 +78,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   public void test_mempool_queries() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
       var payloadHash = rawTransaction.getPayloadHash();

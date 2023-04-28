@@ -82,7 +82,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -116,7 +115,8 @@ public final class REv2LedgerRecoveryTest {
     this.processForCount = processForCount;
   }
 
-  private DeterministicTest createTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
+  private DeterministicTest createTest(
+      TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -160,10 +160,13 @@ public final class REv2LedgerRecoveryTest {
   }
 
   @Test
-  public void on_reboot_should_only_emit_pacemaker_events() throws Exception {
-    try (var test = createTest()) {
-      // Arrange
+  public void on_reboot_should_only_emit_pacemaker_events() {
+    final var transactionGenerator = new REV2TransactionGenerator();
+    try (var test = createTest(transactionGenerator)) {
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
       test.startAllNodes();
+
+      // Arrange
       test.runForCount(processForCount);
 
       // Act

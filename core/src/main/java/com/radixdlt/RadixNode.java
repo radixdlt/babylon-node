@@ -84,13 +84,11 @@ import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,7 +103,7 @@ public final class RadixNode {
 
   public static RadixNode start(
       RuntimeProperties properties, Network network, Optional<GenesisData2> genesisTxn) {
-//    log.info("Starting Radix node (genesis transaction: {})", genesisTxn.getPayloadHash());
+    //    log.info("Starting Radix node (genesis transaction: {})", genesisTxn.getPayloadHash());
 
     final var injector = Guice.createInjector(new RadixNodeModule(properties, network, genesisTxn));
 

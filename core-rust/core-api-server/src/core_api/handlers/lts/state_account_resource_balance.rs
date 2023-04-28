@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::{ComponentAddress, Decimal, ResourceAddress};
+use radix_engine::types::Decimal;
 use state_manager::{
     query::{dump_component_state, VaultData},
     store::traits::QueryableProofStore,
@@ -26,11 +26,14 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         extract_resource_address(&extraction_context, &request.resource_address)
             .map_err(|err| err.into_response_error("resource_address"))?;
 
+    // TODO: re-add this check (NodeId -> entity_type() ? )
+    /*
     if let ResourceAddress::NonFungible(_) = fungible_resource_address {
         return Err(client_error(
             "The provided resource address is not a fungible resource.",
         ));
     }
+     */
 
     let component_address =
         extract_component_address(&extraction_context, &request.account_address)
@@ -38,6 +41,10 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     // TODO: super-inefficient implementation - change before mainnet
     let database = state.database.read();
+
+    let component_dump = dump_component_state(database.deref(), component_address);
+    // TODO: fixme (handle virtual account)
+    /*
     let component_dump = match dump_component_state(database.deref(), component_address) {
         Ok(component_dump) => component_dump,
         Err(err) => match component_address {
@@ -64,11 +71,12 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
             }
         },
     };
+     */
 
     let fungible_resource_balance_amount = component_dump
         .vaults
         .into_iter()
-        .filter_map(|vault| match vault {
+        .filter_map(|(_node_id, vault_data)| match vault_data {
             VaultData::NonFungible { .. } => None,
             VaultData::Fungible {
                 resource_address,

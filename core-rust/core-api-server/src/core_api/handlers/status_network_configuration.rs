@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use radix_engine::types::*;
-use radix_engine_interface::address::{EntityType, HrpSet};
+use radix_engine_common::types::EntityType;
+use radix_engine_interface::address::HrpSet;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_status_network_configuration(
@@ -26,38 +27,49 @@ pub(crate) async fn handle_status_network_configuration(
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
-            epoch_manager: bech32_encoder.encode_component_address_to_string(&EPOCH_MANAGER),
-            clock: bech32_encoder.encode_component_address_to_string(&CLOCK),
+            // TODO: fixme (read faucet from genesis receipt? make it optional?)
+            faucet: bech32_encoder.encode(EPOCH_MANAGER.as_ref()).unwrap(),
+            epoch_manager: bech32_encoder.encode(EPOCH_MANAGER.as_ref()).unwrap(),
+            clock: bech32_encoder.encode(CLOCK.as_ref()).unwrap(),
             ecdsa_secp256k1: bech32_encoder
-                .encode_resource_address_to_string(&ECDSA_SECP256K1_TOKEN),
-            eddsa_ed25519: bech32_encoder.encode_resource_address_to_string(&EDDSA_ED25519_TOKEN),
-            xrd: bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
+                .encode(ECDSA_SECP256K1_TOKEN.as_ref())
+                .unwrap(),
+            eddsa_ed25519: bech32_encoder.encode(EDDSA_ED25519_TOKEN.as_ref()).unwrap(),
+            xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
         }),
     })
     .map(Json)
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 14] = [
-    EntityType::Package,
-    EntityType::FungibleResource,
-    EntityType::NonFungibleResource,
-    EntityType::NormalComponent,
-    EntityType::AccountComponent,
-    EntityType::EcdsaSecp256k1VirtualAccountComponent,
-    EntityType::EddsaEd25519VirtualAccountComponent,
-    EntityType::IdentityComponent,
-    EntityType::EcdsaSecp256k1VirtualIdentityComponent,
-    EntityType::EddsaEd25519VirtualIdentityComponent,
-    EntityType::EpochManager,
-    EntityType::Validator,
-    EntityType::Clock,
-    EntityType::AccessControllerComponent,
+const ALL_ENTITY_TYPES: [EntityType; 21] = [
+    EntityType::GlobalPackage,
+    EntityType::GlobalFungibleResource,
+    EntityType::GlobalNonFungibleResource,
+    EntityType::GlobalEpochManager,
+    EntityType::GlobalValidator,
+    EntityType::GlobalClock,
+    EntityType::GlobalAccessController,
+    EntityType::GlobalAccount,
+    EntityType::GlobalIdentity,
+    EntityType::GlobalGenericComponent,
+    EntityType::GlobalVirtualEcdsaAccount,
+    EntityType::GlobalVirtualEddsaAccount,
+    EntityType::GlobalVirtualEcdsaIdentity,
+    EntityType::GlobalVirtualEddsaIdentity,
+    EntityType::InternalFungibleVault,
+    EntityType::InternalNonFungibleVault,
+    EntityType::InternalAccount,
+    EntityType::InternalKeyValueStore,
+    EntityType::InternalIndex,
+    EntityType::InternalSortedIndex,
+    EntityType::InternalGenericComponent,
 ];
 
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {
     // If you add another entity type here, add it to the ALL_ENTITY_TYPES list above.
     // We do it like this in a match statement so that we catch a compile error if a new entity type is added :)
+    // TODO: fixme
+    /*
     let (subtype, api_entity_type) = match entity_type {
         EntityType::FungibleResource => (
             models::address_type::Subtype::FungibleResource,
@@ -116,11 +128,16 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
             models::EntityType::AccessController,
         ),
     };
+     */
+
     models::AddressType {
         hrp_prefix: hrp_set.get_entity_hrp(&entity_type).to_string(),
-        entity_type: api_entity_type,
-        subtype,
-        address_byte_prefix: entity_type.id().into(),
-        address_byte_length: ADDRESS_LENGTH.try_into().unwrap(),
+        // TODO: fixme
+        // entity_type: api_entity_type,
+        // subtype
+        entity_type: models::EntityType::AccessController,
+        subtype: models::address_type::Subtype::AccessController,
+        address_byte_prefix: 0, // TODO: fixme or remove?  entity_type.id().into(),
+        address_byte_length: 0, // TODO: fixme ADDRESS_LENGTH.try_into().unwrap(),
     }
 }

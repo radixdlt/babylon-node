@@ -95,8 +95,7 @@ use radix_engine_interface::network::NetworkDefinition;
 
 use crate::mempool_manager::MempoolManager;
 use radix_engine::system::bootstrap::{
-    create_genesis_wrap_up_transaction, create_system_bootstrap_transaction,
-    GenesisDataChunk,
+    create_genesis_wrap_up_transaction, create_system_bootstrap_transaction, GenesisDataChunk,
 };
 use radix_engine_common::crypto::Hash;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -551,16 +550,15 @@ where
             .get(0)
             .expect("Missing system bootstrap local receipt");
 
-        let genesis_helper = system_bootstrap_receipt
+        let genesis_helper = *system_bootstrap_receipt
             .local_execution
             .state_update_summary
             .new_components
             .last()
-            .unwrap()
-            .clone();
+            .unwrap();
 
         // TODO: execute data ingestion transactions with chunks
-        let mut next_nonce = 1;
+        let next_nonce = 1;
 
         let genesis_wrap_up_transaction =
             create_genesis_wrap_up_transaction(&genesis_helper, next_nonce);

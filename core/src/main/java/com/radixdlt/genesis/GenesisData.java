@@ -68,8 +68,6 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Map;
 
 /**
@@ -83,14 +81,5 @@ public record GenesisData(
 
   public static GenesisData empty() {
     return new GenesisData(Map.of(), Map.of());
-  }
-
-  public RawLedgerTransaction toGenesisTransaction(GenesisConfig config) {
-    return TransactionBuilder.createGenesis(
-        validatorSetAndStakeOwners,
-        accountXrdAllocations,
-        config.initialEpoch(),
-        config.roundsPerEpoch(),
-        config.numUnstakeEpochs());
   }
 }

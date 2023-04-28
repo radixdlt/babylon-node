@@ -191,7 +191,8 @@ public class REv2RejectedTransactionMempoolTest {
               NetworkDefinition.INT_TEST_NET,
               0,
               0,
-              REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET, faucet),
+              REv2TestTransactions.constructNewAccountManifest(
+                  NetworkDefinition.INT_TEST_NET, faucet),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());

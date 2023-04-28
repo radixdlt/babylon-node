@@ -182,10 +182,12 @@ public final class RadixNodeBootstrapper {
 
     final var genesisFromPropertiesLoader =
         preGenesisInjector.getInstance(GenesisFromPropertiesLoader.class);
-    final var configuredGenesisTransaction =
-        genesisFromPropertiesLoader
-            .loadGenesisDataFromProperties()
-            .map(gd -> gd.toGenesisTransaction(GenesisConfig.babylonDefault()));
+
+    // TODO: fixme
+    final Optional<RawLedgerTransaction> configuredGenesisTransaction = Optional.empty();
+//        genesisFromPropertiesLoader
+//            .loadGenesisDataFromProperties()
+//            .map(gd -> gd.toGenesisTransaction(GenesisConfig.babylonDefault()));
 
     /* We have three sources of a genesis transaction at this point:
      *  - a fixed genesis transaction associated with a given network
@@ -253,12 +255,15 @@ public final class RadixNodeBootstrapper {
                     genesisTx.getPayloadHash())));
       }
 
-      final var radixNode = RadixNode.start(properties, network, Optional.empty() /* TODO: fixme (genesisTx) */);
+      final var radixNode =
+          RadixNode.start(properties, network, Optional.empty() /* TODO: fixme (genesisTx) */);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (fixedNetworkGenesis.isPresent()) {
       // There's nothing on ledger and/or properties, so we can just use
       // the network fixed genesis without any additional validation
-      final var radixNode = RadixNode.start(properties, network, Optional.empty() /* TODO: fixme fixedNetworkGenesis.get() */);
+      final var radixNode =
+          RadixNode.start(
+              properties, network, Optional.empty() /* TODO: fixme fixedNetworkGenesis.get() */);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
@@ -372,9 +377,12 @@ public final class RadixNodeBootstrapper {
              ({} accounts, {} validators). Initializing the Babylon node...""",
                   genesisData.accountXrdAllocations().size(),
                   genesisData.validatorSetAndStakeOwners().size());
-              final var genesisTxn =
-                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
-              radixNodeFuture.complete(RadixNode.start(properties, network, Optional.empty() /* TODO: fixme */));
+
+              // TODO: fixme
+//              final var genesisTxn =
+//                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
+              radixNodeFuture.complete(
+                  RadixNode.start(properties, network, Optional.empty() /* TODO: fixme */));
             }
           });
     }

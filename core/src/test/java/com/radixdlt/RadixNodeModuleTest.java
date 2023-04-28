@@ -74,11 +74,14 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.genesis.GenesisConfig;
 import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
+import java.util.Optional;
+
 import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
 import org.json.JSONObject;
@@ -91,8 +94,9 @@ public class RadixNodeModuleTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private static final Network NETWORK = Network.INTEGRATIONTESTNET;
-  private static final RawLedgerTransaction MOCK_GENESIS_TXN =
-      GenesisData.empty().toGenesisTransaction(GenesisConfig.babylonDefault());
+  // TODO: remove
+//  private static final RawLedgerTransaction MOCK_GENESIS_TXN =
+//      GenesisData.empty().toGenesisTransaction(GenesisConfig.babylonDefault());
 
   @BeforeClass
   public static void beforeClass() {
@@ -104,7 +108,7 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
-    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, Optional.of(GenesisData2.empty())))
         .injectMembers(this);
   }
 
@@ -119,7 +123,7 @@ public class RadixNodeModuleTest {
         assertThrows(
             com.google.inject.CreationException.class,
             () ->
-                Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+                Guice.createInjector(new RadixNodeModule(properties, NETWORK, Optional.of(GenesisData2.empty())))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -136,7 +140,7 @@ public class RadixNodeModuleTest {
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
-    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, Optional.of(GenesisData2.empty())))
         .injectMembers(this);
   }
 

@@ -66,16 +66,22 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
-use crate::{ChangeAction, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash};
+use crate::{
+    ChangeAction, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
+    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+};
 
 use crate::query::TransactionIdentifierLoader;
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
-use radix_engine_stores::interface::{CommittableSubstateDatabase, DatabaseMapper, DatabaseUpdate, SubstateDatabase};
+use radix_engine_stores::interface::{
+    CommittableSubstateDatabase, DatabaseMapper, DatabaseUpdate, SubstateDatabase,
+};
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::collections::{BTreeMap, HashMap};
-use radix_engine_stores::jmt_support::JmtMapper;
 use utils::rust::collections::IndexMap;
 
 #[derive(Debug)]
@@ -236,16 +242,20 @@ impl CommitStore for InMemoryStore {
             .insert(commit_state_version, commit_bundle.proof);
 
         let mut database_updates = IndexMap::new();
-        for ((node_id, module_id, substate_key), change_action) in commit_bundle.substate_store_update.updates {
+        for ((node_id, module_id, substate_key), change_action) in
+            commit_bundle.substate_store_update.updates
+        {
             let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(&node_id, module_id);
             let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_key);
-            let updates_within_index = database_updates.entry(index_id).or_insert_with(|| IndexMap::new());
+            let updates_within_index = database_updates
+                .entry(index_id)
+                .or_insert_with(IndexMap::new);
 
             let update = match change_action {
-              ChangeAction::Create(value) | ChangeAction::Update(value) =>
-                DatabaseUpdate::Set(value),
-              ChangeAction::Delete =>
-                DatabaseUpdate::Delete
+                ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                    DatabaseUpdate::Set(value)
+                }
+                ChangeAction::Delete => DatabaseUpdate::Delete,
             };
             updates_within_index.insert(substate_db_key, update);
         }

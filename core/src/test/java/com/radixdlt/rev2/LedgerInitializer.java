@@ -65,17 +65,8 @@
 package com.radixdlt.rev2;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Blake2b256Hasher;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.*;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
 
 public class LedgerInitializer {
 
@@ -85,27 +76,7 @@ public class LedgerInitializer {
     this.stateComputer = stateComputer;
   }
 
-  public HashCode prepareAndCommit(RawLedgerTransaction genesis) {
-    var prepareResult = this.stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
-    var accumulatorState =
-        new SimpleLedgerAccumulatorAndVerifier(
-                new Blake2b256Hasher(DefaultSerialization.getInstance()))
-            .accumulate(new AccumulatorState(0, HashUtils.zero256()), genesis.getPayloadHash());
-    var proof =
-        new LedgerProof(
-            HashUtils.zero256(),
-            new LedgerHeader(
-                UInt64.fromNonNegativeLong(0),
-                UInt64.fromNonNegativeLong(0),
-                REv2ToConsensus.accumulatorState(accumulatorState),
-                prepareResult.ledgerHashes(),
-                0,
-                0,
-                prepareResult
-                    .validatorSet()
-                    .map(validators -> new NextEpoch(validators, UInt64.fromNonNegativeLong(1)))),
-            List.of());
-    this.stateComputer.commit(new CommitRequest(List.of(genesis), proof, Option.none()));
-    return accumulatorState.getAccumulatorHash();
+  public HashCode prepareAndCommit(GenesisData2 genesis) {
+    return this.stateComputer.executeGenesis(genesis).ledgerHeader().accumulatorState().accumulatorHash();
   }
 }

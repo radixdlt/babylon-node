@@ -134,7 +134,7 @@ public class REv2MempoolToCommittedTest {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
+      var transaction = REv2TestTransactions.constructValidRawTransaction(test.faucetAddress(), 0, 5);
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(transaction));

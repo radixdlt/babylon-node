@@ -1,4 +1,4 @@
-use radix_engine::types::{AddressError, NonFungibleIdType};
+use radix_engine::types::NonFungibleIdType;
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
@@ -60,7 +60,7 @@ pub enum ExtractionError {
     InvalidPublicKey,
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
-    InvalidAddress(AddressError),
+    InvalidAddress,
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
     WrongNonFungibleIdType {
         expected: NonFungibleIdType,

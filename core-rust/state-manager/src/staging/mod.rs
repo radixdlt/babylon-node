@@ -76,14 +76,9 @@ use radix_engine_stores::interface::SubstateDatabase;
 pub use cache::*;
 pub use result::*;
 
-pub trait ReadableStateTreeStore:
-    ReadableTreeStore<IndexPayload> +  ReadableTreeStore<()>
-{
-}
-impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<IndexPayload> +  ReadableTreeStore<()>
-{
-}
+pub trait ReadableStateTreeStore: ReadableTreeStore<IndexPayload> + ReadableTreeStore<()> {}
+impl<T> ReadableStateTreeStore for T where T: ReadableTreeStore<IndexPayload> + ReadableTreeStore<()>
+{}
 
 pub trait ReadableHashStructuresStore:
     ReadableStateTreeStore

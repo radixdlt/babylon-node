@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::{ComponentAddress, Decimal, IndexMap};
+use radix_engine::types::{Decimal, IndexMap};
 use state_manager::query::{dump_component_state, VaultData};
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -25,6 +25,11 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
             .map_err(|err| err.into_response_error("account_address"))?;
 
     let database = state.database.read();
+
+    let component_dump = dump_component_state(database.deref(), component_address);
+
+    /* TODO: fixme (handle virtual accounts */
+    /*
     let component_dump = match dump_component_state(database.deref(), component_address) {
         Ok(component_dump) => component_dump,
         Err(err) => match component_address {
@@ -45,11 +50,12 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
             }
         },
     };
+     */
 
     let fungible_resource_balances = component_dump
         .vaults
         .into_iter()
-        .filter_map(|vault| match vault {
+        .filter_map(|(_node_id, vault_data)| match vault_data {
             VaultData::NonFungible { .. } => None,
             VaultData::Fungible {
                 resource_address,

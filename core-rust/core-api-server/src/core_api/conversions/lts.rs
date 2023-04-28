@@ -23,7 +23,7 @@ pub fn to_api_lts_committed_transaction_outcome(
         .iter()
         .map(
             |(address, resource_changes)| models::LtsEntityFungibleBalanceChanges {
-                entity_address: to_api_address(context, address),
+                entity_address: to_api_global_address(context, address),
                 fungible_resource_balance_changes: resource_changes
                     .iter()
                     .filter_map(|(resource_address, balance_change)| match balance_change {

@@ -83,7 +83,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2LargeTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -103,7 +102,8 @@ import org.junit.rules.TemporaryFolder;
 public final class TransactionDBSizeStressTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest buildTest(TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
+  private DeterministicTest buildTest(
+      TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -119,14 +119,13 @@ public final class TransactionDBSizeStressTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.transactionGenerator(
-                            transactionGenerator,
-                            1)))));
+                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 1)))));
   }
 
   @Test
   public void committing_large_transactions_should_work() {
-    final var transactionGenerator = new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET);
+    final var transactionGenerator =
+        new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET);
     try (var test = buildTest(transactionGenerator)) {
       transactionGenerator.setFaucetAddress(test.faucetAddress());
 

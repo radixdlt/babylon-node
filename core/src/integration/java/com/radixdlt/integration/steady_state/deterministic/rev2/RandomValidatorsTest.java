@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.deterministic.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
-import static com.radixdlt.rev2.ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -86,7 +85,6 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;

@@ -126,11 +126,11 @@ public final class REv2LargeTransactionTest {
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 
-  private static RawNotarizedTransaction createLargeValidTransaction() {
+  private static RawNotarizedTransaction createLargeValidTransaction(ComponentAddress faucet) {
     final var blobsSize = 1024 * 1024 - 462 /* space for other intent/notarized txn fields */;
     final var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
-            NETWORK_DEFINITION, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
+            NETWORK_DEFINITION, faucet, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
     return REv2TestTransactions.constructRawTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
@@ -142,7 +142,7 @@ public final class REv2LargeTransactionTest {
       // Arrange: Start single node network
       var validatorIndex = 0;
       var fullNodeIndex = 1;
-      var largeTransaction = createLargeValidTransaction();
+      var largeTransaction = createLargeValidTransaction(test.faucetAddress());
 
       // Act: Submit transaction to fullnode mempool
       test.startAllNodes();

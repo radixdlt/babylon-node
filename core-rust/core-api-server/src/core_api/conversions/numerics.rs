@@ -55,19 +55,6 @@ pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
         .expect("State version too large somehow"))
 }
 
-#[tracing::instrument(skip_all)]
-pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingError> {
-    let substate_version: u64 = substate_version.into();
-    if substate_version > MAX_API_SUBSTATE_VERSION {
-        return Err(MappingError::IntegerError {
-            message: "Substate version larger than max api state version".to_owned(),
-        });
-    }
-    Ok(substate_version
-        .try_into()
-        .expect("Substate version too large somehow"))
-}
-
 pub fn to_api_decimal(value: &Decimal) -> String {
     value.to_string()
 }

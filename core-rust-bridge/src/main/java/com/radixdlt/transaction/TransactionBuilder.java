@@ -71,7 +71,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
 import com.radixdlt.genesis.GenesisData2;
-import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
@@ -80,13 +79,10 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public final class TransactionBuilder {
   static {
@@ -103,12 +99,11 @@ public final class TransactionBuilder {
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return new GenesisData2(
-            ImmutableList.of(), // TODO: fixme
-            initialEpoch,
-            UInt32.fromNonNegativeInt(100),
-            roundsPerEpoch,
-            numUnstakeEpochs
-    );
+        ImmutableList.of(), // TODO: fixme
+        initialEpoch,
+        UInt32.fromNonNegativeInt(100),
+        roundsPerEpoch,
+        numUnstakeEpochs);
   }
 
   // TODO: rename/move elsewhere
@@ -119,12 +114,11 @@ public final class TransactionBuilder {
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return new GenesisData2(
-          ImmutableList.of(), // TODO: fixme
-          UInt64.fromNonNegativeLong(0),
-          UInt32.fromNonNegativeInt(100),
-          roundsPerEpoch,
-          numUnstakeEpochs
-  );
+        ImmutableList.of(), // TODO: fixme
+        UInt64.fromNonNegativeLong(0),
+        UInt32.fromNonNegativeInt(100),
+        roundsPerEpoch,
+        numUnstakeEpochs);
   }
 
   // TODO: move elsewhere and rename
@@ -135,8 +129,7 @@ public final class TransactionBuilder {
         UInt64.fromNonNegativeLong(0),
         UInt32.fromNonNegativeInt(100),
         roundsPerEpoch,
-        UInt64.fromNonNegativeLong(10)
-    );
+        UInt64.fromNonNegativeLong(10));
   }
 
   // TODO: move elsewhere and rename
@@ -146,12 +139,11 @@ public final class TransactionBuilder {
       Decimal initialStake,
       UInt64 roundsPerEpoch) {
     return new GenesisData2(
-            ImmutableList.of(), // TODO: fixme
-            UInt64.fromNonNegativeLong(0),
-            UInt32.fromNonNegativeInt(100),
-            roundsPerEpoch,
-            UInt64.fromNonNegativeLong(10)
-    );
+        ImmutableList.of(), // TODO: fixme
+        UInt64.fromNonNegativeLong(0),
+        UInt32.fromNonNegativeInt(100),
+        roundsPerEpoch,
+        UInt64.fromNonNegativeLong(10));
   }
 
   public static byte[] compileManifest(

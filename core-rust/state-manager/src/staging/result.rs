@@ -66,7 +66,11 @@ use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
-use crate::{AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, DetailedTransactionOutcome, EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash};
+use crate::{
+    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
+    NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
+};
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
@@ -80,9 +84,9 @@ use radix_engine_stores::hash_tree::tree_store::{
 };
 use radix_engine_stores::hash_tree::DbId;
 
+use crate::staging::ReadableStore;
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{DatabaseMapper, DatabaseUpdate};
-use crate::staging::ReadableStore;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
@@ -172,31 +176,34 @@ impl ProcessedCommitResult {
             .accumulate(transaction_hash);
         let store = hash_update_context.store;
 
+        // TODO: extract to method (duplicated in preview)
         let mut substate_changes = Vec::new();
-        for ((node_id, module_id), updates_within_index) in commit_result.state_updates.system_updates.clone() {
+        for ((node_id, module_id), updates_within_index) in
+            commit_result.state_updates.system_updates.clone()
+        {
             for (substate_key, update) in updates_within_index {
-                let index_id = M::map_to_db_index(&node_id, module_id.clone());
+                let index_id = M::map_to_db_index(&node_id, module_id);
                 let substate_db_key = M::map_to_db_key(&substate_key);
-
                 let change_action = match update {
-                    DatabaseUpdate::Set(value) =>
+                    DatabaseUpdate::Set(value) => {
                         match store.get_substate(&index_id, &substate_db_key) {
                             Some(_) => ChangeAction::Create(value),
                             None => ChangeAction::Update(value),
-                        },
-                    DatabaseUpdate::Delete => ChangeAction::Delete
+                        }
+                    }
+                    DatabaseUpdate::Delete => ChangeAction::Delete,
                 };
-
                 substate_changes.push(SubstateChange {
                     node_id,
                     module_id,
                     substate_key,
-                    action: change_action
+                    action: change_action,
                 });
             }
         }
 
-        let local_receipt = LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
+        let local_receipt =
+            LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
 
         let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
@@ -279,13 +286,19 @@ impl ProcessedCommitResult {
     ) -> StateHashTreeDiff {
         let mut hash_changes = Vec::new();
         for substate_change in substate_changes {
-            let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(&substate_change.node_id, substate_change.module_id.clone());
-            let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_change.substate_key);
+            let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(
+                &substate_change.node_id,
+                substate_change.module_id,
+            );
+            let substate_db_key =
+                <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_change.substate_key);
             match &substate_change.action {
-                ChangeAction::Create(value) | ChangeAction::Update(value) => hash_changes.push(SubstateHashChange::new(
-                    DbId::new(index_id, substate_db_key),
-                    Some(hash(value.clone())),
-                )),
+                ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                    hash_changes.push(SubstateHashChange::new(
+                        DbId::new(index_id, substate_db_key),
+                        Some(hash(value.clone())),
+                    ))
+                }
                 ChangeAction::Delete => hash_changes.push(SubstateHashChange::new(
                     DbId::new(index_id, substate_db_key),
                     None,
@@ -315,7 +328,7 @@ pub struct HashStructuresDiff {
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<IndexPayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey,  TreeNode<()>)>,
+    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
@@ -444,8 +457,8 @@ impl<'s, S> WriteableTreeStore<IndexPayload> for CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S>  WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node:  TreeNode<()>) {
+impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
         self.diff.new_substate_layer_nodes.push((key, node));
     }
 

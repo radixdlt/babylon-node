@@ -2,17 +2,20 @@ use radix_engine::blueprints::access_controller::AccessControllerSubstate;
 use radix_engine::blueprints::account::AccountSubstate;
 use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::blueprints::epoch_manager::{
-    EpochManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate,
+    CurrentValidatorSetSubstate, EpochManagerSubstate, SecondaryIndexSubstate, Validator,
+    ValidatorSubstate,
 };
 use radix_engine::blueprints::package::PackageCodeTypeSubstate;
 use radix_engine::blueprints::resource::{
-    FungibleResourceManagerSubstate, NonFungibleResourceManagerSubstate, VaultInfoSubstate,
+    FungibleResourceManagerSubstate, FungibleVaultBalanceSubstate,
+    FungibleVaultDivisibilitySubstate, NonFungibleResourceManagerSubstate,
+    NonFungibleVaultIdTypeSubstate,
 };
 use radix_engine::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
+use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
@@ -27,110 +30,278 @@ use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::{
-    scrypto_decode, scrypto_encode, Decimal, KeyValueStoreOffset, RENodeId, ResourceAddress,
-    RoyaltyConfig, ScryptoSchema, ScryptoValue, SubstateId, SubstateOffset,
+    scrypto_encode, Decimal, ResourceAddress, RoyaltyConfig, ScryptoSchema, ScryptoValue,
 };
+use radix_engine_common::types::{ComponentAddress, ModuleId, NodeId, SubstateKey};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
 };
-use radix_engine_interface::api::types::{Blueprint, IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
     LiquidNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal,
     SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::scrypto::model::{
-    ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
-};
+use radix_engine_interface::data::scrypto::model::{NonFungibleIdType, NonFungibleLocalId};
 use radix_engine_interface::data::scrypto::{SchemaPath, SchemaSubPath};
+use radix_engine_interface::types::{Blueprint, IndexedScryptoValue, ObjectInfo};
+use radix_engine_queries::typed_substate_layout::{
+    to_typed_substate_key, to_typed_substate_value, GenericScryptoComponentSubstateValue,
+    GenericScryptoSborPayload, NonFungibleVaultBalanceSubstate, TypedAccessControllerSubstateValue,
+    TypedAccessRulesModuleSubstateValue, TypedAccountSubstateValue, TypedClockSubstateValue,
+    TypedEpochManagerSubstateValue, TypedFungibleResourceManagerSubstateValue,
+    TypedFungibleVaultSubstateValue, TypedMetadataModuleSubstateValue,
+    TypedNonFungibleResourceManagerSubstateValue, TypedNonFungibleVaultSubstateValue,
+    TypedObjectModuleSubstateValue, TypedPackageSubstateValue, TypedRoyaltyModuleSubstateValue,
+    TypedSubstateValue, TypedTypeInfoModuleSubstateValue, TypedValidatorSubstateValue,
+};
 
 use super::MappingError;
 
 pub fn to_api_substate(
     context: &MappingContext,
-    substate_id: &SubstateId,
-    substate: &PersistedSubstate,
+    node_id: &NodeId,
+    module_id: ModuleId,
+    substate_key: &SubstateKey,
+    value: Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
-    Ok(match substate {
-        // Shared
-        PersistedSubstate::TypeInfo(type_info) => to_api_type_info_substate(context, type_info)?,
-        PersistedSubstate::MethodAccessRules(substate) => {
-            to_api_access_rules_chain_substate(context, substate)?
+    let typed_substate_key = to_typed_substate_key(
+        node_id.entity_type().unwrap(), /* TODO handle error */
+        module_id,
+        substate_key,
+    )
+    .unwrap(); // TODO: handle error
+
+    // TODO: check value_is_mappable?
+
+    let typed_substate_value =
+        to_typed_substate_value(&typed_substate_key, value.as_ref()).unwrap(); // TODO: handle error
+
+    let api_substate = match &typed_substate_value {
+        TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
+            type_info_substate,
+        )) => to_api_type_info_substate(context, type_info_substate)?,
+        TypedSubstateValue::AccessRulesModule(
+            TypedAccessRulesModuleSubstateValue::MethodAccessRules(method_access_rules_substate),
+        ) => to_api_method_access_rules_substate(context, method_access_rules_substate)?,
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(
+                component_royalty_config_substate,
+            ),
+        ) => to_api_component_royalty_config_substate(context, component_royalty_config_substate)?,
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
+                component_royalty_accumulator_substate,
+            ),
+        ) => to_api_component_royalty_accumulator_substate(component_royalty_accumulator_substate)?,
+        TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::Metadata(
+            metadata_value_substate,
+        )) => to_api_metadata_value_substate(context, metadata_value_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
+            TypedPackageSubstateValue::Info(package_info_substate),
+        )) => to_api_package_info_substate(context, package_info_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
+            TypedPackageSubstateValue::CodeType(package_code_type_substate),
+        )) => to_api_package_code_type_substate(context, package_code_type_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
+            TypedPackageSubstateValue::Code(package_code_substate),
+        )) => to_api_package_code_substate(context, package_code_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
+            TypedPackageSubstateValue::Royalty(package_royalty_substate),
+        )) => to_api_package_royalty_substate(context, package_royalty_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
+            TypedPackageSubstateValue::FunctionAccessRules(package_function_access_rules_substate),
+        )) => to_api_package_function_access_rules_substate(
+            context,
+            package_function_access_rules_substate,
+        )?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleResource(
+            TypedFungibleResourceManagerSubstateValue::ResourceManager(
+                fungible_resource_manager_substate,
+            ),
+        )) => {
+            to_api_fungible_resource_manager_substate(context, fungible_resource_manager_substate)?
         }
-        PersistedSubstate::FunctionAccessRules(substate) => {
-            to_api_function_access_rules_substate(context, substate)?
-        }
-        // Specific
-        PersistedSubstate::ComponentState(component_state) => {
-            to_api_component_state_substate(context, component_state)?
-        }
-        PersistedSubstate::ComponentRoyaltyConfig(substate) => {
-            to_api_component_royalty_config_substate(context, substate)?
-        }
-        PersistedSubstate::ComponentRoyaltyAccumulator(substate) => {
-            to_api_component_royalty_accumulator_substate(substate)?
-        }
-        PersistedSubstate::ResourceManager(resource_manager) => {
-            to_api_fungible_resource_manager_substate(context, resource_manager)?
-        }
-        PersistedSubstate::NonFungibleResourceManager(resource_manager) => {
-            to_api_non_fungible_resource_manager_substate(context, resource_manager)?
-        }
-        PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
-        PersistedSubstate::PackageCode(package_code) => {
-            to_api_package_code_substate(context, package_code)?
-        }
-        PersistedSubstate::PackageCodeType(code_type) => {
-            to_api_package_code_type_substate(context, code_type)?
-        }
-        PersistedSubstate::PackageRoyalty(substate) => {
-            to_api_package_royalty_substate(context, substate)?
-        }
-        PersistedSubstate::EpochManager(epoch_manager) => {
-            to_api_epoch_manager_substate(context, epoch_manager)?
-        }
-        PersistedSubstate::ValidatorSet(validator_set) => {
-            to_api_validator_set_substate(context, validator_set)?
-        }
-        PersistedSubstate::Validator(validator) => to_api_validator_substate(context, validator)?,
-        PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
-            to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
-        }
-        PersistedSubstate::VaultInfo(vault_info) => {
-            to_api_vault_info_substate(context, vault_info)?
-        }
-        PersistedSubstate::VaultLiquidFungible(vault_fungible) => {
-            to_api_fungible_vault_substate(context, vault_fungible)?
-        }
-        PersistedSubstate::VaultLiquidNonFungible(vault_non_fungible) => {
-            to_api_non_fungible_vault_substate(context, vault_non_fungible)?
-        }
-        PersistedSubstate::VaultLockedFungible(locked_fungible) => {
-            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedFungible {locked_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
-        }
-        PersistedSubstate::VaultLockedNonFungible(locked_non_fungible) => {
-            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedNonFungible {locked_non_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
-        }
-        PersistedSubstate::KeyValueStoreEntry(kv_store_entry) => {
-            to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry)?
-        }
-        PersistedSubstate::AccessController(access_controller) => {
-            to_api_access_controller_substate(context, access_controller)?
-        }
-        PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleResource(
+            TypedNonFungibleResourceManagerSubstateValue::ResourceManager(
+                non_fungible_resource_manager_substate,
+            ),
+        )) => to_api_non_fungible_resource_manager_substate(
+            context,
+            non_fungible_resource_manager_substate,
+        )?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleVault(
+            TypedFungibleVaultSubstateValue::Divisibility(fungible_vault_divisibility_substate),
+        )) => to_api_fungible_vault_divisibility_substate(
+            context,
+            fungible_vault_divisibility_substate,
+        )?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleVault(
+            TypedFungibleVaultSubstateValue::Balance(fungible_vault_balance_substate),
+        )) => to_api_fungible_vault_balance_substate(context, fungible_vault_balance_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleVault(
+            TypedNonFungibleVaultSubstateValue::IdType(non_fungible_vault_id_type_substate),
+        )) => to_api_non_fungible_vault_id_type_substate(
+            context,
+            non_fungible_vault_id_type_substate,
+        )?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleVault(
+            TypedNonFungibleVaultSubstateValue::Balance(non_fungible_vault_balance_substate),
+        )) => to_api_non_fungible_vault_balance_substate(
+            context,
+            non_fungible_vault_balance_substate,
+        )?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
+            TypedEpochManagerSubstateValue::EpochManager(epoch_manager_substate),
+        )) => to_api_epoch_manager_substate(context, epoch_manager_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
+            TypedEpochManagerSubstateValue::CurrentValidatorSet(current_validator_set_substate),
+        )) => to_api_current_validator_set_substate(context, current_validator_set_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
+            TypedEpochManagerSubstateValue::RegisteredValidatorSet(secondary_index_substate),
+        )) => to_api_secondary_index_substate(context, secondary_index_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Clock(
+            TypedClockSubstateValue::CurrentTimeRoundedToMinutes(clock_substate),
+        )) => to_api_clock_substate(clock_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Validator(
+            TypedValidatorSubstateValue::Validator(validator_substate),
+        )) => to_api_validator_substate(context, validator_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Account(
+            TypedAccountSubstateValue::Account(account_substate),
+        )) => to_api_account_substate(context, account_substate)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::AccessController(
+            TypedAccessControllerSubstateValue::AccessController(access_controller_substate),
+        )) => to_api_access_controller_substate(context, access_controller_substate)?,
+        TypedSubstateValue::ObjectModule(
+            TypedObjectModuleSubstateValue::GenericScryptoComponent(
+                GenericScryptoComponentSubstateValue::State(generic_scrypto_sbor_payload),
+            ),
+        ) => to_api_generic_scrypto_sbor_payload(context, generic_scrypto_sbor_payload)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericKeyValueStore(
+            generic_scrypto_sbor_payload,
+        )) => to_api_generic_scrypto_sbor_payload(context, generic_scrypto_sbor_payload)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericIndex(
+            generic_scrypto_sbor_payload,
+        )) => to_api_generic_scrypto_sbor_payload(context, generic_scrypto_sbor_payload)?,
+        TypedSubstateValue::ObjectModule(
+            TypedObjectModuleSubstateValue::GenericSortedU16Index(generic_scrypto_sbor_payload),
+        ) => to_api_generic_scrypto_sbor_payload(context, generic_scrypto_sbor_payload)?,
+    };
+
+    Ok(api_substate)
+}
+
+pub fn to_api_generic_scrypto_sbor_payload(
+    _context: &MappingContext,
+    _payload: &GenericScryptoSborPayload,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
     })
 }
 
-pub fn to_api_access_rules_chain_substate(
+pub fn to_api_secondary_index_substate(
+    _context: &MappingContext,
+    substate: &SecondaryIndexSubstate,
+) -> Result<models::Substate, MappingError> {
+    let SecondaryIndexSubstate { validators: _ } = substate;
+
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_current_validator_set_substate(
+    context: &MappingContext,
+    substate: &CurrentValidatorSetSubstate,
+) -> Result<models::Substate, MappingError> {
+    let CurrentValidatorSetSubstate { validator_set } = substate;
+
+    let validator_set = validator_set
+        .iter()
+        .map(|(address, validator)| to_api_active_validator(context, address, validator))
+        .collect();
+    Ok(models::Substate::ValidatorSetSubstate {
+        validator_set,
+        epoch: 0, // to_api_epoch(context, *epoch)?, // TODO: remove
+    })
+}
+
+pub fn to_api_non_fungible_vault_balance_substate(
+    _context: &MappingContext,
+    _substate: &NonFungibleVaultBalanceSubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_non_fungible_vault_id_type_substate(
+    _context: &MappingContext,
+    _substate: &NonFungibleVaultIdTypeSubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_fungible_vault_balance_substate(
+    _context: &MappingContext,
+    _substate: &FungibleVaultBalanceSubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_fungible_vault_divisibility_substate(
+    _context: &MappingContext,
+    _substate: &FungibleVaultDivisibilitySubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_metadata_value_substate(
+    _context: &MappingContext,
+    _substate: &MetadataValueSubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_package_function_access_rules_substate(
+    _context: &MappingContext,
+    _substate: &FunctionAccessRulesSubstate,
+) -> Result<models::Substate, MappingError> {
+    // TODO: implement me, just a placeholder for now
+    Err(MappingError::MismatchedSubstateId {
+        message: "TODO".to_string(),
+    })
+}
+
+pub fn to_api_method_access_rules_substate(
     context: &MappingContext,
     substate: &MethodAccessRulesSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let MethodAccessRulesSubstate { access_rules } = substate;
+    let MethodAccessRulesSubstate {
+        access_rules,
+        child_blueprint_rules: _,
+    } = substate;
 
     Ok(models::Substate::AccessRulesSubstate {
         access_rules: Box::new(to_api_access_rules(context, access_rules)?),
+        /* TODO: add child_blueprint_rules */
     })
 }
 
@@ -165,7 +336,6 @@ pub fn to_api_fungible_resource_manager_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let FungibleResourceManagerSubstate {
-        resource_address: _,
         divisibility,
         total_supply,
     } = substate;
@@ -182,7 +352,6 @@ pub fn to_api_non_fungible_resource_manager_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let NonFungibleResourceManagerSubstate {
-        resource_address: _,
         total_supply,
         id_type,
         non_fungible_type_index,
@@ -190,7 +359,7 @@ pub fn to_api_non_fungible_resource_manager_substate(
         mutable_fields,
     } = substate;
 
-    let owned_nf_store = MappedEntityId::try_from(RENodeId::KeyValueStore(*non_fungible_table))?;
+    let owned_nf_store = MappedEntityId::try_from(*non_fungible_table.as_node_id())?;
 
     Ok(models::Substate::NonFungibleResourceManagerSubstate {
         total_supply: to_api_decimal(total_supply),
@@ -222,22 +391,30 @@ pub fn to_api_type_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let details = match substate {
-        TypeInfoSubstate::Object {
+        TypeInfoSubstate::Object(ObjectInfo {
             blueprint:
                 Blueprint {
                     package_address,
                     blueprint_name,
                 },
             global,
-        } => models::TypeInfoDetails::ObjectTypeInfoDetails {
+            type_parent: _,
+        }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
             package_address: to_api_package_address(context, package_address),
             blueprint_name: blueprint_name.to_string(),
             global: *global,
+            /* TODO: add type_parent */
         },
         TypeInfoSubstate::KeyValueStore(schema) => {
             models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
                 key_value_store_schema: Box::new(to_api_key_value_store_schema(context, schema)?),
             }
+        }
+        TypeInfoSubstate::Index => {
+            panic!("TODO");
+        }
+        TypeInfoSubstate::SortedIndex => {
+            panic!("TODO");
         }
     };
 
@@ -346,7 +523,7 @@ pub fn to_api_method_auth_mutability_entry(
 pub fn to_api_local_method_reference(key: &MethodKey) -> models::LocalMethodReference {
     models::LocalMethodReference {
         name: key.ident.to_string(),
-        module: to_api_module_type(&key.node_module_id),
+        module: to_api_module_type_from_obj(&key.module_id),
     }
 }
 
@@ -628,7 +805,7 @@ struct Entities {
 }
 
 fn extract_entities(
-    context: &MappingContext,
+    _context: &MappingContext,
     struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
     let owned_entities = struct_scrypto_value
@@ -639,14 +816,17 @@ fn extract_entities(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
+    let referenced_entities: Result<Vec<_>, _> = Ok(vec![]);
+    /* TODO: fixme
     let referenced_entities: Result<Vec<_>, _> = struct_scrypto_value
         .references()
         .iter()
-        .filter_map(|renode_id| match renode_id {
+        .filter_map(|node_id| match renode_id {
             RENodeId::GlobalObject(address) => Some(to_global_entity_reference(context, address)),
             _ => None,
         })
         .collect();
+     */
 
     Ok(Entities {
         owned_entities,
@@ -691,9 +871,7 @@ pub fn to_api_component_royalty_accumulator_substate(
     let ComponentRoyaltyAccumulatorSubstate { royalty_vault } = substate;
 
     let vault_id = match royalty_vault {
-        Some(own) => Some(Box::new(to_api_entity_reference(RENodeId::Object(
-            own.id(),
-        ))?)),
+        Some(own) => Some(Box::new(to_api_entity_reference(*own.as_node_id())?)),
         None => None,
     };
 
@@ -708,9 +886,9 @@ pub fn to_api_package_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageInfoSubstate {
+        schema,
         dependent_resources,
         dependent_components,
-        schema,
     } = substate;
 
     Ok(models::Substate::PackageInfoSubstate {
@@ -749,6 +927,7 @@ pub fn to_api_blueprint_schema(
     blueprint_schema: &BlueprintSchema,
 ) -> Result<models::BlueprintSchema, MappingError> {
     let BlueprintSchema {
+        parent: _,
         schema,
         substates,
         functions,
@@ -756,6 +935,7 @@ pub fn to_api_blueprint_schema(
         event_schema,
     } = blueprint_schema;
     Ok(models::BlueprintSchema {
+        // TODO: add parent
         schema: Box::new(to_api_schema(context, schema)?),
         substates: substates
             .iter()
@@ -884,9 +1064,9 @@ pub fn to_api_package_royalty_substate(
 
     let vault_entity = royalty_vault
         .map(|royalty_vault| {
-            Ok(Box::new(to_api_entity_reference(RENodeId::Object(
-                royalty_vault.id(),
-            ))?))
+            Ok(Box::new(to_api_entity_reference(
+                *royalty_vault.as_node_id(),
+            )?))
         })
         .transpose()?;
     Ok(models::Substate::PackageRoyaltySubstate {
@@ -903,32 +1083,12 @@ pub fn to_api_package_royalty_substate(
     })
 }
 
-pub fn to_api_validator_set_substate(
-    context: &MappingContext,
-    substate: &ValidatorSetSubstate,
-) -> Result<models::Substate, MappingError> {
-    let ValidatorSetSubstate {
-        validator_set,
-        epoch,
-    } = substate;
-
-    let validator_set = validator_set
-        .iter()
-        .map(|(address, validator)| to_api_active_validator(context, address, validator))
-        .collect();
-    Ok(models::Substate::ValidatorSetSubstate {
-        validator_set,
-        epoch: to_api_epoch(context, *epoch)?,
-    })
-}
-
 pub fn to_api_validator_substate(
     context: &MappingContext,
     substate: &ValidatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     let ValidatorSubstate {
-        manager,
-        address,
+        sorted_key: _,
         key,
         is_registered,
 
@@ -938,13 +1098,14 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(stake_xrd_vault_id.id()))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(*stake_xrd_vault_id.as_node_id())?;
     let owned_unstake_vault_id =
-        MappedEntityId::try_from(RENodeId::Object(pending_xrd_withdraw_vault_id.id()))?;
+        MappedEntityId::try_from(*pending_xrd_withdraw_vault_id.as_node_id())?;
 
     Ok(models::Substate::ValidatorSubstate {
-        epoch_manager_address: to_api_component_address(context, manager),
-        validator_address: to_api_component_address(context, address),
+        // TODO: fixme (remove epoch man, fix validator address)
+        epoch_manager_address: "".to_string(), // to_api_component_address(context, manager),
+        validator_address: "".to_string(),     // to_api_component_address(context, address),
         public_key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
         unstake_vault: Box::new(owned_unstake_vault_id.into()),
@@ -959,16 +1120,15 @@ pub fn to_api_epoch_manager_substate(
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let EpochManagerSubstate {
-        address,
-        validator_owner_resource,
         epoch,
         round,
+        max_validators: _, // TODO: add to api response
         rounds_per_epoch,
         num_unstake_epochs,
     } = substate;
     Ok(models::Substate::EpochManagerSubstate {
-        address: to_api_component_address(context, address),
-        validator_owner_resource: to_api_resource_address(context, validator_owner_resource),
+        address: "".to_string(), // to_api_component_address(context, address), // TODO: fixme/remove
+        validator_owner_resource: "".to_string(), // to_api_resource_address(context, validator_owner_resource),
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
@@ -976,9 +1136,7 @@ pub fn to_api_epoch_manager_substate(
     })
 }
 
-pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
-    substate: &ClockSubstate,
-) -> Result<models::Substate, MappingError> {
+pub fn to_api_clock_substate(substate: &ClockSubstate) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let ClockSubstate {
         current_time_rounded_to_minutes_ms,
@@ -988,20 +1146,6 @@ pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
         timestamp_rounded_down_to_minute: Box::new(to_api_instant_from_safe_timestamp(
             *current_time_rounded_to_minutes_ms,
         )?),
-    })
-}
-
-pub fn to_api_vault_info_substate(
-    context: &MappingContext,
-    substate: &VaultInfoSubstate,
-) -> Result<models::Substate, MappingError> {
-    let VaultInfoSubstate {
-        resource_address,
-        resource_type,
-    } = substate;
-    Ok(models::Substate::VaultInfoSubstate {
-        resource_address: to_api_resource_address(context, resource_address),
-        resource_type: to_api_resource_type(context, resource_type),
     })
 }
 
@@ -1079,64 +1223,4 @@ pub fn to_api_account_substate(
     Ok(substate)
 }
 
-pub fn to_api_key_value_story_entry_substate(
-    context: &MappingContext,
-    substate_id: &SubstateId,
-    key_value_store_entry: &Option<ScryptoValue>,
-) -> Result<models::Substate, MappingError> {
-    let substate = match substate_id {
-        SubstateId(
-            RENodeId::KeyValueStore(..),
-            NodeModuleId::SELF,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => {
-            let key_non_fungible_local_id = scrypto_decode::<NonFungibleLocalId>(key)
-                .ok()
-                .map(|id| Box::new(to_api_non_fungible_id(&id)));
-            match key_value_store_entry {
-                Some(value) => models::Substate::KeyValueStoreEntrySubstate {
-                    key_hex: to_hex(key),
-                    key_non_fungible_local_id,
-                    is_deleted: false,
-                    data_struct: Some(Box::new(to_api_data_struct_from_bytes(
-                        context,
-                        &scrypto_encode(&value).unwrap(),
-                    )?)),
-                },
-                None => models::Substate::KeyValueStoreEntrySubstate {
-                    key_hex: to_hex(key),
-                    key_non_fungible_local_id,
-                    is_deleted: true,
-                    data_struct: None,
-                },
-            }
-        }
-        SubstateId(
-            _,
-            NodeModuleId::Metadata,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => match key_value_store_entry {
-            Some(value) => models::Substate::MetadataEntrySubstate {
-                key_hex: to_hex(key),
-                is_deleted: false,
-                data_struct: Some(Box::new(to_api_data_struct_from_bytes(
-                    context,
-                    &scrypto_encode(&value).unwrap(),
-                )?)),
-            },
-            None => models::Substate::MetadataEntrySubstate {
-                key_hex: to_hex(key),
-                is_deleted: true,
-                data_struct: None,
-            },
-        },
-        _ => {
-            return Err(MappingError::MismatchedSubstateId {
-                message: "KVStoreEntry substate was matched with a different substate id"
-                    .to_owned(),
-            })
-        }
-    };
-
-    Ok(substate)
-}
+// TODO: remove KeyValueStoreEntrySubstate from api?

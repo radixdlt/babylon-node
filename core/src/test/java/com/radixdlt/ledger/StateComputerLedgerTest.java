@@ -82,6 +82,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -115,7 +116,7 @@ public class StateComputerLedgerTest {
   // to be able to convert it from NotarizedTransaction to LedgerTransaction.
   private final RawNotarizedTransaction nextTransaction =
       REv2TestTransactions.constructDepositFromFaucetTransaction(
-          NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
+          NetworkDefinition.LOCAL_SIMULATOR, ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS, 0, 0);
   private final Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
       nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;

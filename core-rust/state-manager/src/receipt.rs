@@ -187,8 +187,16 @@ impl LedgerTransactionReceipt {
 }
 
 // TODO: also add state changes
-impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)> for LocalTransactionReceipt {
-    fn from((commit_result, substate_changes, execution_trace): (CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)) -> Self {
+impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
+    for LocalTransactionReceipt
+{
+    fn from(
+        (commit_result, substate_changes, execution_trace): (
+            CommitResult,
+            Vec<SubstateChange>,
+            TransactionExecutionTrace,
+        ),
+    ) -> Self {
         let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {

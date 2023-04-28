@@ -79,7 +79,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
 
@@ -160,7 +160,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
     try (var test = buildRunningServerTest(100)) {
-      var transaction = REv2TestTransactions.constructValidTransaction(2, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 2, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
 

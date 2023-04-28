@@ -139,10 +139,10 @@ pub mod proofs {
 }
 
 pub mod commit {
-    use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
+    use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
     use radix_engine_stores::hash_tree::tree_store::{IndexPayload, NodeKey, TreeNode};
     use utils::rust::collections::IndexMap;
 
@@ -169,7 +169,11 @@ pub mod commit {
 
         pub fn apply(&mut self, substate_changes: Vec<SubstateChange>) {
             for substate_change in substate_changes {
-                let substate_id = (substate_change.node_id, substate_change.module_id, substate_change.substate_key);
+                let substate_id = (
+                    substate_change.node_id,
+                    substate_change.module_id,
+                    substate_change.substate_key,
+                );
                 self.updates.insert(substate_id, substate_change.action);
             }
         }
@@ -183,7 +187,7 @@ pub mod commit {
 
     pub struct HashTreeUpdate {
         pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<IndexPayload>)>,
-        pub new_substate_layer_nodes: Vec<(NodeKey,  TreeNode<()>)>,
+        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
         pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
     }
 

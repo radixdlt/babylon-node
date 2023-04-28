@@ -1,34 +1,28 @@
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{RENodeId, SubstateId, SubstateOffset};
-use radix_engine_interface::api::types::NodeModuleId;
-
-use state_manager::store::StateManagerDatabase;
+use radix_engine_common::data::scrypto::ScryptoDecode;
+use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_stores::interface::SubstateDatabase;
 
 use super::{MappingError, ResponseError};
+use radix_engine_stores::jmt_support::JmtMapper;
+use state_manager::store::StateManagerDatabase;
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate(
+pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
-    renode_id: RENodeId,
-    node_module_id: NodeModuleId,
-    substate_offset: &SubstateOffset,
-) -> Result<PersistedSubstate, ResponseError<()>> {
-    let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
-    read_mandatory_substate_from_id(database, &substate_id)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate_from_id(
-    database: &StateManagerDatabase,
-    substate_id: &SubstateId,
-) -> Result<PersistedSubstate, ResponseError<()>> {
-    read_optional_substate_from_id(database, substate_id).ok_or_else(
+    node_id: &NodeId,
+    module_id: ModuleId,
+    substate_key: &SubstateKey,
+) -> Result<D, ResponseError<()>> {
+    read_optional_substate(
+        database,
+        node_id,
+        module_id,
+        substate_key
+    ).ok_or_else(
         || {
-            let SubstateId(renode_id, node_module_id, substate_offset) = substate_id;
             MappingError::MismatchedSubstateId {
                 message: format!(
-                    "Substate {substate_offset:?} not found under RE node {renode_id:?} and module {node_module_id:?}"
+                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and module {module_id:?}"
                 ),
             }
             .into()
@@ -37,28 +31,11 @@ pub(crate) fn read_mandatory_substate_from_id(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_substate(
+pub(crate) fn read_optional_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
-    renode_id: RENodeId,
-    node_module_id: NodeModuleId,
-    substate_offset: &SubstateOffset,
-) -> Option<PersistedSubstate> {
-    let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
-    read_optional_substate_from_id(database, &substate_id)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_substate_from_id(
-    database: &StateManagerDatabase,
-    substate_id: &SubstateId,
-) -> Option<PersistedSubstate> {
-    database.get_substate(substate_id).map(|o| o.substate)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> ResponseError<()> {
-    MappingError::MismatchedSubstateId {
-        message: format!("{substate_offset:?} not of expected type"),
-    }
-    .into()
+    node_id: &NodeId,
+    module_id: ModuleId,
+    substate_key: &SubstateKey,
+) -> Option<D> {
+    database.get_mapped_substate::<JmtMapper, D>(node_id, module_id, substate_key)
 }

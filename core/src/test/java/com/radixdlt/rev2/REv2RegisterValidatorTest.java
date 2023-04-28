@@ -132,7 +132,7 @@ public final class REv2RegisterValidatorTest {
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       var createValidatorTransaction =
           REv2TestTransactions.constructCreateValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, 0L, 1, TEST_KEY);
+              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
           allCommittedTransaction(createValidatorTransaction),
@@ -145,11 +145,11 @@ public final class REv2RegisterValidatorTest {
       // Act: Submit transaction to mempool and run consensus
       var registerValidatorTransaction =
           REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, 0L, 1, validatorAddress, TEST_KEY);
+              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, validatorAddress, TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
       var stakeValidatorTransaction =
           REv2TestTransactions.constructStakeValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, 0L, 1, validatorAddress, TEST_KEY);
+              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, validatorAddress, TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
 
       // Assert: Validator becomes part of validator set

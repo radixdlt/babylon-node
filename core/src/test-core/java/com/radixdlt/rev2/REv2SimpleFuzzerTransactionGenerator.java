@@ -68,7 +68,6 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -100,8 +99,7 @@ public final class REv2SimpleFuzzerTransactionGenerator
   private String nextInstruction() {
     return switch (random.nextInt(4)) {
       case 0 -> String.format(
-          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
-          faucetAddress);
+          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");", faucetAddress);
       case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", faucetAddress);
       case 2 -> "CREATE_ACCOUNT Enum(\"AccessRule::AllowAll\");";
       default -> {

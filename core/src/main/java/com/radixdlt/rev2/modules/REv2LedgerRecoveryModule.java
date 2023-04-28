@@ -72,9 +72,6 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisData2;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
@@ -83,13 +80,8 @@ import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
 import com.radixdlt.sync.TransactionsAndProofReader;
-
-import java.util.List;
 import java.util.Optional;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,14 +99,14 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastStoredProof
   private LedgerProof lastProof(
-      RustStateComputer stateComputer,
-      TransactionsAndProofReader transactionsAndProofReader) {
+      RustStateComputer stateComputer, TransactionsAndProofReader transactionsAndProofReader) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
             () -> {
-              final var genesisData = this.genesis.orElseThrow(() -> new RuntimeException("Missing genesis data"));
+              final var genesisData =
+                  this.genesis.orElseThrow(() -> new RuntimeException("Missing genesis data"));
               return REv2ToConsensus.ledgerProof(stateComputer.executeGenesis(genesisData));
             });
   }

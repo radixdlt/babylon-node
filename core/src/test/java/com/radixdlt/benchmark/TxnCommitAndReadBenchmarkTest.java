@@ -190,10 +190,8 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   }
 
   private List<RawLedgerTransaction> createUniqueTransactions(
-      ComponentAddress faucet,
-      int numTransactions,
-      int notaryPrivKeySeed
-  ) throws PrivateKeyException, PublicKeyException {
+      ComponentAddress faucet, int numTransactions, int notaryPrivKeySeed)
+      throws PrivateKeyException, PublicKeyException {
     final List<RawLedgerTransaction> res = new ArrayList<>();
     final byte[] prvBytes = new byte[ECKeyPair.BYTES];
     final byte[] seedBytes = Longs.toByteArray(notaryPrivKeySeed + 1);

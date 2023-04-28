@@ -177,11 +177,12 @@ public class RustStateComputer {
   private final Natives.Call1<Tuple.Tuple0, ComponentAddress> faucetAddressFunc;
 
   public ComponentAddress getFaucetAddress() {
-    return cachedFaucetAddress.orElseGet(() -> {
-      final var addr = faucetAddressFunc.call(Unit.unit());
-      cachedFaucetAddress = Optional.of(addr);
-      return addr;
-    });
+    return cachedFaucetAddress.orElseGet(
+        () -> {
+          final var addr = faucetAddressFunc.call(Unit.unit());
+          cachedFaucetAddress = Optional.of(addr);
+          return addr;
+        });
   }
 
   private static native byte[] faucetAddress(StateManager stateManager, byte[] payload);

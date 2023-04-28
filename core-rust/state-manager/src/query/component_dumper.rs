@@ -64,12 +64,14 @@
 
 use radix_engine::types::ComponentAddress;
 use radix_engine_common::types::{ModuleId, NodeId, ResourceAddress};
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleVault};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleVault,
+};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::math::Decimal;
-use std::collections::{BTreeMap, BTreeSet};
-use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_queries::query::{StateTreeTraverser, StateTreeVisitor};
+use radix_engine_stores::interface::SubstateDatabase;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub enum VaultData {
     Fungible {
@@ -96,11 +98,11 @@ impl StateTreeVisitor for ComponentStateDump {
         resource: &LiquidFungibleResource,
     ) {
         self.vaults.insert(
-            vault_id.clone(),
+            vault_id,
             VaultData::Fungible {
-                resource_address: resource_address.clone(),
+                resource_address: *resource_address,
                 amount: resource.amount(),
-            }
+            },
         );
     }
 
@@ -111,12 +113,12 @@ impl StateTreeVisitor for ComponentStateDump {
         resource: &LiquidNonFungibleVault,
     ) {
         self.vaults.insert(
-            vault_id.clone(),
+            vault_id,
             VaultData::NonFungible {
-                resource_address: resource_address.clone(),
-                amount: resource.amount.clone(),
+                resource_address: *resource_address,
+                amount: resource.amount,
                 ids: BTreeSet::new(),
-            }
+            },
         );
     }
 
@@ -126,13 +128,20 @@ impl StateTreeVisitor for ComponentStateDump {
         resource_address: &ResourceAddress,
         non_fungible_local_id: &NonFungibleLocalId,
     ) {
-        let vault = self.vaults.entry(vault_id)
+        let vault = self
+            .vaults
+            .entry(vault_id)
             .or_insert_with(|| VaultData::NonFungible {
-                resource_address: resource_address.clone(),
+                resource_address: *resource_address,
                 amount: Decimal::zero(),
                 ids: BTreeSet::new(),
             });
-        if let VaultData::NonFungible { resource_address: _, amount: _, ids } = vault {
+        if let VaultData::NonFungible {
+            resource_address: _,
+            amount: _,
+            ids,
+        } = vault
+        {
             ids.insert(non_fungible_local_id.clone());
         }
     }
@@ -143,8 +152,7 @@ impl StateTreeVisitor for ComponentStateDump {
         node_id: &NodeId,
         depth: u32,
     ) {
-        self.descendents
-            .push((parent_id.cloned(), *node_id, depth));
+        self.descendents.push((parent_id.cloned(), *node_id, depth));
     }
 }
 
@@ -155,14 +163,14 @@ pub fn dump_component_state<S>(
 where
     S: SubstateDatabase,
 {
-    let node_id = component_address.into();
+    let node_id = component_address.as_node_id();
     let mut component_dump = ComponentStateDump {
         vaults: BTreeMap::new(),
         descendents: Vec::new(),
     };
     let mut state_tree_traverser =
         StateTreeTraverser::new(substate_store, &mut component_dump, 100);
-    state_tree_traverser.traverse_all_descendents(None, node_id);
+    state_tree_traverser.traverse_all_descendents(None, *node_id);
 
     component_dump
 }

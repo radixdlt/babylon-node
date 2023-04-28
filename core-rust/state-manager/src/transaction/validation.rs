@@ -13,15 +13,17 @@ use radix_engine_common::network::NetworkDefinition;
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
-use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::interface::{DatabaseMapper, DatabaseUpdate, SubstateDatabase};
+use radix_engine_stores::jmt_support::JmtMapper;
 
 use crate::query::StateManagerSubstateQueries;
 use crate::staging::ReadableStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ConfigType, ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AtState, HasIntentHash, HasUserPayloadHash, IntentHash, PendingTransactionRecord,
-    PendingTransactionResultCache, PreviewRequest, RejectionReason, TransactionAttempt,
+    AtState, ChangeAction, HasIntentHash, HasUserPayloadHash, IntentHash, PendingTransactionRecord,
+    PendingTransactionResultCache, PreviewRequest, RejectionReason, SubstateChange,
+    TransactionAttempt,
 };
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::errors::TransactionValidationError;
@@ -333,7 +335,10 @@ impl<S> TransactionPreviewer<S> {
 
 impl<S: SubstateDatabase> TransactionPreviewer<S> {
     /// Executes the transaction compiled from the given request in a preview mode.
-    pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
+    pub fn preview(
+        &self,
+        preview_request: PreviewRequest,
+    ) -> Result<(PreviewResult, Vec<SubstateChange>), PreviewError> {
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 
@@ -347,7 +352,42 @@ impl<S: SubstateDatabase> TransactionPreviewer<S> {
             .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
         let receipt = transaction_logic.execute_on(read_store.deref());
 
-        Ok(PreviewResult { intent, receipt })
+        let substate_changes = match &receipt.result {
+            TransactionResult::Commit(commit_result) => {
+                // TODO: extract to method (duplicated in commit)
+                let mut substate_changes = Vec::new();
+                for ((node_id, module_id), updates_within_index) in
+                    commit_result.state_updates.system_updates.clone()
+                {
+                    for (substate_key, update) in updates_within_index {
+                        let index_id =
+                            <JmtMapper as DatabaseMapper>::map_to_db_index(&node_id, module_id);
+                        let substate_db_key =
+                            <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_key);
+                        let change_action = match update {
+                            DatabaseUpdate::Set(value) => {
+                                match read_store.get_substate(&index_id, &substate_db_key) {
+                                    Some(_) => ChangeAction::Create(value),
+                                    None => ChangeAction::Update(value),
+                                }
+                            }
+                            DatabaseUpdate::Delete => ChangeAction::Delete,
+                        };
+                        substate_changes.push(SubstateChange {
+                            node_id,
+                            module_id,
+                            substate_key,
+                            action: change_action,
+                        });
+                    }
+                }
+                substate_changes
+            }
+            _ => vec![],
+        };
+
+        // TODO: add a DTO?
+        Ok((PreviewResult { intent, receipt }, substate_changes))
     }
 
     fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntent {

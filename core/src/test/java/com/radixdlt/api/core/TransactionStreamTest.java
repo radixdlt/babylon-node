@@ -89,7 +89,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
               .getTransactions();
 
       var rawTransaction =
-          REv2TestTransactions.constructValidTransaction(0, 0).constructRawTransaction();
+          REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0).constructRawTransaction();
 
       // Submit transaction
       var response =

@@ -169,7 +169,11 @@ public class REv2TransactionCreationTest {
   }
 
   public static TransactionInfo constructSmallValidTransaction(
-      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      int numSigs) {
 
     final var intentBytes =
         REv2TestTransactions.constructValidIntentBytes(
@@ -179,7 +183,11 @@ public class REv2TransactionCreationTest {
   }
 
   public static TransactionInfo constructNewAccountTransactionJava(
-      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      int numSigs) {
     final var intentBytes =
         REv2TestTransactions.constructDepositFromFaucetIntent(
             networkDefinition, faucet, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
@@ -205,9 +213,14 @@ public class REv2TransactionCreationTest {
    * By using too low a cost unit cap to cover the loan
    */
   public static TransactionInfo constructExecutionInvalidTransaction(
-      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce, int numSigs) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      int numSigs) {
 
-    final var manifest = REv2TestTransactions.constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
+    final var manifest =
+        REv2TestTransactions.constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
 
     final var insufficientLimit = UInt32.fromNonNegativeInt(1000);
 
