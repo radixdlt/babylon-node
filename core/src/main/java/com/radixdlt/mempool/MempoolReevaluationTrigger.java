@@ -64,16 +64,29 @@
 
 package com.radixdlt.mempool;
 
-import java.util.List;
+public final class MempoolReevaluationTrigger {
 
-/**
- * Basic mempool functionality.
- *
- * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
- */
-public interface Mempool<RawTx, ProcessedTx> extends MempoolReader<RawTx>, MempoolInserter<RawTx> {
+  private MempoolReevaluationTrigger() {}
 
-  void handleTransactionsCommitted(List<ProcessedTx> transactions);
+  public static MempoolReevaluationTrigger create() {
+    return new MempoolReevaluationTrigger();
+  }
 
-  int getCount();
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o != null && getClass() == o.getClass();
+  }
+
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

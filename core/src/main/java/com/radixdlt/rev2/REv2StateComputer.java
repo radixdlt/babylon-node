@@ -105,6 +105,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   private final RustStateComputer stateComputer;
 
+  private final RustMempool mempool;
+
   // Maximum number of transactions to include in a proposal
   private final int maxNumTransactionsPerProposal;
   // Maximum number of transaction payload bytes to include in a proposal
@@ -124,6 +126,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
+      RustMempool mempool,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
@@ -134,6 +137,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       Serialization serialization,
       Metrics metrics) {
     this.stateComputer = stateComputer;
+    this.mempool = mempool;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
     this.maxUncommittedUserTransactionsTotalPayloadSize =
@@ -153,7 +157,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         .forEach(
             transaction -> {
               try {
-                stateComputer.getMempoolInserter().addTransaction(transaction);
+                mempool.addTransaction(transaction);
                 // Please note that a `MempoolAddSuccess` event is only dispatched when the above
                 // call does not throw. This is deliberate: we do not want to propagate the
                 // transaction to other nodes if it is invalid or a duplicate (to prevent an
@@ -199,7 +203,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     final var result =
         maxPayloadSize > 0 && maxNumTransactionsPerProposal > 0
-            ? stateComputer.getTransactionsForProposal(
+            ? mempool.getTransactionsForProposal(
                 maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions)
             : List.<RawNotarizedTransaction>of();
 

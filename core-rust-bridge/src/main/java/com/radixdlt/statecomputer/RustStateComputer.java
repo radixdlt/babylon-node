@@ -67,9 +67,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
@@ -79,19 +76,13 @@ import com.radixdlt.rev2.ValidatorInfo;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.List;
 import java.util.Objects;
 
 public class RustStateComputer {
-  private final RustMempool mempool;
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
-
-    this.mempool = new RustMempool(metrics, stateManager);
-
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.prepareGenesisFunc =
         Natives.builder(stateManager, RustStateComputer::prepareGenesis)
@@ -117,20 +108,6 @@ public class RustStateComputer {
         Natives.builder(stateManager, RustStateComputer::epoch)
             .measure(timer.label(new MethodId(RustStateComputer.class, "epoch")))
             .build(new TypeToken<>() {});
-  }
-
-  public MempoolReader<RawNotarizedTransaction> getMempoolReader() {
-    return this.mempool;
-  }
-
-  public MempoolInserter<RawNotarizedTransaction> getMempoolInserter() {
-    return this.mempool::addTransaction;
-  }
-
-  public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionToExclude) {
-    return this.mempool.getTransactionsForProposal(
-        maxCount, maxPayloadSizeBytes, transactionToExclude);
   }
 
   public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {

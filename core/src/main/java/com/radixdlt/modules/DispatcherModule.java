@@ -85,10 +85,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolRelayDispatcher;
-import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
@@ -265,6 +262,9 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<MempoolRelayTrigger>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(MempoolRelayTrigger.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<ScheduledEventDispatcher<MempoolReevaluationTrigger>>() {})
+        .toProvider(Dispatchers.scheduledDispatcherProvider(MempoolReevaluationTrigger.class))
         .in(Scopes.SINGLETON);
     // The below is just another flavor of MempoolAddSuccess dispatcher, which must use a callback
     // interface (instead of an `EventDispatcher`) for dependency reasons.
