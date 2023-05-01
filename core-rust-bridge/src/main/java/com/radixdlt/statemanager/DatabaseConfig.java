@@ -64,20 +64,15 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record StateManagerConfig(
-    NetworkDefinition networkDefinition,
-    Option<RustMempoolConfig> mempoolConfigOpt,
-    DatabaseTypeConfig databaseConfig,
-    LoggingConfig loggingConfig) {
+/** Database configuration options */
+public record DatabaseConfig(
+    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
+        DatabaseConfig.class,
+        codecs -> StructCodec.fromRecordComponents(DatabaseConfig.class, codecs));
   }
 }

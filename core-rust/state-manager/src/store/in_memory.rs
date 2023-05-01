@@ -88,6 +88,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
+    config: DatabaseConfig,
     transactions: BTreeMap<u64, LedgerTransaction>,
     transaction_identifiers: BTreeMap<u64, CommittedTransactionIdentifiers>,
     ledger_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
@@ -102,14 +103,14 @@ pub struct InMemoryStore {
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
-    account_change_index_enable: bool,
     account_change_index_last_state_version: u64,
     account_change_index_set: HashMap<Address, BTreeSet<u64>>,
 }
 
 impl InMemoryStore {
-    pub fn new(enable_account_change_index: bool) -> InMemoryStore {
+    pub fn new(config: DatabaseConfig) -> InMemoryStore {
         InMemoryStore {
+            config,
             transactions: BTreeMap::new(),
             transaction_identifiers: BTreeMap::new(),
             ledger_receipts: BTreeMap::new(),
@@ -124,7 +125,6 @@ impl InMemoryStore {
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
-            account_change_index_enable: enable_account_change_index,
             account_change_index_last_state_version: 0,
             account_change_index_set: HashMap::new(),
         }
@@ -176,7 +176,28 @@ impl InMemoryStore {
 
 impl Default for InMemoryStore {
     fn default() -> Self {
-        Self::new(false)
+        Self::new(DatabaseConfig::default())
+    }
+}
+
+impl ConfigurableDatabase for InMemoryStore {
+    fn read_config_state(&self) -> DatabaseConfigState {
+        DatabaseConfigState {
+            account_change_index_enabled: None,
+            local_transaction_execution_index_enabled: None,
+        }
+    }
+
+    fn write_config(&mut self, _database_config: &DatabaseConfig) {
+        // We don't need to do anything for in memory store
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.config.enable_local_transaction_execution_index
+    }
+
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.config.enable_account_change_index
     }
 }
 
@@ -319,7 +340,32 @@ impl QueryableTransactionStore for InMemoryStore {
         Some(self.transactions.get(&state_version)?.clone())
     }
 
-    fn get_committed_transaction_receipt(
+    fn get_committed_transaction_identifiers(
+        &self,
+        state_version: u64,
+    ) -> Option<CommittedTransactionIdentifiers> {
+        Some(self.transaction_identifiers.get(&state_version)?.clone())
+    }
+
+    fn get_committed_ledger_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LedgerTransactionReceipt> {
+        Some(self.ledger_receipts.get(&state_version)?.clone())
+    }
+
+    fn get_committed_local_transaction_execution(
+        &self,
+        state_version: u64,
+    ) -> Option<LocalTransactionExecution> {
+        Some(
+            self.local_transaction_executions
+                .get(&state_version)?
+                .clone(),
+        )
+    }
+
+    fn get_committed_local_transaction_receipt(
         &self,
         state_version: u64,
     ) -> Option<LocalTransactionReceipt> {
@@ -330,13 +376,6 @@ impl QueryableTransactionStore for InMemoryStore {
                 .get(&state_version)?
                 .clone(),
         })
-    }
-
-    fn get_committed_transaction_identifiers(
-        &self,
-        state_version: u64,
-    ) -> Option<CommittedTransactionIdentifiers> {
-        Some(self.transaction_identifiers.get(&state_version)?.clone())
     }
 }
 
@@ -413,10 +452,6 @@ impl InMemoryStore {
 impl AccountChangeIndexExtension for InMemoryStore {
     fn account_change_index_last_processed_state_version(&self) -> u64 {
         self.account_change_index_last_state_version
-    }
-
-    fn is_account_change_index_enabled(&self) -> bool {
-        self.account_change_index_enable
     }
 
     fn catchup_account_change_index(&mut self) {

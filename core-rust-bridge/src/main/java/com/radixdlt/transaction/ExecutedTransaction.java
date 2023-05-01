@@ -64,22 +64,19 @@
 
 package com.radixdlt.transaction;
 
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
+    UInt64 stateVersion,
     CommittedTransactionStatus status,
     byte[] consensusReceiptBytes,
-    byte[] transactionBytes,
-    List<ComponentAddress> newComponentAddresses,
-    List<ResourceAddress> newResourceAddresses) {
+    byte[] transactionBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
@@ -95,23 +92,18 @@ public record ExecutedTransaction(
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ExecutedTransaction that = (ExecutedTransaction) o;
-    return Objects.equals(status, that.status)
+    return Objects.equals(stateVersion, that.stateVersion)
+        && Objects.equals(status, that.status)
         && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes)
-        && Arrays.equals(transactionBytes, that.transactionBytes)
-        && Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
+        && Arrays.equals(transactionBytes, that.transactionBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(status, newComponentAddresses, newResourceAddresses);
+    int result = Objects.hash(stateVersion);
+    result = 31 * result + Objects.hash(status);
     result = 31 * result + Arrays.hashCode(consensusReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
-  }
-
-  @Override
-  public String toString() {
-    return "ExecutedTransaction{" + "newComponentAddresses=" + newComponentAddresses + '}';
   }
 }

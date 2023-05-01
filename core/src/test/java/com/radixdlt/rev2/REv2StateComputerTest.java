@@ -85,6 +85,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statemanager.DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -101,7 +102,7 @@ public class REv2StateComputerTest {
             10 * 1024 * 1024,
             50 * 1024 * 1024,
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
-            true,
+            new DatabaseConfig(false, false),
             Option.none()),
         new AbstractModule() {
           @Override

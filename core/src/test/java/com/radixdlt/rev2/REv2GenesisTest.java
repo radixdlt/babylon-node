@@ -128,8 +128,8 @@ public final class REv2GenesisTest {
       var stateReader = test.getInstance(0, REv2StateReader.class);
 
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
-      var genesis = transactionStore.getTransactionAtStateVersion(1).unwrap();
-      assertThat(genesis.newComponentAddresses())
+      var genesisDetails = transactionStore.getTransactionDetailsAtStateVersion(1).unwrap();
+      assertThat(genesisDetails.newComponentAddresses())
           .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
 
       final var xrdLeftInFaucet =

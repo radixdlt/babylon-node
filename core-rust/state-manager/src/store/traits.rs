@@ -67,9 +67,73 @@ use crate::transaction::LedgerTransaction;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
+use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
+
+pub enum DatabaseConfigValidationError {
+    AccountChangeIndexRequiresLocalTransactionExecutionIndex,
+    LocalTransactionExecutionIndexChanged,
+}
+
+/// Database configuration required for initialization built from
+/// config file and environment variables.
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
+pub struct DatabaseConfig {
+    pub enable_local_transaction_execution_index: bool,
+    pub enable_account_change_index: bool,
+}
+
+impl Default for DatabaseConfig {
+    fn default() -> Self {
+        DatabaseConfig {
+            enable_local_transaction_execution_index: true,
+            enable_account_change_index: true,
+        }
+    }
+}
+
+/// Current state of database configuration. We need Option<T> for
+/// fields that are missing. Missing fields usually mean the database is
+/// just being initialized (when all of the fields are None) but also
+/// when new configurations are added - this is a cheap work around to
+/// limit future needed ledger wipes until we have a better solution.
+pub struct DatabaseConfigState {
+    pub local_transaction_execution_index_enabled: Option<bool>,
+    pub account_change_index_enabled: Option<bool>,
+}
+
+impl DatabaseConfig {
+    pub fn validate(
+        &self,
+        current_database_config: &DatabaseConfigState,
+    ) -> Result<(), DatabaseConfigValidationError> {
+        if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
+            return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
+        }
+        if let Some(local_transaction_execution_index_enabled) =
+            current_database_config.local_transaction_execution_index_enabled
+        {
+            if self.enable_local_transaction_execution_index
+                != local_transaction_execution_index_enabled
+            {
+                return Err(DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged);
+            }
+        }
+        Ok(())
+    }
+}
+
+pub trait ConfigurableDatabase {
+    fn read_config_state(&self) -> DatabaseConfigState;
+
+    fn write_config(&mut self, database_config: &DatabaseConfig);
+
+    fn is_account_change_index_enabled(&self) -> bool;
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool;
+}
 
 pub type CommittedTransactionBundle = (
     LedgerTransaction,
@@ -96,7 +160,10 @@ pub mod substate {
 pub mod transactions {
     use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
-    use crate::{CommittedTransactionIdentifiers, LocalTransactionReceipt};
+    use crate::{
+        CommittedTransactionIdentifiers, LedgerTransactionReceipt, LocalTransactionExecution,
+        LocalTransactionReceipt,
+    };
 
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
@@ -107,15 +174,25 @@ pub mod transactions {
 
         fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
 
-        fn get_committed_transaction_receipt(
-            &self,
-            state_version: u64,
-        ) -> Option<LocalTransactionReceipt>;
-
         fn get_committed_transaction_identifiers(
             &self,
             state_version: u64,
         ) -> Option<CommittedTransactionIdentifiers>;
+
+        fn get_committed_ledger_transaction_receipt(
+            &self,
+            state_version: u64,
+        ) -> Option<LedgerTransactionReceipt>;
+
+        fn get_committed_local_transaction_execution(
+            &self,
+            state_version: u64,
+        ) -> Option<LocalTransactionExecution>;
+
+        fn get_committed_local_transaction_receipt(
+            &self,
+            state_version: u64,
+        ) -> Option<LocalTransactionReceipt>;
     }
 
     pub trait TransactionIndex<T>: QueryableTransactionStore {
@@ -241,8 +318,6 @@ pub mod extensions {
 
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> u64;
-
-        fn is_account_change_index_enabled(&self) -> bool;
 
         fn catchup_account_change_index(&mut self);
 

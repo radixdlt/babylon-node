@@ -1,7 +1,8 @@
 use crate::core_api::*;
 use radix_engine::types::Address;
 use state_manager::store::traits::{
-    extensions::AccountChangeIndexExtension, QueryableProofStore, QueryableTransactionStore,
+    extensions::AccountChangeIndexExtension, ConfigurableDatabase, QueryableProofStore,
+    QueryableTransactionStore,
 };
 
 #[tracing::instrument(skip(state))]
@@ -43,8 +44,16 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
     let database = state.database.read();
 
+    if !database.is_local_transaction_execution_index_enabled() {
+        return Err(client_error(
+            "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
+            Please note the resync will take awhile.",
+        ));
+    }
+
     if !database.is_account_change_index_enabled() {
-        return Err(server_error(
+        return Err(client_error(
             "This endpoint requires that the AccountChangeIndex is enabled on the node. \
             To use this endpoint, you will need to enable the index in the config and restart the node. \
             Please note the index catchup build will take some time.",
@@ -68,7 +77,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
                     .get_committed_transaction(*state_version)
                     .expect("Transaction store corrupted"),
                 database
-                    .get_committed_transaction_receipt(*state_version)
+                    .get_committed_local_transaction_receipt(*state_version)
                     .expect("Transaction receipt index corrupted"),
                 database
                     .get_committed_transaction_identifiers(*state_version)

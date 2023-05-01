@@ -67,6 +67,6 @@ mod in_memory;
 mod rocks_db;
 pub mod traits;
 
-pub use db::{DatabaseConfig, StateManagerDatabase};
+pub use db::{DatabaseTypeConfig, StateManagerDatabase};
 pub use in_memory::InMemoryStore;
 pub use rocks_db::RocksDBStore;

@@ -70,7 +70,7 @@ use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
-use crate::store::{DatabaseConfig, StateManagerDatabase};
+use crate::store::{DatabaseTypeConfig, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -129,7 +129,7 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
+    pub db_type_config: DatabaseTypeConfig,
     pub logging_config: LoggingConfig,
 }
 
@@ -171,7 +171,7 @@ impl JNIStateManager {
         let logging_config = config.logging_config;
 
         let database = Arc::new(parking_lot::const_rwlock(
-            StateManagerDatabase::from_config(config.db_config),
+            StateManagerDatabase::from_config(config.db_type_config),
         ));
         let metric_registry = Registry::new();
         let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));

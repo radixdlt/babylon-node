@@ -91,6 +91,7 @@ import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.PrivateKeys;
@@ -134,7 +135,7 @@ public abstract class SystemApiTestBase {
                                 UInt64.fromNonNegativeLong(10),
                                 UInt64.fromNonNegativeLong(1)),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                            false,
+                            new DatabaseConfig(false, false),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10 * 1024 * 1024, 10, MempoolRelayConfig.of())),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),

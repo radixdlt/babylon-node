@@ -86,6 +86,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -192,7 +193,13 @@ public class REv2RejectedTransactionMempoolTest {
               false,
               List.of());
       var executedTransaction = executeTransaction(test, accountTxn);
-      var accountAddress = executedTransaction.newComponentAddresses().get(0);
+      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      var transactionDetails =
+          transactionStore
+              .getTransactionDetailsAtStateVersion(
+                  executedTransaction.stateVersion().toNonNegativeLong().unwrap())
+              .unwrap();
+      var accountAddress = transactionDetails.newComponentAddresses().get(0);
 
       // deposit xrd into it
       var depositTxn =

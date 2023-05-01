@@ -62,29 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.transaction;
 
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.List;
+import java.util.Objects;
 
-/** REv2 Database configuration options */
-public sealed interface REv2DatabaseConfig {
-  static void registerCodec(CodecMap codecMap) {
+/** Extra information about an executed transaction currently needed for testing */
+public record TransactionDetails(
+    List<ComponentAddress> newComponentAddresses, List<ResourceAddress> newResourceAddresses) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        REv2DatabaseConfig.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(REv2DatabaseConfig.class, codecs));
+        TransactionDetails.class,
+        codecs -> StructCodec.fromRecordComponents(TransactionDetails.class, codecs));
   }
 
-  static REv2DatabaseConfig inMemory(boolean enableAccountChangeIndex) {
-    return new InMemory(enableAccountChangeIndex);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    TransactionDetails that = (TransactionDetails) o;
+    return Objects.equals(newComponentAddresses, that.newComponentAddresses)
+        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
   }
 
-  static REv2DatabaseConfig rocksDB(String databasePath, boolean enableAccountChangeIndex) {
-    return new RocksDB(databasePath, enableAccountChangeIndex);
+  @Override
+  public int hashCode() {
+    return Objects.hash(newComponentAddresses, newResourceAddresses);
   }
-
-  record InMemory(boolean enableAccountChangeIndex) implements REv2DatabaseConfig {}
-
-  record RocksDB(String databasePath, boolean enableAccountChangeIndex)
-      implements REv2DatabaseConfig {}
 }

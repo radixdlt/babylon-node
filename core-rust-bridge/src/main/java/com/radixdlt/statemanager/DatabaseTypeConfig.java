@@ -64,20 +64,27 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-public record StateManagerConfig(
-    NetworkDefinition networkDefinition,
-    Option<RustMempoolConfig> mempoolConfigOpt,
-    DatabaseTypeConfig databaseConfig,
-    LoggingConfig loggingConfig) {
-  public static void registerCodec(CodecMap codecMap) {
+/** REv2 Database configuration options */
+public sealed interface DatabaseTypeConfig {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
+        DatabaseTypeConfig.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseTypeConfig.class, codecs));
   }
+
+  static DatabaseTypeConfig inMemory(DatabaseConfig databaseConfig) {
+    return new InMemory(databaseConfig);
+  }
+
+  static DatabaseTypeConfig rocksDB(String databasePath, DatabaseConfig databaseConfig) {
+    return new RocksDB(databasePath, databaseConfig);
+  }
+
+  record InMemory(DatabaseConfig databaseConfig) implements DatabaseTypeConfig {}
+
+  record RocksDB(String databasePath, DatabaseConfig databaseConfig)
+      implements DatabaseTypeConfig {}
 }
