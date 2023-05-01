@@ -78,8 +78,8 @@ jobs:
       - name: Join multiarch images
         run: |
           docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
-            eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} 
-          eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
+            eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} \
+            eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
 
   join_multiarch_image_dockerhub:
     permissions:
