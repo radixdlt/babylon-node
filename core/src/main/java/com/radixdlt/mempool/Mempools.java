@@ -89,7 +89,7 @@ public class Mempools {
 
       @Override
       public List<RawTx> getTransactionsForProposal(
-          int count, List<ProcessedTx> preparedTransactions) {
+          int maxCount, int maxPayloadSizeBytes, List<RawTx> transactionsToExclude) {
         return List.of();
       }
 

@@ -205,6 +205,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Singleton
           REv2StateComputer rEv2StateComputer(
               RustStateComputer stateComputer,
+              RustMempool mempool,
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -213,6 +214,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               Metrics metrics) {
             return new REv2StateComputer(
                 stateComputer,
+                mempool,
                 maxNumTransactionsPerProposal,
                 maxProposalTotalTxnsPayloadSize,
                 maxUncommittedUserTransactionsTotalPayloadSize,
@@ -284,20 +286,9 @@ public final class REv2StateManagerModule extends AbstractModule {
         });
 
     if (mempoolConfig.isPresent()) {
-      install(
-          new AbstractModule() {
-            @Provides
-            private MempoolReader<RawNotarizedTransaction> mempoolReader(
-                RustStateComputer stateComputer) {
-              return stateComputer.getMempoolReader();
-            }
-
-            @Provides
-            private MempoolInserter<RawNotarizedTransaction> mempoolInserter(
-                RustStateComputer stateComputer) {
-              return stateComputer.getMempoolInserter();
-            }
-          });
+      bind(new Key<MempoolReader<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(new Key<MempoolInserter<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(MempoolReevaluator.class).to(RustMempool.class);
     }
   }
 
@@ -314,5 +305,11 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Singleton
   private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
     return new RustStateComputer(metrics, stateManager);
+  }
+
+  @Provides
+  @Singleton
+  private RustMempool rustMempool(Metrics metrics, StateManager stateManager) {
+    return new RustMempool(metrics, stateManager);
   }
 }

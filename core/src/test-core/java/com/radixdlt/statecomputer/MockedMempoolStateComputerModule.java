@@ -139,7 +139,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public List<RawNotarizedTransaction> getTransactionsForProposal(
           List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        return mempool.getTransactionsForProposal(1, List.of());
+        return mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, List.of());
       }
 
       @Override

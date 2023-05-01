@@ -84,10 +84,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
@@ -105,6 +102,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.time.Duration;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -200,6 +198,7 @@ public final class RadixNodeModule extends AbstractModule {
     // Mempool Relay
     install(new MempoolRelayConfig(5, 100).asModule());
     install(new MempoolRelayerModule(20000));
+    install(new MempoolReevaluationModule(Duration.ofSeconds(10), 5));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);

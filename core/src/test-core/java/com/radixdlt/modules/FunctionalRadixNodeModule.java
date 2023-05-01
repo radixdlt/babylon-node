@@ -81,6 +81,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolReevaluationModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
@@ -91,6 +92,7 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import java.time.Duration;
 import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
@@ -378,6 +380,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
                 install(new MempoolRelayerModule(10000));
+                install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
@@ -416,6 +419,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(10000));
+                install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());
                 install(
