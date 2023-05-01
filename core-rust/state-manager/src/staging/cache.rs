@@ -65,6 +65,7 @@
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
 use std::collections::Bound::{Included, Unbounded};
+use std::ops::Add;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::staging::{
@@ -76,6 +77,7 @@ use crate::{
     LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
+use im::hashset::HashSet as ImmutableHashSet;
 use im::ordmap::OrdMap as ImmutableOrdMap;
 
 use crate::receipt::ChangeAction;
@@ -125,14 +127,8 @@ impl ExecutionCache {
             .accumulator_hash_to_key
             .get(&transaction_accumulator_hash)
         {
-            Some(new_key) => {
-                // TODO: remove
-                println!("Execute transaction cache hit ");
-                self.stage_tree.get_delta(new_key)
-            },
+            Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
-                // TODO: remove
-                println!("Execute transaction cache miss");
                 let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
@@ -204,22 +200,40 @@ impl<'s, S> StagedStore<'s, S> {
 impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
     fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
         let substate_id = encode_substate_id(index_id, key);
-        self.overlay
-            .substate_values
-            .get(&substate_id)
-            .cloned()
-            .or_else(|| self.root.get_substate(index_id, key))
+        if self.overlay.deleted_substates.contains(&substate_id) {
+            None
+        } else {
+            self.overlay
+                .substate_values
+                .get(&substate_id)
+                .cloned()
+                .or_else(|| self.root.get_substate(index_id, key))
+        }
     }
 
     fn list_substates(
         &self,
         index_id: &Vec<u8>,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let root_iter = self.root.list_substates(index_id);
+        // TODO: remove
+        // TODO: clean this method up.. filter once (one filter impl - in rocksdb only?)
+        println!("List substates from index {:?}", hex::encode(&index_id));
+        let root_iter = {
+            let index_id = index_id.clone();
+            self.root
+                .list_substates(&index_id)
+                .filter(move |(k, _)| {
+                    let substate_id = encode_substate_id(&index_id, k);
+                    let filter = !self.overlay.deleted_substates.contains(&substate_id);
+                    println!("Filtering substate_id {} res {}", hex::encode(&substate_id), filter);
+                    filter
+                })
+        };
 
         let overlay_iter = {
-            let start = encode_substate_id(index_id, &vec![0]);
+            let start = encode_substate_id(&index_id, &vec![0]);
             let index_id = index_id.clone();
+            let index_id_ = index_id.clone();
             self.overlay
                 .substate_values
                 .range((Included(start), Unbounded))
@@ -228,7 +242,17 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
                     (index, key, v)
                 })
                 .take_while(move |(index, ..)| index_id.eq(index))
-                .map(|(_, key, value)| (key, value.clone()))
+                .filter(move |(_, k, _)| {
+                    let substate_id = encode_substate_id(&index_id_, k);
+                    let filter = !self.overlay.deleted_substates.contains(&substate_id);
+                    println!("Filtering substate_id {} res {}", hex::encode(&substate_id), filter);
+                    filter
+                })
+                .map(|(_, key, value)| {
+                    // TODO: remove
+                    println!("Overlay iter returning next {:?} {:?}", hex::encode(key.clone()), hex::encode(value));
+                    (key, value.clone())
+                })
         };
 
         Box::new(SortedKvMergeIterator::new(overlay_iter, root_iter))
@@ -324,6 +348,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     substate_values: ImmutableOrdMap<Vec<u8>, Vec<u8>>,
+    deleted_substates: ImmutableHashSet<Vec<u8>>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<IndexPayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<()>>,
     transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
@@ -334,6 +359,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
             substate_values: ImmutableOrdMap::new(),
+            deleted_substates: ImmutableHashSet::new(),
             re_node_layer_nodes: ImmutableHashMap::new(),
             substate_layer_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
@@ -342,6 +368,8 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     }
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
+        // TODO(db-fix): process raw database changes, not substate changes! engine_receipt.commit.database_changes
+
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
             let substate_changes = &commit.local_receipt.on_ledger.substate_changes;
             for substate_change in substate_changes {
@@ -355,10 +383,14 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
                 let substate_id = encode_substate_id(&index_id, &substate_db_key);
                 match &substate_change.action {
                     ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                        println!("(cache) Inserting a substate {:?}", hex::encode(&substate_id));
+                        self.deleted_substates.remove(&substate_id);
                         self.substate_values.insert(substate_id, value.clone());
                     }
                     ChangeAction::Delete => {
                         self.substate_values.remove(&substate_id);
+                        println!("(cache) Deleting a substate {:?}", hex::encode(&substate_id));
+                        self.deleted_substates.insert(substate_id);
                     }
                 }
             }

@@ -75,6 +75,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -86,7 +87,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -116,7 +116,7 @@ public final class REv2RejectMultipleIntentsTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
@@ -154,6 +154,8 @@ public final class REv2RejectMultipleIntentsTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
+      // Prepare - let's start the test
+      test.startAllNodes();
       final var faucet = test.faucetAddress();
 
       var fixedIntent1 = createValidIntentBytes(faucet, 1);
@@ -186,9 +188,6 @@ public final class REv2RejectMultipleIntentsTest {
               fixedIntent1Transactions.get(5),
               fixedIntent3Transactions.get(0),
               fixedIntent2Transactions.get(0));
-
-      // Prepare - let's start the test
-      test.startAllNodes();
 
       // Act: Submit proposal 1 transactions in a proposal and run consensus
       proposalGenerator.nextTransactions = transactionsForFirstProposal;

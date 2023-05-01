@@ -80,9 +80,7 @@ import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.genesis.GenesisConfig;
-import com.radixdlt.genesis.GenesisData2;
-import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -206,7 +204,7 @@ public final class RadixShell {
       }
 
       // TODO: fixme
-      final Optional<GenesisData2> genesis = Optional.empty();
+      final Optional<GenesisData> genesis = Optional.empty();
       /*
       final var genesisTxn =
           new GenesisFromPropertiesLoader(properties, network)
@@ -215,8 +213,7 @@ public final class RadixShell {
               .toGenesisTransaction(GenesisConfig.babylonDefault());
        */
 
-      final var injector =
-          Guice.createInjector(new RadixNodeModule(properties, network, genesis));
+      final var injector = Guice.createInjector(new RadixNodeModule(properties, network, genesis));
       final var node = new Node(injector);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);

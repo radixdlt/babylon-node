@@ -346,18 +346,25 @@ impl CommitStore for RocksDBStore {
         for ((node_id, module_id, substate_key), change_action) in
             commit_bundle.substate_store_update.updates
         {
-            let mut db_key = vec![];
-            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_index(
+            let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(
                 &node_id, module_id,
-            ));
-            db_key.append(&mut <JmtMapper as DatabaseMapper>::map_to_db_key(
+            );
+
+            let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(
                 &substate_key,
-            ));
+            );
+
+            let db_key = encode_substate_id(&index_id, &substate_db_key);
+
             match change_action {
                 ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                    println!("(rocks) Inserting a substate {:?} (index {}, db_key {})", hex::encode(&db_key), hex::encode(&index_id), hex::encode(substate_db_key));
                     batch.put_cf(self.cf_handle(&Substates), db_key, value)
                 }
-                ChangeAction::Delete => batch.delete_cf(self.cf_handle(&Substates), db_key),
+                ChangeAction::Delete => {
+                    println!("(cache) Deleting a substate {:?} (index {}, db_key {})", hex::encode(&db_key), hex::encode(&index_id), hex::encode(substate_db_key));
+                    batch.delete_cf(self.cf_handle(&Substates), db_key)
+                },
             }
         }
 
@@ -745,10 +752,15 @@ impl SubstateDatabase for RocksDBStore {
                 let (k, v) = kv.unwrap();
                 let (index, key) =
                     decode_substate_id(k.as_ref()).expect("Failed to decode substate ID");
+                println!("rocksdb iter decoded (index {} key {}) from db_key {}", hex::encode(&index), hex::encode(&key), hex::encode(k.as_ref()));
                 (index, key, v)
             })
             .take_while(move |(index, ..)| index_id.eq(index))
-            .map(|(_, key, value)| (key, value.as_ref().to_vec()));
+            .map(|(_, key, value)| {
+                // TODO: remove
+                println!("Rocksdb iter returning next {:?} {:?}", hex::encode(key.clone()), hex::encode(value.as_ref()));
+                (key, value.as_ref().to_vec())
+            });
 
         Box::new(iter)
     }

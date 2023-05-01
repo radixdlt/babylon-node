@@ -9,21 +9,8 @@ use crate::core_api::*;
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
-    UnsupportedSubstatePersisted {
-        message: String,
-    },
-    UnknownNodeTypePersisted {
-        message: String,
-    },
-    TransientSubstatePersisted {
-        message: String,
-    },
     ScryptoValueDecode {
         decode_error: DecodeError,
-        bytes: Vec<u8>,
-    },
-    InvalidSbor {
-        decode_error: String,
         bytes: Vec<u8>,
     },
     SborEncodeError {

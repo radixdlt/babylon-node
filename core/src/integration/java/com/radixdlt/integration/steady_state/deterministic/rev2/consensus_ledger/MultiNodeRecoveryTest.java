@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -83,7 +84,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
@@ -144,7 +144,7 @@ public final class MultiNodeRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             NUM_VALIDATORS, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
@@ -155,9 +155,8 @@ public final class MultiNodeRecoveryTest {
   public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest(transactionGenerator)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       for (int i = 0; i < 50; i++) {
         long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());

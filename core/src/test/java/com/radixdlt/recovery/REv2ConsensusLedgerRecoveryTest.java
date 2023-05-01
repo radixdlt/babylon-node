@@ -71,6 +71,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -85,7 +86,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -111,7 +111,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             2, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
@@ -123,9 +123,8 @@ public final class REv2ConsensusLedgerRecoveryTest {
   public void recovery_should_work_when_consensus_is_behind_ledger() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest(transactionGenerator)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Arrange: Situation where behindNode has consensus behind ledger
       test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());

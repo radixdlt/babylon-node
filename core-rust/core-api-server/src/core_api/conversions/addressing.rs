@@ -196,9 +196,7 @@ fn to_mapped_substate_id(
         TypedSubstateKey::RoyaltyModule(RoyaltyOffset::RoyaltyAccumulator) => {
             (SubstateType::TypeInfo, SubstateKeyType::TypeInfo)
         }
-        TypedSubstateKey::MetadataModule(_String) => {
-            (SubstateType::TypeInfo, SubstateKeyType::TypeInfo)
-        }
+        TypedSubstateKey::MetadataModule(_) => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
         TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
             PackageOffset::Info,
         )) => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),

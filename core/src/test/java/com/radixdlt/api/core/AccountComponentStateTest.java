@@ -106,7 +106,8 @@ public final class AccountComponentStateTest extends DeterministicCoreApiTestBas
               UInt32.fromNonNegativeInt(10000000),
               true);
 
-      final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition, test.faucetAddress());
+      final var manifest =
+          REv2TestTransactions.constructNewAccountManifest(networkDefinition, test.faucetAddress());
       final var intent =
           TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
       final var intentHash = HashUtils.blake2b256(intent);

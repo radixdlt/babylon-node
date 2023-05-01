@@ -65,7 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.genesis.GenesisData2;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
@@ -90,7 +90,7 @@ import java.util.Optional;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class RustStateComputer {
   private final RustMempool mempool;
-  private Optional<ComponentAddress> cachedFaucetAddress;
+  private Optional<ComponentAddress> cachedFaucetAddress = Optional.empty();
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
@@ -142,11 +142,13 @@ public class RustStateComputer {
         maxCount, maxPayloadSizeBytes, transactionToExclude);
   }
 
-  public LedgerProof executeGenesis(GenesisData2 genesisData) {
-    return executeGenesisFunc.call(genesisData);
+  public LedgerProof executeGenesis(GenesisData genesisData) {
+    final var result = executeGenesisFunc.call(genesisData);
+    this.getFaucetAddress(); // TODO: fix this hack, just to initialize the cache...
+    return result;
   }
 
-  private final Natives.Call1<GenesisData2, LedgerProof> executeGenesisFunc;
+  private final Natives.Call1<GenesisData, LedgerProof> executeGenesisFunc;
 
   private static native byte[] executeGenesis(StateManager stateManager, byte[] payload);
 

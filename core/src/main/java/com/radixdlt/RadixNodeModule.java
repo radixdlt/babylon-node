@@ -76,7 +76,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.genesis.GenesisData2;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -122,10 +122,10 @@ public final class RadixNodeModule extends AbstractModule {
 
   private final RuntimeProperties properties;
   private final Network network;
-  private final Optional<GenesisData2> genesisData;
+  private final Optional<GenesisData> genesisData;
 
   public RadixNodeModule(
-      RuntimeProperties properties, Network network, Optional<GenesisData2> genesisData) {
+      RuntimeProperties properties, Network network, Optional<GenesisData> genesisData) {
     this.properties = properties;
     this.network = network;
     this.genesisData = genesisData;

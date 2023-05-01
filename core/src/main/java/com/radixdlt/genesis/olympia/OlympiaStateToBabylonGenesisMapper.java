@@ -131,6 +131,8 @@ public final class OlympiaStateToBabylonGenesisMapper {
                 })
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 
-    return new GenesisData(validatorsAndStakeOwners, xrdAllocations);
+    // TODO: fixme
+    return GenesisData.testing_default_empty();
+    //    return new GenesisData(validatorsAndStakeOwners, xrdAllocations);
   }
 }

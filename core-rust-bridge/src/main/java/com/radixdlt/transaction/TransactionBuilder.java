@@ -66,84 +66,21 @@ package com.radixdlt.transaction;
 
 import static com.radixdlt.lang.Tuple.tuple;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
-import com.radixdlt.genesis.GenesisData2;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Map;
 
 public final class TransactionBuilder {
   static {
     // This is idempotent with the other calls
     System.loadLibrary("corerust");
-  }
-
-  // TODO: rename/move elsewhere
-  public static GenesisData2 createGenesis(
-      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
-          validatorSetAndStakeOwners,
-      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
-      UInt64 initialEpoch,
-      UInt64 roundsPerEpoch,
-      UInt64 numUnstakeEpochs) {
-    return new GenesisData2(
-        ImmutableList.of(), // TODO: fixme
-        initialEpoch,
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        numUnstakeEpochs);
-  }
-
-  // TODO: rename/move elsewhere
-  public static GenesisData2 createGenesis(
-      ECDSASecp256k1PublicKey validator,
-      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
-      Decimal initialStake,
-      UInt64 roundsPerEpoch,
-      UInt64 numUnstakeEpochs) {
-    return new GenesisData2(
-        ImmutableList.of(), // TODO: fixme
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        numUnstakeEpochs);
-  }
-
-  // TODO: move elsewhere and rename
-  public static GenesisData2 createGenesisWithNumValidators(
-      long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
-    return new GenesisData2(
-        ImmutableList.of(), // TODO: fixme
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        UInt64.fromNonNegativeLong(10));
-  }
-
-  // TODO: move elsewhere and rename
-  public static GenesisData2 createGenesisWithNumValidatorsAndXrdAlloc(
-      long numValidators,
-      Map<ECDSASecp256k1PublicKey, Decimal> xrdAlloc,
-      Decimal initialStake,
-      UInt64 roundsPerEpoch) {
-    return new GenesisData2(
-        ImmutableList.of(), // TODO: fixme
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        UInt64.fromNonNegativeLong(10));
   }
 
   public static byte[] compileManifest(

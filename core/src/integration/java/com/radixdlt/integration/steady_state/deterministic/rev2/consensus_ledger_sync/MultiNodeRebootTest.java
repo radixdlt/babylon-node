@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -86,7 +87,6 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.*;
@@ -215,7 +215,7 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    TransactionBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createGenesisWithNumValidators(
                         numValidators, Decimal.of(1), this.roundsPerEpoch),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
@@ -234,9 +234,8 @@ public final class MultiNodeRebootTest {
       Module overrideModule) {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest(transactionGenerator, safetyRecoveryConfig, overrideModule)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       for (int testRound = 0; testRound < numTestRounds; testRound++) {
         var numNodesLive = test.numNodesLive();

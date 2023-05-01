@@ -64,22 +64,27 @@
 
 package com.radixdlt.genesis;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import java.util.Map;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-/**
- * Intermediate genesis data used as a base (together with a GenesisConfig) for creating a genesis
- * transaction.
- */
-public record GenesisData(
-    Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
-        validatorSetAndStakeOwners,
-    Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations) {
+public record GenesisValidator(
+    ECDSASecp256k1PublicKey key,
+    boolean acceptDelegatedStake,
+    boolean isRegistered,
+    ImmutableList<Tuple.Tuple2<String, String>> metadata,
+    ComponentAddress owner) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GenesisValidator.class,
+        codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
+  }
 
-  public static GenesisData empty() {
-    return new GenesisData(Map.of(), Map.of());
+  public static GenesisValidator defaultFromPubKey(ECDSASecp256k1PublicKey key) {
+    return new GenesisValidator(
+        key, true, true, ImmutableList.of(), ComponentAddress.virtualAccountFromPublicKey(key));
   }
 }

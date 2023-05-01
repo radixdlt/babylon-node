@@ -75,6 +75,7 @@ import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -86,7 +87,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
@@ -136,7 +136,7 @@ public abstract class DeterministicCoreApiTestBase {
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            TransactionBuilder.createGenesisWithNumValidators(
+                            GenesisBuilder.createGenesisWithNumValidators(
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             StateComputerConfig.REV2ProposerConfig.mempool(

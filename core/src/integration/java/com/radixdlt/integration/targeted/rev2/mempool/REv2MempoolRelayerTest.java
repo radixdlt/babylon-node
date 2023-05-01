@@ -70,6 +70,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
@@ -85,7 +86,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
@@ -105,7 +105,7 @@ public final class REv2MempoolRelayerTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -117,9 +117,8 @@ public final class REv2MempoolRelayerTest {
   public void relayer_fills_mempool_of_all_nodes() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest()) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Arrange: Fill node1 mempool
       var mempoolDispatcher =

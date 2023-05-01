@@ -75,6 +75,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
@@ -90,7 +91,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Random;
 import org.junit.Rule;
@@ -125,7 +125,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    TransactionBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createGenesisWithNumValidators(
                         NUM_VALIDATORS, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
@@ -133,9 +133,8 @@ public final class RecoveryAfterTimeoutQuorumTest {
                 SyncRelayConfig.of(5000, 10, 5000L)));
 
     try (var test = builder.functionalNodeModule(functionalNodeModule)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Run until the round that's expected to form a timeout quorum
       test.runUntilState(

@@ -67,10 +67,10 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
@@ -82,12 +82,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
-
-import java.security.interfaces.ECPrivateKey;
 import java.util.Map;
 import org.junit.Test;
 
@@ -112,10 +108,10 @@ public final class REv2GenesisTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidatorsAndXrdAlloc(
+                        GenesisBuilder.createGenesisWithNumValidatorsAndXrdBalances(
                             1,
-                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             INITIAL_STAKE,
+                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -130,33 +126,29 @@ public final class REv2GenesisTest {
 
       // Assert
       var stateReader = test.getInstance(0, REv2StateReader.class);
-
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+
       var systemBootstrapGenesis = transactionStore.getTransactionAtStateVersion(1).unwrap();
-      System.out.println("System bootstrap genesis = " + systemBootstrapGenesis);
       // TODO: check what genesis data is used (num of chunks) and use a correct state version
       var genesisWrapUp = transactionStore.getTransactionAtStateVersion(2).unwrap();
-      System.out.println("Txn at idx 2 = " + genesisWrapUp);
 
-      // TODO: fix/remove
+      // TODO: uncomment once const FAUCET address is back
       //      assertThat(genesisWrapUp.newComponentAddresses())
       //          .contains(ScryptoConstants.FAUCET_COMPONENT);
 
       final var xrdLeftInFaucet =
           REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
 
-      // TODO: Fix / remove
+      // TODO: uncomment once const FAUCET address is back
       //      var systemAmount =
       //          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT);
       //      assertThat(systemAmount).isEqualTo(xrdLeftInFaucet);
 
       // Check genesis XRD alloc
-      System.out.println("About to get component xrd amount");
       final var allocatedAmount =
           stateReader.getComponentXrdAmount(
               Address.virtualAccountAddress(XRD_ALLOC_ACCOUNT_PUB_KEY));
-      System.out.println("Component xrd amount is " + allocatedAmount);
-//      assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
+      assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
       var emptyAccountAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);

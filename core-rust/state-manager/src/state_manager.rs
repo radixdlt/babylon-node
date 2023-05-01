@@ -90,15 +90,16 @@ use crate::staging::epoch_handling::AccuTreeEpochHandler;
 
 use radix_engine::blueprints::epoch_manager::Validator;
 
+use crate::mempool_manager::MempoolManager;
+use radix_engine::system::bootstrap::{
+    create_genesis_data_ingestion_transaction, create_genesis_wrap_up_transaction,
+    create_system_bootstrap_transaction, GenesisDataChunk,
+};
+use radix_engine_common::crypto::Hash;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
-use crate::mempool_manager::MempoolManager;
-use radix_engine::system::bootstrap::{create_genesis_data_ingestion_transaction, create_genesis_wrap_up_transaction, create_system_bootstrap_transaction, GenesisDataChunk, GenesisStakeAllocation};
-use radix_engine_common::crypto::Hash;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
-use ::transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use radix_engine_common::dec;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -174,7 +175,7 @@ where
 {
     pub fn prepare_genesis(
         &mut self,
-        genesis_transaction: LedgerTransaction
+        genesis_transaction: LedgerTransaction,
     ) -> (LedgerHashes, Option<NextEpoch>) {
         let read_store = self.store.read();
         let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
@@ -185,10 +186,10 @@ where
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
-        let executable =
-            self.ledger_transaction_validator
-                .validate_and_create_executable(&genesis_transaction)
-                .expect("Invalid genesis transaction");
+        let executable = self
+            .ledger_transaction_validator
+            .validate_and_create_executable(&genesis_transaction)
+            .expect("Invalid genesis transaction");
 
         let hash = genesis_transaction.get_hash();
 
@@ -323,7 +324,9 @@ where
                 .wrap(executable, ConfigType::Regular)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
         );
+
         let round_update_commit = processed_round_update.expect_commit(&logged_description);
+        println!("Preparing txn {} (round update) against parent identifiers {:?} resulted in epoch change to {:?} with {:?} validators", ledger_round_update.get_hash(), state_tracker.latest_transaction_identifiers(), round_update_commit.next_epoch().map(|e| e.epoch), round_update_commit.next_epoch().map(|e| e.validator_set.len()));
         round_update_commit.check_success(logged_description);
         state_tracker.update(&round_update_commit.hash_structures_diff);
         let mut next_epoch = round_update_commit.next_epoch();
@@ -395,6 +398,7 @@ where
                 .unwrap();
 
             let logged_description = format!("newly proposed {}", hash);
+            println!("Preparing txn {} against parent identifiers {:?}", hash, state_tracker.latest_transaction_identifiers());
             let processed = self.execution_cache.execute_transaction(
                 read_store.deref(),
                 &epoch_identifiers,
@@ -543,8 +547,7 @@ where
                 .create_payload_and_hash()
                 .unwrap();
 
-        let (ledger_hashes, next_epoch) =
-            self.prepare_genesis(system_bootstrap_ledger_transaction);
+        let (ledger_hashes, next_epoch) = self.prepare_genesis(system_bootstrap_ledger_transaction);
 
         curr_state_version += 1;
         curr_accumulator_hash = curr_accumulator_hash.accumulate(&system_bootstrap_txn_hash);
@@ -605,7 +608,8 @@ where
                 self.prepare_genesis(genesis_data_ingestion_ledger_transaction);
 
             curr_state_version += 1;
-            curr_accumulator_hash = curr_accumulator_hash.accumulate(&genesis_data_ingestion_txn_hash);
+            curr_accumulator_hash =
+                curr_accumulator_hash.accumulate(&genesis_data_ingestion_txn_hash);
 
             let genesis_data_ingestion_commit_request = CommitRequest {
                 transaction_payloads: vec![genesis_data_ingestion_ledger_payload],
@@ -642,7 +646,6 @@ where
             }
         }
 
-
         // Wrap up
 
         let genesis_wrap_up_transaction =
@@ -656,8 +659,7 @@ where
                 .create_payload_and_hash()
                 .unwrap();
 
-        let (ledger_hashes, next_epoch) =
-            self.prepare_genesis(genesis_wrap_up_ledger_transaction);
+        let (ledger_hashes, next_epoch) = self.prepare_genesis(genesis_wrap_up_ledger_transaction);
 
         curr_state_version += 1;
         curr_accumulator_hash = curr_accumulator_hash.accumulate(&genesis_wrap_up_txn_hash);
@@ -710,6 +712,7 @@ where
 
         let commit_ledger_header = &commit_request.proof.ledger_header;
         let commit_accumulator_state = &commit_ledger_header.accumulator_state;
+        println!("Committing {} txns on top of accum {:?} proof next epoch is {:?}", commit_transactions_len, commit_accumulator_state, commit_request.proof.ledger_header.next_epoch);
         let commit_state_version = commit_accumulator_state.state_version;
         let commit_request_start_state_version =
             commit_state_version - (commit_transactions_len as u64);
@@ -778,6 +781,8 @@ where
 
             let transaction_hash = transaction.get_hash();
             let logged_description = format!("committing {}", transaction_hash);
+            println!("Committing txn {} on top of accum {:?}", transaction_hash, state_tracker.latest_transaction_identifiers());
+
             let processed = self.execution_cache.execute_transaction(
                 write_store.deref(),
                 &epoch_identifiers,
@@ -789,6 +794,7 @@ where
                     .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
             );
             let commit = processed.expect_commit(logged_description);
+            println!("Commit txn {} resulted in an epoch change to {:?} with {:?} validators", transaction_hash, commit.next_epoch().map(|e| e.epoch), commit.next_epoch().map(|e| e.validator_set.len()));
 
             let hash_structures_diff = &commit.hash_structures_diff;
             state_tracker.update(hash_structures_diff);
@@ -810,7 +816,10 @@ where
             }
 
             let transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
+
+            // TODO(db-fix): apply engine_receipt.commit.database_changes
             substate_store_update.apply(local_receipt.on_ledger.substate_changes.clone());
+
             state_tree_update.add(transaction_identifiers.state_version, state_hash_tree_diff);
             transaction_tree_slice_merger.append(transaction_tree_slice);
             receipt_tree_slice_merger.append(receipt_tree_slice);
@@ -888,6 +897,11 @@ where
                     if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
                         if transaction_next_epoch != *proof_next_epoch {
                             error!(
+                                "computed next epoch differs from the one in proof ({:?} != {:?})",
+                                transaction_next_epoch, proof_next_epoch
+                            );
+                            // TODO: remove
+                            println!(
                                 "computed next epoch differs from the one in proof ({:?} != {:?})",
                                 transaction_next_epoch, proof_next_epoch
                             );

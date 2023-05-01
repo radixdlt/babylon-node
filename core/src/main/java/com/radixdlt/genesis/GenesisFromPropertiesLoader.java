@@ -66,20 +66,19 @@ package com.radixdlt.genesis;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -129,47 +128,48 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network 
     }
   }
 
+  // TODO: this should just load a list of genesis chunks straight from a file
+  // move staking allocation etc to GenerateUniverses (also rename that file :) )
   private GenesisData createGenesisDataFromHex(String input) {
-    final var initialVset =
+    final var validators =
         Streams.stream(
                 Splitter.fixedLength(ECDSASecp256k1PublicKey.COMPRESSED_BYTES * 2).split(input))
             .map(
                 pubKeyBytes -> {
-                  log.info("Initial vset validator: {}", pubKeyBytes);
+                  log.info("Initial validator: {}", pubKeyBytes);
                   try {
                     return ECDSASecp256k1PublicKey.fromHex(pubKeyBytes);
                   } catch (PublicKeyException e) {
                     throw new RuntimeException(e);
                   }
                 })
-            .toList();
-    var validatorSet =
-        new HashMap<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>();
+            .collect(ImmutableList.toImmutableList());
+
     final var usePowerfulStakingAccount =
         GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
-    final var stakingAccount =
-        usePowerfulStakingAccount
-            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
-            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var stakeAmount =
         usePowerfulStakingAccount
             ? GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
             : GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR;
 
-    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(stakeAmount, stakingAccount)));
+    final var stakingAccount =
+        usePowerfulStakingAccount
+            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
+            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
 
-    final Map<ECDSASecp256k1PublicKey, Decimal> xrdAllocations =
+    final Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances =
         usePowerfulStakingAccount
             ? Map.of(
                 GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
-    log.info("Genesis XRD allocations: {}", xrdAllocations.isEmpty() ? "(empty)" : "");
-    xrdAllocations.forEach((k, v) -> log.info("{}: {}", k, v));
+    log.info("Genesis XRD balances: {}", xrdBalances.isEmpty() ? "(empty)" : "");
+    xrdBalances.forEach((k, v) -> log.info("{}: {}", k, v));
 
-    return new GenesisData(validatorSet, xrdAllocations);
+    return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
+        validators, stakeAmount, stakingAccount, xrdBalances, UInt64.fromNonNegativeLong(100));
   }
 
   private String loadRawGenesisFromFile(String genesisFile) {

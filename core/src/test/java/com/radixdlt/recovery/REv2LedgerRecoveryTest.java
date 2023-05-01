@@ -69,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -83,7 +84,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.*;
@@ -129,7 +129,7 @@ public final class REv2LedgerRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
@@ -140,9 +140,8 @@ public final class REv2LedgerRecoveryTest {
   public void on_reboot_should_load_same_last_header() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest(transactionGenerator)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Arrange
       test.runForCount(processForCount);
@@ -163,8 +162,8 @@ public final class REv2LedgerRecoveryTest {
   public void on_reboot_should_only_emit_pacemaker_events() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest(transactionGenerator)) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Arrange
       test.runForCount(processForCount);

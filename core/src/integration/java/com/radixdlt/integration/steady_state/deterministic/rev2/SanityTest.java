@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
@@ -86,7 +87,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
@@ -135,7 +135,7 @@ public final class SanityTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
@@ -147,9 +147,8 @@ public final class SanityTest {
   public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
     final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest()) {
-      transactionGenerator.setFaucetAddress(test.faucetAddress());
-
       test.startAllNodes();
+      transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Run
       for (int i = 0; i < 100; i++) {

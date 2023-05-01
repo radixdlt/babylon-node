@@ -66,6 +66,7 @@ package com.radixdlt.integration.targeted.rev2.storage;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
@@ -83,7 +84,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2LargeTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -116,7 +116,7 @@ public final class TransactionDBSizeStressTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 1)))));
@@ -127,9 +127,9 @@ public final class TransactionDBSizeStressTest {
     final var transactionGenerator =
         new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET);
     try (var test = buildTest(transactionGenerator)) {
+      test.startAllNodes();
       transactionGenerator.setFaucetAddress(test.faucetAddress());
 
-      test.startAllNodes();
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(20));
     }
   }

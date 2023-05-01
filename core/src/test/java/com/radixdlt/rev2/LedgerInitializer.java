@@ -65,18 +65,21 @@
 package com.radixdlt.rev2;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.genesis.GenesisData2;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.statecomputer.RustStateComputer;
 
-public class LedgerInitializer {
-
+public final class LedgerInitializer {
   private final RustStateComputer stateComputer;
 
   public LedgerInitializer(RustStateComputer stateComputer) {
     this.stateComputer = stateComputer;
   }
 
-  public HashCode prepareAndCommit(GenesisData2 genesis) {
-    return this.stateComputer.executeGenesis(genesis).ledgerHeader().accumulatorState().accumulatorHash();
+  public HashCode prepareAndCommit(GenesisData genesis) {
+    return this.stateComputer
+        .executeGenesis(genesis)
+        .ledgerHeader()
+        .accumulatorState()
+        .accumulatorHash();
   }
 }

@@ -64,19 +64,15 @@
 
 package com.radixdlt.genesis;
 
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 
-/** A configuration used for creating a genesis transaction (together with GenesisData). */
-public record GenesisConfig(UInt64 initialEpoch, UInt64 roundsPerEpoch, UInt64 numUnstakeEpochs) {
-
-  public static GenesisConfig babylonDefault() {
-    return GenesisConfig.of(1, 1800, 1);
-  }
-
-  public static GenesisConfig of(long initialEpoch, long roundsPerEpoch, long numUnstakeEpochs) {
-    return new GenesisConfig(
-        UInt64.fromNonNegativeLong(initialEpoch),
-        UInt64.fromNonNegativeLong(roundsPerEpoch),
-        UInt64.fromNonNegativeLong(numUnstakeEpochs));
+public record GenesisStakeAllocation(UInt32 accountIndex, Decimal xrdAmount) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GenesisStakeAllocation.class,
+        codecs -> StructCodec.fromRecordComponents(GenesisStakeAllocation.class, codecs));
   }
 }

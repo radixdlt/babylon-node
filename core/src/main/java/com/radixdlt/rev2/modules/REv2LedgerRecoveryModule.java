@@ -68,10 +68,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisData2;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
@@ -89,9 +88,9 @@ import org.apache.logging.log4j.Logger;
 public final class REv2LedgerRecoveryModule extends AbstractModule {
 
   private static final Logger log = LogManager.getLogger();
-  private final Optional<GenesisData2> genesis;
+  private final Optional<GenesisData> genesis;
 
-  public REv2LedgerRecoveryModule(Optional<GenesisData2> genesis) {
+  public REv2LedgerRecoveryModule(Optional<GenesisData> genesis) {
     this.genesis = genesis;
   }
 

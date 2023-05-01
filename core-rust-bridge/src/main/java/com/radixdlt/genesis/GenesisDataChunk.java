@@ -62,84 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2.consensus_mempool_ledger_sync;
+package com.radixdlt.genesis;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt64;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.radixdlt.rev2.ResourceAddress;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
+import com.radixdlt.sbor.codec.Field;
 
-public class SanityTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private SimulationTest createTest() {
-    return SimulationTest.builder()
-        .numPhysicalNodes(4)
-        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                NodeStorageConfig.tempFolder(folder),
-                false,
-                SafetyRecoveryConfig.MOCKED,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
-                            4, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
-                    SyncRelayConfig.of(5000, 10, 3000L))))
-        .addTestModules(
-            ConsensusMonitors.safety(),
-            ConsensusMonitors.proposerTimestampChecker(),
-            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-            ConsensusMonitors.noTimeouts(),
-            ConsensusMonitors.directParents(),
-            LedgerMonitors.consensusToLedger(),
-            LedgerMonitors.ordered())
-        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
-        .build();
+public sealed interface GenesisDataChunk {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.registerForSealedClassAndSubclasses(
+        GenesisDataChunk.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.fromFields(
+                    Validators.class,
+                    Validators::new,
+                    Field.of(Validators::value, codecs.of(new TypeToken<>() {}))),
+                EnumEntry.fromFields(
+                    Stakes.class,
+                    Stakes::new,
+                    Field.of(Stakes::accounts, codecs.of(new TypeToken<>() {})),
+                    Field.of(Stakes::allocations, codecs.of(new TypeToken<>() {}))),
+                EnumEntry.fromFields(
+                    Resources.class,
+                    Resources::new,
+                    Field.of(Resources::value, codecs.of(new TypeToken<>() {}))),
+                EnumEntry.fromFields(
+                    ResourceBalances.class,
+                    ResourceBalances::new,
+                    Field.of(ResourceBalances::accounts, codecs.of(new TypeToken<>() {})),
+                    Field.of(ResourceBalances::allocations, codecs.of(new TypeToken<>() {}))),
+                EnumEntry.fromFields(
+                    XrdBalances.class,
+                    XrdBalances::new,
+                    Field.of(XrdBalances::value, codecs.of(new TypeToken<>() {})))));
   }
 
-  @Test
-  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
-    // Arrange
-    var simulationTest = createTest();
+  record Validators(ImmutableList<GenesisValidator> value) implements GenesisDataChunk {}
 
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
+  record Stakes(
+      ImmutableList<ComponentAddress> accounts,
+      ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, ImmutableList<GenesisStakeAllocation>>>
+          allocations)
+      implements GenesisDataChunk {}
 
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
-    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
-  }
+  record Resources(ImmutableList<GenesisResource> value) implements GenesisDataChunk {}
+
+  record ResourceBalances(
+      ImmutableList<ComponentAddress> accounts,
+      ImmutableList<Tuple.Tuple2<ResourceAddress, ImmutableList<GenesisResourceAllocation>>>
+          allocations)
+      implements GenesisDataChunk {}
+
+  record XrdBalances(ImmutableList<Tuple.Tuple2<ComponentAddress, Decimal>> value)
+      implements GenesisDataChunk {}
 }

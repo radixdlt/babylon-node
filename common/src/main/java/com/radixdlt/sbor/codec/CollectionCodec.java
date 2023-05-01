@@ -223,7 +223,8 @@ interface CollectionCodec {
   }
 
   static <T> Codec<ImmutableList<T>> forImmutableList(Codec<T> itemCodec) {
-    return new CollectionCodecViaArrayList<>(itemCodec, ImmutableList::size, list -> list, ImmutableList::copyOf);
+    return new CollectionCodecViaArrayList<>(
+        itemCodec, ImmutableList::size, list -> list, ImmutableList::copyOf);
   }
 
   static <T> Codec<ArrayList<T>> forArrayList(Codec<T> itemCodec) {
@@ -299,7 +300,8 @@ interface CollectionCodec {
             return forImmutableList(codecs.of(itemType));
           } catch (Exception ex) {
             throw new SborCodecException(
-                String.format("Exception creating ImmutableList type codec for %s", collectionType), ex);
+                String.format("Exception creating ImmutableList type codec for %s", collectionType),
+                ex);
           }
         });
   }

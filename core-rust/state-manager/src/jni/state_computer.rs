@@ -65,9 +65,8 @@
 use crate::jni::mempool::JavaRawTransaction;
 
 use crate::{
-    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader,
-    LedgerProof, PreviousVertex, ReceiptTreeHash, StateHash, TimestampedValidatorSignature,
-    TransactionTreeHash,
+    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
+    ReceiptTreeHash, StateHash, TimestampedValidatorSignature, TransactionTreeHash,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -79,7 +78,7 @@ use std::ops::Deref;
 use crate::jni::common_types::JavaHashCode;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::query::StateManagerSubstateQueries;
+use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::store::traits::QueryableTransactionStore;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch};
@@ -184,11 +183,14 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
 
             // a quick fix for handling virtual accounts
             // TODO: fix upstream
-            if let Some(_) = read_store.get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
-                &node_id,
-                SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into()
-            ) {
+            if read_store
+                .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                    node_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .is_some()
+            {
                 let mut accounter = ResourceAccounter::new(read_store.deref());
                 accounter.traverse(*node_id);
                 let balances = accounter.close().balances;
@@ -211,12 +213,17 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_faucetAddre
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |()| -> ComponentAddress {
-        // TODO: this won't work with the current genesis
-        // update radix engine genesis so that faucet is created in the
-        // system bootstrap txn (rather than the wrap up txn)
+        /* TODO: fixme
+        This is a bit of a hack. We call this on the Java side right after
+        executeGenesis so top_state_version should correspond to the
+        genesis wrap up transaction (which creates the faucet).
+        Fix #1: use a const faucet address or
+        Fix #2: create the faucet component in the system bootstrap txn (version = 1)
+         */
         let database = JNIStateManager::get_database(&env, j_state_manager);
         let read_store = database.read();
-        let system_bootstrap_receipt = read_store.get_committed_transaction_receipt(1).unwrap();
+        let top_state_version = read_store.get_top_transaction_identifiers().state_version;
+        let system_bootstrap_receipt = read_store.get_committed_transaction_receipt(top_state_version).unwrap();
         *system_bootstrap_receipt
             .local_execution
             .state_update_summary

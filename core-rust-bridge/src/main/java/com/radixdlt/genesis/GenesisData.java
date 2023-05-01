@@ -62,84 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2.consensus_mempool_ledger_sync;
+package com.radixdlt.genesis;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.sync.SyncRelayConfig;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public class SanityTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+public record GenesisData(
+    ImmutableList<GenesisDataChunk> chunks,
+    UInt64 initialEpoch,
+    UInt32 maxValidators,
+    UInt64 roundsPerEpoch,
+    UInt64 numUnstakeEpochs) {
 
-  private SimulationTest createTest() {
-    return SimulationTest.builder()
-        .numPhysicalNodes(4)
-        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                NodeStorageConfig.tempFolder(folder),
-                false,
-                SafetyRecoveryConfig.MOCKED,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
-                            4, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
-                    SyncRelayConfig.of(5000, 10, 3000L))))
-        .addTestModules(
-            ConsensusMonitors.safety(),
-            ConsensusMonitors.proposerTimestampChecker(),
-            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-            ConsensusMonitors.noTimeouts(),
-            ConsensusMonitors.directParents(),
-            LedgerMonitors.consensusToLedger(),
-            LedgerMonitors.ordered())
-        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
-        .build();
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
   }
 
-  @Test
-  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
-    // Arrange
-    var simulationTest = createTest();
-
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
-    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
+  public static GenesisData testing_default_empty() {
+    return new GenesisData(
+        ImmutableList.of(),
+        UInt64.fromNonNegativeLong(1L),
+        UInt32.fromNonNegativeInt(100),
+        UInt64.fromNonNegativeLong(100),
+        UInt64.fromNonNegativeLong(10));
   }
 }

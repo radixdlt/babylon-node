@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 use std::iter::Peekable;
-use radix_engine_common::types::{ComponentAddress, ResourceAddress};
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 /// Merges two ordered (by K) iterators of (K, V) pairs.
 /// Preserves the order by interleaving items from both iterators.
@@ -53,19 +51,6 @@ where
             (None, None) => None,
         }
     }
-}
-
-use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level};
-use radix_engine_interface::constants::RADIX_TOKEN;
-
-// TODO: remove
-#[test]
-fn remove_me_serialize_test() {
-    let encoded = scrypto_encode(&RADIX_TOKEN);
-
-    println!("Encoded: {:?}", encoded);
-
-    assert_eq!(true, false);
 }
 
 #[test]

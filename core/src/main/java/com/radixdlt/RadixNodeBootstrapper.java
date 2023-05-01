@@ -67,7 +67,6 @@ package com.radixdlt;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.genesis.GenesisConfig;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.PreGenesisNodeModule;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
@@ -185,9 +184,9 @@ public final class RadixNodeBootstrapper {
 
     // TODO: fixme
     final Optional<RawLedgerTransaction> configuredGenesisTransaction = Optional.empty();
-//        genesisFromPropertiesLoader
-//            .loadGenesisDataFromProperties()
-//            .map(gd -> gd.toGenesisTransaction(GenesisConfig.babylonDefault()));
+    //        genesisFromPropertiesLoader
+    //            .loadGenesisDataFromProperties()
+    //            .map(gd -> gd.toGenesisTransaction(GenesisConfig.babylonDefault()));
 
     /* We have three sources of a genesis transaction at this point:
      *  - a fixed genesis transaction associated with a given network
@@ -371,16 +370,17 @@ public final class RadixNodeBootstrapper {
                   ex);
               radixNodeFuture.completeExceptionally(ex);
             } else {
-              log.info(
-                  """
-             Genesis data has been successfully received from the Olympia node \
-             ({} accounts, {} validators). Initializing the Babylon node...""",
-                  genesisData.accountXrdAllocations().size(),
-                  genesisData.validatorSetAndStakeOwners().size());
-
+              /*
+               log.info(
+                   """
+              Genesis data has been successfully received from the Olympia node \
+              ({} accounts, {} validators). Initializing the Babylon node...""",
+                   genesisData.accountXrdAllocations().size(),
+                   genesisData.validatorSetAndStakeOwners().size());
+                */
               // TODO: fixme
-//              final var genesisTxn =
-//                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
+              //              final var genesisTxn =
+              //                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
               radixNodeFuture.complete(
                   RadixNode.start(properties, network, Optional.empty() /* TODO: fixme */));
             }

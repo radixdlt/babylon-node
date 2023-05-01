@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
@@ -84,7 +85,6 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Random;
@@ -111,7 +111,7 @@ public final class SimpleFuzzerTransactionsTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
@@ -128,10 +128,10 @@ public final class SimpleFuzzerTransactionsTest {
         new REv2SimpleFuzzerTransactionGenerator(
             NetworkDefinition.LOCAL_SIMULATOR, new Random(12345));
     try (var test = createTest(transactionGenerator)) {
+      test.startAllNodes();
       transactionGenerator.setFaucetAddress(test.faucetAddress());
 
       // Run
-      test.startAllNodes();
       test.runForCount(10000);
 
       // Post-run assertions

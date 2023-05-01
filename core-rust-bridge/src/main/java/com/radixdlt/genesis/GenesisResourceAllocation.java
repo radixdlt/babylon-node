@@ -64,41 +64,15 @@
 
 package com.radixdlt.genesis;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.rev2.TransactionHeader;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
 
-// TODO(engine-merge): temporary placeholder
-public record GenesisData2(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs) {
-
-  public static void registerCodecs(CodecMap codecMap) {
+public record GenesisResourceAllocation(UInt32 accountIndex, Decimal amount) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-            GenesisDataChunk.class,
-            codecs -> StructCodec.fromRecordComponents(GenesisDataChunk.class, codecs));
-
-    codecMap.register(
-            GenesisData2.class,
-            codecs -> StructCodec.fromRecordComponents(GenesisData2.class, codecs));
-  }
-
-  public record GenesisDataChunk() {}
-
-  // TODO: rename to testing_default or something
-  public static GenesisData2 empty() {
-    return new GenesisData2(
-            ImmutableList.of(),
-            UInt64.fromNonNegativeLong(1L),
-            UInt32.fromNonNegativeInt(100),
-            UInt64.fromNonNegativeLong(100),
-            UInt64.fromNonNegativeLong(10)
-    );
+        GenesisResourceAllocation.class,
+        codecs -> StructCodec.fromRecordComponents(GenesisResourceAllocation.class, codecs));
   }
 }
