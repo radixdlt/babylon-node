@@ -106,4 +106,9 @@ public record ExecutedTransaction(
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "ExecutedTransaction{" + "stateVersion=" + stateVersion + '}';
+  }
 }
