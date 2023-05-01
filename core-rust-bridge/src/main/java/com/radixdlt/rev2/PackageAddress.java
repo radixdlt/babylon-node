@@ -82,7 +82,7 @@ public record PackageAddress(byte[] value) {
                 PackageAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
   public static PackageAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {

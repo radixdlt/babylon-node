@@ -65,7 +65,7 @@
 use crate::jni::mempool::JavaRawTransaction;
 
 use crate::{
-    AccumulatorHash, AccumulatorState, ActiveValidatorInfo, LedgerHashes, LedgerHeader,
+    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader,
     LedgerProof, PreviousVertex, ReceiptTreeHash, StateHash, TimestampedValidatorSignature,
     TransactionTreeHash,
 };
@@ -82,8 +82,10 @@ use crate::jni::utils::*;
 use crate::query::StateManagerSubstateQueries;
 use crate::store::traits::QueryableTransactionStore;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, NextEpoch};
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::system::bootstrap::GenesisDataChunk;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_stores::jmt_support::JmtMapper;
 
@@ -111,7 +113,7 @@ fn do_execute_genesis(
     let genesis_data = args;
 
     let result = state_manager.execute_genesis(
-        vec![], /* TODO */
+        genesis_data.chunks,
         genesis_data.initial_epoch,
         genesis_data.max_validators,
         genesis_data.rounds_per_epoch,
@@ -179,13 +181,24 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
             let node_id = component_address.as_node_id();
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let mut accounter = ResourceAccounter::new(read_store.deref());
-            accounter.traverse(*node_id);
-            let balances = accounter.close().balances;
-            balances
-                .get(&RADIX_TOKEN)
-                .cloned()
-                .unwrap_or_else(Decimal::zero)
+
+            // a quick fix for handling virtual accounts
+            // TODO: fix upstream
+            if let Some(_) = read_store.get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                &node_id,
+                SysModuleId::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into()
+            ) {
+                let mut accounter = ResourceAccounter::new(read_store.deref());
+                accounter.traverse(*node_id);
+                let balances = accounter.close().balances;
+                balances
+                    .get(&RADIX_TOKEN)
+                    .cloned()
+                    .unwrap_or_else(Decimal::zero)
+            } else {
+                Decimal::zero()
+            }
         },
     )
 }
@@ -259,11 +272,8 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
 pub fn export_extern_functions() {}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaGenesisDataChunk {}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaGenesisData {
-    pub chunks: Vec<JavaGenesisDataChunk>,
+    pub chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
@@ -385,34 +395,6 @@ impl From<PrepareResult> for JavaPrepareResult {
             rejected: prepare_results.rejected,
             next_epoch: prepare_results.next_epoch,
             ledger_hashes: prepare_results.ledger_hashes.into(),
-        }
-    }
-}
-
-#[derive(Debug, Decode, Encode, Categorize)]
-pub struct JavaPrepareGenesisRequest {
-    pub genesis: JavaRawTransaction,
-}
-
-impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
-    fn from(prepare_genesis_request: JavaPrepareGenesisRequest) -> Self {
-        PrepareGenesisRequest {
-            genesis: prepare_genesis_request.genesis.payload,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
-    pub ledger_hashes: JavaLedgerHashes,
-}
-
-impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
-    fn from(prepare_result: PrepareGenesisResult) -> Self {
-        JavaPrepareGenesisResult {
-            validator_set: prepare_result.validator_set,
-            ledger_hashes: prepare_result.ledger_hashes.into(),
         }
     }
 }

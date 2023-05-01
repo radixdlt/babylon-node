@@ -787,17 +787,6 @@ pub struct NextEpoch {
     pub epoch: u64,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
-pub struct PrepareGenesisRequest {
-    pub genesis: Vec<u8>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PrepareGenesisResult {
-    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
-    pub ledger_hashes: LedgerHashes,
-}
-
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
     pub key: EcdsaSecp256k1PublicKey,

@@ -176,6 +176,7 @@ public final class CodecMap {
     TupleCodec.registerAllWith(this);
 
     CollectionCodec.registerListToMapTo(this);
+    CollectionCodec.registerImmutableListToMapTo(this);
     CollectionCodec.registerArrayListToMapTo(this);
     CollectionCodec.registerSetToMapTo(this);
     CollectionCodec.registerHashSetToMapTo(this);

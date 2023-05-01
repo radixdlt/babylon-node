@@ -125,8 +125,14 @@ impl ExecutionCache {
             .accumulator_hash_to_key
             .get(&transaction_accumulator_hash)
         {
-            Some(new_key) => self.stage_tree.get_delta(new_key),
+            Some(new_key) => {
+                // TODO: remove
+                println!("Execute transaction cache hit ");
+                self.stage_tree.get_delta(new_key)
+            },
             None => {
+                // TODO: remove
+                println!("Execute transaction cache miss");
                 let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));

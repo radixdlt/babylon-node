@@ -83,7 +83,7 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
   // See entity.rs
   public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x03;
@@ -95,6 +95,9 @@ public record ComponentAddress(byte[] value) {
       ComponentAddress.create(
           new byte[] {
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
             0,
             0,
             0,
