@@ -63,9 +63,11 @@
  */
 
 use crate::staging::StateHashTreeDiff;
+use crate::store::StateManagerDatabase;
 use crate::transaction::LedgerTransaction;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
+use enum_dispatch::enum_dispatch;
 pub use proofs::*;
 use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
@@ -125,6 +127,7 @@ impl DatabaseConfig {
     }
 }
 
+#[enum_dispatch]
 pub trait ConfigurableDatabase {
     fn read_config_state(&self) -> DatabaseConfigState;
 
@@ -142,10 +145,14 @@ pub type CommittedTransactionBundle = (
 );
 
 pub mod vertex {
+    use super::*;
+
+    #[enum_dispatch]
     pub trait RecoverableVertexStore {
         fn get_vertex_store(&self) -> Option<Vec<u8>>;
     }
 
+    #[enum_dispatch]
     pub trait WriteableVertexStore {
         fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
     }
@@ -158,6 +165,8 @@ pub mod substate {
 }
 
 pub mod transactions {
+    use super::*;
+
     use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
     use crate::{
@@ -165,6 +174,7 @@ pub mod transactions {
         LocalTransactionReceipt,
     };
 
+    #[enum_dispatch]
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
             &self,
@@ -195,6 +205,7 @@ pub mod transactions {
         ) -> Option<LocalTransactionReceipt>;
     }
 
+    #[enum_dispatch]
     pub trait TransactionIndex<T>: QueryableTransactionStore {
         fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<u64>;
     }
@@ -203,6 +214,7 @@ pub mod transactions {
 pub mod proofs {
     use super::*;
 
+    #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_txns_and_proof(
@@ -308,14 +320,17 @@ pub mod commit {
         }
     }
 
+    #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&mut self, commit_bundle: CommitBundle);
     }
 }
 
 pub mod extensions {
+    use super::*;
     use radix_engine::types::Address;
 
+    #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
         fn account_change_index_last_processed_state_version(&self) -> u64;
 
