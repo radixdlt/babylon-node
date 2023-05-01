@@ -151,7 +151,6 @@ public record Metrics(
     Ledger ledger,
     LedgerSync sync,
     Mempool mempool,
-    V1RadixEngine v1RadixEngine,
     Messages messages,
     Networking networking,
     Crypto crypto,
@@ -211,22 +210,7 @@ public record Metrics(
         Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
   }
 
-  public record BerkeleyDb(V1Ledger v1Ledger, AddressBook addressBook, SafetyState safetyState) {
-
-    public record V1Ledger(
-        Counter commits,
-        Timer transactionCreate,
-        Timer read,
-        Timer store,
-        Timer lastCommittedRead,
-        Timer lastVertexRead,
-        Timer save,
-        Timer interact,
-        Counter bytesRead,
-        Counter bytesWritten,
-        Counter proofsAdded,
-        Counter proofsRemoved,
-        Counter headerBytesWritten) {}
+  public record BerkeleyDb(AddressBook addressBook, SafetyState safetyState) {
 
     public record AddressBook(
         Timer interact, Counter bytesRead, Counter bytesWritten, Counter entriesDeleted) {}
@@ -249,9 +233,6 @@ public record Metrics(
       Gauge targetStateVersion) {}
 
   public record Mempool(Counter relaysSent) {}
-
-  public record V1RadixEngine(
-      Counter invalidProposedTransactions, Counter userTransactions, Counter systemTransactions) {}
 
   public record Messages(Inbound inbound, Outbound outbound) {
 
