@@ -78,15 +78,14 @@ use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
-use radix_engine_stores::interface::{
-    decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase,
-};
+use radix_engine_stores::interface::{decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase, DatabaseUpdate};
 use radix_engine_stores::jmt_support::JmtMapper;
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
 use tracing::{error, warn};
+use utils::copy_u8_array;
 
 use crate::transaction::LedgerTransaction;
 
@@ -343,28 +342,18 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        for ((node_id, module_id, substate_key), change_action) in
+        for ((db_partition_key, db_sort_key), database_update) in
             commit_bundle.substate_store_update.updates
         {
-            let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(
-                &node_id, module_id,
-            );
+            let full_key_bytes = encode_to_rocksdb_bytes(&db_partition_key, &db_sort_key);
 
-            let substate_db_key = <JmtMapper as DatabaseMapper>::map_to_db_key(
-                &substate_key,
-            );
-
-            let db_key = encode_substate_id(&index_id, &substate_db_key);
-
-            match change_action {
-                ChangeAction::Create(value) | ChangeAction::Update(value) => {
-                    println!("(rocks) Inserting a substate {:?} (index {}, db_key {})", hex::encode(&db_key), hex::encode(&index_id), hex::encode(substate_db_key));
-                    batch.put_cf(self.cf_handle(&Substates), db_key, value)
+            match database_update {
+                DatabaseUpdate::Set(value) => {
+                    batch.put_cf(self.cf_handle(&Substates), full_key_bytes, value);
                 }
-                ChangeAction::Delete => {
-                    println!("(cache) Deleting a substate {:?} (index {}, db_key {})", hex::encode(&db_key), hex::encode(&index_id), hex::encode(substate_db_key));
-                    batch.delete_cf(self.cf_handle(&Substates), db_key)
-                },
+                DatabaseUpdate::Delete => {
+                    batch.delete_cf(self.cf_handle(&Substates), full_key_bytes);
+                }
             }
         }
 
@@ -750,16 +739,12 @@ impl SubstateDatabase for RocksDBStore {
             )
             .map(|kv| {
                 let (k, v) = kv.unwrap();
-                let (index, key) =
-                    decode_substate_id(k.as_ref()).expect("Failed to decode substate ID");
-                println!("rocksdb iter decoded (index {} key {}) from db_key {}", hex::encode(&index), hex::encode(&key), hex::encode(k.as_ref()));
-                (index, key, v)
+                let (db_partition_key, db_sort_key) = decode_from_rocksdb_bytes(k.as_ref());
+                ((db_partition_key, db_sort_key), v)
             })
-            .take_while(move |(index, ..)| index_id.eq(index))
-            .map(|(_, key, value)| {
-                // TODO: remove
-                println!("Rocksdb iter returning next {:?} {:?}", hex::encode(key.clone()), hex::encode(value.as_ref()));
-                (key, value.as_ref().to_vec())
+            .take_while(move |((db_partition_key, _), _)| index_id.eq(db_partition_key))
+            .map(|((_, db_sort_key), value)| {
+                (db_sort_key, value.as_ref().to_vec())
             });
 
         Box::new(iter)
@@ -802,4 +787,25 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<Vec<u8>> {
         self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
     }
+}
+
+
+
+// TODO: use types instead of vec u8
+fn encode_to_rocksdb_bytes(partition_key: &Vec<u8>, sort_key: &Vec<u8>) -> Vec<u8> {
+    let mut buffer = Vec::new();
+    buffer.extend(u32::try_from(partition_key.len()).unwrap().to_be_bytes());
+    buffer.extend(partition_key.clone());
+    buffer.extend(sort_key.clone());
+    buffer
+}
+
+// TODO: use types instead of vec u8
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (Vec<u8>, Vec<u8>) /* DbSubstateKey */ {
+    let partition_key_len =
+        usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
+    let sort_key_offset = 4 + partition_key_len;
+    let partition_key = buffer[4..sort_key_offset].to_vec();
+    let sort_key = buffer[sort_key_offset..].to_vec();
+    (partition_key, sort_key)
 }

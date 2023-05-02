@@ -86,7 +86,7 @@ use radix_engine_stores::hash_tree::DbId;
 
 use crate::staging::ReadableStore;
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_stores::interface::{DatabaseMapper, DatabaseUpdate};
+use radix_engine_stores::interface::{DatabaseMapper, DatabaseUpdate, DatabaseUpdates};
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
@@ -97,6 +97,7 @@ pub enum ProcessedTransactionReceipt {
 pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
+    pub database_updates: DatabaseUpdates,
 }
 
 pub struct HashUpdateContext<'s, S> {

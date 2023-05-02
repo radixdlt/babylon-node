@@ -818,7 +818,7 @@ where
             let transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
             // TODO(db-fix): apply engine_receipt.commit.database_changes
-            substate_store_update.apply(local_receipt.on_ledger.substate_changes.clone());
+            substate_store_update.apply(commit.database_updates);
 
             state_tree_update.add(transaction_identifiers.state_version, state_hash_tree_diff);
             transaction_tree_slice_merger.append(transaction_tree_slice);

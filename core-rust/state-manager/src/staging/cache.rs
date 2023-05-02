@@ -86,9 +86,7 @@ use crate::transaction::TransactionLogic;
 use radix_engine_stores::hash_tree::tree_store::{
     IndexPayload, NodeKey, ReadableTreeStore, TreeNode,
 };
-use radix_engine_stores::interface::{
-    decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase,
-};
+use radix_engine_stores::interface::{decode_substate_id, encode_substate_id, DatabaseMapper, SubstateDatabase, DatabaseUpdate};
 use radix_engine_stores::jmt_support::JmtMapper;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
@@ -199,7 +197,8 @@ impl<'s, S> StagedStore<'s, S> {
 
 impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
     fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>> {
-        let substate_id = encode_substate_id(index_id, key);
+        // TODO: rename to db_subsatate_id, rename index to partition key
+        let substate_id = (index_id.clone(), key.clone());
         if self.overlay.deleted_substates.contains(&substate_id) {
             None
         } else {
@@ -213,7 +212,7 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
 
     fn list_substates(
         &self,
-        index_id: &Vec<u8>,
+        db_partition_key: &Vec<u8>,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
         // TODO: remove
         // TODO: clean this method up.. filter once (one filter impl - in rocksdb only?)
@@ -222,36 +221,22 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
             let index_id = index_id.clone();
             self.root
                 .list_substates(&index_id)
-                .filter(move |(k, _)| {
-                    let substate_id = encode_substate_id(&index_id, k);
-                    let filter = !self.overlay.deleted_substates.contains(&substate_id);
-                    println!("Filtering substate_id {} res {}", hex::encode(&substate_id), filter);
-                    filter
+                .filter(move |(db_sort_key, _)| {
+                    // TODO: avoid cloning if possible
+                    let db_substate_id = (db_partition_key.clone(), db_sort_key.clone());
+                    !self.overlay.deleted_substates.contains(&db_substate_id)
                 })
         };
 
         let overlay_iter = {
             let start = encode_substate_id(&index_id, &vec![0]);
             let index_id = index_id.clone();
-            let index_id_ = index_id.clone();
             self.overlay
                 .substate_values
                 .range((Included(start), Unbounded))
-                .map(|(k, v)| {
-                    let (index, key) = decode_substate_id(k).expect("Failed to decode substate ID");
-                    (index, key, v)
-                })
-                .take_while(move |(index, ..)| index_id.eq(index))
-                .filter(move |(_, k, _)| {
-                    let substate_id = encode_substate_id(&index_id_, k);
-                    let filter = !self.overlay.deleted_substates.contains(&substate_id);
-                    println!("Filtering substate_id {} res {}", hex::encode(&substate_id), filter);
-                    filter
-                })
-                .map(|(_, key, value)| {
-                    // TODO: remove
-                    println!("Overlay iter returning next {:?} {:?}", hex::encode(key.clone()), hex::encode(value));
-                    (key, value.clone())
+                .take_while(move |((db_partition_key, _), _)| index_id.eq(db_partition_key))
+                .map(|((_, db_sort_key), value)| {
+                    (db_sort_key, value.clone())
                 })
         };
 
@@ -347,8 +332,9 @@ impl<K, N> AccuTreeDiff<K, N> {
 
 #[derive(Clone)]
 pub struct ImmutableStore {
-    substate_values: ImmutableOrdMap<Vec<u8>, Vec<u8>>,
-    deleted_substates: ImmutableHashSet<Vec<u8>>,
+    // TODO: use type: SubstateKey
+    substate_values: ImmutableOrdMap<(Vec<u8>, Vec<u8>), Vec<u8>>,
+    deleted_substates: ImmutableHashSet<(Vec<u8>, Vec<u8>)>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<IndexPayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<()>>,
     transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
@@ -371,26 +357,19 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
         // TODO(db-fix): process raw database changes, not substate changes! engine_receipt.commit.database_changes
 
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let substate_changes = &commit.local_receipt.on_ledger.substate_changes;
-            for substate_change in substate_changes {
-                // TODO: JMT mapper as param>
-                let index_id = <JmtMapper as DatabaseMapper>::map_to_db_index(
-                    &substate_change.node_id,
-                    substate_change.module_id,
-                );
-                let substate_db_key =
-                    <JmtMapper as DatabaseMapper>::map_to_db_key(&substate_change.substate_key);
-                let substate_id = encode_substate_id(&index_id, &substate_db_key);
-                match &substate_change.action {
-                    ChangeAction::Create(value) | ChangeAction::Update(value) => {
-                        println!("(cache) Inserting a substate {:?}", hex::encode(&substate_id));
-                        self.deleted_substates.remove(&substate_id);
-                        self.substate_values.insert(substate_id, value.clone());
-                    }
-                    ChangeAction::Delete => {
-                        self.substate_values.remove(&substate_id);
-                        println!("(cache) Deleting a substate {:?}", hex::encode(&substate_id));
-                        self.deleted_substates.insert(substate_id);
+            let database_updates = commit.database_updates.clone();
+            for (db_partition_key, partition_updates) in database_updates {
+                for (db_sort_key, database_update) in partition_updates {
+                    let db_substate_key = (db_partition_key, db_sort_key);
+                    match &database_update {
+                        DatabaseUpdate::Set(value) => {
+                            self.deleted_substates.remove(&db_substate_key);
+                            self.substate_values.insert(db_substate_key, value.clone());
+                        }
+                        DatabaseUpdate::Delete => {
+                            self.substate_values.remove(&db_substate_key);
+                            self.deleted_substates.insert(db_substate_key);
+                        }
                     }
                 }
             }

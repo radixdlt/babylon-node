@@ -144,6 +144,7 @@ pub mod commit {
     use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
     use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
     use radix_engine_stores::hash_tree::tree_store::{IndexPayload, NodeKey, TreeNode};
+    use radix_engine_stores::interface::{DatabaseUpdate, DatabaseUpdates};
     use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {
@@ -157,7 +158,7 @@ pub mod commit {
     }
 
     pub struct SubstateStoreUpdate {
-        pub updates: IndexMap<(NodeId, ModuleId, SubstateKey), ChangeAction>,
+        pub updates: IndexMap<(Vec<u8> /* TODO: DBPartitionKey */, Vec<u8> /* TODO: DBSortKey */), DatabaseUpdate>,
     }
 
     impl SubstateStoreUpdate {
@@ -167,14 +168,11 @@ pub mod commit {
             }
         }
 
-        pub fn apply(&mut self, substate_changes: Vec<SubstateChange>) {
-            for substate_change in substate_changes {
-                let substate_id = (
-                    substate_change.node_id,
-                    substate_change.module_id,
-                    substate_change.substate_key,
-                );
-                self.updates.insert(substate_id, substate_change.action);
+        pub fn apply(&mut self, database_updates: DatabaseUpdates) {
+            for (db_partition_key, partition_updates) in database_updates {
+                for (db_sort_key, database_update) in partition_updates {
+                    self.updates.insert((db_partition_key, db_sort_key), database_update);
+                }
             }
         }
     }

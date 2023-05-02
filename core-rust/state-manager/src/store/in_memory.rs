@@ -241,6 +241,7 @@ impl CommitStore for InMemoryStore {
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
+        /* TODO: fimxe
         let mut database_updates = IndexMap::new();
         for ((node_id, module_id, substate_key), change_action) in
             commit_bundle.substate_store_update.updates
@@ -260,6 +261,7 @@ impl CommitStore for InMemoryStore {
             updates_within_index.insert(substate_db_key, update);
         }
         self.substate_store.commit(&database_updates);
+         */
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
