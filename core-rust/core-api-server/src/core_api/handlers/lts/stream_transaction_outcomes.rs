@@ -31,22 +31,30 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let max_state_version = database.max_state_version();
 
-    let txns = database.get_committed_transaction_bundles(
+    let transactions = database.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );
 
-    let committed_transaction_outcomes = txns
-        .into_iter()
-        .map(|(ledger_transaction, receipt, identifiers)| {
-            Ok(to_api_lts_committed_transaction_outcome(
-                &mapping_context,
-                ledger_transaction,
-                receipt,
-                identifiers,
-            )?)
-        })
-        .collect::<Result<Vec<models::LtsCommittedTransactionOutcome>, ResponseError<()>>>()?;
+    // Reserve enough for the "header" fields
+    let mut current_total_size = 2048;
+    let mut committed_transaction_outcomes = Vec::new();
+    for (ledger_transaction, receipt, identifiers) in transactions {
+        let committed_transaction = to_api_lts_committed_transaction_outcome(
+            &mapping_context,
+            ledger_transaction,
+            receipt,
+            identifiers,
+        )?;
+
+        let committed_transaction_size = committed_transaction.get_json_size();
+        if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
+            break;
+        }
+        current_total_size += committed_transaction_size;
+
+        committed_transaction_outcomes.push(committed_transaction);
+    }
 
     let count: i32 = {
         let transaction_count = committed_transaction_outcomes.len();

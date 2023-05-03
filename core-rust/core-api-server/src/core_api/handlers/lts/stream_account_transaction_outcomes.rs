@@ -59,27 +59,35 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         limit,
     );
 
-    let committed_transaction_outcomes = state_versions
-        .iter()
-        .map(|state_version| {
-            Ok(to_api_lts_committed_transaction_outcome(
-                &mapping_context,
-                database
-                    .get_committed_transaction(*state_version)
-                    .expect("Transaction store corrupted"),
-                database
-                    .get_committed_transaction_receipt(*state_version)
-                    .expect("Transaction receipt index corrupted"),
-                database
-                    .get_committed_transaction_identifiers(*state_version)
-                    .expect("Transaction identifiers index corrupted"),
-            )?)
-        })
-        .collect::<Result<Vec<models::LtsCommittedTransactionOutcome>, ResponseError<()>>>()?;
+    // Reserve enough for the "header" fields
+    let mut current_total_size = 2048;
+    let mut committed_transaction_outcomes = Vec::new();
+    for state_version in state_versions {
+        let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
+            &mapping_context,
+            database
+                .get_committed_transaction(state_version)
+                .expect("Transaction store corrupted"),
+            database
+                .get_committed_transaction_receipt(state_version)
+                .expect("Transaction receipt index corrupted"),
+            database
+                .get_committed_transaction_identifiers(state_version)
+                .expect("Transaction identifiers index corrupted"),
+        )?;
+
+        let committed_transaction_size = committed_transaction_outcome.get_json_size();
+        if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
+            break;
+        }
+        current_total_size += committed_transaction_size;
+
+        committed_transaction_outcomes.push(committed_transaction_outcome);
+    }
 
     Ok(models::LtsStreamAccountTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
-        count: state_versions
+        count: committed_transaction_outcomes
             .len()
             .try_into()
             .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?,
