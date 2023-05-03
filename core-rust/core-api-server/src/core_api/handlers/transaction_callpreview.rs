@@ -6,14 +6,15 @@ use models::{
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
-    types::{Decimal, FAUCET_COMPONENT},
+    types::Decimal,
 };
+
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_interface::constants::FAUCET;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::{
     blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
 };
-
 use state_manager::PreviewRequest;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
@@ -85,7 +86,7 @@ pub(crate) async fn handle_transaction_callpreview(
             manifest: TransactionManifest {
                 instructions: vec![
                     Instruction::CallMethod {
-                        component_address: FAUCET_COMPONENT,
+                        component_address: FAUCET,
                         method_name: "lock_fee".to_string(),
                         args: manifest_args!(Decimal::from(100u32)),
                     },

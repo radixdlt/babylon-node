@@ -67,10 +67,10 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -80,11 +80,10 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Random;
 import org.junit.Ignore;
@@ -94,10 +93,11 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SimpleFuzzerTransactionsTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
 
   private DeterministicTest createTest() {
+    final var transactionGenerator =
+        new REv2SimpleFuzzerTransactionGenerator(
+            NetworkDefinition.LOCAL_SIMULATOR, new Random(12345));
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
@@ -111,7 +111,7 @@ public final class SimpleFuzzerTransactionsTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
@@ -124,11 +124,10 @@ public final class SimpleFuzzerTransactionsTest {
           + " ErrorBeforeFeeLoanRepaid(KernelError(WasmError(WasmError(Trap(Trap { kind:"
           + " Unreachable })))))")
   public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
-    // Arrange
     try (var test = createTest()) {
+      test.startAllNodes();
 
       // Run
-      test.startAllNodes();
       test.runForCount(10000);
 
       // Post-run assertions

@@ -23,14 +23,16 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
 
 jni = "0.19.0"
 

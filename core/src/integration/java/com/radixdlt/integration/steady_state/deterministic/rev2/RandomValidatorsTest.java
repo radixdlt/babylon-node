@@ -68,9 +68,12 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static com.radixdlt.rev2.ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -84,8 +87,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -96,16 +98,17 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RandomValidatorsTest {
-  private static final int NUM_VALIDATORS = 30;
-  private static final RawLedgerTransaction GENESIS =
-      TransactionBuilder.createGenesisWithNumValidators(
-          NUM_VALIDATORS / 2, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
+  private static final int TOTAL_NUM_VALIDATORS = 30;
+  private static final int NUM_GENESIS_VALIDATORS = TOTAL_NUM_VALIDATORS / 2;
+  private static final GenesisData GENESIS =
+      GenesisBuilder.createGenesisWithNumValidators(
+          NUM_GENESIS_VALIDATORS, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(TOTAL_NUM_VALIDATORS, true))
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
@@ -129,19 +132,34 @@ public final class RandomValidatorsTest {
   public void normal_run_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
+      final var faucet = test.faucetAddress();
 
       var random = new Random(12345);
 
-      var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
+      var creatingValidators = new HashMap<Integer, RawNotarizedTransaction>();
       var validators = new HashMap<Integer, ComponentAddress>();
-      var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
-      var componentAddresses =
-          genesis.newComponentAddresses().stream()
-              .filter(
-                  componentAddress ->
-                      componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
-              .toList();
-      for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
+
+      // Iterate over all genesis transactions (data chunks) and collect validator's addresses
+      final var txnStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      final var componentAddressesBuilder = ImmutableList.<ComponentAddress>builder();
+      var stateVersion = 1;
+      while (true) {
+        final var nextTxn = txnStore.getTransactionAtStateVersion(stateVersion);
+        if (nextTxn.isEmpty()) {
+          break;
+        } else {
+          componentAddressesBuilder.addAll(
+              nextTxn.unwrap().newComponentAddresses().stream()
+                  .filter(
+                      componentAddress ->
+                          componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
+                  .toList());
+          stateVersion += 1;
+        }
+      }
+      final var componentAddresses = componentAddressesBuilder.build();
+
+      for (int i = 0; i < NUM_GENESIS_VALIDATORS; i++) {
         validators.put(i, componentAddresses.get(i));
       }
 
@@ -151,21 +169,22 @@ public final class RandomValidatorsTest {
 
         var mempoolDispatcher =
             test.getInstance(
-                random.nextInt(0, NUM_VALIDATORS),
+                random.nextInt(0, TOTAL_NUM_VALIDATORS),
                 Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-        var randomValidatorIndex = random.nextInt(0, NUM_VALIDATORS);
+        var randomValidatorIndex = random.nextInt(0, TOTAL_NUM_VALIDATORS);
         var componentAddress = validators.get(randomValidatorIndex);
         if (componentAddress == null) {
-          var inflightTransaction = creating_validators.get(randomValidatorIndex);
+          var inflightTransaction = creatingValidators.get(randomValidatorIndex);
           if (inflightTransaction == null) {
             var txn =
                 REv2TestTransactions.constructCreateValidatorTransaction(
                     NetworkDefinition.INT_TEST_NET,
+                    faucet,
                     0,
                     random.nextInt(1000000),
                     PrivateKeys.ofNumeric(randomValidatorIndex + 1));
-            creating_validators.put(randomValidatorIndex, txn);
+            creatingValidators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
             var maybeExecuted =
@@ -180,7 +199,7 @@ public final class RandomValidatorsTest {
                           PrivateKeys.ofNumeric(randomValidatorIndex + 1).getPublicKey(),
                           validatorAddress));
                   validators.put(randomValidatorIndex, validatorAddress);
-                  creating_validators.remove(randomValidatorIndex);
+                  creatingValidators.remove(randomValidatorIndex);
                 });
           }
         } else {
@@ -190,6 +209,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructRegisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -199,6 +219,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructUnregisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -208,6 +229,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructStakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,
@@ -219,6 +241,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructUnstakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       validatorInfo.lpTokenAddress(),
@@ -231,6 +254,7 @@ public final class RandomValidatorsTest {
               txn =
                   REv2TestTransactions.constructClaimXrdTransaction(
                       NetworkDefinition.INT_TEST_NET,
+                      faucet,
                       0,
                       random.nextInt(1000000),
                       componentAddress,

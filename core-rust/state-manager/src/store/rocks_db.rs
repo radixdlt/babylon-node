@@ -63,7 +63,7 @@
  */
 
 use crate::types::UserPayloadHash;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 
 use crate::store::traits::*;
@@ -72,23 +72,23 @@ use crate::{
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt,
     ReceiptTreeHash, TransactionTreeHash,
 };
-use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{
-    scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset,
-};
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine::types::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
+use radix_engine_store_interface::interface::{
+    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
+};
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
+
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
+
 use tracing::{error, warn};
+use utils::copy_u8_array;
 
 use crate::transaction::LedgerTransaction;
 
@@ -121,7 +121,6 @@ enum RocksDBColumnFamily {
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::db::{decode_substate_id, encode_substate_id, ListableSubstateStore};
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
@@ -346,32 +345,15 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        // TODO(engine-merge): remove
-        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
-            batch.put_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-                scrypto_encode(&substate).unwrap(),
-            );
-        }
-
-        // TODO(engine-merge): remove
-        for substate_id in commit_bundle.substate_store_update.deleted_ids {
-            batch.delete_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-            );
-        }
-
-        for (index_id, updates_within_index) in commit_bundle.substate_store_update.updates {
-            for (key, update) in updates_within_index {
-                let substate_id = encode_substate_id(&index_id, &key);
-                match update {
+        for (partition_key, partition_updates) in commit_bundle.substate_store_update.updates {
+            for (sort_key, database_update) in partition_updates {
+                let encoded_key_bytes = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+                match database_update {
                     DatabaseUpdate::Set(value) => {
-                        batch.put_cf(self.cf_handle(&Substates), substate_id, value)
+                        batch.put_cf(self.cf_handle(&Substates), encoded_key_bytes, value);
                     }
                     DatabaseUpdate::Delete => {
-                        batch.delete_cf(self.cf_handle(&Substates), substate_id)
+                        batch.delete_cf(self.cf_handle(&Substates), encoded_key_bytes);
                     }
                 }
             }
@@ -737,13 +719,24 @@ impl QueryableProofStore for RocksDBStore {
     }
 }
 
-impl ListableSubstateStore for RocksDBStore {
-    fn list_substates(
+impl SubstateDatabase for RocksDBStore {
+    fn get_substate(
         &self,
-        index_id: &Vec<u8>,
-    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let index_id = index_id.clone();
-        let start = encode_substate_id(&index_id, &vec![0]);
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        let encoded_key_bytes = encode_to_rocksdb_bytes(partition_key, sort_key);
+        self.db
+            .get_cf(self.cf_handle(&Substates), encoded_key_bytes)
+            .unwrap()
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let partition_key = partition_key.clone();
+        let start = encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0]));
         let iter = self
             .db
             .iterator_cf(
@@ -752,20 +745,13 @@ impl ListableSubstateStore for RocksDBStore {
             )
             .map(|kv| {
                 let (k, v) = kv.unwrap();
-                let (index, key) =
-                    decode_substate_id(k.as_ref()).expect("Failed to decode substate ID");
-                (index, key, v)
+                let (partition_key, sort_key) = decode_from_rocksdb_bytes(k.as_ref());
+                ((partition_key, sort_key), v)
             })
-            .take_while(move |(index, ..)| index_id.eq(index))
-            .map(|(_, key, value)| (key, value.as_ref().to_vec()));
+            .take_while(move |((next_partition_key, _), _)| next_partition_key.eq(&partition_key))
+            .map(|((_, sort_key), value)| (sort_key, value.as_ref().to_vec()));
 
         Box::new(iter)
-    }
-}
-
-impl ReadableSubstateStore for RocksDBStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.get_by_key(&Substates, &scrypto_encode(substate_id).unwrap())
     }
 }
 
@@ -793,46 +779,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
     }
 }
 
-impl QueryableSubstateStore for RocksDBStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(*kv_store_id),
-            NodeModuleId::SELF,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
-        ))
-        .unwrap();
-
-        let iter = self.db.iterator_cf(
-            self.cf_handle(&Substates),
-            IteratorMode::From(&id, Direction::Forward),
-        );
-        let mut items = HashMap::new();
-        for res in iter {
-            let (key, value) = res.unwrap();
-            let substate: OutputValue = scrypto_decode(&value).unwrap();
-            let substate_id: SubstateId = scrypto_decode(&key).unwrap();
-            if let SubstateId(
-                RENodeId::KeyValueStore(id),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ) = substate_id
-            {
-                if id == *kv_store_id {
-                    items.insert(key, substate.substate)
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            };
-        }
-        items
-    }
-}
-
 impl WriteableVertexStore for RocksDBStore {
     fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
         self.db
@@ -845,4 +791,21 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<Vec<u8>> {
         self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
     }
+}
+
+fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
+    let mut buffer = Vec::new();
+    buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
+    buffer.extend(partition_key.0.clone());
+    buffer.extend(sort_key.0.clone());
+    buffer
+}
+
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
+    let partition_key_len =
+        usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
+    let sort_key_offset = 4 + partition_key_len;
+    let partition_key = buffer[4..sort_key_offset].to_vec();
+    let sort_key = buffer[sort_key_offset..].to_vec();
+    (DbPartitionKey(partition_key), DbSortKey(sort_key))
 }

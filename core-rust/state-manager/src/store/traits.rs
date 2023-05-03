@@ -88,8 +88,8 @@ pub mod vertex {
 }
 
 pub mod substate {
-    pub use radix_engine::ledger::{
-        QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    pub use radix_engine_store_interface::interface::{
+        CommittableSubstateDatabase, SubstateDatabase,
     };
 }
 
@@ -143,11 +143,12 @@ pub mod proofs {
 pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
-    use radix_engine::ledger::OutputValue;
-    use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
-    use std::collections::{HashMap, HashSet};
+    use crate::{ReceiptTreeHash, TransactionTreeHash};
+
+    use radix_engine_store_interface::interface::{
+        DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+    };
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, PartitionPayload, TreeNode};
     use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {
@@ -160,46 +161,25 @@ pub mod commit {
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
     }
 
-    // TODO(engine-merge): placeholder enum; remove
-    pub enum DatabaseUpdate {
-        Set(Vec<u8>),
-        Delete,
-    }
-
     pub struct SubstateStoreUpdate {
-        // TODO(engine-merge): remove
-        pub upserted: HashMap<SubstateId, OutputValue>,
-        pub deleted_ids: HashSet<SubstateId>,
-
-        pub updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
+        pub updates: IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>,
     }
 
     impl SubstateStoreUpdate {
         pub fn new() -> Self {
             Self {
-                upserted: HashMap::new(),
-                deleted_ids: HashSet::new(),
                 updates: IndexMap::new(),
             }
         }
 
-        pub fn apply(&mut self, changes: &[SubstateChange]) {
-            for change in changes {
-                let id = &change.substate_id;
-                match &change.action {
-                    ChangeAction::Create(value) => {
-                        self.deleted_ids.remove(id);
-                        self.upserted.insert(id.clone(), value.clone());
-                    }
-                    ChangeAction::Update(value) => {
-                        self.upserted.insert(id.clone(), value.clone());
-                    }
-                    ChangeAction::Delete(_) => {
-                        let previous_value = self.upserted.remove(id);
-                        if previous_value.is_none() {
-                            self.deleted_ids.insert(id.clone());
-                        }
-                    }
+        pub fn apply(&mut self, database_updates: DatabaseUpdates) {
+            for (partition_key, partition_updates) in database_updates {
+                let curr_partition_updates = self
+                    .updates
+                    .entry(partition_key)
+                    .or_insert_with(IndexMap::new);
+                for (sort_key, database_update) in partition_updates {
+                    curr_partition_updates.insert(sort_key, database_update);
                 }
             }
         }
@@ -212,8 +192,8 @@ pub mod commit {
     }
 
     pub struct HashTreeUpdate {
-        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
-        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
+        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
+        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
         pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
     }
 

@@ -31,7 +31,7 @@ import com.radixdlt.api.core.generated.models.EventEmitterIdentifierType;
 import com.radixdlt.api.core.generated.models.FunctionEventEmitterIdentifier;
 import com.radixdlt.api.core.generated.models.FunctionEventEmitterIdentifierAllOf;
 import com.radixdlt.api.core.generated.models.MethodEventEmitterIdentifier;
-import com.radixdlt.api.core.generated.models.ModuleType;
+import com.radixdlt.api.core.generated.models.ObjectModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -62,7 +62,7 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
   private EntityReference entity;
 
   public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ModuleType moduleType;
+  private ObjectModuleType moduleType;
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
@@ -96,7 +96,7 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
   }
 
 
-  public FunctionEventEmitterIdentifier moduleType(ModuleType moduleType) {
+  public FunctionEventEmitterIdentifier moduleType(ObjectModuleType moduleType) {
     this.moduleType = moduleType;
     return this;
   }
@@ -110,14 +110,14 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleType getModuleType() {
+  public ObjectModuleType getModuleType() {
     return moduleType;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ModuleType moduleType) {
+  public void setModuleType(ObjectModuleType moduleType) {
     this.moduleType = moduleType;
   }
 

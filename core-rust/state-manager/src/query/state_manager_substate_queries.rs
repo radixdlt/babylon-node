@@ -1,27 +1,23 @@
 use radix_engine::blueprints::epoch_manager::EpochManagerSubstate;
-use radix_engine::types::{EpochManagerOffset, SubstateId, EPOCH_MANAGER};
-use radix_engine::types::{RENodeId, SubstateOffset};
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::types::{EpochManagerOffset, SysModuleId};
 
-use crate::store::traits::*;
+use radix_engine_store_interface::interface::SubstateDatabase;
 
 pub trait StateManagerSubstateQueries {
     fn get_epoch(&self) -> u64;
 }
 
-impl<T: ReadableSubstateStore> StateManagerSubstateQueries for T {
+impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
     fn get_epoch(&self) -> u64 {
-        let system_substate: EpochManagerSubstate = self
-            .get_substate(&SubstateId(
-                RENodeId::GlobalObject(EPOCH_MANAGER.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-            ))
-            .expect("Couldn't find Epoch Manager substate!")
-            .substate
-            .to_runtime()
-            .into();
-
-        system_substate.epoch
+        let epoch_manager_substate: EpochManagerSubstate = self
+            .get_mapped_substate::<SpreadPrefixKeyMapper, EpochManagerSubstate>(
+                EPOCH_MANAGER.as_node_id(),
+                SysModuleId::Object.into(),
+                &EpochManagerOffset::EpochManager.into(),
+            )
+            .unwrap();
+        epoch_manager_substate.epoch
     }
 }

@@ -73,7 +73,6 @@ import java.util.List;
 public final class REv2LargeTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
-
   private int currentKey = 1;
 
   public REv2LargeTransactionGenerator(NetworkDefinition networkDefinition) {
@@ -88,7 +87,12 @@ public final class REv2LargeTransactionGenerator
     var size = (int) (Math.random() * 924 * 1024) + 100 * 1024;
     var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
-            networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);
+            networkDefinition,
+            ScryptoConstants.FAUCET_ADDRESS,
+            0,
+            1,
+            notary.getPublicKey().toPublicKey(),
+            size);
     return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of());
   }
 }

@@ -64,7 +64,7 @@
 
 use crate::{
     accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
-    LedgerTransactionOutcome,
+    LedgerTransactionOutcome, SubstateChange,
 };
 use radix_engine::types::*;
 use std::fmt;
@@ -221,12 +221,9 @@ pub struct SubstateChangeHash([u8; Self::LENGTH]);
 impl SubstateChangeHash {
     pub const LENGTH: usize = 32;
 
-    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
-        Self(hash_bytes)
-    }
-
-    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
+    pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
+        let hashed_bytes = hash(scrypto_encode(&substate_change).unwrap()).0;
+        SubstateChangeHash(hashed_bytes)
     }
 }
 
@@ -339,7 +336,7 @@ pub struct ConsensusReceipt {
     /// The high-level outcome from the `LedgerTransactionReceipt`.
     pub outcome: LedgerTransactionOutcome,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
-    /// `substate_changes` (see `SubstateChange::get_hash()`).
+    /// `substate_changes`.
     pub substate_change_root: SubstateChangeHash,
     /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
     /// `application_events` (see `ApplicationEvent::get_hash()`).
@@ -788,17 +785,6 @@ pub struct ActiveValidatorInfo {
 pub struct NextEpoch {
     pub validator_set: Vec<ActiveValidatorInfo>,
     pub epoch: u64,
-}
-
-#[derive(Debug, Decode, Encode, Categorize)]
-pub struct PrepareGenesisRequest {
-    pub genesis: Vec<u8>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PrepareGenesisResult {
-    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
-    pub ledger_hashes: LedgerHashes,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

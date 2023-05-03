@@ -64,6 +64,8 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -83,45 +85,20 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
-  // See entity.rs
-  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x03;
-  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID =
-      (byte) 0x06; // Search for VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID
+  // See entity_type.rs
+  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x04;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x09;
 
-  public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
-      // See constants.rs (component.rs defines the encoding)
-      ComponentAddress.create(
-          new byte[] {
-            NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          });
+  // TODO: call scrypto (through JNI)
+  public static ComponentAddress virtualAccountFromPublicKey(ECDSASecp256k1PublicKey key) {
+    final var pubKeyHash = HashUtils.blake2b256(key.getCompressedBytes()).asBytes();
+    final byte[] lowerKeyBytes = new byte[BYTE_LENGTH];
+    System.arraycopy(pubKeyHash, pubKeyHash.length - BYTE_LENGTH, lowerKeyBytes, 0, BYTE_LENGTH);
+    lowerKeyBytes[0] = (byte) 10;
+    return new ComponentAddress(lowerKeyBytes);
+  }
 
   public static ComponentAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {

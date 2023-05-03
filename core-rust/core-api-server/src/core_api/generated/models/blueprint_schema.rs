@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintSchema {
+    #[serde(rename = "outer_blueprint", skip_serializing_if = "Option::is_none")]
+    pub outer_blueprint: Option<String>,
     #[serde(rename = "schema")]
     pub schema: Box<crate::core_api::generated::models::SborData>,
     /// The type index of the substates under the SELF module - in the context of the blueprint's SBOR schema. 
@@ -32,6 +34,7 @@ pub struct BlueprintSchema {
 impl BlueprintSchema {
     pub fn new(schema: crate::core_api::generated::models::SborData, substates: Vec<crate::core_api::generated::models::LocalTypeIndex>, function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, virtual_lazy_load_function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::VirtualLazyLoadSchema>, event_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>) -> BlueprintSchema {
         BlueprintSchema {
+            outer_blueprint: None,
             schema: Box::new(schema),
             substates,
             function_schemas,

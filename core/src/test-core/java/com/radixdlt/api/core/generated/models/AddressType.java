@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AddressType
  */
 @JsonPropertyOrder({
-  AddressType.JSON_PROPERTY_SUBTYPE,
   AddressType.JSON_PROPERTY_HRP_PREFIX,
   AddressType.JSON_PROPERTY_ENTITY_TYPE,
   AddressType.JSON_PROPERTY_ADDRESS_BYTE_PREFIX,
@@ -40,68 +39,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AddressType {
-  /**
-   * Gets or Sets subtype
-   */
-  public enum SubtypeEnum {
-    PACKAGE("Package"),
-    
-    FUNGIBLERESOURCE("FungibleResource"),
-    
-    NONFUNGIBLERESOURCE("NonFungibleResource"),
-    
-    NORMALCOMPONENT("NormalComponent"),
-    
-    ACCOUNTCOMPONENT("AccountComponent"),
-    
-    ECDSASECP256K1VIRTUALACCOUNTCOMPONENT("EcdsaSecp256k1VirtualAccountComponent"),
-    
-    EDDSAED25519VIRTUALACCOUNTCOMPONENT("EddsaEd25519VirtualAccountComponent"),
-    
-    IDENTITYCOMPONENT("IdentityComponent"),
-    
-    ECDSASECP256K1VIRTUALIDENTITYCOMPONENT("EcdsaSecp256k1VirtualIdentityComponent"),
-    
-    EDDSAED25519VIRTUALIDENTITYCOMPONENT("EddsaEd25519VirtualIdentityComponent"),
-    
-    EPOCHMANAGER("EpochManager"),
-    
-    VALIDATOR("Validator"),
-    
-    CLOCK("Clock"),
-    
-    ACCESSCONTROLLER("AccessController");
-
-    private String value;
-
-    SubtypeEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static SubtypeEnum fromValue(String value) {
-      for (SubtypeEnum b : SubtypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_SUBTYPE = "subtype";
-  private SubtypeEnum subtype;
-
   public static final String JSON_PROPERTY_HRP_PREFIX = "hrp_prefix";
   private String hrpPrefix;
 
@@ -116,32 +53,6 @@ public class AddressType {
 
   public AddressType() { 
   }
-
-  public AddressType subtype(SubtypeEnum subtype) {
-    this.subtype = subtype;
-    return this;
-  }
-
-   /**
-   * Get subtype
-   * @return subtype
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBTYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubtypeEnum getSubtype() {
-    return subtype;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBTYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubtype(SubtypeEnum subtype) {
-    this.subtype = subtype;
-  }
-
 
   public AddressType hrpPrefix(String hrpPrefix) {
     this.hrpPrefix = hrpPrefix;
@@ -263,8 +174,7 @@ public class AddressType {
       return false;
     }
     AddressType addressType = (AddressType) o;
-    return Objects.equals(this.subtype, addressType.subtype) &&
-        Objects.equals(this.hrpPrefix, addressType.hrpPrefix) &&
+    return Objects.equals(this.hrpPrefix, addressType.hrpPrefix) &&
         Objects.equals(this.entityType, addressType.entityType) &&
         Objects.equals(this.addressBytePrefix, addressType.addressBytePrefix) &&
         Objects.equals(this.addressByteLength, addressType.addressByteLength);
@@ -272,14 +182,13 @@ public class AddressType {
 
   @Override
   public int hashCode() {
-    return Objects.hash(subtype, hrpPrefix, entityType, addressBytePrefix, addressByteLength);
+    return Objects.hash(hrpPrefix, entityType, addressBytePrefix, addressByteLength);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AddressType {\n");
-    sb.append("    subtype: ").append(toIndentedString(subtype)).append("\n");
     sb.append("    hrpPrefix: ").append(toIndentedString(hrpPrefix)).append("\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    addressBytePrefix: ").append(toIndentedString(addressBytePrefix)).append("\n");

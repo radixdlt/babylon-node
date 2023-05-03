@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ModuleType;
+import com.radixdlt.api.core.generated.models.ObjectModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -42,7 +42,7 @@ public class MethodEventEmitterIdentifierAllOf {
   private EntityReference entity;
 
   public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ModuleType moduleType;
+  private ObjectModuleType moduleType;
 
   public MethodEventEmitterIdentifierAllOf() { 
   }
@@ -73,7 +73,7 @@ public class MethodEventEmitterIdentifierAllOf {
   }
 
 
-  public MethodEventEmitterIdentifierAllOf moduleType(ModuleType moduleType) {
+  public MethodEventEmitterIdentifierAllOf moduleType(ObjectModuleType moduleType) {
     this.moduleType = moduleType;
     return this;
   }
@@ -87,14 +87,14 @@ public class MethodEventEmitterIdentifierAllOf {
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleType getModuleType() {
+  public ObjectModuleType getModuleType() {
     return moduleType;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ModuleType moduleType) {
+  public void setModuleType(ObjectModuleType moduleType) {
     this.moduleType = moduleType;
   }
 

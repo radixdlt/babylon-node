@@ -11,10 +11,10 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct StateResourceResponse {
     #[serde(rename = "manager")]
-    pub manager: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    pub manager: Box<crate::core_api::generated::models::StateResourceResponseManager>,
     #[serde(rename = "access_rules")]
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "vault_access_rules")]
@@ -22,9 +22,9 @@ pub struct StateResourceResponse {
 }
 
 impl StateResourceResponse {
-    pub fn new(manager: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, vault_access_rules: crate::core_api::generated::models::Substate) -> StateResourceResponse {
+    pub fn new(manager: crate::core_api::generated::models::StateResourceResponseManager, access_rules: crate::core_api::generated::models::Substate, vault_access_rules: crate::core_api::generated::models::Substate) -> StateResourceResponse {
         StateResourceResponse {
-            manager: Option::Some(manager),
+            manager: Box::new(manager),
             access_rules: Option::Some(access_rules),
             vault_access_rules: Option::Some(vault_access_rules),
         }

@@ -79,8 +79,8 @@ public class NetworkStatusTest extends DeterministicCoreApiTestBase {
           getStatusApi()
               .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
 
-      // Has ingested genesis on startup
-      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(1);
+      // Has ingested genesis on startup (expecting 4 genesis txns)
+      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(4);
     }
   }
 }

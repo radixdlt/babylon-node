@@ -62,12 +62,12 @@
  * permissions under this License.
  */
 
-use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
+use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
+    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
     NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
 };
@@ -75,11 +75,14 @@ use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
 };
-use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_common::crypto::hash;
 use radix_engine_interface::crypto::Hash;
 
+use crate::staging::ReadableStore;
+use radix_engine::track::db_key_mapper::DatabaseKeyMapper;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, WriteableTreeStore,
+    NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 
@@ -92,6 +95,7 @@ pub enum ProcessedTransactionReceipt {
 pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
+    pub database_updates: DatabaseUpdates,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -102,13 +106,13 @@ pub struct HashUpdateContext<'s, S> {
 }
 
 impl ProcessedTransactionReceipt {
-    pub fn process<S: ReadableHashStructuresStore>(
+    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         transaction_receipt: TransactionReceipt,
     ) -> Self {
         match transaction_receipt.result {
             TransactionResult::Commit(commit) => {
-                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
                     hash_update_context,
                     commit,
                     transaction_receipt.execution_trace,
@@ -158,7 +162,7 @@ impl ProcessedTransactionReceipt {
 }
 
 impl ProcessedCommitResult {
-    pub fn process<S: ReadableHashStructuresStore>(
+    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_trace: TransactionExecutionTrace,
@@ -169,13 +173,44 @@ impl ProcessedCommitResult {
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
-        let local_receipt = LocalTransactionReceipt::from((commit_result, execution_trace));
         let store = hash_update_context.store;
+
+        let mut substate_changes = Vec::new();
+        for ((node_id, module_id), node_module_updates) in
+            commit_result.state_updates.system_updates.clone()
+        {
+            for (substate_key, update) in node_module_updates {
+                let partition_key = D::to_db_partition_key(&node_id, module_id);
+                let sort_key = D::to_db_sort_key(&substate_key);
+                let change_action = match update {
+                    DatabaseUpdate::Set(value) => {
+                        match store.get_substate(&partition_key, &sort_key) {
+                            Some(_) => ChangeAction::Create(value),
+                            None => ChangeAction::Update(value),
+                        }
+                    }
+                    DatabaseUpdate::Delete => ChangeAction::Delete,
+                };
+                substate_changes.push(SubstateChange {
+                    node_id,
+                    module_id,
+                    substate_key,
+                    action: change_action,
+                });
+            }
+        }
+
+        let database_updates = commit_result.state_updates.database_updates.clone();
+
         let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
             parent_transaction_identifiers.state_version,
-            &local_receipt.on_ledger.substate_changes,
+            &commit_result.state_updates.database_updates,
         );
+
+        let local_receipt =
+            LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
+
         let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
             store,
             epoch_transaction_identifiers.state_version,
@@ -196,6 +231,7 @@ impl ProcessedCommitResult {
             transaction_root: *transaction_tree_diff.slice.root(),
             receipt_root: *receipt_tree_diff.slice.root(),
         };
+
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
@@ -205,6 +241,7 @@ impl ProcessedCommitResult {
                 transaction_tree_diff,
                 receipt_tree_diff,
             },
+            database_updates,
         }
     }
 
@@ -247,17 +284,24 @@ impl ProcessedCommitResult {
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: u64,
-        substate_changes: &[SubstateChange],
+        database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
-        let hash_changes = substate_changes
-            .iter()
-            .map(|substate_change| {
-                SubstateHashChange::new(
-                    substate_change.substate_id.clone(),
-                    substate_change.action.get_new_value_hash(),
-                )
-            })
-            .collect::<Vec<_>>();
+        let mut hash_changes = Vec::new();
+        for (db_partition_key, partition_updates) in database_updates {
+            for (db_sort_key, database_update) in partition_updates {
+                match database_update {
+                    DatabaseUpdate::Set(value) => hash_changes.push(SubstateHashChange::new(
+                        (db_partition_key.clone(), db_sort_key.clone()),
+                        Some(hash(value)),
+                    )),
+                    DatabaseUpdate::Delete => hash_changes.push(SubstateHashChange::new(
+                        (db_partition_key.clone(), db_sort_key.clone()),
+                        None,
+                    )),
+                }
+            }
+        }
+
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
@@ -279,8 +323,8 @@ pub struct HashStructuresDiff {
 #[derive(Clone)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
+    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
+    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
@@ -399,8 +443,8 @@ impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for Collectin
     }
 }
 
-impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+impl<'s, S> WriteableTreeStore<PartitionPayload> for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<PartitionPayload>) {
         self.diff.new_re_node_layer_nodes.push((key, node));
     }
 
@@ -409,8 +453,8 @@ impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, 
     }
 }
 
-impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
+impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
         self.diff.new_substate_layer_nodes.push((key, node));
     }
 

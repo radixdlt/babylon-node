@@ -107,7 +107,7 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> committedUserTransaction(
-      RawNotarizedTransaction userTransaction) {
+      RawNotarizedTransaction userTransaction, boolean requireSuccess) {
     var committedTransaction =
         RawLedgerTransaction.create(
             TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
@@ -120,7 +120,11 @@ public class NodePredicate {
         } else {
           var txn = maybeTxn.unwrap();
           if (txn.rawTransaction().equals(committedTransaction)) {
-            return true;
+            if (requireSuccess) {
+              return txn.status() instanceof CommittedTransactionStatus.Success;
+            } else {
+              return true;
+            }
           }
         }
       }

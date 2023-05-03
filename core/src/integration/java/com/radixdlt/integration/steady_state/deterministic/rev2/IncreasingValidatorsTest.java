@@ -73,6 +73,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -90,7 +91,6 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -118,7 +118,7 @@ public final class IncreasingValidatorsTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -139,7 +139,7 @@ public final class IncreasingValidatorsTest {
                   k ->
                       Pair.of(
                           REv2TestTransactions.constructCreateValidatorTransaction(
-                              NetworkDefinition.INT_TEST_NET, 0, 12, k),
+                              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0, 12, k),
                           k))
               .limit(NUM_VALIDATORS - 1)
               .toList();
@@ -155,7 +155,8 @@ public final class IncreasingValidatorsTest {
       for (int i = 0; i < transactions.size(); i++) {
         var txn = transactions.get(i);
         test.runForCount(1000);
-        test.runUntilState(nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst())));
+        test.runUntilState(
+            nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst(), false)));
         var executedTransaction =
             NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), txn.getFirst());
         var validatorAddress = executedTransaction.newComponentAddresses().get(0);
@@ -165,10 +166,20 @@ public final class IncreasingValidatorsTest {
                 PrivateKeys.ofNumeric(i + 2).getPublicKey(), validatorAddress));
         var registerValidatorTxn =
             REv2TestTransactions.constructRegisterValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
+                NetworkDefinition.INT_TEST_NET,
+                test.faucetAddress(),
+                0,
+                13,
+                validatorAddress,
+                txn.getSecond());
         var stakeValidatorTxn =
             REv2TestTransactions.constructStakeValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
+                NetworkDefinition.INT_TEST_NET,
+                test.faucetAddress(),
+                0,
+                13,
+                validatorAddress,
+                txn.getSecond());
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
         mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
       }

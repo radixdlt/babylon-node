@@ -1,25 +1,22 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
-use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::{
-    Address, ComponentAddress, ObjectId, RENodeId, SubstateOffset, VaultOffset,
-};
-use radix_engine::{
-    ledger::OutputValue,
-    types::{hash, scrypto_encode, Decimal, SubstateId},
-};
+use radix_engine::types::ComponentAddress;
+use radix_engine::types::{hash, Decimal};
 
-use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
-use radix_engine_interface::blueprints::resource::ResourceType;
-
-use std::collections::{BTreeMap, HashMap};
+use radix_engine::system::system_modules::costing::{FeeSummary, RoyaltyRecipient};
+use radix_engine_common::data::scrypto::scrypto_encode;
+use radix_engine_common::types::{GlobalAddress, ModuleId, NodeId, SubstateKey};
+use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
+use radix_engine_queries::typed_substate_layout::{
+    to_typed_substate_key, to_typed_substate_value, TypedSubstateKey, TypedSubstateValue,
+};
+use std::collections::BTreeMap;
 
 use state_manager::{
-    ApplicationEvent, ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome,
-    LocalTransactionReceipt,
+    ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
+    SubstateChange,
 };
 
 pub fn to_api_receipt(
@@ -61,81 +58,75 @@ pub fn to_api_receipt(
         )?);
     }
 
-    // This was added as a temporary workaround to the Vault substate abstraction for the RCNet release
-    fn filter_out_incorrect_vault_substates_for_gateway(
-        created_substates: Vec<(SubstateId, OutputValue)>,
-    ) -> Vec<(SubstateId, OutputValue)> {
-        // First pass -> create mapping of Vault => ResourceType
-        let vault_resource_type_map: HashMap<ObjectId, ResourceType> = created_substates
-            .iter()
-            .filter_map(|(substate_id, output_value)| match substate_id {
-                SubstateId(
-                    RENodeId::Object(vault_id),
-                    _,
-                    SubstateOffset::Vault(VaultOffset::Info),
-                ) => match &output_value.substate {
-                    PersistedSubstate::VaultInfo(substate) => {
-                        Some((*vault_id, substate.resource_type))
-                    }
-                    _ => None,
-                },
-                _ => None,
-            })
-            .collect();
-        // Second pass -> filter out incorrect substates
-        created_substates
-            .into_iter()
-            .filter_map(|(substate_id, output_value)| {
-                let resource_type = match substate_id.0 {
-                    RENodeId::Object(object_id) => vault_resource_type_map.get(&object_id),
-                    _ => None,
-                };
-                let keep_substate = match (&output_value.substate, resource_type) {
-                    (
-                        PersistedSubstate::VaultLiquidFungible(_),
-                        Some(ResourceType::Fungible { .. }),
-                    ) => true,
-                    (PersistedSubstate::VaultLiquidFungible(_), _) => false,
-                    (
-                        PersistedSubstate::VaultLiquidNonFungible(_),
-                        Some(ResourceType::NonFungible { .. }),
-                    ) => true,
-                    (PersistedSubstate::VaultLiquidNonFungible(_), _) => false,
-                    (PersistedSubstate::VaultLockedFungible(_), _) => false,
-                    (PersistedSubstate::VaultLockedNonFungible(_), _) => false,
-                    _ => true,
-                };
-                if keep_substate {
-                    Some((substate_id, output_value))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    let mut unfiltered_creations = Vec::new();
+    let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for substate_change in receipt.on_ledger.substate_changes {
-        let id = substate_change.substate_id;
-        match substate_change.action {
+    for SubstateChange {
+        node_id,
+        module_id,
+        substate_key,
+        action,
+    } in receipt.on_ledger.substate_changes
+    {
+        let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
+        let typed_substate_key = to_typed_substate_key(entity_type, module_id, &substate_key)
+            .map_err(|msg| MappingError::SubstateKeyMappingError {
+                entity_type_hex: to_hex(node_id_to_entity_id_bytes(&node_id)),
+                module_id: module_id.0,
+                substate_key_hex: to_hex(scrypto_encode(&substate_key).unwrap()),
+                message: msg,
+            })?;
+        if !typed_substate_key.value_is_mappable() {
+            continue;
+        }
+
+        match action {
             ChangeAction::Create(value) => {
-                unfiltered_creations.push((id, value));
+                let typed_substate_value =
+                    to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
+                        |msg| MappingError::SubstateValueMappingError {
+                            bytes: value.clone(),
+                            message: msg,
+                        },
+                    )?;
+                created_substates.push(to_api_created_or_updated_substate(
+                    context,
+                    &node_id,
+                    module_id,
+                    &substate_key,
+                    &value,
+                    &typed_substate_key,
+                    &typed_substate_value,
+                )?);
             }
             ChangeAction::Update(value) => {
-                updated_substates.push(to_api_new_substate_version(context, id, value)?);
+                let typed_substate_value =
+                    to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
+                        |msg| MappingError::SubstateValueMappingError {
+                            bytes: value.clone(),
+                            message: msg,
+                        },
+                    )?;
+                updated_substates.push(to_api_created_or_updated_substate(
+                    context,
+                    &node_id,
+                    module_id,
+                    &substate_key,
+                    &value,
+                    &typed_substate_key,
+                    &typed_substate_value,
+                )?);
             }
-            ChangeAction::Delete(version) => {
-                deleted_substates.push(to_api_deleted_substate(id, version)?);
+            ChangeAction::Delete => {
+                deleted_substates.push(to_api_deleted_substate(
+                    &node_id,
+                    module_id,
+                    &substate_key,
+                    &typed_substate_key,
+                )?);
             }
         }
     }
-
-    let created_substates = filter_out_incorrect_vault_substates_for_gateway(unfiltered_creations)
-        .into_iter()
-        .map(|(id, value)| to_api_new_substate_version(context, id, value))
-        .collect::<Result<Vec<_>, _>>()?;
 
     let api_state_updates = models::StateUpdates {
         created_substates,
@@ -185,42 +176,41 @@ pub fn to_api_receipt(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_new_substate_version(
+pub fn to_api_created_or_updated_substate(
     context: &MappingContext,
-    substate_id: SubstateId,
-    output_value: OutputValue,
-) -> Result<models::NewSubstateVersion, MappingError> {
-    let substate_bytes =
-        scrypto_encode(&output_value.substate).map_err(|err| MappingError::SborEncodeError {
-            encode_error: err,
-            message: "Substate bytes could not be encoded".to_string(),
-        })?;
-    let hash = to_hex(hash(&substate_bytes));
-
-    let api_substate_data = Some(to_api_substate(
+    node_id: &NodeId,
+    module_id: ModuleId,
+    substate_key: &SubstateKey,
+    value: &Vec<u8>,
+    typed_substate_key: &TypedSubstateKey,
+    typed_substate_value: &TypedSubstateValue,
+) -> Result<models::CreatedOrUpdatedSubstate, MappingError> {
+    let substate_hex = to_hex(value);
+    let substate_data_hash = to_hex(hash(value));
+    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let substate_data = Some(to_api_substate(
         context,
-        &substate_id,
-        &output_value.substate,
+        substate_key,
+        typed_substate_value,
     )?);
-
-    Ok(models::NewSubstateVersion {
-        substate_id: Box::new(to_api_substate_id(substate_id)?),
-        version: to_api_substate_version(output_value.version)?,
-        substate_hex: to_hex(substate_bytes),
-        substate_data_hash: hash,
-        substate_data: api_substate_data,
+    Ok(models::CreatedOrUpdatedSubstate {
+        substate_id: Box::new(substate_id),
+        substate_hex,
+        substate_data_hash,
+        substate_data,
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
-    substate_id: SubstateId,
-    deleted_substate: DeletedSubstateVersion,
-) -> Result<models::DeletedSubstateVersionRef, MappingError> {
-    Ok(models::DeletedSubstateVersionRef {
-        substate_id: Box::new(to_api_substate_id(substate_id)?),
-        substate_data_hash: to_hex(deleted_substate.substate_hash),
-        version: to_api_substate_version(deleted_substate.version)?,
+    node_id: &NodeId,
+    module_id: ModuleId,
+    substate_key: &SubstateKey,
+    typed_substate_key: &TypedSubstateKey,
+) -> Result<models::DeletedSubstate, MappingError> {
+    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    Ok(models::DeletedSubstate {
+        substate_id: Box::new(substate_id),
     })
 }
 
@@ -259,17 +249,17 @@ pub fn to_api_event(
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
             emitter: Some(match emitter {
-                Emitter::Function(node_id, node_module_id, blueprint_name) => {
+                Emitter::Function(node_id, object_module_id, blueprint_name) => {
                     models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_module_type(&node_module_id),
+                        module_type: to_api_object_module_type(&object_module_id),
                         blueprint_name,
                     }
                 }
-                Emitter::Method(node_id, node_module_id) => {
+                Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_module_type(&node_module_id),
+                        module_type: to_api_object_module_type(&object_module_id),
                     }
                 }
             }),
@@ -283,7 +273,7 @@ pub fn to_api_event(
 pub fn to_api_fee_summary(
     context: &MappingContext,
     fee_summary: &FeeSummary,
-    fee_payments: &IndexMap<ObjectId, Decimal>,
+    fee_payments: &IndexMap<NodeId, Decimal>,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
@@ -302,7 +292,7 @@ pub fn to_api_fee_summary(
             .iter()
             .map(|(vault_id, xrd_amount)| {
                 Ok(models::VaultPayment {
-                    vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(*vault_id))?),
+                    vault_entity: Box::new(to_api_entity_reference(*vault_id)?),
                     xrd_amount: to_api_decimal(xrd_amount),
                 })
             })
@@ -311,9 +301,9 @@ pub fn to_api_fee_summary(
             .royalty_cost_breakdown
             .iter()
             .map(|(receiver, (_, xrd_amount))| {
-                let global_address = match receiver {
-                    RoyaltyRecipient::Package(address) => Address::Package(*address),
-                    RoyaltyRecipient::Component(address) => Address::Component(*address),
+                let global_address: GlobalAddress = match receiver {
+                    RoyaltyRecipient::Package(address) => (*address).into(),
+                    RoyaltyRecipient::Component(address) => (*address).into(),
                 };
                 Ok(models::RoyaltyPayment {
                     royalty_receiver: Box::new(to_global_entity_reference(

@@ -67,7 +67,7 @@ package com.radixdlt;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.genesis.GenesisConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.PreGenesisNodeModule;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
@@ -76,10 +76,6 @@ import com.radixdlt.genesis.olympia.OlympiaGenesisService;
 import com.radixdlt.lang.Either;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
@@ -150,9 +146,8 @@ public final class RadixNodeBootstrapper {
     /*
      The Radix bootstrapper utilizes two (or tree including the node itself) top-level Guice modules:
      - PreGenesisNodeModule:
-        A basic module containing utils for loading the genesis transaction from properties
-        and a simplified/mocked StateManager instance used to read the executed genesis transaction
-        from the database. This module is always instantiated.
+        A basic module containing utils for loading the genesis transaction from properties.
+        This module is always instantiated.
 
      - GenesisFromOlympiaNodeModule:
         A module used to acquire the genesis transaction from a running Olympia node.
@@ -168,24 +163,10 @@ public final class RadixNodeBootstrapper {
     final var preGenesisInjector =
         Guice.createInjector(new PreGenesisNodeModule(properties, network));
 
-    // We only need REv2 state manager to be able to read the genesis transaction from the database
-    // once we read it we can immediately shut it down, so that the database lock and any other
-    // resources are released and can be re-used by the real
-    // state manager instantiated by the RadixNodeModule.
-    final var executedGenesisTransaction =
+    final Optional<GenesisData> configuredGenesis =
         preGenesisInjector
-            .getInstance(REv2TransactionAndProofStore.class)
-            .getTransactionAtStateVersion(1)
-            .map(ExecutedTransaction::rawTransaction)
-            .toOptional();
-    preGenesisInjector.getInstance(StateManager.class).shutdown();
-
-    final var genesisFromPropertiesLoader =
-        preGenesisInjector.getInstance(GenesisFromPropertiesLoader.class);
-    final var configuredGenesisTransaction =
-        genesisFromPropertiesLoader
-            .loadGenesisDataFromProperties()
-            .map(gd -> gd.toGenesisTransaction(GenesisConfig.babylonDefault()));
+            .getInstance(GenesisFromPropertiesLoader.class)
+            .loadGenesisDataFromProperties();
 
     /* We have three sources of a genesis transaction at this point:
      *  - a fixed genesis transaction associated with a given network
@@ -193,6 +174,8 @@ public final class RadixNodeBootstrapper {
      * 	- a genesis transaction stored in a database
      * We can use either one, but we need to make sure they match, if more than one
      * is configured (to protect against node misconfiguration).
+     * TODO(genesis): the check that the configured genesis data matches the database state has been
+     *                temporarily removed, bring it back at some point (or something similar)
      *
      * If neither genesis transaction is present, we may try to acquire it from a running
      * Olympia node, if it has been configured. This mode will be (or already was :)) used to
@@ -201,79 +184,51 @@ public final class RadixNodeBootstrapper {
      * Finally, if neither the genesis transaction nor any means to obtain it (from the Olympia node)
      * have been configured, we fail with an error.
      * */
-    if (executedGenesisTransaction.isPresent()) {
-      // The ledger is already initialized, let's make sure the genesis
-      // transaction matches the properties and/or network.
-      final var executedTx = executedGenesisTransaction.get();
-
-      if (isPresentAndNotEqual(executedTx, configuredGenesisTransaction)) {
-        return new RadixNodeBootstrapperHandle.Failed(
-            new RuntimeException(
-                String.format(
-                    """
-                      Configured genesis transaction (%s) doesn't match the genesis transaction that has \
-                      already been executed and stored on ledger (%s). Make sure your \
-                      `network.genesis_txn` and/or `network.genesis_file` config options are set \
-                      correctly (or clear them).""",
-                    configuredGenesisTransaction.orElseThrow().getPayloadHash(),
-                    executedTx.getPayloadHash())));
-      }
-      if (isPresentAndNotEqual(executedTx, fixedNetworkGenesis)) {
-        return new RadixNodeBootstrapperHandle.Failed(
-            new RuntimeException(
-                String.format(
-                    """
-                    Network %s has a genesis transaction (%s) that doesn't match the genesis" \
-                    transaction that has previously been executed and stored on ledger (%s)." \
-                    Make sure your configuration is correct (`network.id` and/or" \
-                    `db.location`).""",
-                    network.getLogicalName(),
-                    fixedNetworkGenesis.orElseThrow().getPayloadHash(),
-                    executedTx.getPayloadHash())));
-      }
-
-      final var radixNode = RadixNode.start(properties, network, executedTx);
-      return new RadixNodeBootstrapperHandle.Resolved(radixNode);
-    } else if (configuredGenesisTransaction.isPresent()) {
+    if (configuredGenesis.isPresent()) {
       // The ledger isn't initialized, but there is a configured genesis transaction in properties
       // So just need to make sure it matches the fixed network genesis
-      final var genesisTx = configuredGenesisTransaction.get();
-
-      if (isPresentAndNotEqual(genesisTx, fixedNetworkGenesis)) {
+      if (isPresentAndNotEqual(configuredGenesis.get(), fixedNetworkGenesis)) {
         return new RadixNodeBootstrapperHandle.Failed(
             new RuntimeException(
                 String.format(
                     """
-                    Network %s has a genesis transaction (%s) that doesn't match \
-                    the genesis transaction that has been configured for this node (%s). \
+                    Network %s has a genesis configuration that doesn't match \
+                    the genesis that has been configured for this node. \
                     Make sure your configuration is correct (`network.id` and/or \
                     `network.genesis_txn` and/or `network.genesis_file`).""",
-                    network.getLogicalName(),
-                    fixedNetworkGenesis.orElseThrow().getPayloadHash(),
-                    genesisTx.getPayloadHash())));
+                    network.getLogicalName())));
       }
-
-      final var radixNode = RadixNode.start(properties, network, genesisTx);
+      final var radixNode = RadixNode.start(properties, network, configuredGenesis);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (fixedNetworkGenesis.isPresent()) {
-      // There's nothing on ledger and/or properties, so we can just use
+      // There's no configured genesis data in properties, so we can just use
       // the network fixed genesis without any additional validation
-      final var radixNode = RadixNode.start(properties, network, fixedNetworkGenesis.get());
+      final var radixNode = RadixNode.start(properties, network, fixedNetworkGenesis);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
       final var olympiaBootstrapper = OlympiaGenesisBootstrapper.start(properties, network);
       return new RadixNodeBootstrapperHandle.AsyncFromOlympia(olympiaBootstrapper);
     } else {
+      // TODO(genesis): for now just starting the node without any genesis configuration,
+      //                the node will start if the database was already initialized
+      //                or fail in the recovery module.
+      final var radixNode = RadixNode.start(properties, network, Optional.empty());
+      return new RadixNodeBootstrapperHandle.Resolved(radixNode);
+      // TODO(genesis): bring back the error message once the genesis check
+      //                against the database is brought back
+
       // TODO(post-babylon): remove Olympia ref from the message below
+      /*
       return new RadixNodeBootstrapperHandle.Failed(
           new RuntimeException(
               """
-						  Radix node couldn't be initialized. No genesis transaction has been configured. Make \
-						  sure that either `network.genesis_txn` or `network.genesis_file` is set or that \
-						  you're using a well known network (`network.id`). If you're running an Olympia \
-						  node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
-						  documentation for more details."""));
+        Radix node couldn't be initialized. No genesis transaction has been configured. Make \
+        sure that either `network.genesis_txn` or `network.genesis_file` is set or that \
+        you're using a well known network (`network.id`). If you're running an Olympia \
+        node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
+        documentation for more details."""));
+       */
     }
   }
 
@@ -309,9 +264,8 @@ public final class RadixNodeBootstrapper {
             (missing or invalid network.id config).""")));
   }
 
-  private static RawLedgerTransaction resolveFixedNetworkGenesis(
-      FixedNetworkGenesis fixedNetworkGenesis) {
-    // TODO: read genesis data from resources or parse from raw bytes
+  private static GenesisData resolveFixedNetworkGenesis(FixedNetworkGenesis fixedNetworkGenesis) {
+    // TODO(genesis): read genesis data from resources or parse from raw bytes
     throw new RuntimeException("Not implemented yet");
   }
 
@@ -368,13 +322,11 @@ public final class RadixNodeBootstrapper {
             } else {
               log.info(
                   """
-             Genesis data has been successfully received from the Olympia node \
-             ({} accounts, {} validators). Initializing the Babylon node...""",
-                  genesisData.accountXrdAllocations().size(),
-                  genesisData.validatorSetAndStakeOwners().size());
-              final var genesisTxn =
-                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
-              radixNodeFuture.complete(RadixNode.start(properties, network, genesisTxn));
+              Genesis data has been successfully received from the Olympia node \
+              ({} data chunks). Initializing the Babylon node...""",
+                  genesisData.chunks().size());
+              radixNodeFuture.complete(
+                  RadixNode.start(properties, network, Optional.of(genesisData)));
             }
           });
     }

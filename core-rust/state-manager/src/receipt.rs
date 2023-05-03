@@ -3,18 +3,15 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use std::collections::BTreeMap;
 
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::OutputValue;
-use radix_engine::state_manager::StateDiff;
-use radix_engine::system::kernel_modules::costing::FeeSummary;
-use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
+use radix_engine::system::system_modules::costing::FeeSummary;
+use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
     CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
 };
-use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
-use radix_engine_common::crypto::blake2b_256_hash;
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level};
+use radix_engine_common::types::{ComponentAddress, ModuleId, NodeId, SubstateKey};
 
-use radix_engine_interface::api::types::EventTypeIdentifier;
-use radix_engine_interface::data::scrypto::model::ComponentAddress;
+use radix_engine_interface::types::EventTypeIdentifier;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
 
@@ -38,6 +35,21 @@ impl CommittedTransactionIdentifiers {
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct SubstateChange {
+    pub node_id: NodeId,
+    pub module_id: ModuleId,
+    pub substate_key: SubstateKey,
+    pub action: ChangeAction,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ChangeAction {
+    Create(Vec<u8>),
+    Update(Vec<u8>),
+    Delete,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ApplicationEvent {
     pub type_id: EventTypeIdentifier,
     pub data: Vec<u8>,
@@ -50,46 +62,7 @@ impl ApplicationEvent {
 
     /// Computes a hash of this event, to be used in the events' merkle tree.
     pub fn get_hash(&self) -> EventHash {
-        EventHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
-    }
-}
-
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct SubstateChange {
-    pub substate_id: SubstateId,
-    pub action: ChangeAction,
-}
-
-impl SubstateChange {
-    pub fn new(substate_id: SubstateId, action: ChangeAction) -> Self {
-        Self {
-            substate_id,
-            action,
-        }
-    }
-
-    /// Computes a hash of this change, to be used in the substate changes' merkle tree.
-    pub fn get_hash(&self) -> SubstateChangeHash {
-        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
-    }
-}
-
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ChangeAction {
-    Create(OutputValue),
-    Update(OutputValue),
-    Delete(DeletedSubstateVersion),
-}
-
-impl ChangeAction {
-    /// Computes a hash of the changed substate's new value, to be used in the state merkle tree.
-    pub fn get_new_value_hash(&self) -> Option<Hash> {
-        match &self {
-            ChangeAction::Create(value) | ChangeAction::Update(value) => {
-                Some(hash(scrypto_encode(&value.substate).unwrap()))
-            }
-            ChangeAction::Delete(_) => None,
-        }
+        EventHash::from(hash(scrypto_encode(self).unwrap()))
     }
 }
 
@@ -163,7 +136,7 @@ pub struct LedgerTransactionReceipt {
     /// A simple, high-level outcome of the transaction.
     /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
-    /// The substate changes resulting from the transaction, ordered by their `substate_id`.
+    /// The substate changes resulting from the transaction.
     pub substate_changes: Vec<SubstateChange>,
     /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<ApplicationEvent>,
@@ -178,7 +151,7 @@ pub struct LocalTransactionExecution {
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
     // Which vault/s paid the fee
-    pub fee_payments: IndexMap<ObjectId, Decimal>,
+    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     // These will be removed once we have the parent_map for the toolkit to use
@@ -198,7 +171,9 @@ impl LedgerTransactionReceipt {
             substate_change_root: compute_merkle_root(
                 substate_changes
                     .iter()
-                    .map(|substate_change| substate_change.get_hash())
+                    .map(|substate_change| {
+                        SubstateChangeHash::from_substate_change(substate_change)
+                    })
                     .collect(),
             ),
             event_root: compute_merkle_root(
@@ -211,13 +186,21 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt {
-    fn from((commit_result, execution_trace): (CommitResult, TransactionExecutionTrace)) -> Self {
+impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
+    for LocalTransactionReceipt
+{
+    fn from(
+        (commit_result, substate_changes, execution_trace): (
+            CommitResult,
+            Vec<SubstateChange>,
+            TransactionExecutionTrace,
+        ),
+    ) -> Self {
         let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
-                substate_changes: fix_state_updates(commit_result.state_updates),
+                substate_changes,
                 application_events: commit_result
                     .application_events
                     .into_iter()
@@ -235,74 +218,6 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt
             },
         }
     }
-}
-
-fn fix_state_updates(state_updates: StateDiff) -> Vec<SubstateChange> {
-    // As of end of August 2022, the engine's statediff erroneously includes substate reads
-    // (even if the content didn't change) as ups and downs.
-    // This needs fixing, but for now, we work around this here, by removing such up/down pairs.
-    let mut possible_creations = state_updates.up_substates;
-    let mut updated = BTreeMap::<SubstateId, OutputValue>::new();
-    let mut deleted = BTreeMap::<SubstateId, DeletedSubstateVersion>::new();
-
-    // We iterate over the downed substates, and attempt to match them with an upped substate
-    // > If they match an upped substate, the down and up is erroneous, so we ignore both
-    // > If it doesn't match, this is correct and is added to valid_down_substates
-    for down_substate_output_id in state_updates.down_substates {
-        let substate_id = down_substate_output_id.substate_id;
-        let down_substate_hash = down_substate_output_id.substate_hash;
-        match possible_creations.remove(&substate_id) {
-            Some(up_substate_output_value) => {
-                // TODO - this check can be removed when the bug is fixed
-                let up_substate_hash =
-                    hash(scrypto_encode(&up_substate_output_value.substate).unwrap());
-                if up_substate_hash != down_substate_hash {
-                    updated.insert(substate_id, up_substate_output_value);
-                } else {
-                    // Do nothing - this is erroneous
-                }
-            }
-            None => {
-                deleted.insert(
-                    substate_id,
-                    DeletedSubstateVersion {
-                        substate_hash: down_substate_hash,
-                        version: down_substate_output_id.version,
-                    },
-                );
-            }
-        }
-    }
-
-    // The remaining up_substates which didn't match with a down_substate are all creates
-    let created = possible_creations;
-
-    into_change_list(created, updated, deleted)
-}
-
-/// Turns the sets of changes (of different kind) into a flat list of `SubstateChange`s, ordered by
-/// `SubstateId` (i.e. suitable for merklization).
-fn into_change_list(
-    created: BTreeMap<SubstateId, OutputValue>,
-    updated: BTreeMap<SubstateId, OutputValue>,
-    deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
-) -> Vec<SubstateChange> {
-    let mut changes = created
-        .into_iter()
-        .map(|(id, value)| SubstateChange::new(id, ChangeAction::Create(value)))
-        .chain(
-            updated
-                .into_iter()
-                .map(|(id, value)| SubstateChange::new(id, ChangeAction::Update(value))),
-        )
-        .chain(
-            deleted
-                .into_iter()
-                .map(|(id, version)| SubstateChange::new(id, ChangeAction::Delete(version))),
-        )
-        .collect::<Vec<_>>();
-    changes.sort_by(|left, right| left.substate_id.cmp(&right.substate_id));
-    changes
 }
 
 /// Constructs a transient merkle tree on top of the given leaves, and returns its root only.

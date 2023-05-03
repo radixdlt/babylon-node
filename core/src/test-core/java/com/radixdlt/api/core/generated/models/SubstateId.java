@@ -23,9 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityType;
-import com.radixdlt.api.core.generated.models.ModuleType;
-import com.radixdlt.api.core.generated.models.SubstateKeyType;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.SysModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -39,7 +38,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   SubstateId.JSON_PROPERTY_ENTITY_ID_HEX,
   SubstateId.JSON_PROPERTY_MODULE_TYPE,
   SubstateId.JSON_PROPERTY_SUBSTATE_TYPE,
-  SubstateId.JSON_PROPERTY_SUBSTATE_KEY_TYPE,
   SubstateId.JSON_PROPERTY_SUBSTATE_KEY_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -51,13 +49,10 @@ public class SubstateId {
   private String entityIdHex;
 
   public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ModuleType moduleType;
+  private SysModuleType moduleType;
 
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
-
-  public static final String JSON_PROPERTY_SUBSTATE_KEY_TYPE = "substate_key_type";
-  private SubstateKeyType substateKeyType;
 
   public static final String JSON_PROPERTY_SUBSTATE_KEY_HEX = "substate_key_hex";
   private String substateKeyHex;
@@ -117,7 +112,7 @@ public class SubstateId {
   }
 
 
-  public SubstateId moduleType(ModuleType moduleType) {
+  public SubstateId moduleType(SysModuleType moduleType) {
     this.moduleType = moduleType;
     return this;
   }
@@ -131,14 +126,14 @@ public class SubstateId {
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleType getModuleType() {
+  public SysModuleType getModuleType() {
     return moduleType;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ModuleType moduleType) {
+  public void setModuleType(SysModuleType moduleType) {
     this.moduleType = moduleType;
   }
 
@@ -166,32 +161,6 @@ public class SubstateId {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSubstateType(SubstateType substateType) {
     this.substateType = substateType;
-  }
-
-
-  public SubstateId substateKeyType(SubstateKeyType substateKeyType) {
-    this.substateKeyType = substateKeyType;
-    return this;
-  }
-
-   /**
-   * Get substateKeyType
-   * @return substateKeyType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateKeyType getSubstateKeyType() {
-    return substateKeyType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateKeyType(SubstateKeyType substateKeyType) {
-    this.substateKeyType = substateKeyType;
   }
 
 
@@ -237,13 +206,12 @@ public class SubstateId {
         Objects.equals(this.entityIdHex, substateId.entityIdHex) &&
         Objects.equals(this.moduleType, substateId.moduleType) &&
         Objects.equals(this.substateType, substateId.substateType) &&
-        Objects.equals(this.substateKeyType, substateId.substateKeyType) &&
         Objects.equals(this.substateKeyHex, substateId.substateKeyHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex, moduleType, substateType, substateKeyType, substateKeyHex);
+    return Objects.hash(entityType, entityIdHex, moduleType, substateType, substateKeyHex);
   }
 
   @Override
@@ -254,7 +222,6 @@ public class SubstateId {
     sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
     sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    substateKeyType: ").append(toIndentedString(substateKeyType)).append("\n");
     sb.append("    substateKeyHex: ").append(toIndentedString(substateKeyHex)).append("\n");
     sb.append("}");
     return sb.toString();

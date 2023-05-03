@@ -26,33 +26,41 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
-import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
+import com.radixdlt.api.core.generated.models.CurrentValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.EpochManagerConfigSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
-import com.radixdlt.api.core.generated.models.FungibleResourceManagerSubstate;
-import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerSubstate;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerDivisibilitySubstate;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerTotalSupplySubstate;
+import com.radixdlt.api.core.generated.models.FungibleVaultBalanceSubstate;
+import com.radixdlt.api.core.generated.models.GenericIndexSubstate;
+import com.radixdlt.api.core.generated.models.GenericKeyValueStoreSubstate;
+import com.radixdlt.api.core.generated.models.GenericScryptoComponentStateSubstate;
+import com.radixdlt.api.core.generated.models.GenericSortedU16IndexSubstate;
+import com.radixdlt.api.core.generated.models.MetadataValueSubstate;
+import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSchemaSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerIdTypeSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerTotalSupplySubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultBalanceSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageFunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltySubstate;
+import com.radixdlt.api.core.generated.models.SecondaryIndexSubstate;
+import com.radixdlt.api.core.generated.models.SortedKey;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
-import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstateAllOf;
-import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
-import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
-import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -63,14 +71,13 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ValidatorSubstate
  */
 @JsonPropertyOrder({
-  ValidatorSubstate.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
-  ValidatorSubstate.JSON_PROPERTY_VALIDATOR_ADDRESS,
+  ValidatorSubstate.JSON_PROPERTY_SORTED_KEY,
   ValidatorSubstate.JSON_PROPERTY_PUBLIC_KEY,
+  ValidatorSubstate.JSON_PROPERTY_IS_REGISTERED,
   ValidatorSubstate.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstate.JSON_PROPERTY_UNSTAKE_VAULT,
   ValidatorSubstate.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
-  ValidatorSubstate.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS,
-  ValidatorSubstate.JSON_PROPERTY_IS_REGISTERED
+  ValidatorSubstate.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -80,39 +87,46 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockSubstate.class, name = "Clock"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
-  @JsonSubTypes.Type(value = ComponentStateSubstate.class, name = "ComponentState"),
+  @JsonSubTypes.Type(value = CurrentValidatorSetSubstate.class, name = "CurrentValidatorSet"),
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
-  @JsonSubTypes.Type(value = FungibleResourceManagerSubstate.class, name = "FungibleResourceManager"),
-  @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
-  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerSubstate.class, name = "NonFungibleResourceManager"),
+  @JsonSubTypes.Type(value = EpochManagerConfigSubstate.class, name = "EpochManagerConfig"),
+  @JsonSubTypes.Type(value = FungibleResourceManagerDivisibilitySubstate.class, name = "FungibleResourceManagerDivisibility"),
+  @JsonSubTypes.Type(value = FungibleResourceManagerTotalSupplySubstate.class, name = "FungibleResourceManagerTotalSupply"),
+  @JsonSubTypes.Type(value = FungibleVaultBalanceSubstate.class, name = "FungibleVaultBalance"),
+  @JsonSubTypes.Type(value = GenericIndexSubstate.class, name = "GenericIndex"),
+  @JsonSubTypes.Type(value = GenericKeyValueStoreSubstate.class, name = "GenericKeyValueStore"),
+  @JsonSubTypes.Type(value = GenericScryptoComponentStateSubstate.class, name = "GenericScryptoComponentState"),
+  @JsonSubTypes.Type(value = GenericSortedU16IndexSubstate.class, name = "GenericSortedU16Index"),
+  @JsonSubTypes.Type(value = MetadataValueSubstate.class, name = "MetadataValue"),
+  @JsonSubTypes.Type(value = MethodAccessRulesSubstate.class, name = "MethodAccessRules"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSubstate.class, name = "NonFungibleResourceManagerData"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSchemaSubstate.class, name = "NonFungibleResourceManagerDataSchema"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerIdTypeSubstate.class, name = "NonFungibleResourceManagerIdType"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerTotalSupplySubstate.class, name = "NonFungibleResourceManagerTotalSupply"),
+  @JsonSubTypes.Type(value = NonFungibleVaultBalanceSubstate.class, name = "NonFungibleVaultBalance"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageFunctionAccessRulesSubstate.class, name = "PackageFunctionAccessRules"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltySubstate.class, name = "PackageRoyalty"),
+  @JsonSubTypes.Type(value = SecondaryIndexSubstate.class, name = "RegisteredValidators"),
   @JsonSubTypes.Type(value = TypeInfoSubstate.class, name = "TypeInfo"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
-  @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
-  @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungible"),
-  @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
-  @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
 public class ValidatorSubstate extends Substate {
-  public static final String JSON_PROPERTY_EPOCH_MANAGER_ADDRESS = "epoch_manager_address";
-  private String epochManagerAddress;
-
-  public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
-  private String validatorAddress;
+  public static final String JSON_PROPERTY_SORTED_KEY = "sorted_key";
+  private SortedKey sortedKey;
 
   public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
   private EcdsaSecp256k1PublicKey publicKey;
+
+  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
+  private Boolean isRegistered;
 
   public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
   private EntityReference stakeVault;
@@ -126,61 +140,32 @@ public class ValidatorSubstate extends Substate {
   public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
   private String unstakeClaimTokenResourceAddress;
 
-  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
-  private Boolean isRegistered;
-
   public ValidatorSubstate() { 
   }
 
-  public ValidatorSubstate epochManagerAddress(String epochManagerAddress) {
-    this.epochManagerAddress = epochManagerAddress;
+  public ValidatorSubstate sortedKey(SortedKey sortedKey) {
+    this.sortedKey = sortedKey;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the component address
-   * @return epochManagerAddress
+   * Get sortedKey
+   * @return sortedKey
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getEpochManagerAddress() {
-    return epochManagerAddress;
+  public SortedKey getSortedKey() {
+    return sortedKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochManagerAddress(String epochManagerAddress) {
-    this.epochManagerAddress = epochManagerAddress;
-  }
-
-
-  public ValidatorSubstate validatorAddress(String validatorAddress) {
-    this.validatorAddress = validatorAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the component address
-   * @return validatorAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getValidatorAddress() {
-    return validatorAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorAddress(String validatorAddress) {
-    this.validatorAddress = validatorAddress;
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSortedKey(SortedKey sortedKey) {
+    this.sortedKey = sortedKey;
   }
 
 
@@ -207,6 +192,32 @@ public class ValidatorSubstate extends Substate {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPublicKey(EcdsaSecp256k1PublicKey publicKey) {
     this.publicKey = publicKey;
+  }
+
+
+  public ValidatorSubstate isRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+    return this;
+  }
+
+   /**
+   * Get isRegistered
+   * @return isRegistered
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsRegistered() {
+    return isRegistered;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
   }
 
 
@@ -314,32 +325,6 @@ public class ValidatorSubstate extends Substate {
   }
 
 
-  public ValidatorSubstate isRegistered(Boolean isRegistered) {
-    this.isRegistered = isRegistered;
-    return this;
-  }
-
-   /**
-   * Get isRegistered
-   * @return isRegistered
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsRegistered() {
-    return isRegistered;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsRegistered(Boolean isRegistered) {
-    this.isRegistered = isRegistered;
-  }
-
-
   /**
    * Return true if this ValidatorSubstate object is equal to o.
    */
@@ -352,20 +337,19 @@ public class ValidatorSubstate extends Substate {
       return false;
     }
     ValidatorSubstate validatorSubstate = (ValidatorSubstate) o;
-    return Objects.equals(this.epochManagerAddress, validatorSubstate.epochManagerAddress) &&
-        Objects.equals(this.validatorAddress, validatorSubstate.validatorAddress) &&
+    return Objects.equals(this.sortedKey, validatorSubstate.sortedKey) &&
         Objects.equals(this.publicKey, validatorSubstate.publicKey) &&
+        Objects.equals(this.isRegistered, validatorSubstate.isRegistered) &&
         Objects.equals(this.stakeVault, validatorSubstate.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstate.unstakeVault) &&
         Objects.equals(this.liquidStakeUnitResourceAddress, validatorSubstate.liquidStakeUnitResourceAddress) &&
         Objects.equals(this.unstakeClaimTokenResourceAddress, validatorSubstate.unstakeClaimTokenResourceAddress) &&
-        Objects.equals(this.isRegistered, validatorSubstate.isRegistered) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, publicKey, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered, super.hashCode());
+    return Objects.hash(sortedKey, publicKey, isRegistered, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, super.hashCode());
   }
 
   @Override
@@ -373,14 +357,13 @@ public class ValidatorSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
-    sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
+    sb.append("    sortedKey: ").append(toIndentedString(sortedKey)).append("\n");
     sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
     sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");
     sb.append("    unstakeClaimTokenResourceAddress: ").append(toIndentedString(unstakeClaimTokenResourceAddress)).append("\n");
-    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -400,28 +383,35 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("Clock", ClockSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
-  mappings.put("ComponentState", ComponentStateSubstate.class);
+  mappings.put("CurrentValidatorSet", CurrentValidatorSetSubstate.class);
   mappings.put("EpochManager", EpochManagerSubstate.class);
-  mappings.put("FungibleResourceManager", FungibleResourceManagerSubstate.class);
-  mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
-  mappings.put("MetadataEntry", MetadataEntrySubstate.class);
-  mappings.put("NonFungibleResourceManager", NonFungibleResourceManagerSubstate.class);
+  mappings.put("EpochManagerConfig", EpochManagerConfigSubstate.class);
+  mappings.put("FungibleResourceManagerDivisibility", FungibleResourceManagerDivisibilitySubstate.class);
+  mappings.put("FungibleResourceManagerTotalSupply", FungibleResourceManagerTotalSupplySubstate.class);
+  mappings.put("FungibleVaultBalance", FungibleVaultBalanceSubstate.class);
+  mappings.put("GenericIndex", GenericIndexSubstate.class);
+  mappings.put("GenericKeyValueStore", GenericKeyValueStoreSubstate.class);
+  mappings.put("GenericScryptoComponentState", GenericScryptoComponentStateSubstate.class);
+  mappings.put("GenericSortedU16Index", GenericSortedU16IndexSubstate.class);
+  mappings.put("MetadataValue", MetadataValueSubstate.class);
+  mappings.put("MethodAccessRules", MethodAccessRulesSubstate.class);
+  mappings.put("NonFungibleResourceManagerData", NonFungibleResourceManagerDataSubstate.class);
+  mappings.put("NonFungibleResourceManagerDataSchema", NonFungibleResourceManagerDataSchemaSubstate.class);
+  mappings.put("NonFungibleResourceManagerIdType", NonFungibleResourceManagerIdTypeSubstate.class);
+  mappings.put("NonFungibleResourceManagerTotalSupply", NonFungibleResourceManagerTotalSupplySubstate.class);
+  mappings.put("NonFungibleVaultBalance", NonFungibleVaultBalanceSubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageFunctionAccessRules", PackageFunctionAccessRulesSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyalty", PackageRoyaltySubstate.class);
+  mappings.put("RegisteredValidators", SecondaryIndexSubstate.class);
   mappings.put("TypeInfo", TypeInfoSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
-  mappings.put("ValidatorSet", ValidatorSetSubstate.class);
-  mappings.put("VaultFungible", VaultFungibleSubstate.class);
-  mappings.put("VaultInfo", VaultInfoSubstate.class);
-  mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
   mappings.put("ValidatorSubstate", ValidatorSubstate.class);
   JSON.registerDiscriminator(ValidatorSubstate.class, "substate_type", mappings);
 }

@@ -16,6 +16,10 @@ pub enum TypeInfoType {
     Object,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
+    #[serde(rename = "Index")]
+    Index,
+    #[serde(rename = "SortedIndex")]
+    SortedIndex,
 
 }
 
@@ -24,6 +28,8 @@ impl ToString for TypeInfoType {
         match self {
             Self::Object => String::from("Object"),
             Self::KeyValueStore => String::from("KeyValueStore"),
+            Self::Index => String::from("Index"),
+            Self::SortedIndex => String::from("SortedIndex"),
         }
     }
 }

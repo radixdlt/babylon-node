@@ -25,8 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.IndexTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetails;
+import com.radixdlt.api.core.generated.models.SortedIndexTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -47,10 +49,14 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = IndexTypeInfoDetails.class, name = "Index"),
+  @JsonSubTypes.Type(value = IndexTypeInfoDetails.class, name = "IndexTypeInfoDetails"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStore"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStoreTypeInfoDetails"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "Object"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "ObjectTypeInfoDetails"),
+  @JsonSubTypes.Type(value = SortedIndexTypeInfoDetails.class, name = "SortedIndex"),
+  @JsonSubTypes.Type(value = SortedIndexTypeInfoDetails.class, name = "SortedIndexTypeInfoDetails"),
 })
 
 public class TypeInfoDetails {
@@ -129,10 +135,14 @@ public class TypeInfoDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("Index", IndexTypeInfoDetails.class);
+  mappings.put("IndexTypeInfoDetails", IndexTypeInfoDetails.class);
   mappings.put("KeyValueStore", KeyValueStoreTypeInfoDetails.class);
   mappings.put("KeyValueStoreTypeInfoDetails", KeyValueStoreTypeInfoDetails.class);
   mappings.put("Object", ObjectTypeInfoDetails.class);
   mappings.put("ObjectTypeInfoDetails", ObjectTypeInfoDetails.class);
+  mappings.put("SortedIndex", SortedIndexTypeInfoDetails.class);
+  mappings.put("SortedIndexTypeInfoDetails", SortedIndexTypeInfoDetails.class);
   mappings.put("TypeInfoDetails", TypeInfoDetails.class);
   JSON.registerDiscriminator(TypeInfoDetails.class, "type", mappings);
 }

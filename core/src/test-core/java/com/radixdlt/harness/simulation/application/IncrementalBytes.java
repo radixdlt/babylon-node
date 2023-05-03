@@ -68,7 +68,7 @@ import com.google.common.primitives.Longs;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 
 /** Submits unique bytes (incrementally) to a network */
-public class IncrementalBytes implements TransactionGenerator {
+public class IncrementalBytes implements TransactionGenerator<RawNotarizedTransaction> {
   private long transactionNumber = 0;
 
   @Override

@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::{ComponentAddress, Decimal, IndexMap};
+use radix_engine::types::{Decimal, IndexMap};
 use state_manager::query::{dump_component_state, VaultData};
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -25,31 +25,13 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
             .map_err(|err| err.into_response_error("account_address"))?;
 
     let database = state.database.read();
-    let component_dump = match dump_component_state(database.deref(), component_address) {
-        Ok(component_dump) => component_dump,
-        Err(err) => match component_address {
-            ComponentAddress::Account(_) => return Err(not_found_error("Account not found")),
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
-            | ComponentAddress::EddsaEd25519VirtualAccount(_) => {
-                return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-                    state_version: to_api_state_version(database.max_state_version())?,
-                    account_address: to_api_component_address(&mapping_context, &component_address),
-                    fungible_resource_balances: Vec::new(),
-                })
-                .map(Json)
-            }
-            _ => {
-                return Err(server_error(format!(
-                    "Error traversing component state: {err:?}"
-                )))
-            }
-        },
-    };
+
+    let component_dump = dump_component_state(database.deref(), component_address);
 
     let fungible_resource_balances = component_dump
         .vaults
         .into_iter()
-        .filter_map(|vault| match vault {
+        .filter_map(|(_node_id, vault_data)| match vault_data {
             VaultData::NonFungible { .. } => None,
             VaultData::Fungible {
                 resource_address,

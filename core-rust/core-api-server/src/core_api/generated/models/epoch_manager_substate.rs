@@ -15,35 +15,20 @@
 pub struct EpochManagerSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the component address
-    #[serde(rename = "address")]
-    pub address: String,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "validator_owner_resource")]
-    pub validator_owner_resource: String,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
     /// An integer between `0` and `10^10`, marking the current round in an epoch
     #[serde(rename = "round")]
     pub round: i64,
-    /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
-    #[serde(rename = "rounds_per_epoch")]
-    pub rounds_per_epoch: i64,
-    #[serde(rename = "num_unstake_epochs")]
-    pub num_unstake_epochs: i64,
 }
 
 impl EpochManagerSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, address: String, validator_owner_resource: String, epoch: i64, round: i64, rounds_per_epoch: i64, num_unstake_epochs: i64) -> EpochManagerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64) -> EpochManagerSubstate {
         EpochManagerSubstate {
             substate_type,
-            address,
-            validator_owner_resource,
             epoch,
             round,
-            rounds_per_epoch,
-            num_unstake_epochs,
         }
     }
 }

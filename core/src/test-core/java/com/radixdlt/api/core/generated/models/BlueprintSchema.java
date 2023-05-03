@@ -39,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintSchema
  */
 @JsonPropertyOrder({
+  BlueprintSchema.JSON_PROPERTY_OUTER_BLUEPRINT,
   BlueprintSchema.JSON_PROPERTY_SCHEMA,
   BlueprintSchema.JSON_PROPERTY_SUBSTATES,
   BlueprintSchema.JSON_PROPERTY_FUNCTION_SCHEMAS,
@@ -47,6 +48,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchema {
+  public static final String JSON_PROPERTY_OUTER_BLUEPRINT = "outer_blueprint";
+  private String outerBlueprint;
+
   public static final String JSON_PROPERTY_SCHEMA = "schema";
   private SborData schema;
 
@@ -64,6 +68,32 @@ public class BlueprintSchema {
 
   public BlueprintSchema() { 
   }
+
+  public BlueprintSchema outerBlueprint(String outerBlueprint) {
+    this.outerBlueprint = outerBlueprint;
+    return this;
+  }
+
+   /**
+   * Get outerBlueprint
+   * @return outerBlueprint
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_OUTER_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getOuterBlueprint() {
+    return outerBlueprint;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_OUTER_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setOuterBlueprint(String outerBlueprint) {
+    this.outerBlueprint = outerBlueprint;
+  }
+
 
   public BlueprintSchema schema(SborData schema) {
     this.schema = schema;
@@ -227,7 +257,8 @@ public class BlueprintSchema {
       return false;
     }
     BlueprintSchema blueprintSchema = (BlueprintSchema) o;
-    return Objects.equals(this.schema, blueprintSchema.schema) &&
+    return Objects.equals(this.outerBlueprint, blueprintSchema.outerBlueprint) &&
+        Objects.equals(this.schema, blueprintSchema.schema) &&
         Objects.equals(this.substates, blueprintSchema.substates) &&
         Objects.equals(this.functionSchemas, blueprintSchema.functionSchemas) &&
         Objects.equals(this.virtualLazyLoadFunctionSchemas, blueprintSchema.virtualLazyLoadFunctionSchemas) &&
@@ -236,13 +267,14 @@ public class BlueprintSchema {
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, substates, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas);
+    return Objects.hash(outerBlueprint, schema, substates, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintSchema {\n");
+    sb.append("    outerBlueprint: ").append(toIndentedString(outerBlueprint)).append("\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    substates: ").append(toIndentedString(substates)).append("\n");
     sb.append("    functionSchemas: ").append(toIndentedString(functionSchemas)).append("\n");

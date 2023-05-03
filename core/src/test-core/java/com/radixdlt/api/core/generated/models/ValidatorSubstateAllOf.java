@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.SortedKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,25 +34,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ValidatorSubstateAllOf
  */
 @JsonPropertyOrder({
-  ValidatorSubstateAllOf.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
-  ValidatorSubstateAllOf.JSON_PROPERTY_VALIDATOR_ADDRESS,
+  ValidatorSubstateAllOf.JSON_PROPERTY_SORTED_KEY,
   ValidatorSubstateAllOf.JSON_PROPERTY_PUBLIC_KEY,
+  ValidatorSubstateAllOf.JSON_PROPERTY_IS_REGISTERED,
   ValidatorSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
-  ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS,
-  ValidatorSubstateAllOf.JSON_PROPERTY_IS_REGISTERED
+  ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ValidatorSubstateAllOf {
-  public static final String JSON_PROPERTY_EPOCH_MANAGER_ADDRESS = "epoch_manager_address";
-  private String epochManagerAddress;
-
-  public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
-  private String validatorAddress;
+  public static final String JSON_PROPERTY_SORTED_KEY = "sorted_key";
+  private SortedKey sortedKey;
 
   public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
   private EcdsaSecp256k1PublicKey publicKey;
+
+  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
+  private Boolean isRegistered;
 
   public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
   private EntityReference stakeVault;
@@ -65,61 +65,32 @@ public class ValidatorSubstateAllOf {
   public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
   private String unstakeClaimTokenResourceAddress;
 
-  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
-  private Boolean isRegistered;
-
   public ValidatorSubstateAllOf() { 
   }
 
-  public ValidatorSubstateAllOf epochManagerAddress(String epochManagerAddress) {
-    this.epochManagerAddress = epochManagerAddress;
+  public ValidatorSubstateAllOf sortedKey(SortedKey sortedKey) {
+    this.sortedKey = sortedKey;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the component address
-   * @return epochManagerAddress
+   * Get sortedKey
+   * @return sortedKey
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getEpochManagerAddress() {
-    return epochManagerAddress;
+  public SortedKey getSortedKey() {
+    return sortedKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochManagerAddress(String epochManagerAddress) {
-    this.epochManagerAddress = epochManagerAddress;
-  }
-
-
-  public ValidatorSubstateAllOf validatorAddress(String validatorAddress) {
-    this.validatorAddress = validatorAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the component address
-   * @return validatorAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getValidatorAddress() {
-    return validatorAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorAddress(String validatorAddress) {
-    this.validatorAddress = validatorAddress;
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSortedKey(SortedKey sortedKey) {
+    this.sortedKey = sortedKey;
   }
 
 
@@ -146,6 +117,32 @@ public class ValidatorSubstateAllOf {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPublicKey(EcdsaSecp256k1PublicKey publicKey) {
     this.publicKey = publicKey;
+  }
+
+
+  public ValidatorSubstateAllOf isRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+    return this;
+  }
+
+   /**
+   * Get isRegistered
+   * @return isRegistered
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsRegistered() {
+    return isRegistered;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
   }
 
 
@@ -253,32 +250,6 @@ public class ValidatorSubstateAllOf {
   }
 
 
-  public ValidatorSubstateAllOf isRegistered(Boolean isRegistered) {
-    this.isRegistered = isRegistered;
-    return this;
-  }
-
-   /**
-   * Get isRegistered
-   * @return isRegistered
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsRegistered() {
-    return isRegistered;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsRegistered(Boolean isRegistered) {
-    this.isRegistered = isRegistered;
-  }
-
-
   /**
    * Return true if this ValidatorSubstate_allOf object is equal to o.
    */
@@ -291,33 +262,31 @@ public class ValidatorSubstateAllOf {
       return false;
     }
     ValidatorSubstateAllOf validatorSubstateAllOf = (ValidatorSubstateAllOf) o;
-    return Objects.equals(this.epochManagerAddress, validatorSubstateAllOf.epochManagerAddress) &&
-        Objects.equals(this.validatorAddress, validatorSubstateAllOf.validatorAddress) &&
+    return Objects.equals(this.sortedKey, validatorSubstateAllOf.sortedKey) &&
         Objects.equals(this.publicKey, validatorSubstateAllOf.publicKey) &&
+        Objects.equals(this.isRegistered, validatorSubstateAllOf.isRegistered) &&
         Objects.equals(this.stakeVault, validatorSubstateAllOf.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstateAllOf.unstakeVault) &&
         Objects.equals(this.liquidStakeUnitResourceAddress, validatorSubstateAllOf.liquidStakeUnitResourceAddress) &&
-        Objects.equals(this.unstakeClaimTokenResourceAddress, validatorSubstateAllOf.unstakeClaimTokenResourceAddress) &&
-        Objects.equals(this.isRegistered, validatorSubstateAllOf.isRegistered);
+        Objects.equals(this.unstakeClaimTokenResourceAddress, validatorSubstateAllOf.unstakeClaimTokenResourceAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, publicKey, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered);
+    return Objects.hash(sortedKey, publicKey, isRegistered, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorSubstateAllOf {\n");
-    sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
-    sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
+    sb.append("    sortedKey: ").append(toIndentedString(sortedKey)).append("\n");
     sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
     sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");
     sb.append("    unstakeClaimTokenResourceAddress: ").append(toIndentedString(unstakeClaimTokenResourceAddress)).append("\n");
-    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.SubstateId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,14 +32,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateComponentDescendentId
  */
 @JsonPropertyOrder({
-  StateComponentDescendentId.JSON_PROPERTY_PARENT,
+  StateComponentDescendentId.JSON_PROPERTY_PARENT_ENTITY,
+  StateComponentDescendentId.JSON_PROPERTY_PARENT_MODULE_ID,
+  StateComponentDescendentId.JSON_PROPERTY_PARENT_SORT_KEY,
   StateComponentDescendentId.JSON_PROPERTY_ENTITY,
   StateComponentDescendentId.JSON_PROPERTY_DEPTH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateComponentDescendentId {
-  public static final String JSON_PROPERTY_PARENT = "parent";
-  private SubstateId parent;
+  public static final String JSON_PROPERTY_PARENT_ENTITY = "parent_entity";
+  private EntityReference parentEntity;
+
+  public static final String JSON_PROPERTY_PARENT_MODULE_ID = "parent_module_id";
+  private Integer parentModuleId;
+
+  public static final String JSON_PROPERTY_PARENT_SORT_KEY = "parent_sort_key";
+  private String parentSortKey;
 
   public static final String JSON_PROPERTY_ENTITY = "entity";
   private EntityReference entity;
@@ -51,29 +58,81 @@ public class StateComponentDescendentId {
   public StateComponentDescendentId() { 
   }
 
-  public StateComponentDescendentId parent(SubstateId parent) {
-    this.parent = parent;
+  public StateComponentDescendentId parentEntity(EntityReference parentEntity) {
+    this.parentEntity = parentEntity;
     return this;
   }
 
    /**
-   * Get parent
-   * @return parent
+   * Get parentEntity
+   * @return parentEntity
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PARENT)
+  @JsonProperty(JSON_PROPERTY_PARENT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateId getParent() {
-    return parent;
+  public EntityReference getParentEntity() {
+    return parentEntity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARENT)
+  @JsonProperty(JSON_PROPERTY_PARENT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setParent(SubstateId parent) {
-    this.parent = parent;
+  public void setParentEntity(EntityReference parentEntity) {
+    this.parentEntity = parentEntity;
+  }
+
+
+  public StateComponentDescendentId parentModuleId(Integer parentModuleId) {
+    this.parentModuleId = parentModuleId;
+    return this;
+  }
+
+   /**
+   * Get parentModuleId
+   * @return parentModuleId
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_ID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getParentModuleId() {
+    return parentModuleId;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_ID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setParentModuleId(Integer parentModuleId) {
+    this.parentModuleId = parentModuleId;
+  }
+
+
+  public StateComponentDescendentId parentSortKey(String parentSortKey) {
+    this.parentSortKey = parentSortKey;
+    return this;
+  }
+
+   /**
+   * Hex-encoded DB sort key
+   * @return parentSortKey
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Hex-encoded DB sort key")
+  @JsonProperty(JSON_PROPERTY_PARENT_SORT_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getParentSortKey() {
+    return parentSortKey;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PARENT_SORT_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setParentSortKey(String parentSortKey) {
+    this.parentSortKey = parentSortKey;
   }
 
 
@@ -143,21 +202,25 @@ public class StateComponentDescendentId {
       return false;
     }
     StateComponentDescendentId stateComponentDescendentId = (StateComponentDescendentId) o;
-    return Objects.equals(this.parent, stateComponentDescendentId.parent) &&
+    return Objects.equals(this.parentEntity, stateComponentDescendentId.parentEntity) &&
+        Objects.equals(this.parentModuleId, stateComponentDescendentId.parentModuleId) &&
+        Objects.equals(this.parentSortKey, stateComponentDescendentId.parentSortKey) &&
         Objects.equals(this.entity, stateComponentDescendentId.entity) &&
         Objects.equals(this.depth, stateComponentDescendentId.depth);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(parent, entity, depth);
+    return Objects.hash(parentEntity, parentModuleId, parentSortKey, entity, depth);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateComponentDescendentId {\n");
-    sb.append("    parent: ").append(toIndentedString(parent)).append("\n");
+    sb.append("    parentEntity: ").append(toIndentedString(parentEntity)).append("\n");
+    sb.append("    parentModuleId: ").append(toIndentedString(parentModuleId)).append("\n");
+    sb.append("    parentSortKey: ").append(toIndentedString(parentSortKey)).append("\n");
     sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
     sb.append("    depth: ").append(toIndentedString(depth)).append("\n");
     sb.append("}");

@@ -81,7 +81,7 @@ impl PreparedValidatorTransaction {
         };
 
         Executable::new_no_blobs(
-            self.instructions,
+            self.instructions.as_ref(),
             ExecutionContext {
                 transaction_hash: self.hash,
                 payload_size: 0,

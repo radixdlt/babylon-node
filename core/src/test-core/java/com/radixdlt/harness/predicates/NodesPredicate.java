@@ -100,12 +100,12 @@ public final class NodesPredicate {
 
   public static Predicate<List<Injector>> allCommittedTransaction(
       RawNotarizedTransaction transaction) {
-    return allNodesMatch(NodePredicate.committedUserTransaction(transaction));
+    return allNodesMatch(NodePredicate.committedUserTransaction(transaction, false));
   }
 
   public static Predicate<List<Injector>> anyCommittedTransaction(
       RawNotarizedTransaction transaction) {
-    return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction));
+    return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction, false));
   }
 
   public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {

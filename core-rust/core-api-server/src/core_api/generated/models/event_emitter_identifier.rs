@@ -18,7 +18,7 @@ pub enum EventEmitterIdentifier {
         #[serde(rename = "entity")]
         entity: Box<crate::core_api::generated::models::EntityReference>,
         #[serde(rename = "module_type")]
-        module_type: crate::core_api::generated::models::ModuleType,
+        module_type: crate::core_api::generated::models::ObjectModuleType,
         /// Blueprint name.
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
@@ -28,7 +28,7 @@ pub enum EventEmitterIdentifier {
         #[serde(rename = "entity")]
         entity: Box<crate::core_api::generated::models::EntityReference>,
         #[serde(rename = "module_type")]
-        module_type: crate::core_api::generated::models::ModuleType,
+        module_type: crate::core_api::generated::models::ObjectModuleType,
     },
 }
 

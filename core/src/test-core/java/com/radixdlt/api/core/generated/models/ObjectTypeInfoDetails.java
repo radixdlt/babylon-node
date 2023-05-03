@@ -25,9 +25,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.IndexTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetailsAllOf;
+import com.radixdlt.api.core.generated.models.SortedIndexTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoType;
 import io.swagger.annotations.ApiModel;
@@ -42,7 +44,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   ObjectTypeInfoDetails.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetails.JSON_PROPERTY_BLUEPRINT_NAME,
-  ObjectTypeInfoDetails.JSON_PROPERTY_GLOBAL
+  ObjectTypeInfoDetails.JSON_PROPERTY_GLOBAL,
+  ObjectTypeInfoDetails.JSON_PROPERTY_OUTER_OBJECT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -51,8 +54,10 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = IndexTypeInfoDetails.class, name = "Index"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStore"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "Object"),
+  @JsonSubTypes.Type(value = SortedIndexTypeInfoDetails.class, name = "SortedIndex"),
 })
 
 public class ObjectTypeInfoDetails extends TypeInfoDetails {
@@ -64,6 +69,9 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
+
+  public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
+  private String outerObject;
 
   public ObjectTypeInfoDetails() { 
   }
@@ -146,6 +154,32 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
   }
 
 
+  public ObjectTypeInfoDetails outerObject(String outerObject) {
+    this.outerObject = outerObject;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of any global address
+   * @return outerObject
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The Bech32m-encoded human readable version of any global address")
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getOuterObject() {
+    return outerObject;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setOuterObject(String outerObject) {
+    this.outerObject = outerObject;
+  }
+
+
   /**
    * Return true if this ObjectTypeInfoDetails object is equal to o.
    */
@@ -161,12 +195,13 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     return Objects.equals(this.packageAddress, objectTypeInfoDetails.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetails.blueprintName) &&
         Objects.equals(this.global, objectTypeInfoDetails.global) &&
+        Objects.equals(this.outerObject, objectTypeInfoDetails.outerObject) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global, super.hashCode());
+    return Objects.hash(packageAddress, blueprintName, global, outerObject, super.hashCode());
   }
 
   @Override
@@ -177,6 +212,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
+    sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -195,8 +231,10 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("Index", IndexTypeInfoDetails.class);
   mappings.put("KeyValueStore", KeyValueStoreTypeInfoDetails.class);
   mappings.put("Object", ObjectTypeInfoDetails.class);
+  mappings.put("SortedIndex", SortedIndexTypeInfoDetails.class);
   mappings.put("ObjectTypeInfoDetails", ObjectTypeInfoDetails.class);
   JSON.registerDiscriminator(ObjectTypeInfoDetails.class, "type", mappings);
 }

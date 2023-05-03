@@ -30,49 +30,63 @@ public enum SubstateType {
   
   TYPEINFO("TypeInfo"),
   
-  METADATAENTRY("MetadataEntry"),
-  
-  ACCESSRULES("AccessRules"),
-  
-  COMPONENTSTATE("ComponentState"),
+  METHODACCESSRULES("MethodAccessRules"),
   
   COMPONENTROYALTYCONFIG("ComponentRoyaltyConfig"),
   
   COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
   
+  METADATAVALUE("MetadataValue"),
+  
   PACKAGEINFO("PackageInfo"),
   
-  PACKAGECODE("PackageCode"),
-  
   PACKAGECODETYPE("PackageCodeType"),
+  
+  PACKAGECODE("PackageCode"),
   
   PACKAGEROYALTY("PackageRoyalty"),
   
   PACKAGEFUNCTIONACCESSRULES("PackageFunctionAccessRules"),
   
-  FUNGIBLERESOURCEMANAGER("FungibleResourceManager"),
+  FUNGIBLERESOURCEMANAGERDIVISIBILITY("FungibleResourceManagerDivisibility"),
   
-  NONFUNGIBLERESOURCEMANAGER("NonFungibleResourceManager"),
+  FUNGIBLERESOURCEMANAGERTOTALSUPPLY("FungibleResourceManagerTotalSupply"),
+  
+  NONFUNGIBLERESOURCEMANAGERIDTYPE("NonFungibleResourceManagerIdType"),
+  
+  NONFUNGIBLERESOURCEMANAGERTOTALSUPPLY("NonFungibleResourceManagerTotalSupply"),
+  
+  NONFUNGIBLERESOURCEMANAGERDATASCHEMA("NonFungibleResourceManagerDataSchema"),
+  
+  NONFUNGIBLERESOURCEMANAGERDATA("NonFungibleResourceManagerData"),
+  
+  FUNGIBLEVAULTBALANCE("FungibleVaultBalance"),
+  
+  NONFUNGIBLEVAULTBALANCE("NonFungibleVaultBalance"),
+  
+  EPOCHMANAGERCONFIG("EpochManagerConfig"),
   
   EPOCHMANAGER("EpochManager"),
   
-  VALIDATORSET("ValidatorSet"),
+  CURRENTVALIDATORSET("CurrentValidatorSet"),
   
-  VALIDATOR("Validator"),
+  REGISTEREDVALIDATORS("RegisteredValidators"),
   
   CLOCK("Clock"),
   
-  KEYVALUESTOREENTRY("KeyValueStoreEntry"),
+  VALIDATOR("Validator"),
   
-  VAULTINFO("VaultInfo"),
-  
-  VAULTFUNGIBLE("VaultFungible"),
-  
-  VAULTNONFUNGIBLE("VaultNonFungible"),
+  ACCOUNT("Account"),
   
   ACCESSCONTROLLER("AccessController"),
   
-  ACCOUNT("Account");
+  GENERICSCRYPTOCOMPONENTSTATE("GenericScryptoComponentState"),
+  
+  GENERICKEYVALUESTORE("GenericKeyValueStore"),
+  
+  GENERICINDEX("GenericIndex"),
+  
+  GENERICSORTEDU16INDEX("GenericSortedU16Index");
 
   private String value;
 

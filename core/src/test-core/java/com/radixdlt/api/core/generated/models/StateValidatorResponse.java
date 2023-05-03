@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateValidatorResponse
  */
 @JsonPropertyOrder({
+  StateValidatorResponse.JSON_PROPERTY_ADDRESS,
   StateValidatorResponse.JSON_PROPERTY_STATE,
   StateValidatorResponse.JSON_PROPERTY_ACCESS_RULES,
   StateValidatorResponse.JSON_PROPERTY_STATE_OWNED_VAULTS,
@@ -43,6 +44,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateValidatorResponse {
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
+
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
 
@@ -57,6 +61,32 @@ public class StateValidatorResponse {
 
   public StateValidatorResponse() { 
   }
+
+  public StateValidatorResponse address(String address) {
+    this.address = address;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the component address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
 
   public StateValidatorResponse state(Substate state) {
     this.state = state;
@@ -184,7 +214,8 @@ public class StateValidatorResponse {
       return false;
     }
     StateValidatorResponse stateValidatorResponse = (StateValidatorResponse) o;
-    return Objects.equals(this.state, stateValidatorResponse.state) &&
+    return Objects.equals(this.address, stateValidatorResponse.address) &&
+        Objects.equals(this.state, stateValidatorResponse.state) &&
         Objects.equals(this.accessRules, stateValidatorResponse.accessRules) &&
         Objects.equals(this.stateOwnedVaults, stateValidatorResponse.stateOwnedVaults) &&
         Objects.equals(this.descendentIds, stateValidatorResponse.descendentIds);
@@ -192,13 +223,14 @@ public class StateValidatorResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, accessRules, stateOwnedVaults, descendentIds);
+    return Objects.hash(address, state, accessRules, stateOwnedVaults, descendentIds);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateValidatorResponse {\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("    stateOwnedVaults: ").append(toIndentedString(stateOwnedVaults)).append("\n");

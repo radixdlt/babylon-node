@@ -34,8 +34,14 @@ pub enum EntityType {
     AccessController,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
-    #[serde(rename = "Vault")]
-    Vault,
+    #[serde(rename = "FungibleVault")]
+    FungibleVault,
+    #[serde(rename = "NonFungibleVault")]
+    NonFungibleVault,
+    #[serde(rename = "Index")]
+    Index,
+    #[serde(rename = "SortedIndex")]
+    SortedIndex,
 
 }
 
@@ -53,7 +59,10 @@ impl ToString for EntityType {
             Self::Clock => String::from("Clock"),
             Self::AccessController => String::from("AccessController"),
             Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::Vault => String::from("Vault"),
+            Self::FungibleVault => String::from("FungibleVault"),
+            Self::NonFungibleVault => String::from("NonFungibleVault"),
+            Self::Index => String::from("Index"),
+            Self::SortedIndex => String::from("SortedIndex"),
         }
     }
 }

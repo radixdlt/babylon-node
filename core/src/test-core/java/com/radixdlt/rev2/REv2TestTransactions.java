@@ -103,10 +103,13 @@ public final class REv2TestTransactions {
   }
 
   public static byte[] constructValidIntentBytes(
-      NetworkDefinition network, long fromEpoch, long nonce, PublicKey notary) {
+      NetworkDefinition network,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      PublicKey notary) {
     final var addressing = Addressing.ofNetwork(network);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
 
     var manifest =
         String.format(
@@ -119,42 +122,45 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
-  public static String constructDepositFromFaucetManifest(NetworkDefinition networkDefinition) {
+  public static String constructDepositFromFaucetToRandomManifest(
+      NetworkDefinition networkDefinition, ComponentAddress faucet) {
     return constructDepositFromFaucetManifest(
-        networkDefinition, Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
+        networkDefinition,
+        faucet,
+        Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
   }
 
-  public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
+  public static String constructNewAccountManifest(
+      NetworkDefinition networkDefinition, ComponentAddress faucet) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     return String.format(
         """
                     CALL_METHOD Address("%s") "lock_fee" Decimal("100");
                     CREATE_ACCOUNT_ADVANCED
-                      Tuple(                                    # Access Rules Config Struct
-                          Map<Tuple, Enum>(),                   # Method auth Field
-                          Map<String, Enum>(),                  # Grouped Auth Field
-                          Enum(                                 # Default Auth Field
-                              "AccessRuleEntry::AccessRule",
-                              Enum("AccessRule::AllowAll")
-                          ),
-                          Map<Tuple, Enum>(),                   # Method Auth Mutability Field
-                          Map<String, Enum>(),                  # Group Auth Mutability Field
-                          Enum(                                 # Default Auth Mutability Field
-                              "AccessRuleEntry::AccessRule",
-                              Enum("AccessRule::DenyAll")
-                          )
-                      );
+                        Tuple(                                    # Access Rules Config Struct
+                            Map<Tuple, Enum>(),                   # Direct Method auth Field
+                            Map<Tuple, Enum>(),                   # Method auth Field
+                            Map<String, Enum>(),                  # Grouped Auth Field
+                            Enum(                                 # Default Auth Field
+                                "AccessRuleEntry::AccessRule",
+                                Enum("AccessRule::AllowAll")
+                            ),
+                            Map<Tuple, Enum>(),                   # Method Auth Mutability Field
+                            Map<String, Enum>(),                  # Group Auth Mutability Field
+                            Enum(                                 # Default Auth Mutability Field
+                                "AccessRuleEntry::AccessRule",
+                                Enum("AccessRule::DenyAll")
+                            )
+                        );
                     """,
         faucetAddress);
   }
 
   public static String constructDepositFromFaucetManifest(
-      NetworkDefinition networkDefinition, ComponentAddress to) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, ComponentAddress to) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     return String.format(
         """
                     CALL_METHOD Address("%s") "lock_fee" Decimal("100");
@@ -165,11 +171,12 @@ public final class REv2TestTransactions {
   }
 
   public static String constructDepositFromAccountManifest(
-      NetworkDefinition networkDefinition, ComponentAddress from) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, ComponentAddress from) {
     // NOTE: A test relies on this only being able to be performed once per account
     // So we transfer 900 XRD (which is the majority of the account start amount
     // of 1000, the size of the free XRD bucket)
     final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var fromAddress = addressing.encodeAccountAddress(from);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var accountAddress =
@@ -181,14 +188,13 @@ public final class REv2TestTransactions {
                         CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("9900");
                         CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                         """,
-        fromAddress, fromAddress, xrdAddress, accountAddress);
+        faucetAddress, fromAddress, xrdAddress, accountAddress);
   }
 
   public static String constructCreateValidatorManifest(
-      NetworkDefinition networkDefinition, ECDSASecp256k1PublicKey key) {
+      NetworkDefinition networkDefinition, ComponentAddress faucet, ECDSASecp256k1PublicKey key) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
 
     // Re-using the validator key for holding its own token
     final var ownerTokenHolder =
@@ -205,11 +211,11 @@ public final class REv2TestTransactions {
 
   public static String constructRegisterValidatorManifest(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       ComponentAddress validatorAddress,
       ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var validatorOwnerTokenAddress =
         addressing.encodeResourceAddress(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS);
@@ -225,11 +231,11 @@ public final class REv2TestTransactions {
 
   public static String constructUnregisterValidatorManifest(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       ComponentAddress validatorAddress,
       ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var validatorOwnerTokenAddress =
         addressing.encodeResourceAddress(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS);
@@ -246,11 +252,11 @@ public final class REv2TestTransactions {
 
   public static String constructStakeValidatorManifest(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       ComponentAddress validatorAddress,
       ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
@@ -279,11 +285,11 @@ public final class REv2TestTransactions {
 
   public static String constructUnstakeValidatorManifest(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       ResourceAddress lpTokenAddress,
       ComponentAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var accountAddress = addressing.encodeAccountAddress(account);
@@ -302,11 +308,11 @@ public final class REv2TestTransactions {
 
   public static String constructClaimXrdManifest(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       ComponentAddress validatorAddress,
       ResourceAddress unstakeResource) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var faucetAddress = addressing.encodeNormalComponentAddress(faucet);
     final var unstakeResourceAddress = addressing.encodeResourceAddress(unstakeResource);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
@@ -332,8 +338,12 @@ public final class REv2TestTransactions {
   }
 
   public static byte[] constructDepositFromFaucetIntent(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary) {
-    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
+      NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      PublicKey notary) {
+    final var manifest = constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
@@ -341,31 +351,36 @@ public final class REv2TestTransactions {
 
   public static byte[] constructLargeValidTransactionIntent(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       PublicKey notary,
       int blobsSize) {
-    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
+    final var manifest = constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     final var blobs = List.of(new byte[blobsSize]);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, blobs);
   }
 
-  public static RawNotarizedTransaction constructValidRawTransaction(long fromEpoch, long nonce) {
+  public static RawNotarizedTransaction constructValidRawTransaction(
+      ComponentAddress faucet, long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(
             NetworkDefinition.INT_TEST_NET,
+            faucet,
             fromEpoch,
             nonce,
             DEFAULT_NOTARY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructRawTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
-  public static NotarizedTransactionBuilder constructValidTransaction(long fromEpoch, long nonce) {
+  public static NotarizedTransactionBuilder constructValidTransaction(
+      ComponentAddress faucet, long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(
             NetworkDefinition.INT_TEST_NET,
+            faucet,
             fromEpoch,
             nonce,
             DEFAULT_NOTARY.getPublicKey().toPublicKey());
@@ -373,9 +388,13 @@ public final class REv2TestTransactions {
   }
 
   public static RawNotarizedTransaction constructCreateValidatorTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, ECKeyPair keyPair) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
+      long fromEpoch,
+      long nonce,
+      ECKeyPair keyPair) {
     final var manifest =
-        constructCreateValidatorManifest(networkDefinition, keyPair.getPublicKey());
+        constructCreateValidatorManifest(networkDefinition, faucet, keyPair.getPublicKey());
     final var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -383,6 +402,7 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructRegisterValidatorTransaction(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       ComponentAddress validatorAddress,
@@ -390,7 +410,8 @@ public final class REv2TestTransactions {
     // Assuming that the validator key was re-used to hold its own token
     final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
     var manifest =
-        constructRegisterValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
+        constructRegisterValidatorManifest(
+            networkDefinition, faucet, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -398,6 +419,7 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructUnregisterValidatorTransaction(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       ComponentAddress validatorAddress,
@@ -405,7 +427,8 @@ public final class REv2TestTransactions {
     // Assuming that the validator key was re-used to hold its own token
     final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
     var manifest =
-        constructUnregisterValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
+        constructUnregisterValidatorManifest(
+            networkDefinition, faucet, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -413,6 +436,7 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructStakeValidatorTransaction(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       ComponentAddress validatorAddress,
@@ -420,7 +444,8 @@ public final class REv2TestTransactions {
     // Assuming that the validator key was re-used to hold its own token
     final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
     var manifest =
-        constructStakeValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
+        constructStakeValidatorManifest(
+            networkDefinition, faucet, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -428,13 +453,15 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructUnstakeValidatorTransaction(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       ResourceAddress lpTokenAddress,
       ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
     var manifest =
-        constructUnstakeValidatorManifest(networkDefinition, lpTokenAddress, validatorAddress);
+        constructUnstakeValidatorManifest(
+            networkDefinition, faucet, lpTokenAddress, validatorAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -442,20 +469,22 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructClaimXrdTransaction(
       NetworkDefinition networkDefinition,
+      ComponentAddress faucet,
       long fromEpoch,
       long nonce,
       ComponentAddress validatorAddress,
       ResourceAddress unstakeAddress,
       ECKeyPair keyPair) {
-    var manifest = constructClaimXrdManifest(networkDefinition, validatorAddress, unstakeAddress);
+    var manifest =
+        constructClaimXrdManifest(networkDefinition, faucet, validatorAddress, unstakeAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
   public static RawNotarizedTransaction constructDepositFromFaucetTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
-    var manifest = constructDepositFromFaucetManifest(networkDefinition);
+      NetworkDefinition networkDefinition, ComponentAddress faucet, long fromEpoch, long nonce) {
+    var manifest = constructDepositFromFaucetToRandomManifest(networkDefinition, faucet);
     var signatories = List.<ECKeyPair>of();
 
     return constructRawTransaction(

@@ -31,87 +31,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EpochManagerSubstateAllOf
  */
 @JsonPropertyOrder({
-  EpochManagerSubstateAllOf.JSON_PROPERTY_ADDRESS,
-  EpochManagerSubstateAllOf.JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE,
   EpochManagerSubstateAllOf.JSON_PROPERTY_EPOCH,
-  EpochManagerSubstateAllOf.JSON_PROPERTY_ROUND,
-  EpochManagerSubstateAllOf.JSON_PROPERTY_ROUNDS_PER_EPOCH,
-  EpochManagerSubstateAllOf.JSON_PROPERTY_NUM_UNSTAKE_EPOCHS
+  EpochManagerSubstateAllOf.JSON_PROPERTY_ROUND
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstateAllOf {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
-
-  public static final String JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE = "validator_owner_resource";
-  private String validatorOwnerResource;
-
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
   public static final String JSON_PROPERTY_ROUND = "round";
   private Long round;
 
-  public static final String JSON_PROPERTY_ROUNDS_PER_EPOCH = "rounds_per_epoch";
-  private Long roundsPerEpoch;
-
-  public static final String JSON_PROPERTY_NUM_UNSTAKE_EPOCHS = "num_unstake_epochs";
-  private Long numUnstakeEpochs;
-
   public EpochManagerSubstateAllOf() { 
   }
-
-  public EpochManagerSubstateAllOf address(String address) {
-    this.address = address;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the component address
-   * @return address
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getAddress() {
-    return address;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
-  }
-
-
-  public EpochManagerSubstateAllOf validatorOwnerResource(String validatorOwnerResource) {
-    this.validatorOwnerResource = validatorOwnerResource;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return validatorOwnerResource
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getValidatorOwnerResource() {
-    return validatorOwnerResource;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorOwnerResource(String validatorOwnerResource) {
-    this.validatorOwnerResource = validatorOwnerResource;
-  }
-
 
   public EpochManagerSubstateAllOf epoch(Long epoch) {
     this.epoch = epoch;
@@ -169,62 +101,6 @@ public class EpochManagerSubstateAllOf {
   }
 
 
-  public EpochManagerSubstateAllOf roundsPerEpoch(Long roundsPerEpoch) {
-    this.roundsPerEpoch = roundsPerEpoch;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the number of rounds per epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return roundsPerEpoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the number of rounds per epoch")
-  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getRoundsPerEpoch() {
-    return roundsPerEpoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoundsPerEpoch(Long roundsPerEpoch) {
-    this.roundsPerEpoch = roundsPerEpoch;
-  }
-
-
-  public EpochManagerSubstateAllOf numUnstakeEpochs(Long numUnstakeEpochs) {
-    this.numUnstakeEpochs = numUnstakeEpochs;
-    return this;
-  }
-
-   /**
-   * Get numUnstakeEpochs
-   * minimum: 0
-   * maximum: 10000000000
-   * @return numUnstakeEpochs
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getNumUnstakeEpochs() {
-    return numUnstakeEpochs;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNumUnstakeEpochs(Long numUnstakeEpochs) {
-    this.numUnstakeEpochs = numUnstakeEpochs;
-  }
-
-
   /**
    * Return true if this EpochManagerSubstate_allOf object is equal to o.
    */
@@ -237,29 +113,21 @@ public class EpochManagerSubstateAllOf {
       return false;
     }
     EpochManagerSubstateAllOf epochManagerSubstateAllOf = (EpochManagerSubstateAllOf) o;
-    return Objects.equals(this.address, epochManagerSubstateAllOf.address) &&
-        Objects.equals(this.validatorOwnerResource, epochManagerSubstateAllOf.validatorOwnerResource) &&
-        Objects.equals(this.epoch, epochManagerSubstateAllOf.epoch) &&
-        Objects.equals(this.round, epochManagerSubstateAllOf.round) &&
-        Objects.equals(this.roundsPerEpoch, epochManagerSubstateAllOf.roundsPerEpoch) &&
-        Objects.equals(this.numUnstakeEpochs, epochManagerSubstateAllOf.numUnstakeEpochs);
+    return Objects.equals(this.epoch, epochManagerSubstateAllOf.epoch) &&
+        Objects.equals(this.round, epochManagerSubstateAllOf.round);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, validatorOwnerResource, epoch, round, roundsPerEpoch, numUnstakeEpochs);
+    return Objects.hash(epoch, round);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochManagerSubstateAllOf {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
-    sb.append("    validatorOwnerResource: ").append(toIndentedString(validatorOwnerResource)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
-    sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
-    sb.append("    numUnstakeEpochs: ").append(toIndentedString(numUnstakeEpochs)).append("\n");
     sb.append("}");
     return sb.toString();
   }

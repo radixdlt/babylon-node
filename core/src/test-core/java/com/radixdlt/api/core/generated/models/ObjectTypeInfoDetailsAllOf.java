@@ -33,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_OUTER_OBJECT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectTypeInfoDetailsAllOf {
@@ -45,6 +46,9 @@ public class ObjectTypeInfoDetailsAllOf {
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
+
+  public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
+  private String outerObject;
 
   public ObjectTypeInfoDetailsAllOf() { 
   }
@@ -127,6 +131,32 @@ public class ObjectTypeInfoDetailsAllOf {
   }
 
 
+  public ObjectTypeInfoDetailsAllOf outerObject(String outerObject) {
+    this.outerObject = outerObject;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of any global address
+   * @return outerObject
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The Bech32m-encoded human readable version of any global address")
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getOuterObject() {
+    return outerObject;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setOuterObject(String outerObject) {
+    this.outerObject = outerObject;
+  }
+
+
   /**
    * Return true if this ObjectTypeInfoDetails_allOf object is equal to o.
    */
@@ -141,12 +171,13 @@ public class ObjectTypeInfoDetailsAllOf {
     ObjectTypeInfoDetailsAllOf objectTypeInfoDetailsAllOf = (ObjectTypeInfoDetailsAllOf) o;
     return Objects.equals(this.packageAddress, objectTypeInfoDetailsAllOf.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetailsAllOf.blueprintName) &&
-        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global);
+        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global) &&
+        Objects.equals(this.outerObject, objectTypeInfoDetailsAllOf.outerObject);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global);
+    return Objects.hash(packageAddress, blueprintName, global, outerObject);
   }
 
   @Override
@@ -156,6 +187,7 @@ public class ObjectTypeInfoDetailsAllOf {
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
+    sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("}");
     return sb.toString();
   }

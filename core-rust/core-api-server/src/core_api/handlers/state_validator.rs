@@ -1,8 +1,9 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{NodeModuleId, SubstateOffset, ValidatorOffset};
-use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
+use radix_engine::types::ValidatorOffset;
 
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
+use radix_engine_interface::types::{AccessRulesOffset, SysModuleId};
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
@@ -29,44 +30,36 @@ pub(crate) async fn handle_state_validator(
 
     let database = state.database.read();
 
-    let component_state = {
-        let substate_offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::Validator(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let component_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let validator_substate: ValidatorSubstate = read_mandatory_substate(
+        database.deref(),
+        validator_address.as_node_id(),
+        SysModuleId::Object.into(),
+        &ValidatorOffset::Validator.into(),
+    )?;
 
-    let component_dump = dump_component_state(database.deref(), validator_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        validator_address.as_node_id(),
+        SysModuleId::AccessRules.into(),
+        &AccessRulesOffset::AccessRules.into(),
+    )?;
+
+    let component_dump = dump_component_state(database.deref(), validator_address);
 
     let state_owned_vaults = component_dump
         .vaults
-        .into_iter()
-        .map(|vault| match vault {
+        .into_values()
+        .map(|vault_data| match vault_data {
             VaultData::NonFungible {
                 resource_address,
+                amount,
                 ids,
-            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
+            } => to_api_non_fungible_resource_amount(
+                &mapping_context,
+                &resource_address,
+                &amount,
+                &ids,
+            ),
             VaultData::Fungible {
                 resource_address,
                 amount,
@@ -82,13 +75,14 @@ pub(crate) async fn handle_state_validator(
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(models::StateValidatorResponse {
+        address: to_api_component_address(&mapping_context, &validator_address),
         state: Some(to_api_validator_substate(
             &mapping_context,
-            &component_state,
+            &validator_substate,
         )?),
-        access_rules: Some(to_api_access_rules_chain_substate(
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &component_access_rules,
+            &method_access_rules_substate,
         )?),
         state_owned_vaults,
         descendent_ids,

@@ -80,8 +80,8 @@ public class AddressingTest {
   public void test_system_faucet_address_encoded_correctly() {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("component_test1q0kryz5scup945usk39qjc2yjh6l5zsyuh8t7v5pk0tsk4ggpa");
+                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_ADDRESS))
+        .isEqualTo("component_test1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6m2em7");
   }
 
   @Test
@@ -89,8 +89,8 @@ public class AddressingTest {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                 .decodeNormalComponentAddress(
-                    "component_test1q0kryz5scup945usk39qjc2yjh6l5zsyuh8t7v5pk0tsk4ggpa"))
-        .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+                    "component_test1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6m2em7"))
+        .isEqualTo(ScryptoConstants.FAUCET_ADDRESS);
   }
 
   @Test

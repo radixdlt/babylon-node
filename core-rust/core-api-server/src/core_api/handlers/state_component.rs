@@ -1,11 +1,17 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ComponentOffset, RENodeId, SubstateId, SubstateOffset};
-use radix_engine_interface::api::types::{
-    AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::types::ComponentOffset;
+use radix_engine_common::types::NodeId;
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
 };
 
-use state_manager::query::{dump_component_state, VaultData};
+use radix_engine_interface::types::{
+    AccessRulesOffset, AccountOffset, RoyaltyOffset, SysModuleId, TypeInfoOffset,
+};
+use radix_engine_queries::typed_substate_layout::AccountSubstate;
+use radix_engine_queries::typed_substate_layout::MethodAccessRulesSubstate;
+use state_manager::query::{dump_component_state, DescendantParentOpt, VaultData};
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_component(
@@ -29,101 +35,66 @@ pub(crate) async fn handle_state_component(
     }
 
     let database = state.database.read();
-    let type_info = {
-        let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::TypeInfo,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::TypeInfo(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let component_state = {
-        let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentState(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let account_state = {
-        let substate_offset = SubstateOffset::Account(AccountOffset::Account);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::Account(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    // TODO: royalty_* should be non-optional once fixed on the engine side
-    let component_royalty_config = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::ComponentRoyalty,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentRoyaltyConfig(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let component_royalty_accumulator = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::ComponentRoyalty,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentRoyaltyAccumulator(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let component_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let type_info: TypeInfoSubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        SysModuleId::TypeInfo.into(),
+        &TypeInfoOffset::TypeInfo.into(),
+    )?;
 
-    let component_dump = dump_component_state(database.deref(), component_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
+    let component_state: Option<ComponentStateSubstate> = read_optional_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        SysModuleId::Object.into(),
+        &ComponentOffset::State0.into(),
+    );
+
+    let account_state: Option<AccountSubstate> = read_optional_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        SysModuleId::Object.into(),
+        &AccountOffset::Account.into(),
+    );
+
+    // TODO: royalty_* should be non-optional once fixed on the engine side
+    let component_royalty_config: Option<ComponentRoyaltyConfigSubstate> = read_optional_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        SysModuleId::Royalty.into(),
+        &RoyaltyOffset::RoyaltyConfig.into(),
+    );
+
+    let component_royalty_accumulator: Option<ComponentRoyaltyAccumulatorSubstate> =
+        read_optional_substate(
+            database.deref(),
+            component_address.as_node_id(),
+            SysModuleId::Royalty.into(),
+            &RoyaltyOffset::RoyaltyAccumulator.into(),
+        );
+
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        SysModuleId::AccessRules.into(),
+        &AccessRulesOffset::AccessRules.into(),
+    )?;
+
+    let component_dump = dump_component_state(database.deref(), component_address);
 
     let state_owned_vaults = component_dump
         .vaults
-        .into_iter()
-        .map(|vault| match vault {
+        .into_values()
+        .map(|vault_data| match vault_data {
             VaultData::NonFungible {
                 resource_address,
+                amount,
                 ids,
-            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
+            } => to_api_non_fungible_resource_amount(
+                &mapping_context,
+                &resource_address,
+                &amount,
+                &ids,
+            ),
             VaultData::Fungible {
                 resource_address,
                 amount,
@@ -166,9 +137,9 @@ pub(crate) async fn handle_state_component(
         } else {
             None
         },
-        access_rules: Some(to_api_access_rules_chain_substate(
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &component_access_rules,
+            &method_access_rules_substate,
         )?),
         state_owned_vaults,
         descendent_ids,
@@ -177,13 +148,16 @@ pub(crate) async fn handle_state_component(
 }
 
 pub(crate) fn map_to_descendent_id(
-    parent: Option<SubstateId>,
-    node: RENodeId,
+    parent: DescendantParentOpt,
+    node_id: NodeId,
     depth: u32,
 ) -> Result<models::StateComponentDescendentId, MappingError> {
+    let parent = parent.unwrap();
     Ok(models::StateComponentDescendentId {
-        parent: Box::new(to_api_substate_id(parent.unwrap())?),
-        entity: Box::new(to_api_entity_reference(node)?),
+        parent_entity: Box::new(to_api_entity_reference(parent.0)?),
+        parent_module_id: parent.1 .0 as i32,
+        parent_sort_key: to_hex(&parent.2 .0),
+        entity: Box::new(to_api_entity_reference(node_id)?),
         depth: depth as i32, // Won't go over 100 due to component dumper max depth
     })
 }

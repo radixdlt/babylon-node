@@ -62,17 +62,16 @@
  * permissions under this License.
  */
 
-use radix_engine::blueprints::resource::VaultInfoSubstate;
-use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::types::{ComponentAddress, RENodeId, SubstateId};
+use radix_engine::types::ComponentAddress;
+use radix_engine_common::types::{ModuleId, NodeId, ResourceAddress};
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource,
+    LiquidFungibleResource, LiquidNonFungibleVault,
 };
-use radix_engine_interface::data::scrypto::model::{NonFungibleLocalId, ResourceAddress};
+use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::math::Decimal;
-use std::collections::BTreeSet;
-
-use super::component_state_tree_traverser::*;
+use radix_engine_queries::query::{StateTreeTraverser, StateTreeVisitor};
+use radix_engine_store_interface::interface::{DbSortKey, SubstateDatabase};
+use std::collections::{BTreeMap, BTreeSet};
 
 pub enum VaultData {
     Fungible {
@@ -81,61 +80,99 @@ pub enum VaultData {
     },
     NonFungible {
         resource_address: ResourceAddress,
+        amount: Decimal,
         ids: BTreeSet<NonFungibleLocalId>,
     },
 }
 
+pub type DescendantParentOpt = Option<(NodeId, ModuleId, DbSortKey)>;
+
 pub struct ComponentStateDump {
-    pub vaults: Vec<VaultData>,
-    pub descendents: Vec<(Option<SubstateId>, RENodeId, u32)>,
+    pub vaults: BTreeMap<NodeId, VaultData>,
+    pub descendents: Vec<(DescendantParentOpt, NodeId, u32)>,
 }
 
 impl StateTreeVisitor for ComponentStateDump {
     fn visit_fungible_vault(
         &mut self,
-        _parent_id: Option<&SubstateId>,
-        info: &VaultInfoSubstate,
-        liquid: &LiquidFungibleResource,
+        vault_id: NodeId,
+        resource_address: &ResourceAddress,
+        resource: &LiquidFungibleResource,
     ) {
-        self.vaults.push(VaultData::Fungible {
-            resource_address: info.resource_address,
-            amount: liquid.amount(),
-        });
+        self.vaults.insert(
+            vault_id,
+            VaultData::Fungible {
+                resource_address: *resource_address,
+                amount: resource.amount(),
+            },
+        );
     }
 
     fn visit_non_fungible_vault(
         &mut self,
-        _parent_id: Option<&SubstateId>,
-        info: &VaultInfoSubstate,
-        liquid: &LiquidNonFungibleResource,
+        vault_id: NodeId,
+        resource_address: &ResourceAddress,
+        resource: &LiquidNonFungibleVault,
     ) {
-        self.vaults.push(VaultData::NonFungible {
-            resource_address: info.resource_address,
-            ids: liquid.ids().clone(),
-        });
+        self.vaults.insert(
+            vault_id,
+            VaultData::NonFungible {
+                resource_address: *resource_address,
+                amount: resource.amount,
+                ids: BTreeSet::new(),
+            },
+        );
     }
 
-    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, node_id: &RENodeId, depth: u32) {
-        self.descendents
-            .push((_parent_id.cloned(), *node_id, depth));
+    fn visit_non_fungible(
+        &mut self,
+        vault_id: NodeId,
+        resource_address: &ResourceAddress,
+        non_fungible_local_id: &NonFungibleLocalId,
+    ) {
+        let vault = self
+            .vaults
+            .entry(vault_id)
+            .or_insert_with(|| VaultData::NonFungible {
+                resource_address: *resource_address,
+                amount: Decimal::zero(),
+                ids: BTreeSet::new(),
+            });
+        if let VaultData::NonFungible {
+            resource_address: _,
+            amount: _,
+            ids,
+        } = vault
+        {
+            ids.insert(non_fungible_local_id.clone());
+        }
+    }
+
+    fn visit_node_id(
+        &mut self,
+        parent_id: Option<&(NodeId, ModuleId, DbSortKey)>,
+        node_id: &NodeId,
+        depth: u32,
+    ) {
+        self.descendents.push((parent_id.cloned(), *node_id, depth));
     }
 }
 
 pub fn dump_component_state<S>(
     substate_store: &S,
-    component: ComponentAddress,
-) -> Result<ComponentStateDump, StateTreeTraverserError>
+    component_address: ComponentAddress,
+) -> ComponentStateDump
 where
-    S: ReadableSubstateStore + QueryableSubstateStore,
+    S: SubstateDatabase,
 {
-    let node_id = RENodeId::GlobalObject(component.into());
+    let node_id = component_address.as_node_id();
     let mut component_dump = ComponentStateDump {
-        vaults: Vec::new(),
+        vaults: BTreeMap::new(),
         descendents: Vec::new(),
     };
-    let mut state_tree_visitor =
-        ComponentStateTreeTraverser::new(substate_store, &mut component_dump, 100);
-    state_tree_visitor.traverse_all_descendents(None, node_id)?;
+    let mut state_tree_traverser =
+        StateTreeTraverser::new(substate_store, &mut component_dump, 100);
+    state_tree_traverser.traverse_all_descendents(None, *node_id);
 
-    Ok(component_dump)
+    component_dump
 }

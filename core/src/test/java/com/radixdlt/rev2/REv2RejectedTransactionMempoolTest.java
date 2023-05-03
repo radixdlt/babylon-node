@@ -75,6 +75,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -86,7 +87,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
@@ -130,7 +130,7 @@ public class REv2RejectedTransactionMempoolTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -140,8 +140,10 @@ public class REv2RejectedTransactionMempoolTest {
   @Test
   public void initially_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(1)) {
-      // Arrange
       test.startAllNodes();
+      final var faucet = test.faucetAddress();
+
+      // Arrange
       var rawRejectableTransaction =
           REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
       var mempoolDispatcher =
@@ -151,7 +153,7 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Act: Submit valid transaction to mempool
       mempoolDispatcher.dispatch(
-          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(0, 0)));
+          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(faucet, 0, 0)));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
@@ -178,8 +180,10 @@ public class REv2RejectedTransactionMempoolTest {
   @Test
   public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
-      // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
+      final var faucet = test.faucetAddress();
+
+      // Arrange: Two conflicting transactions in mempool
 
       // create account
       var accountTxn =
@@ -187,7 +191,8 @@ public class REv2RejectedTransactionMempoolTest {
               NetworkDefinition.INT_TEST_NET,
               0,
               0,
-              REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET),
+              REv2TestTransactions.constructNewAccountManifest(
+                  NetworkDefinition.INT_TEST_NET, faucet),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
@@ -201,7 +206,7 @@ public class REv2RejectedTransactionMempoolTest {
               0,
               0,
               REv2TestTransactions.constructDepositFromFaucetManifest(
-                  NetworkDefinition.INT_TEST_NET, accountAddress),
+                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
@@ -216,7 +221,7 @@ public class REv2RejectedTransactionMempoolTest {
               0,
               0,
               REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, accountAddress),
+                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
@@ -227,7 +232,7 @@ public class REv2RejectedTransactionMempoolTest {
               0,
               1,
               REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, accountAddress),
+                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
@@ -245,8 +250,9 @@ public class REv2RejectedTransactionMempoolTest {
               0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(0);
       // Check that only one of the two transactions was committed
+      // TODO: this used to check for committed (success|failure) - why?
       assertOneTransactionCommittedOutOf(
-          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2));
+          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2), true);
     }
   }
 }

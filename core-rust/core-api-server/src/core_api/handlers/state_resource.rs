@@ -1,15 +1,29 @@
 use crate::core_api::*;
 use radix_engine::blueprints::resource::{
-    FungibleResourceManagerSubstate, NonFungibleResourceManagerSubstate,
+    FungibleResourceManagerDivisibilitySubstate, FungibleResourceManagerTotalSupplySubstate,
+    NonFungibleResourceManagerDataSchemaSubstate, NonFungibleResourceManagerDataSubstate,
+    NonFungibleResourceManagerIdTypeSubstate, NonFungibleResourceManagerTotalSupplySubstate,
 };
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ResourceAddress, ResourceManagerOffset, SubstateOffset};
-use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENodeId};
+use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
+use radix_engine_interface::types::SysModuleId;
+use radix_engine_interface::types::{
+    AccessRulesOffset, FungibleResourceManagerOffset, NonFungibleResourceManagerOffset,
+};
 use std::ops::Deref;
 
+use radix_engine_common::types::EntityType;
+
 enum ManagerByType {
-    Fungible(FungibleResourceManagerSubstate),
-    NonFungible(NonFungibleResourceManagerSubstate),
+    Fungible(
+        FungibleResourceManagerDivisibilitySubstate,
+        FungibleResourceManagerTotalSupplySubstate,
+    ),
+    NonFungible(
+        NonFungibleResourceManagerIdTypeSubstate,
+        NonFungibleResourceManagerTotalSupplySubstate,
+        NonFungibleResourceManagerDataSchemaSubstate,
+        NonFungibleResourceManagerDataSubstate,
+    ),
 }
 
 pub(crate) async fn handle_state_resource(
@@ -25,81 +39,99 @@ pub(crate) async fn handle_state_resource(
 
     let database = state.database.read();
 
-    let manager = match &resource_address {
-        ResourceAddress::Fungible(_) => {
-            let substate_offset =
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let loaded_substate = read_mandatory_substate(
+    let resource_node_id = resource_address.as_node_id();
+    let is_fungible = resource_node_id.entity_type() == Some(EntityType::GlobalFungibleResource);
+    let manager = if is_fungible {
+        ManagerByType::Fungible(
+            read_mandatory_substate(
                 database.deref(),
-                RENodeId::GlobalObject(resource_address.into()),
-                NodeModuleId::SELF,
-                &substate_offset,
-            )?;
-            let PersistedSubstate::ResourceManager(substate) = loaded_substate else {
-                return Err(wrong_substate_type(substate_offset));
-            };
-            ManagerByType::Fungible(substate)
-        }
-        ResourceAddress::NonFungible(_) => {
-            let substate_offset =
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let loaded_substate = read_mandatory_substate(
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &FungibleResourceManagerOffset::Divisibility.into(),
+            )?,
+            read_mandatory_substate(
                 database.deref(),
-                RENodeId::GlobalObject(resource_address.into()),
-                NodeModuleId::SELF,
-                &substate_offset,
-            )?;
-            let PersistedSubstate::NonFungibleResourceManager(substate) = loaded_substate else {
-                return Err(wrong_substate_type(substate_offset));
-            };
-            ManagerByType::NonFungible(substate)
-        }
-    };
-    let access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(resource_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &FungibleResourceManagerOffset::TotalSupply.into(),
+            )?,
+        )
+    } else {
+        ManagerByType::NonFungible(
+            read_mandatory_substate(
+                database.deref(),
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &NonFungibleResourceManagerOffset::IdType.into(),
+            )?,
+            read_mandatory_substate(
+                database.deref(),
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &NonFungibleResourceManagerOffset::TotalSupply.into(),
+            )?,
+            read_mandatory_substate(
+                database.deref(),
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &NonFungibleResourceManagerOffset::DataSchema.into(),
+            )?,
+            read_mandatory_substate(
+                database.deref(),
+                resource_node_id,
+                SysModuleId::Object.into(),
+                &NonFungibleResourceManagerOffset::Data.into(),
+            )?,
+        )
     };
 
-    let vault_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(resource_address.into()),
-            NodeModuleId::AccessRules1,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        resource_address.as_node_id(),
+        SysModuleId::AccessRules.into(),
+        &AccessRulesOffset::AccessRules.into(),
+    )?;
 
     Ok(models::StateResourceResponse {
-        manager: Some(match &manager {
-            ManagerByType::Fungible(manager) => {
-                to_api_fungible_resource_manager_substate(&mapping_context, manager)?
-            }
-            ManagerByType::NonFungible(manager) => {
-                to_api_non_fungible_resource_manager_substate(&mapping_context, manager)?
-            }
-        }),
-        access_rules: Some(to_api_access_rules_chain_substate(
+        manager: Box::new(to_api_resource_manager(&mapping_context, &manager)?),
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &access_rules,
+            &method_access_rules_substate,
         )?),
-        vault_access_rules: Some(to_api_access_rules_chain_substate(
-            &mapping_context,
-            &vault_access_rules,
-        )?),
+        vault_access_rules: None, /* TODO: bring it back */
     })
     .map(Json)
+}
+
+fn to_api_resource_manager(
+    context: &MappingContext,
+    manager: &ManagerByType,
+) -> Result<models::StateResourceResponseManager, MappingError> {
+    Ok(match manager {
+        ManagerByType::Fungible(divisiility, total_supply) => {
+            models::StateResourceResponseManager::StateFungibleResource {
+                divisibility: Box::new(to_api_fungible_resource_manager_divisibility_substate(
+                    divisiility,
+                )?),
+                total_supply: Box::new(to_api_fungible_resource_manager_total_supply_substate(
+                    total_supply,
+                )?),
+            }
+        }
+        ManagerByType::NonFungible(id_type, total_supply, data_schema, data) => {
+            models::StateResourceResponseManager::StateNonFungibleResource {
+                id_type: Box::new(to_api_non_fungible_resource_manager_id_type_substate(
+                    id_type,
+                )?),
+                total_supply: Box::new(to_api_non_fungible_resource_manager_total_supply_substate(
+                    total_supply,
+                )?),
+                data_schema: Box::new(to_api_non_fungible_resource_manager_data_schema_substate(
+                    context,
+                    data_schema,
+                )?),
+                data: Box::new(to_api_non_fungible_resource_manager_data_substate(data)?),
+            }
+        }
+    })
 }

@@ -83,7 +83,7 @@ use transaction::model::NotarizedTransaction;
 /// A high-level API giving a thread-safe access to the `SimpleMempool`.
 pub struct MempoolManager {
     mempool: Arc<RwLock<SimpleMempool>>,
-    relay_dispatcher: MempoolRelayDispatcher,
+    relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
     metrics: MempoolMetrics,
 }
@@ -92,7 +92,7 @@ impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
         mempool: Arc<RwLock<SimpleMempool>>,
-        relay_dispatcher: MempoolRelayDispatcher,
+        relay_dispatcher: Option<MempoolRelayDispatcher>,
         cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
@@ -187,8 +187,11 @@ impl MempoolManager {
         transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
         self.add_if_commitable(source, transaction.clone())?;
-        if let Err(error) = self.relay_dispatcher.trigger_relay(transaction) {
-            warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
+
+        if let Some(relay_dispatcher) = &self.relay_dispatcher {
+            if let Err(error) = relay_dispatcher.trigger_relay(transaction) {
+                warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
+            }
         }
         Ok(())
     }

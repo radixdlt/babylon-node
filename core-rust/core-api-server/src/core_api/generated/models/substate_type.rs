@@ -14,50 +14,64 @@
 pub enum SubstateType {
     #[serde(rename = "TypeInfo")]
     TypeInfo,
-    #[serde(rename = "MetadataEntry")]
-    MetadataEntry,
-    #[serde(rename = "AccessRules")]
-    AccessRules,
-    #[serde(rename = "ComponentState")]
-    ComponentState,
+    #[serde(rename = "MethodAccessRules")]
+    MethodAccessRules,
     #[serde(rename = "ComponentRoyaltyConfig")]
     ComponentRoyaltyConfig,
     #[serde(rename = "ComponentRoyaltyAccumulator")]
     ComponentRoyaltyAccumulator,
+    #[serde(rename = "MetadataValue")]
+    MetadataValue,
     #[serde(rename = "PackageInfo")]
     PackageInfo,
-    #[serde(rename = "PackageCode")]
-    PackageCode,
     #[serde(rename = "PackageCodeType")]
     PackageCodeType,
+    #[serde(rename = "PackageCode")]
+    PackageCode,
     #[serde(rename = "PackageRoyalty")]
     PackageRoyalty,
     #[serde(rename = "PackageFunctionAccessRules")]
     PackageFunctionAccessRules,
-    #[serde(rename = "FungibleResourceManager")]
-    FungibleResourceManager,
-    #[serde(rename = "NonFungibleResourceManager")]
-    NonFungibleResourceManager,
+    #[serde(rename = "FungibleResourceManagerDivisibility")]
+    FungibleResourceManagerDivisibility,
+    #[serde(rename = "FungibleResourceManagerTotalSupply")]
+    FungibleResourceManagerTotalSupply,
+    #[serde(rename = "NonFungibleResourceManagerIdType")]
+    NonFungibleResourceManagerIdType,
+    #[serde(rename = "NonFungibleResourceManagerTotalSupply")]
+    NonFungibleResourceManagerTotalSupply,
+    #[serde(rename = "NonFungibleResourceManagerDataSchema")]
+    NonFungibleResourceManagerDataSchema,
+    #[serde(rename = "NonFungibleResourceManagerData")]
+    NonFungibleResourceManagerData,
+    #[serde(rename = "FungibleVaultBalance")]
+    FungibleVaultBalance,
+    #[serde(rename = "NonFungibleVaultBalance")]
+    NonFungibleVaultBalance,
+    #[serde(rename = "EpochManagerConfig")]
+    EpochManagerConfig,
     #[serde(rename = "EpochManager")]
     EpochManager,
-    #[serde(rename = "ValidatorSet")]
-    ValidatorSet,
-    #[serde(rename = "Validator")]
-    Validator,
+    #[serde(rename = "CurrentValidatorSet")]
+    CurrentValidatorSet,
+    #[serde(rename = "RegisteredValidators")]
+    RegisteredValidators,
     #[serde(rename = "Clock")]
     Clock,
-    #[serde(rename = "KeyValueStoreEntry")]
-    KeyValueStoreEntry,
-    #[serde(rename = "VaultInfo")]
-    VaultInfo,
-    #[serde(rename = "VaultFungible")]
-    VaultFungible,
-    #[serde(rename = "VaultNonFungible")]
-    VaultNonFungible,
-    #[serde(rename = "AccessController")]
-    AccessController,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "Account")]
     Account,
+    #[serde(rename = "AccessController")]
+    AccessController,
+    #[serde(rename = "GenericScryptoComponentState")]
+    GenericScryptoComponentState,
+    #[serde(rename = "GenericKeyValueStore")]
+    GenericKeyValueStore,
+    #[serde(rename = "GenericIndex")]
+    GenericIndex,
+    #[serde(rename = "GenericSortedU16Index")]
+    GenericSortedU16Index,
 
 }
 
@@ -65,28 +79,35 @@ impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
             Self::TypeInfo => String::from("TypeInfo"),
-            Self::MetadataEntry => String::from("MetadataEntry"),
-            Self::AccessRules => String::from("AccessRules"),
-            Self::ComponentState => String::from("ComponentState"),
+            Self::MethodAccessRules => String::from("MethodAccessRules"),
             Self::ComponentRoyaltyConfig => String::from("ComponentRoyaltyConfig"),
             Self::ComponentRoyaltyAccumulator => String::from("ComponentRoyaltyAccumulator"),
+            Self::MetadataValue => String::from("MetadataValue"),
             Self::PackageInfo => String::from("PackageInfo"),
-            Self::PackageCode => String::from("PackageCode"),
             Self::PackageCodeType => String::from("PackageCodeType"),
+            Self::PackageCode => String::from("PackageCode"),
             Self::PackageRoyalty => String::from("PackageRoyalty"),
             Self::PackageFunctionAccessRules => String::from("PackageFunctionAccessRules"),
-            Self::FungibleResourceManager => String::from("FungibleResourceManager"),
-            Self::NonFungibleResourceManager => String::from("NonFungibleResourceManager"),
+            Self::FungibleResourceManagerDivisibility => String::from("FungibleResourceManagerDivisibility"),
+            Self::FungibleResourceManagerTotalSupply => String::from("FungibleResourceManagerTotalSupply"),
+            Self::NonFungibleResourceManagerIdType => String::from("NonFungibleResourceManagerIdType"),
+            Self::NonFungibleResourceManagerTotalSupply => String::from("NonFungibleResourceManagerTotalSupply"),
+            Self::NonFungibleResourceManagerDataSchema => String::from("NonFungibleResourceManagerDataSchema"),
+            Self::NonFungibleResourceManagerData => String::from("NonFungibleResourceManagerData"),
+            Self::FungibleVaultBalance => String::from("FungibleVaultBalance"),
+            Self::NonFungibleVaultBalance => String::from("NonFungibleVaultBalance"),
+            Self::EpochManagerConfig => String::from("EpochManagerConfig"),
             Self::EpochManager => String::from("EpochManager"),
-            Self::ValidatorSet => String::from("ValidatorSet"),
-            Self::Validator => String::from("Validator"),
+            Self::CurrentValidatorSet => String::from("CurrentValidatorSet"),
+            Self::RegisteredValidators => String::from("RegisteredValidators"),
             Self::Clock => String::from("Clock"),
-            Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
-            Self::VaultInfo => String::from("VaultInfo"),
-            Self::VaultFungible => String::from("VaultFungible"),
-            Self::VaultNonFungible => String::from("VaultNonFungible"),
-            Self::AccessController => String::from("AccessController"),
+            Self::Validator => String::from("Validator"),
             Self::Account => String::from("Account"),
+            Self::AccessController => String::from("AccessController"),
+            Self::GenericScryptoComponentState => String::from("GenericScryptoComponentState"),
+            Self::GenericKeyValueStore => String::from("GenericKeyValueStore"),
+            Self::GenericIndex => String::from("GenericIndex"),
+            Self::GenericSortedU16Index => String::from("GenericSortedU16Index"),
         }
     }
 }

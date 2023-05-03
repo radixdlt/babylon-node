@@ -65,24 +65,23 @@
 mod cache;
 pub mod epoch_handling;
 mod result;
-mod sorted_kv_merge_iterator;
 mod stage_tree;
+mod substate_overlay_iterator;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::{ReceiptTreeHash, TransactionTreeHash};
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_stores::hash_tree::tree_store::{ReNodeModulePayload, ReadableTreeStore};
+use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_stores::hash_tree::tree_store::{PartitionPayload, ReadableTreeStore};
 
 pub use cache::*;
 pub use result::*;
 
 pub trait ReadableStateTreeStore:
-    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
+    ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
 {
 }
 impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
+    T: ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
 {
 }
 
@@ -99,5 +98,5 @@ impl<T> ReadableHashStructuresStore for T where
 {
 }
 
-pub trait ReadableStore: ReadableSubstateStore + ReadableHashStructuresStore {}
-impl<T> ReadableStore for T where T: ReadableSubstateStore + ReadableHashStructuresStore {}
+pub trait ReadableStore: SubstateDatabase + ReadableHashStructuresStore {}
+impl<T> ReadableStore for T where T: SubstateDatabase + ReadableHashStructuresStore {}

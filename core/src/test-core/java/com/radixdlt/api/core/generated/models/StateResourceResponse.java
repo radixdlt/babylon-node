@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.StateResourceResponseManager;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -39,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateResourceResponse {
   public static final String JSON_PROPERTY_MANAGER = "manager";
-  private Substate manager;
+  private StateResourceResponseManager manager;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
@@ -50,7 +51,7 @@ public class StateResourceResponse {
   public StateResourceResponse() { 
   }
 
-  public StateResourceResponse manager(Substate manager) {
+  public StateResourceResponse manager(StateResourceResponseManager manager) {
     this.manager = manager;
     return this;
   }
@@ -64,14 +65,14 @@ public class StateResourceResponse {
   @JsonProperty(JSON_PROPERTY_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getManager() {
+  public StateResourceResponseManager getManager() {
     return manager;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setManager(Substate manager) {
+  public void setManager(StateResourceResponseManager manager) {
     this.manager = manager;
   }
 
