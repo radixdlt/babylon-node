@@ -52,3 +52,4 @@ opentelemetry = { version = "0.18", default-features = false, features = [
   "trace",
 ] }
 opentelemetry-jaeger = { version = "0.17", features = ["rt-tokio"] }
+enum_dispatch = "0.3.11"
