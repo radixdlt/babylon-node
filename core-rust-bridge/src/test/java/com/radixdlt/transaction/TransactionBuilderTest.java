@@ -80,12 +80,12 @@ public final class TransactionBuilderTest {
     // Just a bunch of random instructions, copied over from scrypto repo tests
     final var manifest =
         """
-			CALL_METHOD Address("account_sim1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqs7d0gtn") "withdraw_by_amount" Decimal("5.0") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
-			TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Bucket("xrd");
-			CALL_METHOD Address("component_sim1qd8djmepmq7hxqaakt9rl3hkce532px42s8eh4qmqlks9f87dn") "buy_gumball" Bucket("xrd");
-			ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
-			ASSERT_WORKTOP_CONTAINS Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k");
-			TAKE_FROM_WORKTOP Address("resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k") Bucket("some_xrd");
+			CALL_METHOD Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt") "withdraw_by_amount" Decimal("5.0") Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp");
+			TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Bucket("xrd");
+			CALL_METHOD Address("component_sim1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdxh44") "buy_gumball" Bucket("xrd");
+			ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp");
+			ASSERT_WORKTOP_CONTAINS Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp");
+			TAKE_FROM_WORKTOP Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp") Bucket("some_xrd");
 			CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
 			CLONE_PROOF Proof("proof1") Proof("proof2");
 			DROP_PROOF Proof("proof1");
