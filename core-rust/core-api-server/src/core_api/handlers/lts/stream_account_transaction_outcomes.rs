@@ -93,6 +93,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
             break;
         }
     }
+    response.count = response.committed_transaction_outcomes.len() as i32;
 
     Ok(response).map(Json)
 }

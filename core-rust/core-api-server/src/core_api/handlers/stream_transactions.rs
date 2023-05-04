@@ -73,7 +73,7 @@ pub(crate) async fn handle_stream_transactions(
         current_total_size += committed_transaction_size;
 
         response.transactions.push(committed_transaction);
-        
+
         if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
             break;
         }
