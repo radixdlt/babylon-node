@@ -74,7 +74,7 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseConfig;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -107,21 +107,21 @@ public sealed interface StateComputerConfig {
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
-      DatabaseConfig databaseConfig,
+      DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseConfig, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
-      DatabaseConfig databaseConfig,
+      DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseConfig, proposerConfig, false);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, false);
   }
 
   static StateComputerConfig rev2(
@@ -130,7 +130,7 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, new DatabaseConfig(true, false), proposerConfig, false);
+        networkId, genesis, databaseType, new DatabaseFlags(true, false), proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -174,7 +174,7 @@ public sealed interface StateComputerConfig {
       int networkId,
       RawLedgerTransaction genesis,
       REv2StateManagerModule.DatabaseType databaseType,
-      DatabaseConfig databaseConfig,
+      DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)
       implements StateComputerConfig {}

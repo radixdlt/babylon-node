@@ -90,9 +90,9 @@ use radix_engine::types::{Address, KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub enum DatabaseTypeConfig {
-    InMemory(DatabaseConfig),
-    RocksDB(String, DatabaseConfig),
+pub enum DatabaseBackendConfig {
+    InMemory,
+    RocksDB(String),
 }
 
 pub enum StateManagerDatabase {
@@ -101,15 +101,15 @@ pub enum StateManagerDatabase {
 }
 
 impl StateManagerDatabase {
-    pub fn from_config(type_config: DatabaseTypeConfig) -> Self {
-        match type_config {
-            DatabaseTypeConfig::InMemory(config) => {
-                let store = InMemoryStore::new(config);
+    pub fn from_config(backend_config: DatabaseBackendConfig, flags: DatabaseFlags) -> Self {
+        match backend_config {
+            DatabaseBackendConfig::InMemory => {
+                let store = InMemoryStore::new(flags);
                 StateManagerDatabase::InMemory(store)
             }
-            DatabaseTypeConfig::RocksDB(path, config) => {
+            DatabaseBackendConfig::RocksDB(path) => {
                 let db = {
-                    match RocksDBStore::new(PathBuf::from(path), config) {
+                    match RocksDBStore::new(PathBuf::from(path), flags) {
                         Ok(db) => db,
                         Err(error) => {
                             match error {
@@ -131,17 +131,17 @@ impl StateManagerDatabase {
 }
 
 impl ConfigurableDatabase for StateManagerDatabase {
-    fn read_config_state(&self) -> DatabaseConfigState {
+    fn read_flags_state(&self) -> DatabaseFlagsState {
         match self {
-            StateManagerDatabase::InMemory(store) => store.read_config_state(),
-            StateManagerDatabase::RocksDB(store) => store.read_config_state(),
+            StateManagerDatabase::InMemory(store) => store.read_flags_state(),
+            StateManagerDatabase::RocksDB(store) => store.read_flags_state(),
         }
     }
 
-    fn write_config(&mut self, database_config: &DatabaseConfig) {
+    fn write_flags(&mut self, flags: &DatabaseFlags) {
         match self {
-            StateManagerDatabase::InMemory(store) => store.write_config(database_config),
-            StateManagerDatabase::RocksDB(store) => store.write_config(database_config),
+            StateManagerDatabase::InMemory(store) => store.write_flags(flags),
+            StateManagerDatabase::RocksDB(store) => store.write_flags(flags),
         }
     }
 

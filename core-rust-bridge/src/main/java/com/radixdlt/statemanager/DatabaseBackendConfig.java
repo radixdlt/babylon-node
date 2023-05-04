@@ -65,14 +65,25 @@
 package com.radixdlt.statemanager;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-/** Database configuration options */
-public record DatabaseConfig(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
-  public static void registerCodec(CodecMap codecMap) {
+/** REv2 Database configuration options */
+public sealed interface DatabaseBackendConfig {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        DatabaseConfig.class,
-        codecs -> StructCodec.fromRecordComponents(DatabaseConfig.class, codecs));
+        DatabaseBackendConfig.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseBackendConfig.class, codecs));
   }
+
+  static DatabaseBackendConfig inMemory() {
+    return new InMemory();
+  }
+
+  static DatabaseBackendConfig rocksDB(String databasePath) {
+    return new RocksDB(databasePath);
+  }
+
+  record InMemory() implements DatabaseBackendConfig {}
+
+  record RocksDB(String databasePath) implements DatabaseBackendConfig {}
 }

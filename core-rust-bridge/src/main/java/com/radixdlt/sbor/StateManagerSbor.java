@@ -154,8 +154,8 @@ public final class StateManagerSbor {
     ActiveValidatorInfo.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     CommitError.registerCodec(codecMap);
-    DatabaseTypeConfig.registerCodec(codecMap);
-    DatabaseConfig.registerCodec(codecMap);
+    DatabaseBackendConfig.registerCodec(codecMap);
+    DatabaseFlags.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);

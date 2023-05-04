@@ -86,7 +86,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseConfig;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.FreePortFinder;
@@ -111,19 +111,19 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000, new DatabaseConfig(true, false));
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false));
   }
 
-  protected DeterministicTest buildRunningServerTest(DatabaseConfig databaseConfig) {
-    return buildRunningServerTest(1000000, databaseConfig);
+  protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
+    return buildRunningServerTest(1000000, databaseFlags);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
-    return buildRunningServerTest(roundsPerEpoch, new DatabaseConfig(true, false));
+    return buildRunningServerTest(roundsPerEpoch, new DatabaseFlags(true, false));
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseConfig databaseConfig) {
+      int roundsPerEpoch, DatabaseFlags databaseConfig) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))

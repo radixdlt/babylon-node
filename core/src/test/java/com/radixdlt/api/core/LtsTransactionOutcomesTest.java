@@ -75,7 +75,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
-import com.radixdlt.statemanager.DatabaseConfig;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.utils.Bytes;
 import java.math.BigDecimal;
 import java.util.List;
@@ -85,7 +85,7 @@ import org.junit.Test;
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
-    try (var test = buildRunningServerTest(new DatabaseConfig(true, true))) {
+    try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
 
       var faucetAddress = ScryptoConstants.FAUCET_COMPONENT_ADDRESS;
       var faucetAddressStr = addressing.encodeNormalComponentAddress(faucetAddress);
