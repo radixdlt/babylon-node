@@ -14,6 +14,9 @@ on:
 jobs:
   publish-core-sdk-npmjs:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: ./sdk/typescript
