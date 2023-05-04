@@ -66,6 +66,8 @@ use crate::store::traits::extensions::*;
 use crate::store::traits::CommitBundle;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
+use crate::LedgerTransactionReceipt;
+use crate::LocalTransactionExecution;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -88,9 +90,9 @@ use radix_engine::types::{Address, KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub enum DatabaseConfig {
-    InMemory(bool),
-    RocksDB(String, bool),
+pub enum DatabaseBackendConfig {
+    InMemory,
+    RocksDB(String),
 }
 
 pub enum StateManagerDatabase {
@@ -99,22 +101,65 @@ pub enum StateManagerDatabase {
 }
 
 impl StateManagerDatabase {
-    pub fn from_config(config: DatabaseConfig) -> Self {
-        match config {
-            DatabaseConfig::InMemory(enable_account_change_index) => {
-                let mut store = InMemoryStore::new(enable_account_change_index);
-                if enable_account_change_index {
-                    store.catchup_account_change_index();
-                }
+    pub fn from_config(backend_config: DatabaseBackendConfig, flags: DatabaseFlags) -> Self {
+        match backend_config {
+            DatabaseBackendConfig::InMemory => {
+                let store = InMemoryStore::new(flags);
                 StateManagerDatabase::InMemory(store)
             }
-            DatabaseConfig::RocksDB(path, enable_account_change_index) => {
-                let mut db = RocksDBStore::new(PathBuf::from(path), enable_account_change_index);
-                if enable_account_change_index {
-                    db.catchup_account_change_index();
-                }
+            DatabaseBackendConfig::RocksDB(path) => {
+                let db = {
+                    match RocksDBStore::new(PathBuf::from(path), flags) {
+                        Ok(db) => db,
+                        Err(error) => {
+                            match error {
+                                DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
+                                    panic!("Local transaction execution index needs to be enabled in order for account change index to work.")
+                                },
+                                DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
+                                    panic!("Local transaction execution index can not be changed once configured.\n\
+                                            If you need to change it, please wipe ledger data and resync.\n")
+                                }
+                            }
+                        }
+                    }
+                };
                 StateManagerDatabase::RocksDB(db)
             }
+        }
+    }
+}
+
+impl ConfigurableDatabase for StateManagerDatabase {
+    fn read_flags_state(&self) -> DatabaseFlagsState {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.read_flags_state(),
+            StateManagerDatabase::RocksDB(store) => store.read_flags_state(),
+        }
+    }
+
+    fn write_flags(&mut self, flags: &DatabaseFlags) {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.write_flags(flags),
+            StateManagerDatabase::RocksDB(store) => store.write_flags(flags),
+        }
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                store.is_local_transaction_execution_index_enabled()
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                store.is_local_transaction_execution_index_enabled()
+            }
+        }
+    }
+
+    fn is_account_change_index_enabled(&self) -> bool {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.is_account_change_index_enabled(),
+            StateManagerDatabase::RocksDB(store) => store.is_account_change_index_enabled(),
         }
     }
 }
@@ -190,21 +235,6 @@ impl QueryableTransactionStore for StateManagerDatabase {
     }
 
     #[tracing::instrument(skip_all)]
-    fn get_committed_transaction_receipt(
-        &self,
-        state_version: u64,
-    ) -> Option<LocalTransactionReceipt> {
-        match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_committed_transaction_receipt(state_version)
-            }
-            StateManagerDatabase::RocksDB(store) => {
-                store.get_committed_transaction_receipt(state_version)
-            }
-        }
-    }
-
-    #[tracing::instrument(skip_all)]
     fn get_committed_transaction_identifiers(
         &self,
         state_version: u64,
@@ -215,6 +245,51 @@ impl QueryableTransactionStore for StateManagerDatabase {
             }
             StateManagerDatabase::RocksDB(store) => {
                 store.get_committed_transaction_identifiers(state_version)
+            }
+        }
+    }
+
+    #[tracing::instrument(skip_all)]
+    fn get_committed_ledger_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LedgerTransactionReceipt> {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                store.get_committed_ledger_transaction_receipt(state_version)
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_ledger_transaction_receipt(state_version)
+            }
+        }
+    }
+
+    #[tracing::instrument(skip_all)]
+    fn get_committed_local_transaction_execution(
+        &self,
+        state_version: u64,
+    ) -> Option<LocalTransactionExecution> {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                store.get_committed_local_transaction_execution(state_version)
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_local_transaction_execution(state_version)
+            }
+        }
+    }
+
+    #[tracing::instrument(skip_all)]
+    fn get_committed_local_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LocalTransactionReceipt> {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                store.get_committed_local_transaction_receipt(state_version)
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_local_transaction_receipt(state_version)
             }
         }
     }
@@ -357,13 +432,6 @@ impl AccountChangeIndexExtension for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.account_change_index_last_processed_state_version()
             }
-        }
-    }
-
-    fn is_account_change_index_enabled(&self) -> bool {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.is_account_change_index_enabled(),
-            StateManagerDatabase::RocksDB(store) => store.is_account_change_index_enabled(),
         }
     }
 

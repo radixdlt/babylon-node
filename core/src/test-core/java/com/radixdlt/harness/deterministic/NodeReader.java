@@ -67,6 +67,7 @@ package com.radixdlt.harness.deterministic;
 import com.google.inject.Injector;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transaction.TransactionDetails;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
 
@@ -75,7 +76,7 @@ public final class NodeReader {
     throw new IllegalStateException("Not allowed to instantiate.");
   }
 
-  public static Optional<ExecutedTransaction> getCommittedLedgerTransaction(
+  public static Optional<Long> getStateVersionForCommittedLedgerTransaction(
       Injector node, RawLedgerTransaction committedTransaction) {
     var store = node.getInstance(REv2TransactionAndProofStore.class);
     for (long version = 1; true; version++) {
@@ -85,9 +86,33 @@ public final class NodeReader {
       } else {
         var txn = maybeTxn.unwrap();
         if (txn.rawTransaction().equals(committedTransaction)) {
-          return Optional.of(txn);
+          return Optional.of(version);
         }
       }
+    }
+
+    return Optional.empty();
+  }
+
+  public static Optional<ExecutedTransaction> getCommittedLedgerTransaction(
+      Injector node, RawLedgerTransaction committedTransaction) {
+    var store = node.getInstance(REv2TransactionAndProofStore.class);
+    var maybeStateVersion =
+        NodeReader.getStateVersionForCommittedLedgerTransaction(node, committedTransaction);
+    if (maybeStateVersion.isPresent()) {
+      return store.getTransactionAtStateVersion(maybeStateVersion.get()).toOptional();
+    }
+
+    return Optional.empty();
+  }
+
+  public static Optional<TransactionDetails> getCommittedLedgerTransactionDetails(
+      Injector node, RawLedgerTransaction committedTransaction) {
+    var store = node.getInstance(REv2TransactionAndProofStore.class);
+    var maybeStateVersion =
+        NodeReader.getStateVersionForCommittedLedgerTransaction(node, committedTransaction);
+    if (maybeStateVersion.isPresent()) {
+      return store.getTransactionDetailsAtStateVersion(maybeStateVersion.get()).toOptional();
     }
 
     return Optional.empty();

@@ -62,91 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.statemanager;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.*;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.utils.UInt64;
-import java.util.Map;
-import org.junit.Test;
-
-public final class REv2GenesisTest {
-  private static final Decimal INITIAL_STAKE = Decimal.of(1);
-
-  private static final Decimal XRD_ALLOC_AMOUNT = Decimal.of(100123);
-  private static final ECDSASecp256k1PublicKey XRD_ALLOC_ACCOUNT_PUB_KEY =
-      ECKeyPair.generateNew().getPublicKey();
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                NodeStorageConfig.none(),
-                false,
-                SafetyRecoveryConfig.MOCKED,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidatorsAndXrdAlloc(
-                            1,
-                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            INITIAL_STAKE,
-                            UInt64.fromNonNegativeLong(10)),
-                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, 0, MempoolRelayConfig.of())))));
-  }
-
-  @Test
-  public void state_reader_on_genesis_returns_correct_amounts() {
-    // Arrange/Act
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Assert
-      var stateReader = test.getInstance(0, REv2StateReader.class);
-
-      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
-      var genesisDetails = transactionStore.getTransactionDetailsAtStateVersion(1).unwrap();
-      assertThat(genesisDetails.newComponentAddresses())
-          .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-
-      final var xrdLeftInFaucet =
-          REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
-      var systemAmount =
-          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(xrdLeftInFaucet);
-
-      // Check genesis XRD alloc
-      final var allocatedAmount =
-          stateReader.getComponentXrdAmount(
-              Address.virtualAccountAddress(XRD_ALLOC_ACCOUNT_PUB_KEY));
-      assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
-
-      var emptyAccountAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
-      assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
-    }
+/** Database configuration options */
+public record DatabaseFlags(
+    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        DatabaseFlags.class,
+        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
   }
 }

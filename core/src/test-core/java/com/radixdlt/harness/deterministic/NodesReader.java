@@ -69,6 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transaction.TransactionDetails;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -112,6 +113,41 @@ public final class NodesReader {
             TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
 
     return NodeReader.getCommittedLedgerTransaction(node, committedTransaction);
+  }
+
+  public static TransactionDetails getCommittedLedgerTransactionDetails(
+      List<Injector> nodes, RawLedgerTransaction committedTransaction) {
+    for (var injector : nodes) {
+      if (injector == null) {
+        continue;
+      }
+
+      var maybeExecuted =
+          NodeReader.getCommittedLedgerTransactionDetails(injector, committedTransaction);
+      if (maybeExecuted.isPresent()) {
+        return maybeExecuted.orElseThrow();
+      }
+    }
+
+    throw new IllegalStateException("Committed Transaction Not Found " + committedTransaction);
+  }
+
+  public static TransactionDetails getCommittedTransactionDetails(
+      List<Injector> nodes, RawNotarizedTransaction userTransaction) {
+    var committedTransaction =
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+
+    return getCommittedLedgerTransactionDetails(nodes, committedTransaction);
+  }
+
+  public static Optional<TransactionDetails> tryGetCommittedTransactionDetails(
+      Injector node, RawNotarizedTransaction userTransaction) {
+    var committedTransaction =
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+
+    return NodeReader.getCommittedLedgerTransactionDetails(node, committedTransaction);
   }
 
   public static long getHighestStateVersion(List<Injector> nodes) {

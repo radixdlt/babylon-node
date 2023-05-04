@@ -102,7 +102,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int maxProposalTotalTxnsPayloadSize;
   private final int maxUncommittedUserTransactionsTotalPayloadSize;
   private final DatabaseType databaseType;
-  private final boolean enableAccountChangeIndex;
+  private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
 
@@ -111,7 +111,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
-      boolean enableAccountChangeIndex,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
@@ -119,7 +119,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.maxUncommittedUserTransactionsTotalPayloadSize =
         maxUncommittedUserTransactionsTotalPayloadSize;
     this.databaseType = databaseType;
-    this.enableAccountChangeIndex = enableAccountChangeIndex;
+    this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
   }
@@ -129,14 +129,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
-      boolean enableAccountChangeIndex,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
         maxUncommittedUserTransactionsTotalPayloadSize,
         databaseType,
-        enableAccountChangeIndex,
+        databaseFlags,
         mempoolConfig,
         false);
   }
@@ -145,7 +145,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       DatabaseType databaseType,
-      boolean enableAccountChangeIndex,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
@@ -153,7 +153,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         maxProposalTotalTxnsPayloadSize,
         maxProposalTotalTxnsPayloadSize * 5,
         databaseType,
-        enableAccountChangeIndex,
+        databaseFlags,
         mempoolConfig,
         debugLogging);
   }
@@ -163,23 +163,24 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+    bind(DatabaseFlags.class).toInstance(databaseFlags);
 
     switch (databaseType) {
       case ROCKS_DB -> install(
           new AbstractModule() {
             @Provides
             @Singleton
-            REv2DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
-              return REv2DatabaseConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath(), enableAccountChangeIndex);
+            DatabaseBackendConfig databaseBackendConfig(
+                @NodeStorageLocation String nodeStorageLocation) {
+              return DatabaseBackendConfig.rocksDB(
+                  new File(nodeStorageLocation, "rocks_db").getPath());
             }
           });
       case IN_MEMORY -> install(
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(REv2DatabaseConfig.class)
-                  .toInstance(REv2DatabaseConfig.inMemory(enableAccountChangeIndex));
+              bind(DatabaseBackendConfig.class).toInstance(DatabaseBackendConfig.inMemory());
             }
           });
     }
@@ -191,13 +192,15 @@ public final class REv2StateManagerModule extends AbstractModule {
           private StateManager stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               Network network,
-              REv2DatabaseConfig databaseConfig) {
+              DatabaseBackendConfig databaseBackendConfig,
+              DatabaseFlags databaseFlags) {
             return new StateManager(
                 mempoolRelayDispatcher,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
-                    databaseConfig,
+                    databaseBackendConfig,
+                    databaseFlags,
                     getLoggingConfig()));
           }
 

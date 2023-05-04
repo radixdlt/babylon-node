@@ -66,7 +66,6 @@ package com.radixdlt.transaction;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import java.util.List;
 
 public sealed interface CommittedTransactionStatus {
   static void registerCodec(CodecMap codecMap) {
@@ -76,7 +75,7 @@ public sealed interface CommittedTransactionStatus {
             EnumCodec.fromPermittedRecordSubclasses(CommittedTransactionStatus.class, codecs));
   }
 
-  record Success(List<byte[]> results) implements CommittedTransactionStatus {}
+  record Success() implements CommittedTransactionStatus {}
 
-  record Failure(String message) implements CommittedTransactionStatus {}
+  record Failure() implements CommittedTransactionStatus {}
 }
