@@ -3,7 +3,9 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::api::types::NodeModuleId;
 
+use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
+use std::io::Write;
 
 use super::{MappingError, ResponseError};
 
@@ -62,3 +64,37 @@ pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> ResponseEr
     }
     .into()
 }
+
+struct ByteCountWriter<'a> {
+    bytes: &'a mut usize,
+}
+
+impl<'a> ByteCountWriter<'a> {
+    fn new(bytes: &'a mut usize) -> Self {
+        Self { bytes }
+    }
+}
+
+impl<'a> Write for ByteCountWriter<'a> {
+    fn write(&mut self, data: &[u8]) -> Result<usize, std::io::Error> {
+        *self.bytes += data.len();
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        Ok(())
+    }
+}
+
+pub trait GetJsonSize: Serialize {
+    fn get_json_size(&self) -> usize {
+        let mut bytes = 0;
+        {
+            let writer = ByteCountWriter::new(&mut bytes);
+            serde_json::to_writer(writer, &self).expect("Failed to serialize JSON");
+        }
+        bytes
+    }
+}
+
+impl<T> GetJsonSize for T where T: Serialize {}
