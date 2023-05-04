@@ -76,7 +76,6 @@ use crate::jni::utils::jni_sbor_coded_call;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
-    state_version: u64,
     outcome: TransactionOutcomeJava,
     consensus_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
@@ -125,7 +124,6 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
                 read_database.get_committed_ledger_transaction_receipt(state_version)?;
 
             Some(ExecutedTransaction {
-                state_version,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,

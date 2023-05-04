@@ -90,7 +90,6 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
@@ -153,18 +152,12 @@ public final class IncreasingValidatorsTest {
       }
 
       // Register Validators
-      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
       for (int i = 0; i < transactions.size(); i++) {
         var txn = transactions.get(i);
         test.runForCount(1000);
         test.runUntilState(nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst())));
-        var executedTransaction =
-            NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), txn.getFirst());
         var transactionDetails =
-            transactionStore
-                .getTransactionDetailsAtStateVersion(
-                    executedTransaction.stateVersion().toNonNegativeLong().unwrap())
-                .unwrap();
+            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), txn.getFirst());
         var validatorAddress = transactionDetails.newComponentAddresses().get(0);
         test.restartNodeWithConfig(
             i + 1,

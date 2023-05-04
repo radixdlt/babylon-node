@@ -88,7 +88,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -138,15 +137,9 @@ public final class REv2RegisterValidatorTest {
       test.runUntilState(
           allCommittedTransaction(createValidatorTransaction),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
-      var executedTransaction =
-          NodesReader.getCommittedUserTransaction(
-              test.getNodeInjectors(), createValidatorTransaction);
-      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
       var transactionDetails =
-          transactionStore
-              .getTransactionDetailsAtStateVersion(
-                  executedTransaction.stateVersion().toNonNegativeLong().unwrap())
-              .unwrap();
+          NodesReader.getCommittedTransactionDetails(
+              test.getNodeInjectors(), createValidatorTransaction);
       var validatorAddress = transactionDetails.newComponentAddresses().get(0);
 
       // Act: Submit transaction to mempool and run consensus
