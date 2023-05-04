@@ -31,25 +31,42 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     let max_state_version = database.max_state_version();
 
-    let txns = database.get_committed_transaction_bundles(
+    let transactions = database.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );
 
-    let committed_transaction_outcomes = txns
-        .into_iter()
-        .map(|(ledger_transaction, receipt, identifiers)| {
-            Ok(to_api_lts_committed_transaction_outcome(
-                &mapping_context,
-                ledger_transaction,
-                receipt,
-                identifiers,
-            )?)
-        })
-        .collect::<Result<Vec<models::LtsCommittedTransactionOutcome>, ResponseError<()>>>()?;
+    let mut response = models::LtsStreamTransactionOutcomesResponse {
+        from_state_version: to_api_state_version(from_state_version)?,
+        count: MAX_STREAM_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        max_ledger_state_version: to_api_state_version(max_state_version)?,
+        committed_transaction_outcomes: Vec::new(),
+    };
+
+    // Reserve enough for the "header" fields
+    let mut current_total_size = response.get_json_size();
+    for (ledger_transaction, receipt, identifiers) in transactions {
+        let committed_transaction = to_api_lts_committed_transaction_outcome(
+            &mapping_context,
+            ledger_transaction,
+            receipt,
+            identifiers,
+        )?;
+
+        let committed_transaction_size = committed_transaction.get_json_size();
+        current_total_size += committed_transaction_size;
+
+        response
+            .committed_transaction_outcomes
+            .push(committed_transaction);
+
+        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+            break;
+        }
+    }
 
     let count: i32 = {
-        let transaction_count = committed_transaction_outcomes.len();
+        let transaction_count = response.committed_transaction_outcomes.len();
         if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
@@ -58,11 +75,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
             .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?
     };
 
-    Ok(models::LtsStreamTransactionOutcomesResponse {
-        from_state_version: to_api_state_version(from_state_version)?,
-        count,
-        max_ledger_state_version: to_api_state_version(max_state_version)?,
-        committed_transaction_outcomes,
-    })
-    .map(Json)
+    response.count = count;
+
+    Ok(response).map(Json)
 }

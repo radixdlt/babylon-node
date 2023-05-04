@@ -135,13 +135,9 @@ public final class RandomValidatorsTest {
 
       var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
       var validators = new HashMap<Integer, ComponentAddress>();
-      var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
       var genesisDetails =
-          transactionStore
-              .getTransactionDetailsAtStateVersion(
-                  genesis.stateVersion().toNonNegativeLong().unwrap())
-              .unwrap();
+          NodesReader.getCommittedLedgerTransactionDetails(test.getNodeInjectors(), GENESIS);
       var componentAddresses =
           genesisDetails.newComponentAddresses().stream()
               .filter(
@@ -175,16 +171,11 @@ public final class RandomValidatorsTest {
             creating_validators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
-            var maybeExecuted =
-                NodesReader.tryGetCommittedUserTransaction(
+            var maybeTransactionsDetails =
+                NodesReader.tryGetCommittedTransactionDetails(
                     test.getNodeInjectors().get(randomValidatorIndex), inflightTransaction);
-            maybeExecuted.ifPresent(
-                executedTransaction -> {
-                  var transactionDetails =
-                      transactionStore
-                          .getTransactionDetailsAtStateVersion(
-                              executedTransaction.stateVersion().toNonNegativeLong().unwrap())
-                          .unwrap();
+            maybeTransactionsDetails.ifPresent(
+                transactionDetails -> {
                   var validatorAddress = transactionDetails.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidatorIndex,

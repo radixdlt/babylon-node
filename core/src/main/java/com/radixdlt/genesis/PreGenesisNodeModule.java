@@ -83,7 +83,7 @@ import com.radixdlt.modules.MetricsModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule.DatabaseType;
-import com.radixdlt.statemanager.DatabaseConfig;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -119,7 +119,7 @@ public final class PreGenesisNodeModule extends AbstractModule {
         .toInstance(transaction -> {});
     install(
         REv2StateManagerModule.create(
-            0, 0, 0, DatabaseType.ROCKS_DB, new DatabaseConfig(false, false), Option.empty()));
+            0, 0, 0, DatabaseType.ROCKS_DB, new DatabaseFlags(false, false), Option.empty()));
   }
 
   @Provides

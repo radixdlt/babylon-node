@@ -79,17 +79,17 @@ pub enum DatabaseConfigValidationError {
     LocalTransactionExecutionIndexChanged,
 }
 
-/// Database configuration required for initialization built from
+/// Database flags required for initialization built from
 /// config file and environment variables.
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseConfig {
+pub struct DatabaseFlags {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
 }
 
-impl Default for DatabaseConfig {
+impl Default for DatabaseFlags {
     fn default() -> Self {
-        DatabaseConfig {
+        DatabaseFlags {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
         }
@@ -101,15 +101,15 @@ impl Default for DatabaseConfig {
 /// just being initialized (when all of the fields are None) but also
 /// when new configurations are added - this is a cheap work around to
 /// limit future needed ledger wipes until we have a better solution.
-pub struct DatabaseConfigState {
+pub struct DatabaseFlagsState {
     pub local_transaction_execution_index_enabled: Option<bool>,
     pub account_change_index_enabled: Option<bool>,
 }
 
-impl DatabaseConfig {
+impl DatabaseFlags {
     pub fn validate(
         &self,
-        current_database_config: &DatabaseConfigState,
+        current_database_config: &DatabaseFlagsState,
     ) -> Result<(), DatabaseConfigValidationError> {
         if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
             return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
@@ -129,9 +129,9 @@ impl DatabaseConfig {
 
 #[enum_dispatch]
 pub trait ConfigurableDatabase {
-    fn read_config_state(&self) -> DatabaseConfigState;
+    fn read_flags_state(&self) -> DatabaseFlagsState;
 
-    fn write_config(&mut self, database_config: &DatabaseConfig);
+    fn write_flags(&mut self, flags: &DatabaseFlags);
 
     fn is_account_change_index_enabled(&self) -> bool;
 

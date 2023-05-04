@@ -413,7 +413,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         0,
                         0,
                         rev2Config.databaseType(),
-                        rev2Config.databaseConfig(),
+                        rev2Config.databaseFlags(),
                         Option.none(),
                         rev2Config.debugLogging()));
               }
@@ -427,7 +427,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         mempool.maxNumTransactionsPerProposal(),
                         mempool.maxProposalTotalTxnsPayloadSize(),
                         rev2Config.databaseType(),
-                        rev2Config.databaseConfig(),
+                        rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));
               }

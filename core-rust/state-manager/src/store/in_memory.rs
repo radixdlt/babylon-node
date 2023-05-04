@@ -88,7 +88,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    config: DatabaseConfig,
+    flags: DatabaseFlags,
     transactions: BTreeMap<u64, LedgerTransaction>,
     transaction_identifiers: BTreeMap<u64, CommittedTransactionIdentifiers>,
     ledger_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
@@ -108,9 +108,9 @@ pub struct InMemoryStore {
 }
 
 impl InMemoryStore {
-    pub fn new(config: DatabaseConfig) -> InMemoryStore {
+    pub fn new(flags: DatabaseFlags) -> InMemoryStore {
         InMemoryStore {
-            config,
+            flags,
             transactions: BTreeMap::new(),
             transaction_identifiers: BTreeMap::new(),
             ledger_receipts: BTreeMap::new(),
@@ -176,28 +176,28 @@ impl InMemoryStore {
 
 impl Default for InMemoryStore {
     fn default() -> Self {
-        Self::new(DatabaseConfig::default())
+        Self::new(DatabaseFlags::default())
     }
 }
 
 impl ConfigurableDatabase for InMemoryStore {
-    fn read_config_state(&self) -> DatabaseConfigState {
-        DatabaseConfigState {
+    fn read_flags_state(&self) -> DatabaseFlagsState {
+        DatabaseFlagsState {
             account_change_index_enabled: None,
             local_transaction_execution_index_enabled: None,
         }
     }
 
-    fn write_config(&mut self, _database_config: &DatabaseConfig) {
+    fn write_flags(&mut self, _flags: &DatabaseFlags) {
         // We don't need to do anything for in memory store
     }
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool {
-        self.config.enable_local_transaction_execution_index
+        self.flags.enable_local_transaction_execution_index
     }
 
     fn is_account_change_index_enabled(&self) -> bool {
-        self.config.enable_account_change_index
+        self.flags.enable_account_change_index
     }
 }
 

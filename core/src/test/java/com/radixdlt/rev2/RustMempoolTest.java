@@ -107,7 +107,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            DatabaseTypeConfig.inMemory(new DatabaseConfig(false, false)),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
@@ -169,7 +170,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            DatabaseTypeConfig.inMemory(new DatabaseConfig(false, false)),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
@@ -293,7 +295,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            DatabaseTypeConfig.inMemory(new DatabaseConfig(false, false)),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 

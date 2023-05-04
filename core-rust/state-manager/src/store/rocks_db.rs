@@ -206,13 +206,13 @@ impl fmt::Display for ExtensionsDataKeys {
 
 pub struct RocksDBStore {
     db: DB,
-    config: DatabaseConfig,
+    config: DatabaseFlags,
 }
 
 impl RocksDBStore {
     pub fn new(
         root: PathBuf,
-        config: DatabaseConfig,
+        config: DatabaseFlags,
     ) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
@@ -227,7 +227,7 @@ impl RocksDBStore {
 
         let mut rocks_db_store = RocksDBStore { db, config };
 
-        let current_database_config = rocks_db_store.read_config_state();
+        let current_database_config = rocks_db_store.read_flags_state();
         rocks_db_store.config.validate(&current_database_config)?;
 
         if rocks_db_store.config.enable_account_change_index {
@@ -357,7 +357,7 @@ impl RocksDBStore {
 }
 
 impl ConfigurableDatabase for RocksDBStore {
-    fn read_config_state(&self) -> DatabaseConfigState {
+    fn read_flags_state(&self) -> DatabaseFlagsState {
         let account_change_index_enabled = self.get_by_key::<bool>(
             &ExtensionsData,
             ExtensionsDataKeys::AccountChangeIndexEnabled
@@ -370,13 +370,13 @@ impl ConfigurableDatabase for RocksDBStore {
                 .to_string()
                 .as_bytes(),
         );
-        DatabaseConfigState {
+        DatabaseFlagsState {
             account_change_index_enabled,
             local_transaction_execution_index_enabled,
         }
     }
 
-    fn write_config(&mut self, database_config: &DatabaseConfig) {
+    fn write_flags(&mut self, database_config: &DatabaseFlags) {
         let mut batch = WriteBatch::default();
         batch.put_cf(
             self.cf_handle(&ExtensionsData),
