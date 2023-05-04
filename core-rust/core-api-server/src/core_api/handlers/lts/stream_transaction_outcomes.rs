@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use state_manager::store::traits::{QueryableProofStore, QueryableTransactionStore};
+use tracing::warn;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -56,6 +57,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
         let committed_transaction_size = committed_transaction.get_json_size();
         if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
+            warn!("Query from state version {from_state_version} with count limit of {limit} passed total size limit of {MAX_STREAM_TOTAL_SIZE_PER_RESPONSE}.");
             break;
         }
         current_total_size += committed_transaction_size;

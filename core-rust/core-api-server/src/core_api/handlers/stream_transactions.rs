@@ -11,6 +11,7 @@ use state_manager::{
 
 use radix_engine_interface::data::manifest::manifest_encode;
 use std::collections::HashMap;
+use tracing::warn;
 use transaction::manifest;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
@@ -72,6 +73,7 @@ pub(crate) async fn handle_stream_transactions(
 
         let committed_transaction_size = committed_transaction.get_json_size();
         if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
+            warn!("Query from state version {from_state_version} with count limit of {limit} passed total size limit of {MAX_STREAM_TOTAL_SIZE_PER_RESPONSE}.");
             break;
         }
         current_total_size += committed_transaction_size;

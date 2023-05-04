@@ -3,6 +3,7 @@ use radix_engine::types::Address;
 use state_manager::store::traits::{
     extensions::AccountChangeIndexExtension, QueryableProofStore, QueryableTransactionStore,
 };
+use tracing::warn;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
@@ -85,6 +86,8 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
         let committed_transaction_size = committed_transaction_outcome.get_json_size();
         if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
+            let account_address = request.account_address;
+            warn!("Query for {account_address} from state version {from_state_version} with count limit of {limit} passed total size limit of {MAX_STREAM_TOTAL_SIZE_PER_RESPONSE}.");
             break;
         }
         current_total_size += committed_transaction_size;
