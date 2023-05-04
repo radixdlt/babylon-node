@@ -10,22 +10,29 @@
 
 
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateFungibleResource {
-    #[serde(rename = "divisibility")]
-    pub divisibility: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "total_supply")]
-    pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "resource_type")]
+pub enum StateResourceManager {
+    #[serde(rename="Fungible")]
+    StateFungibleResourceManager {
+        #[serde(rename = "divisibility")]
+        divisibility: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "total_supply")]
+        total_supply: Box<crate::core_api::generated::models::Substate>,
+    },
+    #[serde(rename="NonFungible")]
+    StateNonFungibleResourceManager {
+        #[serde(rename = "id_type")]
+        id_type: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "total_supply")]
+        total_supply: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "data_schema")]
+        data_schema: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "data")]
+        data: Box<crate::core_api::generated::models::Substate>,
+    },
 }
 
-impl StateFungibleResource {
-    pub fn new(divisibility: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate) -> StateFungibleResource {
-        StateFungibleResource {
-            divisibility: Option::Some(divisibility),
-            total_supply: Option::Some(total_supply),
-        }
-    }
-}
+
 
 

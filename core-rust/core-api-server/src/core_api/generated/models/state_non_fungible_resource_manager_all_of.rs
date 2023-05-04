@@ -11,19 +11,25 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct StateResourceResponse {
-    #[serde(rename = "manager")]
-    pub manager: Box<crate::core_api::generated::models::StateResourceManager>,
-    #[serde(rename = "access_rules")]
-    pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct StateNonFungibleResourceManagerAllOf {
+    #[serde(rename = "id_type")]
+    pub id_type: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "total_supply")]
+    pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "data_schema")]
+    pub data_schema: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "data")]
+    pub data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl StateResourceResponse {
-    pub fn new(manager: crate::core_api::generated::models::StateResourceManager, access_rules: crate::core_api::generated::models::Substate) -> StateResourceResponse {
-        StateResourceResponse {
-            manager: Box::new(manager),
-            access_rules: Option::Some(access_rules),
+impl StateNonFungibleResourceManagerAllOf {
+    pub fn new(id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, data_schema: crate::core_api::generated::models::Substate, data: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManagerAllOf {
+        StateNonFungibleResourceManagerAllOf {
+            id_type: Option::Some(id_type),
+            total_supply: Option::Some(total_supply),
+            data_schema: Option::Some(data_schema),
+            data: Option::Some(data),
         }
     }
 }

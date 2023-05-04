@@ -29,50 +29,58 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateFungibleResource
+ * StateNonFungibleResourceManagerAllOf
  */
 @JsonPropertyOrder({
-  StateFungibleResource.JSON_PROPERTY_DIVISIBILITY,
-  StateFungibleResource.JSON_PROPERTY_TOTAL_SUPPLY
+  StateNonFungibleResourceManagerAllOf.JSON_PROPERTY_ID_TYPE,
+  StateNonFungibleResourceManagerAllOf.JSON_PROPERTY_TOTAL_SUPPLY,
+  StateNonFungibleResourceManagerAllOf.JSON_PROPERTY_DATA_SCHEMA,
+  StateNonFungibleResourceManagerAllOf.JSON_PROPERTY_DATA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateFungibleResource {
-  public static final String JSON_PROPERTY_DIVISIBILITY = "divisibility";
-  private Substate divisibility;
+public class StateNonFungibleResourceManagerAllOf {
+  public static final String JSON_PROPERTY_ID_TYPE = "id_type";
+  private Substate idType;
 
   public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
   private Substate totalSupply;
 
-  public StateFungibleResource() { 
+  public static final String JSON_PROPERTY_DATA_SCHEMA = "data_schema";
+  private Substate dataSchema;
+
+  public static final String JSON_PROPERTY_DATA = "data";
+  private Substate data;
+
+  public StateNonFungibleResourceManagerAllOf() { 
   }
 
-  public StateFungibleResource divisibility(Substate divisibility) {
-    this.divisibility = divisibility;
+  public StateNonFungibleResourceManagerAllOf idType(Substate idType) {
+    this.idType = idType;
     return this;
   }
 
    /**
-   * Get divisibility
-   * @return divisibility
+   * Get idType
+   * @return idType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_ID_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getDivisibility() {
-    return divisibility;
+  public Substate getIdType() {
+    return idType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_ID_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDivisibility(Substate divisibility) {
-    this.divisibility = divisibility;
+  public void setIdType(Substate idType) {
+    this.idType = idType;
   }
 
 
-  public StateFungibleResource totalSupply(Substate totalSupply) {
+  public StateNonFungibleResourceManagerAllOf totalSupply(Substate totalSupply) {
     this.totalSupply = totalSupply;
     return this;
   }
@@ -98,8 +106,60 @@ public class StateFungibleResource {
   }
 
 
+  public StateNonFungibleResourceManagerAllOf dataSchema(Substate dataSchema) {
+    this.dataSchema = dataSchema;
+    return this;
+  }
+
+   /**
+   * Get dataSchema
+   * @return dataSchema
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DATA_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getDataSchema() {
+    return dataSchema;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATA_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDataSchema(Substate dataSchema) {
+    this.dataSchema = dataSchema;
+  }
+
+
+  public StateNonFungibleResourceManagerAllOf data(Substate data) {
+    this.data = data;
+    return this;
+  }
+
+   /**
+   * Get data
+   * @return data
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getData() {
+    return data;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setData(Substate data) {
+    this.data = data;
+  }
+
+
   /**
-   * Return true if this StateFungibleResource object is equal to o.
+   * Return true if this StateNonFungibleResourceManager_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +169,26 @@ public class StateFungibleResource {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateFungibleResource stateFungibleResource = (StateFungibleResource) o;
-    return Objects.equals(this.divisibility, stateFungibleResource.divisibility) &&
-        Objects.equals(this.totalSupply, stateFungibleResource.totalSupply);
+    StateNonFungibleResourceManagerAllOf stateNonFungibleResourceManagerAllOf = (StateNonFungibleResourceManagerAllOf) o;
+    return Objects.equals(this.idType, stateNonFungibleResourceManagerAllOf.idType) &&
+        Objects.equals(this.totalSupply, stateNonFungibleResourceManagerAllOf.totalSupply) &&
+        Objects.equals(this.dataSchema, stateNonFungibleResourceManagerAllOf.dataSchema) &&
+        Objects.equals(this.data, stateNonFungibleResourceManagerAllOf.data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(divisibility, totalSupply);
+    return Objects.hash(idType, totalSupply, dataSchema, data);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateFungibleResource {\n");
-    sb.append("    divisibility: ").append(toIndentedString(divisibility)).append("\n");
+    sb.append("class StateNonFungibleResourceManagerAllOf {\n");
+    sb.append("    idType: ").append(toIndentedString(idType)).append("\n");
     sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
+    sb.append("    dataSchema: ").append(toIndentedString(dataSchema)).append("\n");
+    sb.append("    data: ").append(toIndentedString(data)).append("\n");
     sb.append("}");
     return sb.toString();
   }

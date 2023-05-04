@@ -26,8 +26,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ResourceType;
-import com.radixdlt.api.core.generated.models.StateFungibleResource;
-import com.radixdlt.api.core.generated.models.StateNonFungibleResource;
+import com.radixdlt.api.core.generated.models.StateFungibleResourceManager;
+import com.radixdlt.api.core.generated.models.StateFungibleResourceManagerAllOf;
+import com.radixdlt.api.core.generated.models.StateNonFungibleResourceManager;
+import com.radixdlt.api.core.generated.models.StateResourceManager;
+import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,10 +38,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * StateResourceResponseManager
+ * StateFungibleResourceManager
  */
 @JsonPropertyOrder({
-  StateResourceResponseManager.JSON_PROPERTY_RESOURCE_TYPE
+  StateFungibleResourceManager.JSON_PROPERTY_DIVISIBILITY,
+  StateFungibleResourceManager.JSON_PROPERTY_TOTAL_SUPPLY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -47,45 +51,74 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "resource_type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = StateFungibleResource.class, name = "Fungible"),
-  @JsonSubTypes.Type(value = StateNonFungibleResource.class, name = "NonFungible"),
+  @JsonSubTypes.Type(value = StateFungibleResourceManager.class, name = "Fungible"),
+  @JsonSubTypes.Type(value = StateNonFungibleResourceManager.class, name = "NonFungible"),
 })
 
-public class StateResourceResponseManager {
-  public static final String JSON_PROPERTY_RESOURCE_TYPE = "resource_type";
-  private ResourceType resourceType;
+public class StateFungibleResourceManager extends StateResourceManager {
+  public static final String JSON_PROPERTY_DIVISIBILITY = "divisibility";
+  private Substate divisibility;
 
-  public StateResourceResponseManager() { 
+  public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
+  private Substate totalSupply;
+
+  public StateFungibleResourceManager() { 
   }
 
-  public StateResourceResponseManager resourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public StateFungibleResourceManager divisibility(Substate divisibility) {
+    this.divisibility = divisibility;
     return this;
   }
 
    /**
-   * Get resourceType
-   * @return resourceType
+   * Get divisibility
+   * @return divisibility
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceType getResourceType() {
-    return resourceType;
+  public Substate getDivisibility() {
+    return divisibility;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public void setDivisibility(Substate divisibility) {
+    this.divisibility = divisibility;
+  }
+
+
+  public StateFungibleResourceManager totalSupply(Substate totalSupply) {
+    this.totalSupply = totalSupply;
+    return this;
+  }
+
+   /**
+   * Get totalSupply
+   * @return totalSupply
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getTotalSupply() {
+    return totalSupply;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTotalSupply(Substate totalSupply) {
+    this.totalSupply = totalSupply;
   }
 
 
   /**
-   * Return true if this StateResourceResponse_manager object is equal to o.
+   * Return true if this StateFungibleResourceManager object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -95,20 +128,24 @@ public class StateResourceResponseManager {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateResourceResponseManager stateResourceResponseManager = (StateResourceResponseManager) o;
-    return Objects.equals(this.resourceType, stateResourceResponseManager.resourceType);
+    StateFungibleResourceManager stateFungibleResourceManager = (StateFungibleResourceManager) o;
+    return Objects.equals(this.divisibility, stateFungibleResourceManager.divisibility) &&
+        Objects.equals(this.totalSupply, stateFungibleResourceManager.totalSupply) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceType);
+    return Objects.hash(divisibility, totalSupply, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateResourceResponseManager {\n");
-    sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
+    sb.append("class StateFungibleResourceManager {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    divisibility: ").append(toIndentedString(divisibility)).append("\n");
+    sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -127,10 +164,10 @@ public class StateResourceResponseManager {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Fungible", StateFungibleResource.class);
-  mappings.put("NonFungible", StateNonFungibleResource.class);
-  mappings.put("StateResourceResponse_manager", StateResourceResponseManager.class);
-  JSON.registerDiscriminator(StateResourceResponseManager.class, "resource_type", mappings);
+  mappings.put("Fungible", StateFungibleResourceManager.class);
+  mappings.put("NonFungible", StateNonFungibleResourceManager.class);
+  mappings.put("StateFungibleResourceManager", StateFungibleResourceManager.class);
+  JSON.registerDiscriminator(StateFungibleResourceManager.class, "resource_type", mappings);
 }
 }
 

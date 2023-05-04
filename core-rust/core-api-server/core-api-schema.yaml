@@ -4737,50 +4737,54 @@ components:
       required:
         - manager
         - access_rules
-        - vault_access_rules
       properties:
         manager:
-          required:
-            - resource_type
-          properties:
-            resource_type:
-              $ref: '#/components/schemas/ResourceType'
-          discriminator:
-            propertyName: resource_type
-            mapping:
-              # NOTE: These need to match ResourceType
-              Fungible: '#/components/schemas/StateFungibleResource'
-              NonFungible: '#/components/schemas/StateNonFungibleResource'
+          $ref: "#/components/schemas/StateResourceManager"
         access_rules:
           $ref: "#/components/schemas/Substate"
-        vault_access_rules:
-          $ref: "#/components/schemas/Substate"
-    StateFungibleResource:
+    StateResourceManager:
       type: object
       required:
-        - divisibility
-        - total_supply
+        - resource_type
       properties:
-        divisibility:
-          $ref: "#/components/schemas/Substate"
-        total_supply:
-          $ref: "#/components/schemas/Substate"
-    StateNonFungibleResource:
-      type: object
-      required:
-        - id_type
-        - total_supply
-        - data_schema
-        - data
-      properties:
-        id_type:
-          $ref: "#/components/schemas/Substate"
-        total_supply:
-          $ref: "#/components/schemas/Substate"
-        data_schema:
-          $ref: "#/components/schemas/Substate"
-        data:
-          $ref: "#/components/schemas/Substate"
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      discriminator:
+        propertyName: resource_type
+        mapping:
+          # NOTE: These need to match ResourceType
+          Fungible: '#/components/schemas/StateFungibleResourceManager'
+          NonFungible: '#/components/schemas/StateNonFungibleResourceManager'
+    StateFungibleResourceManager:
+      allOf:
+        - $ref: '#/components/schemas/StateResourceManager'
+        - type: object
+          required:
+            - divisibility
+            - total_supply
+          properties:
+            divisibility:
+              $ref: "#/components/schemas/Substate"
+            total_supply:
+              $ref: "#/components/schemas/Substate"
+    StateNonFungibleResourceManager:
+      allOf:
+        - $ref: '#/components/schemas/StateResourceManager'
+        - type: object
+          required:
+            - id_type
+            - total_supply
+            - data_schema
+            - data
+          properties:
+            id_type:
+              $ref: "#/components/schemas/Substate"
+            total_supply:
+              $ref: "#/components/schemas/Substate"
+            data_schema:
+              $ref: "#/components/schemas/Substate"
+            data:
+              $ref: "#/components/schemas/Substate"
 ################################
 # REQUEST: /state/non-fungible #
 ################################

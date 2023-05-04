@@ -98,7 +98,6 @@ pub(crate) async fn handle_state_resource(
             &mapping_context,
             &method_access_rules_substate,
         )?),
-        vault_access_rules: None, /* TODO: bring it back */
     })
     .map(Json)
 }
@@ -106,10 +105,10 @@ pub(crate) async fn handle_state_resource(
 fn to_api_resource_manager(
     context: &MappingContext,
     manager: &ManagerByType,
-) -> Result<models::StateResourceResponseManager, MappingError> {
+) -> Result<models::StateResourceManager, MappingError> {
     Ok(match manager {
         ManagerByType::Fungible(divisiility, total_supply) => {
-            models::StateResourceResponseManager::StateFungibleResource {
+            models::StateResourceManager::StateFungibleResourceManager {
                 divisibility: Box::new(to_api_fungible_resource_manager_divisibility_substate(
                     divisiility,
                 )?),
@@ -119,7 +118,7 @@ fn to_api_resource_manager(
             }
         }
         ManagerByType::NonFungible(id_type, total_supply, data_schema, data) => {
-            models::StateResourceResponseManager::StateNonFungibleResource {
+            models::StateResourceManager::StateNonFungibleResourceManager {
                 id_type: Box::new(to_api_non_fungible_resource_manager_id_type_substate(
                     id_type,
                 )?),

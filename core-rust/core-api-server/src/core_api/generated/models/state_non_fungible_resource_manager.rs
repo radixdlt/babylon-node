@@ -12,7 +12,9 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateNonFungibleResource {
+pub struct StateNonFungibleResourceManager {
+    #[serde(rename = "resource_type")]
+    pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "id_type")]
     pub id_type: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "total_supply")]
@@ -23,9 +25,10 @@ pub struct StateNonFungibleResource {
     pub data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl StateNonFungibleResource {
-    pub fn new(id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, data_schema: crate::core_api::generated::models::Substate, data: crate::core_api::generated::models::Substate) -> StateNonFungibleResource {
-        StateNonFungibleResource {
+impl StateNonFungibleResourceManager {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, data_schema: crate::core_api::generated::models::Substate, data: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManager {
+        StateNonFungibleResourceManager {
+            resource_type,
             id_type: Option::Some(id_type),
             total_supply: Option::Some(total_supply),
             data_schema: Option::Some(data_schema),

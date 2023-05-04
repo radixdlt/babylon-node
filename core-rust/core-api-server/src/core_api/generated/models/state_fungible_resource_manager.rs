@@ -10,29 +10,25 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "resource_type")]
-pub enum StateResourceResponseManager {
-    #[serde(rename="Fungible")]
-    StateFungibleResource {
-        #[serde(rename = "divisibility")]
-        divisibility: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "total_supply")]
-        total_supply: Box<crate::core_api::generated::models::Substate>,
-    },
-    #[serde(rename="NonFungible")]
-    StateNonFungibleResource {
-        #[serde(rename = "id_type")]
-        id_type: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "total_supply")]
-        total_supply: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "data_schema")]
-        data_schema: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "data")]
-        data: Box<crate::core_api::generated::models::Substate>,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct StateFungibleResourceManager {
+    #[serde(rename = "resource_type")]
+    pub resource_type: crate::core_api::generated::models::ResourceType,
+    #[serde(rename = "divisibility")]
+    pub divisibility: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "total_supply")]
+    pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-
+impl StateFungibleResourceManager {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, divisibility: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate) -> StateFungibleResourceManager {
+        StateFungibleResourceManager {
+            resource_type,
+            divisibility: Option::Some(divisibility),
+            total_supply: Option::Some(total_supply),
+        }
+    }
+}
 
 
