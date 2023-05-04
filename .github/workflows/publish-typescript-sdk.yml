@@ -36,8 +36,6 @@ jobs:
         with:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
-        # env:
-        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Build @radixdlt/babylon-core-api-sdk
         run: |
           yarn
@@ -49,9 +47,6 @@ jobs:
           file: ./sdk/typescript/package.json
           field: version
           value: ${{ github.event.inputs.package_version_number || github.event.release.tag_name }}
-
       - run: |
           npm config set access public
           npm publish
-        # env:
-        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

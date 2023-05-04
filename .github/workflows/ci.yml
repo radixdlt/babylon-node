@@ -53,12 +53,19 @@ jobs:
           path: ./core/build/distributions/core-*.zip
           name: distZip
           retention-days: 7
+      - uses: ./.github/actions/fetch-secrets
+        with: 
+          role_name: "arn:aws:iam::308190735829:role/gh-babylon-node-secrets-read-access"
+          app_name: "babylon-node"
+          step_name: "build"
+          secret_prefix: "SONAR_"
+          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
+          secret_name: "github-actions/radixdlt/babylon-node/sonar-token"
+          parse_json: true
       - name: Sonar analysis
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
     name: Test core-rust docker build for local development
