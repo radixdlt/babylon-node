@@ -11,7 +11,6 @@ use state_manager::{
 
 use radix_engine_interface::data::manifest::manifest_encode;
 use std::collections::HashMap;
-use tracing::warn;
 use transaction::manifest;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
@@ -62,7 +61,6 @@ pub(crate) async fn handle_stream_transactions(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    current_total_size += 8; // This should cover '[' and ']'
     for (ledger_transaction, receipt, identifiers) in transactions {
         let committed_transaction = to_api_committed_transaction(
             &mapping_context,
@@ -72,14 +70,13 @@ pub(crate) async fn handle_stream_transactions(
         )?;
 
         let committed_transaction_size = committed_transaction.get_json_size();
-        if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
-            warn!("Query from state version {from_state_version} with count limit of {limit} passed total size limit of {MAX_STREAM_TOTAL_SIZE_PER_RESPONSE}.");
-            break;
-        }
         current_total_size += committed_transaction_size;
-        current_total_size += 4; // this is should cover for ',' between array elements
 
         response.transactions.push(committed_transaction);
+        
+        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+            break;
+        }
     }
 
     let count: i32 = {

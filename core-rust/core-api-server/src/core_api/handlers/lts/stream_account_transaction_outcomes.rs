@@ -3,7 +3,6 @@ use radix_engine::types::Address;
 use state_manager::store::traits::{
     extensions::AccountChangeIndexExtension, QueryableProofStore, QueryableTransactionStore,
 };
-use tracing::warn;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
@@ -69,7 +68,6 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    current_total_size += 8; // This should cover '[' and ']'
     for state_version in state_versions {
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
             &mapping_context,
@@ -85,17 +83,15 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         )?;
 
         let committed_transaction_size = committed_transaction_outcome.get_json_size();
-        if current_total_size + committed_transaction_size > MAX_STREAM_TOTAL_SIZE_PER_RESPONSE {
-            let account_address = request.account_address;
-            warn!("Query for {account_address} from state version {from_state_version} with count limit of {limit} passed total size limit of {MAX_STREAM_TOTAL_SIZE_PER_RESPONSE}.");
-            break;
-        }
         current_total_size += committed_transaction_size;
-        current_total_size += 4; // this is should cover for ',' between array elements
 
         response
             .committed_transaction_outcomes
             .push(committed_transaction_outcome);
+
+        if current_total_size > CAP_STREAM_RESPONSE_WHEN_ABOVE_BYTES {
+            break;
+        }
     }
 
     Ok(response).map(Json)
