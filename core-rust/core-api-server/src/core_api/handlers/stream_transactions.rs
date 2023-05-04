@@ -52,9 +52,16 @@ pub(crate) async fn handle_stream_transactions(
         limit.try_into().expect("limit out of usize bounds"),
     );
 
+    let mut response = models::StreamTransactionsResponse {
+        from_state_version: to_api_state_version(from_state_version)?,
+        count: MAX_STREAM_COUNT_PER_REQUEST as i32, // placeholder to get a better size aproximation for the header
+        max_ledger_state_version: to_api_state_version(max_state_version)?,
+        transactions: Vec::new(),
+    };
+
     // Reserve enough for the "header" fields
-    let mut current_total_size = 2048;
-    let mut api_txns = Vec::new();
+    let mut current_total_size = response.get_json_size();
+    current_total_size += 8; // This should cover '[' and ']'
     for (ledger_transaction, receipt, identifiers) in transactions {
         let committed_transaction = to_api_committed_transaction(
             &mapping_context,
@@ -68,12 +75,13 @@ pub(crate) async fn handle_stream_transactions(
             break;
         }
         current_total_size += committed_transaction_size;
+        current_total_size += 4; // this is should cover for ',' between array elements
 
-        api_txns.push(committed_transaction);
+        response.transactions.push(committed_transaction);
     }
 
     let count: i32 = {
-        let transaction_count = api_txns.len();
+        let transaction_count = response.transactions.len();
         if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
@@ -82,13 +90,9 @@ pub(crate) async fn handle_stream_transactions(
             .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?
     };
 
-    Ok(models::StreamTransactionsResponse {
-        from_state_version: to_api_state_version(from_state_version)?,
-        count,
-        max_ledger_state_version: to_api_state_version(max_state_version)?,
-        transactions: api_txns,
-    })
-    .map(Json)
+    response.count = count;
+
+    Ok(response).map(Json)
 }
 
 #[tracing::instrument(skip_all)]
