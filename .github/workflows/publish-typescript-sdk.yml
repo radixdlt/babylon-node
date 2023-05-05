@@ -14,19 +14,28 @@ on:
 jobs:
   publish-core-sdk-npmjs:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: ./sdk/typescript
 
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+      - uses: ./.github/actions/fetch-secrets
+        with: 
+          role_name: "arn:aws:iam::308190735829:role/gh-babylon-node-secrets-read-access"
+          app_name: "babylon-node"
+          step_name: "publish-core-sdk-npmjs"
+          secret_prefix: "NODE_AUTH"
+          secret_name: "github-actions/radixdlt/babylon-node/npm-publishing-secret"
+          parse_json: true
       - name: Use Node.js
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516
         with:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Build @radixdlt/babylon-core-api-sdk
         run: |
           yarn
@@ -38,9 +47,6 @@ jobs:
           file: ./sdk/typescript/package.json
           field: version
           value: ${{ github.event.inputs.package_version_number || github.event.release.tag_name }}
-
       - run: |
           npm config set access public
           npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

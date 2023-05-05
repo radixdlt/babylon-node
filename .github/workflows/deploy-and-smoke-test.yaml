@@ -15,15 +15,26 @@ jobs:
         with:
           access_token: ${{ github.token }}
   deploy:
+    permissions:
+      id-token: write
+      contents: read
     name: Deploy to Gilganet
     runs-on: ubuntu-22.04
     steps:
+      - uses: ./.github/actions/fetch-secrets
+        with: 
+          role_name: "arn:aws:iam::308190735829:role/gh-babylon-node-secrets-read-access"
+          app_name: "babylon-node"
+          step_name: "deploy"
+          secret_prefix: "JENKINS"
+          secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
+          parse_json: true
       - name: Deploy
         uses: toptal/jenkins-job-trigger-action@1.0.0
         with:
-          jenkins_url: "${{ secrets.JENKINS_URL }}"
-          jenkins_user: ${{ secrets.JENKINS_USER }}
-          jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
+          jenkins_url: "${{ env.JENKINS_URL }}"
+          jenkins_user: ${{ env.JENKINS_USER }}
+          jenkins_token: ${{ env.JENKINS_TOKEN }}
           job_name: "v2-jobs/job/babylon-deploy-main"
           job_params: |
             {
@@ -33,17 +44,28 @@ jobs:
             }
           job_timeout: "3600"
   smoke_test:
+    permissions:
+      id-token: write
+      contents: read
     needs:
       - deploy
     name: Run smoke tests
     runs-on: ubuntu-22.04
     steps:
+      - uses: ./.github/actions/fetch-secrets
+        with: 
+          role_name: "arn:aws:iam::308190735829:role/gh-babylon-node-secrets-read-access"
+          app_name: "babylon-node"
+          step_name: "smoke_test"
+          secret_prefix: "JENKINS"
+          secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
+          parse_json: true
       - name: SmokeTests
         uses: toptal/jenkins-job-trigger-action@1.0.0
         with:
-          jenkins_url: "${{ secrets.JENKINS_URL }}"
-          jenkins_user: ${{ secrets.JENKINS_USER }}
-          jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
+          jenkins_url: "${{ env.JENKINS_URL }}"
+          jenkins_user: ${{ env.JENKINS_USER }}
+          jenkins_token: ${{ env.JENKINS_TOKEN }}
           job_name: "v2-jobs/job/babylon-testnet-smoke-tests"
           job_params: |
             {"networkName":"gilganet"}
