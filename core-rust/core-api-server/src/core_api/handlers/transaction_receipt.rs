@@ -17,6 +17,14 @@ pub(crate) async fn handle_transaction_receipt(
 
     let database = state.database.read();
 
+    if !database.is_local_transaction_execution_index_enabled() {
+        return Err(client_error(
+            "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
+            Please note the resync will take awhile.",
+        ));
+    }
+
     let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
 
     if let Some(txn_state_version) = txn_state_version_opt {
@@ -25,7 +33,7 @@ pub(crate) async fn handle_transaction_receipt(
             .expect("Txn is missing");
 
         let receipt = database
-            .get_committed_transaction_receipt(txn_state_version)
+            .get_committed_local_transaction_receipt(txn_state_version)
             .expect("Txn receipt is missing");
 
         let identifiers = database

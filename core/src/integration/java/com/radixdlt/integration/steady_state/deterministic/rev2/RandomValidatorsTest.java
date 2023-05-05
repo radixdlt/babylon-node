@@ -84,6 +84,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -134,9 +135,11 @@ public final class RandomValidatorsTest {
 
       var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
       var validators = new HashMap<Integer, ComponentAddress>();
-      var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
+      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      var genesisDetails =
+          NodesReader.getCommittedLedgerTransactionDetails(test.getNodeInjectors(), GENESIS);
       var componentAddresses =
-          genesis.newComponentAddresses().stream()
+          genesisDetails.newComponentAddresses().stream()
               .filter(
                   componentAddress ->
                       componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
@@ -168,12 +171,12 @@ public final class RandomValidatorsTest {
             creating_validators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
-            var maybeExecuted =
-                NodesReader.tryGetCommittedUserTransaction(
+            var maybeTransactionsDetails =
+                NodesReader.tryGetCommittedTransactionDetails(
                     test.getNodeInjectors().get(randomValidatorIndex), inflightTransaction);
-            maybeExecuted.ifPresent(
-                executedTransaction -> {
-                  var validatorAddress = executedTransaction.newComponentAddresses().get(0);
+            maybeTransactionsDetails.ifPresent(
+                transactionDetails -> {
+                  var validatorAddress = transactionDetails.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidatorIndex,
                       PhysicalNodeConfig.create(

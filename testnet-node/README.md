@@ -11,16 +11,15 @@ Documentation for integrators is available [here](https://docs.google.com/docume
 ## Getting started
 1. Install `docker` version 20.10+ with `docker compose` - either by installing docker desktop, or by installing [plain docker and the compose CLI extension](https://docs.docker.com/compose/install/).
 2. Ensure `docker compose` runs successfully, printing out the docs for docker compose. If you see an error such as `compose is not a command`, please ensure you are running docker with the compose extension as above. (NOTE: We are using [the future-proof `docker compose` command](https://docs.docker.com/compose/compose-v2/), rather than the legacy `docker-compose`).
-3. Run `./run.sh` in this folder, or run `docker compose up --build`.
-4. The node will start syncing. You can see how close to synced-up you are by running this query and examining the `ledger_clock.date_time` field:
+3. Ensure your docker daemon is configured with high enough limits, and you have sufficient disk space. We recommend updating the docker limits to at least 2 CPUs, 4GB RAM and 100GB disk size. In Docker Desktop, you can configure this by navigating to `Preferences > Resources`.
+4. Run `./run.sh` in this folder, or run `docker compose up --build`.
+5. The node will start syncing. You can see how close to synced-up you are by running this query and examining the `ledger_clock.date_time` field:
 ```sh
 curl \
   'http://localhost:3333/core/lts/transaction/construction' \
   -H 'Content-Type: application/json' \
   -d '{ "network": "kisharnet" }'
 ```
-
-Note: we recommend updating the docker limits to at least 4 CPUs, 4GB RAM and 100GB disk size.
 
 ## Node volumes
 
