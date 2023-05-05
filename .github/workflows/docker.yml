@@ -199,7 +199,7 @@ jobs:
         uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: /tmp/outputs/cache/docker
-          key: babylon-node-default-${{ hashFiles("./Dockerfile") }}
+          key: babylon-node-default-${{ hashFiles('./Dockerfile') }}
       - name: Install and Configure Buildx
         run: |
           wget https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64
