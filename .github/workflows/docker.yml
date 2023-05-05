@@ -331,9 +331,9 @@ jobs:
 #     - name: Deploy and test on ephemeral network
 #       uses: toptal/jenkins-job-trigger-action@1.0.0
 #       with:
-#         jenkins_url: "${{ secrets.JENKINS_URL }}"
-#         jenkins_user: ${{ secrets.JENKINS_USER }}
-#         jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
+#         jenkins_url: "${{ env.JENKINS_URL }}"
+#         jenkins_user: ${{ env.JENKINS_USER }}
+#         jenkins_token: ${{ env.JENKINS_TOKEN }}
 #         job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
 #         job_params: |
 #           {
