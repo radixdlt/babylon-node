@@ -62,46 +62,75 @@
  * permissions under this License.
  */
 
-use crate::jni::java_structure::*;
-
-use crate::store::traits::CommitBundle;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
-
 use std::path::PathBuf;
 
 use crate::types::UserPayloadHash;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::traits::RecoverableVertexStore;
-use crate::transaction::LedgerTransaction;
 use crate::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
-    LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, ReceiptTreeHash,
+    TransactionTreeHash,
 };
+use enum_dispatch::enum_dispatch;
 use radix_engine_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
+
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
+use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub enum DatabaseConfig {
+pub enum DatabaseBackendConfig {
     InMemory,
     RocksDB(String),
 }
 
+// As of May 2023, enum_dispatch does not work with generic traits (or other libraries that do the same).
+// We can also extend code generation for remaining local (declared in this crate) traits once
+// trait aliases/specialization makes it into stable Rust.
+// Unfortunately this doesn't work across crates since it's a proc_macro (i.e. for ReadableSubstateStore).
+#[enum_dispatch(
+    ConfigurableDatabase,
+    QueryableProofStore,
+    TransactionIdentifierLoader,
+    WriteableVertexStore,
+    RecoverableVertexStore,
+    AccountChangeIndexExtension,
+    QueryableTransactionStore,
+    CommitStore
+)]
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),
     RocksDB(RocksDBStore),
 }
 
 impl StateManagerDatabase {
-    pub fn from_config(config: DatabaseConfig) -> Self {
-        match config {
-            DatabaseConfig::InMemory => StateManagerDatabase::InMemory(InMemoryStore::new()),
-            DatabaseConfig::RocksDB(path) => {
-                let db = RocksDBStore::new(PathBuf::from(path));
+    pub fn from_config(backend_config: DatabaseBackendConfig, flags: DatabaseFlags) -> Self {
+        match backend_config {
+            DatabaseBackendConfig::InMemory => {
+                let store = InMemoryStore::new(flags);
+                StateManagerDatabase::InMemory(store)
+            }
+            DatabaseBackendConfig::RocksDB(path) => {
+                let db = {
+                    match RocksDBStore::new(PathBuf::from(path), flags) {
+                        Ok(db) => db,
+                        Err(error) => {
+                            match error {
+                                DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex => {
+                                    panic!("Local transaction execution index needs to be enabled in order for account change index to work.")
+                                },
+                                DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
+                                    panic!("Local transaction execution index can not be changed once configured.\n\
+                                            If you need to change it, please wipe ledger data and resync.\n")
+                                }
+                            }
+                        }
+                    }
+                };
                 StateManagerDatabase::RocksDB(db)
             }
         }
@@ -158,71 +187,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for StateManagerDatabase {
     }
 }
 
-impl CommitStore for StateManagerDatabase {
-    fn commit(&mut self, commit_bundle: CommitBundle) {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.commit(commit_bundle),
-            StateManagerDatabase::RocksDB(store) => store.commit(commit_bundle),
-        }
-    }
-}
-
-impl QueryableTransactionStore for StateManagerDatabase {
-    #[tracing::instrument(skip_all)]
-    fn get_committed_transaction_bundles(
-        &self,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<CommittedTransactionBundle> {
-        match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_committed_transaction_bundles(start_state_version_inclusive, limit)
-            }
-            StateManagerDatabase::RocksDB(store) => {
-                store.get_committed_transaction_bundles(start_state_version_inclusive, limit)
-            }
-        }
-    }
-
-    #[tracing::instrument(skip_all)]
-    fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_committed_transaction(state_version),
-            StateManagerDatabase::RocksDB(store) => store.get_committed_transaction(state_version),
-        }
-    }
-
-    #[tracing::instrument(skip_all)]
-    fn get_committed_transaction_receipt(
-        &self,
-        state_version: u64,
-    ) -> Option<LocalTransactionReceipt> {
-        match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_committed_transaction_receipt(state_version)
-            }
-            StateManagerDatabase::RocksDB(store) => {
-                store.get_committed_transaction_receipt(state_version)
-            }
-        }
-    }
-
-    #[tracing::instrument(skip_all)]
-    fn get_committed_transaction_identifiers(
-        &self,
-        state_version: u64,
-    ) -> Option<CommittedTransactionIdentifiers> {
-        match self {
-            StateManagerDatabase::InMemory(store) => {
-                store.get_committed_transaction_identifiers(state_version)
-            }
-            StateManagerDatabase::RocksDB(store) => {
-                store.get_committed_transaction_identifiers(state_version)
-            }
-        }
-    }
-}
-
 impl TransactionIndex<&IntentHash> for StateManagerDatabase {
     fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<u64> {
         match self {
@@ -258,83 +222,6 @@ impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
-        }
-    }
-}
-
-impl TransactionIdentifierLoader for StateManagerDatabase {
-    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_top_transaction_identifiers(),
-            StateManagerDatabase::RocksDB(store) => store.get_top_transaction_identifiers(),
-        }
-    }
-}
-
-impl QueryableProofStore for StateManagerDatabase {
-    fn max_state_version(&self) -> u64 {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.max_state_version(),
-            StateManagerDatabase::RocksDB(store) => store.max_state_version(),
-        }
-    }
-
-    fn get_txns_and_proof(
-        &self,
-        start_state_version_inclusive: u64,
-        max_number_of_txns_if_more_than_one_proof: u32,
-        max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_txns_and_proof(
-                start_state_version_inclusive,
-                max_number_of_txns_if_more_than_one_proof,
-                max_payload_size_in_bytes,
-            ),
-            StateManagerDatabase::RocksDB(store) => store.get_txns_and_proof(
-                start_state_version_inclusive,
-                max_number_of_txns_if_more_than_one_proof,
-                max_payload_size_in_bytes,
-            ),
-        }
-    }
-
-    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_epoch_proof(epoch),
-            StateManagerDatabase::RocksDB(store) => store.get_epoch_proof(epoch),
-        }
-    }
-
-    fn get_last_proof(&self) -> Option<LedgerProof> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_last_proof(),
-            StateManagerDatabase::RocksDB(store) => store.get_last_proof(),
-        }
-    }
-
-    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_last_epoch_proof(),
-            StateManagerDatabase::RocksDB(store) => store.get_last_epoch_proof(),
-        }
-    }
-}
-
-impl WriteableVertexStore for StateManagerDatabase {
-    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.save_vertex_store(vertex_store_bytes),
-            StateManagerDatabase::RocksDB(store) => store.save_vertex_store(vertex_store_bytes),
-        }
-    }
-}
-
-impl RecoverableVertexStore for StateManagerDatabase {
-    fn get_vertex_store(&self) -> Option<Vec<u8>> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_vertex_store(),
-            StateManagerDatabase::RocksDB(store) => store.get_vertex_store(),
         }
     }
 }

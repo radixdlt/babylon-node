@@ -2,6 +2,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+
 use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 
@@ -88,7 +89,9 @@ impl<E: ErrorDetails> IntoResponse for ResponseError<E> {
             self.trace.map(|x| x.0),
         );
 
-        (self.status_code, Json(body)).into_response()
+        let mut response = (self.status_code, Json(body.clone())).into_response();
+        response.extensions_mut().insert(body);
+        response
     }
 }
 
@@ -118,15 +121,6 @@ pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> Respo
 pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::NOT_FOUND,
-        public_error_message: message.into(),
-        trace: None,
-        details: None,
-    }
-}
-
-pub(crate) fn not_implemented<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
-    ResponseError {
-        status_code: StatusCode::NOT_IMPLEMENTED,
         public_error_message: message.into(),
         trace: None,
         details: None,

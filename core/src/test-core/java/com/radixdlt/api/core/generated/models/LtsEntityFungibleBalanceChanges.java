@@ -35,15 +35,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   LtsEntityFungibleBalanceChanges.JSON_PROPERTY_ENTITY_ADDRESS,
-  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FEE_BALANCE_CHANGE,
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_NON_FEE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsEntityFungibleBalanceChanges {
   public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
   private String entityAddress;
 
-  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES = "fungible_resource_balance_changes";
-  private List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges = new ArrayList<>();
+  public static final String JSON_PROPERTY_FEE_BALANCE_CHANGE = "fee_balance_change";
+  private LtsFungibleResourceBalanceChange feeBalanceChange;
+
+  public static final String JSON_PROPERTY_NON_FEE_BALANCE_CHANGES = "non_fee_balance_changes";
+  private List<LtsFungibleResourceBalanceChange> nonFeeBalanceChanges = new ArrayList<>();
 
   public LtsEntityFungibleBalanceChanges() { 
   }
@@ -74,34 +78,60 @@ public class LtsEntityFungibleBalanceChanges {
   }
 
 
-  public LtsEntityFungibleBalanceChanges fungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
-    this.fungibleResourceBalanceChanges = fungibleResourceBalanceChanges;
-    return this;
-  }
-
-  public LtsEntityFungibleBalanceChanges addFungibleResourceBalanceChangesItem(LtsFungibleResourceBalanceChange fungibleResourceBalanceChangesItem) {
-    this.fungibleResourceBalanceChanges.add(fungibleResourceBalanceChangesItem);
+  public LtsEntityFungibleBalanceChanges feeBalanceChange(LtsFungibleResourceBalanceChange feeBalanceChange) {
+    this.feeBalanceChange = feeBalanceChange;
     return this;
   }
 
    /**
-   * Get fungibleResourceBalanceChanges
-   * @return fungibleResourceBalanceChanges
+   * Get feeBalanceChange
+   * @return feeBalanceChange
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_FEE_BALANCE_CHANGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public List<LtsFungibleResourceBalanceChange> getFungibleResourceBalanceChanges() {
-    return fungibleResourceBalanceChanges;
+  public LtsFungibleResourceBalanceChange getFeeBalanceChange() {
+    return feeBalanceChange;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES)
+  @JsonProperty(JSON_PROPERTY_FEE_BALANCE_CHANGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFeeBalanceChange(LtsFungibleResourceBalanceChange feeBalanceChange) {
+    this.feeBalanceChange = feeBalanceChange;
+  }
+
+
+  public LtsEntityFungibleBalanceChanges nonFeeBalanceChanges(List<LtsFungibleResourceBalanceChange> nonFeeBalanceChanges) {
+    this.nonFeeBalanceChanges = nonFeeBalanceChanges;
+    return this;
+  }
+
+  public LtsEntityFungibleBalanceChanges addNonFeeBalanceChangesItem(LtsFungibleResourceBalanceChange nonFeeBalanceChangesItem) {
+    this.nonFeeBalanceChanges.add(nonFeeBalanceChangesItem);
+    return this;
+  }
+
+   /**
+   * Get nonFeeBalanceChanges
+   * @return nonFeeBalanceChanges
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NON_FEE_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
-    this.fungibleResourceBalanceChanges = fungibleResourceBalanceChanges;
+
+  public List<LtsFungibleResourceBalanceChange> getNonFeeBalanceChanges() {
+    return nonFeeBalanceChanges;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NON_FEE_BALANCE_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNonFeeBalanceChanges(List<LtsFungibleResourceBalanceChange> nonFeeBalanceChanges) {
+    this.nonFeeBalanceChanges = nonFeeBalanceChanges;
   }
 
 
@@ -118,12 +148,13 @@ public class LtsEntityFungibleBalanceChanges {
     }
     LtsEntityFungibleBalanceChanges ltsEntityFungibleBalanceChanges = (LtsEntityFungibleBalanceChanges) o;
     return Objects.equals(this.entityAddress, ltsEntityFungibleBalanceChanges.entityAddress) &&
-        Objects.equals(this.fungibleResourceBalanceChanges, ltsEntityFungibleBalanceChanges.fungibleResourceBalanceChanges);
+        Objects.equals(this.feeBalanceChange, ltsEntityFungibleBalanceChanges.feeBalanceChange) &&
+        Objects.equals(this.nonFeeBalanceChanges, ltsEntityFungibleBalanceChanges.nonFeeBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, fungibleResourceBalanceChanges);
+    return Objects.hash(entityAddress, feeBalanceChange, nonFeeBalanceChanges);
   }
 
   @Override
@@ -131,7 +162,8 @@ public class LtsEntityFungibleBalanceChanges {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsEntityFungibleBalanceChanges {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
-    sb.append("    fungibleResourceBalanceChanges: ").append(toIndentedString(fungibleResourceBalanceChanges)).append("\n");
+    sb.append("    feeBalanceChange: ").append(toIndentedString(feeBalanceChange)).append("\n");
+    sb.append("    nonFeeBalanceChanges: ").append(toIndentedString(nonFeeBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();
   }

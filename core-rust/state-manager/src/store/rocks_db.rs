@@ -63,16 +63,20 @@
  */
 
 use crate::types::UserPayloadHash;
+use crate::utils::IsAccountExt;
 use std::collections::HashSet;
 use std::fmt;
+use std::mem::size_of;
 
 use crate::store::traits::*;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt,
-    ReceiptTreeHash, TransactionTreeHash,
+    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
+
 use radix_engine::types::{scrypto_decode, scrypto_encode};
+use radix_engine_common::types::GlobalAddress;
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_store_interface::interface::{
@@ -86,11 +90,14 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
-
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 use utils::copy_u8_array;
 
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::query::TransactionIdentifierLoader;
 use crate::transaction::LedgerTransaction;
+
+use super::traits::extensions::*;
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
 enum RocksDBColumnFamily {
@@ -117,13 +124,17 @@ enum RocksDBColumnFamily {
     /// Transaction/Receipt accumulator tree slices keyed by state version of their ledger header
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
+    /// Various data needed by extensions
+    ExtensionsData,
+    /// Account to state versions (which changed the account)
+    /// Key: concat(account_address, state_version), value: null
+    /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
+    AccountChangeStateVersions,
 }
 
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::query::TransactionIdentifierLoader;
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
     TxnByStateVersion,
     TxnAccumulatorHashByStateVersion,
     LedgerReceiptByStateVersion,
@@ -139,6 +150,8 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
     StaleStateHashTreeNodeKeysByStateVersion,
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
+    ExtensionsData,
+    AccountChangeStateVersions,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -163,6 +176,30 @@ impl fmt::Display for RocksDBColumnFamily {
                 "transaction_accu_tree_slice_by_state_version"
             }
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
+            ExtensionsData => "extensions_data",
+            AccountChangeStateVersions => "account_change_state_versions",
+        };
+        write!(f, "{str}")
+    }
+}
+
+#[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+enum ExtensionsDataKeys {
+    AccountChangeIndexLastProcessedStateVersion,
+    AccountChangeIndexEnabled,
+    LocalTransactionExecutionIndexEnabled,
+}
+
+impl fmt::Display for ExtensionsDataKeys {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            Self::AccountChangeIndexLastProcessedStateVersion => {
+                "account_change_index_last_processed_state_version"
+            }
+            Self::AccountChangeIndexEnabled => "account_change_index_enabled",
+            Self::LocalTransactionExecutionIndexEnabled => {
+                "local_transaction_execution_index_enabled"
+            }
         };
         write!(f, "{str}")
     }
@@ -170,10 +207,14 @@ impl fmt::Display for RocksDBColumnFamily {
 
 pub struct RocksDBStore {
     db: DB,
+    config: DatabaseFlags,
 }
 
 impl RocksDBStore {
-    pub fn new(root: PathBuf) -> RocksDBStore {
+    pub fn new(
+        root: PathBuf,
+        config: DatabaseFlags,
+    ) -> Result<RocksDBStore, DatabaseConfigValidationError> {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
@@ -185,7 +226,16 @@ impl RocksDBStore {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        RocksDBStore { db }
+        let mut rocks_db_store = RocksDBStore { db, config };
+
+        let current_database_config = rocks_db_store.read_flags_state();
+        rocks_db_store.config.validate(&current_database_config)?;
+
+        if rocks_db_store.config.enable_account_change_index {
+            rocks_db_store.catchup_account_change_index();
+        }
+
+        Ok(rocks_db_store)
     }
 
     fn add_transaction_to_write_batch(
@@ -193,6 +243,13 @@ impl RocksDBStore {
         batch: &mut WriteBatch,
         transaction_bundle: CommittedTransactionBundle,
     ) {
+        if self.is_account_change_index_enabled() {
+            self.batch_update_account_change_index_from_committed_transaction(
+                batch,
+                &transaction_bundle,
+            );
+        }
+
         let (transaction, receipt, identifiers) = transaction_bundle;
         let state_version = identifiers.state_version;
         let ledger_payload_hash = transaction.ledger_payload_hash();
@@ -271,11 +328,13 @@ impl RocksDBStore {
             scrypto_encode(&receipt.on_ledger).unwrap(),
         );
 
-        batch.put_cf(
-            self.cf_handle(&LocalTransactionExecutionByStateVersion),
-            state_version.to_be_bytes(),
-            scrypto_encode(&receipt.local_execution).unwrap(),
-        );
+        if self.is_local_transaction_execution_index_enabled() {
+            batch.put_cf(
+                self.cf_handle(&LocalTransactionExecutionByStateVersion),
+                state_version.to_be_bytes(),
+                scrypto_encode(&receipt.local_execution).unwrap(),
+            );
+        }
     }
 
     fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
@@ -295,6 +354,56 @@ impl RocksDBStore {
             .get_pinned_cf(self.cf_handle(cf), key)
             .unwrap()
             .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+    }
+}
+
+impl ConfigurableDatabase for RocksDBStore {
+    fn read_flags_state(&self) -> DatabaseFlagsState {
+        let account_change_index_enabled = self.get_by_key::<bool>(
+            &ExtensionsData,
+            ExtensionsDataKeys::AccountChangeIndexEnabled
+                .to_string()
+                .as_bytes(),
+        );
+        let local_transaction_execution_index_enabled = self.get_by_key::<bool>(
+            &ExtensionsData,
+            ExtensionsDataKeys::LocalTransactionExecutionIndexEnabled
+                .to_string()
+                .as_bytes(),
+        );
+        DatabaseFlagsState {
+            account_change_index_enabled,
+            local_transaction_execution_index_enabled,
+        }
+    }
+
+    fn write_flags(&mut self, database_config: &DatabaseFlags) {
+        let mut batch = WriteBatch::default();
+        batch.put_cf(
+            self.cf_handle(&ExtensionsData),
+            ExtensionsDataKeys::AccountChangeIndexEnabled
+                .to_string()
+                .as_bytes(),
+            scrypto_encode(&database_config.enable_account_change_index).unwrap(),
+        );
+        batch.put_cf(
+            self.cf_handle(&ExtensionsData),
+            ExtensionsDataKeys::LocalTransactionExecutionIndexEnabled
+                .to_string()
+                .as_bytes(),
+            scrypto_encode(&database_config.enable_local_transaction_execution_index).unwrap(),
+        );
+        self.db
+            .write(batch)
+            .expect("DB error writing database config");
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.config.enable_local_transaction_execution_index
+    }
+
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.config.enable_account_change_index
     }
 }
 
@@ -408,6 +517,8 @@ impl QueryableTransactionStore for RocksDBStore {
         start_state_version_inclusive: u64,
         limit: usize,
     ) -> Vec<CommittedTransactionBundle> {
+        debug_assert!(self.is_local_transaction_execution_index_enabled());
+
         let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
         let txns_iter = self.db.iterator_cf(
             self.cf_handle(&TxnByStateVersion),
@@ -488,28 +599,6 @@ impl QueryableTransactionStore for RocksDBStore {
             .map(|v| manifest_decode(&v).expect("Failed to decode a committed transaction"))
     }
 
-    fn get_committed_transaction_receipt(
-        &self,
-        state_version: u64,
-    ) -> Option<LocalTransactionReceipt> {
-        let ledger_transaction_receipt =
-            self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_be_bytes());
-        let local_transaction_execution = self.get_by_key(
-            &LocalTransactionExecutionByStateVersion,
-            &state_version.to_be_bytes(),
-        );
-        match (ledger_transaction_receipt, local_transaction_execution) {
-            (Some(on_ledger), Some(local_execution)) => Some(LocalTransactionReceipt {
-                on_ledger,
-                local_execution,
-            }),
-            (None, Some(_)) => panic!("missing ledger receipt at state version {state_version}"),
-            // TODO: in future, we might want to support returning only the on-ledger part:
-            (Some(_), None) => panic!("missing local execution at state version {state_version}"),
-            (None, None) => None,
-        }
-    }
-
     fn get_committed_transaction_identifiers(
         &self,
         state_version: u64,
@@ -527,6 +616,47 @@ impl QueryableTransactionStore for RocksDBStore {
                         .expect("Failed to decode a committed transaction accumulator hash"),
                 ),
             })
+    }
+
+    fn get_committed_ledger_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LedgerTransactionReceipt> {
+        self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_be_bytes())
+    }
+
+    fn get_committed_local_transaction_execution(
+        &self,
+        state_version: u64,
+    ) -> Option<LocalTransactionExecution> {
+        self.get_by_key(
+            &LocalTransactionExecutionByStateVersion,
+            &state_version.to_be_bytes(),
+        )
+    }
+
+    fn get_committed_local_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LocalTransactionReceipt> {
+        let ledger_transaction_receipt =
+            self.get_committed_ledger_transaction_receipt(state_version);
+        let local_transaction_execution =
+            self.get_committed_local_transaction_execution(state_version);
+        match (ledger_transaction_receipt, local_transaction_execution) {
+            (Some(on_ledger), Some(local_execution)) => Some(LocalTransactionReceipt {
+                on_ledger,
+                local_execution,
+            }),
+            (None, Some(_)) => panic!("missing ledger receipt at state version {state_version}"),
+            (Some(_), None) => {
+                if self.is_local_transaction_execution_index_enabled() {
+                    panic!("missing local execution at state version {state_version}")
+                }
+                None
+            }
+            (None, None) => None,
+        }
     }
 }
 
@@ -808,4 +938,190 @@ fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
     let partition_key = buffer[4..sort_key_offset].to_vec();
     let sort_key = buffer[sort_key_offset..].to_vec();
     (DbPartitionKey(partition_key), DbSortKey(sort_key))
+}
+
+impl RocksDBStore {
+    fn batch_update_account_change_index_from_receipt(
+        &self,
+        batch: &mut WriteBatch,
+        state_version: u64,
+        receipt: &LocalTransactionReceipt,
+    ) {
+        for (address, _) in receipt
+            .local_execution
+            .state_update_summary
+            .balance_changes
+            .iter()
+        {
+            if !address.is_account() {
+                continue;
+            }
+            let mut key = address.to_vec();
+            key.extend(state_version.to_be_bytes());
+            batch.put_cf(self.cf_handle(&AccountChangeStateVersions), key, []);
+        }
+    }
+
+    fn batch_update_account_change_index_from_committed_transaction(
+        &self,
+        batch: &mut WriteBatch,
+        transaction_bundle: &CommittedTransactionBundle,
+    ) {
+        let state_version = transaction_bundle.2.state_version;
+
+        self.batch_update_account_change_index_from_receipt(
+            batch,
+            state_version,
+            &transaction_bundle.1,
+        );
+
+        batch.put_cf(
+            self.cf_handle(&ExtensionsData),
+            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                .to_string()
+                .as_bytes(),
+            state_version.to_be_bytes(),
+        );
+    }
+
+    fn update_account_change_index_from_store(
+        &mut self,
+        start_state_version_inclusive: u64,
+        limit: u64,
+    ) -> u64 {
+        let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
+        let mut receipts_iter = self.db.iterator_cf(
+            self.cf_handle(&LocalTransactionExecutionByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut batch = WriteBatch::default();
+
+        let mut last_state_version = start_state_version_inclusive;
+        let mut index = 0;
+        while index < limit {
+            match receipts_iter.next() {
+                Some(next_receipt_result) => {
+                    let next_receipt_kv = next_receipt_result.unwrap();
+
+                    let next_receipt_state_version =
+                        u64::from_be_bytes((*next_receipt_kv.0).try_into().unwrap());
+
+                    let expected_state_version = start_state_version_inclusive + index;
+                    if expected_state_version != next_receipt_state_version {
+                        panic!(
+                            "DB inconsistency! Missing receipt at state version {expected_state_version}"
+                        );
+                    }
+                    last_state_version = expected_state_version;
+
+                    let next_receipt: LocalTransactionReceipt =
+                        scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
+                    self.batch_update_account_change_index_from_receipt(
+                        &mut batch,
+                        last_state_version,
+                        &next_receipt,
+                    );
+
+                    index += 1;
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
+        batch.put_cf(
+            self.cf_handle(&ExtensionsData),
+            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                .to_string()
+                .as_bytes(),
+            last_state_version.to_be_bytes(),
+        );
+
+        self.db
+            .write(batch)
+            .expect("Account change index build failed");
+
+        last_state_version
+    }
+}
+
+impl AccountChangeIndexExtension for RocksDBStore {
+    fn account_change_index_last_processed_state_version(&self) -> u64 {
+        self.db
+            .get_pinned_cf(
+                self.cf_handle(&ExtensionsData),
+                ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                    .to_string()
+                    .as_bytes(),
+            )
+            .unwrap()
+            .map(|pinnable_slice| u64::from_be_bytes(pinnable_slice.as_ref().try_into().unwrap()))
+            .unwrap_or(0)
+    }
+
+    fn catchup_account_change_index(&mut self) {
+        const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
+
+        info!("Account Change Index is enabled!");
+
+        let last_state_version = self.max_state_version();
+        let mut last_processed_state_version =
+            self.account_change_index_last_processed_state_version();
+
+        if last_processed_state_version == last_state_version {
+            return;
+        }
+
+        info!("Account Change Index is behind at state version {last_processed_state_version} out of {last_state_version}. Catching up ...");
+
+        while last_processed_state_version < last_state_version {
+            last_processed_state_version = self.update_account_change_index_from_store(
+                last_processed_state_version + 1,
+                MAX_TRANSACTION_BATCH,
+            );
+            info!("Account Change Index updated to {last_processed_state_version}/{last_state_version}");
+        }
+
+        info!("Account Change Index catchup done!");
+    }
+
+    fn get_state_versions_for_account(
+        &self,
+        account: GlobalAddress,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<u64> {
+        let mut key = account.to_vec();
+        key.extend(start_state_version_inclusive.to_be_bytes());
+
+        let account_bytes = account.to_vec();
+
+        let mut account_change_iter = self.db.iterator_cf(
+            self.cf_handle(&AccountChangeStateVersions),
+            IteratorMode::From(&key, Direction::Forward),
+        );
+
+        let mut results = Vec::new();
+        while results.len() < limit {
+            match account_change_iter.next() {
+                Some(entry) => {
+                    let (key, _value) = entry.unwrap();
+                    let (address_bytes, state_version_bytes) =
+                        key.split_at(key.len() - size_of::<u64>());
+                    let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
+                    if address_bytes != account_bytes {
+                        break;
+                    }
+                    results.push(state_version);
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
+        results
+    }
 }

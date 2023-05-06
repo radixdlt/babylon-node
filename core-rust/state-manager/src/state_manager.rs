@@ -77,7 +77,7 @@ use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash};
 
 use ::transaction::errors::TransactionValidationError;
 
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
 
 use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
@@ -121,7 +121,7 @@ pub struct StateManager<S> {
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    execution_cache: ExecutionCache,
+    execution_cache: Mutex<ExecutionCache>,
     user_transaction_validator: UserTransactionValidator,
     ledger_transaction_validator: LedgerTransactionValidator,
     ledger_metrics: LedgerMetrics,
@@ -148,7 +148,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             mempool_manager,
             execution_configurator,
             pending_transaction_result_cache,
-            execution_cache: ExecutionCache::new(accumulator_hash),
+            execution_cache: parking_lot::const_mutex(ExecutionCache::new(accumulator_hash)),
             user_transaction_validator: UserTransactionValidator::new(network),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
@@ -175,7 +175,7 @@ where
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     pub fn prepare_genesis(
-        &mut self,
+        &self,
         genesis_transaction: LedgerTransaction,
     ) -> (LedgerHashes, Option<NextEpoch>) {
         let read_store = self.store.read();
@@ -193,10 +193,10 @@ where
             .expect("Invalid genesis transaction");
 
         let hash = genesis_transaction.get_hash();
-
         let logged_description = format!("prepare genesis {}", hash);
-        let processed = self.execution_cache.execute_transaction(
-            read_store.deref(),
+        let mut lock_execution_cache = self.execution_cache.lock();
+        let processed = lock_execution_cache.execute_transaction(
+            self.store.read().deref(),
             &epoch_identifiers,
             state_tracker.latest_transaction_identifiers(),
             &hash,
@@ -206,13 +206,13 @@ where
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
         );
 
-        let commit = processed.expect_commit("genesis");
+        let commit = processed.expect_commit("prepare genesis");
         state_tracker.update(&commit.hash_structures_diff);
 
         (*state_tracker.latest_ledger_hashes(), commit.next_epoch())
     }
 
-    pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
+    pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
         let read_store = self.store.read();
         let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
         let epoch_identifiers = read_store
@@ -286,7 +286,8 @@ where
 
             let transaction_hash = parsed_transaction.get_hash();
             let logged_description = format!("already prepared {}", transaction_hash);
-            let processed = self.execution_cache.execute_transaction(
+            let mut lock_execution_cache = self.execution_cache.lock();
+            let processed = lock_execution_cache.execute_transaction(
                 read_store.deref(),
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
@@ -300,6 +301,7 @@ where
             let commit = processed.expect_commit(logged_description);
             // TODO: Do we need to check that next epoch request has been prepared?
             state_tracker.update(&commit.hash_structures_diff);
+            drop(lock_execution_cache);
         }
 
         let mut committed = Vec::new();
@@ -315,7 +317,8 @@ where
 
         let logged_description = format!("round update {}", prepare_request.round_number);
         let executable = round_update.prepare().to_executable();
-        let processed_round_update = self.execution_cache.execute_transaction(
+        let mut lock_execution_cache = self.execution_cache.lock();
+        let processed_round_update = lock_execution_cache.execute_transaction(
             read_store.deref(),
             &epoch_identifiers,
             state_tracker.latest_transaction_identifiers(),
@@ -330,6 +333,7 @@ where
         round_update_commit.check_success(logged_description);
         state_tracker.update(&round_update_commit.hash_structures_diff);
         let mut next_epoch = round_update_commit.next_epoch();
+        drop(lock_execution_cache);
 
         committed.push(manifest_encode(&ledger_round_update).unwrap());
 
@@ -398,7 +402,8 @@ where
                 .unwrap();
 
             let logged_description = format!("newly proposed {}", hash);
-            let processed = self.execution_cache.execute_transaction(
+            let mut lock_execution_cache = self.execution_cache.lock();
+            let processed = lock_execution_cache.execute_transaction(
                 read_store.deref(),
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
@@ -413,6 +418,7 @@ where
                 Ok(commit) => {
                     state_tracker.update(&commit.hash_structures_diff);
                     next_epoch = commit.next_epoch();
+                    drop(lock_execution_cache);
 
                     already_committed_or_prepared_intent_hashes
                         .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -426,6 +432,7 @@ where
                 }
                 Err(reject) => {
                     let error = reject.error.clone();
+                    drop(lock_execution_cache);
 
                     rejected_payloads.push((proposed_payload, format!("{:?}", error)));
                     pending_transaction_results.push(PendingTransactionResult {
@@ -512,7 +519,7 @@ impl StateTracker {
     }
 }
 
-impl<'db, S> StateManager<S>
+impl<S> StateManager<S>
 where
     S: CommitStore,
     S: ReadableStore,
@@ -520,7 +527,7 @@ where
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     pub fn execute_genesis(
-        &mut self,
+        &self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
         max_validators: u32,
@@ -707,7 +714,7 @@ where
     }
 
     pub fn commit(
-        &'db mut self,
+        &self,
         commit_request: CommitRequest,
     ) -> Result<Vec<LocalTransactionReceipt>, CommitError> {
         let commit_transactions_len = commit_request.transaction_payloads.len();
@@ -785,7 +792,8 @@ where
             let transaction_hash = transaction.get_hash();
             let logged_description = format!("committing {}", transaction_hash);
 
-            let processed = self.execution_cache.execute_transaction(
+            let mut lock_execution_cache = self.execution_cache.lock();
+            let processed = lock_execution_cache.execute_transaction(
                 write_store.deref(),
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
@@ -804,6 +812,8 @@ where
             let transaction_tree_slice = hash_structures_diff.transaction_tree_diff.slice.clone();
             let receipt_tree_slice = hash_structures_diff.receipt_tree_diff.slice.clone();
             let local_receipt = commit.local_receipt.clone();
+            let database_updates = commit.database_updates.clone();
+            drop(lock_execution_cache);
 
             Self::check_epoch_proof_match(
                 commit_ledger_header,
@@ -818,7 +828,7 @@ where
 
             let transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
-            substate_store_update.apply(commit.database_updates.clone());
+            substate_store_update.apply(database_updates);
             state_tree_update.add(transaction_identifiers.state_version, state_hash_tree_diff);
             transaction_tree_slice_merger.append(transaction_tree_slice);
             receipt_tree_slice_merger.append(receipt_tree_slice);
@@ -844,8 +854,9 @@ where
 
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
-        self.execution_cache
-            .progress_root(&final_transaction_identifiers.accumulator_hash);
+        let mut lock_execution_cache = self.execution_cache.lock();
+        lock_execution_cache.progress_root(&final_transaction_identifiers.accumulator_hash);
+        drop(lock_execution_cache);
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,

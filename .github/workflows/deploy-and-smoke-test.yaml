@@ -28,7 +28,8 @@ jobs:
           job_params: |
             {
               "NETWORK_NAME":"gilganet",
-              "FEATURE_BRANCH_NAME":"develop"
+              "FEATURE_BRANCH_NAME":"develop",
+              "WIPE_LEDGER":true
             }
           job_timeout: "3600"
   smoke_test:

@@ -28,7 +28,7 @@ macro_rules! args_from_bytes_vec {
     }};
 }
 
-#[tracing::instrument(level = "debug", skip_all, err(Debug))]
+#[tracing::instrument(level = "debug", skip_all)]
 pub(crate) async fn handle_transaction_callpreview(
     State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,

@@ -110,50 +110,60 @@ impl MempoolManager {
     /// Obeys the given count/size limits and explicit exclusions.
     pub fn get_proposal_transactions(
         &self,
-        max_count: u64,
+        max_count: usize,
         max_payload_size_bytes: u64,
         user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
         let read_mempool = self.mempool.read();
-        let candidate_pending_transactions = read_mempool.get_all_transactions();
+        let all_transactions = read_mempool.get_all_transactions();
         drop(read_mempool);
-        let mut payload_size_so_far = 0u64;
-        candidate_pending_transactions
+
+        let candidate_transactions = all_transactions
             .into_iter()
-            .filter(|candidate_transaction| {
-                !user_payload_hashes_to_exclude.contains(&candidate_transaction.payload_hash)
-            })
-            .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.payload_size as u64;
-                let fits = increased_payload_size <= max_payload_size_bytes;
-                if fits {
-                    payload_size_so_far = increased_payload_size;
-                }
-                fits
-            })
-            .take(max_count as usize)
-            .collect()
+            .filter(|candidate| !user_payload_hashes_to_exclude.contains(&candidate.payload_hash))
+            .collect();
+        Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
     }
 
     /// Picks a random subset of transactions to be relayed via a mempool sync.
     /// Obeys the given count/size limits.
-    /// Checks the commitability of each transaction considered for relay (using
-    /// `CachedCommitabilityValidator`) - in case of rejection, the transaction will not be
-    /// returned, but removed from the mempool instead.
     pub fn get_relay_transactions(
         &self,
-        max_num_txns: u32,
-        max_payload_size_bytes: u32,
+        max_count: usize,
+        max_payload_size_bytes: u64,
     ) -> Vec<PendingTransaction> {
         let read_mempool = self.mempool.read();
         let candidate_transactions = read_mempool.get_all_transactions();
         drop(read_mempool);
 
-        let (transactions_to_relay, transactions_to_remove) = self.check_transactions_to_relay(
-            candidate_transactions,
-            max_num_txns.try_into().unwrap(),
-            max_payload_size_bytes.try_into().unwrap(),
-        );
+        Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
+    }
+
+    /// Checks the commitability of a random subset of transactions and removes the rejected ones
+    /// from the mempool.
+    /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
+    pub fn reevaluate_transaction_commitability(&self, max_reevaluated_count: u32) {
+        let read_mempool = self.mempool.read();
+        let mut candidate_transactions = read_mempool.get_all_transactions();
+        drop(read_mempool);
+
+        let mut transactions_to_remove = Vec::new();
+        let mut reevaluated_count = 0;
+        candidate_transactions.shuffle(&mut thread_rng());
+        for candidate_transaction in candidate_transactions {
+            let (record, was_cached) = self
+                .cached_commitability_validator
+                .check_for_rejection_cached(&candidate_transaction.payload);
+            if record.latest_attempt.rejection.is_some() {
+                transactions_to_remove.push(candidate_transaction);
+            }
+            if !was_cached {
+                reevaluated_count += 1;
+                if reevaluated_count >= max_reevaluated_count {
+                    break;
+                }
+            }
+        }
 
         if !transactions_to_remove.is_empty() {
             let mut write_mempool = self.mempool.write();
@@ -169,8 +179,6 @@ impl MempoolManager {
             drop(write_mempool);
             self.metrics.current_transactions.sub(removed_count as i64);
         }
-
-        transactions_to_relay
     }
 
     /// Adds the given transaction to the mempool (applying all the commitability checks, see
@@ -278,45 +286,24 @@ impl MempoolManager {
         self.metrics.current_transactions.sub(removed_count as i64);
     }
 
-    /// Checks the given candidate transactions for rejection and decides which ones should be
-    /// relayed via mempool sync, and which ones should be removed from mempool.
-    fn check_transactions_to_relay(
-        &self,
+    fn pick_subset_with_limits(
         mut candidate_transactions: Vec<PendingTransaction>,
-        max_num_txns: usize,
-        max_payload_size_bytes: usize,
-    ) -> (Vec<PendingTransaction>, Vec<PendingTransaction>) {
-        let mut to_relay = Vec::new();
-        let mut payload_size_so_far = 0usize;
-
-        // We (partially) cleanup the mempool on the occasion of getting the relay txns
-        // TODO: move this to a separate job
-        let mut to_remove = Vec::new();
-
+        max_count: usize,
+        max_payload_size_bytes: u64,
+    ) -> Vec<PendingTransaction> {
         candidate_transactions.shuffle(&mut thread_rng());
-        for candidate_transaction in candidate_transactions.into_iter() {
-            let (record, _) = self
-                .cached_commitability_validator
-                .check_for_rejection_cached(&candidate_transaction.payload);
-            if record.latest_attempt.rejection.is_some() {
-                // Mark the transaction to be removed from the mempool
-                // (see the comment above about moving this to a separate job)
-                to_remove.push(candidate_transaction);
-            } else {
-                // Check the payload size limit
-                payload_size_so_far += candidate_transaction.payload_size;
-                if payload_size_so_far > max_payload_size_bytes {
-                    break;
+        let mut payload_size_so_far = 0;
+        candidate_transactions
+            .into_iter()
+            .filter(|transaction| {
+                let increased_payload_size = payload_size_so_far + transaction.payload_size as u64;
+                let fits = increased_payload_size <= max_payload_size_bytes;
+                if fits {
+                    payload_size_so_far = increased_payload_size;
                 }
-
-                // Add the transaction to response
-                to_relay.push(candidate_transaction);
-                if to_relay.len() >= max_num_txns {
-                    break;
-                }
-            }
-        }
-
-        (to_relay, to_remove)
+                fits
+            })
+            .take(max_count)
+            .collect()
     }
 }

@@ -3,7 +3,7 @@ use radix_engine::types::*;
 use radix_engine_common::types::EntityType;
 use radix_engine_interface::address::HrpSet;
 
-#[tracing::instrument(err(Debug), skip(state))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_configuration(
     state: State<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {

@@ -65,6 +65,9 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use axum::http::{StatusCode, Uri};
+use axum::middleware::map_response;
+use axum::response::Response;
 use axum::{
     extract::DefaultBodyLimit,
     routing::{get, post},
@@ -73,10 +76,13 @@ use axum::{
 use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
+use tracing::{debug, error, info, trace, warn, Level};
+
 use state_manager::jni::state_manager::ActualStateManager;
 
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
+use crate::core_api::models::ErrorResponse;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
 use state_manager::mempool_manager::MempoolManager;
 use state_manager::simple_mempool::SimpleMempool;
@@ -87,7 +93,7 @@ use state_manager::PendingTransactionResultCache;
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
@@ -117,20 +123,20 @@ where
             post(lts::handle_lts_transaction_submit),
         )
         .route(
-            "/lts/stream/account-transactions-basic-outcomes",
-            post(lts::handle_lts_stream_account_transaction_outcomes),
-        )
-        .route(
-            "/lts/stream/transactions-basic-outcomes",
-            post(lts::handle_lts_stream_transaction_outcomes),
-        )
-        .route(
             "/lts/state/account-all-fungible-resource-balances",
             post(lts::handle_lts_state_account_all_fungible_resource_balances),
         )
         .route(
             "/lts/state/account-fungible-resource-balance",
             post(lts::handle_lts_state_account_fungible_resource_balance),
+        )
+        .route(
+            "/lts/stream/transaction-outcomes",
+            post(lts::handle_lts_stream_transaction_outcomes),
+        )
+        .route(
+            "/lts/stream/account-transaction-outcomes",
+            post(lts::handle_lts_stream_account_transaction_outcomes),
         )
         // Status Sub-API
         .route(
@@ -178,7 +184,8 @@ where
 
     let prefixed_router = Router::new()
         .nest("/core", router)
-        .route("/", get(handle_no_core_path));
+        .route("/", get(handle_no_core_path))
+        .layer(map_response(emit_error_response_event));
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
 
@@ -189,9 +196,39 @@ where
         .unwrap();
 }
 
-#[tracing::instrument(err(Debug))]
+#[tracing::instrument]
 pub(crate) async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
     Err(not_found_error("Try /core"))
+}
+
+/// A function (to be used within a `map_response` layer) in order to emit more customized events
+/// when top-level `ErrorResponse` is returned.
+/// In short, it is supposed to replace an `err(Debug)` within `#[tracing::instrument(...)]` of
+/// every handler function which returns `Result<_, ResponseError<_>>`. It emits almost the same
+/// information (except for emitting the path instead of the handler function name), but is
+/// capable of choosing the `Level` based on the HTTP status code (see `resolve_level()`).
+async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
+    let error_response = response.extensions().get::<ErrorResponse>();
+    if let Some(error_response) = error_response {
+        let level = resolve_level(response.status());
+        // the `event!(level, ...)` macro does not accept non-costant levels, hence we unroll:
+        match level {
+            Level::TRACE => trace!(path = uri.path(), error = debug(error_response)),
+            Level::DEBUG => debug!(path = uri.path(), error = debug(error_response)),
+            Level::INFO => info!(path = uri.path(), error = debug(error_response)),
+            Level::WARN => warn!(path = uri.path(), error = debug(error_response)),
+            Level::ERROR => error!(path = uri.path(), error = debug(error_response)),
+        }
+    }
+    response
+}
+
+fn resolve_level(status_code: StatusCode) -> Level {
+    if status_code.is_server_error() {
+        Level::WARN
+    } else {
+        Level::DEBUG
+    }
 }
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]

@@ -169,7 +169,7 @@ public final class REv2GenesisTest {
           transactionStore.getLastProof().get().ledgerHeader().accumulatorState().stateVersion();
       final var genesisWrapUp =
           transactionStore
-              .getTransactionAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
+              .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
               .unwrap();
       assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
 

@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -106,10 +107,21 @@ public sealed interface StateComputerConfig {
       int networkId,
       GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging);
+  }
+
+  static StateComputerConfig rev2(
+      int networkId,
+      GenesisData genesis,
+      REv2StateManagerModule.DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
+      REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, false);
   }
 
   static StateComputerConfig rev2(
@@ -117,7 +129,8 @@ public sealed interface StateComputerConfig {
       GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, genesis, databaseType, proposerConfig, false);
+    return new REv2StateComputerConfig(
+        networkId, genesis, databaseType, new DatabaseFlags(true, false), proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -161,6 +174,7 @@ public sealed interface StateComputerConfig {
       int networkId,
       GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)
       implements StateComputerConfig {}

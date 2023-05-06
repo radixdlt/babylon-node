@@ -64,22 +64,15 @@
 
 package com.radixdlt.transaction;
 
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
-    CommittedTransactionStatus status,
-    byte[] consensusReceiptBytes,
-    byte[] transactionBytes,
-    List<ComponentAddress> newComponentAddresses,
-    List<ResourceAddress> newResourceAddresses) {
+    CommittedTransactionStatus status, byte[] consensusReceiptBytes, byte[] transactionBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
@@ -97,14 +90,12 @@ public record ExecutedTransaction(
     ExecutedTransaction that = (ExecutedTransaction) o;
     return Objects.equals(status, that.status)
         && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes)
-        && Arrays.equals(transactionBytes, that.transactionBytes)
-        && Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
+        && Arrays.equals(transactionBytes, that.transactionBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(status, newComponentAddresses, newResourceAddresses);
+    int result = Objects.hash(status);
     result = 31 * result + Arrays.hashCode(consensusReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
@@ -112,6 +103,6 @@ public record ExecutedTransaction(
 
   @Override
   public String toString() {
-    return "ExecutedTransaction{" + "newComponentAddresses=" + newComponentAddresses + '}';
+    return "ExecutedTransaction{}";
   }
 }

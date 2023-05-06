@@ -66,10 +66,9 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use crate::jni::utils::jni_sbor_coded_call;
 use radix_engine::types::{EPOCH_MANAGER, RADIX_TOKEN, VALIDATOR_OWNER_TOKEN};
 use radix_engine_interface::constants::FAUCET;
-
-use super::utils::jni_static_sbor_call;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
@@ -77,7 +76,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, |_: ()| RADIX_TOKEN)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| RADIX_TOKEN)
 }
 
 #[no_mangle]
@@ -86,7 +85,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetAddress(
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, |_: ()| FAUCET)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| FAUCET)
 }
 
 #[no_mangle]
@@ -95,7 +94,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getEpochManagerCompon
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, |_: ()| EPOCH_MANAGER)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| EPOCH_MANAGER)
 }
 
 #[no_mangle]
@@ -104,7 +103,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerToke
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, |_: ()| VALIDATOR_OWNER_TOKEN)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| VALIDATOR_OWNER_TOKEN)
 }
 
 pub fn export_extern_functions() {}

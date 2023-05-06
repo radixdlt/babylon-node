@@ -196,8 +196,10 @@ public class REv2RejectedTransactionMempoolTest {
               REv2TestTransactions.DEFAULT_NOTARY,
               false,
               List.of());
-      var executedTransaction = executeTransaction(test, accountTxn);
-      var accountAddress = executedTransaction.newComponentAddresses().get(0);
+      executeTransaction(test, accountTxn);
+      var transactionDetails =
+          NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), accountTxn);
+      var accountAddress = transactionDetails.newComponentAddresses().get(0);
 
       // deposit xrd into it
       var depositTxn =

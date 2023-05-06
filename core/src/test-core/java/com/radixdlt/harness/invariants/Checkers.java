@@ -196,8 +196,6 @@ public final class Checkers {
                         .isEqualTo(executedTxn.transactionBytes());
                     assertThat(maybeExistingExecutedTxn.consensusReceiptBytes())
                         .isEqualTo(executedTxn.consensusReceiptBytes());
-                    assertThat(maybeExistingExecutedTxn.newComponentAddresses())
-                        .isEqualTo(executedTxn.newComponentAddresses());
                   } else {
                     executedTxns.put(txnStateVersion, executedTxn);
                   }

@@ -4,7 +4,7 @@ use state_manager::query::{dump_component_state, VaultData};
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,

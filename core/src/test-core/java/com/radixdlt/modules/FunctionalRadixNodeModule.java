@@ -79,6 +79,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolReevaluationModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
@@ -89,6 +90,7 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.rules.TemporaryFolder;
 
@@ -377,6 +379,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
                 install(new MempoolRelayerModule(10000));
+                install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
@@ -404,10 +407,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        0, 0, rev2Config.databaseType(), Option.none(), rev2Config.debugLogging()));
+                        0,
+                        0,
+                        rev2Config.databaseType(),
+                        rev2Config.databaseFlags(),
+                        Option.none(),
+                        rev2Config.debugLogging()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(10000));
+                install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());
                 install(
@@ -415,6 +424,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         mempool.maxNumTransactionsPerProposal(),
                         mempool.maxProposalTotalTxnsPayloadSize(),
                         rev2Config.databaseType(),
+                        rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));
               }

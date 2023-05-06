@@ -144,12 +144,12 @@ public final class RandomValidatorsTest {
       final var componentAddressesBuilder = ImmutableList.<ComponentAddress>builder();
       var stateVersion = 1;
       while (true) {
-        final var nextTxn = txnStore.getTransactionAtStateVersion(stateVersion);
-        if (nextTxn.isEmpty()) {
+        final var nextTxnDetails = txnStore.getTransactionDetailsAtStateVersion(stateVersion);
+        if (nextTxnDetails.isEmpty()) {
           break;
         } else {
           componentAddressesBuilder.addAll(
-              nextTxn.unwrap().newComponentAddresses().stream()
+              nextTxnDetails.unwrap().newComponentAddresses().stream()
                   .filter(
                       componentAddress ->
                           componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
@@ -187,12 +187,12 @@ public final class RandomValidatorsTest {
             creatingValidators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
-            var maybeExecuted =
-                NodesReader.tryGetCommittedUserTransaction(
+            var maybeTransactionsDetails =
+                NodesReader.tryGetCommittedTransactionDetails(
                     test.getNodeInjectors().get(randomValidatorIndex), inflightTransaction);
-            maybeExecuted.ifPresent(
-                executedTransaction -> {
-                  var validatorAddress = executedTransaction.newComponentAddresses().get(0);
+            maybeTransactionsDetails.ifPresent(
+                transactionDetails -> {
+                  var validatorAddress = transactionDetails.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidatorIndex,
                       PhysicalNodeConfig.create(

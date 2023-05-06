@@ -63,13 +63,80 @@
  */
 
 use crate::staging::StateHashTreeDiff;
+use crate::store::StateManagerDatabase;
 use crate::transaction::LedgerTransaction;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
+use enum_dispatch::enum_dispatch;
 pub use proofs::*;
+use radix_engine_common::{Categorize, Decode, Encode};
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
+
+pub enum DatabaseConfigValidationError {
+    AccountChangeIndexRequiresLocalTransactionExecutionIndex,
+    LocalTransactionExecutionIndexChanged,
+}
+
+/// Database flags required for initialization built from
+/// config file and environment variables.
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
+pub struct DatabaseFlags {
+    pub enable_local_transaction_execution_index: bool,
+    pub enable_account_change_index: bool,
+}
+
+impl Default for DatabaseFlags {
+    fn default() -> Self {
+        DatabaseFlags {
+            enable_local_transaction_execution_index: true,
+            enable_account_change_index: true,
+        }
+    }
+}
+
+/// Current state of database configuration. We need Option<T> for
+/// fields that are missing. Missing fields usually mean the database is
+/// just being initialized (when all of the fields are None) but also
+/// when new configurations are added - this is a cheap work around to
+/// limit future needed ledger wipes until we have a better solution.
+pub struct DatabaseFlagsState {
+    pub local_transaction_execution_index_enabled: Option<bool>,
+    pub account_change_index_enabled: Option<bool>,
+}
+
+impl DatabaseFlags {
+    pub fn validate(
+        &self,
+        current_database_config: &DatabaseFlagsState,
+    ) -> Result<(), DatabaseConfigValidationError> {
+        if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
+            return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
+        }
+        if let Some(local_transaction_execution_index_enabled) =
+            current_database_config.local_transaction_execution_index_enabled
+        {
+            if self.enable_local_transaction_execution_index
+                != local_transaction_execution_index_enabled
+            {
+                return Err(DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[enum_dispatch]
+pub trait ConfigurableDatabase {
+    fn read_flags_state(&self) -> DatabaseFlagsState;
+
+    fn write_flags(&mut self, flags: &DatabaseFlags);
+
+    fn is_account_change_index_enabled(&self) -> bool;
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool;
+}
 
 pub type CommittedTransactionBundle = (
     LedgerTransaction,
@@ -78,10 +145,14 @@ pub type CommittedTransactionBundle = (
 );
 
 pub mod vertex {
+    use super::*;
+
+    #[enum_dispatch]
     pub trait RecoverableVertexStore {
         fn get_vertex_store(&self) -> Option<Vec<u8>>;
     }
 
+    #[enum_dispatch]
     pub trait WriteableVertexStore {
         fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
     }
@@ -94,10 +165,16 @@ pub mod substate {
 }
 
 pub mod transactions {
+    use super::*;
+
     use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
-    use crate::{CommittedTransactionIdentifiers, LocalTransactionReceipt};
+    use crate::{
+        CommittedTransactionIdentifiers, LedgerTransactionReceipt, LocalTransactionExecution,
+        LocalTransactionReceipt,
+    };
 
+    #[enum_dispatch]
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
             &self,
@@ -107,17 +184,28 @@ pub mod transactions {
 
         fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
 
-        fn get_committed_transaction_receipt(
-            &self,
-            state_version: u64,
-        ) -> Option<LocalTransactionReceipt>;
-
         fn get_committed_transaction_identifiers(
             &self,
             state_version: u64,
         ) -> Option<CommittedTransactionIdentifiers>;
+
+        fn get_committed_ledger_transaction_receipt(
+            &self,
+            state_version: u64,
+        ) -> Option<LedgerTransactionReceipt>;
+
+        fn get_committed_local_transaction_execution(
+            &self,
+            state_version: u64,
+        ) -> Option<LocalTransactionExecution>;
+
+        fn get_committed_local_transaction_receipt(
+            &self,
+            state_version: u64,
+        ) -> Option<LocalTransactionReceipt>;
     }
 
+    #[enum_dispatch]
     pub trait TransactionIndex<T>: QueryableTransactionStore {
         fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<u64>;
     }
@@ -126,6 +214,7 @@ pub mod transactions {
 pub mod proofs {
     use super::*;
 
+    #[enum_dispatch]
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_txns_and_proof(
@@ -222,7 +311,27 @@ pub mod commit {
         }
     }
 
+    #[enum_dispatch]
     pub trait CommitStore {
         fn commit(&mut self, commit_bundle: CommitBundle);
+    }
+}
+
+pub mod extensions {
+    use super::*;
+    use radix_engine::types::GlobalAddress;
+
+    #[enum_dispatch]
+    pub trait AccountChangeIndexExtension {
+        fn account_change_index_last_processed_state_version(&self) -> u64;
+
+        fn catchup_account_change_index(&mut self);
+
+        fn get_state_versions_for_account(
+            &self,
+            account: GlobalAddress,
+            start_state_version_inclusive: u64,
+            limit: usize,
+        ) -> Vec<u64>;
     }
 }

@@ -102,6 +102,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int maxProposalTotalTxnsPayloadSize;
   private final int maxUncommittedUserTransactionsTotalPayloadSize;
   private final DatabaseType databaseType;
+  private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
 
@@ -110,6 +111,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
@@ -117,6 +119,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.maxUncommittedUserTransactionsTotalPayloadSize =
         maxUncommittedUserTransactionsTotalPayloadSize;
     this.databaseType = databaseType;
+    this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
   }
@@ -126,12 +129,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
       DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
         maxUncommittedUserTransactionsTotalPayloadSize,
         databaseType,
+        databaseFlags,
         mempoolConfig,
         false);
   }
@@ -140,6 +145,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       DatabaseType databaseType,
+      DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
@@ -147,6 +153,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         maxProposalTotalTxnsPayloadSize,
         maxProposalTotalTxnsPayloadSize * 5,
         databaseType,
+        databaseFlags,
         mempoolConfig,
         debugLogging);
   }
@@ -156,14 +163,16 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+    bind(DatabaseFlags.class).toInstance(databaseFlags);
 
     switch (databaseType) {
       case ROCKS_DB -> install(
           new AbstractModule() {
             @Provides
             @Singleton
-            REv2DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
-              return REv2DatabaseConfig.rocksDB(
+            DatabaseBackendConfig databaseBackendConfig(
+                @NodeStorageLocation String nodeStorageLocation) {
+              return DatabaseBackendConfig.rocksDB(
                   new File(nodeStorageLocation, "rocks_db").getPath());
             }
           });
@@ -171,7 +180,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(REv2DatabaseConfig.class).toInstance(REv2DatabaseConfig.inMemory());
+              bind(DatabaseBackendConfig.class).toInstance(DatabaseBackendConfig.inMemory());
             }
           });
     }
@@ -183,13 +192,15 @@ public final class REv2StateManagerModule extends AbstractModule {
           private StateManager stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               Network network,
-              REv2DatabaseConfig databaseConfig) {
+              DatabaseBackendConfig databaseBackendConfig,
+              DatabaseFlags databaseFlags) {
             return new StateManager(
                 mempoolRelayDispatcher,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
-                    databaseConfig,
+                    databaseBackendConfig,
+                    databaseFlags,
                     getLoggingConfig()));
           }
 
@@ -197,6 +208,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Singleton
           REv2StateComputer rEv2StateComputer(
               RustStateComputer stateComputer,
+              RustMempool mempool,
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -205,6 +217,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               Metrics metrics) {
             return new REv2StateComputer(
                 stateComputer,
+                mempool,
                 maxNumTransactionsPerProposal,
                 maxProposalTotalTxnsPayloadSize,
                 maxUncommittedUserTransactionsTotalPayloadSize,
@@ -276,20 +289,9 @@ public final class REv2StateManagerModule extends AbstractModule {
         });
 
     if (mempoolConfig.isPresent()) {
-      install(
-          new AbstractModule() {
-            @Provides
-            private MempoolReader<RawNotarizedTransaction> mempoolReader(
-                RustStateComputer stateComputer) {
-              return stateComputer.getMempoolReader();
-            }
-
-            @Provides
-            private MempoolInserter<RawNotarizedTransaction> mempoolInserter(
-                RustStateComputer stateComputer) {
-              return stateComputer.getMempoolInserter();
-            }
-          });
+      bind(new Key<MempoolReader<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(new Key<MempoolInserter<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(MempoolReevaluator.class).to(RustMempool.class);
     }
   }
 
@@ -306,5 +308,11 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Singleton
   private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
     return new RustStateComputer(metrics, stateManager);
+  }
+
+  @Provides
+  @Singleton
+  private RustMempool rustMempool(Metrics metrics, StateManager stateManager) {
+    return new RustMempool(metrics, stateManager);
   }
 }

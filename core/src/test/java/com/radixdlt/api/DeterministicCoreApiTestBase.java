@@ -71,6 +71,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -86,6 +87,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt64;
@@ -98,6 +100,7 @@ import org.junit.rules.TemporaryFolder;
 public abstract class DeterministicCoreApiTestBase {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
+  public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
   public static String networkLogicalName = networkDefinition.logical_name();
   protected int coreApiPort = FreePortFinder.findFreeLocalPort();
 
@@ -108,10 +111,19 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000);
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false));
+  }
+
+  protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
+    return buildRunningServerTest(1000000, databaseFlags);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
+    return buildRunningServerTest(roundsPerEpoch, new DatabaseFlags(true, false));
+  }
+
+  protected DeterministicTest buildRunningServerTest(
+      int roundsPerEpoch, DatabaseFlags databaseConfig) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -139,6 +151,7 @@ public abstract class DeterministicCoreApiTestBase {
                             GenesisBuilder.createGenesisWithNumValidators(
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                            databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
@@ -214,6 +227,10 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected StateApi getStateApi() {
     return new StateApi(apiClient);
+  }
+
+  protected LtsApi getLtsApi() {
+    return new LtsApi(apiClient);
   }
 
   protected DeterministicCoreApiTestBase() {}

@@ -83,10 +83,7 @@ import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
@@ -97,11 +94,13 @@ import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
 import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.time.Duration;
 import java.util.Optional;
 
 /** Module which manages everything in a single node */
@@ -198,6 +197,7 @@ public final class RadixNodeModule extends AbstractModule {
     // Mempool Relay
     install(new MempoolRelayConfig(5, 100).asModule());
     install(new MempoolRelayerModule(20000));
+    install(new MempoolReevaluationModule(Duration.ofSeconds(10), 5));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -219,6 +219,11 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    var enableLocalTransactionExecutionIndex =
+        properties.get("db.local_transaction_execution_index.enable", true);
+    var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
+    var databaseFlags =
+        new DatabaseFlags(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
 
     install(
         REv2StateManagerModule.create(
@@ -226,6 +231,7 @@ public final class RadixNodeModule extends AbstractModule {
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
             MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
+            databaseFlags,
             Option.some(mempoolConfig)));
 
     // Recovery

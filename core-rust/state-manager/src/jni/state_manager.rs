@@ -64,12 +64,13 @@
 
 use std::sync::{Arc, MutexGuard};
 
-use crate::jni::java_structure::JavaStructure;
+use crate::environment::setup_tracing;
+use crate::jni::java_structure::StructFromJava;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
-use crate::store::{DatabaseConfig, StateManagerDatabase};
+use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -77,6 +78,7 @@ use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
+use tokio::runtime::Runtime;
 
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
@@ -127,15 +129,17 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
+    pub database_backend_config: DatabaseBackendConfig,
+    pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
 }
 
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
+    pub runtime: Arc<Runtime>,
     pub network: NetworkDefinition,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
@@ -149,6 +153,10 @@ impl JNIStateManager {
     pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
+
+        let runtime = Runtime::new().unwrap();
+
+        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
 
         // Build the basic subcomponents.
         let mempool_config = match config.mempool_config {
@@ -164,7 +172,10 @@ impl JNIStateManager {
         let logging_config = config.logging_config;
 
         let database = Arc::new(parking_lot::const_rwlock(
-            StateManagerDatabase::from_config(config.db_config),
+            StateManagerDatabase::from_config(
+                config.database_backend_config,
+                config.database_flags,
+            ),
         ));
         let metric_registry = Registry::new();
         let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
@@ -201,7 +212,7 @@ impl JNIStateManager {
         ));
 
         // Build the state manager.
-        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
+        let state_manager = Arc::new(StateManager::new(
             &network,
             database.clone(),
             mempool_manager.clone(),
@@ -209,9 +220,10 @@ impl JNIStateManager {
             pending_transaction_result_cache.clone(),
             logging_config,
             &metric_registry,
-        )));
+        ));
 
         let jni_state_manager = JNIStateManager {
+            runtime: Arc::new(runtime),
             network,
             state_manager,
             database,
@@ -243,10 +255,7 @@ impl JNIStateManager {
             .unwrap()
     }
 
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<RwLock<ActualStateManager>> {
+    pub fn get_state_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<ActualStateManager> {
         Self::get_state(env, j_state_manager).state_manager.clone()
     }
 

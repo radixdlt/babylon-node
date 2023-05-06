@@ -4,7 +4,7 @@ use radix_engine::types::{ClockOffset, CLOCK};
 use radix_engine_interface::types::SysModuleId;
 use std::ops::Deref;
 
-#[tracing::instrument(skip(state), err(Debug))]
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_state_clock(
     state: State<CoreApiState>,
     Json(request): Json<models::StateClockRequest>,

@@ -128,8 +128,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
             let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
             mempool_manager
                 .get_proposal_transactions(
-                    request.max_count.into(),
-                    request.max_payload_size_bytes.into(),
+                    request.max_count.try_into().unwrap(),
+                    request.max_payload_size_bytes as u64,
                     &user_payload_hashes_to_exclude,
                 )
                 .into_iter()
@@ -165,14 +165,29 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
         request_payload,
         |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaRawTransaction> {
             let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-            let transactions_to_relay =
-                mempool_manager.get_relay_transactions(max_num_txns, max_payload_size_bytes);
+            let transactions_to_relay = mempool_manager.get_relay_transactions(
+                max_num_txns.try_into().unwrap(),
+                max_payload_size_bytes as u64,
+            );
             transactions_to_relay
                 .into_iter()
                 .map(|transaction_to_relay| transaction_to_relay.into())
                 .collect()
         },
     )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommitability(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |max_reevaluated_count: u32| {
+        let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
+        mempool_manager.reevaluate_transaction_commitability(max_reevaluated_count);
+    })
 }
 
 //

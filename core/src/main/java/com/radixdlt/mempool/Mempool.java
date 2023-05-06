@@ -72,15 +72,6 @@ import java.util.List;
  * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
  */
 public interface Mempool<RawTx, ProcessedTx> extends MempoolReader<RawTx>, MempoolInserter<RawTx> {
-  /**
-   * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
-   *
-   * @param count the number of transactions to retrieve
-   * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
-   *     which will need to be taken into account when choosing transactions
-   * @return A list of transactions for processing by consensus
-   */
-  List<RawTx> getTransactionsForProposal(int count, List<ProcessedTx> preparedTransactions);
 
   void handleTransactionsCommitted(List<ProcessedTx> transactions);
 

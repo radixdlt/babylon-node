@@ -311,8 +311,6 @@ dependencies = [
  "hex",
  "hyper",
  "jni",
- "opentelemetry",
- "opentelemetry-jaeger",
  "parking_lot",
  "prometheus",
  "radix-engine",
@@ -328,8 +326,6 @@ dependencies = [
  "state-manager",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
  "transaction",
  "utils",
 ]
@@ -474,6 +470,18 @@ name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
+
+[[package]]
+name = "enum_dispatch"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11f36e95862220b211a6e2aa5eca09b4fa391b13cd52ceb8035a24bf65a79de2"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "errno"
@@ -1907,11 +1915,14 @@ version = "0.1.0"
 dependencies = [
  "bech32",
  "blake2",
+ "enum_dispatch",
  "hex",
  "im",
  "jni",
  "lazy_static",
  "lru",
+ "opentelemetry",
+ "opentelemetry-jaeger",
  "parking_lot",
  "prometheus",
  "radix-engine",
@@ -1925,7 +1936,10 @@ dependencies = [
  "rocksdb",
  "sbor",
  "slotmap",
+ "tokio",
  "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
  "transaction",
  "utils",
 ]

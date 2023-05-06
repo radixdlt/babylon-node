@@ -76,7 +76,10 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
 
-public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
+public class RustMempool
+    implements MempoolReader<RawNotarizedTransaction>,
+        MempoolInserter<RawNotarizedTransaction>,
+        MempoolReevaluator {
 
   public RustMempool(Metrics metrics, StateManager stateManager) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
@@ -92,12 +95,18 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
         Natives.builder(stateManager, RustMempool::getTransactionsToRelay)
             .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsToRelay")))
             .build(new TypeToken<>() {});
+    reevaluateTransactionCommitabilityFunc =
+        Natives.builder(stateManager, RustMempool::reevaluateTransactionCommitability)
+            .measure(
+                timer.label(new MethodId(RustMempool.class, "reevaluateTransactionCommitability")))
+            .build(new TypeToken<>() {});
     getCountFunc =
         Natives.builder(stateManager, RustMempool::getCount)
             .measure(timer.label(new MethodId(RustMempool.class, "getCount")))
             .build(new TypeToken<>() {});
   }
 
+  @Override
   public void addTransaction(RawNotarizedTransaction transaction) throws MempoolRejectedException {
     final var result = addFunc.call(transaction);
 
@@ -117,6 +126,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
     }
   }
 
+  @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
       int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionsToExclude) {
     if (maxCount <= 0) {
@@ -149,6 +159,11 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
   }
 
   @Override
+  public void reevaluateTransactionCommitability(int maxReevaluatedCount) {
+    reevaluateTransactionCommitabilityFunc.call(UInt32.fromNonNegativeInt(maxReevaluatedCount));
+  }
+
+  @Override
   public int getCount() {
     return getCountFunc.call(Tuple.Tuple0.of());
   }
@@ -167,6 +182,11 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
+
+  private final Natives.Call1<UInt32, Tuple.Tuple0> reevaluateTransactionCommitabilityFunc;
+
+  private static native byte[] reevaluateTransactionCommitability(
+      StateManager stateManager, byte[] payload);
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
 

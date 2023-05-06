@@ -133,7 +133,7 @@ mod tests {
     use crate::jni::state_manager::ActualStateManager;
     use crate::mempool_manager::MempoolManager;
     use crate::simple_mempool::SimpleMempool;
-    use crate::store::{InMemoryStore, StateManagerDatabase};
+    use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
     use crate::transaction::{
         CachedCommitabilityValidator, CommitabilityValidator, ExecutionConfigurator,
         TransactionPreviewer,
@@ -167,7 +167,7 @@ mod tests {
             },
         };
         let database = Arc::new(parking_lot::const_rwlock(StateManagerDatabase::InMemory(
-            InMemoryStore::new(),
+            InMemoryStore::new(DatabaseFlags::default()),
         )));
         let metric_registry = Registry::new();
         let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
@@ -220,9 +220,10 @@ mod tests {
                 )],
             },
         ];
-        let mut write_state_manager = state_manager.write();
-        write_state_manager.execute_genesis(genesis_chunks, 0, 100, 10, 10);
-        drop(write_state_manager);
+
+        state_manager
+            .read()
+            .execute_genesis(genesis_chunks, 0, 100, 10, 10);
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,

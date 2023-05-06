@@ -73,10 +73,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.LoggingConfig;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.statemanager.*;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.HashSet;
 import java.util.List;
@@ -102,7 +99,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
@@ -165,7 +163,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
@@ -290,7 +289,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
+            DatabaseBackendConfig.inMemory(),
+            new DatabaseFlags(false, false),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 

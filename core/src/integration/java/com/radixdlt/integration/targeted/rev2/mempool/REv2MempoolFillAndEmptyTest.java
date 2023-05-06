@@ -66,7 +66,6 @@ package com.radixdlt.integration.targeted.rev2.mempool;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
@@ -82,7 +81,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
@@ -92,6 +90,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -150,9 +149,11 @@ public final class REv2MempoolFillAndEmptyTest {
       }
       test.runForCount(10);
       if (mempoolReader.getCount() == 0) {
-        break;
+        return;
       }
     }
+
+    Assertions.fail("expected the mempool to empty itself: {}", mempoolReader.getCount());
   }
 
   @Test
@@ -163,9 +164,6 @@ public final class REv2MempoolFillAndEmptyTest {
       for (int i = 0; i < 10; i++) {
         fillAndEmptyMempool(test);
       }
-
-      var metrics = test.getInstance(0, Metrics.class);
-      assertThat(metrics.v1RadixEngine().invalidProposedTransactions().get()).isZero();
     }
   }
 }

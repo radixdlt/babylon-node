@@ -66,7 +66,7 @@ use crate::store::traits::*;
 
 use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
-use crate::{DetailedTransactionOutcome, LocalTransactionReceipt};
+use crate::LedgerTransactionOutcome;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -79,15 +79,18 @@ struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
     consensus_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
-    /// Used by some Java tests, consider removing at some point as it doesn't really fit here
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct TransactionDetails {
     new_component_addresses: Vec<ComponentAddress>,
     new_resource_addresses: Vec<ResourceAddress>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionOutcomeJava {
-    Success(Vec<Vec<u8>>),
-    Failure(String),
+    Success,
+    Failure,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -117,28 +120,47 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
-            let committed_receipt =
-                read_database.get_committed_transaction_receipt(state_version)?;
-
-            let LocalTransactionReceipt {
-                on_ledger,
-                local_execution,
-            } = committed_receipt;
+            let committed_ledger_transaction_receipt =
+                read_database.get_committed_ledger_transaction_receipt(state_version)?;
 
             Some(ExecutedTransaction {
-                outcome: match local_execution.outcome {
-                    DetailedTransactionOutcome::Success(output) => {
-                        TransactionOutcomeJava::Success(output)
-                    }
-                    DetailedTransactionOutcome::Failure(err) => {
-                        TransactionOutcomeJava::Failure(format!("{err:?}"))
-                    }
+                outcome: match committed_ledger_transaction_receipt.outcome {
+                    LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
+                    LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
                 },
-                consensus_receipt_bytes: scrypto_encode(&on_ledger.get_consensus_receipt())
-                    .unwrap(),
+                consensus_receipt_bytes: scrypto_encode(
+                    &committed_ledger_transaction_receipt.get_consensus_receipt(),
+                )
+                .unwrap(),
                 transaction_bytes: committed_transaction.create_payload().unwrap(),
-                new_component_addresses: local_execution.state_update_summary.new_components,
-                new_resource_addresses: local_execution.state_update_summary.new_resources,
+            })
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionDetailsAtStateVersion(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |state_version: u64| -> Option<TransactionDetails> {
+            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let read_database = database.read();
+            let committed_local_transaction_execution =
+                read_database.get_committed_local_transaction_execution(state_version)?;
+
+            Some(TransactionDetails {
+                new_component_addresses: committed_local_transaction_execution
+                    .state_update_summary
+                    .new_components,
+                new_resource_addresses: committed_local_transaction_execution
+                    .state_update_summary
+                    .new_resources,
             })
         },
     )

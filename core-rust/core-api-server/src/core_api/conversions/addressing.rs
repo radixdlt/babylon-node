@@ -309,6 +309,14 @@ pub fn to_global_entity_reference(
     Ok(reference)
 }
 
+pub fn extract_global_address(
+    extraction_context: &ExtractionContext,
+    package_address: &str,
+) -> Result<GlobalAddress, ExtractionError> {
+    GlobalAddress::try_from_bech32(&extraction_context.bech32_decoder, package_address)
+        .ok_or(ExtractionError::InvalidAddress)
+}
+
 pub fn extract_package_address(
     extraction_context: &ExtractionContext,
     package_address: &str,
