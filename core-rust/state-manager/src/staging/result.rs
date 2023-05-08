@@ -185,8 +185,8 @@ impl ProcessedCommitResult {
                 let change_action = match update {
                     DatabaseUpdate::Set(value) => {
                         match store.get_substate(&partition_key, &sort_key) {
-                            Some(_) => ChangeAction::Create(value),
-                            None => ChangeAction::Update(value),
+                            Some(_) => ChangeAction::Update(value),
+                            None => ChangeAction::Create(value),
                         }
                     }
                     DatabaseUpdate::Delete => ChangeAction::Delete,
