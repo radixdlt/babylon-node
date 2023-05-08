@@ -28,8 +28,7 @@ pub struct TransactionPreviewer<S> {
     validation_config: ValidationConfig,
 }
 
-// TODO: Engine preview executor (execute_preview) isn't really used...? remove it?
-pub struct PreviewResult {
+pub struct ProcessedPreviewResult {
     pub intent: PreviewIntent,
     pub receipt: TransactionReceipt,
     pub processed_receipt: ProcessedTransactionReceipt,
@@ -51,7 +50,7 @@ impl<S> TransactionPreviewer<S> {
 
 impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> TransactionPreviewer<S> {
     /// Executes the transaction compiled from the given request in a preview mode.
-    pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
+    pub fn preview(&self, preview_request: PreviewRequest) -> Result<ProcessedPreviewResult, PreviewError> {
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 
@@ -84,7 +83,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             receipt.clone(),
         );
 
-        Ok(PreviewResult {
+        Ok(ProcessedPreviewResult {
             intent,
             receipt,
             processed_receipt,

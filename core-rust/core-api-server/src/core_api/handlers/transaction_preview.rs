@@ -4,7 +4,7 @@ use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
 
-use state_manager::transaction::PreviewResult;
+use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{LocalTransactionReceipt, PreviewRequest, ProcessedTransactionReceipt};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
@@ -86,7 +86,7 @@ fn extract_preview_request(
 
 fn to_api_response(
     context: &MappingContext,
-    result: PreviewResult,
+    result: ProcessedPreviewResult,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
     let substate_changes = match result.processed_receipt {
