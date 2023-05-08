@@ -147,7 +147,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         |commit_request: JavaCommitRequest| -> Result<(), CommitError> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
             state_manager
-                .commit(commit_request.into())
+                .commit(commit_request.into(), false)
                 .map(|_unused| ())
         },
     )

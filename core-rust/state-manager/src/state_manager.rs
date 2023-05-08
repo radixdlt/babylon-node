@@ -580,7 +580,7 @@ where
         };
 
         let system_bootstrap_commit_receipts = self
-            .commit(system_bootstrap_commit_request)
+            .commit(system_bootstrap_commit_request, true)
             .expect("System bootstrap commit failed");
 
         let system_bootstrap_receipt = system_bootstrap_commit_receipts
@@ -639,7 +639,7 @@ where
             };
 
             let genesis_data_ingestion_commit_receipt = self
-                .commit(genesis_data_ingestion_commit_request)
+                .commit(genesis_data_ingestion_commit_request, true)
                 .expect("Genesis data ingestion commit failed")
                 .remove(0);
 
@@ -692,7 +692,7 @@ where
         };
 
         let genesis_wrap_up_commit_receipts = self
-            .commit(genesis_wrap_up_commit_request)
+            .commit(genesis_wrap_up_commit_request, true)
             .expect("Genesis wrap up commit failed");
 
         let genesis_wrap_up_receipt = genesis_wrap_up_commit_receipts
@@ -716,6 +716,7 @@ where
     pub fn commit(
         &self,
         commit_request: CommitRequest,
+        genesis: bool,
     ) -> Result<Vec<LocalTransactionReceipt>, CommitError> {
         let commit_transactions_len = commit_request.transaction_payloads.len();
         if commit_transactions_len == 0 {
@@ -771,14 +772,11 @@ where
 
         let mut result_receipts = vec![];
         for (i, transaction) in parsed_transactions.into_iter().enumerate() {
-            // TODO: add some system transaction logic?
-            /*
             if let LedgerTransaction::System(..) = transaction {
-                if commit_state_version != 1 && i != 0 {
+                if !genesis {
                     panic!("Non Genesis system transaction cannot be committed.");
                 }
             }
-             */
 
             let executable = self
                 .ledger_transaction_validator
