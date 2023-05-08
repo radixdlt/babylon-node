@@ -190,6 +190,8 @@ pub mod generic_index_substate;
 pub use self::generic_index_substate::GenericIndexSubstate;
 pub mod generic_key_value_store_substate;
 pub use self::generic_key_value_store_substate::GenericKeyValueStoreSubstate;
+pub mod generic_key_value_store_substate_all_of;
+pub use self::generic_key_value_store_substate_all_of::GenericKeyValueStoreSubstateAllOf;
 pub mod generic_scrypto_component_state_substate;
 pub use self::generic_scrypto_component_state_substate::GenericScryptoComponentStateSubstate;
 pub mod generic_sorted_u16_index_substate;

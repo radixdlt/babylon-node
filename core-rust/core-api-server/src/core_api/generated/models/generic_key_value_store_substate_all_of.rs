@@ -12,20 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsResultantFungibleBalance {
-    /// The Bech32m-encoded human readable version of the fungible resource's address 
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
-    /// The string-encoded decimal representing the resultant balance of the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "resultant_balance")]
-    pub resultant_balance: String,
+pub struct GenericKeyValueStoreSubstateAllOf {
+    /// The hex-encoded bytes of its key
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
+    #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
+    pub key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
+    #[serde(rename = "data_struct")]
+    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
-impl LtsResultantFungibleBalance {
-    pub fn new(resource_address: String, resultant_balance: String) -> LtsResultantFungibleBalance {
-        LtsResultantFungibleBalance {
-            resource_address,
-            resultant_balance,
+impl GenericKeyValueStoreSubstateAllOf {
+    pub fn new(key_hex: String, data_struct: crate::core_api::generated::models::DataStruct) -> GenericKeyValueStoreSubstateAllOf {
+        GenericKeyValueStoreSubstateAllOf {
+            key_hex,
+            key_non_fungible_local_id: None,
+            data_struct: Box::new(data_struct),
         }
     }
 }

@@ -3102,8 +3102,17 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
+            - key_hex
             - data_struct
           properties:
+            key_hex:
+              type: string
+              description: The hex-encoded bytes of its key
+            key_non_fungible_local_id:
+              description: |
+                This is only included if the key bytes deserialize into a NonFungibleLocalId.
+                This is a temporary measure to help with mapping NonFungibles in the Gateway.
+              $ref: '#/components/schemas/NonFungibleId'
             data_struct:
               $ref: '#/components/schemas/DataStruct'
     GenericIndexSubstate:

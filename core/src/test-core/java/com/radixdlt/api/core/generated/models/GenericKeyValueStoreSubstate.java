@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
-import com.radixdlt.api.core.generated.models.AccountSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ClockSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
@@ -40,10 +39,12 @@ import com.radixdlt.api.core.generated.models.FungibleResourceManagerTotalSupply
 import com.radixdlt.api.core.generated.models.FungibleVaultBalanceSubstate;
 import com.radixdlt.api.core.generated.models.GenericIndexSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreSubstate;
+import com.radixdlt.api.core.generated.models.GenericKeyValueStoreSubstateAllOf;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.GenericSortedU16IndexSubstate;
 import com.radixdlt.api.core.generated.models.MetadataValueSubstate;
 import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSchemaSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerIdTypeSubstate;
@@ -69,6 +70,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * GenericKeyValueStoreSubstate
  */
 @JsonPropertyOrder({
+  GenericKeyValueStoreSubstate.JSON_PROPERTY_KEY_HEX,
+  GenericKeyValueStoreSubstate.JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID,
   GenericKeyValueStoreSubstate.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -111,11 +114,69 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class GenericKeyValueStoreSubstate extends Substate {
+  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
+  private String keyHex;
+
+  public static final String JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID = "key_non_fungible_local_id";
+  private NonFungibleId keyNonFungibleLocalId;
+
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
   public GenericKeyValueStoreSubstate() { 
   }
+
+  public GenericKeyValueStoreSubstate keyHex(String keyHex) {
+    this.keyHex = keyHex;
+    return this;
+  }
+
+   /**
+   * The hex-encoded bytes of its key
+   * @return keyHex
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its key")
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getKeyHex() {
+    return keyHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKeyHex(String keyHex) {
+    this.keyHex = keyHex;
+  }
+
+
+  public GenericKeyValueStoreSubstate keyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
+    return this;
+  }
+
+   /**
+   * Get keyNonFungibleLocalId
+   * @return keyNonFungibleLocalId
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public NonFungibleId getKeyNonFungibleLocalId() {
+    return keyNonFungibleLocalId;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setKeyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
+  }
+
 
   public GenericKeyValueStoreSubstate dataStruct(DataStruct dataStruct) {
     this.dataStruct = dataStruct;
@@ -155,13 +216,15 @@ public class GenericKeyValueStoreSubstate extends Substate {
       return false;
     }
     GenericKeyValueStoreSubstate genericKeyValueStoreSubstate = (GenericKeyValueStoreSubstate) o;
-    return Objects.equals(this.dataStruct, genericKeyValueStoreSubstate.dataStruct) &&
+    return Objects.equals(this.keyHex, genericKeyValueStoreSubstate.keyHex) &&
+        Objects.equals(this.keyNonFungibleLocalId, genericKeyValueStoreSubstate.keyNonFungibleLocalId) &&
+        Objects.equals(this.dataStruct, genericKeyValueStoreSubstate.dataStruct) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(keyHex, keyNonFungibleLocalId, dataStruct, super.hashCode());
   }
 
   @Override
@@ -169,6 +232,8 @@ public class GenericKeyValueStoreSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class GenericKeyValueStoreSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    keyNonFungibleLocalId: ").append(toIndentedString(keyNonFungibleLocalId)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();

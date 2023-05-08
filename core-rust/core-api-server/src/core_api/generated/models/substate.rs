@@ -86,6 +86,11 @@ pub enum Substate {
     },
     #[serde(rename="GenericKeyValueStore")]
     GenericKeyValueStoreSubstate {
+        /// The hex-encoded bytes of its key
+        #[serde(rename = "key_hex")]
+        key_hex: String,
+        #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
+        key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },

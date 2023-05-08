@@ -22,83 +22,115 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsResultantFungibleBalance
+ * GenericKeyValueStoreSubstateAllOf
  */
 @JsonPropertyOrder({
-  LtsResultantFungibleBalance.JSON_PROPERTY_RESOURCE_ADDRESS,
-  LtsResultantFungibleBalance.JSON_PROPERTY_RESULTANT_BALANCE
+  GenericKeyValueStoreSubstateAllOf.JSON_PROPERTY_KEY_HEX,
+  GenericKeyValueStoreSubstateAllOf.JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID,
+  GenericKeyValueStoreSubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsResultantFungibleBalance {
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+public class GenericKeyValueStoreSubstateAllOf {
+  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
+  private String keyHex;
 
-  public static final String JSON_PROPERTY_RESULTANT_BALANCE = "resultant_balance";
-  private String resultantBalance;
+  public static final String JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID = "key_non_fungible_local_id";
+  private NonFungibleId keyNonFungibleLocalId;
 
-  public LtsResultantFungibleBalance() { 
+  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
+  private DataStruct dataStruct;
+
+  public GenericKeyValueStoreSubstateAllOf() { 
   }
 
-  public LtsResultantFungibleBalance resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public GenericKeyValueStoreSubstateAllOf keyHex(String keyHex) {
+    this.keyHex = keyHex;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the fungible resource&#39;s address 
-   * @return resourceAddress
+   * The hex-encoded bytes of its key
+   * @return keyHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the fungible resource's address ")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its key")
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public String getKeyHex() {
+    return keyHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setKeyHex(String keyHex) {
+    this.keyHex = keyHex;
   }
 
 
-  public LtsResultantFungibleBalance resultantBalance(String resultantBalance) {
-    this.resultantBalance = resultantBalance;
+  public GenericKeyValueStoreSubstateAllOf keyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the resultant balance of the fungible resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return resultantBalance
+   * Get keyNonFungibleLocalId
+   * @return keyNonFungibleLocalId
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the resultant balance of the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getResultantBalance() {
-    return resultantBalance;
+  public NonFungibleId getKeyNonFungibleLocalId() {
+    return keyNonFungibleLocalId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESULTANT_BALANCE)
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setKeyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
+  }
+
+
+  public GenericKeyValueStoreSubstateAllOf dataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
+    return this;
+  }
+
+   /**
+   * Get dataStruct
+   * @return dataStruct
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResultantBalance(String resultantBalance) {
-    this.resultantBalance = resultantBalance;
+
+  public DataStruct getDataStruct() {
+    return dataStruct;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this LtsResultantFungibleBalance object is equal to o.
+   * Return true if this GenericKeyValueStoreSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +140,24 @@ public class LtsResultantFungibleBalance {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsResultantFungibleBalance ltsResultantFungibleBalance = (LtsResultantFungibleBalance) o;
-    return Objects.equals(this.resourceAddress, ltsResultantFungibleBalance.resourceAddress) &&
-        Objects.equals(this.resultantBalance, ltsResultantFungibleBalance.resultantBalance);
+    GenericKeyValueStoreSubstateAllOf genericKeyValueStoreSubstateAllOf = (GenericKeyValueStoreSubstateAllOf) o;
+    return Objects.equals(this.keyHex, genericKeyValueStoreSubstateAllOf.keyHex) &&
+        Objects.equals(this.keyNonFungibleLocalId, genericKeyValueStoreSubstateAllOf.keyNonFungibleLocalId) &&
+        Objects.equals(this.dataStruct, genericKeyValueStoreSubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, resultantBalance);
+    return Objects.hash(keyHex, keyNonFungibleLocalId, dataStruct);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsResultantFungibleBalance {\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    resultantBalance: ").append(toIndentedString(resultantBalance)).append("\n");
+    sb.append("class GenericKeyValueStoreSubstateAllOf {\n");
+    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    keyNonFungibleLocalId: ").append(toIndentedString(keyNonFungibleLocalId)).append("\n");
+    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
   }

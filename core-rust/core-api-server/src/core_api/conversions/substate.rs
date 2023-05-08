@@ -27,6 +27,7 @@ use crate::core_api::models;
 use radix_engine::types::{
     scrypto_encode, Decimal, ResourceAddress, RoyaltyConfig, ScryptoSchema, ScryptoValue,
 };
+use radix_engine_common::data::scrypto::scrypto_decode;
 use radix_engine_common::types::{ComponentAddress, GlobalAddress, SubstateKey};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
@@ -178,66 +179,67 @@ pub fn to_api_substate(
             TypedObjectModuleSubstateValue::GenericScryptoComponent(
                 GenericScryptoComponentSubstateValue::State(generic_scrypto_sbor_payload),
             ),
-        ) => {
-            to_api_generic_scrypto_component_state_substate(context, generic_scrypto_sbor_payload)?
-        }
+        ) => to_api_generic_scrypto_component_state_substate(
+            context,
+            &generic_scrypto_sbor_payload.data,
+        )?,
         TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericKeyValueStore(
-            generic_scrypto_sbor_payload,
-        )) => to_api_generic_key_value_store_substate(context, generic_scrypto_sbor_payload)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericIndex(
-            generic_scrypto_sbor_payload,
-        )) => to_api_generic_index_substate(context, generic_scrypto_sbor_payload)?,
+            payload,
+        )) => to_api_generic_key_value_store_substate(context, substate_key, &payload.data)?,
+        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericIndex(payload)) => {
+            to_api_generic_index_substate(context, &payload.data)?
+        }
         TypedSubstateValue::ObjectModule(
-            TypedObjectModuleSubstateValue::GenericSortedU16Index(generic_scrypto_sbor_payload),
-        ) => to_api_generic_sorted_index_substate(context, generic_scrypto_sbor_payload)?,
+            TypedObjectModuleSubstateValue::GenericSortedU16Index(payload),
+        ) => to_api_generic_sorted_index_substate(context, &payload.data)?,
     })
 }
 
 pub fn to_api_generic_scrypto_component_state_substate(
     context: &MappingContext,
-    substate: &GenericScryptoSborPayload,
+    data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::GenericScryptoComponentStateSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(
-            context,
-            substate.data.as_ref(),
-        )?),
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 
 pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
-    substate: &GenericScryptoSborPayload,
+    substate_key: &SubstateKey,
+    data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
+    let key_hex = to_hex(scrypto_encode(substate_key).unwrap());
+
+    let key_non_fungible_local_id = match substate_key {
+        SubstateKey::Map(map_key) => scrypto_decode::<NonFungibleLocalId>(map_key)
+            .ok()
+            .map(|id| Box::new(to_api_non_fungible_id(&id))),
+        _ => None,
+    };
+
     Ok(models::Substate::GenericKeyValueStoreSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(
-            context,
-            substate.data.as_ref(),
-        )?),
+        key_hex,
+        key_non_fungible_local_id,
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 
 pub fn to_api_generic_index_substate(
     context: &MappingContext,
-    substate: &GenericScryptoSborPayload,
+    data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::GenericIndexSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(
-            context,
-            substate.data.as_ref(),
-        )?),
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 
 pub fn to_api_generic_sorted_index_substate(
     context: &MappingContext,
-    substate: &GenericScryptoSborPayload,
+    data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::GenericSortedU16IndexSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(
-            context,
-            substate.data.as_ref(),
-        )?),
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 

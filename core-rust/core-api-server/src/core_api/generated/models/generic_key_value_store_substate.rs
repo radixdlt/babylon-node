@@ -15,14 +15,21 @@
 pub struct GenericKeyValueStoreSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The hex-encoded bytes of its key
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
+    #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
+    pub key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
     #[serde(rename = "data_struct")]
     pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
 impl GenericKeyValueStoreSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, data_struct: crate::core_api::generated::models::DataStruct) -> GenericKeyValueStoreSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, key_hex: String, data_struct: crate::core_api::generated::models::DataStruct) -> GenericKeyValueStoreSubstate {
         GenericKeyValueStoreSubstate {
             substate_type,
+            key_hex,
+            key_non_fungible_local_id: None,
             data_struct: Box::new(data_struct),
         }
     }
