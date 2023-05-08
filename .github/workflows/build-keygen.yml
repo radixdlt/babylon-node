@@ -26,7 +26,7 @@ jobs:
       tag: ${{ github.event.release.tag_name }}
       context: "./docker"
       dockerfile: "./docker/Dockerfile.keygen"
-      platforms: "linux/amd64,linux/arm64"
+      platforms: "linux/amd64"
       enable_dockerhub: "true"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
@@ -45,7 +45,7 @@ jobs:
       tag: ${{ inputs.image_tag }}
       context: "./docker"
       dockerfile: "./docker/Dockerfile.keygen"
-      platforms: "linux/amd64,linux/arm64"
+      platforms: "linux/amd64"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -61,7 +61,7 @@ jobs:
       tag: "test"
       context: "./docker"
       dockerfile: "./docker/Dockerfile.keygen"
-      platforms: "linux/amd64,linux/arm64"
+      platforms: "linux/amd64"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
