@@ -92,13 +92,27 @@ impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
         mempool: Arc<RwLock<SimpleMempool>>,
-        relay_dispatcher: Option<MempoolRelayDispatcher>,
+        relay_dispatcher: MempoolRelayDispatcher,
         cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
             mempool,
-            relay_dispatcher,
+            relay_dispatcher: Some(relay_dispatcher),
+            cached_commitability_validator,
+            metrics: MempoolMetrics::new(metric_registry),
+        }
+    }
+
+    /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
+    pub fn new_for_testing(
+        mempool: Arc<RwLock<SimpleMempool>>,
+        cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
+        metric_registry: &Registry,
+    ) -> Self {
+        Self {
+            mempool,
+            relay_dispatcher: None,
             cached_commitability_validator,
             metrics: MempoolMetrics::new(metric_registry),
         }

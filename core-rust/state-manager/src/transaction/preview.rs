@@ -187,9 +187,8 @@ mod tests {
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
             MempoolConfig { max_size: 10 },
         )));
-        let mempool_manager = Arc::new(MempoolManager::new(
+        let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,
-            None,
             cached_commitability_validator,
             &metric_registry,
         ));

@@ -198,7 +198,7 @@ impl JNIStateManager {
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),
-            Some(mempool_relay_dispatcher),
+            mempool_relay_dispatcher,
             cached_commitability_validator,
             &metric_registry,
         ));

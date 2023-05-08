@@ -204,7 +204,7 @@ impl<'s, S> StagedStore<'s, S> {
             self.overlay
                 .substate_updates
                 .range((
-                    Included(&(partition_key.clone(), DbSortKey(vec![0]))),
+                    Included(&(partition_key.clone(), DbSortKey(vec![]))),
                     Unbounded,
                 ))
                 .take_while(move |((next_partition_key, _), _)| {
