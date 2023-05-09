@@ -63,14 +63,14 @@
  */
 
 use radix_engine::types::ComponentAddress;
-use radix_engine_common::types::{ModuleId, NodeId, ResourceAddress};
+use radix_engine_common::types::{ModuleNumber, NodeId, ResourceAddress, SubstateKey};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleVault,
 };
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_queries::query::{StateTreeTraverser, StateTreeVisitor};
-use radix_engine_store_interface::interface::{DbSortKey, SubstateDatabase};
+use radix_engine_store_interface::interface::SubstateDatabase;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub enum VaultData {
@@ -85,7 +85,7 @@ pub enum VaultData {
     },
 }
 
-pub type DescendantParentOpt = Option<(NodeId, ModuleId, DbSortKey)>;
+pub type DescendantParentOpt = Option<(NodeId, ModuleNumber, SubstateKey)>;
 
 pub struct ComponentStateDump {
     pub vaults: BTreeMap<NodeId, VaultData>,
@@ -150,7 +150,7 @@ impl StateTreeVisitor for ComponentStateDump {
 
     fn visit_node_id(
         &mut self,
-        parent_id: Option<&(NodeId, ModuleId, DbSortKey)>,
+        parent_id: Option<&(NodeId, ModuleNumber, SubstateKey)>,
         node_id: &NodeId,
         depth: u32,
     ) {

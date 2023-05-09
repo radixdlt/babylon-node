@@ -7,7 +7,7 @@ use radix_engine::types::{hash, Decimal};
 
 use radix_engine::system::system_modules::costing::{FeeSummary, RoyaltyRecipient};
 use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_common::types::{GlobalAddress, ModuleId, NodeId, SubstateKey};
+use radix_engine_common::types::{GlobalAddress, ModuleNumber, NodeId, SubstateKey};
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
 use radix_engine_queries::typed_substate_layout::{
     to_typed_substate_key, to_typed_substate_value, TypedSubstateKey, TypedSubstateValue,
@@ -63,16 +63,16 @@ pub fn to_api_receipt(
     let mut deleted_substates = Vec::new();
     for SubstateChange {
         node_id,
-        module_id,
+        module_num,
         substate_key,
         action,
     } in receipt.on_ledger.substate_changes
     {
         let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
-        let typed_substate_key = to_typed_substate_key(entity_type, module_id, &substate_key)
+        let typed_substate_key = to_typed_substate_key(entity_type, module_num, &substate_key)
             .map_err(|msg| MappingError::SubstateKeyMappingError {
                 entity_type_hex: to_hex(node_id_to_entity_id_bytes(&node_id)),
-                module_id: module_id.0,
+                module_num: module_num.0,
                 substate_key_hex: to_hex(scrypto_encode(&substate_key).unwrap()),
                 message: msg,
             })?;
@@ -92,7 +92,7 @@ pub fn to_api_receipt(
                 created_substates.push(to_api_created_or_updated_substate(
                     context,
                     &node_id,
-                    module_id,
+                    module_num,
                     &substate_key,
                     &value,
                     &typed_substate_key,
@@ -110,7 +110,7 @@ pub fn to_api_receipt(
                 updated_substates.push(to_api_created_or_updated_substate(
                     context,
                     &node_id,
-                    module_id,
+                    module_num,
                     &substate_key,
                     &value,
                     &typed_substate_key,
@@ -120,7 +120,7 @@ pub fn to_api_receipt(
             ChangeAction::Delete => {
                 deleted_substates.push(to_api_deleted_substate(
                     &node_id,
-                    module_id,
+                    module_num,
                     &substate_key,
                     &typed_substate_key,
                 )?);
@@ -179,7 +179,7 @@ pub fn to_api_receipt(
 pub fn to_api_created_or_updated_substate(
     context: &MappingContext,
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
     value: &Vec<u8>,
     typed_substate_key: &TypedSubstateKey,
@@ -187,7 +187,7 @@ pub fn to_api_created_or_updated_substate(
 ) -> Result<models::CreatedOrUpdatedSubstate, MappingError> {
     let substate_hex = to_hex(value);
     let substate_data_hash = to_hex(hash(value));
-    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let substate_id = to_api_substate_id(node_id, module_num, substate_key, typed_substate_key)?;
     let substate_data = Some(to_api_substate(
         context,
         substate_key,
@@ -204,11 +204,11 @@ pub fn to_api_created_or_updated_substate(
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
 ) -> Result<models::DeletedSubstate, MappingError> {
-    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let substate_id = to_api_substate_id(node_id, module_num, substate_key, typed_substate_key)?;
     Ok(models::DeletedSubstate {
         substate_id: Box::new(substate_id),
     })
@@ -252,14 +252,14 @@ pub fn to_api_event(
                 Emitter::Function(node_id, object_module_id, blueprint_name) => {
                     models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_object_module_type(&object_module_id),
+                        object_module_id: to_api_object_module_id(&object_module_id),
                         blueprint_name,
                     }
                 }
                 Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_object_module_type(&object_module_id),
+                        object_module_id: to_api_object_module_id(&object_module_id),
                     }
                 }
             }),

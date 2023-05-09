@@ -75,6 +75,7 @@ import java.util.List;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
+
   @Test
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {

@@ -9,7 +9,7 @@ use radix_engine::transaction::{
     CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level};
-use radix_engine_common::types::{ComponentAddress, ModuleId, NodeId, SubstateKey};
+use radix_engine_common::types::{ComponentAddress, ModuleNumber, NodeId, SubstateKey};
 
 use radix_engine_interface::types::EventTypeIdentifier;
 use radix_engine_interface::*;
@@ -37,7 +37,7 @@ impl CommittedTransactionIdentifiers {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChange {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_num: ModuleNumber,
     pub substate_key: SubstateKey,
     pub action: ChangeAction,
 }

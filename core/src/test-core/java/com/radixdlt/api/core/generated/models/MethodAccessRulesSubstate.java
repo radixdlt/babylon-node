@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRules;
-import com.radixdlt.api.core.generated.models.AccountSubstate;
+import com.radixdlt.api.core.generated.models.AccountVaultSubstate;
 import com.radixdlt.api.core.generated.models.ClockSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
@@ -45,9 +45,8 @@ import com.radixdlt.api.core.generated.models.MetadataValueSubstate;
 import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstateAllOf;
 import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstateAllOfChildBlueprintRules;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSchemaSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerIdTypeSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultBalanceSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
@@ -83,7 +82,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
+  @JsonSubTypes.Type(value = AccountVaultSubstate.class, name = "AccountVault"),
   @JsonSubTypes.Type(value = ClockSubstate.class, name = "Clock"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
@@ -99,9 +98,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = GenericSortedU16IndexSubstate.class, name = "GenericSortedU16Index"),
   @JsonSubTypes.Type(value = MetadataValueSubstate.class, name = "MetadataValue"),
   @JsonSubTypes.Type(value = MethodAccessRulesSubstate.class, name = "MethodAccessRules"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSubstate.class, name = "NonFungibleResourceManagerData"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSchemaSubstate.class, name = "NonFungibleResourceManagerDataSchema"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerIdTypeSubstate.class, name = "NonFungibleResourceManagerIdType"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerMutableFieldsSubstate.class, name = "NonFungibleResourceManagerMutableFields"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerTotalSupplySubstate.class, name = "NonFungibleResourceManagerTotalSupply"),
   @JsonSubTypes.Type(value = NonFungibleVaultBalanceSubstate.class, name = "NonFungibleVaultBalance"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
@@ -229,7 +227,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("Account", AccountSubstate.class);
+  mappings.put("AccountVault", AccountVaultSubstate.class);
   mappings.put("Clock", ClockSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
@@ -245,9 +243,8 @@ static {
   mappings.put("GenericSortedU16Index", GenericSortedU16IndexSubstate.class);
   mappings.put("MetadataValue", MetadataValueSubstate.class);
   mappings.put("MethodAccessRules", MethodAccessRulesSubstate.class);
-  mappings.put("NonFungibleResourceManagerData", NonFungibleResourceManagerDataSubstate.class);
-  mappings.put("NonFungibleResourceManagerDataSchema", NonFungibleResourceManagerDataSchemaSubstate.class);
   mappings.put("NonFungibleResourceManagerIdType", NonFungibleResourceManagerIdTypeSubstate.class);
+  mappings.put("NonFungibleResourceManagerMutableFields", NonFungibleResourceManagerMutableFieldsSubstate.class);
   mappings.put("NonFungibleResourceManagerTotalSupply", NonFungibleResourceManagerTotalSupplySubstate.class);
   mappings.put("NonFungibleVaultBalance", NonFungibleVaultBalanceSubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);

@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::clock::{
     ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerNextRoundInput, EPOCH_MANAGER_NEXT_ROUND_IDENT,
+    EpochManagerNextRoundInput, LeaderProposalHistory, EPOCH_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
@@ -53,6 +53,11 @@ impl ValidatorTransaction {
                     args: manifest_decode::<ManifestValue>(
                         &manifest_encode(&EpochManagerNextRoundInput {
                             round: *round_in_epoch,
+                            leader_proposal_history: LeaderProposalHistory {
+                                gap_round_leaders: vec![],
+                                current_leader: 0,
+                                is_fallback: false,
+                            },
                         })
                         .unwrap(),
                     )

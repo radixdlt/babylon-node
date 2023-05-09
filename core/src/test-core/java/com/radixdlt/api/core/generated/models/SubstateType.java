@@ -56,9 +56,7 @@ public enum SubstateType {
   
   NONFUNGIBLERESOURCEMANAGERTOTALSUPPLY("NonFungibleResourceManagerTotalSupply"),
   
-  NONFUNGIBLERESOURCEMANAGERDATASCHEMA("NonFungibleResourceManagerDataSchema"),
-  
-  NONFUNGIBLERESOURCEMANAGERDATA("NonFungibleResourceManagerData"),
+  NONFUNGIBLERESOURCEMANAGERMUTABLEFIELDS("NonFungibleResourceManagerMutableFields"),
   
   FUNGIBLEVAULTBALANCE("FungibleVaultBalance"),
   
@@ -76,7 +74,7 @@ public enum SubstateType {
   
   VALIDATOR("Validator"),
   
-  ACCOUNT("Account"),
+  ACCOUNTVAULT("AccountVault"),
   
   ACCESSCONTROLLER("AccessController"),
   

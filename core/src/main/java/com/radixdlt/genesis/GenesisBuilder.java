@@ -66,6 +66,7 @@ package com.radixdlt.genesis;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -164,8 +165,7 @@ public final class GenesisBuilder {
         xrdBalances.entrySet().stream()
             .map(
                 e -> {
-                  final var accountAddress =
-                      ComponentAddress.virtualAccountFromPublicKey(e.getKey());
+                  final var accountAddress = Address.virtualAccountAddress(e.getKey());
                   return Tuple.Tuple2.of(accountAddress, e.getValue());
                 })
             .collect(ImmutableList.toImmutableList()));

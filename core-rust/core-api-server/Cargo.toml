@@ -23,16 +23,16 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-lukasz-6074f20ed" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-266d6bcb6" }
 
 jni = "0.19.0"
 

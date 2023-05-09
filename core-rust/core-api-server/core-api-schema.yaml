@@ -1511,7 +1511,7 @@ components:
       required:
         - entity_type
         - entity_id_hex
-        - module_type
+        - module_num
         - substate_type
         - substate_key_hex
       properties:
@@ -1519,8 +1519,8 @@ components:
           $ref: "#/components/schemas/EntityType"
         entity_id_hex:
           $ref: "#/components/schemas/EntityId"
-        module_type:
-          $ref: "#/components/schemas/SysModuleType"
+        module_num:
+          type: integer
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key_hex:
@@ -1633,13 +1633,13 @@ components:
         - type: object
           required:
             - entity
-            - module_type
+            - object_module_id
             - blueprint_name
           properties:
             entity:
               $ref: "#/components/schemas/EntityReference"
-            module_type:
-              $ref: "#/components/schemas/ObjectModuleType"
+            object_module_id:
+              $ref: "#/components/schemas/ObjectModuleId"
             blueprint_name:
               type: string
               description: Blueprint name.
@@ -1649,12 +1649,12 @@ components:
         - type: object
           required:
             - entity
-            - module_type
+            - object_module_id
           properties:
             entity:
               $ref: "#/components/schemas/EntityReference"
-            module_type:
-              $ref: "#/components/schemas/ObjectModuleType"
+            object_module_id:
+              $ref: "#/components/schemas/ObjectModuleId"
 
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
@@ -1775,7 +1775,7 @@ components:
             signature:
               $ref: '#/components/schemas/EddsaEd25519Signature'
 ################################################
-# GENERAL / SHARED MODELS - Dynamic auth rules #
+# GENERAL / SHARED MODELS - auth rules #
 ################################################
     AccessRules:
       type: object
@@ -1834,7 +1834,7 @@ components:
         - name
       properties:
         module:
-          $ref: '#/components/schemas/ObjectModuleType'
+          $ref: '#/components/schemas/ObjectModuleId'
         name:
           description: The name of the method
           type: string
@@ -1900,7 +1900,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match DynamicAuthorizationType options above
+          # NOTE: These need to match AccessRuleType options above
           Protected: '#/components/schemas/ProtectedAccessRule'
           AllowAll: '#/components/schemas/AllowAllAccessRule'
           DenyAll: '#/components/schemas/DenyAllAccessRule'
@@ -1972,6 +1972,13 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AccessRuleNode'
+    ResourceOrNonFungible:
+      type: object
+      properties:
+        resource:
+          $ref: '#/components/schemas/ResourceAddress'
+        non_fungible:
+          $ref: '#/components/schemas/NonFungibleGlobalId'
     ProofRuleType:
       type: string
       enum:
@@ -2001,10 +2008,10 @@ components:
         - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
-            - resource
+            - resource_or_non_fungible
           properties:
-            resource:
-              $ref: '#/components/schemas/DynamicResourceDescriptor'
+            resource_or_non_fungible:
+              $ref: '#/components/schemas/ResourceOrNonFungible'
     AmountOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2014,9 +2021,9 @@ components:
             - resource
           properties:
             amount:
-              $ref: '#/components/schemas/DynamicAmount'
+              type: string
             resource:
-              $ref: '#/components/schemas/DynamicResourceDescriptor'
+              $ref: '#/components/schemas/ResourceAddress'
     AllOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2025,7 +2032,9 @@ components:
             - list
           properties:
             list:
-              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+              type: array
+              items:
+                $ref: '#/components/schemas/ResourceOrNonFungible'
     AnyOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2034,7 +2043,9 @@ components:
             - list
           properties:
             list:
-              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+              type: array
+              items:
+                $ref: '#/components/schemas/ResourceOrNonFungible'
     CountOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2044,217 +2055,11 @@ components:
             - list
           properties:
             count:
-              $ref: '#/components/schemas/DynamicCount'
-            list:
-              $ref: '#/components/schemas/DynamicResourceDescriptorList'
-    DynamicAmountType:
-      type: string
-      enum:
-        - Amount
-        - SchemaPath
-    DynamicAmount:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/DynamicAmountType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicAmountType options above
-          Amount: '#/components/schemas/AmountDynamicAmount'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicAmount'
-    AmountDynamicAmount:
-      allOf:
-        - $ref: '#/components/schemas/DynamicAmount'
-        - type: object
-          required:
-            - amount
-          properties:
-            amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the amount of resource required to pass the proof rule.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    SchemaPathDynamicAmount:
-      allOf:
-        - $ref: '#/components/schemas/DynamicAmount'
-        - type: object
-          required:
-            - schema_path
-          properties:
-            schema_path:
-              $ref: '#/components/schemas/SchemaPath'
-    DynamicCountType:
-      type: string
-      enum:
-        - Count
-        - SchemaPath
-    DynamicCount:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/DynamicCountType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicCountType options above
-          Count: '#/components/schemas/CountDynamicCount'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicCount'
-    CountDynamicCount:
-      allOf:
-        - $ref: '#/components/schemas/DynamicCount'
-        - type: object
-          required:
-            - count
-          properties:
-            count:
               type: integer
-              format: int32
-              minimum: 0
-              maximum: 255
-    SchemaPathDynamicCount:
-      allOf:
-        - $ref: '#/components/schemas/DynamicCount'
-        - type: object
-          required:
-            - schema_path
-          properties:
-            schema_path:
-              $ref: '#/components/schemas/SchemaPath'
-    DynamicResourceDescriptorListType:
-      type: string
-      enum:
-        - List
-        - SchemaPath
-    DynamicResourceDescriptorList:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/DynamicResourceDescriptorListType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicResourceDescriptorListType options above
-          List: '#/components/schemas/ListDynamicResourceDescriptorList'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
-    ListDynamicResourceDescriptorList:
-      allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorList'
-        - type: object
-          required:
-            - resources
-          properties:
-            resources:
+            list:
               type: array
               items:
-                $ref: '#/components/schemas/DynamicResourceDescriptor'
-    SchemaPathDynamicResourceDescriptorList:
-      allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorList'
-        - type: object
-          required:
-            - schema_path
-          properties:
-            schema_path:
-              $ref: '#/components/schemas/SchemaPath'
-    DynamicResourceDescriptorType:
-      type: string
-      enum:
-        - NonFungible
-        - Resource
-        - SchemaPath
-    DynamicResourceDescriptor:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/DynamicResourceDescriptorType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicResourceDescriptorType options above
-          NonFungible: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
-          Resource: '#/components/schemas/ResourceDynamicResourceDescriptor'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
-    NonFungibleDynamicResourceDescriptor:
-      allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptor'
-        - type: object
-          required:
-            - resource_address
-            - non_fungible_id
-          properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            non_fungible_id:
-              $ref: '#/components/schemas/NonFungibleId'
-    ResourceDynamicResourceDescriptor:
-      allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptor'
-        - type: object
-          required:
-            - resource_address
-          properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-    SchemaPathDynamicResourceDescriptor:
-      allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptor'
-        - type: object
-          required:
-            - schema_path
-          properties:
-            schema_path:
-              $ref: '#/components/schemas/SchemaPath'
-    SchemaPath:
-      type: array
-      items:
-        $ref: '#/components/schemas/SchemaSubpath'
-    SchemaSubpathType:
-      type: string
-      enum:
-        - Index
-        - Field
-    SchemaSubpath:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/SchemaSubpathType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match SchemaSubpathType options above
-          Index: '#/components/schemas/IndexSchemaSubpath'
-          Field: '#/components/schemas/FieldSchemaSubpath'
-    IndexSchemaSubpath:
-      allOf:
-        - $ref: '#/components/schemas/SchemaSubpath'
-        - type: object
-          required:
-            - index
-          properties:
-            index:
-              type: string
-              description: A decimal-string-encoded integer between 0 and 2^64 - 1, which captures the index of the schema sub-path
-    FieldSchemaSubpath:
-      allOf:
-        - $ref: '#/components/schemas/SchemaSubpath'
-        - type: object
-          required:
-            - field
-          properties:
-            field:
-              type: string
-              description: The name of the field
+                $ref: '#/components/schemas/ResourceOrNonFungible'
     SortedKey:
       type: object
       required:
@@ -2280,7 +2085,7 @@ components:
         - Integer
         - Bytes
         - UUID
-    NonFungibleId:
+    NonFungibleLocalId:
       type: object
       required:
         - simple_rep
@@ -2288,19 +2093,29 @@ components:
         - sbor_hex
       properties:
         simple_rep:
-          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
+          $ref: '#/components/schemas/NonFungibleLocalIdSimpleRepresentation'
         id_type:
           $ref: '#/components/schemas/NonFungibleIdType'
         sbor_hex:
           type: string
           description: The hex-encoded SBOR-encoded bytes of its non-fungible id
-    NonFungibleIdSimpleRepresentation:
+    NonFungibleLocalIdSimpleRepresentation:
       type: string
       description: |
         The simple string representation of the non-fungible id.
         For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
         A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
         under the given resource address.
+    NonFungibleGlobalId:
+      type: object
+      required:
+        - resource_address
+        - local_id
+      properties:
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        local_id:
+          $ref: "#/components/schemas/NonFungibleLocalId"
     ResourceAmount:
       type: object
       required:
@@ -2345,7 +2160,7 @@ components:
             non_fungible_ids:
               type: array
               items:
-                $ref: '#/components/schemas/NonFungibleId'
+                $ref: '#/components/schemas/NonFungibleLocalId'
 ##################################
 # GENERAL / SHARED MODELS - SBOR #
 ##################################
@@ -2464,16 +2279,7 @@ components:
     EntityId:
       type: string
       description: The hex-encoded bytes of the entity id.
-    SysModuleType:
-      type: string
-      enum:
-        - TypeInfo
-        - Metadata
-        - Royalty
-        - AccessRules
-        - Object
-        - Virtualized
-    ObjectModuleType:
+    ObjectModuleId:
       type: string
       enum:
         - Self
@@ -2504,8 +2310,7 @@ components:
           FungibleResourceManagerTotalSupply: '#/components/schemas/FungibleResourceManagerTotalSupplySubstate'
           NonFungibleResourceManagerIdType: '#/components/schemas/NonFungibleResourceManagerIdTypeSubstate'
           NonFungibleResourceManagerTotalSupply: '#/components/schemas/NonFungibleResourceManagerTotalSupplySubstate'
-          NonFungibleResourceManagerDataSchema: '#/components/schemas/NonFungibleResourceManagerDataSchemaSubstate'
-          NonFungibleResourceManagerData: '#/components/schemas/NonFungibleResourceManagerDataSubstate'
+          NonFungibleResourceManagerMutableFields: '#/components/schemas/NonFungibleResourceManagerMutableFieldsSubstate'
           FungibleVaultBalance: '#/components/schemas/FungibleVaultBalanceSubstate'
           NonFungibleVaultBalance: '#/components/schemas/NonFungibleVaultBalanceSubstate'
           EpochManagerConfig: '#/components/schemas/EpochManagerConfigSubstate'
@@ -2514,7 +2319,7 @@ components:
           RegisteredValidators: '#/components/schemas/SecondaryIndexSubstate'
           Clock: '#/components/schemas/ClockSubstate'
           Validator: '#/components/schemas/ValidatorSubstate'
-          Account: '#/components/schemas/AccountSubstate'
+          AccountVault: '#/components/schemas/AccountVaultSubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           GenericScryptoComponentState: '#/components/schemas/GenericScryptoComponentStateSubstate'
           GenericKeyValueStore: '#/components/schemas/GenericKeyValueStoreSubstate'
@@ -2537,8 +2342,7 @@ components:
         - FungibleResourceManagerTotalSupply
         - NonFungibleResourceManagerIdType
         - NonFungibleResourceManagerTotalSupply
-        - NonFungibleResourceManagerDataSchema
-        - NonFungibleResourceManagerData
+        - NonFungibleResourceManagerMutableFields
         - FungibleVaultBalance
         - NonFungibleVaultBalance
         - EpochManagerConfig
@@ -2547,7 +2351,7 @@ components:
         - RegisteredValidators
         - Clock
         - Validator
-        - Account
+        - AccountVault
         - AccessController
         - GenericScryptoComponentState
         - GenericKeyValueStore
@@ -2607,22 +2411,29 @@ components:
         - $ref: '#/components/schemas/TypeInfoDetails'
         - type: object
           required:
-            - key_value_store_schema
+            - key_value_store_info
           properties:
-            key_value_store_schema:
+            key_value_store_info:
               description: The SBOR schema of the KeyValueStore
-              $ref: '#/components/schemas/KeyValueStoreSchema'
-    KeyValueStoreSchema:
+              $ref: '#/components/schemas/KeyValueStoreInfo'
+    KeyValueStoreInfo:
       type: object
       required:
         - schema
-        - key_type
-        - value_type
-        - can_own
+        - kv_store_schema
       properties:
         schema:
           $ref: '#/components/schemas/SborData'
           description: The SBOR schema of the key value store.
+        kv_store_schema:
+          $ref: '#/components/schemas/KeyValueStoreSchema'
+    KeyValueStoreSchema:
+      type: object
+      required:
+        - key_type
+        - value_type
+        - can_own
+      properties:
         key_type:
           $ref: '#/components/schemas/LocalTypeIndex'
           description: |
@@ -2913,35 +2724,19 @@ components:
               description: |
                 The string-encoded decimal representing the total supply of this resource.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    NonFungibleResourceManagerDataSchemaSubstate:
+    NonFungibleResourceManagerMutableFieldsSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - non_fungible_type_index
             - mutable_fields
           properties:
-            non_fungible_type_index:
-              $ref: '#/components/schemas/LocalTypeIndex'
-              description: |
-                The type index of the non fungible data - in the context of the schema on the owned `non_fungible_table` key value store.
             mutable_fields:
               type: array
               description: |
                 The field names of the NF Metadata which are mutable.
               items:
                 type: string
-    NonFungibleResourceManagerDataSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - non_fungible_data_table
-          properties:
-            non_fungible_data_table:
-              description: |
-                The owned key value store.
-              $ref: '#/components/schemas/EntityReference'
     FungibleVaultBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3070,7 +2865,7 @@ components:
               $ref: '#/components/schemas/ResourceAddress'
             unstake_claim_token_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-    AccountSubstate:
+    AccountVaultSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3112,7 +2907,7 @@ components:
               description: |
                 This is only included if the key bytes deserialize into a NonFungibleLocalId.
                 This is a temporary measure to help with mapping NonFungibles in the Gateway.
-              $ref: '#/components/schemas/NonFungibleId'
+              $ref: '#/components/schemas/NonFungibleLocalId'
             data_struct:
               $ref: '#/components/schemas/DataStruct'
     GenericIndexSubstate:
@@ -4673,8 +4468,6 @@ components:
           $ref: "#/components/schemas/Substate"
         state:
           $ref: "#/components/schemas/Substate"
-        account:
-          $ref: "#/components/schemas/Substate"
         royalty_config:
           $ref: "#/components/schemas/Substate"
         royalty_accumulator:
@@ -4695,18 +4488,18 @@ components:
       type: object
       required:
         - parent_entity
-        - parent_module_id
-        - parent_sort_key
+        - parent_module_num
+        - parent_substate_key_hex
         - entity
         - depth
       properties:
         parent_entity:
           $ref: "#/components/schemas/EntityReference"
-        parent_module_id:
+        parent_module_num:
           type: integer
-        parent_sort_key:
+        parent_substate_key_hex:
           type: string
-          description: Hex-encoded DB sort key
+          description: Hex-encoded parent substate key
         entity:
           $ref: "#/components/schemas/EntityReference"
         depth:
@@ -4844,16 +4637,13 @@ components:
           required:
             - id_type
             - total_supply
-            - data_schema
-            - data
+            - mutable_fields
           properties:
             id_type:
               $ref: "#/components/schemas/Substate"
             total_supply:
               $ref: "#/components/schemas/Substate"
-            data_schema:
-              $ref: "#/components/schemas/Substate"
-            data:
+            mutable_fields:
               $ref: "#/components/schemas/Substate"
 ################################
 # REQUEST: /state/non-fungible #
@@ -4871,7 +4661,7 @@ components:
           type: string
           description: The Bech32m-encoded human readable version of the resource's global address
         non_fungible_id:
-          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
+          $ref: '#/components/schemas/NonFungibleLocalIdSimpleRepresentation'
     StateNonFungibleResponse:
       type: object
       required:

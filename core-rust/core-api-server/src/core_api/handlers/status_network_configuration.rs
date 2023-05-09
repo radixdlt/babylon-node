@@ -31,9 +31,11 @@ pub(crate) async fn handle_status_network_configuration(
             epoch_manager: bech32_encoder.encode(EPOCH_MANAGER.as_ref()).unwrap(),
             clock: bech32_encoder.encode(CLOCK.as_ref()).unwrap(),
             ecdsa_secp256k1: bech32_encoder
-                .encode(ECDSA_SECP256K1_TOKEN.as_ref())
+                .encode(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
-            eddsa_ed25519: bech32_encoder.encode(EDDSA_ED25519_TOKEN.as_ref()).unwrap(),
+            eddsa_ed25519: bech32_encoder
+                .encode(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .unwrap(),
             xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
         }),
     })
@@ -51,10 +53,10 @@ const ALL_ENTITY_TYPES: [EntityType; 21] = [
     EntityType::GlobalAccount,
     EntityType::GlobalIdentity,
     EntityType::GlobalGenericComponent,
-    EntityType::GlobalVirtualEcdsaAccount,
-    EntityType::GlobalVirtualEddsaAccount,
-    EntityType::GlobalVirtualEcdsaIdentity,
-    EntityType::GlobalVirtualEddsaIdentity,
+    EntityType::GlobalVirtualSecp256k1Account,
+    EntityType::GlobalVirtualEd25519Account,
+    EntityType::GlobalVirtualSecp256k1Identity,
+    EntityType::GlobalVirtualEd25519Identity,
     EntityType::InternalFungibleVault,
     EntityType::InternalNonFungibleVault,
     EntityType::InternalAccount,

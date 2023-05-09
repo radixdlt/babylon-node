@@ -3,7 +3,9 @@ use radix_engine::types::ValidatorOffset;
 
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use radix_engine_interface::types::{AccessRulesOffset, SysModuleId};
+use radix_engine_interface::types::{
+    AccessRulesOffset, ACCESS_RULES_BASE_MODULE, OBJECT_BASE_MODULE,
+};
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
@@ -33,14 +35,14 @@ pub(crate) async fn handle_state_validator(
     let validator_substate: ValidatorSubstate = read_mandatory_substate(
         database.deref(),
         validator_address.as_node_id(),
-        SysModuleId::Object.into(),
+        OBJECT_BASE_MODULE,
         &ValidatorOffset::Validator.into(),
     )?;
 
     let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
         database.deref(),
         validator_address.as_node_id(),
-        SysModuleId::AccessRules.into(),
+        ACCESS_RULES_BASE_MODULE,
         &AccessRulesOffset::AccessRules.into(),
     )?;
 

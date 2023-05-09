@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::types::{ClockOffset, CLOCK};
-use radix_engine_interface::types::SysModuleId;
+use radix_engine_interface::types::OBJECT_BASE_MODULE;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -15,7 +15,7 @@ pub(crate) async fn handle_state_clock(
     let clock_substate: ClockSubstate = read_mandatory_substate(
         database.deref(),
         CLOCK.as_node_id(),
-        SysModuleId::Object.into(),
+        OBJECT_BASE_MODULE,
         &ClockOffset::CurrentTimeRoundedToMinutes.into(),
     )?;
 

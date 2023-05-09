@@ -16,14 +16,14 @@ pub struct AllOfProofRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ProofRuleType,
     #[serde(rename = "list")]
-    pub list: Option<crate::core_api::generated::models::DynamicResourceDescriptorList>, // Using Option permits Default trait; Will always be Some in normal use
+    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
 }
 
 impl AllOfProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, list: crate::core_api::generated::models::DynamicResourceDescriptorList) -> AllOfProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> AllOfProofRule {
         AllOfProofRule {
             _type,
-            list: Option::Some(list),
+            list,
         }
     }
 }

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.SysModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   SubstateId.JSON_PROPERTY_ENTITY_TYPE,
   SubstateId.JSON_PROPERTY_ENTITY_ID_HEX,
-  SubstateId.JSON_PROPERTY_MODULE_TYPE,
+  SubstateId.JSON_PROPERTY_MODULE_NUM,
   SubstateId.JSON_PROPERTY_SUBSTATE_TYPE,
   SubstateId.JSON_PROPERTY_SUBSTATE_KEY_HEX
 })
@@ -48,8 +47,8 @@ public class SubstateId {
   public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
   private String entityIdHex;
 
-  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private SysModuleType moduleType;
+  public static final String JSON_PROPERTY_MODULE_NUM = "module_num";
+  private Integer moduleNum;
 
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
@@ -112,29 +111,29 @@ public class SubstateId {
   }
 
 
-  public SubstateId moduleType(SysModuleType moduleType) {
-    this.moduleType = moduleType;
+  public SubstateId moduleNum(Integer moduleNum) {
+    this.moduleNum = moduleNum;
     return this;
   }
 
    /**
-   * Get moduleType
-   * @return moduleType
+   * Get moduleNum
+   * @return moduleNum
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_MODULE_NUM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SysModuleType getModuleType() {
-    return moduleType;
+  public Integer getModuleNum() {
+    return moduleNum;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_MODULE_NUM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(SysModuleType moduleType) {
-    this.moduleType = moduleType;
+  public void setModuleNum(Integer moduleNum) {
+    this.moduleNum = moduleNum;
   }
 
 
@@ -204,14 +203,14 @@ public class SubstateId {
     SubstateId substateId = (SubstateId) o;
     return Objects.equals(this.entityType, substateId.entityType) &&
         Objects.equals(this.entityIdHex, substateId.entityIdHex) &&
-        Objects.equals(this.moduleType, substateId.moduleType) &&
+        Objects.equals(this.moduleNum, substateId.moduleNum) &&
         Objects.equals(this.substateType, substateId.substateType) &&
         Objects.equals(this.substateKeyHex, substateId.substateKeyHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex, moduleType, substateType, substateKeyHex);
+    return Objects.hash(entityType, entityIdHex, moduleNum, substateType, substateKeyHex);
   }
 
   @Override
@@ -220,7 +219,7 @@ public class SubstateId {
     sb.append("class SubstateId {\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
-    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
+    sb.append("    moduleNum: ").append(toIndentedString(moduleNum)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    substateKeyHex: ").append(toIndentedString(substateKeyHex)).append("\n");
     sb.append("}");

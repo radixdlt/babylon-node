@@ -11,7 +11,7 @@ use crate::core_api::*;
 pub enum MappingError {
     SubstateKeyMappingError {
         entity_type_hex: String,
-        module_id: u8,
+        module_num: u8,
         substate_key_hex: String,
         message: String,
     },

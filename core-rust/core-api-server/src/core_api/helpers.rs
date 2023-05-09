@@ -1,5 +1,5 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_common::types::{ModuleNumber, NodeId, SubstateKey};
 
 use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
@@ -12,19 +12,19 @@ use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKey
 pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Result<D, ResponseError<()>> {
     read_optional_substate(
         database,
         node_id,
-        module_id,
+        module_num,
         substate_key
     ).ok_or_else(
         || {
             MappingError::MismatchedSubstateId {
                 message: format!(
-                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and module {module_id:?}"
+                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and module {module_num:?}"
                 ),
             }
             .into()
@@ -36,10 +36,10 @@ pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
 pub(crate) fn read_optional_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Option<D> {
-    database.get_mapped_substate::<SpreadPrefixKeyMapper, D>(node_id, module_id, substate_key)
+    database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, module_num, substate_key)
 }
 
 struct ByteCountWriter<'a> {

@@ -65,16 +65,24 @@
 package com.radixdlt.api;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.rev2.REv2TestTransactions.buildTransactionWithDefaultNotary;
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.core.LtsTransactionOutcomesTest;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
+import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
+import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -89,9 +97,11 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
+import java.util.List;
 import javax.net.ssl.SSLContext;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
@@ -233,5 +243,62 @@ public abstract class DeterministicCoreApiTestBase {
     return new LtsApi(apiClient);
   }
 
+  public CommittedResult submitAndWaitForSuccess(
+      DeterministicTest test, String manifest, List<ECKeyPair> signatories) throws Exception {
+    var metadata =
+        getLtsApi()
+            .ltsTransactionConstructionPost(
+                new LtsTransactionConstructionRequest().network(networkLogicalName));
+
+    var transactionBuilder =
+        buildTransactionWithDefaultNotary(
+            networkDefinition, manifest, metadata.getCurrentEpoch(), 0, signatories);
+
+    var intentHash = transactionBuilder.hashedIntent();
+    var payload = transactionBuilder.constructRawTransaction().getPayload();
+
+    var submitResponse =
+        getLtsApi()
+            .ltsTransactionSubmitPost(
+                new LtsTransactionSubmitRequest()
+                    .network(networkLogicalName)
+                    .notarizedTransactionHex(Bytes.toHexString(payload)));
+
+    assertThat(submitResponse.getDuplicate()).isFalse();
+
+    int messagesProcessedPerAttempt = 20;
+    long attempts = 50;
+
+    LtsTransactionStatusResponse statusResponse = null;
+    for (long i = 0; i < attempts; i++) {
+      statusResponse =
+          getLtsApi()
+              .ltsTransactionStatusPost(
+                  new LtsTransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Bytes.toHexString(intentHash.asBytes())));
+      switch (statusResponse.getIntentStatus()) {
+        case COMMITTEDSUCCESS -> {
+          var stateVersion = statusResponse.getCommittedStateVersion();
+          if (stateVersion == null) {
+            throw new RuntimeException(
+                "Transaction got committed as success without state version on response");
+          }
+          return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+        }
+        case COMMITTEDFAILURE -> throw new RuntimeException("Transaction got committed as failure");
+        case PERMANENTREJECTION -> throw new RuntimeException(
+            "Transaction got permanently rejected");
+        default -> test.runForCount(messagesProcessedPerAttempt);
+      }
+    }
+    throw new RuntimeException(
+        String.format(
+            "Transaction submit didn't complete in after running for count of %s. Status still: %s",
+            attempts * messagesProcessedPerAttempt, statusResponse.getIntentStatus()));
+  }
+
   protected DeterministicCoreApiTestBase() {}
+
+  public record CommittedResult(HashCode intentHash, long stateVersion) {}
 }

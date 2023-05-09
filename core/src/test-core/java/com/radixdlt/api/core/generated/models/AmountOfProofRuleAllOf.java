@@ -22,8 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DynamicAmount;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptor;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -39,15 +37,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AmountOfProofRuleAllOf {
   public static final String JSON_PROPERTY_AMOUNT = "amount";
-  private DynamicAmount amount;
+  private String amount;
 
   public static final String JSON_PROPERTY_RESOURCE = "resource";
-  private DynamicResourceDescriptor resource;
+  private String resource;
 
   public AmountOfProofRuleAllOf() { 
   }
 
-  public AmountOfProofRuleAllOf amount(DynamicAmount amount) {
+  public AmountOfProofRuleAllOf amount(String amount) {
     this.amount = amount;
     return this;
   }
@@ -61,40 +59,40 @@ public class AmountOfProofRuleAllOf {
   @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicAmount getAmount() {
+  public String getAmount() {
     return amount;
   }
 
 
   @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAmount(DynamicAmount amount) {
+  public void setAmount(String amount) {
     this.amount = amount;
   }
 
 
-  public AmountOfProofRuleAllOf resource(DynamicResourceDescriptor resource) {
+  public AmountOfProofRuleAllOf resource(String resource) {
     this.resource = resource;
     return this;
   }
 
    /**
-   * Get resource
+   * The Bech32m-encoded human readable version of the resource address
    * @return resource
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
   @JsonProperty(JSON_PROPERTY_RESOURCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptor getResource() {
+  public String getResource() {
     return resource;
   }
 
 
   @JsonProperty(JSON_PROPERTY_RESOURCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResource(DynamicResourceDescriptor resource) {
+  public void setResource(String resource) {
     this.resource = resource;
   }
 

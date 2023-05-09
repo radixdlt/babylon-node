@@ -18,8 +18,8 @@ pub enum Substate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="Account")]
-    AccountSubstate {
+    #[serde(rename="AccountVault")]
+    AccountVaultSubstate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
@@ -90,7 +90,7 @@ pub enum Substate {
         #[serde(rename = "key_hex")]
         key_hex: String,
         #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
-        key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
+        key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleLocalId>>,
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
@@ -121,23 +121,16 @@ pub enum Substate {
         #[serde(rename = "child_blueprint_rules")]
         child_blueprint_rules: Vec<crate::core_api::generated::models::MethodAccessRulesSubstateAllOfChildBlueprintRules>,
     },
-    #[serde(rename="NonFungibleResourceManagerData")]
-    NonFungibleResourceManagerDataSubstate {
-        #[serde(rename = "non_fungible_data_table")]
-        non_fungible_data_table: Box<crate::core_api::generated::models::EntityReference>,
-    },
-    #[serde(rename="NonFungibleResourceManagerDataSchema")]
-    NonFungibleResourceManagerDataSchemaSubstate {
-        #[serde(rename = "non_fungible_type_index")]
-        non_fungible_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
-        /// The field names of the NF Metadata which are mutable. 
-        #[serde(rename = "mutable_fields")]
-        mutable_fields: Vec<String>,
-    },
     #[serde(rename="NonFungibleResourceManagerIdType")]
     NonFungibleResourceManagerIdTypeSubstate {
         #[serde(rename = "non_fungible_id_type")]
         non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType,
+    },
+    #[serde(rename="NonFungibleResourceManagerMutableFields")]
+    NonFungibleResourceManagerMutableFieldsSubstate {
+        /// The field names of the NF Metadata which are mutable. 
+        #[serde(rename = "mutable_fields")]
+        mutable_fields: Vec<String>,
     },
     #[serde(rename="NonFungibleResourceManagerTotalSupply")]
     NonFungibleResourceManagerTotalSupplySubstate {

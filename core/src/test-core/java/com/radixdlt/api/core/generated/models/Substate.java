@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccountSubstate;
+import com.radixdlt.api.core.generated.models.AccountVaultSubstate;
 import com.radixdlt.api.core.generated.models.ClockSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
@@ -42,9 +42,8 @@ import com.radixdlt.api.core.generated.models.GenericScryptoComponentStateSubsta
 import com.radixdlt.api.core.generated.models.GenericSortedU16IndexSubstate;
 import com.radixdlt.api.core.generated.models.MetadataValueSubstate;
 import com.radixdlt.api.core.generated.models.MethodAccessRulesSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSchemaSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerIdTypeSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultBalanceSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
@@ -77,8 +76,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessControllerSubstate"),
-  @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
-  @JsonSubTypes.Type(value = AccountSubstate.class, name = "AccountSubstate"),
+  @JsonSubTypes.Type(value = AccountVaultSubstate.class, name = "AccountVault"),
+  @JsonSubTypes.Type(value = AccountVaultSubstate.class, name = "AccountVaultSubstate"),
   @JsonSubTypes.Type(value = ClockSubstate.class, name = "Clock"),
   @JsonSubTypes.Type(value = ClockSubstate.class, name = "ClockSubstate"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
@@ -109,12 +108,10 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = MetadataValueSubstate.class, name = "MetadataValueSubstate"),
   @JsonSubTypes.Type(value = MethodAccessRulesSubstate.class, name = "MethodAccessRules"),
   @JsonSubTypes.Type(value = MethodAccessRulesSubstate.class, name = "MethodAccessRulesSubstate"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSubstate.class, name = "NonFungibleResourceManagerData"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSchemaSubstate.class, name = "NonFungibleResourceManagerDataSchema"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSchemaSubstate.class, name = "NonFungibleResourceManagerDataSchemaSubstate"),
-  @JsonSubTypes.Type(value = NonFungibleResourceManagerDataSubstate.class, name = "NonFungibleResourceManagerDataSubstate"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerIdTypeSubstate.class, name = "NonFungibleResourceManagerIdType"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerIdTypeSubstate.class, name = "NonFungibleResourceManagerIdTypeSubstate"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerMutableFieldsSubstate.class, name = "NonFungibleResourceManagerMutableFields"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerMutableFieldsSubstate.class, name = "NonFungibleResourceManagerMutableFieldsSubstate"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerTotalSupplySubstate.class, name = "NonFungibleResourceManagerTotalSupply"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerTotalSupplySubstate.class, name = "NonFungibleResourceManagerTotalSupplySubstate"),
   @JsonSubTypes.Type(value = NonFungibleVaultBalanceSubstate.class, name = "NonFungibleVaultBalance"),
@@ -215,8 +212,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
   mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  mappings.put("Account", AccountSubstate.class);
-  mappings.put("AccountSubstate", AccountSubstate.class);
+  mappings.put("AccountVault", AccountVaultSubstate.class);
+  mappings.put("AccountVaultSubstate", AccountVaultSubstate.class);
   mappings.put("Clock", ClockSubstate.class);
   mappings.put("ClockSubstate", ClockSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
@@ -247,12 +244,10 @@ static {
   mappings.put("MetadataValueSubstate", MetadataValueSubstate.class);
   mappings.put("MethodAccessRules", MethodAccessRulesSubstate.class);
   mappings.put("MethodAccessRulesSubstate", MethodAccessRulesSubstate.class);
-  mappings.put("NonFungibleResourceManagerData", NonFungibleResourceManagerDataSubstate.class);
-  mappings.put("NonFungibleResourceManagerDataSchema", NonFungibleResourceManagerDataSchemaSubstate.class);
-  mappings.put("NonFungibleResourceManagerDataSchemaSubstate", NonFungibleResourceManagerDataSchemaSubstate.class);
-  mappings.put("NonFungibleResourceManagerDataSubstate", NonFungibleResourceManagerDataSubstate.class);
   mappings.put("NonFungibleResourceManagerIdType", NonFungibleResourceManagerIdTypeSubstate.class);
   mappings.put("NonFungibleResourceManagerIdTypeSubstate", NonFungibleResourceManagerIdTypeSubstate.class);
+  mappings.put("NonFungibleResourceManagerMutableFields", NonFungibleResourceManagerMutableFieldsSubstate.class);
+  mappings.put("NonFungibleResourceManagerMutableFieldsSubstate", NonFungibleResourceManagerMutableFieldsSubstate.class);
   mappings.put("NonFungibleResourceManagerTotalSupply", NonFungibleResourceManagerTotalSupplySubstate.class);
   mappings.put("NonFungibleResourceManagerTotalSupplySubstate", NonFungibleResourceManagerTotalSupplySubstate.class);
   mappings.put("NonFungibleVaultBalance", NonFungibleVaultBalanceSubstate.class);

@@ -15,11 +15,11 @@
 pub struct StateComponentDescendentId {
     #[serde(rename = "parent_entity")]
     pub parent_entity: Box<crate::core_api::generated::models::EntityReference>,
-    #[serde(rename = "parent_module_id")]
-    pub parent_module_id: i32,
-    /// Hex-encoded DB sort key
-    #[serde(rename = "parent_sort_key")]
-    pub parent_sort_key: String,
+    #[serde(rename = "parent_module_num")]
+    pub parent_module_num: i32,
+    /// Hex-encoded parent substate key
+    #[serde(rename = "parent_substate_key_hex")]
+    pub parent_substate_key_hex: String,
     #[serde(rename = "entity")]
     pub entity: Box<crate::core_api::generated::models::EntityReference>,
     /// Depth under component
@@ -28,11 +28,11 @@ pub struct StateComponentDescendentId {
 }
 
 impl StateComponentDescendentId {
-    pub fn new(parent_entity: crate::core_api::generated::models::EntityReference, parent_module_id: i32, parent_sort_key: String, entity: crate::core_api::generated::models::EntityReference, depth: i32) -> StateComponentDescendentId {
+    pub fn new(parent_entity: crate::core_api::generated::models::EntityReference, parent_module_num: i32, parent_substate_key_hex: String, entity: crate::core_api::generated::models::EntityReference, depth: i32) -> StateComponentDescendentId {
         StateComponentDescendentId {
             parent_entity: Box::new(parent_entity),
-            parent_module_id,
-            parent_sort_key,
+            parent_module_num,
+            parent_substate_key_hex,
             entity: Box::new(entity),
             depth,
         }

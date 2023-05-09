@@ -22,10 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DynamicCount;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorList;
+import com.radixdlt.api.core.generated.models.ResourceOrNonFungible;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -39,15 +40,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CountOfProofRuleAllOf {
   public static final String JSON_PROPERTY_COUNT = "count";
-  private DynamicCount count;
+  private Integer count;
 
   public static final String JSON_PROPERTY_LIST = "list";
-  private DynamicResourceDescriptorList _list;
+  private List<ResourceOrNonFungible> _list = new ArrayList<>();
 
   public CountOfProofRuleAllOf() { 
   }
 
-  public CountOfProofRuleAllOf count(DynamicCount count) {
+  public CountOfProofRuleAllOf count(Integer count) {
     this.count = count;
     return this;
   }
@@ -61,20 +62,25 @@ public class CountOfProofRuleAllOf {
   @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicCount getCount() {
+  public Integer getCount() {
     return count;
   }
 
 
   @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCount(DynamicCount count) {
+  public void setCount(Integer count) {
     this.count = count;
   }
 
 
-  public CountOfProofRuleAllOf _list(DynamicResourceDescriptorList _list) {
+  public CountOfProofRuleAllOf _list(List<ResourceOrNonFungible> _list) {
     this._list = _list;
+    return this;
+  }
+
+  public CountOfProofRuleAllOf addListItem(ResourceOrNonFungible _listItem) {
+    this._list.add(_listItem);
     return this;
   }
 
@@ -87,14 +93,14 @@ public class CountOfProofRuleAllOf {
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptorList getList() {
+  public List<ResourceOrNonFungible> getList() {
     return _list;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setList(DynamicResourceDescriptorList _list) {
+  public void setList(List<ResourceOrNonFungible> _list) {
     this._list = _list;
   }
 

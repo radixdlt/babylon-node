@@ -6,10 +6,11 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
 };
 
+use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::types::{
-    AccessRulesOffset, AccountOffset, RoyaltyOffset, SysModuleId, TypeInfoOffset,
+    AccessRulesOffset, RoyaltyOffset, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, OBJECT_BASE_MODULE,
+    ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE,
 };
-use radix_engine_queries::typed_substate_layout::AccountSubstate;
 use radix_engine_queries::typed_substate_layout::MethodAccessRulesSubstate;
 use state_manager::query::{dump_component_state, DescendantParentOpt, VaultData};
 use std::ops::Deref;
@@ -38,29 +39,22 @@ pub(crate) async fn handle_state_component(
     let type_info: TypeInfoSubstate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        SysModuleId::TypeInfo.into(),
+        TYPE_INFO_BASE_MODULE,
         &TypeInfoOffset::TypeInfo.into(),
     )?;
 
     let component_state: Option<ComponentStateSubstate> = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
-        SysModuleId::Object.into(),
+        OBJECT_BASE_MODULE,
         &ComponentOffset::State0.into(),
-    );
-
-    let account_state: Option<AccountSubstate> = read_optional_substate(
-        database.deref(),
-        component_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &AccountOffset::Account.into(),
     );
 
     // TODO: royalty_* should be non-optional once fixed on the engine side
     let component_royalty_config: Option<ComponentRoyaltyConfigSubstate> = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
-        SysModuleId::Royalty.into(),
+        ROYALTY_BASE_MODULE,
         &RoyaltyOffset::RoyaltyConfig.into(),
     );
 
@@ -68,14 +62,14 @@ pub(crate) async fn handle_state_component(
         read_optional_substate(
             database.deref(),
             component_address.as_node_id(),
-            SysModuleId::Royalty.into(),
+            ROYALTY_BASE_MODULE,
             &RoyaltyOffset::RoyaltyAccumulator.into(),
         );
 
     let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        SysModuleId::AccessRules.into(),
+        ACCESS_RULES_BASE_MODULE,
         &AccessRulesOffset::AccessRules.into(),
     )?;
 
@@ -119,11 +113,6 @@ pub(crate) async fn handle_state_component(
         } else {
             None
         },
-        account: if let Some(a) = account_state {
-            Some(Box::new(to_api_account_substate(&mapping_context, &a)?))
-        } else {
-            None
-        },
         royalty_config: if let Some(r) = component_royalty_config {
             Some(Box::new(to_api_component_royalty_config_substate(
                 &mapping_context,
@@ -155,8 +144,8 @@ pub(crate) fn map_to_descendent_id(
     let parent = parent.unwrap();
     Ok(models::StateComponentDescendentId {
         parent_entity: Box::new(to_api_entity_reference(parent.0)?),
-        parent_module_id: parent.1 .0 as i32,
-        parent_sort_key: to_hex(&parent.2 .0),
+        parent_module_num: parent.1 .0 as i32,
+        parent_substate_key_hex: to_hex(scrypto_encode(&parent.2).unwrap()),
         entity: Box::new(to_api_entity_reference(node_id)?),
         depth: depth as i32, // Won't go over 100 due to component dumper max depth
     })

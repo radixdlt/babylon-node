@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.KeyValueStoreSchema;
+import com.radixdlt.api.core.generated.models.KeyValueStoreInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreTypeInfoDetailsAllOf
  */
 @JsonPropertyOrder({
-  KeyValueStoreTypeInfoDetailsAllOf.JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA
+  KeyValueStoreTypeInfoDetailsAllOf.JSON_PROPERTY_KEY_VALUE_STORE_INFO
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreTypeInfoDetailsAllOf {
-  public static final String JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA = "key_value_store_schema";
-  private KeyValueStoreSchema keyValueStoreSchema;
+  public static final String JSON_PROPERTY_KEY_VALUE_STORE_INFO = "key_value_store_info";
+  private KeyValueStoreInfo keyValueStoreInfo;
 
   public KeyValueStoreTypeInfoDetailsAllOf() { 
   }
 
-  public KeyValueStoreTypeInfoDetailsAllOf keyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
-    this.keyValueStoreSchema = keyValueStoreSchema;
+  public KeyValueStoreTypeInfoDetailsAllOf keyValueStoreInfo(KeyValueStoreInfo keyValueStoreInfo) {
+    this.keyValueStoreInfo = keyValueStoreInfo;
     return this;
   }
 
    /**
-   * Get keyValueStoreSchema
-   * @return keyValueStoreSchema
+   * Get keyValueStoreInfo
+   * @return keyValueStoreInfo
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public KeyValueStoreSchema getKeyValueStoreSchema() {
-    return keyValueStoreSchema;
+  public KeyValueStoreInfo getKeyValueStoreInfo() {
+    return keyValueStoreInfo;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
-    this.keyValueStoreSchema = keyValueStoreSchema;
+  public void setKeyValueStoreInfo(KeyValueStoreInfo keyValueStoreInfo) {
+    this.keyValueStoreInfo = keyValueStoreInfo;
   }
 
 
@@ -80,19 +80,19 @@ public class KeyValueStoreTypeInfoDetailsAllOf {
       return false;
     }
     KeyValueStoreTypeInfoDetailsAllOf keyValueStoreTypeInfoDetailsAllOf = (KeyValueStoreTypeInfoDetailsAllOf) o;
-    return Objects.equals(this.keyValueStoreSchema, keyValueStoreTypeInfoDetailsAllOf.keyValueStoreSchema);
+    return Objects.equals(this.keyValueStoreInfo, keyValueStoreTypeInfoDetailsAllOf.keyValueStoreInfo);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyValueStoreSchema);
+    return Objects.hash(keyValueStoreInfo);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreTypeInfoDetailsAllOf {\n");
-    sb.append("    keyValueStoreSchema: ").append(toIndentedString(keyValueStoreSchema)).append("\n");
+    sb.append("    keyValueStoreInfo: ").append(toIndentedString(keyValueStoreInfo)).append("\n");
     sb.append("}");
     return sb.toString();
   }

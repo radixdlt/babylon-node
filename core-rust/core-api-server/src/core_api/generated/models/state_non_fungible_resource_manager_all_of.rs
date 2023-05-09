@@ -17,19 +17,16 @@ pub struct StateNonFungibleResourceManagerAllOf {
     pub id_type: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "total_supply")]
     pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "data_schema")]
-    pub data_schema: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "data")]
-    pub data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "mutable_fields")]
+    pub mutable_fields: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StateNonFungibleResourceManagerAllOf {
-    pub fn new(id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, data_schema: crate::core_api::generated::models::Substate, data: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManagerAllOf {
+    pub fn new(id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, mutable_fields: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManagerAllOf {
         StateNonFungibleResourceManagerAllOf {
             id_type: Option::Some(id_type),
             total_supply: Option::Some(total_supply),
-            data_schema: Option::Some(data_schema),
-            data: Option::Some(data),
+            mutable_fields: Option::Some(mutable_fields),
         }
     }
 }

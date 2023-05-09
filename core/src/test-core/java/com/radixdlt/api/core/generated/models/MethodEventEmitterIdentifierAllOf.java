@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ObjectModuleType;
+import com.radixdlt.api.core.generated.models.ObjectModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MethodEventEmitterIdentifierAllOf.JSON_PROPERTY_ENTITY,
-  MethodEventEmitterIdentifierAllOf.JSON_PROPERTY_MODULE_TYPE
+  MethodEventEmitterIdentifierAllOf.JSON_PROPERTY_OBJECT_MODULE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MethodEventEmitterIdentifierAllOf {
   public static final String JSON_PROPERTY_ENTITY = "entity";
   private EntityReference entity;
 
-  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ObjectModuleType moduleType;
+  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
+  private ObjectModuleId objectModuleId;
 
   public MethodEventEmitterIdentifierAllOf() { 
   }
@@ -73,29 +73,29 @@ public class MethodEventEmitterIdentifierAllOf {
   }
 
 
-  public MethodEventEmitterIdentifierAllOf moduleType(ObjectModuleType moduleType) {
-    this.moduleType = moduleType;
+  public MethodEventEmitterIdentifierAllOf objectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
     return this;
   }
 
    /**
-   * Get moduleType
-   * @return moduleType
+   * Get objectModuleId
+   * @return objectModuleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleType getModuleType() {
-    return moduleType;
+  public ObjectModuleId getObjectModuleId() {
+    return objectModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ObjectModuleType moduleType) {
-    this.moduleType = moduleType;
+  public void setObjectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
   }
 
 
@@ -112,12 +112,12 @@ public class MethodEventEmitterIdentifierAllOf {
     }
     MethodEventEmitterIdentifierAllOf methodEventEmitterIdentifierAllOf = (MethodEventEmitterIdentifierAllOf) o;
     return Objects.equals(this.entity, methodEventEmitterIdentifierAllOf.entity) &&
-        Objects.equals(this.moduleType, methodEventEmitterIdentifierAllOf.moduleType);
+        Objects.equals(this.objectModuleId, methodEventEmitterIdentifierAllOf.objectModuleId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entity, moduleType);
+    return Objects.hash(entity, objectModuleId);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class MethodEventEmitterIdentifierAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class MethodEventEmitterIdentifierAllOf {\n");
     sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
-    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
+    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

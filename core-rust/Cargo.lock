@@ -906,9 +906,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.142"
+version = "0.2.143"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
+checksum = "edc207893e85c5d6be840e969b496b53d94cec8be2d501b214f50daa97fa8024"
 
 [[package]]
 name = "libloading"
@@ -954,9 +954,9 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64f40e5e03e0d54f03845c8197d0291253cdbedfb1cb46b13c2c117554a9f4c"
+checksum = "ece97ea872ece730aed82664c424eb4c8291e1ff2480247ccf7409044bc6479f"
 
 [[package]]
 name = "lock_api"
@@ -1053,7 +1053,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1303,9 +1303,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.26"
+version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
+checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
 name = "ppv-lite86"
@@ -1359,7 +1359,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "bitflags",
  "colored",
@@ -1385,7 +1385,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "bech32",
  "blake2",
@@ -1405,12 +1405,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1421,7 +1421,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -1439,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-queries"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "hex",
  "itertools",
@@ -1455,7 +1455,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-store-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "hex",
  "itertools",
@@ -1468,7 +1468,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "hex",
  "itertools",
@@ -1482,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "fixedstr",
 ]
@@ -1603,7 +1603,7 @@ checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
 [[package]]
 name = "resources-tracker-macro"
 version = "0.1.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1638,9 +1638,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.18"
+version = "0.37.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bbfc1d1c7c40c01715f47d71444744a81669ca84e8b63e25a55e169b1f86433"
+checksum = "acf8729d8542766f1b2cf77eb034d52f40d375bb8b615d0b147089946e16613d"
 dependencies = [
  "bitflags",
  "errno",
@@ -1674,7 +1674,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1688,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1697,7 +1697,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1724,7 +1724,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto-schema"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -1760,18 +1760,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.160"
+version = "1.0.162"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb2f3770c8bce3bcda7e149193a069a0f4365bda1fa5cd88e03bca26afc1216c"
+checksum = "71b2f6e1ab5c2b98c05f0f35b236b22e8df7ead6ffbf51d7808da7f8817e7ab6"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.160"
+version = "1.0.162"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291a097c63d8497e00160b166a967a4a79c64f3facdd01cbd7502231688d77df"
+checksum = "a2a0814352fd64b58489904a44ea8d90cb1a91dcb6b4f5ebabc32c8318e93cb6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2201,7 +2201,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2250,7 +2250,7 @@ checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
 [[package]]
 name = "utils"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-lukasz-6074f20ed#6074f20ede788fd07420ab91256c31b04d721938"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-266d6bcb6#266d6bcb682415073dcc3cef6d46e55c589ae23a"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

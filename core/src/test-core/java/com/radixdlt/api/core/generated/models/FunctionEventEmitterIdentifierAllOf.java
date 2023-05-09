@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ObjectModuleType;
+import com.radixdlt.api.core.generated.models.ObjectModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_ENTITY,
-  FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_MODULE_TYPE,
+  FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_OBJECT_MODULE_ID,
   FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -42,8 +42,8 @@ public class FunctionEventEmitterIdentifierAllOf {
   public static final String JSON_PROPERTY_ENTITY = "entity";
   private EntityReference entity;
 
-  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ObjectModuleType moduleType;
+  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
+  private ObjectModuleId objectModuleId;
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
@@ -77,29 +77,29 @@ public class FunctionEventEmitterIdentifierAllOf {
   }
 
 
-  public FunctionEventEmitterIdentifierAllOf moduleType(ObjectModuleType moduleType) {
-    this.moduleType = moduleType;
+  public FunctionEventEmitterIdentifierAllOf objectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
     return this;
   }
 
    /**
-   * Get moduleType
-   * @return moduleType
+   * Get objectModuleId
+   * @return objectModuleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleType getModuleType() {
-    return moduleType;
+  public ObjectModuleId getObjectModuleId() {
+    return objectModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ObjectModuleType moduleType) {
-    this.moduleType = moduleType;
+  public void setObjectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
   }
 
 
@@ -142,13 +142,13 @@ public class FunctionEventEmitterIdentifierAllOf {
     }
     FunctionEventEmitterIdentifierAllOf functionEventEmitterIdentifierAllOf = (FunctionEventEmitterIdentifierAllOf) o;
     return Objects.equals(this.entity, functionEventEmitterIdentifierAllOf.entity) &&
-        Objects.equals(this.moduleType, functionEventEmitterIdentifierAllOf.moduleType) &&
+        Objects.equals(this.objectModuleId, functionEventEmitterIdentifierAllOf.objectModuleId) &&
         Objects.equals(this.blueprintName, functionEventEmitterIdentifierAllOf.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entity, moduleType, blueprintName);
+    return Objects.hash(entity, objectModuleId, blueprintName);
   }
 
   @Override
@@ -156,7 +156,7 @@ public class FunctionEventEmitterIdentifierAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class FunctionEventEmitterIdentifierAllOf {\n");
     sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
-    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
+    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("}");
     return sb.toString();

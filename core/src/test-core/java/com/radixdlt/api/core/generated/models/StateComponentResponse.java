@@ -38,7 +38,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
-  StateComponentResponse.JSON_PROPERTY_ACCOUNT,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_CONFIG,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
   StateComponentResponse.JSON_PROPERTY_ACCESS_RULES,
@@ -52,9 +51,6 @@ public class StateComponentResponse {
 
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
-
-  public static final String JSON_PROPERTY_ACCOUNT = "account";
-  private Substate account;
 
   public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
   private Substate royaltyConfig;
@@ -123,32 +119,6 @@ public class StateComponentResponse {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setState(Substate state) {
     this.state = state;
-  }
-
-
-  public StateComponentResponse account(Substate account) {
-    this.account = account;
-    return this;
-  }
-
-   /**
-   * Get account
-   * @return account
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public Substate getAccount() {
-    return account;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAccount(Substate account) {
-    this.account = account;
   }
 
 
@@ -306,7 +276,6 @@ public class StateComponentResponse {
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
     return Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
-        Objects.equals(this.account, stateComponentResponse.account) &&
         Objects.equals(this.royaltyConfig, stateComponentResponse.royaltyConfig) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
         Objects.equals(this.accessRules, stateComponentResponse.accessRules) &&
@@ -316,7 +285,7 @@ public class StateComponentResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, account, royaltyConfig, royaltyAccumulator, accessRules, stateOwnedVaults, descendentIds);
+    return Objects.hash(info, state, royaltyConfig, royaltyAccumulator, accessRules, stateOwnedVaults, descendentIds);
   }
 
   @Override
@@ -325,7 +294,6 @@ public class StateComponentResponse {
     sb.append("class StateComponentResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    account: ").append(toIndentedString(account)).append("\n");
     sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");

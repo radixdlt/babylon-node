@@ -18,8 +18,8 @@ pub enum TypeInfoDetails {
     },
     #[serde(rename="KeyValueStore")]
     KeyValueStoreTypeInfoDetails {
-        #[serde(rename = "key_value_store_schema")]
-        key_value_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
+        #[serde(rename = "key_value_store_info")]
+        key_value_store_info: Box<crate::core_api::generated::models::KeyValueStoreInfo>,
     },
     #[serde(rename="Object")]
     ObjectTypeInfoDetails {

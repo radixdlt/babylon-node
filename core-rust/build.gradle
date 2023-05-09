@@ -90,16 +90,16 @@ spotlessRustApply.dependsOn("runRustClippy")
 spotlessRustApply.dependsOn("runRustFormat")
 
 task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
+    commandLine '/home/me/.cargo/bin/cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
 }
 
 task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
+    commandLine '/home/me/.cargo/bin/cargo', 'fmt'
 }
 
 // TBC - We should consider using some kind of gradle rust build plug-in
 task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    commandLine '/home/me/.cargo/bin/cargo', 'build'
 }
 
 task buildRustForDocker(type: Exec) {

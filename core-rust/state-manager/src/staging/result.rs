@@ -176,11 +176,11 @@ impl ProcessedCommitResult {
         let store = hash_update_context.store;
 
         let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in
+        for ((node_id, module_num), node_module_updates) in
             commit_result.state_updates.system_updates.clone()
         {
             for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(&node_id, module_id);
+                let partition_key = D::to_db_partition_key(&node_id, module_num);
                 let sort_key = D::to_db_sort_key(&substate_key);
                 let change_action = match update {
                     DatabaseUpdate::Set(value) => {
@@ -193,7 +193,7 @@ impl ProcessedCommitResult {
                 };
                 substate_changes.push(SubstateChange {
                     node_id,
-                    module_id,
+                    module_num,
                     substate_key,
                     action: change_action,
                 });

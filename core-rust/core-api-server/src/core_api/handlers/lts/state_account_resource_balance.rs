@@ -1,9 +1,9 @@
 use crate::core_api::*;
 use radix_engine::types::blueprints::resource::LiquidFungibleResource;
-use radix_engine::types::{scrypto_encode, AccountOffset, Decimal};
+use radix_engine::types::{scrypto_encode, Decimal};
+use radix_engine_common::data::scrypto::model::Own;
 use radix_engine_common::types::{EntityType, SubstateKey};
-use radix_engine_interface::types::SysModuleId;
-use radix_engine_queries::typed_substate_layout::AccountSubstate;
+use radix_engine_interface::types::{FungibleVaultOffset, OBJECT_BASE_MODULE};
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
@@ -40,82 +40,31 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     let database = state.database.read();
 
-    let account_substate: AccountSubstate = match read_mandatory_substate(
+    let encoded_resource_address =
+        scrypto_encode(&fungible_resource_address).expect("Impossible Case!");
+    let substate_key = SubstateKey::Map(encoded_resource_address);
+
+    let vault_reference_opt: Option<Option<Own>> = read_optional_substate(
         database.deref(),
         account_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &AccountOffset::Account.into(),
-    ) {
-        Ok(substate) => substate,
-        Err(_) => {
-            match account_address.as_node_id().entity_type() {
-                Some(entity_type) => match entity_type {
-                    EntityType::GlobalAccount => {
-                        return Err(not_found_error("Account not found"));
-                    }
-                    EntityType::GlobalVirtualEcdsaAccount
-                    | EntityType::GlobalVirtualEddsaAccount => {
-                        return Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
-                            state_version: to_api_state_version(database.max_state_version())?,
-                            account_address: to_api_global_address(
-                                &mapping_context,
-                                &account_address,
-                            ),
-                            fungible_resource_balance: Box::new(
-                                models::LtsFungibleResourceBalance {
-                                    fungible_resource_address: to_api_resource_address(
-                                        &mapping_context,
-                                        &fungible_resource_address,
-                                    ),
-                                    amount: to_api_decimal(&Decimal::ZERO),
-                                },
-                            ),
-                        })
-                        .map(Json)
-                    }
-                    _ => {
-                        return Err(client_error(
-                            "Provided address is not an Account address.".to_string(),
-                        ));
-                    }
-                },
-                None => {
-                    return Err(client_error(
-                        "Provided address is not an Account address.".to_string(),
-                    ));
-                }
-            };
+        OBJECT_BASE_MODULE,
+        &substate_key,
+    );
+
+    let amount = match vault_reference_opt {
+        Some(Some(vault_reference)) => {
+            let liquid_fungible_resource_opt: Option<LiquidFungibleResource> =
+                read_optional_substate(
+                    database.deref(),
+                    vault_reference.as_node_id(),
+                    OBJECT_BASE_MODULE,
+                    &FungibleVaultOffset::LiquidFungible.into(),
+                );
+            liquid_fungible_resource_opt
+                .map(|r| r.amount())
+                .unwrap_or(Decimal::zero())
         }
-    };
-
-    let vault_substate = {
-        let kv_store_id = account_substate.vaults.as_node_id();
-        let encoded_key = scrypto_encode(&fungible_resource_address).expect("Impossible Case!");
-        let substate_key = SubstateKey::Map(encoded_key);
-
-        let loaded_substate: LiquidFungibleResource = match read_mandatory_substate(
-            database.deref(),
-            kv_store_id,
-            SysModuleId::Object.into(),
-            &substate_key,
-        ) {
-            Ok(substate) => substate,
-            Err(_) => {
-                return Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
-                    state_version: to_api_state_version(database.max_state_version())?,
-                    account_address: to_api_global_address(&mapping_context, &account_address),
-                    fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
-                        fungible_resource_address: to_api_resource_address(
-                            &mapping_context,
-                            &fungible_resource_address,
-                        ),
-                        amount: to_api_decimal(&Decimal::zero()),
-                    }),
-                })
-                .map(Json)
-            }
-        };
-        loaded_substate
+        _ => Decimal::zero(),
     };
 
     Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
@@ -126,7 +75,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
                 &mapping_context,
                 &fungible_resource_address,
             ),
-            amount: to_api_decimal(&vault_substate.amount()),
+            amount: to_api_decimal(&amount),
         }),
     })
     .map(Json)

@@ -16,17 +16,17 @@ pub struct CountOfProofRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ProofRuleType,
     #[serde(rename = "count")]
-    pub count: Option<crate::core_api::generated::models::DynamicCount>, // Using Option permits Default trait; Will always be Some in normal use
+    pub count: i32,
     #[serde(rename = "list")]
-    pub list: Option<crate::core_api::generated::models::DynamicResourceDescriptorList>, // Using Option permits Default trait; Will always be Some in normal use
+    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
 }
 
 impl CountOfProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, count: crate::core_api::generated::models::DynamicCount, list: crate::core_api::generated::models::DynamicResourceDescriptorList) -> CountOfProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, count: i32, list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> CountOfProofRule {
         CountOfProofRule {
             _type,
-            count: Option::Some(count),
-            list: Option::Some(list),
+            count,
+            list,
         }
     }
 }

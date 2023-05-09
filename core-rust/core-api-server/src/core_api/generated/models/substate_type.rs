@@ -40,10 +40,8 @@ pub enum SubstateType {
     NonFungibleResourceManagerIdType,
     #[serde(rename = "NonFungibleResourceManagerTotalSupply")]
     NonFungibleResourceManagerTotalSupply,
-    #[serde(rename = "NonFungibleResourceManagerDataSchema")]
-    NonFungibleResourceManagerDataSchema,
-    #[serde(rename = "NonFungibleResourceManagerData")]
-    NonFungibleResourceManagerData,
+    #[serde(rename = "NonFungibleResourceManagerMutableFields")]
+    NonFungibleResourceManagerMutableFields,
     #[serde(rename = "FungibleVaultBalance")]
     FungibleVaultBalance,
     #[serde(rename = "NonFungibleVaultBalance")]
@@ -60,8 +58,8 @@ pub enum SubstateType {
     Clock,
     #[serde(rename = "Validator")]
     Validator,
-    #[serde(rename = "Account")]
-    Account,
+    #[serde(rename = "AccountVault")]
+    AccountVault,
     #[serde(rename = "AccessController")]
     AccessController,
     #[serde(rename = "GenericScryptoComponentState")]
@@ -92,8 +90,7 @@ impl ToString for SubstateType {
             Self::FungibleResourceManagerTotalSupply => String::from("FungibleResourceManagerTotalSupply"),
             Self::NonFungibleResourceManagerIdType => String::from("NonFungibleResourceManagerIdType"),
             Self::NonFungibleResourceManagerTotalSupply => String::from("NonFungibleResourceManagerTotalSupply"),
-            Self::NonFungibleResourceManagerDataSchema => String::from("NonFungibleResourceManagerDataSchema"),
-            Self::NonFungibleResourceManagerData => String::from("NonFungibleResourceManagerData"),
+            Self::NonFungibleResourceManagerMutableFields => String::from("NonFungibleResourceManagerMutableFields"),
             Self::FungibleVaultBalance => String::from("FungibleVaultBalance"),
             Self::NonFungibleVaultBalance => String::from("NonFungibleVaultBalance"),
             Self::EpochManagerConfig => String::from("EpochManagerConfig"),
@@ -102,7 +99,7 @@ impl ToString for SubstateType {
             Self::RegisteredValidators => String::from("RegisteredValidators"),
             Self::Clock => String::from("Clock"),
             Self::Validator => String::from("Validator"),
-            Self::Account => String::from("Account"),
+            Self::AccountVault => String::from("AccountVault"),
             Self::AccessController => String::from("AccessController"),
             Self::GenericScryptoComponentState => String::from("GenericScryptoComponentState"),
             Self::GenericKeyValueStore => String::from("GenericKeyValueStore"),

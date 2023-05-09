@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DataStruct;
-import com.radixdlt.api.core.generated.models.NonFungibleId;
+import com.radixdlt.api.core.generated.models.NonFungibleLocalId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -43,7 +43,7 @@ public class GenericKeyValueStoreSubstateAllOf {
   private String keyHex;
 
   public static final String JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID = "key_non_fungible_local_id";
-  private NonFungibleId keyNonFungibleLocalId;
+  private NonFungibleLocalId keyNonFungibleLocalId;
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
@@ -77,7 +77,7 @@ public class GenericKeyValueStoreSubstateAllOf {
   }
 
 
-  public GenericKeyValueStoreSubstateAllOf keyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+  public GenericKeyValueStoreSubstateAllOf keyNonFungibleLocalId(NonFungibleLocalId keyNonFungibleLocalId) {
     this.keyNonFungibleLocalId = keyNonFungibleLocalId;
     return this;
   }
@@ -91,14 +91,14 @@ public class GenericKeyValueStoreSubstateAllOf {
   @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public NonFungibleId getKeyNonFungibleLocalId() {
+  public NonFungibleLocalId getKeyNonFungibleLocalId() {
     return keyNonFungibleLocalId;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setKeyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+  public void setKeyNonFungibleLocalId(NonFungibleLocalId keyNonFungibleLocalId) {
     this.keyNonFungibleLocalId = keyNonFungibleLocalId;
   }
 

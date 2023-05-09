@@ -10,13 +10,13 @@ use radix_engine::types::{
     PackageOffset, ResourceAddress,
 };
 use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_common::types::{EntityType, GlobalAddress, ModuleId, NodeId, SubstateKey};
+use radix_engine_common::types::{EntityType, GlobalAddress, ModuleNumber, NodeId, SubstateKey};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
-    AccessControllerOffset, AccessRulesOffset, AccountOffset, FungibleResourceManagerOffset,
-    FungibleVaultOffset, NonFungibleResourceManagerOffset, NonFungibleVaultOffset, RoyaltyOffset,
-    SysModuleId, TypeInfoOffset, ValidatorOffset,
+    AccessControllerOffset, AccessRulesOffset, FungibleResourceManagerOffset, FungibleVaultOffset,
+    NonFungibleResourceManagerOffset, NonFungibleVaultOffset, RoyaltyOffset, TypeInfoOffset,
+    ValidatorOffset,
 };
 use radix_engine_queries::typed_substate_layout::{TypedObjectModuleSubstateKey, TypedSubstateKey};
 
@@ -65,11 +65,11 @@ pub fn to_api_entity_reference(node_id: NodeId) -> Result<models::EntityReferenc
 #[tracing::instrument(skip_all)]
 pub fn to_api_substate_id(
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
 ) -> Result<models::SubstateId, MappingError> {
-    let mapped = to_mapped_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let mapped = to_mapped_substate_id(node_id, module_num, substate_key, typed_substate_key)?;
     Ok(mapped.into())
 }
 
@@ -114,10 +114,10 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalAccount => models::EntityType::Account,
         EntityType::GlobalIdentity => models::EntityType::Identity,
         EntityType::GlobalGenericComponent => models::EntityType::NormalComponent,
-        EntityType::GlobalVirtualEcdsaAccount => models::EntityType::Account,
-        EntityType::GlobalVirtualEddsaAccount => models::EntityType::Account,
-        EntityType::GlobalVirtualEcdsaIdentity => models::EntityType::Identity,
-        EntityType::GlobalVirtualEddsaIdentity => models::EntityType::Identity,
+        EntityType::GlobalVirtualSecp256k1Account => models::EntityType::Account,
+        EntityType::GlobalVirtualEd25519Account => models::EntityType::Account,
+        EntityType::GlobalVirtualSecp256k1Identity => models::EntityType::Identity,
+        EntityType::GlobalVirtualEd25519Identity => models::EntityType::Identity,
         EntityType::InternalFungibleVault => models::EntityType::FungibleVault,
         EntityType::InternalNonFungibleVault => models::EntityType::NonFungibleVault,
         EntityType::InternalAccount => models::EntityType::Account,
@@ -132,7 +132,7 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
 pub struct MappedSubstateId(
     models::EntityType,
     Vec<u8>,
-    models::SysModuleType,
+    i32,
     models::SubstateType,
     Vec<u8>,
 );
@@ -142,7 +142,7 @@ impl From<MappedSubstateId> for models::SubstateId {
         models::SubstateId {
             entity_type: mapped_substate_id.0,
             entity_id_hex: to_hex(mapped_substate_id.1),
-            module_type: mapped_substate_id.2,
+            module_num: mapped_substate_id.2,
             substate_type: mapped_substate_id.3,
             substate_key_hex: to_hex(mapped_substate_id.4),
         }
@@ -169,13 +169,13 @@ impl From<MappedSubstateId> for models::EntityReference {
 
 fn to_mapped_substate_id(
     node_id: &NodeId,
-    module_id: ModuleId,
+    module_num: ModuleNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
 ) -> Result<MappedSubstateId, MappingError> {
     let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
     let entity_id_bytes = node_id_to_entity_id_bytes(node_id);
-    let module_type = to_api_sys_module_type(module_id)?;
+
     let substate_key_bytes = scrypto_encode(&substate_key).unwrap();
 
     let substate_type = match typed_substate_key {
@@ -218,11 +218,8 @@ fn to_mapped_substate_id(
             NonFungibleResourceManagerOffset::TotalSupply,
         )) => SubstateType::NonFungibleResourceManagerTotalSupply,
         TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::DataSchema,
-        )) => SubstateType::NonFungibleResourceManagerDataSchema,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::Data,
-        )) => SubstateType::NonFungibleResourceManagerData,
+            NonFungibleResourceManagerOffset::MutableFields,
+        )) => SubstateType::NonFungibleResourceManagerMutableFields,
         TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleVault(
             FungibleVaultOffset::LiquidFungible,
         )) => SubstateType::FungibleVaultBalance,
@@ -231,7 +228,7 @@ fn to_mapped_substate_id(
         )) => {
             return Err(MappingError::SubstateKeyMappingError {
                 entity_type_hex: to_hex(entity_id_bytes),
-                module_id: module_id.0,
+                module_num: module_num.0,
                 substate_key_hex: to_hex(substate_key_bytes),
                 message: "LockedFungible".to_string(),
             })
@@ -244,7 +241,7 @@ fn to_mapped_substate_id(
         )) => {
             return Err(MappingError::SubstateKeyMappingError {
                 entity_type_hex: to_hex(entity_id_bytes),
-                module_id: module_id.0,
+                module_num: module_num.0,
                 substate_key_hex: to_hex(substate_key_bytes),
                 message: "LockedNonFungible".to_string(),
             })
@@ -267,9 +264,9 @@ fn to_mapped_substate_id(
         TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Validator(
             ValidatorOffset::Validator,
         )) => SubstateType::Validator,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Account(
-            AccountOffset::Account,
-        )) => SubstateType::Account,
+        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Account(_)) => {
+            SubstateType::AccountVault
+        }
         TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::AccessController(
             AccessControllerOffset::AccessController,
         )) => SubstateType::AccessController,
@@ -290,7 +287,7 @@ fn to_mapped_substate_id(
     Ok(MappedSubstateId(
         to_api_entity_type(entity_type),
         entity_id_bytes,
-        module_type,
+        module_num.0 as i32,
         substate_type,
         substate_key_bytes,
     ))
@@ -351,27 +348,11 @@ pub fn node_id_to_entity_id_bytes(node_id: &NodeId) -> Vec<u8> {
     node_id.0[0..NodeId::ENTITY_ID_LENGTH].to_vec()
 }
 
-pub fn to_api_sys_module_type(module_id: ModuleId) -> Result<models::SysModuleType, MappingError> {
-    let sys_module_id =
-        SysModuleId::try_from(module_id).map_err(|_| MappingError::ModuleTypeError {
-            message: format!("Could not convert SysModuleId {:?}", module_id),
-        })?;
-
-    Ok(match sys_module_id {
-        SysModuleId::TypeInfo => models::SysModuleType::TypeInfo,
-        SysModuleId::Metadata => models::SysModuleType::Metadata,
-        SysModuleId::Royalty => models::SysModuleType::Royalty,
-        SysModuleId::AccessRules => models::SysModuleType::AccessRules,
-        SysModuleId::Object => models::SysModuleType::Object,
-        SysModuleId::Virtualized => models::SysModuleType::Virtualized,
-    })
-}
-
-pub fn to_api_object_module_type(object_module_id: &ObjectModuleId) -> models::ObjectModuleType {
+pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::ObjectModuleId {
     match object_module_id {
-        ObjectModuleId::SELF => models::ObjectModuleType::_Self,
-        ObjectModuleId::Metadata => models::ObjectModuleType::Metadata,
-        ObjectModuleId::Royalty => models::ObjectModuleType::Royalty,
-        ObjectModuleId::AccessRules => models::ObjectModuleType::AccessRules,
+        ObjectModuleId::SELF => models::ObjectModuleId::_Self,
+        ObjectModuleId::Metadata => models::ObjectModuleId::Metadata,
+        ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
+        ObjectModuleId::AccessRules => models::ObjectModuleId::AccessRules,
     }
 }

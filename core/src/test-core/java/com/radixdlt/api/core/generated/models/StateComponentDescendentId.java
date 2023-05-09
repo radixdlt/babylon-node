@@ -33,8 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateComponentDescendentId.JSON_PROPERTY_PARENT_ENTITY,
-  StateComponentDescendentId.JSON_PROPERTY_PARENT_MODULE_ID,
-  StateComponentDescendentId.JSON_PROPERTY_PARENT_SORT_KEY,
+  StateComponentDescendentId.JSON_PROPERTY_PARENT_MODULE_NUM,
+  StateComponentDescendentId.JSON_PROPERTY_PARENT_SUBSTATE_KEY_HEX,
   StateComponentDescendentId.JSON_PROPERTY_ENTITY,
   StateComponentDescendentId.JSON_PROPERTY_DEPTH
 })
@@ -43,11 +43,11 @@ public class StateComponentDescendentId {
   public static final String JSON_PROPERTY_PARENT_ENTITY = "parent_entity";
   private EntityReference parentEntity;
 
-  public static final String JSON_PROPERTY_PARENT_MODULE_ID = "parent_module_id";
-  private Integer parentModuleId;
+  public static final String JSON_PROPERTY_PARENT_MODULE_NUM = "parent_module_num";
+  private Integer parentModuleNum;
 
-  public static final String JSON_PROPERTY_PARENT_SORT_KEY = "parent_sort_key";
-  private String parentSortKey;
+  public static final String JSON_PROPERTY_PARENT_SUBSTATE_KEY_HEX = "parent_substate_key_hex";
+  private String parentSubstateKeyHex;
 
   public static final String JSON_PROPERTY_ENTITY = "entity";
   private EntityReference entity;
@@ -84,55 +84,55 @@ public class StateComponentDescendentId {
   }
 
 
-  public StateComponentDescendentId parentModuleId(Integer parentModuleId) {
-    this.parentModuleId = parentModuleId;
+  public StateComponentDescendentId parentModuleNum(Integer parentModuleNum) {
+    this.parentModuleNum = parentModuleNum;
     return this;
   }
 
    /**
-   * Get parentModuleId
-   * @return parentModuleId
+   * Get parentModuleNum
+   * @return parentModuleNum
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_NUM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getParentModuleId() {
-    return parentModuleId;
+  public Integer getParentModuleNum() {
+    return parentModuleNum;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_PARENT_MODULE_NUM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setParentModuleId(Integer parentModuleId) {
-    this.parentModuleId = parentModuleId;
+  public void setParentModuleNum(Integer parentModuleNum) {
+    this.parentModuleNum = parentModuleNum;
   }
 
 
-  public StateComponentDescendentId parentSortKey(String parentSortKey) {
-    this.parentSortKey = parentSortKey;
+  public StateComponentDescendentId parentSubstateKeyHex(String parentSubstateKeyHex) {
+    this.parentSubstateKeyHex = parentSubstateKeyHex;
     return this;
   }
 
    /**
-   * Hex-encoded DB sort key
-   * @return parentSortKey
+   * Hex-encoded parent substate key
+   * @return parentSubstateKeyHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Hex-encoded DB sort key")
-  @JsonProperty(JSON_PROPERTY_PARENT_SORT_KEY)
+  @ApiModelProperty(required = true, value = "Hex-encoded parent substate key")
+  @JsonProperty(JSON_PROPERTY_PARENT_SUBSTATE_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getParentSortKey() {
-    return parentSortKey;
+  public String getParentSubstateKeyHex() {
+    return parentSubstateKeyHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARENT_SORT_KEY)
+  @JsonProperty(JSON_PROPERTY_PARENT_SUBSTATE_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setParentSortKey(String parentSortKey) {
-    this.parentSortKey = parentSortKey;
+  public void setParentSubstateKeyHex(String parentSubstateKeyHex) {
+    this.parentSubstateKeyHex = parentSubstateKeyHex;
   }
 
 
@@ -203,15 +203,15 @@ public class StateComponentDescendentId {
     }
     StateComponentDescendentId stateComponentDescendentId = (StateComponentDescendentId) o;
     return Objects.equals(this.parentEntity, stateComponentDescendentId.parentEntity) &&
-        Objects.equals(this.parentModuleId, stateComponentDescendentId.parentModuleId) &&
-        Objects.equals(this.parentSortKey, stateComponentDescendentId.parentSortKey) &&
+        Objects.equals(this.parentModuleNum, stateComponentDescendentId.parentModuleNum) &&
+        Objects.equals(this.parentSubstateKeyHex, stateComponentDescendentId.parentSubstateKeyHex) &&
         Objects.equals(this.entity, stateComponentDescendentId.entity) &&
         Objects.equals(this.depth, stateComponentDescendentId.depth);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(parentEntity, parentModuleId, parentSortKey, entity, depth);
+    return Objects.hash(parentEntity, parentModuleNum, parentSubstateKeyHex, entity, depth);
   }
 
   @Override
@@ -219,8 +219,8 @@ public class StateComponentDescendentId {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateComponentDescendentId {\n");
     sb.append("    parentEntity: ").append(toIndentedString(parentEntity)).append("\n");
-    sb.append("    parentModuleId: ").append(toIndentedString(parentModuleId)).append("\n");
-    sb.append("    parentSortKey: ").append(toIndentedString(parentSortKey)).append("\n");
+    sb.append("    parentModuleNum: ").append(toIndentedString(parentModuleNum)).append("\n");
+    sb.append("    parentSubstateKeyHex: ").append(toIndentedString(parentSubstateKeyHex)).append("\n");
     sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
     sb.append("    depth: ").append(toIndentedString(depth)).append("\n");
     sb.append("}");

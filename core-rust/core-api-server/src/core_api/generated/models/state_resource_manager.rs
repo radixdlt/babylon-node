@@ -26,10 +26,8 @@ pub enum StateResourceManager {
         id_type: Box<crate::core_api::generated::models::Substate>,
         #[serde(rename = "total_supply")]
         total_supply: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "data_schema")]
-        data_schema: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "data")]
-        data: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "mutable_fields")]
+        mutable_fields: Box<crate::core_api::generated::models::Substate>,
     },
 }
 
