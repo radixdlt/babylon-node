@@ -303,39 +303,68 @@ impl CommitStore for InMemoryStore {
     }
 }
 
-impl QueryableTransactionStore for InMemoryStore {
-    fn get_committed_transaction_bundles(
-        &self,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<CommittedTransactionBundle> {
-        let mut res = Vec::new();
+pub struct InMemoryCommittedTransactionBundleIterator<'a> {
+    state_version: u64,
+    store: &'a InMemoryStore,
+}
 
-        while res.len() < limit {
-            let next_state_version = start_state_version_inclusive + res.len() as u64;
-            res.push((
-                self.transactions.get(&next_state_version).unwrap().clone(),
+impl<'a> InMemoryCommittedTransactionBundleIterator<'a> {
+    fn new(from_state_version: u64, store: &'a InMemoryStore) -> Self {
+        InMemoryCommittedTransactionBundleIterator {
+            state_version: from_state_version,
+            store,
+        }
+    }
+}
+
+impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
+    type Item = CommittedTransactionBundle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let state_version = self.state_version;
+        self.state_version += 1;
+        match self.store.transactions.get(&state_version) {
+            None => None,
+            Some(transaction) => Some((
+                transaction.clone(),
                 LocalTransactionReceipt {
                     on_ledger: self
+                        .store
                         .ledger_receipts
-                        .get(&next_state_version)
+                        .get(&state_version)
                         .unwrap()
                         .clone(),
                     local_execution: self
+                        .store
                         .local_transaction_executions
-                        .get(&next_state_version)
+                        .get(&state_version)
                         .unwrap()
                         .clone(),
                 },
-                self.transaction_identifiers
-                    .get(&next_state_version)
+                self.store
+                    .transaction_identifiers
+                    .get(&state_version)
                     .unwrap()
                     .clone(),
-            ));
+            )),
         }
-        res
     }
+}
 
+impl IterableTransactionStore for InMemoryStore {
+    type CommittedTransactionBundleIterator<'a> = InMemoryCommittedTransactionBundleIterator<'a>;
+
+    fn get_committed_transaction_bundle_iter(
+        &self,
+        from_state_version: u64,
+    ) -> Self::CommittedTransactionBundleIterator<'_> {
+        debug_assert!(self.is_local_transaction_execution_index_enabled());
+
+        InMemoryCommittedTransactionBundleIterator::new(from_state_version, self)
+    }
+}
+
+impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         Some(self.transactions.get(&state_version)?.clone())
     }

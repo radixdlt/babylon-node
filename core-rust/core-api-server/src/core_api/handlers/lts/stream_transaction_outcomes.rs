@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use state_manager::store::traits::{QueryableProofStore, QueryableTransactionStore};
+use state_manager::store::traits::{IterableTransactionStore, QueryableProofStore};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -27,14 +27,11 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
         )));
     }
 
+    let limit = limit.try_into().expect("limit out of usize bounds");
+
     let database = state.database.read();
 
     let max_state_version = database.max_state_version();
-
-    let transactions = database.get_committed_transaction_bundles(
-        from_state_version,
-        limit.try_into().expect("limit out of usize bounds"),
-    );
 
     let mut response = models::LtsStreamTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
@@ -45,7 +42,10 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for (ledger_transaction, receipt, identifiers) in transactions {
+    for (ledger_transaction, receipt, identifiers) in database
+        .get_committed_transaction_bundle_iter(from_state_version)
+        .take(limit)
+    {
         let committed_transaction = to_api_lts_committed_transaction_outcome(
             &mapping_context,
             ledger_transaction,

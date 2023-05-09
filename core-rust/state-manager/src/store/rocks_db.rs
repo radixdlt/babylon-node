@@ -87,7 +87,8 @@ use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
 use rocksdb::{
-    ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
+    ColumnFamily, ColumnFamilyDescriptor, DBIteratorWithThreadMode, Direction, IteratorMode,
+    Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
 use tracing::{error, info, warn};
@@ -510,84 +511,115 @@ impl CommitStore for RocksDBStore {
     }
 }
 
-impl QueryableTransactionStore for RocksDBStore {
-    fn get_committed_transaction_bundles(
+pub struct RocksDBCommittedTransactionBundleIterator<'a> {
+    state_version: u64,
+    txns_iter: DBIteratorWithThreadMode<'a, DB>,
+    ledger_receipts_iter: DBIteratorWithThreadMode<'a, DB>,
+    local_executions_iter: DBIteratorWithThreadMode<'a, DB>,
+    accumulator_hashes_iter: DBIteratorWithThreadMode<'a, DB>,
+}
+
+impl<'a> RocksDBCommittedTransactionBundleIterator<'a> {
+    fn new(from_state_version: u64, store: &'a RocksDBStore) -> Self {
+        let start_state_version_bytes = from_state_version.to_be_bytes();
+        RocksDBCommittedTransactionBundleIterator {
+            state_version: from_state_version,
+            txns_iter: store.db.iterator_cf(
+                store.cf_handle(&TxnByStateVersion),
+                IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+            ),
+            ledger_receipts_iter: store.db.iterator_cf(
+                store.cf_handle(&LedgerReceiptByStateVersion),
+                IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+            ),
+            local_executions_iter: store.db.iterator_cf(
+                store.cf_handle(&LocalTransactionExecutionByStateVersion),
+                IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+            ),
+            accumulator_hashes_iter: store.db.iterator_cf(
+                store.cf_handle(&TxnAccumulatorHashByStateVersion),
+                IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+            ),
+        }
+    }
+}
+
+impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
+    type Item = CommittedTransactionBundle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.txns_iter.next() {
+            None => None,
+            Some(txn) => {
+                let txn_kv = txn.unwrap();
+
+                let ledger_receipt_kv = self
+                    .ledger_receipts_iter
+                    .next()
+                    .expect("Missing ledger receipt")
+                    .unwrap();
+                let local_execution_kv = self
+                    .local_executions_iter
+                    .next()
+                    .expect("Missing local transaction execution")
+                    .unwrap();
+                let accumulator_hash_kv = self
+                    .accumulator_hashes_iter
+                    .next()
+                    .expect("Missing txn accumulator hash")
+                    .unwrap();
+
+                for (other_key_description, other_key_bytes) in [
+                    ("transaction version", txn_kv.0),
+                    ("ledger receipt version", ledger_receipt_kv.0),
+                    ("local execution version", local_execution_kv.0),
+                    ("accumulator hash version", accumulator_hash_kv.0),
+                ] {
+                    let other_row_version =
+                        u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
+                    let expected_state_version = self.state_version;
+                    if other_row_version != expected_state_version {
+                        panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({expected_state_version})");
+                    }
+                }
+
+                let txn = manifest_decode(txn_kv.1.as_ref()).unwrap();
+                let ledger_receipt = scrypto_decode(ledger_receipt_kv.1.as_ref()).unwrap();
+                let local_execution = scrypto_decode(local_execution_kv.1.as_ref()).unwrap();
+                let complete_receipt = LocalTransactionReceipt {
+                    on_ledger: ledger_receipt,
+                    local_execution,
+                };
+
+                let identifiers = CommittedTransactionIdentifiers {
+                    state_version: self.state_version,
+                    accumulator_hash: AccumulatorHash::from_raw_bytes(
+                        (*accumulator_hash_kv.1).try_into().unwrap(),
+                    ),
+                };
+
+                self.state_version += 1;
+
+                Some((txn, complete_receipt, identifiers))
+            }
+        }
+    }
+}
+
+impl IterableTransactionStore for RocksDBStore {
+    type CommittedTransactionBundleIterator<'a> = RocksDBCommittedTransactionBundleIterator<'a>;
+
+    fn get_committed_transaction_bundle_iter(
         &self,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<CommittedTransactionBundle> {
+        from_state_version: u64,
+    ) -> Self::CommittedTransactionBundleIterator<'_> {
         debug_assert!(self.is_local_transaction_execution_index_enabled());
 
-        let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
-        let txns_iter = self.db.iterator_cf(
-            self.cf_handle(&TxnByStateVersion),
-            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
-        );
-
-        let mut ledger_receipts_iter = self.db.iterator_cf(
-            self.cf_handle(&LedgerReceiptByStateVersion),
-            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
-        );
-
-        let mut local_executions_iter = self.db.iterator_cf(
-            self.cf_handle(&LocalTransactionExecutionByStateVersion),
-            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
-        );
-
-        let mut accumulator_hashes_iter = self.db.iterator_cf(
-            self.cf_handle(&TxnAccumulatorHashByStateVersion),
-            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
-        );
-
-        let mut res = Vec::new();
-        for (txn_index, next_txn_result) in txns_iter.take(limit).enumerate() {
-            let next_state_version = start_state_version_inclusive + txn_index as u64;
-            let next_txn_kv = next_txn_result.unwrap();
-
-            let next_ledger_receipt_kv = ledger_receipts_iter
-                .next()
-                .expect("Missing ledger receipt")
-                .unwrap();
-            let next_local_execution_kv = local_executions_iter
-                .next()
-                .expect("Missing local transaction execution")
-                .unwrap();
-            let next_accumulator_hash_kv = accumulator_hashes_iter
-                .next()
-                .expect("Missing txn accumulator hash")
-                .unwrap();
-
-            for (other_key_description, other_key_bytes) in [
-                ("transaction version", next_txn_kv.0),
-                ("ledger receipt version", next_ledger_receipt_kv.0),
-                ("local execution version", next_local_execution_kv.0),
-                ("accumulator hash version", next_accumulator_hash_kv.0),
-            ] {
-                let other_row_version = u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
-                if other_row_version != next_state_version {
-                    panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({next_state_version})");
-                }
-            }
-
-            let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
-            let next_ledger_receipt = scrypto_decode(next_ledger_receipt_kv.1.as_ref()).unwrap();
-            let next_local_execution = scrypto_decode(next_local_execution_kv.1.as_ref()).unwrap();
-            let next_complete_receipt = LocalTransactionReceipt {
-                on_ledger: next_ledger_receipt,
-                local_execution: next_local_execution,
-            };
-            let next_accumulator_hash =
-                AccumulatorHash::from_raw_bytes((*next_accumulator_hash_kv.1).try_into().unwrap());
-            let next_identifiers = CommittedTransactionIdentifiers {
-                state_version: next_state_version,
-                accumulator_hash: next_accumulator_hash,
-            };
-            res.push((next_txn, next_complete_receipt, next_identifiers));
-        }
-
-        res
+        RocksDBCommittedTransactionBundleIterator::new(from_state_version, self)
     }
+}
 
+impl QueryableTransactionStore for RocksDBStore {
     fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         self.db
             .get_cf(

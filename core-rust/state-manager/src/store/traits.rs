@@ -174,14 +174,19 @@ pub mod transactions {
         LocalTransactionReceipt,
     };
 
+    pub trait IterableTransactionStore {
+        type CommittedTransactionBundleIterator<'a>: Iterator<Item = CommittedTransactionBundle>
+        where
+            Self: 'a;
+
+        fn get_committed_transaction_bundle_iter(
+            &self,
+            from_state_version: u64,
+        ) -> Self::CommittedTransactionBundleIterator<'_>;
+    }
+
     #[enum_dispatch]
     pub trait QueryableTransactionStore {
-        fn get_committed_transaction_bundles(
-            &self,
-            start_state_version_inclusive: u64,
-            limit: usize,
-        ) -> Vec<CommittedTransactionBundle>;
-
         fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
 
         fn get_committed_transaction_identifiers(

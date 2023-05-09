@@ -81,6 +81,9 @@ use radix_engine::types::*;
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
+use super::in_memory::InMemoryCommittedTransactionBundleIterator;
+use super::rocks_db::RocksDBCommittedTransactionBundleIterator;
+
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseBackendConfig {
     InMemory,
@@ -131,6 +134,50 @@ impl StateManagerDatabase {
                     }
                 };
                 StateManagerDatabase::RocksDB(db)
+            }
+        }
+    }
+}
+
+#[allow(clippy::large_enum_variant)]
+pub enum StateManagerDatabaseCommittedTransactionBundleIterator<'a> {
+    InMemory(InMemoryCommittedTransactionBundleIterator<'a>),
+    RocksDB(RocksDBCommittedTransactionBundleIterator<'a>),
+}
+
+impl Iterator for StateManagerDatabaseCommittedTransactionBundleIterator<'_> {
+    type Item = CommittedTransactionBundle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            StateManagerDatabaseCommittedTransactionBundleIterator::InMemory(iterator) => {
+                iterator.next()
+            }
+            StateManagerDatabaseCommittedTransactionBundleIterator::RocksDB(iterator) => {
+                iterator.next()
+            }
+        }
+    }
+}
+
+impl IterableTransactionStore for StateManagerDatabase {
+    type CommittedTransactionBundleIterator<'a> =
+        StateManagerDatabaseCommittedTransactionBundleIterator<'a>;
+
+    fn get_committed_transaction_bundle_iter(
+        &self,
+        from_state_version: u64,
+    ) -> Self::CommittedTransactionBundleIterator<'_> {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                StateManagerDatabaseCommittedTransactionBundleIterator::InMemory(
+                    store.get_committed_transaction_bundle_iter(from_state_version),
+                )
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                StateManagerDatabaseCommittedTransactionBundleIterator::RocksDB(
+                    store.get_committed_transaction_bundle_iter(from_state_version),
+                )
             }
         }
     }
