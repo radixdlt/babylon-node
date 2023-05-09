@@ -15,15 +15,15 @@
 pub struct RequireProofRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ProofRuleType,
-    #[serde(rename = "resource")]
-    pub resource: Option<crate::core_api::generated::models::DynamicResourceDescriptor>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "resource_or_non_fungible")]
+    pub resource_or_non_fungible: Box<crate::core_api::generated::models::ResourceOrNonFungible>,
 }
 
 impl RequireProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, resource: crate::core_api::generated::models::DynamicResourceDescriptor) -> RequireProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, resource_or_non_fungible: crate::core_api::generated::models::ResourceOrNonFungible) -> RequireProofRule {
         RequireProofRule {
             _type,
-            resource: Option::Some(resource),
+            resource_or_non_fungible: Box::new(resource_or_non_fungible),
         }
     }
 }

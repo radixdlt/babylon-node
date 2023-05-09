@@ -171,10 +171,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
             // a quick fix for handling virtual accounts
             // TODO: fix upstream
             if read_store
-                .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                     node_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                 )
                 .is_some()
             {
@@ -206,10 +206,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
             let validator_substate: ValidatorSubstate = read_store
-                .get_mapped_substate::<SpreadPrefixKeyMapper, ValidatorSubstate>(
+                .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                     validator_address.as_node_id(),
-                    SysModuleId::Object.into(),
-                    &ValidatorOffset::Validator.into(),
+                    OBJECT_BASE_PARTITION,
+                    &ValidatorField::Validator.into(),
                 )
                 .unwrap();
 

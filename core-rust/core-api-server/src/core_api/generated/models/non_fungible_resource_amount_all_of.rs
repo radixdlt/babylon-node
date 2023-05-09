@@ -17,11 +17,11 @@ pub struct NonFungibleResourceAmountAllOf {
     #[serde(rename = "amount")]
     pub amount: String,
     #[serde(rename = "non_fungible_ids")]
-    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>,
 }
 
 impl NonFungibleResourceAmountAllOf {
-    pub fn new(amount: String, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> NonFungibleResourceAmountAllOf {
+    pub fn new(amount: String, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>) -> NonFungibleResourceAmountAllOf {
         NonFungibleResourceAmountAllOf {
             amount,
             non_fungible_ids,

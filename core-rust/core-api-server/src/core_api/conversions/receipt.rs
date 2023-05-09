@@ -1,18 +1,10 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::ComponentAddress;
-use radix_engine::types::{hash, Decimal};
+use radix_engine::types::*;
 
-use radix_engine::system::system_modules::costing::{FeeSummary, RoyaltyRecipient};
-use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_common::types::{GlobalAddress, ModuleId, NodeId, SubstateKey};
-use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
-use radix_engine_queries::typed_substate_layout::{
-    to_typed_substate_key, to_typed_substate_value, TypedSubstateKey, TypedSubstateValue,
-};
-use std::collections::BTreeMap;
+use radix_engine::system::system_modules::costing::*;
+use radix_engine_queries::typed_substate_layout::*;
 
 use state_manager::{
     ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
@@ -38,23 +30,23 @@ pub fn to_api_receipt(
     let mut new_global_entities = Vec::new();
 
     for package_address in state_update_summary.new_packages {
-        new_global_entities.push(to_global_entity_reference(
+        new_global_entities.push(to_api_entity_reference(
             context,
-            &package_address.into(),
+            package_address.as_node_id(),
         )?);
     }
 
     for component_address in state_update_summary.new_components {
-        new_global_entities.push(to_global_entity_reference(
+        new_global_entities.push(to_api_entity_reference(
             context,
-            &component_address.into(),
+            component_address.as_node_id(),
         )?);
     }
 
     for resource_address in state_update_summary.new_resources {
-        new_global_entities.push(to_global_entity_reference(
+        new_global_entities.push(to_api_entity_reference(
             context,
-            &resource_address.into(),
+            resource_address.as_node_id(),
         )?);
     }
 
@@ -63,18 +55,21 @@ pub fn to_api_receipt(
     let mut deleted_substates = Vec::new();
     for SubstateChange {
         node_id,
-        module_id,
+        partition_number,
         substate_key,
         action,
     } in receipt.on_ledger.substate_changes
     {
         let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
-        let typed_substate_key = to_typed_substate_key(entity_type, module_id, &substate_key)
-            .map_err(|msg| MappingError::SubstateKeyMappingError {
-                entity_type_hex: to_hex(node_id_to_entity_id_bytes(&node_id)),
-                module_id: module_id.0,
-                substate_key_hex: to_hex(scrypto_encode(&substate_key).unwrap()),
-                message: msg,
+        let typed_substate_key =
+            to_typed_substate_key(entity_type, partition_number, &substate_key).map_err(|msg| {
+                MappingError::SubstateKey {
+                    entity_address: to_api_entity_address(context, &node_id)
+                        .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
+                    partition_number,
+                    substate_key: to_api_substate_key(&substate_key),
+                    message: msg,
+                }
             })?;
         if !typed_substate_key.value_is_mappable() {
             continue;
@@ -84,7 +79,7 @@ pub fn to_api_receipt(
             ChangeAction::Create(value) => {
                 let typed_substate_value =
                     to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
-                        |msg| MappingError::SubstateValueMappingError {
+                        |msg| MappingError::SubstateValue {
                             bytes: value.clone(),
                             message: msg,
                         },
@@ -92,7 +87,7 @@ pub fn to_api_receipt(
                 created_substates.push(to_api_created_or_updated_substate(
                     context,
                     &node_id,
-                    module_id,
+                    partition_number,
                     &substate_key,
                     &value,
                     &typed_substate_key,
@@ -102,7 +97,7 @@ pub fn to_api_receipt(
             ChangeAction::Update(value) => {
                 let typed_substate_value =
                     to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
-                        |msg| MappingError::SubstateValueMappingError {
+                        |msg| MappingError::SubstateValue {
                             bytes: value.clone(),
                             message: msg,
                         },
@@ -110,7 +105,7 @@ pub fn to_api_receipt(
                 updated_substates.push(to_api_created_or_updated_substate(
                     context,
                     &node_id,
-                    module_id,
+                    partition_number,
                     &substate_key,
                     &value,
                     &typed_substate_key,
@@ -119,8 +114,9 @@ pub fn to_api_receipt(
             }
             ChangeAction::Delete => {
                 deleted_substates.push(to_api_deleted_substate(
+                    context,
                     &node_id,
-                    module_id,
+                    partition_number,
                     &substate_key,
                     &typed_substate_key,
                 )?);
@@ -179,7 +175,7 @@ pub fn to_api_receipt(
 pub fn to_api_created_or_updated_substate(
     context: &MappingContext,
     node_id: &NodeId,
-    module_id: ModuleId,
+    partition_number: PartitionNumber,
     substate_key: &SubstateKey,
     value: &Vec<u8>,
     typed_substate_key: &TypedSubstateKey,
@@ -187,7 +183,13 @@ pub fn to_api_created_or_updated_substate(
 ) -> Result<models::CreatedOrUpdatedSubstate, MappingError> {
     let substate_hex = to_hex(value);
     let substate_data_hash = to_hex(hash(value));
-    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let substate_id = to_api_substate_id(
+        context,
+        node_id,
+        partition_number,
+        substate_key,
+        typed_substate_key,
+    )?;
     let substate_data = Some(to_api_substate(
         context,
         substate_key,
@@ -203,12 +205,19 @@ pub fn to_api_created_or_updated_substate(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
+    context: &MappingContext,
     node_id: &NodeId,
-    module_id: ModuleId,
+    partition_number: PartitionNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
 ) -> Result<models::DeletedSubstate, MappingError> {
-    let substate_id = to_api_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
+    let substate_id = to_api_substate_id(
+        context,
+        node_id,
+        partition_number,
+        substate_key,
+        typed_substate_key,
+    )?;
     Ok(models::DeletedSubstate {
         substate_id: Box::new(substate_id),
     })
@@ -223,15 +232,12 @@ pub fn to_api_next_epoch(
         next_epoch.0.into_iter().map(|e| (e.0, e.1)).collect();
     sorted_validators.sort_by(|a, b| b.1.stake.cmp(&a.1.stake));
 
-    let mut validators = Vec::new();
-    for (address, validator) in sorted_validators {
-        let api_validator = to_api_active_validator(context, &address, &validator);
-        validators.push(api_validator);
-    }
-
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, next_epoch.1)?,
-        validators,
+        validators: sorted_validators
+            .into_iter()
+            .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
+            .collect::<Result<_, _>>()?,
     };
 
     Ok(next_epoch)
@@ -251,15 +257,15 @@ pub fn to_api_event(
             emitter: Some(match emitter {
                 Emitter::Function(node_id, object_module_id, blueprint_name) => {
                     models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
-                        entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_object_module_type(&object_module_id),
+                        entity: Box::new(to_api_entity_reference(context, &node_id)?),
+                        object_module_id: to_api_object_module_id(&object_module_id),
                         blueprint_name,
                     }
                 }
                 Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
-                        entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: to_api_object_module_type(&object_module_id),
+                        entity: Box::new(to_api_entity_reference(context, &node_id)?),
+                        object_module_id: to_api_object_module_id(&object_module_id),
                     }
                 }
             }),
@@ -292,7 +298,7 @@ pub fn to_api_fee_summary(
             .iter()
             .map(|(vault_id, xrd_amount)| {
                 Ok(models::VaultPayment {
-                    vault_entity: Box::new(to_api_entity_reference(*vault_id)?),
+                    vault_entity: Box::new(to_api_entity_reference(context, vault_id)?),
                     xrd_amount: to_api_decimal(xrd_amount),
                 })
             })
@@ -306,9 +312,9 @@ pub fn to_api_fee_summary(
                     RoyaltyRecipient::Component(address) => (*address).into(),
                 };
                 Ok(models::RoyaltyPayment {
-                    royalty_receiver: Box::new(to_global_entity_reference(
+                    royalty_receiver: Box::new(to_api_entity_reference(
                         context,
-                        &global_address,
+                        global_address.as_node_id(),
                     )?),
                     xrd_amount: to_api_decimal(xrd_amount),
                 })

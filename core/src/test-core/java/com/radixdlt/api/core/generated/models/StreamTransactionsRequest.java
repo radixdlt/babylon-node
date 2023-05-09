@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SborFormats;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StreamTransactionsRequest.JSON_PROPERTY_NETWORK,
   StreamTransactionsRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  StreamTransactionsRequest.JSON_PROPERTY_LIMIT
+  StreamTransactionsRequest.JSON_PROPERTY_LIMIT,
+  StreamTransactionsRequest.JSON_PROPERTY_SBOR_FORMATS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StreamTransactionsRequest {
@@ -46,6 +48,9 @@ public class StreamTransactionsRequest {
 
   public static final String JSON_PROPERTY_LIMIT = "limit";
   private Integer limit;
+
+  public static final String JSON_PROPERTY_SBOR_FORMATS = "sbor_formats";
+  private SborFormats sborFormats;
 
   public StreamTransactionsRequest() { 
   }
@@ -130,6 +135,32 @@ public class StreamTransactionsRequest {
   }
 
 
+  public StreamTransactionsRequest sborFormats(SborFormats sborFormats) {
+    this.sborFormats = sborFormats;
+    return this;
+  }
+
+   /**
+   * Get sborFormats
+   * @return sborFormats
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMATS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormats getSborFormats() {
+    return sborFormats;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMATS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormats(SborFormats sborFormats) {
+    this.sborFormats = sborFormats;
+  }
+
+
   /**
    * Return true if this StreamTransactionsRequest object is equal to o.
    */
@@ -144,12 +175,13 @@ public class StreamTransactionsRequest {
     StreamTransactionsRequest streamTransactionsRequest = (StreamTransactionsRequest) o;
     return Objects.equals(this.network, streamTransactionsRequest.network) &&
         Objects.equals(this.fromStateVersion, streamTransactionsRequest.fromStateVersion) &&
-        Objects.equals(this.limit, streamTransactionsRequest.limit);
+        Objects.equals(this.limit, streamTransactionsRequest.limit) &&
+        Objects.equals(this.sborFormats, streamTransactionsRequest.sborFormats);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, fromStateVersion, limit);
+    return Objects.hash(network, fromStateVersion, limit, sborFormats);
   }
 
   @Override
@@ -159,6 +191,7 @@ public class StreamTransactionsRequest {
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    limit: ").append(toIndentedString(limit)).append("\n");
+    sb.append("    sborFormats: ").append(toIndentedString(sborFormats)).append("\n");
     sb.append("}");
     return sb.toString();
   }

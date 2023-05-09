@@ -8,11 +8,9 @@ use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
     CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
 };
-use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level};
-use radix_engine_common::types::{ComponentAddress, ModuleId, NodeId, SubstateKey};
+use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
-use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
@@ -37,7 +35,7 @@ impl CommittedTransactionIdentifiers {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChange {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub partition_number: PartitionNumber,
     pub substate_key: SubstateKey,
     pub action: ChangeAction,
 }

@@ -1,11 +1,9 @@
-use radix_engine::blueprints::resource::{
-    NonFungibleResourceManagerDataSubstate, NonFungibleResourceManagerIdTypeSubstate,
-};
+use radix_engine::blueprints::resource::*;
+use radix_engine::types::*;
 use std::ops::Deref;
 
 use crate::core_api::*;
 use radix_engine_common::types::SubstateKey;
-use radix_engine_interface::types::{NonFungibleResourceManagerOffset, SysModuleId};
 
 use crate::core_api::models::StateNonFungibleResponse;
 
@@ -23,12 +21,12 @@ pub(crate) async fn handle_state_non_fungible(
 
     let database = state.database.read();
 
-    let id_type_substate: NonFungibleResourceManagerIdTypeSubstate = read_mandatory_substate(
-        database.deref(),
-        resource_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &NonFungibleResourceManagerOffset::IdType.into(),
-    )?;
+    let id_type_substate: NonFungibleResourceManagerIdTypeSubstate =
+        read_mandatory_main_field_substate(
+            database.deref(),
+            resource_address.as_node_id(),
+            &NonFungibleResourceManagerField::IdType.into(),
+        )?;
 
     let non_fungible_id =
         extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
@@ -42,26 +40,19 @@ pub(crate) async fn handle_state_non_fungible(
         .into_response_error("non_fungible_id"));
     }
 
-    let nf_data_substate: NonFungibleResourceManagerDataSubstate = read_mandatory_substate(
+    let non_fungible: Vec<u8> = read_optional_collection_substate(
         database.deref(),
         resource_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &NonFungibleResourceManagerOffset::Data.into(),
-    )?;
-
-    let non_fungible_substate_key = SubstateKey::Map(non_fungible_id.to_key());
-
-    let non_fungible: Vec<u8> = read_mandatory_substate(
-        database.deref(),
-        nf_data_substate.as_node_id(),
-        SysModuleId::Object.into(),
-        &non_fungible_substate_key,
-    )?;
+        NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
+        &SubstateKey::Map(non_fungible_id.to_key()),
+    )
+    .ok_or_else(|| {
+        not_found_error("The given non_fungible_id doesn't exist under that resource address")
+    })?;
 
     Ok(StateNonFungibleResponse {
-        non_fungible: Some(to_api_generic_key_value_store_substate(
+        non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
-            &non_fungible_substate_key,
             &non_fungible,
         )?),
     })

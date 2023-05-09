@@ -193,7 +193,7 @@ impl ProcessedCommitResult {
                 };
                 substate_changes.push(SubstateChange {
                     node_id,
-                    module_id,
+                    partition_number: module_id,
                     substate_key,
                     action: change_action,
                 });

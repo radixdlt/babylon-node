@@ -27,41 +27,95 @@ pub(crate) async fn handle_status_network_configuration(
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
+            xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
+            secp256k1_signature_virtual_badge: bech32_encoder
+                .encode(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .unwrap(),
+            ed25519_signature_virtual_badge: bech32_encoder
+                .encode(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .unwrap(),
+            package_of_direct_caller_virtual_badge: bech32_encoder
+                .encode(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref())
+                .unwrap(),
+            global_caller_virtual_badge: bech32_encoder
+                .encode(GLOBAL_CALLER_VIRTUAL_BADGE.as_ref())
+                .unwrap(),
+            system_transaction_badge: bech32_encoder
+                .encode(SYSTEM_TRANSACTION_BADGE.as_ref())
+                .unwrap(),
+            package_owner_badge: bech32_encoder.encode(PACKAGE_OWNER_BADGE.as_ref()).unwrap(),
+            validator_owner_badge: bech32_encoder
+                .encode(VALIDATOR_OWNER_BADGE.as_ref())
+                .unwrap(),
+            account_owner_badge: bech32_encoder.encode(ACCOUNT_OWNER_BADGE.as_ref()).unwrap(),
+            identity_owner_badge: bech32_encoder
+                .encode(IDENTITY_OWNER_BADGE.as_ref())
+                .unwrap(),
+            package_package: bech32_encoder.encode(PACKAGE_PACKAGE.as_ref()).unwrap(),
+            resource_package: bech32_encoder.encode(RESOURCE_PACKAGE.as_ref()).unwrap(),
+            account_package: bech32_encoder.encode(ACCOUNT_PACKAGE.as_ref()).unwrap(),
+            identity_package: bech32_encoder.encode(IDENTITY_PACKAGE.as_ref()).unwrap(),
+            epoch_manager_package: bech32_encoder
+                .encode(EPOCH_MANAGER_PACKAGE.as_ref())
+                .unwrap(),
+            clock_package: bech32_encoder.encode(CLOCK_PACKAGE.as_ref()).unwrap(),
+            access_controller_package: bech32_encoder
+                .encode(ACCESS_CONTROLLER_PACKAGE.as_ref())
+                .unwrap(),
+            transaction_processor_package: bech32_encoder
+                .encode(TRANSACTION_PROCESSOR_PACKAGE.as_ref())
+                .unwrap(),
+            metadata_module_package: bech32_encoder
+                .encode(METADATA_MODULE_PACKAGE.as_ref())
+                .unwrap(),
+            royalty_module_package: bech32_encoder
+                .encode(ROYALTY_MODULE_PACKAGE.as_ref())
+                .unwrap(),
+            access_rules_package: bech32_encoder
+                .encode(ACCESS_RULES_MODULE_PACKAGE.as_ref())
+                .unwrap(),
+            genesis_helper_package: bech32_encoder
+                .encode(GENESIS_HELPER_PACKAGE.as_ref())
+                .unwrap(),
+            faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
             epoch_manager: bech32_encoder.encode(EPOCH_MANAGER.as_ref()).unwrap(),
             clock: bech32_encoder.encode(CLOCK.as_ref()).unwrap(),
-            ecdsa_secp256k1: bech32_encoder
-                .encode(ECDSA_SECP256K1_TOKEN.as_ref())
-                .unwrap(),
-            eddsa_ed25519: bech32_encoder.encode(EDDSA_ED25519_TOKEN.as_ref()).unwrap(),
-            xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
+            genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
+            faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
         }),
     })
     .map(Json)
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 21] = [
+const ALL_ENTITY_TYPES: [EntityType; 19] = [
+    // Package
     EntityType::GlobalPackage,
-    EntityType::GlobalFungibleResource,
-    EntityType::GlobalNonFungibleResource,
+    // System
     EntityType::GlobalEpochManager,
     EntityType::GlobalValidator,
     EntityType::GlobalClock,
-    EntityType::GlobalAccessController,
+    // Standard global
+    EntityType::GlobalGenericComponent,
     EntityType::GlobalAccount,
     EntityType::GlobalIdentity,
-    EntityType::GlobalGenericComponent,
-    EntityType::GlobalVirtualEcdsaAccount,
-    EntityType::GlobalVirtualEddsaAccount,
-    EntityType::GlobalVirtualEcdsaIdentity,
-    EntityType::GlobalVirtualEddsaIdentity,
+    EntityType::GlobalAccessController,
+    // Secp256k1 Virtual Global
+    EntityType::GlobalVirtualSecp256k1Account,
+    EntityType::GlobalVirtualSecp256k1Identity,
+    // Ed25519 Virtual Global Components
+    EntityType::GlobalVirtualEd25519Account,
+    EntityType::GlobalVirtualEd25519Identity,
+    // Fungible-related
+    EntityType::GlobalFungibleResource,
     EntityType::InternalFungibleVault,
+    // Non-fungible related
+    EntityType::GlobalNonFungibleResource,
     EntityType::InternalNonFungibleVault,
-    EntityType::InternalAccount,
-    EntityType::InternalKeyValueStore,
-    EntityType::InternalIndex,
-    EntityType::InternalSortedIndex,
+    // Internal misc
     EntityType::InternalGenericComponent,
+    EntityType::InternalAccount,
+    // Internal key-value-store-like
+    EntityType::InternalKeyValueStore,
 ];
 
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {

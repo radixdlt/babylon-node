@@ -28,65 +28,63 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
-  TYPEINFO("TypeInfo"),
+  TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
-  METHODACCESSRULES("MethodAccessRules"),
+  ACCESSRULESMODULEFIELDACCESSRULES("AccessRulesModuleFieldAccessRules"),
   
-  COMPONENTROYALTYCONFIG("ComponentRoyaltyConfig"),
+  ROYALTYMODULEFIELDCONFIG("RoyaltyModuleFieldConfig"),
   
-  COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
+  ROYALTYMODULEFIELDACCUMULATOR("RoyaltyModuleFieldAccumulator"),
   
-  METADATAVALUE("MetadataValue"),
+  METADATAMODULEENTRY("MetadataModuleEntry"),
   
-  PACKAGEINFO("PackageInfo"),
+  PACKAGEFIELDINFO("PackageFieldInfo"),
   
-  PACKAGECODETYPE("PackageCodeType"),
+  PACKAGEFIELDCODETYPE("PackageFieldCodeType"),
   
-  PACKAGECODE("PackageCode"),
+  PACKAGEFIELDCODE("PackageFieldCode"),
   
-  PACKAGEROYALTY("PackageRoyalty"),
+  PACKAGEFIELDROYALTY("PackageFieldRoyalty"),
   
-  PACKAGEFUNCTIONACCESSRULES("PackageFunctionAccessRules"),
+  PACKAGEFIELDFUNCTIONACCESSRULES("PackageFieldFunctionAccessRules"),
   
-  FUNGIBLERESOURCEMANAGERDIVISIBILITY("FungibleResourceManagerDivisibility"),
+  FUNGIBLERESOURCEMANAGERFIELDDIVISIBILITY("FungibleResourceManagerFieldDivisibility"),
   
-  FUNGIBLERESOURCEMANAGERTOTALSUPPLY("FungibleResourceManagerTotalSupply"),
+  FUNGIBLERESOURCEMANAGERFIELDTOTALSUPPLY("FungibleResourceManagerFieldTotalSupply"),
   
-  NONFUNGIBLERESOURCEMANAGERIDTYPE("NonFungibleResourceManagerIdType"),
+  NONFUNGIBLERESOURCEMANAGERFIELDIDTYPE("NonFungibleResourceManagerFieldIdType"),
   
-  NONFUNGIBLERESOURCEMANAGERTOTALSUPPLY("NonFungibleResourceManagerTotalSupply"),
+  NONFUNGIBLERESOURCEMANAGERFIELDTOTALSUPPLY("NonFungibleResourceManagerFieldTotalSupply"),
   
-  NONFUNGIBLERESOURCEMANAGERDATASCHEMA("NonFungibleResourceManagerDataSchema"),
+  NONFUNGIBLERESOURCEMANAGERFIELDMUTABLEFIELDS("NonFungibleResourceManagerFieldMutableFields"),
   
-  NONFUNGIBLERESOURCEMANAGERDATA("NonFungibleResourceManagerData"),
+  NONFUNGIBLERESOURCEMANAGERDATAENTRY("NonFungibleResourceManagerDataEntry"),
   
-  FUNGIBLEVAULTBALANCE("FungibleVaultBalance"),
+  FUNGIBLEVAULTFIELDBALANCE("FungibleVaultFieldBalance"),
   
-  NONFUNGIBLEVAULTBALANCE("NonFungibleVaultBalance"),
+  NONFUNGIBLEVAULTFIELDBALANCE("NonFungibleVaultFieldBalance"),
   
-  EPOCHMANAGERCONFIG("EpochManagerConfig"),
+  NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
-  EPOCHMANAGER("EpochManager"),
+  EPOCHMANAGERFIELDCONFIG("EpochManagerFieldConfig"),
   
-  CURRENTVALIDATORSET("CurrentValidatorSet"),
+  EPOCHMANAGERFIELDSTATE("EpochManagerFieldState"),
   
-  REGISTEREDVALIDATORS("RegisteredValidators"),
+  EPOCHMANAGERFIELDCURRENTVALIDATORSET("EpochManagerFieldCurrentValidatorSet"),
   
-  CLOCK("Clock"),
+  EPOCHMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("EpochManagerRegisteredValidatorsByStakeIndexEntry"),
   
-  VALIDATOR("Validator"),
+  CLOCKFIELDSTATE("ClockFieldState"),
   
-  ACCOUNT("Account"),
+  VALIDATORFIELDSTATE("ValidatorFieldState"),
   
-  ACCESSCONTROLLER("AccessController"),
+  ACCOUNTVAULTINDEXENTRY("AccountVaultIndexEntry"),
   
-  GENERICSCRYPTOCOMPONENTSTATE("GenericScryptoComponentState"),
+  ACCESSCONTROLLERFIELDSTATE("AccessControllerFieldState"),
   
-  GENERICKEYVALUESTORE("GenericKeyValueStore"),
+  GENERICSCRYPTOCOMPONENTFIELDSTATE("GenericScryptoComponentFieldState"),
   
-  GENERICINDEX("GenericIndex"),
-  
-  GENERICSORTEDU16INDEX("GenericSortedU16Index");
+  GENERICKEYVALUESTOREENTRY("GenericKeyValueStoreEntry");
 
   private String value;
 

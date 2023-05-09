@@ -15,16 +15,19 @@
 pub struct EntityReference {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
-    /// The hex-encoded bytes of the entity id.
-    #[serde(rename = "entity_id_hex")]
-    pub entity_id_hex: String,
+    #[serde(rename = "is_global")]
+    pub is_global: bool,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
 }
 
 impl EntityReference {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_id_hex: String) -> EntityReference {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, is_global: bool, entity_address: String) -> EntityReference {
         EntityReference {
             entity_type,
-            entity_id_hex,
+            is_global,
+            entity_address,
         }
     }
 }

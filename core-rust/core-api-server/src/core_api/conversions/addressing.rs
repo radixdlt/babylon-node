@@ -1,105 +1,60 @@
-use std::convert::TryFrom;
-use std::str::FromStr;
-
-use crate::core_api::*;
-
 use crate::core_api::models;
+use crate::core_api::*;
 use models::SubstateType;
-use radix_engine::types::{
-    ClockOffset, ComponentAddress, ComponentOffset, EpochManagerOffset, PackageAddress,
-    PackageOffset, ResourceAddress,
-};
-use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_common::types::{EntityType, GlobalAddress, ModuleId, NodeId, SubstateKey};
-use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::types::{
-    AccessControllerOffset, AccessRulesOffset, AccountOffset, FungibleResourceManagerOffset,
-    FungibleVaultOffset, NonFungibleResourceManagerOffset, NonFungibleVaultOffset, RoyaltyOffset,
-    SysModuleId, TypeInfoOffset, ValidatorOffset,
-};
-use radix_engine_queries::typed_substate_layout::{TypedObjectModuleSubstateKey, TypedSubstateKey};
+use radix_engine::track::db_key_mapper::*;
+use radix_engine::types::*;
+use radix_engine_interface::api::*;
+use radix_engine_queries::typed_substate_layout::*;
+
+pub fn to_api_global_address(
+    context: &MappingContext,
+    global_address: &GlobalAddress,
+) -> Result<String, MappingError> {
+    to_api_entity_address(context, global_address.as_node_id())
+}
 
 pub fn to_api_component_address(
     context: &MappingContext,
     component_address: &ComponentAddress,
-) -> String {
-    context
-        .bech32_encoder
-        .encode(component_address.as_ref())
-        .unwrap()
+) -> Result<String, MappingError> {
+    to_api_entity_address(context, component_address.as_node_id())
 }
 
 pub fn to_api_resource_address(
     context: &MappingContext,
     resource_address: &ResourceAddress,
-) -> String {
-    context
-        .bech32_encoder
-        .encode(resource_address.as_ref())
-        .unwrap()
+) -> Result<String, MappingError> {
+    to_api_entity_address(context, resource_address.as_node_id())
 }
 
 pub fn to_api_package_address(
     context: &MappingContext,
     package_address: &PackageAddress,
-) -> String {
-    context
-        .bech32_encoder
-        .encode(package_address.as_ref())
-        .unwrap()
+) -> Result<String, MappingError> {
+    to_api_entity_address(context, package_address.as_node_id())
 }
 
-pub fn to_api_global_address(context: &MappingContext, global_address: &GlobalAddress) -> String {
-    context
-        .bech32_encoder
-        .encode(global_address.as_ref())
-        .unwrap()
-}
-
-pub fn to_api_entity_reference(node_id: NodeId) -> Result<models::EntityReference, MappingError> {
-    let mapped = MappedEntityId::try_from(node_id)?;
-    Ok(mapped.into())
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_substate_id(
+pub fn to_api_entity_address(
+    context: &MappingContext,
     node_id: &NodeId,
-    module_id: ModuleId,
-    substate_key: &SubstateKey,
-    typed_substate_key: &TypedSubstateKey,
-) -> Result<models::SubstateId, MappingError> {
-    let mapped = to_mapped_substate_id(node_id, module_id, substate_key, typed_substate_key)?;
-    Ok(mapped.into())
+) -> Result<String, MappingError> {
+    context
+        .bech32_encoder
+        .encode(node_id.as_ref())
+        .map_err(|err| MappingError::InvalidEntityAddress { encode_error: err })
 }
 
-#[derive(Debug)]
-pub struct MappedEntityId {
-    entity_type: models::EntityType,
-    entity_id_bytes: Vec<u8>,
-}
-
-impl From<MappedEntityId> for models::EntityReference {
-    fn from(mapped_entity_id: MappedEntityId) -> Self {
-        models::EntityReference {
-            entity_type: mapped_entity_id.entity_type,
-            entity_id_hex: to_hex(mapped_entity_id.entity_id_bytes),
-        }
-    }
-}
-
-impl TryFrom<NodeId> for MappedEntityId {
-    type Error = MappingError;
-
-    fn try_from(node_id: NodeId) -> Result<MappedEntityId, MappingError> {
-        let entity_id_bytes = node_id_to_entity_id_bytes(&node_id);
-        let entity_type =
-            to_api_entity_type(node_id.entity_type().ok_or(MappingError::EntityTypeError)?);
-        Ok(MappedEntityId {
-            entity_type,
-            entity_id_bytes,
-        })
-    }
+pub fn to_api_entity_reference(
+    context: &MappingContext,
+    node_id: &NodeId,
+) -> Result<models::EntityReference, MappingError> {
+    Ok(models::EntityReference {
+        entity_type: to_api_entity_type(
+            node_id.entity_type().ok_or(MappingError::EntityTypeError)?,
+        ),
+        is_global: node_id.is_global(),
+        entity_address: to_api_entity_address(context, node_id)?,
+    })
 }
 
 pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
@@ -114,199 +69,238 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalAccount => models::EntityType::Account,
         EntityType::GlobalIdentity => models::EntityType::Identity,
         EntityType::GlobalGenericComponent => models::EntityType::NormalComponent,
-        EntityType::GlobalVirtualEcdsaAccount => models::EntityType::Account,
-        EntityType::GlobalVirtualEddsaAccount => models::EntityType::Account,
-        EntityType::GlobalVirtualEcdsaIdentity => models::EntityType::Identity,
-        EntityType::GlobalVirtualEddsaIdentity => models::EntityType::Identity,
+        EntityType::GlobalVirtualSecp256k1Account => models::EntityType::Account,
+        EntityType::GlobalVirtualEd25519Account => models::EntityType::Account,
+        EntityType::GlobalVirtualSecp256k1Identity => models::EntityType::Identity,
+        EntityType::GlobalVirtualEd25519Identity => models::EntityType::Identity,
         EntityType::InternalFungibleVault => models::EntityType::FungibleVault,
         EntityType::InternalNonFungibleVault => models::EntityType::NonFungibleVault,
         EntityType::InternalAccount => models::EntityType::Account,
         EntityType::InternalKeyValueStore => models::EntityType::KeyValueStore,
-        EntityType::InternalIndex => models::EntityType::Index,
-        EntityType::InternalSortedIndex => models::EntityType::SortedIndex,
         EntityType::InternalGenericComponent => models::EntityType::NormalComponent,
     }
 }
 
-#[derive(Debug)]
-pub struct MappedSubstateId(
-    models::EntityType,
-    Vec<u8>,
-    models::SysModuleType,
-    models::SubstateType,
-    Vec<u8>,
-);
-
-impl From<MappedSubstateId> for models::SubstateId {
-    fn from(mapped_substate_id: MappedSubstateId) -> Self {
-        models::SubstateId {
-            entity_type: mapped_substate_id.0,
-            entity_id_hex: to_hex(mapped_substate_id.1),
-            module_type: mapped_substate_id.2,
-            substate_type: mapped_substate_id.3,
-            substate_key_hex: to_hex(mapped_substate_id.4),
-        }
-    }
-}
-
-impl From<MappedSubstateId> for MappedEntityId {
-    fn from(mapped_substate_id: MappedSubstateId) -> Self {
-        MappedEntityId {
-            entity_type: mapped_substate_id.0,
-            entity_id_bytes: mapped_substate_id.1,
-        }
-    }
-}
-
-impl From<MappedSubstateId> for models::EntityReference {
-    fn from(mapped_substate_id: MappedSubstateId) -> Self {
-        models::EntityReference {
-            entity_type: mapped_substate_id.0,
-            entity_id_hex: to_hex(mapped_substate_id.1),
-        }
-    }
-}
-
-fn to_mapped_substate_id(
+#[tracing::instrument(skip_all)]
+pub fn to_api_substate_id(
+    context: &MappingContext,
     node_id: &NodeId,
-    module_id: ModuleId,
+    partition_number: PartitionNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
-) -> Result<MappedSubstateId, MappingError> {
+) -> Result<models::SubstateId, MappingError> {
     let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
-    let entity_id_bytes = node_id_to_entity_id_bytes(node_id);
-    let module_type = to_api_sys_module_type(module_id)?;
-    let substate_key_bytes = scrypto_encode(&substate_key).unwrap();
+    let entity_address = to_api_entity_address(context, node_id)?;
+    let api_substate_key = to_api_substate_key(substate_key);
 
-    let substate_type = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModule(TypeInfoOffset::TypeInfo) => SubstateType::TypeInfo,
-        TypedSubstateKey::AccessRulesModule(AccessRulesOffset::AccessRules) => {
-            SubstateType::MethodAccessRules
-        }
-        TypedSubstateKey::RoyaltyModule(RoyaltyOffset::RoyaltyConfig) => {
-            SubstateType::ComponentRoyaltyConfig
-        }
-        TypedSubstateKey::RoyaltyModule(RoyaltyOffset::RoyaltyAccumulator) => {
-            SubstateType::ComponentRoyaltyAccumulator
-        }
-        TypedSubstateKey::MetadataModule(_) => SubstateType::MetadataValue,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
-            PackageOffset::Info,
-        )) => SubstateType::PackageInfo,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
-            PackageOffset::CodeType,
-        )) => SubstateType::PackageCode,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
-            PackageOffset::Code,
-        )) => SubstateType::PackageCode,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
-            PackageOffset::Royalty,
-        )) => SubstateType::PackageRoyalty,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Package(
-            PackageOffset::FunctionAccessRules,
-        )) => SubstateType::PackageFunctionAccessRules,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleResource(
-            FungibleResourceManagerOffset::Divisibility,
-        )) => SubstateType::FungibleResourceManagerDivisibility,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleResource(
-            FungibleResourceManagerOffset::TotalSupply,
-        )) => SubstateType::FungibleResourceManagerTotalSupply,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::IdType,
-        )) => SubstateType::NonFungibleResourceManagerIdType,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::TotalSupply,
-        )) => SubstateType::NonFungibleResourceManagerTotalSupply,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::DataSchema,
-        )) => SubstateType::NonFungibleResourceManagerDataSchema,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::Data,
-        )) => SubstateType::NonFungibleResourceManagerData,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleVault(
-            FungibleVaultOffset::LiquidFungible,
-        )) => SubstateType::FungibleVaultBalance,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleVault(
-            FungibleVaultOffset::LockedFungible,
+    let (substate_type, partition_kind) = match typed_substate_key {
+        TypedSubstateKey::TypeInfoModuleField(TypeInfoField::TypeInfo) => (
+            SubstateType::TypeInfoModuleFieldTypeInfo,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::AccessRulesModuleField(AccessRulesField::AccessRules) => (
+            SubstateType::AccessRulesModuleFieldAccessRules,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyConfig) => (
+            SubstateType::RoyaltyModuleFieldConfig,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyAccumulator) => (
+            SubstateType::RoyaltyModuleFieldAccumulator,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MetadataModuleEntryKey(_) => (
+            SubstateType::MetadataModuleEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
+            PackageField::Info,
+        )) => (SubstateType::PackageFieldCode, models::PartitionKind::Field),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
+            PackageField::CodeType,
+        )) => (
+            SubstateType::PackageFieldCodeType,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
+            PackageField::Code,
+        )) => (SubstateType::PackageFieldCode, models::PartitionKind::Field),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
+            PackageField::Royalty,
+        )) => (
+            SubstateType::PackageFieldRoyalty,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
+            PackageField::FunctionAccessRules,
+        )) => (
+            SubstateType::PackageFieldFunctionAccessRules,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceField(
+            FungibleResourceManagerField::Divisibility,
+        )) => (
+            SubstateType::FungibleResourceManagerFieldDivisibility,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceField(
+            FungibleResourceManagerField::TotalSupply,
+        )) => (
+            SubstateType::FungibleResourceManagerFieldTotalSupply,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
+            NonFungibleResourceManagerField::IdType,
+        )) => (
+            SubstateType::NonFungibleResourceManagerFieldIdType,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
+            NonFungibleResourceManagerField::TotalSupply,
+        )) => (
+            SubstateType::NonFungibleResourceManagerFieldTotalSupply,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceField(
+            NonFungibleResourceManagerField::MutableFields,
+        )) => (
+            SubstateType::NonFungibleResourceManagerFieldMutableFields,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(_)) => (
+            SubstateType::NonFungibleResourceManagerDataEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
+            FungibleVaultField::LiquidFungible,
+        )) => (
+            SubstateType::FungibleVaultFieldBalance,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
+            FungibleVaultField::LockedFungible,
         )) => {
-            return Err(MappingError::SubstateKeyMappingError {
-                entity_type_hex: to_hex(entity_id_bytes),
-                module_id: module_id.0,
-                substate_key_hex: to_hex(substate_key_bytes),
+            return Err(MappingError::SubstateKey {
+                entity_address,
+                partition_number,
+                substate_key: api_substate_key,
                 message: "LockedFungible".to_string(),
             })
         }
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVault(
-            NonFungibleVaultOffset::LiquidNonFungible,
-        )) => SubstateType::NonFungibleVaultBalance,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVault(
-            NonFungibleVaultOffset::LockedNonFungible,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
+            NonFungibleVaultField::LiquidNonFungible,
+        )) => (
+            SubstateType::NonFungibleVaultFieldBalance,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
+            NonFungibleVaultField::LockedNonFungible,
         )) => {
-            return Err(MappingError::SubstateKeyMappingError {
-                entity_type_hex: to_hex(entity_id_bytes),
-                module_id: module_id.0,
-                substate_key_hex: to_hex(substate_key_bytes),
+            return Err(MappingError::SubstateKey {
+                entity_address,
+                partition_number,
+                substate_key: api_substate_key,
                 message: "LockedNonFungible".to_string(),
             })
         }
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManager(
-            EpochManagerOffset::Config,
-        )) => SubstateType::EpochManagerConfig,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManager(
-            EpochManagerOffset::EpochManager,
-        )) => SubstateType::EpochManager,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManager(
-            EpochManagerOffset::CurrentValidatorSet,
-        )) => SubstateType::CurrentValidatorSet,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManager(
-            EpochManagerOffset::RegisteredValidators,
-        )) => SubstateType::RegisteredValidators,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Clock(
-            ClockOffset::CurrentTimeRoundedToMinutes,
-        )) => SubstateType::Clock,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Validator(
-            ValidatorOffset::Validator,
-        )) => SubstateType::Validator,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::Account(
-            AccountOffset::Account,
-        )) => SubstateType::Account,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::AccessController(
-            AccessControllerOffset::AccessController,
-        )) => SubstateType::AccessController,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericScryptoComponent(
-            ComponentOffset::State0,
-        )) => SubstateType::GenericScryptoComponentState,
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericKeyValueStore(_)) => {
-            SubstateType::GenericKeyValueStore
-        }
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericIndex(_)) => {
-            SubstateType::GenericIndex
-        }
-        TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericSortedU16Index(_)) => {
-            SubstateType::GenericSortedU16Index
-        }
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_),
+        ) => (
+            SubstateType::NonFungibleVaultContentsIndexEntry,
+            models::PartitionKind::Index,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
+            EpochManagerField::Config,
+        )) => (
+            SubstateType::EpochManagerFieldConfig,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
+            EpochManagerField::EpochManager,
+        )) => (
+            SubstateType::EpochManagerFieldState,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
+            EpochManagerField::CurrentValidatorSet,
+        )) => (
+            SubstateType::EpochManagerFieldCurrentValidatorSet,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(_),
+        ) => (
+            SubstateType::EpochManagerRegisteredValidatorsByStakeIndexEntry,
+            models::PartitionKind::SortedIndex,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ClockField(
+            ClockField::CurrentTimeRoundedToMinutes,
+        )) => (SubstateType::ClockFieldState, models::PartitionKind::Field),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
+            ValidatorField::Validator,
+        )) => (
+            SubstateType::ValidatorFieldState,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(_)) => (
+            SubstateType::AccountVaultIndexEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessControllerField(
+            AccessControllerField::AccessController,
+        )) => (
+            SubstateType::AccessControllerFieldState,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::GenericScryptoComponentField(
+            ComponentField::State0,
+        )) => (
+            SubstateType::GenericScryptoComponentFieldState,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_)) => (
+            SubstateType::GenericKeyValueStoreEntry,
+            models::PartitionKind::KeyValue,
+        ),
     };
 
-    Ok(MappedSubstateId(
-        to_api_entity_type(entity_type),
-        entity_id_bytes,
-        module_type,
+    let entity_module = match typed_substate_key {
+        TypedSubstateKey::TypeInfoModuleField(_) => models::EntityModule::TypeInfo,
+        TypedSubstateKey::AccessRulesModuleField(_) => models::EntityModule::AccessRules,
+        TypedSubstateKey::RoyaltyModuleField(_) => models::EntityModule::Royalty,
+        TypedSubstateKey::MetadataModuleEntryKey(_) => models::EntityModule::Metadata,
+        TypedSubstateKey::MainModule(_) => models::EntityModule::Main,
+    };
+
+    Ok(models::SubstateId {
+        entity_type: to_api_entity_type(entity_type),
+        entity_address,
+        entity_module,
+        partition_kind,
+        partition_number: partition_number.0 as i32,
         substate_type,
-        substate_key_bytes,
-    ))
+        substate_key: Some(api_substate_key),
+    })
 }
 
-pub fn to_global_entity_reference(
-    context: &MappingContext,
-    global_address: &GlobalAddress,
-) -> Result<models::GlobalEntityReference, MappingError> {
-    let reference = models::GlobalEntityReference {
-        entity_reference: Box::new(to_api_entity_reference(*global_address.as_node_id())?),
-        global_address_hex: to_hex(global_address.to_vec()),
-        global_address: to_api_global_address(context, global_address),
-    };
-
-    Ok(reference)
+pub fn to_api_substate_key(substate_key: &SubstateKey) -> models::SubstateKey {
+    let db_sort_key_hex = to_hex(SpreadPrefixKeyMapper::to_db_sort_key(substate_key).0);
+    match substate_key {
+        SubstateKey::Tuple(tuple_key) => models::SubstateKey::FieldSubstateKey {
+            db_sort_key_hex,
+            id: to_api_u8_as_i32(*tuple_key),
+        },
+        SubstateKey::Map(map_key) => models::SubstateKey::MapSubstateKey {
+            db_sort_key_hex,
+            key_hex: to_hex(map_key),
+        },
+        SubstateKey::Sorted((sort_key, map_key)) => models::SubstateKey::SortedSubstateKey {
+            db_sort_key_hex,
+            sort_prefix: to_api_u16_as_i32(*sort_key),
+            key_hex: to_hex(map_key),
+        },
+    }
 }
 
 pub fn extract_global_address(
@@ -347,31 +341,11 @@ pub fn extract_non_fungible_id_from_simple_representation(
     Ok(NonFungibleLocalId::from_str(simple_rep)?)
 }
 
-pub fn node_id_to_entity_id_bytes(node_id: &NodeId) -> Vec<u8> {
-    node_id.0[0..NodeId::ENTITY_ID_LENGTH].to_vec()
-}
-
-pub fn to_api_sys_module_type(module_id: ModuleId) -> Result<models::SysModuleType, MappingError> {
-    let sys_module_id =
-        SysModuleId::try_from(module_id).map_err(|_| MappingError::ModuleTypeError {
-            message: format!("Could not convert SysModuleId {:?}", module_id),
-        })?;
-
-    Ok(match sys_module_id {
-        SysModuleId::TypeInfo => models::SysModuleType::TypeInfo,
-        SysModuleId::Metadata => models::SysModuleType::Metadata,
-        SysModuleId::Royalty => models::SysModuleType::Royalty,
-        SysModuleId::AccessRules => models::SysModuleType::AccessRules,
-        SysModuleId::Object => models::SysModuleType::Object,
-        SysModuleId::Virtualized => models::SysModuleType::Virtualized,
-    })
-}
-
-pub fn to_api_object_module_type(object_module_id: &ObjectModuleId) -> models::ObjectModuleType {
+pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::ObjectModuleId {
     match object_module_id {
-        ObjectModuleId::SELF => models::ObjectModuleType::_Self,
-        ObjectModuleId::Metadata => models::ObjectModuleType::Metadata,
-        ObjectModuleId::Royalty => models::ObjectModuleType::Royalty,
-        ObjectModuleId::AccessRules => models::ObjectModuleType::AccessRules,
+        ObjectModuleId::Main => models::ObjectModuleId::Main,
+        ObjectModuleId::Metadata => models::ObjectModuleId::Metadata,
+        ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
+        ObjectModuleId::AccessRules => models::ObjectModuleId::AccessRules,
     }
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptor;
+import com.radixdlt.api.core.generated.models.ResourceOrNonFungible;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * RequireProofRuleAllOf
  */
 @JsonPropertyOrder({
-  RequireProofRuleAllOf.JSON_PROPERTY_RESOURCE
+  RequireProofRuleAllOf.JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RequireProofRuleAllOf {
-  public static final String JSON_PROPERTY_RESOURCE = "resource";
-  private DynamicResourceDescriptor resource;
+  public static final String JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE = "resource_or_non_fungible";
+  private ResourceOrNonFungible resourceOrNonFungible;
 
   public RequireProofRuleAllOf() { 
   }
 
-  public RequireProofRuleAllOf resource(DynamicResourceDescriptor resource) {
-    this.resource = resource;
+  public RequireProofRuleAllOf resourceOrNonFungible(ResourceOrNonFungible resourceOrNonFungible) {
+    this.resourceOrNonFungible = resourceOrNonFungible;
     return this;
   }
 
    /**
-   * Get resource
-   * @return resource
+   * Get resourceOrNonFungible
+   * @return resourceOrNonFungible
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE)
+  @JsonProperty(JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptor getResource() {
-    return resource;
+  public ResourceOrNonFungible getResourceOrNonFungible() {
+    return resourceOrNonFungible;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE)
+  @JsonProperty(JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResource(DynamicResourceDescriptor resource) {
-    this.resource = resource;
+  public void setResourceOrNonFungible(ResourceOrNonFungible resourceOrNonFungible) {
+    this.resourceOrNonFungible = resourceOrNonFungible;
   }
 
 
@@ -80,19 +80,19 @@ public class RequireProofRuleAllOf {
       return false;
     }
     RequireProofRuleAllOf requireProofRuleAllOf = (RequireProofRuleAllOf) o;
-    return Objects.equals(this.resource, requireProofRuleAllOf.resource);
+    return Objects.equals(this.resourceOrNonFungible, requireProofRuleAllOf.resourceOrNonFungible);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resource);
+    return Objects.hash(resourceOrNonFungible);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class RequireProofRuleAllOf {\n");
-    sb.append("    resource: ").append(toIndentedString(resource)).append("\n");
+    sb.append("    resourceOrNonFungible: ").append(toIndentedString(resourceOrNonFungible)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -38,10 +38,6 @@ pub enum EntityType {
     FungibleVault,
     #[serde(rename = "NonFungibleVault")]
     NonFungibleVault,
-    #[serde(rename = "Index")]
-    Index,
-    #[serde(rename = "SortedIndex")]
-    SortedIndex,
 
 }
 
@@ -61,8 +57,6 @@ impl ToString for EntityType {
             Self::KeyValueStore => String::from("KeyValueStore"),
             Self::FungibleVault => String::from("FungibleVault"),
             Self::NonFungibleVault => String::from("NonFungibleVault"),
-            Self::Index => String::from("Index"),
-            Self::SortedIndex => String::from("SortedIndex"),
         }
     }
 }

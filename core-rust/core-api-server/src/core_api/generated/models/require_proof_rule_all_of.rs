@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct RequireProofRuleAllOf {
-    #[serde(rename = "resource")]
-    pub resource: Option<crate::core_api::generated::models::DynamicResourceDescriptor>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "resource_or_non_fungible")]
+    pub resource_or_non_fungible: Box<crate::core_api::generated::models::ResourceOrNonFungible>,
 }
 
 impl RequireProofRuleAllOf {
-    pub fn new(resource: crate::core_api::generated::models::DynamicResourceDescriptor) -> RequireProofRuleAllOf {
+    pub fn new(resource_or_non_fungible: crate::core_api::generated::models::ResourceOrNonFungible) -> RequireProofRuleAllOf {
         RequireProofRuleAllOf {
-            resource: Option::Some(resource),
+            resource_or_non_fungible: Box::new(resource_or_non_fungible),
         }
     }
 }

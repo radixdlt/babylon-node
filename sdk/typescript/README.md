@@ -22,10 +22,10 @@ Behind the scenes, this library uses the fetch API:
 The client checks that it can connect to the Core API at `initialize` time. If you'd rather, you can use `initializeUnchecked` which skips this check.
 
 ```typescript
-import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
+import fetch from "node-fetch"; // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
 import http from "node:http";
 import https from "node:http";
-import { CoreApiClient} from "@radixdlt/babylon-core-api-sdk";
+import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     // Note - in nodeJS, you may need to use 127.0.0.1 instead of localhost

@@ -43,8 +43,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   StateNonFungibleResourceManager.JSON_PROPERTY_ID_TYPE,
   StateNonFungibleResourceManager.JSON_PROPERTY_TOTAL_SUPPLY,
-  StateNonFungibleResourceManager.JSON_PROPERTY_DATA_SCHEMA,
-  StateNonFungibleResourceManager.JSON_PROPERTY_DATA
+  StateNonFungibleResourceManager.JSON_PROPERTY_MUTABLE_FIELDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -64,11 +63,8 @@ public class StateNonFungibleResourceManager extends StateResourceManager {
   public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
   private Substate totalSupply;
 
-  public static final String JSON_PROPERTY_DATA_SCHEMA = "data_schema";
-  private Substate dataSchema;
-
-  public static final String JSON_PROPERTY_DATA = "data";
-  private Substate data;
+  public static final String JSON_PROPERTY_MUTABLE_FIELDS = "mutable_fields";
+  private Substate mutableFields;
 
   public StateNonFungibleResourceManager() { 
   }
@@ -125,55 +121,29 @@ public class StateNonFungibleResourceManager extends StateResourceManager {
   }
 
 
-  public StateNonFungibleResourceManager dataSchema(Substate dataSchema) {
-    this.dataSchema = dataSchema;
+  public StateNonFungibleResourceManager mutableFields(Substate mutableFields) {
+    this.mutableFields = mutableFields;
     return this;
   }
 
    /**
-   * Get dataSchema
-   * @return dataSchema
+   * Get mutableFields
+   * @return mutableFields
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getDataSchema() {
-    return dataSchema;
+  public Substate getMutableFields() {
+    return mutableFields;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataSchema(Substate dataSchema) {
-    this.dataSchema = dataSchema;
-  }
-
-
-  public StateNonFungibleResourceManager data(Substate data) {
-    this.data = data;
-    return this;
-  }
-
-   /**
-   * Get data
-   * @return data
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getData() {
-    return data;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setData(Substate data) {
-    this.data = data;
+  public void setMutableFields(Substate mutableFields) {
+    this.mutableFields = mutableFields;
   }
 
 
@@ -191,14 +161,13 @@ public class StateNonFungibleResourceManager extends StateResourceManager {
     StateNonFungibleResourceManager stateNonFungibleResourceManager = (StateNonFungibleResourceManager) o;
     return Objects.equals(this.idType, stateNonFungibleResourceManager.idType) &&
         Objects.equals(this.totalSupply, stateNonFungibleResourceManager.totalSupply) &&
-        Objects.equals(this.dataSchema, stateNonFungibleResourceManager.dataSchema) &&
-        Objects.equals(this.data, stateNonFungibleResourceManager.data) &&
+        Objects.equals(this.mutableFields, stateNonFungibleResourceManager.mutableFields) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(idType, totalSupply, dataSchema, data, super.hashCode());
+    return Objects.hash(idType, totalSupply, mutableFields, super.hashCode());
   }
 
   @Override
@@ -208,8 +177,7 @@ public class StateNonFungibleResourceManager extends StateResourceManager {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    idType: ").append(toIndentedString(idType)).append("\n");
     sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
-    sb.append("    dataSchema: ").append(toIndentedString(dataSchema)).append("\n");
-    sb.append("    data: ").append(toIndentedString(data)).append("\n");
+    sb.append("    mutableFields: ").append(toIndentedString(mutableFields)).append("\n");
     sb.append("}");
     return sb.toString();
   }

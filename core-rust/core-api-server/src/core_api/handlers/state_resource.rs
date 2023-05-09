@@ -1,14 +1,7 @@
 use crate::core_api::*;
-use radix_engine::blueprints::resource::{
-    FungibleResourceManagerDivisibilitySubstate, FungibleResourceManagerTotalSupplySubstate,
-    NonFungibleResourceManagerDataSchemaSubstate, NonFungibleResourceManagerDataSubstate,
-    NonFungibleResourceManagerIdTypeSubstate, NonFungibleResourceManagerTotalSupplySubstate,
-};
-use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use radix_engine_interface::types::SysModuleId;
-use radix_engine_interface::types::{
-    AccessRulesOffset, FungibleResourceManagerOffset, NonFungibleResourceManagerOffset,
-};
+use radix_engine::blueprints::resource::*;
+use radix_engine::system::node_modules::access_rules::*;
+use radix_engine::types::*;
 use std::ops::Deref;
 
 use radix_engine_common::types::EntityType;
@@ -21,8 +14,7 @@ enum ManagerByType {
     NonFungible(
         NonFungibleResourceManagerIdTypeSubstate,
         NonFungibleResourceManagerTotalSupplySubstate,
-        NonFungibleResourceManagerDataSchemaSubstate,
-        NonFungibleResourceManagerDataSubstate,
+        NonFungibleResourceManagerMutableFieldsSubstate,
     ),
 }
 
@@ -43,44 +35,33 @@ pub(crate) async fn handle_state_resource(
     let is_fungible = resource_node_id.entity_type() == Some(EntityType::GlobalFungibleResource);
     let manager = if is_fungible {
         ManagerByType::Fungible(
-            read_mandatory_substate(
+            read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
-                SysModuleId::Object.into(),
-                &FungibleResourceManagerOffset::Divisibility.into(),
+                &FungibleResourceManagerField::Divisibility.into(),
             )?,
-            read_mandatory_substate(
+            read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
-                SysModuleId::Object.into(),
-                &FungibleResourceManagerOffset::TotalSupply.into(),
+                &FungibleResourceManagerField::TotalSupply.into(),
             )?,
         )
     } else {
         ManagerByType::NonFungible(
-            read_mandatory_substate(
+            read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
-                SysModuleId::Object.into(),
-                &NonFungibleResourceManagerOffset::IdType.into(),
+                &NonFungibleResourceManagerField::IdType.into(),
             )?,
-            read_mandatory_substate(
+            read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
-                SysModuleId::Object.into(),
-                &NonFungibleResourceManagerOffset::TotalSupply.into(),
+                &NonFungibleResourceManagerField::TotalSupply.into(),
             )?,
-            read_mandatory_substate(
+            read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
-                SysModuleId::Object.into(),
-                &NonFungibleResourceManagerOffset::DataSchema.into(),
-            )?,
-            read_mandatory_substate(
-                database.deref(),
-                resource_node_id,
-                SysModuleId::Object.into(),
-                &NonFungibleResourceManagerOffset::Data.into(),
+                &NonFungibleResourceManagerField::MutableFields.into(),
             )?,
         )
     };
@@ -88,12 +69,12 @@ pub(crate) async fn handle_state_resource(
     let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
-        SysModuleId::AccessRules.into(),
-        &AccessRulesOffset::AccessRules.into(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
     )?;
 
     Ok(models::StateResourceResponse {
-        manager: Box::new(to_api_resource_manager(&mapping_context, &manager)?),
+        manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
             &method_access_rules_substate,
@@ -117,7 +98,7 @@ fn to_api_resource_manager(
                 )?),
             }
         }
-        ManagerByType::NonFungible(id_type, total_supply, data_schema, data) => {
+        ManagerByType::NonFungible(id_type, total_supply, mutable_fields) => {
             models::StateResourceManager::StateNonFungibleResourceManager {
                 id_type: Box::new(to_api_non_fungible_resource_manager_id_type_substate(
                     id_type,
@@ -125,11 +106,12 @@ fn to_api_resource_manager(
                 total_supply: Box::new(to_api_non_fungible_resource_manager_total_supply_substate(
                     total_supply,
                 )?),
-                data_schema: Box::new(to_api_non_fungible_resource_manager_data_schema_substate(
-                    context,
-                    data_schema,
-                )?),
-                data: Box::new(to_api_non_fungible_resource_manager_data_substate(data)?),
+                mutable_fields: Box::new(
+                    to_api_non_fungible_resource_manager_mutable_fields_substate(
+                        context,
+                        mutable_fields,
+                    )?,
+                ),
             }
         }
     })

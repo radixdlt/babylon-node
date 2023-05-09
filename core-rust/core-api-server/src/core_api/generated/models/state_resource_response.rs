@@ -11,10 +11,10 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateResourceResponse {
     #[serde(rename = "manager")]
-    pub manager: Box<crate::core_api::generated::models::StateResourceManager>,
+    pub manager: Option<crate::core_api::generated::models::StateResourceManager>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "access_rules")]
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
@@ -22,7 +22,7 @@ pub struct StateResourceResponse {
 impl StateResourceResponse {
     pub fn new(manager: crate::core_api::generated::models::StateResourceManager, access_rules: crate::core_api::generated::models::Substate) -> StateResourceResponse {
         StateResourceResponse {
-            manager: Box::new(manager),
+            manager: Option::Some(manager),
             access_rules: Option::Some(access_rules),
         }
     }

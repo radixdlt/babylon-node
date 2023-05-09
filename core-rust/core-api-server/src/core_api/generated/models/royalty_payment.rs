@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct RoyaltyPayment {
     #[serde(rename = "royalty_receiver")]
-    pub royalty_receiver: Box<crate::core_api::generated::models::GlobalEntityReference>,
+    pub royalty_receiver: Box<crate::core_api::generated::models::EntityReference>,
     /// The string-encoded decimal representing the amount of fee in XRD paid as royalty to this receiver. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "xrd_amount")]
     pub xrd_amount: String,
 }
 
 impl RoyaltyPayment {
-    pub fn new(royalty_receiver: crate::core_api::generated::models::GlobalEntityReference, xrd_amount: String) -> RoyaltyPayment {
+    pub fn new(royalty_receiver: crate::core_api::generated::models::EntityReference, xrd_amount: String) -> RoyaltyPayment {
         RoyaltyPayment {
             royalty_receiver: Box::new(royalty_receiver),
             xrd_amount,

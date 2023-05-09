@@ -65,7 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -79,7 +79,7 @@ public record ComponentAddress(byte[] value) {
         ComponentAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ADDRESS,
+                TypeId.TYPE_CUSTOM_REFERENCE,
                 BYTE_LENGTH,
                 ComponentAddress::value,
                 ComponentAddress::new));
@@ -88,23 +88,18 @@ public record ComponentAddress(byte[] value) {
   private static final int BYTE_LENGTH = 30;
 
   // See entity_type.rs
-  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x04;
-  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x09;
-
-  // TODO: call scrypto (through JNI)
-  public static ComponentAddress virtualAccountFromPublicKey(ECDSASecp256k1PublicKey key) {
-    final var pubKeyHash = HashUtils.blake2b256(key.getCompressedBytes()).asBytes();
-    final byte[] lowerKeyBytes = new byte[BYTE_LENGTH];
-    System.arraycopy(pubKeyHash, pubKeyHash.length - BYTE_LENGTH, lowerKeyBytes, 0, BYTE_LENGTH);
-    lowerKeyBytes[0] = (byte) 10;
-    return new ComponentAddress(lowerKeyBytes);
-  }
+  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 130;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 192;
 
   public static ComponentAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);
+  }
+
+  public static ComponentAddress virtualAccountFromPublicKey(ECDSASecp256k1PublicKey key) {
+    return Address.virtualAccountAddress(key);
   }
 
   public String toHexString() {

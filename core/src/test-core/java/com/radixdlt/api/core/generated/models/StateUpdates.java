@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CreatedOrUpdatedSubstate;
 import com.radixdlt.api.core.generated.models.DeletedSubstate;
-import com.radixdlt.api.core.generated.models.GlobalEntityReference;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ public class StateUpdates {
   private List<DeletedSubstate> deletedSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_NEW_GLOBAL_ENTITIES = "new_global_entities";
-  private List<GlobalEntityReference> newGlobalEntities = new ArrayList<>();
+  private List<EntityReference> newGlobalEntities = new ArrayList<>();
 
   public StateUpdates() { 
   }
@@ -152,12 +152,12 @@ public class StateUpdates {
   }
 
 
-  public StateUpdates newGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
+  public StateUpdates newGlobalEntities(List<EntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
     return this;
   }
 
-  public StateUpdates addNewGlobalEntitiesItem(GlobalEntityReference newGlobalEntitiesItem) {
+  public StateUpdates addNewGlobalEntitiesItem(EntityReference newGlobalEntitiesItem) {
     this.newGlobalEntities.add(newGlobalEntitiesItem);
     return this;
   }
@@ -171,14 +171,14 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<GlobalEntityReference> getNewGlobalEntities() {
+  public List<EntityReference> getNewGlobalEntities() {
     return newGlobalEntities;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNewGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
+  public void setNewGlobalEntities(List<EntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
   }
 

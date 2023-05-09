@@ -66,6 +66,7 @@ package com.radixdlt.genesis;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -85,6 +86,6 @@ public record GenesisValidator(
 
   public static GenesisValidator defaultFromPubKey(ECDSASecp256k1PublicKey key) {
     return new GenesisValidator(
-        key, true, true, ImmutableList.of(), ComponentAddress.virtualAccountFromPublicKey(key));
+        key, true, true, ImmutableList.of(), Address.virtualAccountAddress(key));
   }
 }

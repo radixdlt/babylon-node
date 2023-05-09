@@ -30,11 +30,7 @@ public enum TypeInfoType {
   
   OBJECT("Object"),
   
-  KEYVALUESTORE("KeyValueStore"),
-  
-  INDEX("Index"),
-  
-  SORTEDINDEX("SortedIndex");
+  KEYVALUESTORE("KeyValueStore");
 
   private String value;
 

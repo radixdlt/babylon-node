@@ -1,8 +1,7 @@
 use crate::core_api::*;
 use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::blueprints::epoch_manager::EpochManagerSubstate;
-use radix_engine::types::{ClockOffset, EpochManagerOffset, CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::types::SysModuleId;
+use radix_engine::types::*;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -15,18 +14,17 @@ pub(crate) async fn handle_lts_transaction_construction(
 
     let database = state.database.read();
 
-    let epoch_manager_substate: EpochManagerSubstate = read_mandatory_substate(
+    let epoch_manager_substate: EpochManagerSubstate = read_mandatory_main_field_substate(
         database.deref(),
         EPOCH_MANAGER.as_node_id(),
-        SysModuleId::Object.into(),
-        &EpochManagerOffset::EpochManager.into(),
+        &EpochManagerField::EpochManager.into(),
     )?;
 
-    let clock_substate: ClockSubstate = read_mandatory_substate(
+    let clock_substate: ClockSubstate = read_mandatory_main_field_substate(
         database.deref(),
         CLOCK.as_node_id(),
-        SysModuleId::Object.into(),
-        &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+        // TODO - change this to a better resolution of time when we have it
+        &ClockField::CurrentTimeRoundedToMinutes.into(),
     )?;
 
     Ok(models::LtsTransactionConstructionResponse {

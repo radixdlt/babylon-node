@@ -16,31 +16,32 @@ pub enum ProofRule {
     #[serde(rename="AllOf")]
     AllOfProofRule {
         #[serde(rename = "list")]
-        list: Box<crate::core_api::generated::models::DynamicResourceDescriptorList>,
+        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
     },
     #[serde(rename="AmountOf")]
     AmountOfProofRule {
         #[serde(rename = "amount")]
-        amount: Box<crate::core_api::generated::models::DynamicAmount>,
+        amount: String,
+        /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource")]
-        resource: Box<crate::core_api::generated::models::DynamicResourceDescriptor>,
+        resource: String,
     },
     #[serde(rename="AnyOf")]
     AnyOfProofRule {
         #[serde(rename = "list")]
-        list: Box<crate::core_api::generated::models::DynamicResourceDescriptorList>,
+        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
     },
     #[serde(rename="CountOf")]
     CountOfProofRule {
         #[serde(rename = "count")]
-        count: Box<crate::core_api::generated::models::DynamicCount>,
+        count: i32,
         #[serde(rename = "list")]
-        list: Box<crate::core_api::generated::models::DynamicResourceDescriptorList>,
+        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
     },
     #[serde(rename="Require")]
     RequireProofRule {
-        #[serde(rename = "resource")]
-        resource: Box<crate::core_api::generated::models::DynamicResourceDescriptor>,
+        #[serde(rename = "resource_or_non_fungible")]
+        resource_or_non_fungible: Box<crate::core_api::generated::models::ResourceOrNonFungible>,
     },
 }
 

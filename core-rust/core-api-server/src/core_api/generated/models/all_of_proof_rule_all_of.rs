@@ -14,13 +14,13 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AllOfProofRuleAllOf {
     #[serde(rename = "list")]
-    pub list: Option<crate::core_api::generated::models::DynamicResourceDescriptorList>, // Using Option permits Default trait; Will always be Some in normal use
+    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
 }
 
 impl AllOfProofRuleAllOf {
-    pub fn new(list: crate::core_api::generated::models::DynamicResourceDescriptorList) -> AllOfProofRuleAllOf {
+    pub fn new(list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> AllOfProofRuleAllOf {
         AllOfProofRuleAllOf {
-            list: Option::Some(list),
+            list,
         }
     }
 }

@@ -108,10 +108,6 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
         fix_for_enum_not_implementing_default(file_path, "ProofRule")
-        fix_for_enum_not_implementing_default(file_path, "DynamicAmount")
-        fix_for_enum_not_implementing_default(file_path, "DynamicCount")
-        fix_for_enum_not_implementing_default(file_path, "DynamicResourceDescriptor")
-        fix_for_enum_not_implementing_default(file_path, "DynamicResourceDescriptorList")
         fix_for_enum_not_implementing_default(file_path, "LedgerTransaction")
         fix_for_enum_not_implementing_default(file_path, "ParsedTransaction")
         fix_for_enum_not_implementing_default(file_path, "PublicKey")
@@ -129,6 +125,12 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "TargetIdentifier")
         fix_for_enum_not_implementing_default(file_path, "EventEmitterIdentifier")
         fix_for_enum_not_implementing_default(file_path, "TypeInfoDetails")
+        fix_for_enum_not_implementing_default(file_path, "StateResourceManager")
+        fix_for_enum_not_implementing_default(file_path, "SubstateKey")
+        fix_for_enum_not_implementing_default(file_path, "BlueprintCollectionSchemaType")
+        fix_for_enum_not_implementing_default(file_path, "BlueprintTypeReferenceKind")
+        fix_for_enum_not_implementing_default(file_path, "BlueprintCollectionSchema")
+        fix_for_enum_not_implementing_default(file_path, "BlueprintTypeReference")
 
     logging.info("Successfully fixed up rust models.")
 

@@ -52,11 +52,7 @@ public enum EntityType {
   
   FUNGIBLEVAULT("FungibleVault"),
   
-  NONFUNGIBLEVAULT("NonFungibleVault"),
-  
-  INDEX("Index"),
-  
-  SORTEDINDEX("SortedIndex");
+  NONFUNGIBLEVAULT("NonFungibleVault");
 
   private String value;
 

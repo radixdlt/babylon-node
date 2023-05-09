@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.NonFungibleId;
+import com.radixdlt.api.core.generated.models.NonFungibleLocalId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class NonFungibleResourceAmountAllOf {
   private String amount;
 
   public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
-  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
+  private List<NonFungibleLocalId> nonFungibleIds = new ArrayList<>();
 
   public NonFungibleResourceAmountAllOf() { 
   }
@@ -74,12 +74,12 @@ public class NonFungibleResourceAmountAllOf {
   }
 
 
-  public NonFungibleResourceAmountAllOf nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+  public NonFungibleResourceAmountAllOf nonFungibleIds(List<NonFungibleLocalId> nonFungibleIds) {
     this.nonFungibleIds = nonFungibleIds;
     return this;
   }
 
-  public NonFungibleResourceAmountAllOf addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+  public NonFungibleResourceAmountAllOf addNonFungibleIdsItem(NonFungibleLocalId nonFungibleIdsItem) {
     this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
@@ -93,14 +93,14 @@ public class NonFungibleResourceAmountAllOf {
   @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<NonFungibleId> getNonFungibleIds() {
+  public List<NonFungibleLocalId> getNonFungibleIds() {
     return nonFungibleIds;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+  public void setNonFungibleIds(List<NonFungibleLocalId> nonFungibleIds) {
     this.nonFungibleIds = nonFungibleIds;
   }
 

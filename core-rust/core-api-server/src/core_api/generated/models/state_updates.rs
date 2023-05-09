@@ -21,12 +21,12 @@ pub struct StateUpdates {
     #[serde(rename = "deleted_substates")]
     pub deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>,
     #[serde(rename = "new_global_entities")]
-    pub new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityReference>,
+    pub new_global_entities: Vec<crate::core_api::generated::models::EntityReference>,
 }
 
 impl StateUpdates {
     /// Transaction state updates (only present if status is Succeeded or Failed)
-    pub fn new(created_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, updated_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityReference>) -> StateUpdates {
+    pub fn new(created_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, updated_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>, new_global_entities: Vec<crate::core_api::generated::models::EntityReference>) -> StateUpdates {
         StateUpdates {
             created_substates,
             updated_substates,

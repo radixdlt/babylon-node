@@ -1,7 +1,6 @@
 use crate::core_api::*;
-use radix_engine::blueprints::clock::ClockSubstate;
-use radix_engine::types::{ClockOffset, CLOCK};
-use radix_engine_interface::types::SysModuleId;
+use radix_engine::blueprints::clock::*;
+use radix_engine::types::*;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -12,11 +11,10 @@ pub(crate) async fn handle_state_clock(
     assert_matching_network(&request.network, &state.network)?;
 
     let database = state.database.read();
-    let clock_substate: ClockSubstate = read_mandatory_substate(
+    let clock_substate: ClockSubstate = read_mandatory_main_field_substate(
         database.deref(),
         CLOCK.as_node_id(),
-        SysModuleId::Object.into(),
-        &ClockOffset::CurrentTimeRoundedToMinutes.into(),
+        &ClockField::CurrentTimeRoundedToMinutes.into(),
     )?;
 
     // TODO: Substate offset (CurrentTimeRoundedToMinutes) doesn't match substate name (ClockSubstate); fix upstream

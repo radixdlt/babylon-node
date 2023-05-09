@@ -15,26 +15,31 @@
 pub struct SubstateId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
-    /// The hex-encoded bytes of the entity id.
-    #[serde(rename = "entity_id_hex")]
-    pub entity_id_hex: String,
-    #[serde(rename = "module_type")]
-    pub module_type: crate::core_api::generated::models::SysModuleType,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
+    #[serde(rename = "entity_module")]
+    pub entity_module: crate::core_api::generated::models::EntityModule,
+    #[serde(rename = "partition_kind")]
+    pub partition_kind: crate::core_api::generated::models::PartitionKind,
+    #[serde(rename = "partition_number")]
+    pub partition_number: i32,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded bytes of the substate key, under the entity
-    #[serde(rename = "substate_key_hex")]
-    pub substate_key_hex: String,
+    #[serde(rename = "substate_key")]
+    pub substate_key: Option<crate::core_api::generated::models::SubstateKey>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl SubstateId {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_id_hex: String, module_type: crate::core_api::generated::models::SysModuleType, substate_type: crate::core_api::generated::models::SubstateType, substate_key_hex: String) -> SubstateId {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address: String, entity_module: crate::core_api::generated::models::EntityModule, partition_kind: crate::core_api::generated::models::PartitionKind, partition_number: i32, substate_type: crate::core_api::generated::models::SubstateType, substate_key: crate::core_api::generated::models::SubstateKey) -> SubstateId {
         SubstateId {
             entity_type,
-            entity_id_hex,
-            module_type,
+            entity_address,
+            entity_module,
+            partition_kind,
+            partition_number,
             substate_type,
-            substate_key_hex,
+            substate_key: Option::Some(substate_key),
         }
     }
 }

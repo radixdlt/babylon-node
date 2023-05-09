@@ -1,7 +1,6 @@
 use crate::core_api::*;
 use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use radix_engine::types::PackageOffset;
-use radix_engine_interface::types::{AccessRulesOffset, SysModuleId};
+use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
 
@@ -18,26 +17,25 @@ pub(crate) async fn handle_state_package(
 
     let database = state.database.read();
 
-    let package_info: PackageInfoSubstate = read_mandatory_substate(
+    let package_info: PackageInfoSubstate = read_optional_main_field_substate(
         database.deref(),
         package_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &PackageOffset::Info.into(),
+        &PackageField::Info.into(),
+    )
+    .ok_or_else(|| not_found_error("Package not found".to_string()))?;
+
+    let package_royalty: PackageRoyaltySubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        package_address.as_node_id(),
+        &PackageField::Royalty.into(),
     )?;
 
-    let package_royalty: PackageRoyaltySubstate = read_mandatory_substate(
-        database.deref(),
-        package_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &PackageOffset::Royalty.into(),
-    )?;
-
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
-        database.deref(),
-        package_address.as_node_id(),
-        SysModuleId::AccessRules.into(),
-        &AccessRulesOffset::AccessRules.into(),
-    )?;
+    let method_access_rules_substate: MethodAccessRulesSubstate =
+        read_mandatory_main_field_substate(
+            database.deref(),
+            package_address.as_node_id(),
+            &AccessRulesField::AccessRules.into(),
+        )?;
 
     Ok(models::StatePackageResponse {
         info: Some(to_api_package_info_substate(

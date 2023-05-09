@@ -25,6 +25,8 @@ pub struct ObjectTypeInfoDetails {
     /// The Bech32m-encoded human readable version of any global address
     #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
     pub outer_object: Option<String>,
+    #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
+    pub instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
 }
 
 impl ObjectTypeInfoDetails {
@@ -35,6 +37,7 @@ impl ObjectTypeInfoDetails {
             blueprint_name,
             global,
             outer_object: None,
+            instance_schema: None,
         }
     }
 }

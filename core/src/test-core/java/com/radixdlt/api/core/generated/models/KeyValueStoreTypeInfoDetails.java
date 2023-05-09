@@ -25,12 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.IndexTypeInfoDetails;
-import com.radixdlt.api.core.generated.models.KeyValueStoreSchema;
+import com.radixdlt.api.core.generated.models.KeyValueStoreInfo;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetailsAllOf;
 import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetails;
-import com.radixdlt.api.core.generated.models.SortedIndexTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoType;
 import io.swagger.annotations.ApiModel;
@@ -43,7 +41,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * KeyValueStoreTypeInfoDetails
  */
 @JsonPropertyOrder({
-  KeyValueStoreTypeInfoDetails.JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA
+  KeyValueStoreTypeInfoDetails.JSON_PROPERTY_KEY_VALUE_STORE_INFO
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -52,42 +50,40 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = IndexTypeInfoDetails.class, name = "Index"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStore"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "Object"),
-  @JsonSubTypes.Type(value = SortedIndexTypeInfoDetails.class, name = "SortedIndex"),
 })
 
 public class KeyValueStoreTypeInfoDetails extends TypeInfoDetails {
-  public static final String JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA = "key_value_store_schema";
-  private KeyValueStoreSchema keyValueStoreSchema;
+  public static final String JSON_PROPERTY_KEY_VALUE_STORE_INFO = "key_value_store_info";
+  private KeyValueStoreInfo keyValueStoreInfo;
 
   public KeyValueStoreTypeInfoDetails() { 
   }
 
-  public KeyValueStoreTypeInfoDetails keyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
-    this.keyValueStoreSchema = keyValueStoreSchema;
+  public KeyValueStoreTypeInfoDetails keyValueStoreInfo(KeyValueStoreInfo keyValueStoreInfo) {
+    this.keyValueStoreInfo = keyValueStoreInfo;
     return this;
   }
 
    /**
-   * Get keyValueStoreSchema
-   * @return keyValueStoreSchema
+   * Get keyValueStoreInfo
+   * @return keyValueStoreInfo
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public KeyValueStoreSchema getKeyValueStoreSchema() {
-    return keyValueStoreSchema;
+  public KeyValueStoreInfo getKeyValueStoreInfo() {
+    return keyValueStoreInfo;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
-    this.keyValueStoreSchema = keyValueStoreSchema;
+  public void setKeyValueStoreInfo(KeyValueStoreInfo keyValueStoreInfo) {
+    this.keyValueStoreInfo = keyValueStoreInfo;
   }
 
 
@@ -103,13 +99,13 @@ public class KeyValueStoreTypeInfoDetails extends TypeInfoDetails {
       return false;
     }
     KeyValueStoreTypeInfoDetails keyValueStoreTypeInfoDetails = (KeyValueStoreTypeInfoDetails) o;
-    return Objects.equals(this.keyValueStoreSchema, keyValueStoreTypeInfoDetails.keyValueStoreSchema) &&
+    return Objects.equals(this.keyValueStoreInfo, keyValueStoreTypeInfoDetails.keyValueStoreInfo) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyValueStoreSchema, super.hashCode());
+    return Objects.hash(keyValueStoreInfo, super.hashCode());
   }
 
   @Override
@@ -117,7 +113,7 @@ public class KeyValueStoreTypeInfoDetails extends TypeInfoDetails {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreTypeInfoDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    keyValueStoreSchema: ").append(toIndentedString(keyValueStoreSchema)).append("\n");
+    sb.append("    keyValueStoreInfo: ").append(toIndentedString(keyValueStoreInfo)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -136,10 +132,8 @@ public class KeyValueStoreTypeInfoDetails extends TypeInfoDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Index", IndexTypeInfoDetails.class);
   mappings.put("KeyValueStore", KeyValueStoreTypeInfoDetails.class);
   mappings.put("Object", ObjectTypeInfoDetails.class);
-  mappings.put("SortedIndex", SortedIndexTypeInfoDetails.class);
   mappings.put("KeyValueStoreTypeInfoDetails", KeyValueStoreTypeInfoDetails.class);
   JSON.registerDiscriminator(KeyValueStoreTypeInfoDetails.class, "type", mappings);
 }

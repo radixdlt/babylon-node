@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceAmount;
-import com.radixdlt.api.core.generated.models.StateComponentDescendentId;
+import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
+import com.radixdlt.api.core.generated.models.VaultBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -38,12 +38,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
-  StateComponentResponse.JSON_PROPERTY_ACCOUNT,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_CONFIG,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
   StateComponentResponse.JSON_PROPERTY_ACCESS_RULES,
-  StateComponentResponse.JSON_PROPERTY_STATE_OWNED_VAULTS,
-  StateComponentResponse.JSON_PROPERTY_DESCENDENT_IDS
+  StateComponentResponse.JSON_PROPERTY_VAULTS,
+  StateComponentResponse.JSON_PROPERTY_DESCENDENT_NODES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateComponentResponse {
@@ -52,9 +51,6 @@ public class StateComponentResponse {
 
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
-
-  public static final String JSON_PROPERTY_ACCOUNT = "account";
-  private Substate account;
 
   public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
   private Substate royaltyConfig;
@@ -65,11 +61,11 @@ public class StateComponentResponse {
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
 
-  public static final String JSON_PROPERTY_STATE_OWNED_VAULTS = "state_owned_vaults";
-  private List<ResourceAmount> stateOwnedVaults = new ArrayList<>();
+  public static final String JSON_PROPERTY_VAULTS = "vaults";
+  private List<VaultBalance> vaults = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_DESCENDENT_IDS = "descendent_ids";
-  private List<StateComponentDescendentId> descendentIds = new ArrayList<>();
+  public static final String JSON_PROPERTY_DESCENDENT_NODES = "descendent_nodes";
+  private List<StateComponentDescendentNode> descendentNodes = new ArrayList<>();
 
   public StateComponentResponse() { 
   }
@@ -109,10 +105,10 @@ public class StateComponentResponse {
    * Get state
    * @return state
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_STATE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public Substate getState() {
     return state;
@@ -120,35 +116,9 @@ public class StateComponentResponse {
 
 
   @JsonProperty(JSON_PROPERTY_STATE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setState(Substate state) {
     this.state = state;
-  }
-
-
-  public StateComponentResponse account(Substate account) {
-    this.account = account;
-    return this;
-  }
-
-   /**
-   * Get account
-   * @return account
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public Substate getAccount() {
-    return account;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAccount(Substate account) {
-    this.account = account;
   }
 
 
@@ -161,10 +131,10 @@ public class StateComponentResponse {
    * Get royaltyConfig
    * @return royaltyConfig
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public Substate getRoyaltyConfig() {
     return royaltyConfig;
@@ -172,7 +142,7 @@ public class StateComponentResponse {
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRoyaltyConfig(Substate royaltyConfig) {
     this.royaltyConfig = royaltyConfig;
   }
@@ -187,10 +157,10 @@ public class StateComponentResponse {
    * Get royaltyAccumulator
    * @return royaltyAccumulator
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public Substate getRoyaltyAccumulator() {
     return royaltyAccumulator;
@@ -198,7 +168,7 @@ public class StateComponentResponse {
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
     this.royaltyAccumulator = royaltyAccumulator;
   }
@@ -230,65 +200,65 @@ public class StateComponentResponse {
   }
 
 
-  public StateComponentResponse stateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
-    this.stateOwnedVaults = stateOwnedVaults;
+  public StateComponentResponse vaults(List<VaultBalance> vaults) {
+    this.vaults = vaults;
     return this;
   }
 
-  public StateComponentResponse addStateOwnedVaultsItem(ResourceAmount stateOwnedVaultsItem) {
-    this.stateOwnedVaults.add(stateOwnedVaultsItem);
+  public StateComponentResponse addVaultsItem(VaultBalance vaultsItem) {
+    this.vaults.add(vaultsItem);
     return this;
   }
 
    /**
    * Any vaults owned directly or indirectly by the component
-   * @return stateOwnedVaults
+   * @return vaults
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Any vaults owned directly or indirectly by the component")
-  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ResourceAmount> getStateOwnedVaults() {
-    return stateOwnedVaults;
+  public List<VaultBalance> getVaults() {
+    return vaults;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
-    this.stateOwnedVaults = stateOwnedVaults;
+  public void setVaults(List<VaultBalance> vaults) {
+    this.vaults = vaults;
   }
 
 
-  public StateComponentResponse descendentIds(List<StateComponentDescendentId> descendentIds) {
-    this.descendentIds = descendentIds;
+  public StateComponentResponse descendentNodes(List<StateComponentDescendentNode> descendentNodes) {
+    this.descendentNodes = descendentNodes;
     return this;
   }
 
-  public StateComponentResponse addDescendentIdsItem(StateComponentDescendentId descendentIdsItem) {
-    this.descendentIds.add(descendentIdsItem);
+  public StateComponentResponse addDescendentNodesItem(StateComponentDescendentNode descendentNodesItem) {
+    this.descendentNodes.add(descendentNodesItem);
     return this;
   }
 
    /**
    * Any descendent nodes owned directly or indirectly by the component
-   * @return descendentIds
+   * @return descendentNodes
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Any descendent nodes owned directly or indirectly by the component")
-  @JsonProperty(JSON_PROPERTY_DESCENDENT_IDS)
+  @JsonProperty(JSON_PROPERTY_DESCENDENT_NODES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<StateComponentDescendentId> getDescendentIds() {
-    return descendentIds;
+  public List<StateComponentDescendentNode> getDescendentNodes() {
+    return descendentNodes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DESCENDENT_IDS)
+  @JsonProperty(JSON_PROPERTY_DESCENDENT_NODES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDescendentIds(List<StateComponentDescendentId> descendentIds) {
-    this.descendentIds = descendentIds;
+  public void setDescendentNodes(List<StateComponentDescendentNode> descendentNodes) {
+    this.descendentNodes = descendentNodes;
   }
 
 
@@ -306,17 +276,16 @@ public class StateComponentResponse {
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
     return Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
-        Objects.equals(this.account, stateComponentResponse.account) &&
         Objects.equals(this.royaltyConfig, stateComponentResponse.royaltyConfig) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
         Objects.equals(this.accessRules, stateComponentResponse.accessRules) &&
-        Objects.equals(this.stateOwnedVaults, stateComponentResponse.stateOwnedVaults) &&
-        Objects.equals(this.descendentIds, stateComponentResponse.descendentIds);
+        Objects.equals(this.vaults, stateComponentResponse.vaults) &&
+        Objects.equals(this.descendentNodes, stateComponentResponse.descendentNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, account, royaltyConfig, royaltyAccumulator, accessRules, stateOwnedVaults, descendentIds);
+    return Objects.hash(info, state, royaltyConfig, royaltyAccumulator, accessRules, vaults, descendentNodes);
   }
 
   @Override
@@ -325,12 +294,11 @@ public class StateComponentResponse {
     sb.append("class StateComponentResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    account: ").append(toIndentedString(account)).append("\n");
     sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    stateOwnedVaults: ").append(toIndentedString(stateOwnedVaults)).append("\n");
-    sb.append("    descendentIds: ").append(toIndentedString(descendentIds)).append("\n");
+    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
+    sb.append("    descendentNodes: ").append(toIndentedString(descendentNodes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

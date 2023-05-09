@@ -23,7 +23,8 @@ pub(crate) async fn handle_stream_transactions(
     Json(request): Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context =
+        MappingContext::new(&state.network).with_sbor_formats(&request.sbor_formats);
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;

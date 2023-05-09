@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.GlobalEntityReference;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RoyaltyPayment {
   public static final String JSON_PROPERTY_ROYALTY_RECEIVER = "royalty_receiver";
-  private GlobalEntityReference royaltyReceiver;
+  private EntityReference royaltyReceiver;
 
   public static final String JSON_PROPERTY_XRD_AMOUNT = "xrd_amount";
   private String xrdAmount;
@@ -46,7 +46,7 @@ public class RoyaltyPayment {
   public RoyaltyPayment() { 
   }
 
-  public RoyaltyPayment royaltyReceiver(GlobalEntityReference royaltyReceiver) {
+  public RoyaltyPayment royaltyReceiver(EntityReference royaltyReceiver) {
     this.royaltyReceiver = royaltyReceiver;
     return this;
   }
@@ -60,14 +60,14 @@ public class RoyaltyPayment {
   @JsonProperty(JSON_PROPERTY_ROYALTY_RECEIVER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public GlobalEntityReference getRoyaltyReceiver() {
+  public EntityReference getRoyaltyReceiver() {
     return royaltyReceiver;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_RECEIVER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyReceiver(GlobalEntityReference royaltyReceiver) {
+  public void setRoyaltyReceiver(EntityReference royaltyReceiver) {
     this.royaltyReceiver = royaltyReceiver;
   }
 

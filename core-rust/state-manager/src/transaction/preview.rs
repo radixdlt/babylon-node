@@ -50,7 +50,10 @@ impl<S> TransactionPreviewer<S> {
 
 impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> TransactionPreviewer<S> {
     /// Executes the transaction compiled from the given request in a preview mode.
-    pub fn preview(&self, preview_request: PreviewRequest) -> Result<ProcessedPreviewResult, PreviewError> {
+    pub fn preview(
+        &self,
+        preview_request: PreviewRequest,
+    ) -> Result<ProcessedPreviewResult, PreviewError> {
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 

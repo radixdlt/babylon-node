@@ -1,49 +1,18 @@
 use radix_engine::blueprints::access_controller::AccessControllerSubstate;
-use radix_engine::blueprints::account::AccountSubstate;
-use radix_engine::blueprints::clock::ClockSubstate;
-use radix_engine::blueprints::epoch_manager::{
-    CurrentValidatorSetSubstate, EpochManagerSubstate, SecondaryIndexSubstate, Validator,
-    ValidatorSubstate,
-};
+use radix_engine::blueprints::clock::*;
+use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::blueprints::package::PackageCodeTypeSubstate;
-use radix_engine::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
-};
+use radix_engine::system::node_modules::access_rules::*;
 use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine_interface::blueprints::package::{
-    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
-};
-use radix_engine_interface::schema::{
-    BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver,
-    VirtualLazyLoadSchema,
-};
-use sbor::LocalTypeIndex;
-use std::collections::BTreeSet;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::schema::*;
 
 use super::*;
 use crate::core_api::models;
 
-use radix_engine::types::{
-    scrypto_encode, Decimal, ResourceAddress, RoyaltyConfig, ScryptoSchema, ScryptoValue,
-};
-use radix_engine_common::data::scrypto::scrypto_decode;
-use radix_engine_common::types::{ComponentAddress, GlobalAddress, SubstateKey};
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-};
-
-use crate::core_api::models::MethodAccessRulesSubstateAllOfChildBlueprintRules;
-use radix_engine_interface::api::sorted_index_api::SortedKey;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, MethodKey, ProofRule,
-    ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
-};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::scrypto::model::{NonFungibleIdType, NonFungibleLocalId};
-use radix_engine_interface::data::scrypto::{SchemaPath, SchemaSubPath};
-use radix_engine_interface::types::{Blueprint, IndexedScryptoValue, ObjectInfo};
+use radix_engine::types::*;
+use radix_engine_interface::api::component::*;
 use radix_engine_queries::typed_substate_layout::*;
 
 use super::MappingError;
@@ -54,144 +23,136 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
-        TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
+        TypedSubstateValue::TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, type_info_substate)?,
-        TypedSubstateValue::AccessRulesModule(
-            TypedAccessRulesModuleSubstateValue::MethodAccessRules(method_access_rules_substate),
+        TypedSubstateValue::AccessRulesModuleFieldValue(
+            TypedAccessRulesModuleFieldValue::MethodAccessRules(method_access_rules_substate),
         ) => to_api_method_access_rules_substate(context, method_access_rules_substate)?,
-        TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(
-                component_royalty_config_substate,
-            ),
+        TypedSubstateValue::RoyaltyModuleFieldValue(
+            TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(component_royalty_config_substate),
         ) => to_api_component_royalty_config_substate(context, component_royalty_config_substate)?,
-        TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
+        TypedSubstateValue::RoyaltyModuleFieldValue(
+            TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(
                 component_royalty_accumulator_substate,
             ),
-        ) => to_api_component_royalty_accumulator_substate(component_royalty_accumulator_substate)?,
-        TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::Metadata(
-            metadata_value_substate,
-        )) => to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
-            TypedPackageSubstateValue::Info(package_info_substate),
+        ) => to_api_component_royalty_accumulator_substate(
+            context,
+            component_royalty_accumulator_substate,
+        )?,
+        TypedSubstateValue::MetadataModuleEntryValue(metadata_value_substate) => {
+            to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?
+        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::Info(package_info_substate),
         )) => to_api_package_info_substate(context, package_info_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
-            TypedPackageSubstateValue::CodeType(package_code_type_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::CodeType(package_code_type_substate),
         )) => to_api_package_code_type_substate(context, package_code_type_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
-            TypedPackageSubstateValue::Code(package_code_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::Code(package_code_substate),
         )) => to_api_package_code_substate(context, package_code_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
-            TypedPackageSubstateValue::Royalty(package_royalty_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::Royalty(package_royalty_substate),
         )) => to_api_package_royalty_substate(context, package_royalty_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Package(
-            TypedPackageSubstateValue::FunctionAccessRules(package_function_access_rules_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::FunctionAccessRules(package_function_access_rules_substate),
         )) => to_api_package_function_access_rules_substate(
             context,
             package_function_access_rules_substate,
         )?,
-
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleResource(
-            TypedFungibleResourceManagerSubstateValue::Divisibility(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
+            TypedFungibleResourceManagerFieldValue::Divisibility(
                 fungible_resource_manager_divisibility_substate,
             ),
         )) => to_api_fungible_resource_manager_divisibility_substate(
             fungible_resource_manager_divisibility_substate,
         )?,
-
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleResource(
-            TypedFungibleResourceManagerSubstateValue::TotalSupply(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
+            TypedFungibleResourceManagerFieldValue::TotalSupply(
                 fungible_resource_manager_total_supply_substate,
             ),
         )) => to_api_fungible_resource_manager_total_supply_substate(
             fungible_resource_manager_total_supply_substate,
         )?,
-
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerSubstateValue::IdType(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
+            TypedNonFungibleResourceManagerFieldValue::IdType(
                 non_fungible_resource_manager_id_type_substate,
             ),
         )) => to_api_non_fungible_resource_manager_id_type_substate(
             non_fungible_resource_manager_id_type_substate,
         )?,
-
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerSubstateValue::TotalSupply(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
+            TypedNonFungibleResourceManagerFieldValue::TotalSupply(
                 non_fungible_resource_manager_total_supply_substate,
             ),
         )) => to_api_non_fungible_resource_manager_total_supply_substate(
             non_fungible_resource_manager_total_supply_substate,
         )?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
+            TypedNonFungibleResourceManagerFieldValue::MutableFields(substate),
+        )) => to_api_non_fungible_resource_manager_mutable_fields_substate(context, substate)?,
 
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerSubstateValue::DataSchema(
-                non_fungible_resource_manager_data_schema_substate,
-            ),
-        )) => to_api_non_fungible_resource_manager_data_schema_substate(
-            context,
-            non_fungible_resource_manager_data_schema_substate,
-        )?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResourceData(
+            substate_payload,
+        )) => to_api_non_fungible_resource_manager_data_substate(context, &substate_payload.data)?,
 
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerSubstateValue::Data(
-                non_fungible_resource_manager_data_substate,
-            ),
-        )) => to_api_non_fungible_resource_manager_data_substate(
-            non_fungible_resource_manager_data_substate,
-        )?,
-
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::FungibleVault(
-            TypedFungibleVaultSubstateValue::Balance(fungible_vault_balance_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
+            TypedFungibleVaultFieldValue::Balance(fungible_vault_balance_substate),
         )) => to_api_fungible_vault_balance_substate(context, fungible_vault_balance_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::NonFungibleVault(
-            TypedNonFungibleVaultSubstateValue::Balance(non_fungible_vault_balance_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
+            TypedNonFungibleVaultFieldValue::Balance(non_fungible_vault_balance_substate),
         )) => to_api_non_fungible_vault_balance_substate(
             context,
             non_fungible_vault_balance_substate,
         )?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
-            TypedEpochManagerSubstateValue::EpochManager(epoch_manager_substate),
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(entry),
+        ) => to_api_non_fungible_vault_contents_entry_substate(context, entry)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::EpochManagerField(
+            TypedEpochManagerFieldValue::EpochManager(epoch_manager_substate),
         )) => to_api_epoch_manager_substate(context, epoch_manager_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
-            TypedEpochManagerSubstateValue::Config(epoch_manager_config_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::EpochManagerField(
+            TypedEpochManagerFieldValue::Config(epoch_manager_config_substate),
         )) => to_api_epoch_manager_config_substate(epoch_manager_config_substate)?,
 
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
-            TypedEpochManagerSubstateValue::CurrentValidatorSet(current_validator_set_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::EpochManagerField(
+            TypedEpochManagerFieldValue::CurrentValidatorSet(current_validator_set_substate),
         )) => to_api_current_validator_set_substate(context, current_validator_set_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::EpochManager(
-            TypedEpochManagerSubstateValue::RegisteredValidatorSet(secondary_index_substate),
-        )) => to_api_registered_validator_set_substate(secondary_index_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Clock(
-            TypedClockSubstateValue::CurrentTimeRoundedToMinutes(clock_substate),
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::EpochManagerRegisteredValidatorsByStakeIndexEntry(entry),
+        ) => to_api_registered_validator_set_substate(context, entry)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Clock(
+            TypedClockFieldValue::CurrentTimeRoundedToMinutes(clock_substate),
         )) => to_api_clock_substate(clock_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Validator(
-            TypedValidatorSubstateValue::Validator(validator_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
+            TypedValidatorFieldValue::Validator(validator_substate),
         )) => to_api_validator_substate(context, validator_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::Account(
-            TypedAccountSubstateValue::Account(account_substate),
-        )) => to_api_account_substate(context, account_substate)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::AccessController(
-            TypedAccessControllerSubstateValue::AccessController(access_controller_substate),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountVaultIndex(
+            account_vault_entry,
+        )) => to_api_account_vault_entry(context, account_vault_entry)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccessController(
+            TypedAccessControllerFieldValue::AccessController(access_controller_substate),
         )) => to_api_access_controller_substate(context, access_controller_substate)?,
-        TypedSubstateValue::ObjectModule(
-            TypedObjectModuleSubstateValue::GenericScryptoComponent(
-                GenericScryptoComponentSubstateValue::State(generic_scrypto_sbor_payload),
-            ),
-        ) => to_api_generic_scrypto_component_state_substate(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericScryptoComponent(
+            GenericScryptoComponentFieldValue::State(generic_scrypto_sbor_payload),
+        )) => to_api_generic_scrypto_component_state_substate(
             context,
             &generic_scrypto_sbor_payload.data,
         )?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericKeyValueStore(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericKeyValueStore(
             payload,
-        )) => to_api_generic_key_value_store_substate(context, substate_key, &payload.data)?,
-        TypedSubstateValue::ObjectModule(TypedObjectModuleSubstateValue::GenericIndex(payload)) => {
-            to_api_generic_index_substate(context, &payload.data)?
-        }
-        TypedSubstateValue::ObjectModule(
-            TypedObjectModuleSubstateValue::GenericSortedU16Index(payload),
-        ) => to_api_generic_sorted_index_substate(context, &payload.data)?,
+        )) => to_api_generic_key_value_store_substate(context, &payload.data)?,
+    })
+}
+
+pub fn to_api_account_vault_entry(
+    context: &MappingContext,
+    vault: &Option<Own>,
+) -> Result<models::Substate, MappingError> {
+    let data = scrypto_encode(vault).unwrap();
+    Ok(models::Substate::AccountVaultIndexEntrySubstate {
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 
@@ -199,56 +160,35 @@ pub fn to_api_generic_scrypto_component_state_substate(
     context: &MappingContext,
     data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::GenericScryptoComponentStateSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
-    })
+    Ok(
+        models::Substate::GenericScryptoComponentFieldStateSubstate {
+            data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
+        },
+    )
 }
 
 pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
-    substate_key: &SubstateKey,
     data: &Vec<u8>,
 ) -> Result<models::Substate, MappingError> {
-    let key_hex = to_hex(scrypto_encode(substate_key).unwrap());
-
-    let key_non_fungible_local_id = match substate_key {
-        SubstateKey::Map(map_key) => scrypto_decode::<NonFungibleLocalId>(map_key)
-            .ok()
-            .map(|id| Box::new(to_api_non_fungible_id(&id))),
-        _ => None,
-    };
-
-    Ok(models::Substate::GenericKeyValueStoreSubstate {
-        key_hex,
-        key_non_fungible_local_id,
-        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
-    })
-}
-
-pub fn to_api_generic_index_substate(
-    context: &MappingContext,
-    data: &Vec<u8>,
-) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::GenericIndexSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
-    })
-}
-
-pub fn to_api_generic_sorted_index_substate(
-    context: &MappingContext,
-    data: &Vec<u8>,
-) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::GenericSortedU16IndexSubstate {
+    Ok(models::Substate::GenericKeyValueStoreEntrySubstate {
         data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
     })
 }
 
 pub fn to_api_registered_validator_set_substate(
-    substate: &SecondaryIndexSubstate,
+    context: &MappingContext,
+    substate: &EpochRegisteredValidatorByStakeEntry,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::SecondaryIndexSubstate {
-        value: Box::new(to_api_entity_reference(substate.0)?),
-    })
+    Ok(
+        models::Substate::EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate {
+            active_validator: Box::new(to_api_active_validator(
+                context,
+                &substate.component_address,
+                &substate.validator,
+            )?),
+        },
+    )
 }
 
 pub fn to_api_current_validator_set_substate(
@@ -259,8 +199,8 @@ pub fn to_api_current_validator_set_substate(
     let validator_set = validator_set
         .iter()
         .map(|(address, validator)| to_api_active_validator(context, address, validator))
-        .collect();
-    Ok(models::Substate::CurrentValidatorSetSubstate { validator_set })
+        .collect::<Result<_, _>>()?;
+    Ok(models::Substate::EpochManagerFieldCurrentValidatorSetSubstate { validator_set })
 }
 
 pub fn to_api_metadata_value_substate(
@@ -268,18 +208,24 @@ pub fn to_api_metadata_value_substate(
     substate_key: &SubstateKey,
     substate: &MetadataValueSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let key_hex = to_hex(scrypto_encode(substate_key).unwrap());
+    let SubstateKey::Map(key_bytes) = substate_key else {
+        return Err(MappingError::InvalidMetadataKey { message: "Was not a map key".to_string() });
+    };
+    let field_name: String =
+        scrypto_decode(key_bytes).map_err(|_| MappingError::InvalidMetadataKey {
+            message: "Was not a string".to_string(),
+        })?;
     Ok(match substate {
-        Some(entry) => models::Substate::MetadataValueSubstate {
-            key_hex,
+        Some(entry) => models::Substate::MetadataModuleEntrySubstate {
+            field_name,
             is_deleted: false,
             data_struct: Some(Box::new(to_api_data_struct_from_bytes(
                 context,
                 &scrypto_encode(entry).unwrap(),
             )?)),
         },
-        None => models::Substate::MetadataValueSubstate {
-            key_hex,
+        None => models::Substate::MetadataModuleEntrySubstate {
+            field_name,
             is_deleted: true,
             data_struct: None,
         },
@@ -296,18 +242,23 @@ pub fn to_api_method_access_rules_substate(
         child_blueprint_rules,
     } = substate;
 
-    let mut api_child_blueprint_rules = vec![];
-    for (blueprint_name, child_rules) in child_blueprint_rules {
-        api_child_blueprint_rules.push(MethodAccessRulesSubstateAllOfChildBlueprintRules::new(
-            blueprint_name.to_string(),
-            to_api_access_rules(context, child_rules)?,
-        ));
-    }
-
-    Ok(models::Substate::MethodAccessRulesSubstate {
-        access_rules: Box::new(to_api_access_rules(context, access_rules)?),
-        child_blueprint_rules: api_child_blueprint_rules,
-    })
+    Ok(
+        models::Substate::AccessRulesModuleFieldAccessRulesSubstate {
+            access_rules: Box::new(to_api_access_rules(context, access_rules)?),
+            child_blueprint_rules: child_blueprint_rules
+                .iter()
+                .map(|(blueprint_name, blueprint_rules_config)| {
+                    Ok(models::BlueprintAccessRules {
+                        blueprint_name: blueprint_name.to_string(),
+                        access_rules: Box::new(to_api_access_rules(
+                            context,
+                            blueprint_rules_config,
+                        )?),
+                    })
+                })
+                .collect::<Result<_, _>>()?,
+        },
+    )
 }
 
 pub fn to_api_package_function_access_rules_substate(
@@ -320,18 +271,18 @@ pub fn to_api_package_function_access_rules_substate(
         default_auth,
     } = substate;
 
-    Ok(models::Substate::PackageFunctionAccessRulesSubstate {
+    Ok(models::Substate::PackageFieldFunctionAccessRulesSubstate {
         function_auth: access_rules
             .iter()
             .map(|(function_key, access_rule)| {
                 Ok(models::PackageFunctionAccessRule {
                     blueprint: function_key.blueprint.to_string(),
                     function_name: function_key.ident.to_string(),
-                    access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
+                    access_rule: Some(to_api_access_rule(context, access_rule)?),
                 })
             })
             .collect::<Result<_, _>>()?,
-        default_auth: Box::new(to_api_dynamic_access_rule(context, default_auth)?),
+        default_auth: Box::new(to_api_access_rule(context, default_auth)?),
     })
 }
 
@@ -358,23 +309,61 @@ pub fn to_api_type_info_substate(
                 },
             global,
             outer_object,
+            instance_schema,
         }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
-            package_address: to_api_package_address(context, package_address),
+            package_address: to_api_package_address(context, package_address)?,
             blueprint_name: blueprint_name.to_string(),
             global: *global,
-            outer_object: outer_object.map(|o| to_api_global_address(context, &o)),
+            outer_object: outer_object
+                .map(|o| to_api_global_address(context, &o))
+                .transpose()?,
+            instance_schema: instance_schema
+                .as_ref()
+                .map(|instance_schema| {
+                    Ok(Box::new(to_api_instance_schema(context, instance_schema)?))
+                })
+                .transpose()?,
         },
-        TypeInfoSubstate::KeyValueStore(schema) => {
+        TypeInfoSubstate::KeyValueStore(key_value_store_info) => {
             models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
-                key_value_store_schema: Box::new(to_api_key_value_store_schema(context, schema)?),
+                key_value_store_info: Box::new(to_api_key_value_store_info(
+                    context,
+                    key_value_store_info,
+                )?),
             }
         }
-        TypeInfoSubstate::Index => models::TypeInfoDetails::IndexTypeInfoDetails {},
-        TypeInfoSubstate::SortedIndex => models::TypeInfoDetails::SortedIndexTypeInfoDetails {},
     };
 
-    Ok(models::Substate::TypeInfoSubstate {
+    Ok(models::Substate::TypeInfoModuleFieldTypeInfoSubstate {
         details: Box::new(details),
+    })
+}
+
+pub fn to_api_instance_schema(
+    context: &MappingContext,
+    instance_schema: &InstanceSchema,
+) -> Result<models::InstanceSchema, MappingError> {
+    Ok(models::InstanceSchema {
+        schema: Box::new(to_api_scrypto_schema(context, &instance_schema.schema)?),
+        provided_types: instance_schema
+            .type_index
+            .iter()
+            .map(|local_type_index| to_api_local_type_index(context, local_type_index))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_key_value_store_info(
+    context: &MappingContext,
+    key_value_store_info: &KeyValueStoreInfo,
+) -> Result<models::KeyValueStoreInfo, MappingError> {
+    let KeyValueStoreInfo {
+        schema,
+        kv_store_schema,
+    } = key_value_store_info;
+    Ok(models::KeyValueStoreInfo {
+        schema: Box::new(to_api_scrypto_schema(context, schema)?),
+        kv_store_schema: Box::new(to_api_key_value_store_schema(context, kv_store_schema)?),
     })
 }
 
@@ -383,13 +372,11 @@ pub fn to_api_key_value_store_schema(
     key_value_store_schema: &KeyValueStoreSchema,
 ) -> Result<models::KeyValueStoreSchema, MappingError> {
     let KeyValueStoreSchema {
-        schema,
         key,
         value,
         can_own,
     } = key_value_store_schema;
     Ok(models::KeyValueStoreSchema {
-        schema: Box::new(to_api_sbor_data_from_encodable(context, schema)?),
         key_type: Box::new(to_api_local_type_index(context, key)?),
         value_type: Box::new(to_api_local_type_index(context, value)?),
         can_own: *can_own,
@@ -411,10 +398,7 @@ pub fn to_api_access_rules(
             .iter()
             .map(|(key, rule)| to_api_grouped_auth_entry(context, key, rule))
             .collect::<Result<_, _>>()?,
-        default_auth: Some(to_api_dynamic_access_rule(
-            context,
-            &access_rules.get_default(),
-        )?),
+        default_auth: Some(to_api_access_rule(context, &access_rules.get_default())?),
         method_auth_mutability: access_rules
             .get_all_method_mutability()
             .iter()
@@ -427,7 +411,7 @@ pub fn to_api_access_rules(
             .iter()
             .map(|(key, rule)| to_api_grouped_auth_entry(context, key, rule))
             .collect::<Result<_, _>>()?,
-        default_auth_mutability: Some(to_api_dynamic_access_rule(
+        default_auth_mutability: Some(to_api_access_rule(
             context,
             &access_rules.get_default_mutability(),
         )?),
@@ -453,7 +437,7 @@ pub fn to_api_access_rule_reference(
     Ok(match entry {
         AccessRuleEntry::AccessRule(access_rule) => {
             models::AccessRuleReference::RuleAccessRuleReference {
-                access_rule: Box::new(to_api_dynamic_access_rule(context, access_rule)?),
+                access_rule: Box::new(to_api_access_rule(context, access_rule)?),
             }
         }
         AccessRuleEntry::Group(group_name) => {
@@ -478,7 +462,7 @@ pub fn to_api_method_auth_mutability_entry(
 pub fn to_api_local_method_reference(key: &MethodKey) -> models::LocalMethodReference {
     models::LocalMethodReference {
         name: key.ident.to_string(),
-        module: to_api_object_module_type(&key.module_id),
+        module: to_api_object_module_id(&key.module_id),
     }
 }
 
@@ -489,161 +473,106 @@ pub fn to_api_grouped_auth_entry(
 ) -> Result<models::GroupedAuthEntry, MappingError> {
     Ok(models::GroupedAuthEntry {
         group_name: group_name.to_string(),
-        access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
+        access_rule: Some(to_api_access_rule(context, access_rule)?),
     })
 }
 
-pub fn to_api_dynamic_access_rule(
+pub fn to_api_access_rule(
     context: &MappingContext,
     access_rule: &AccessRule,
 ) -> Result<models::AccessRule, MappingError> {
     Ok(match access_rule {
         AccessRule::Protected(access_rule_node) => models::AccessRule::ProtectedAccessRule {
-            access_rule: Box::new(to_api_dynamic_access_rule_node(context, access_rule_node)?),
+            access_rule: Box::new(to_api_access_rule_node(context, access_rule_node)?),
         },
         AccessRule::AllowAll => models::AccessRule::AllowAllAccessRule {},
         AccessRule::DenyAll => models::AccessRule::DenyAllAccessRule {},
     })
 }
 
-pub fn to_api_dynamic_access_rule_node(
+pub fn to_api_access_rule_node(
     context: &MappingContext,
     access_rule: &AccessRuleNode,
 ) -> Result<models::AccessRuleNode, MappingError> {
     Ok(match access_rule {
         AccessRuleNode::ProofRule(proof_rule) => models::AccessRuleNode::ProofAccessRuleNode {
-            proof_rule: Box::new(to_api_dynamic_proof_rule(context, proof_rule)?),
+            proof_rule: Box::new(to_api_proof_rule(context, proof_rule)?),
         },
         AccessRuleNode::AnyOf(access_rules) => models::AccessRuleNode::AnyOfAccessRuleNode {
             access_rules: access_rules
                 .iter()
-                .map(|ar| to_api_dynamic_access_rule_node(context, ar))
+                .map(|ar| to_api_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
         },
         AccessRuleNode::AllOf(access_rules) => models::AccessRuleNode::AllOfAccessRuleNode {
             access_rules: access_rules
                 .iter()
-                .map(|ar| to_api_dynamic_access_rule_node(context, ar))
+                .map(|ar| to_api_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
         },
     })
 }
 
-pub fn to_api_dynamic_proof_rule(
+pub fn to_api_proof_rule(
     context: &MappingContext,
     proof_rule: &ProofRule,
 ) -> Result<models::ProofRule, MappingError> {
     Ok(match proof_rule {
-        ProofRule::Require(resource) => models::ProofRule::RequireProofRule {
-            resource: Box::new(to_api_dynamic_resource_descriptor(context, resource)?),
-        },
-        ProofRule::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
-            amount: Box::new(to_api_dynamic_amount_from_soft_decimal(amount)?),
-            resource: Box::new(to_api_dynamic_resource_descriptor_from_resource(
-                context, resource,
+        ProofRule::Require(resource_or_non_fungible) => models::ProofRule::RequireProofRule {
+            resource_or_non_fungible: Box::new(to_api_resource_or_non_fungible(
+                context,
+                resource_or_non_fungible,
             )?),
         },
-        ProofRule::AllOf(resources) => models::ProofRule::AllOfProofRule {
-            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
-        },
-        ProofRule::AnyOf(resources) => models::ProofRule::AnyOfProofRule {
-            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
-        },
-        ProofRule::CountOf(count, resources) => models::ProofRule::CountOfProofRule {
-            count: Box::new(to_api_dynamic_count_from_soft_count(count)?),
-            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
-        },
-    })
-}
-
-pub fn to_api_dynamic_amount_from_soft_decimal(
-    soft_decimal: &SoftDecimal,
-) -> Result<models::DynamicAmount, MappingError> {
-    Ok(match soft_decimal {
-        SoftDecimal::Static(amount) => models::DynamicAmount::AmountDynamicAmount {
+        ProofRule::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
             amount: to_api_decimal(amount),
+            resource: to_api_resource_address(context, resource)?,
         },
-        SoftDecimal::Dynamic(schema_path) => models::DynamicAmount::SchemaPathDynamicAmount {
-            schema_path: to_api_schema_path(schema_path)?,
+        ProofRule::AllOf(resource_or_non_fungible_list) => models::ProofRule::AllOfProofRule {
+            list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
         },
+        ProofRule::AnyOf(resource_or_non_fungible_list) => models::ProofRule::AnyOfProofRule {
+            list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
+        },
+        ProofRule::CountOf(count, resource_or_non_fungible_list) => {
+            models::ProofRule::CountOfProofRule {
+                count: *count as i32,
+                list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
+            }
+        }
     })
 }
 
-pub fn to_api_dynamic_count_from_soft_count(
-    soft_count: &SoftCount,
-) -> Result<models::DynamicCount, MappingError> {
-    Ok(match soft_count {
-        SoftCount::Static(count) => models::DynamicCount::CountDynamicCount {
-            count: (*count)
-                .try_into()
-                .map_err(|err| MappingError::IntegerError {
-                    message: format!("Could not translate count into i32: {err:?}"),
-                })?,
-        },
-        SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
-            schema_path: to_api_schema_path(schema_path)?,
-        },
-    })
-}
-
-pub fn to_api_dynamic_resource_descriptor_list(
+pub fn to_api_resource_or_non_fungible_list(
     context: &MappingContext,
-    resource_list: &SoftResourceOrNonFungibleList,
-) -> Result<models::DynamicResourceDescriptorList, MappingError> {
-    Ok(match resource_list {
-        SoftResourceOrNonFungibleList::Static(resources) => {
-            models::DynamicResourceDescriptorList::ListDynamicResourceDescriptorList {
-                resources: resources
-                    .iter()
-                    .map(|r| to_api_dynamic_resource_descriptor(context, r))
-                    .collect::<Result<_, _>>()?,
-            }
-        }
-        SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
-            models::DynamicResourceDescriptorList::SchemaPathDynamicResourceDescriptorList {
-                schema_path: to_api_schema_path(schema_path)?,
-            }
-        }
-    })
+    resource_or_non_fungible_list: &[ResourceOrNonFungible],
+) -> Result<Vec<models::ResourceOrNonFungible>, MappingError> {
+    let mut res = Vec::new();
+    for resource_or_non_fungible in resource_or_non_fungible_list.iter() {
+        res.push(to_api_resource_or_non_fungible(
+            context,
+            resource_or_non_fungible,
+        )?);
+    }
+    Ok(res)
 }
 
-pub fn to_api_dynamic_resource_descriptor_from_resource(
+pub fn to_api_resource_or_non_fungible(
     context: &MappingContext,
-    resource: &SoftResource,
-) -> Result<models::DynamicResourceDescriptor, MappingError> {
-    Ok(match resource {
-        SoftResource::Static(resource) => {
-            models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
-                resource_address: to_api_resource_address(context, resource),
-            }
-        }
-        SoftResource::Dynamic(schema_path) => {
-            models::DynamicResourceDescriptor::SchemaPathDynamicResourceDescriptor {
-                schema_path: to_api_schema_path(schema_path)?,
-            }
-        }
-    })
-}
-
-pub fn to_api_dynamic_resource_descriptor(
-    context: &MappingContext,
-    resource: &SoftResourceOrNonFungible,
-) -> Result<models::DynamicResourceDescriptor, MappingError> {
-    Ok(match resource {
-        SoftResourceOrNonFungible::StaticNonFungible(nf) => {
-            models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
-                resource_address: to_api_resource_address(context, &nf.resource_address()),
-                non_fungible_id: Box::new(to_api_non_fungible_id(nf.local_id())),
-            }
-        }
-        SoftResourceOrNonFungible::StaticResource(resource) => {
-            models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
-                resource_address: to_api_resource_address(context, resource),
-            }
-        }
-        SoftResourceOrNonFungible::Dynamic(schema_path) => {
-            models::DynamicResourceDescriptor::SchemaPathDynamicResourceDescriptor {
-                schema_path: to_api_schema_path(schema_path)?,
+    resource_or_non_fungible: &ResourceOrNonFungible,
+) -> Result<models::ResourceOrNonFungible, MappingError> {
+    Ok(match resource_or_non_fungible {
+        ResourceOrNonFungible::Resource(resource_address) => models::ResourceOrNonFungible {
+            resource: Some(to_api_resource_address(context, resource_address)?),
+            non_fungible: None,
+        },
+        ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
+            models::ResourceOrNonFungible {
+                resource: None,
+                non_fungible: Some(Box::new(to_api_non_fungible_global_id(
+                    context,
+                    non_fungible_global_id,
+                )?)),
             }
         }
     })
@@ -662,47 +591,36 @@ pub fn to_api_active_validator(
     context: &MappingContext,
     address: &ComponentAddress,
     validator: &Validator,
-) -> models::ActiveValidator {
-    models::ActiveValidator {
-        address: to_api_component_address(context, address),
+) -> Result<models::ActiveValidator, MappingError> {
+    Ok(models::ActiveValidator {
+        address: to_api_component_address(context, address)?,
         key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
         stake: to_api_decimal(&validator.stake),
-    }
+    })
 }
 
-pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleLocalId) -> models::NonFungibleId {
-    models::NonFungibleId {
+pub fn to_api_non_fungible_local_id(
+    non_fungible_id: &NonFungibleLocalId,
+) -> models::NonFungibleLocalId {
+    models::NonFungibleLocalId {
         simple_rep: non_fungible_id.to_string(),
         id_type: to_api_non_fungible_id_type(&non_fungible_id.id_type()),
         sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
     }
 }
 
-pub fn to_api_schema_path(
-    schema_path: &SchemaPath,
-) -> Result<Vec<models::SchemaSubpath>, MappingError> {
-    let mapped = schema_path
-        .0
-        .iter()
-        .map(to_api_schema_subpath)
-        .collect::<Result<_, _>>()?;
-    Ok(mapped)
-}
-
-pub fn to_api_schema_subpath(
-    schema_subpath: &SchemaSubPath,
-) -> Result<models::SchemaSubpath, MappingError> {
-    Ok(match schema_subpath {
-        SchemaSubPath::Field(field) => models::SchemaSubpath::FieldSchemaSubpath {
-            field: field.to_owned(),
-        },
-        SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
-            index: to_api_u64_as_string((*index).try_into().map_err(|err| {
-                MappingError::IntegerError {
-                    message: format!("Couldn't map usize to u64: {err:?}"),
-                }
-            })?),
-        },
+pub fn to_api_non_fungible_global_id(
+    context: &MappingContext,
+    non_fungible_global_id: &NonFungibleGlobalId,
+) -> Result<models::NonFungibleGlobalId, MappingError> {
+    Ok(models::NonFungibleGlobalId {
+        resource_address: to_api_resource_address(
+            context,
+            &non_fungible_global_id.resource_address(),
+        )?,
+        local_id: Box::new(to_api_non_fungible_local_id(
+            non_fungible_global_id.local_id(),
+        )),
     })
 }
 
@@ -711,12 +629,14 @@ pub fn to_api_component_state_substate(
     substate: &ComponentStateSubstate,
 ) -> Result<models::Substate, MappingError> {
     let ComponentStateSubstate(scrypto_value) = substate;
-    Ok(models::Substate::GenericScryptoComponentStateSubstate {
-        data_struct: Box::new(to_api_data_struct_from_scrypto_value(
-            context,
-            scrypto_value,
-        )?),
-    })
+    Ok(
+        models::Substate::GenericScryptoComponentFieldStateSubstate {
+            data_struct: Box::new(to_api_data_struct_from_scrypto_value(
+                context,
+                scrypto_value,
+            )?),
+        },
+    )
 }
 
 pub fn to_api_data_struct_from_scrypto_value(
@@ -756,7 +676,7 @@ pub fn to_api_data_struct_from_indexed_scrypto_value(
 
 struct Entities {
     pub owned_entities: Vec<models::EntityReference>,
-    pub referenced_entities: Vec<models::GlobalEntityReference>,
+    pub referenced_entities: Vec<models::EntityReference>,
 }
 
 fn extract_entities(
@@ -766,29 +686,18 @@ fn extract_entities(
     let owned_entities = struct_scrypto_value
         .owned_node_ids()
         .iter()
-        .map(|node_id| -> Result<models::EntityReference, MappingError> {
-            Ok(MappedEntityId::try_from(*node_id)?.into())
-        })
+        .map(|node_id| to_api_entity_reference(context, node_id))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let referenced_entities: Result<Vec<_>, _> = struct_scrypto_value
+    let referenced_entities = struct_scrypto_value
         .references()
         .iter()
-        .filter_map(|node_id| {
-            if node_id.is_global() {
-                Some(to_global_entity_reference(
-                    context,
-                    &GlobalAddress::new_or_panic(node_id.0),
-                ))
-            } else {
-                None
-            }
-        })
-        .collect();
+        .map(|node_id| to_api_entity_reference(context, node_id))
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(Entities {
         owned_entities,
-        referenced_entities: referenced_entities?,
+        referenced_entities,
     })
 }
 
@@ -799,7 +708,7 @@ pub fn to_api_component_royalty_config_substate(
     // Use compiler to unpack to ensure we map all fields
     let ComponentRoyaltyConfigSubstate { royalty_config } = substate;
 
-    Ok(models::Substate::ComponentRoyaltyConfigSubstate {
+    Ok(models::Substate::RoyaltyModuleFieldConfigSubstate {
         royalty_config: Box::new(to_api_royalty_config(royalty_config)),
     })
 }
@@ -823,17 +732,21 @@ pub fn to_api_royalty_rule(royalty_rule: &u32) -> i64 {
 }
 
 pub fn to_api_component_royalty_accumulator_substate(
+    context: &MappingContext,
     substate: &ComponentRoyaltyAccumulatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let ComponentRoyaltyAccumulatorSubstate { royalty_vault } = substate;
 
     let vault_id = match royalty_vault {
-        Some(own) => Some(Box::new(to_api_entity_reference(*own.as_node_id())?)),
+        Some(own) => Some(Box::new(to_api_entity_reference(
+            context,
+            own.as_node_id(),
+        )?)),
         None => None,
     };
 
-    Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
+    Ok(models::Substate::RoyaltyModuleFieldAccumulatorSubstate {
         vault_entity: vault_id,
     })
 }
@@ -849,24 +762,24 @@ pub fn to_api_package_info_substate(
         dependent_components,
     } = substate;
 
-    Ok(models::Substate::PackageInfoSubstate {
+    Ok(models::Substate::PackageFieldInfoSubstate {
+        package_schema: Box::new(to_api_package_schema(context, schema)?),
         dependent_resources: dependent_resources
             .iter()
             .map(|address| to_api_resource_address(context, address))
-            .collect(),
+            .collect::<Result<Vec<_>, _>>()?,
         dependent_components: dependent_components
             .iter()
             .map(|address| to_api_component_address(context, address))
-            .collect(),
-        package_schema: Box::new(to_api_package_schema(context, schema)?),
+            .collect::<Result<Vec<_>, _>>()?,
     })
 }
 
 pub fn to_api_package_schema(
     context: &MappingContext,
-    package_schema: &PackageSchema,
+    package_schema: &IndexedPackageSchema,
 ) -> Result<models::PackageSchema, MappingError> {
-    let PackageSchema { blueprints } = package_schema;
+    let IndexedPackageSchema { blueprints } = package_schema;
     Ok(models::PackageSchema {
         blueprint_schemas: blueprints
             .iter()
@@ -882,23 +795,20 @@ pub fn to_api_package_schema(
 
 pub fn to_api_blueprint_schema(
     context: &MappingContext,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
 ) -> Result<models::BlueprintSchema, MappingError> {
-    let BlueprintSchema {
+    let IndexedBlueprintSchema {
         outer_blueprint,
         schema,
-        substates,
         functions,
         virtual_lazy_load_functions,
         event_schema,
+        fields,
+        collections,
     } = blueprint_schema;
     Ok(models::BlueprintSchema {
         outer_blueprint: outer_blueprint.clone(),
-        schema: Box::new(to_api_schema(context, schema)?),
-        substates: substates
-            .iter()
-            .map(|index| to_api_local_type_index(context, index))
-            .collect::<Result<_, _>>()?,
+        schema: Box::new(to_api_scrypto_schema(context, schema)?),
         function_schemas: functions
             .iter()
             .map(|(function_name, function_schema)| {
@@ -924,6 +834,26 @@ pub fn to_api_blueprint_schema(
                     event_name.to_string(),
                     to_api_local_type_index(context, type_index)?,
                 ))
+            })
+            .collect::<Result<_, _>>()?,
+        field_partition: fields
+            .as_ref()
+            .map(|(partition_offset, field_types)| {
+                Ok(Box::new(to_api_blueprint_schema_fields_partition(
+                    context,
+                    *partition_offset,
+                    field_types,
+                )?))
+            })
+            .transpose()?,
+        collection_partitions: collections
+            .iter()
+            .map(|(partition_offset, blueprint_collection_schema)| {
+                to_api_blueprint_schema_collection_partition(
+                    context,
+                    *partition_offset,
+                    blueprint_collection_schema,
+                )
             })
             .collect::<Result<_, _>>()?,
     })
@@ -979,11 +909,82 @@ pub fn to_api_virtual_lazy_load_schema(
     })
 }
 
-pub fn to_api_schema(
+pub fn to_api_blueprint_schema_fields_partition(
+    context: &MappingContext,
+    partition_offset: PartitionOffset,
+    fields: &[LocalTypeIndex],
+) -> Result<models::BlueprintSchemaFieldPartition, MappingError> {
+    Ok(models::BlueprintSchemaFieldPartition {
+        partition_offset: to_api_u8_as_i32(partition_offset.0),
+        fields: fields
+            .iter()
+            .map(|i| to_api_local_type_index(context, i))
+            .collect::<Result<_, MappingError>>()?,
+    })
+}
+
+pub fn to_api_blueprint_schema_collection_partition(
+    context: &MappingContext,
+    partition_offset: PartitionOffset,
+    collection_schema: &BlueprintCollectionSchema,
+) -> Result<models::BlueprintSchemaCollectionPartition, MappingError> {
+    Ok(models::BlueprintSchemaCollectionPartition {
+        partition_offset: to_api_u8_as_i32(partition_offset.0),
+        collection_schema: Some(to_api_blueprint_collection_schema(
+            context,
+            collection_schema,
+        )?),
+    })
+}
+
+pub fn to_api_blueprint_collection_schema(
+    context: &MappingContext,
+    collection_schema: &BlueprintCollectionSchema,
+) -> Result<models::BlueprintCollectionSchema, MappingError> {
+    Ok(match collection_schema {
+        BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueStoreSchema {
+            key,
+            value,
+            can_own,
+        }) => models::BlueprintCollectionSchema::KeyValueBlueprintCollectionSchema {
+            key_type_reference: Box::new(to_api_blueprint_schema_type_reference(context, key)?),
+            value_type_reference: Box::new(to_api_blueprint_schema_type_reference(context, value)?),
+            can_own: *can_own,
+        },
+        BlueprintCollectionSchema::Index(BlueprintIndexSchema {}) => {
+            models::BlueprintCollectionSchema::IndexBlueprintCollectionSchema {}
+        }
+        BlueprintCollectionSchema::SortedIndex(BlueprintSortedIndexSchema {}) => {
+            models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {}
+        }
+    })
+}
+
+pub fn to_api_blueprint_schema_type_reference(
+    context: &MappingContext,
+    type_schema: &TypeSchema,
+) -> Result<models::BlueprintTypeReference, MappingError> {
+    Ok(match type_schema {
+        TypeSchema::Blueprint(local_type_index) => {
+            models::BlueprintTypeReference::BlueprintSchemaBlueprintTypeReference {
+                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+            }
+        }
+        TypeSchema::Instance(instance_provided_type_index) => {
+            models::BlueprintTypeReference::InstanceSchemaBlueprintTypeReference {
+                instance_provided_type_index: to_api_u8_as_i32(*instance_provided_type_index),
+            }
+        }
+    })
+}
+
+pub fn to_api_scrypto_schema(
     context: &MappingContext,
     schema: &ScryptoSchema,
-) -> Result<models::SborData, MappingError> {
-    to_api_sbor_data_from_encodable(context, schema)
+) -> Result<models::ScryptoSchema, MappingError> {
+    Ok(models::ScryptoSchema {
+        sbor_data: Box::new(to_api_sbor_data_from_encodable(context, schema)?),
+    })
 }
 
 pub fn to_api_package_code_substate(
@@ -993,7 +994,7 @@ pub fn to_api_package_code_substate(
     // Use compiler to unpack to ensure we map all fields
     let PackageCodeSubstate { code } = substate;
 
-    Ok(models::Substate::PackageCodeSubstate {
+    Ok(models::Substate::PackageFieldCodeSubstate {
         code_hex: to_hex(code),
     })
 }
@@ -1002,16 +1003,16 @@ pub fn to_api_package_code_type_substate(
     _context: &MappingContext,
     substate: &PackageCodeTypeSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::PackageCodeTypeSubstate {
+    Ok(models::Substate::PackageFieldCodeTypeSubstate {
         code_type: match substate {
-            PackageCodeTypeSubstate::Native => "native".to_string(),
-            PackageCodeTypeSubstate::Wasm => "wasm".to_string(),
+            PackageCodeTypeSubstate::Native => models::PackageCodeType::Native,
+            PackageCodeTypeSubstate::Wasm => models::PackageCodeType::Wasm,
         },
     })
 }
 
 pub fn to_api_package_royalty_substate(
-    _context: &MappingContext,
+    context: &MappingContext,
     substate: &PackageRoyaltySubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -1023,11 +1024,12 @@ pub fn to_api_package_royalty_substate(
     let vault_entity = royalty_vault
         .map(|royalty_vault| {
             Ok(Box::new(to_api_entity_reference(
-                *royalty_vault.as_node_id(),
+                context,
+                royalty_vault.as_node_id(),
             )?))
         })
         .transpose()?;
-    Ok(models::Substate::PackageRoyaltySubstate {
+    Ok(models::Substate::PackageFieldRoyaltySubstate {
         vault_entity,
         blueprint_royalties: blueprint_royalty_configs
             .iter()
@@ -1055,20 +1057,25 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(*stake_xrd_vault_id.as_node_id())?;
-    let owned_unstake_vault_id =
-        MappedEntityId::try_from(*pending_xrd_withdraw_vault_id.as_node_id())?;
-
-    Ok(models::Substate::ValidatorSubstate {
-        sorted_key: sorted_key
-            .as_ref()
-            .map(|sk| Box::new(to_api_sorted_key(sk))),
+    Ok(models::Substate::ValidatorFieldStateSubstate {
         public_key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         is_registered: *is_registered,
-        stake_vault: Box::new(owned_stake_vault_id.into()),
-        unstake_vault: Box::new(owned_unstake_vault_id.into()),
-        unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft),
-        liquid_stake_unit_resource_address: to_api_resource_address(context, liquidity_token),
+        stake_vault: Box::new(to_api_entity_reference(
+            context,
+            stake_xrd_vault_id.as_node_id(),
+        )?),
+        unstake_vault: Box::new(to_api_entity_reference(
+            context,
+            pending_xrd_withdraw_vault_id.as_node_id(),
+        )?),
+        unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft)?,
+        liquid_stake_unit_resource_address: to_api_resource_address(context, liquidity_token)?,
+        sorted_key: sorted_key.as_ref().map(|key| {
+            Box::new(to_api_substate_key(&SubstateKey::Sorted((
+                key.0,
+                key.1.clone(),
+            ))))
+        }),
     })
 }
 
@@ -1077,7 +1084,7 @@ pub fn to_api_epoch_manager_substate(
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let EpochManagerSubstate { epoch, round } = substate;
-    Ok(models::Substate::EpochManagerSubstate {
+    Ok(models::Substate::EpochManagerFieldStateSubstate {
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
     })
@@ -1086,7 +1093,7 @@ pub fn to_api_epoch_manager_substate(
 pub fn to_api_epoch_manager_config_substate(
     substate: &EpochManagerConfigSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::EpochManagerConfigSubstate {
+    Ok(models::Substate::EpochManagerFieldConfigSubstate {
         max_validators: substate.max_validators as i64, // TODO: check for overflow?
         rounds_per_epoch: substate.rounds_per_epoch as i64,
         num_unstake_epochs: substate.num_unstake_epochs as i64,
@@ -1099,28 +1106,18 @@ pub fn to_api_clock_substate(substate: &ClockSubstate) -> Result<models::Substat
         current_time_rounded_to_minutes_ms,
     } = substate;
 
-    Ok(models::Substate::ClockSubstate {
+    Ok(models::Substate::ClockFieldStateSubstate {
         timestamp_rounded_down_to_minute: Box::new(to_api_instant_from_safe_timestamp(
             *current_time_rounded_to_minutes_ms,
         )?),
     })
 }
 
-pub fn to_api_resource_type(
-    _context: &MappingContext,
-    resource_type: &ResourceType,
-) -> models::ResourceType {
-    match resource_type {
-        ResourceType::Fungible { .. } => models::ResourceType::Fungible,
-        ResourceType::NonFungible { .. } => models::ResourceType::NonFungible,
-    }
-}
-
 pub fn to_api_fungible_vault_balance_substate(
     _context: &MappingContext,
     balance: &FungibleVaultBalanceSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::FungibleVaultBalanceSubstate {
+    Ok(models::Substate::FungibleVaultFieldBalanceSubstate {
         amount: to_api_decimal(&balance.amount()),
     })
 }
@@ -1129,10 +1126,20 @@ pub fn to_api_non_fungible_vault_balance_substate(
     _context: &MappingContext,
     substate: &NonFungibleVaultBalanceSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::NonFungibleVaultBalanceSubstate {
+    Ok(models::Substate::NonFungibleVaultFieldBalanceSubstate {
         amount: to_api_decimal(&substate.amount),
-        ids: Box::new(to_api_entity_reference(*substate.ids.as_node_id())?),
     })
+}
+
+pub fn to_api_non_fungible_vault_contents_entry_substate(
+    _context: &MappingContext,
+    non_fungible_id: &NonFungibleLocalId,
+) -> Result<models::Substate, MappingError> {
+    Ok(
+        models::Substate::NonFungibleVaultContentsIndexEntrySubstate {
+            non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_id)),
+        },
+    )
 }
 
 pub fn to_api_fungible_resource_amount(
@@ -1141,7 +1148,7 @@ pub fn to_api_fungible_resource_amount(
     amount: &Decimal,
 ) -> Result<models::ResourceAmount, MappingError> {
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_address: to_api_resource_address(context, resource_address),
+        resource_address: to_api_resource_address(context, resource_address)?,
         amount: to_api_decimal(amount),
     })
 }
@@ -1152,9 +1159,9 @@ pub fn to_api_non_fungible_resource_amount(
     amount: &Decimal,
     ids: &BTreeSet<NonFungibleLocalId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
+    let non_fungible_ids = ids.iter().map(to_api_non_fungible_local_id).collect();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_address: to_api_resource_address(context, resource_address),
+        resource_address: to_api_resource_address(context, resource_address)?,
         amount: to_api_decimal(amount),
         non_fungible_ids,
     })
@@ -1165,36 +1172,18 @@ pub fn to_api_access_controller_substate(
     substate: &AccessControllerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let data = scrypto_encode(substate).unwrap();
-    let substate = models::Substate::AccessControllerSubstate {
+    let substate = models::Substate::AccessControllerFieldStateSubstate {
         data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
     };
 
     Ok(substate)
-}
-
-pub fn to_api_account_substate(
-    context: &MappingContext,
-    substate: &AccountSubstate,
-) -> Result<models::Substate, MappingError> {
-    let data = scrypto_encode(substate).unwrap();
-    let substate = models::Substate::AccountSubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
-    };
-    Ok(substate)
-}
-
-pub fn to_api_sorted_key(sorted_key: &SortedKey) -> models::SortedKey {
-    models::SortedKey {
-        sorted: sorted_key.0 as i32,
-        key: to_hex(&sorted_key.1),
-    }
 }
 
 pub fn to_api_fungible_resource_manager_divisibility_substate(
     substate: &FungibleResourceManagerDivisibilitySubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(
-        models::Substate::FungibleResourceManagerDivisibilitySubstate {
+        models::Substate::FungibleResourceManagerFieldDivisibilitySubstate {
             divisibility: to_api_u8_as_i32(*substate),
         },
     )
@@ -1204,7 +1193,7 @@ pub fn to_api_fungible_resource_manager_total_supply_substate(
     substate: &FungibleResourceManagerTotalSupplySubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(
-        models::Substate::FungibleResourceManagerTotalSupplySubstate {
+        models::Substate::FungibleResourceManagerFieldTotalSupplySubstate {
             total_supply: to_api_decimal(substate),
         },
     )
@@ -1213,41 +1202,41 @@ pub fn to_api_fungible_resource_manager_total_supply_substate(
 pub fn to_api_non_fungible_resource_manager_id_type_substate(
     substate: &NonFungibleResourceManagerIdTypeSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::NonFungibleResourceManagerIdTypeSubstate {
-        non_fungible_id_type: to_api_non_fungible_id_type(substate),
-    })
+    Ok(
+        models::Substate::NonFungibleResourceManagerFieldIdTypeSubstate {
+            non_fungible_id_type: to_api_non_fungible_id_type(substate),
+        },
+    )
 }
 
 pub fn to_api_non_fungible_resource_manager_total_supply_substate(
     substate: &NonFungibleResourceManagerTotalSupplySubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(
-        models::Substate::NonFungibleResourceManagerTotalSupplySubstate {
+        models::Substate::NonFungibleResourceManagerFieldTotalSupplySubstate {
             total_supply: to_api_decimal(substate),
         },
     )
 }
 
-pub fn to_api_non_fungible_resource_manager_data_schema_substate(
-    context: &MappingContext,
-    substate: &NonFungibleResourceManagerDataSchemaSubstate,
+pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
+    _context: &MappingContext,
+    substate: &NonFungibleResourceManagerMutableFieldsSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(
-        models::Substate::NonFungibleResourceManagerDataSchemaSubstate {
-            non_fungible_type_index: Box::new(to_api_local_type_index(
-                context,
-                &substate.non_fungible_type_index,
-            )?),
+        models::Substate::NonFungibleResourceManagerFieldMutableFieldsSubstate {
             mutable_fields: substate.mutable_fields.iter().cloned().collect(),
         },
     )
 }
 
 pub fn to_api_non_fungible_resource_manager_data_substate(
-    substate: &NonFungibleResourceManagerDataSubstate,
+    context: &MappingContext,
+    raw_substate: &[u8],
 ) -> Result<models::Substate, MappingError> {
-    let mapped_entity_id = MappedEntityId::try_from(*substate.as_node_id())?;
-    Ok(models::Substate::NonFungibleResourceManagerDataSubstate {
-        non_fungible_data_table: Box::new(mapped_entity_id.into()),
-    })
+    Ok(
+        models::Substate::NonFungibleResourceManagerDataEntrySubstate {
+            data_struct: Box::new(to_api_data_struct_from_bytes(context, raw_substate)?),
+        },
+    )
 }

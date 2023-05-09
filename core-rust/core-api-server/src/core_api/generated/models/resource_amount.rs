@@ -31,7 +31,7 @@ pub enum ResourceAmount {
         #[serde(rename = "amount")]
         amount: String,
         #[serde(rename = "non_fungible_ids")]
-        non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
+        non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>,
     },
 }
 

@@ -1,13 +1,11 @@
 use crate::core_api::*;
-use radix_engine::types::AccessControllerOffset;
-
-use radix_engine::blueprints::access_controller::AccessControllerSubstate;
-use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use radix_engine_interface::types::{AccessRulesOffset, SysModuleId};
-use state_manager::query::{dump_component_state, VaultData};
+use radix_engine::blueprints::access_controller::*;
+use radix_engine::system::node_modules::access_rules::*;
+use radix_engine::types::*;
+use state_manager::query::dump_component_state;
 use std::ops::Deref;
 
-use super::map_to_descendent_id;
+use super::component_dump_to_vaults_and_nodes;
 
 pub(crate) async fn handle_state_access_controller(
     state: State<CoreApiState>,
@@ -22,57 +20,29 @@ pub(crate) async fn handle_state_access_controller(
         extract_component_address(&extraction_context, &request.controller_address)
             .map_err(|err| err.into_response_error("controller_address"))?;
 
-    if !request.controller_address.starts_with("accesscontroller_")
-        && !request.controller_address.starts_with("controller_")
-    {
+    if !request.controller_address.starts_with("accesscontroller_") {
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
     let database = state.database.read();
 
-    let access_controller_substate: AccessControllerSubstate = read_mandatory_substate(
+    let access_controller_substate: AccessControllerSubstate = read_optional_main_field_substate(
         database.deref(),
         controller_address.as_node_id(),
-        SysModuleId::Object.into(),
-        &AccessControllerOffset::AccessController.into(),
-    )?;
+        &AccessControllerField::AccessController.into(),
+    )
+    .ok_or_else(|| not_found_error("Access controller not found".to_string()))?;
 
     let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
         database.deref(),
         controller_address.as_node_id(),
-        SysModuleId::AccessRules.into(),
-        &AccessRulesOffset::AccessRules.into(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), controller_address);
-
-    let state_owned_vaults = component_dump
-        .vaults
-        .into_values()
-        .map(|vault_data| match vault_data {
-            VaultData::NonFungible {
-                resource_address,
-                amount,
-                ids,
-            } => to_api_non_fungible_resource_amount(
-                &mapping_context,
-                &resource_address,
-                &amount,
-                &ids,
-            ),
-            VaultData::Fungible {
-                resource_address,
-                amount,
-            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let descendent_ids = component_dump
-        .descendents
-        .into_iter()
-        .filter(|(_, _, depth)| *depth > 0)
-        .map(|(parent, node, depth)| map_to_descendent_id(parent, node, depth))
-        .collect::<Result<Vec<_>, _>>()?;
+    let (vaults, descendent_nodes) =
+        component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateAccessControllerResponse {
         state: Some(to_api_access_controller_substate(
@@ -83,8 +53,8 @@ pub(crate) async fn handle_state_access_controller(
             &mapping_context,
             &method_access_rules_substate,
         )?),
-        state_owned_vaults,
-        descendent_ids,
+        vaults,
+        descendent_nodes,
     })
     .map(Json)
 }

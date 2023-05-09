@@ -107,9 +107,14 @@ fn to_api_response(
                     .iter()
                     .map(|v| {
                         Ok(models::ResourceChange {
-                            resource_address: to_api_resource_address(context, &v.resource_address),
-                            component_entity: Box::new(to_api_entity_reference(v.node_id)?),
-                            vault_entity: Box::new(to_api_entity_reference(v.vault_id)?),
+                            resource_address: to_api_resource_address(
+                                context,
+                                &v.resource_address,
+                            )?,
+                            component_entity: Box::new(to_api_entity_reference(
+                                context, &v.node_id,
+                            )?),
+                            vault_entity: Box::new(to_api_entity_reference(context, &v.vault_id)?),
                             amount: to_api_decimal(&v.amount),
                         })
                     })

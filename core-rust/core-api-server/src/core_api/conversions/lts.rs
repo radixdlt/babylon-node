@@ -41,7 +41,7 @@ pub fn to_api_lts_committed_transaction_outcome(
             context,
             total_fee,
             &receipt.local_execution.state_update_summary.balance_changes,
-        ),
+        )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
             context,
             &receipt.local_execution.state_update_summary.balance_changes,
@@ -55,7 +55,7 @@ pub fn to_api_lts_fungible_balance_changes(
     context: &MappingContext,
     total_fee: Decimal,
     balance_changes: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-) -> Vec<models::LtsEntityFungibleBalanceChanges> {
+) -> Result<Vec<models::LtsEntityFungibleBalanceChanges>, MappingError> {
     // TODO - until we have the proper information from the engine, we need to do some guessing here about which entities
     // actually paid the fee. Ideally our guessing will align with 99% of transactions - and we can make clear in the docs
     // it's not fully accurate for now but will be for launch.
@@ -104,11 +104,11 @@ pub fn to_api_lts_fungible_balance_changes(
     balance_changes
         .iter()
         .map(|(entity_address, resource_changes)| {
-            if assumed_fee_payer == Some(*entity_address) {
+            let changes = if assumed_fee_payer == Some(*entity_address) {
                 models::LtsEntityFungibleBalanceChanges {
-                    entity_address: to_api_global_address(context, entity_address),
+                    entity_address: to_api_global_address(context, entity_address)?,
                     fee_balance_change: Some(Box::new(models::LtsFungibleResourceBalanceChange {
-                        resource_address: to_api_resource_address(context, &RADIX_TOKEN),
+                        resource_address: to_api_resource_address(context, &RADIX_TOKEN)?,
                         balance_change: to_api_decimal(&assumed_fee_balance_change),
                     })),
                     non_fee_balance_changes: resource_changes
@@ -122,52 +122,58 @@ pub fn to_api_lts_fungible_balance_changes(
                                 if non_fee_balance_change == Decimal::ZERO {
                                     return None;
                                 }
-                                return Some(models::LtsFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(
-                                        context,
-                                        resource_address,
-                                    ),
-                                    balance_change: to_api_decimal(&non_fee_balance_change),
-                                });
+                                return Some(to_api_lts_fungible_resource_balance_change(
+                                    context,
+                                    resource_address,
+                                    &non_fee_balance_change,
+                                ));
                             }
                             match balance_change {
                                 BalanceChange::Fungible(balance_change) => {
-                                    Some(models::LtsFungibleResourceBalanceChange {
-                                        resource_address: to_api_resource_address(
-                                            context,
-                                            resource_address,
-                                        ),
-                                        balance_change: to_api_decimal(balance_change),
-                                    })
+                                    Some(to_api_lts_fungible_resource_balance_change(
+                                        context,
+                                        resource_address,
+                                        balance_change,
+                                    ))
                                 }
                                 BalanceChange::NonFungible { .. } => None,
                             }
                         })
-                        .collect(),
+                        .collect::<Result<_, MappingError>>()?,
                 }
             } else {
                 models::LtsEntityFungibleBalanceChanges {
-                    entity_address: to_api_global_address(context, entity_address),
+                    entity_address: to_api_global_address(context, entity_address)?,
                     fee_balance_change: None,
                     non_fee_balance_changes: resource_changes
                         .iter()
                         .filter_map(|(resource_address, balance_change)| match balance_change {
                             BalanceChange::Fungible(balance_change) => {
-                                Some(models::LtsFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(
-                                        context,
-                                        resource_address,
-                                    ),
-                                    balance_change: to_api_decimal(balance_change),
-                                })
+                                Some(to_api_lts_fungible_resource_balance_change(
+                                    context,
+                                    resource_address,
+                                    balance_change,
+                                ))
                             }
                             BalanceChange::NonFungible { .. } => None,
                         })
-                        .collect(),
+                        .collect::<Result<_, MappingError>>()?,
                 }
-            }
+            };
+            Ok(changes)
         })
-        .collect()
+        .collect::<Result<Vec<_>, MappingError>>()
+}
+
+pub fn to_api_lts_fungible_resource_balance_change(
+    context: &MappingContext,
+    resource_address: &ResourceAddress,
+    balance_change: &Decimal,
+) -> Result<models::LtsFungibleResourceBalanceChange, MappingError> {
+    Ok(models::LtsFungibleResourceBalanceChange {
+        resource_address: to_api_resource_address(context, resource_address)?,
+        balance_change: to_api_decimal(balance_change),
+    })
 }
 
 pub fn to_api_lts_resultant_account_fungible_balances(

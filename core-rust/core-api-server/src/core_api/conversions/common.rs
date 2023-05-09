@@ -1,11 +1,9 @@
-use radix_engine::types::{scrypto_encode, ScryptoEncode};
-use radix_engine_common::data::scrypto::{ScryptoRawPayload, ScryptoValueDisplayContext};
-use sbor::representations::{SerializationMode, SerializationParameters};
-use serde_json::to_value;
+use radix_engine::types::*;
 
+use sbor::representations::*;
 use state_manager::transaction::UserTransactionValidator;
 use transaction::model::NotarizedTransaction;
-use utils::ContextualSerialize;
+use utils::*;
 
 use crate::core_api::*;
 
@@ -35,24 +33,40 @@ pub fn to_api_sbor_data_from_bytes(
     context: &MappingContext,
     scrypto_sbor_bytes: &[u8],
 ) -> Result<models::SborData, MappingError> {
-    let json = to_value(
-        ScryptoRawPayload::new_from_valid_slice_with_checks(scrypto_sbor_bytes)
-            .unwrap()
-            .serializable(SerializationParameters::Schemaless {
-                mode: SerializationMode::Programmatic,
-                custom_context: ScryptoValueDisplayContext::with_optional_bech32(Some(
-                    &context.bech32_encoder,
-                )),
-            }),
-    )
-    .map_err(|err| MappingError::InvalidSbor {
-        decode_error: err.to_string(),
-        bytes: scrypto_sbor_bytes.to_vec(),
-    })?;
-    Ok(models::SborData::new(
-        to_hex(scrypto_sbor_bytes),
-        Some(json),
-    ))
+    Ok(models::SborData {
+        hex: {
+            if context.sbor_options.include_raw {
+                Some(to_hex(scrypto_sbor_bytes))
+            } else {
+                None
+            }
+        },
+        programmatic_json: {
+            if context.sbor_options.include_programmatic_json {
+                Some({
+                    serde_json::to_value(
+                        ScryptoRawPayload::new_from_valid_slice_with_checks(scrypto_sbor_bytes)
+                            .ok_or_else(|| MappingError::InvalidSbor {
+                                decode_error: "Failed payload prefix check".to_string(),
+                                bytes: scrypto_sbor_bytes.to_vec(),
+                            })?
+                            .serializable(SerializationParameters::Schemaless {
+                                mode: SerializationMode::Programmatic,
+                                custom_context: ScryptoValueDisplayContext::with_optional_bech32(
+                                    Some(&context.bech32_encoder),
+                                ),
+                            }),
+                    )
+                    .map_err(|err| MappingError::InvalidSbor {
+                        decode_error: format!("Could not encode to JSON: {err}"),
+                        bytes: scrypto_sbor_bytes.to_vec(),
+                    })?
+                })
+            } else {
+                None
+            }
+        },
+    })
 }
 
 pub fn extract_unvalidated_transaction(

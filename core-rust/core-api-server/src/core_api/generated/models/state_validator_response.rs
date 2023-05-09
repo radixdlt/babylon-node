@@ -21,21 +21,21 @@ pub struct StateValidatorResponse {
     #[serde(rename = "access_rules")]
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
-    #[serde(rename = "state_owned_vaults")]
-    pub state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>,
+    #[serde(rename = "vaults")]
+    pub vaults: Vec<crate::core_api::generated::models::VaultBalance>,
     /// Any descendent nodes owned directly or indirectly by the component
-    #[serde(rename = "descendent_ids")]
-    pub descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>,
+    #[serde(rename = "descendent_nodes")]
+    pub descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>,
 }
 
 impl StateValidatorResponse {
-    pub fn new(address: String, state: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateValidatorResponse {
+    pub fn new(address: String, state: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
         StateValidatorResponse {
             address,
             state: Option::Some(state),
             access_rules: Option::Some(access_rules),
-            state_owned_vaults,
-            descendent_ids,
+            vaults,
+            descendent_nodes,
         }
     }
 }

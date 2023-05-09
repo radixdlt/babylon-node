@@ -75,8 +75,8 @@ impl IsAccountExt for GlobalAddress {
             Some(entity_type) => matches!(
                 entity_type,
                 EntityType::GlobalAccount
-                    | EntityType::GlobalVirtualEcdsaAccount
-                    | EntityType::GlobalVirtualEddsaAccount
+                    | EntityType::GlobalVirtualSecp256k1Account
+                    | EntityType::GlobalVirtualEd25519Account
             ),
             _ => false,
         }

@@ -22,9 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EntityModule;
 import com.radixdlt.api.core.generated.models.EntityType;
+import com.radixdlt.api.core.generated.models.PartitionKind;
+import com.radixdlt.api.core.generated.models.SubstateKey;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.SysModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,27 +37,35 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   SubstateId.JSON_PROPERTY_ENTITY_TYPE,
-  SubstateId.JSON_PROPERTY_ENTITY_ID_HEX,
-  SubstateId.JSON_PROPERTY_MODULE_TYPE,
+  SubstateId.JSON_PROPERTY_ENTITY_ADDRESS,
+  SubstateId.JSON_PROPERTY_ENTITY_MODULE,
+  SubstateId.JSON_PROPERTY_PARTITION_KIND,
+  SubstateId.JSON_PROPERTY_PARTITION_NUMBER,
   SubstateId.JSON_PROPERTY_SUBSTATE_TYPE,
-  SubstateId.JSON_PROPERTY_SUBSTATE_KEY_HEX
+  SubstateId.JSON_PROPERTY_SUBSTATE_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SubstateId {
   public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
   private EntityType entityType;
 
-  public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
-  private String entityIdHex;
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
-  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private SysModuleType moduleType;
+  public static final String JSON_PROPERTY_ENTITY_MODULE = "entity_module";
+  private EntityModule entityModule;
+
+  public static final String JSON_PROPERTY_PARTITION_KIND = "partition_kind";
+  private PartitionKind partitionKind;
+
+  public static final String JSON_PROPERTY_PARTITION_NUMBER = "partition_number";
+  private Integer partitionNumber;
 
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
-  public static final String JSON_PROPERTY_SUBSTATE_KEY_HEX = "substate_key_hex";
-  private String substateKeyHex;
+  public static final String JSON_PROPERTY_SUBSTATE_KEY = "substate_key";
+  private SubstateKey substateKey;
 
   public SubstateId() { 
   }
@@ -86,55 +96,109 @@ public class SubstateId {
   }
 
 
-  public SubstateId entityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public SubstateId entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the entity id.
-   * @return entityIdHex
+   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityIdHex() {
-    return entityIdHex;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
-  public SubstateId moduleType(SysModuleType moduleType) {
-    this.moduleType = moduleType;
+  public SubstateId entityModule(EntityModule entityModule) {
+    this.entityModule = entityModule;
     return this;
   }
 
    /**
-   * Get moduleType
-   * @return moduleType
+   * Get entityModule
+   * @return entityModule
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY_MODULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SysModuleType getModuleType() {
-    return moduleType;
+  public EntityModule getEntityModule() {
+    return entityModule;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY_MODULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(SysModuleType moduleType) {
-    this.moduleType = moduleType;
+  public void setEntityModule(EntityModule entityModule) {
+    this.entityModule = entityModule;
+  }
+
+
+  public SubstateId partitionKind(PartitionKind partitionKind) {
+    this.partitionKind = partitionKind;
+    return this;
+  }
+
+   /**
+   * Get partitionKind
+   * @return partitionKind
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PARTITION_KIND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public PartitionKind getPartitionKind() {
+    return partitionKind;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PARTITION_KIND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPartitionKind(PartitionKind partitionKind) {
+    this.partitionKind = partitionKind;
+  }
+
+
+  public SubstateId partitionNumber(Integer partitionNumber) {
+    this.partitionNumber = partitionNumber;
+    return this;
+  }
+
+   /**
+   * Get partitionNumber
+   * minimum: 0
+   * maximum: 255
+   * @return partitionNumber
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PARTITION_NUMBER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getPartitionNumber() {
+    return partitionNumber;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PARTITION_NUMBER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPartitionNumber(Integer partitionNumber) {
+    this.partitionNumber = partitionNumber;
   }
 
 
@@ -164,29 +228,29 @@ public class SubstateId {
   }
 
 
-  public SubstateId substateKeyHex(String substateKeyHex) {
-    this.substateKeyHex = substateKeyHex;
+  public SubstateId substateKey(SubstateKey substateKey) {
+    this.substateKey = substateKey;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the substate key, under the entity
-   * @return substateKeyHex
+   * Get substateKey
+   * @return substateKey
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the substate key, under the entity")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSubstateKeyHex() {
-    return substateKeyHex;
+  public SubstateKey getSubstateKey() {
+    return substateKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY_HEX)
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateKeyHex(String substateKeyHex) {
-    this.substateKeyHex = substateKeyHex;
+  public void setSubstateKey(SubstateKey substateKey) {
+    this.substateKey = substateKey;
   }
 
 
@@ -203,15 +267,17 @@ public class SubstateId {
     }
     SubstateId substateId = (SubstateId) o;
     return Objects.equals(this.entityType, substateId.entityType) &&
-        Objects.equals(this.entityIdHex, substateId.entityIdHex) &&
-        Objects.equals(this.moduleType, substateId.moduleType) &&
+        Objects.equals(this.entityAddress, substateId.entityAddress) &&
+        Objects.equals(this.entityModule, substateId.entityModule) &&
+        Objects.equals(this.partitionKind, substateId.partitionKind) &&
+        Objects.equals(this.partitionNumber, substateId.partitionNumber) &&
         Objects.equals(this.substateType, substateId.substateType) &&
-        Objects.equals(this.substateKeyHex, substateId.substateKeyHex);
+        Objects.equals(this.substateKey, substateId.substateKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex, moduleType, substateType, substateKeyHex);
+    return Objects.hash(entityType, entityAddress, entityModule, partitionKind, partitionNumber, substateType, substateKey);
   }
 
   @Override
@@ -219,10 +285,12 @@ public class SubstateId {
     StringBuilder sb = new StringBuilder();
     sb.append("class SubstateId {\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
-    sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
-    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
+    sb.append("    entityModule: ").append(toIndentedString(entityModule)).append("\n");
+    sb.append("    partitionKind: ").append(toIndentedString(partitionKind)).append("\n");
+    sb.append("    partitionNumber: ").append(toIndentedString(partitionNumber)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    substateKeyHex: ").append(toIndentedString(substateKeyHex)).append("\n");
+    sb.append("    substateKey: ").append(toIndentedString(substateKey)).append("\n");
     sb.append("}");
     return sb.toString();
   }
