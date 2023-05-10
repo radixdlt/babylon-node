@@ -173,7 +173,7 @@ public class REv2RejectedTransactionMempoolTest {
     mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
     test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
-    test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
+    test.runUntilState(allCommittedTransactionSuccess(transaction), onlyConsensusEvents());
     return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
   }
 

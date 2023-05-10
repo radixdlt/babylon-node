@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -113,7 +113,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
       assertThat(mempoolTransaction.getNotarizedTransaction().getHash())
           .isEqualTo(Bytes.toHexString(payloadHash.asBytes()));
 
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       assertThat(
               getMempoolApi()

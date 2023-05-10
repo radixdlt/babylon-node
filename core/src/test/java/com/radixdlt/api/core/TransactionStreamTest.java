@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -103,7 +103,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       assertThat(response.getDuplicate()).isFalse();
 
-      test.runUntilState(allCommittedTransaction(rawTransaction), 100);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 100);
 
       var newTransactions =
           getStreamApi()

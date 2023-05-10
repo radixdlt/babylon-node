@@ -65,7 +65,7 @@
 package com.radixdlt.api.core;
 
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -104,7 +104,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       // Check the status response again
       var statusResponse2 =
@@ -205,7 +205,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(response2.getDuplicate()).isFalse();
 
       // And get committed...
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       // Check the status response again to check it's been marked as committed
       var statusResponse2 =

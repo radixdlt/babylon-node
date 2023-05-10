@@ -66,7 +66,7 @@ package com.radixdlt.api.core;
 
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Key;
@@ -119,7 +119,7 @@ public final class AccountStateTest extends DeterministicCoreApiTestBase {
       test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
           .dispatch(MempoolAdd.create(rawNotarizedTx));
       test.runUntilState(
-          allCommittedTransaction(rawNotarizedTx),
+          allCommittedTransactionSuccess(rawNotarizedTx),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
       final var receipt =

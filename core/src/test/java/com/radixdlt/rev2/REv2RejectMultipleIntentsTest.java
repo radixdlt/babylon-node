@@ -193,7 +193,8 @@ public final class REv2RejectMultipleIntentsTest {
       proposalGenerator.nextTransactions = transactionsForFirstProposal;
       test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
       test.runUntilState(
-          allCommittedTransaction(transactionsForFirstProposal.get(0)), onlyConsensusEvents());
+          allCommittedTransactionSuccess(transactionsForFirstProposal.get(0)),
+          onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
@@ -202,7 +203,8 @@ public final class REv2RejectMultipleIntentsTest {
       proposalGenerator.nextTransactions = transactionsForSecondProposal;
       test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
       test.runUntilState(
-          allCommittedTransaction(transactionsForSecondProposal.get(0)), onlyConsensusEvents());
+          allCommittedTransactionSuccess(transactionsForSecondProposal.get(0)),
+          onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();

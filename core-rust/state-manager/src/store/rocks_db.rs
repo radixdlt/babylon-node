@@ -914,24 +914,21 @@ impl RecoverableVertexStore for RocksDBStore {
 }
 
 fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::new();
-    buffer.extend_from_slice(&partition_key.0);
-    buffer.extend_from_slice(&sort_key.0);
+    let mut buffer = Vec::with_capacity(1 + partition_key.0.len() + sort_key.0.len());
     buffer.push(
         u8::try_from(partition_key.0.len())
             .expect("Partition key length is effectively constant 32 so should fit in a u8"),
     );
+    buffer.extend_from_slice(&partition_key.0);
+    buffer.extend_from_slice(&sort_key.0);
     buffer
 }
 
 fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
-    let last_byte_index = buffer
-        .len()
-        .checked_sub(1)
-        .expect("Expected DB key to be at least 1 byte");
-    let partition_key_len = usize::from(buffer[last_byte_index]);
-    let partition_key = buffer[..partition_key_len].to_vec();
-    let sort_key = buffer[partition_key_len..last_byte_index].to_vec();
+    let partition_key_start: usize = 1usize;
+    let sort_key_start = 1 + usize::from(buffer[0]);
+    let partition_key = buffer[partition_key_start..sort_key_start].to_vec();
+    let sort_key = buffer[sort_key_start..].to_vec();
     (DbPartitionKey(partition_key), DbSortKey(sort_key))
 }
 
@@ -1126,7 +1123,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn rust_encoding_is_invertible() {
+    fn rocksdb_key_encoding_is_invertible() {
         let partition_key = DbPartitionKey(vec![1, 2, 3, 4, 132]);
         let sort_key = DbSortKey(vec![13, 5]);
         let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
@@ -1135,5 +1132,22 @@ mod tests {
 
         assert_eq!(partition_key, decoded.0);
         assert_eq!(sort_key, decoded.1);
+    }
+
+    /// This is needed for the iteration to work correctly
+    #[test]
+    fn rocksdb_key_encoding_respects_lexicographic_ordering_on_sort_keys() {
+        let partition_key = DbPartitionKey(vec![73, 85]);
+        let sort_key = DbSortKey(vec![0, 4]);
+        let iterator_start = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0])) < iterator_start);
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 3])) < iterator_start);
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])) == iterator_start);
+        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5])));
+        assert!(
+            iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))
+        );
+        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![1, 51])));
     }
 }

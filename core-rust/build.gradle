@@ -86,15 +86,19 @@ spotless {
     }
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
+task runUnitTests(type: Exec) {
+    commandLine 'cargo', 'test'
 }
+
+spotlessRustApply.dependsOn("runRustFormat")
+spotlessRustApply.dependsOn("runRustClippy")
 
 task runRustFormat(type: Exec) {
     commandLine 'cargo', 'fmt'
+}
+
+task runRustClippy(type: Exec) {
+    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
 }
 
 // TBC - We should consider using some kind of gradle rust build plug-in
@@ -111,8 +115,12 @@ task buildRustForDocker(type: Exec) {
         dockerPlatform = "linux/arm64"
         tagSuffix = "linux-arm64"
     }
-    project.logger.lifecycle("Building for own target: $target")
-    project.logger.lifecycle("Building for own docker platform: $dockerPlatform")
+
+    doFirst {
+        project.logger.lifecycle("Building Rust for docker:")
+        project.logger.lifecycle("Building for own target: $target")
+        project.logger.lifecycle("Building for own docker platform: $dockerPlatform")
+    }
 
     workingDir rootProject.projectDir
     def outputDir = "core-rust/target/$target/${project.property("rustBinaryBuildType")}"

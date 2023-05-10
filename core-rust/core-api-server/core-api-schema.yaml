@@ -2652,6 +2652,7 @@ components:
       required:
         - kind
         - index
+        - as_sbor
       properties:
         kind:
           type: string
@@ -2667,6 +2668,11 @@ components:
             Either the well known identifier, of the schema-local index, depending on the kind.
           type: integer
           format: int32
+        as_sbor:
+          $ref: '#/components/schemas/SborData'
+          description: |
+            The SBOR encoding of the LocalTypeIndex.
+            This is useful for passing to the Radix Engine toolkit along with a schema.
     VirtualLazyLoadSchema:
       type: object
       required:

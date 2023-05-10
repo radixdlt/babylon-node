@@ -107,7 +107,7 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> committedUserTransaction(
-      RawNotarizedTransaction userTransaction, boolean requireSuccess) {
+      RawNotarizedTransaction userTransaction, boolean requireSuccess, boolean assertSuccess) {
     var committedTransaction =
         RawLedgerTransaction.create(
             TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
@@ -120,9 +120,12 @@ public class NodePredicate {
         } else {
           var txn = maybeTxn.unwrap();
           if (txn.rawTransaction().equals(committedTransaction)) {
-            if (requireSuccess) {
-              return txn.status() instanceof CommittedTransactionStatus.Success;
-            } else {
+            var isSuccess = txn.status() instanceof CommittedTransactionStatus.Success;
+            if (assertSuccess && !isSuccess) {
+              var errorMessage = txn.errorMessage().or("No error message");
+              throw new RuntimeException("Transaction was committed as failure: " + errorMessage);
+            }
+            if (!requireSuccess || isSuccess) {
               return true;
             }
           }

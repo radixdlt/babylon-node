@@ -142,7 +142,7 @@ public class REv2MempoolToCommittedTest {
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act/Assert
-      test.runUntilState(anyCommittedTransaction(transaction), 20000);
+      test.runUntilState(anyCommittedTransactionSuccess(transaction), 20000);
     }
   }
 }

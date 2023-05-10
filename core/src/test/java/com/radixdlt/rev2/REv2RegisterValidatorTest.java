@@ -67,8 +67,9 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static com.radixdlt.harness.predicates.EventPredicate.*;
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -135,23 +136,18 @@ public final class REv2RegisterValidatorTest {
               NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
-          allCommittedTransaction(createValidatorTransaction),
-          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+          allCommittedTransactionSuccess(createValidatorTransaction),
+          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
       var transactionDetails =
           NodesReader.getCommittedTransactionDetails(
               test.getNodeInjectors(), createValidatorTransaction);
       var validatorAddress = transactionDetails.newComponentAddresses().get(0);
 
+      // Sanity check
+      assertThat(validatorAddress.value()[0])
+          .isEqualTo(ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID);
+
       // Act: Submit transaction to mempool and run consensus
-      var registerValidatorTransaction =
-          REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
-      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
       var stakeValidatorTransaction =
           REv2TestTransactions.constructStakeValidatorTransaction(
               NetworkDefinition.INT_TEST_NET,
@@ -161,6 +157,24 @@ public final class REv2RegisterValidatorTest {
               validatorAddress,
               TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
+
+      var registerValidatorTransaction =
+          REv2TestTransactions.constructRegisterValidatorTransaction(
+              NetworkDefinition.INT_TEST_NET,
+              test.faucetAddress(),
+              0L,
+              1,
+              validatorAddress,
+              TEST_KEY);
+      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
+
+      // Sanity check that they both get committed
+      test.runUntilState(
+          allCommittedTransactionSuccess(stakeValidatorTransaction),
+          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
+      test.runUntilState(
+          allCommittedTransactionSuccess(registerValidatorTransaction),
+          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
 
       // Assert: Validator becomes part of validator set
       test.runUntilState(

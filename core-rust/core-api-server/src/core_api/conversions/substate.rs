@@ -854,13 +854,14 @@ pub fn to_api_blueprint_schema(
 }
 
 pub fn to_api_local_type_index(
-    _context: &MappingContext,
+    context: &MappingContext,
     local_type_index: &LocalTypeIndex,
 ) -> Result<models::LocalTypeIndex, MappingError> {
     Ok(match local_type_index {
         LocalTypeIndex::WellKnown(index) => models::LocalTypeIndex {
             kind: models::local_type_index::Kind::WellKnown,
             index: to_api_u8_as_i32(*index),
+            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
         },
         LocalTypeIndex::SchemaLocalIndex(index) => models::LocalTypeIndex {
             kind: models::local_type_index::Kind::SchemaLocal,
@@ -869,6 +870,7 @@ pub fn to_api_local_type_index(
                     message: "Type index too large".to_string(),
                 }
             })?),
+            as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
         },
     })
 }

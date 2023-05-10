@@ -154,12 +154,14 @@ public final class REv2LargeTransactionTest {
 
       // Now wait for mempool sync to the validator and commit
       test.runUntilState(
-          nodeAt(validatorIndex, NodePredicate.committedUserTransaction(largeTransaction, false)),
+          nodeAt(
+              validatorIndex, NodePredicate.committedUserTransaction(largeTransaction, true, true)),
           onlyConsensusEvents());
 
       // Act: Sync
       test.runUntilState(
-          nodeAt(fullNodeIndex, NodePredicate.committedUserTransaction(largeTransaction, false)),
+          nodeAt(
+              fullNodeIndex, NodePredicate.committedUserTransaction(largeTransaction, true, true)),
           onlyLedgerSyncEvents());
 
       // Assert: Check transaction and post submission state

@@ -128,7 +128,7 @@ public final class Checkers {
                   .filter(
                       transaction ->
                           NodePredicate.committedUserTransaction(
-                                  transaction, allowMoreCommittedIfFailed)
+                                  transaction, allowMoreCommittedIfFailed, false)
                               .test(injector))
                   .count();
           assertThat(numCommitted).isEqualTo(1);
