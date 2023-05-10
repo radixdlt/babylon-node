@@ -24,8 +24,9 @@ jobs:
       image_organization: "radixdlt"
       image_name: "keygen"
       tag: ${{ github.event.release.tag_name }}
-      context: "./docker"
-      dockerfile: "./docker/Dockerfile.keygen"
+      context: "."
+      dockerfile: "./Dockerfile"
+      target: "keygen"
       platforms: "linux/amd64"
       enable_dockerhub: "true"
     secrets:
@@ -43,8 +44,9 @@ jobs:
       image_organization: "dev-container-repo"
       image_name: "keygen"
       tag: ${{ inputs.image_tag }}
-      context: "./docker"
-      dockerfile: "./docker/Dockerfile.keygen"
+      context: "."
+      dockerfile: "./Dockerfile"
+      target: "keygen"
       platforms: "linux/amd64"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
