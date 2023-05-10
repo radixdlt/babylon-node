@@ -75,13 +75,16 @@ public final class Address {
     System.loadLibrary("corerust");
   }
 
-  public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey key) {
-    return virtualAccountAddressFunc.call(key);
+  public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey publicKey) {
+    return virtualAccountAddress(publicKey.getCompressedBytes());
   }
 
-  private static final Natives.Call1<ECDSASecp256k1PublicKey, ComponentAddress>
-      virtualAccountAddressFunc =
-          Natives.builder(Address::virtualAccountAddress).build(new TypeToken<>() {});
+  public static ComponentAddress virtualAccountAddress(byte[] publicKeyBytes) {
+    return virtualAccountAddressFunc.call(publicKeyBytes);
+  }
 
-  private static native byte[] virtualAccountAddress(byte[] requestPayload);
+  private static final Natives.Call1<byte[], ComponentAddress> virtualAccountAddressFunc =
+      Natives.builder(Address::nativeVirtualAccountAddress).build(new TypeToken<>() {});
+
+  private static native byte[] nativeVirtualAccountAddress(byte[] requestPayload);
 }

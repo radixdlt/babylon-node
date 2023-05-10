@@ -116,6 +116,8 @@ pub struct StateManagerLoggingConfig {
 
 const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
+const GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(2000);
+
 pub struct StateManager<S> {
     store: Arc<RwLock<S>>,
     mempool_manager: Arc<MempoolManager>,
@@ -203,7 +205,10 @@ where
             &self
                 .execution_configurator
                 .wrap(executable, ConfigType::Genesis)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
+                .warn_after(
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    &logged_description,
+                ),
         );
 
         let commit = processed.expect_commit("prepare genesis");
@@ -597,7 +602,13 @@ where
         let mut next_nonce = 1;
 
         // Data ingestion
-        for chunk in genesis_data_chunks {
+        let genesis_data_chunks_len = genesis_data_chunks.len();
+        for (idx, chunk) in genesis_data_chunks.into_iter().enumerate() {
+            info!(
+                "Ingesting genesis data chunk {} of {}",
+                idx + 1,
+                genesis_data_chunks_len
+            );
             let genesis_data_ingestion_transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, next_nonce);
             next_nonce += 1;
@@ -646,7 +657,12 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed"); // TODO(genesis): better error handling?
+                    panic!(
+                        "Genesis data ingestion txn didn't succeed {:?}",
+                        genesis_data_ingestion_commit_receipt
+                            .local_execution
+                            .outcome
+                    ); // TODO(genesis): better error handling?
                 }
             }
         }
@@ -788,8 +804,19 @@ where
                 });
 
             let transaction_hash = transaction.get_hash();
-            let logged_description = format!("committing {}", transaction_hash);
-
+            let (execution_config_type, warn_threshold, logged_description) = if genesis {
+                (
+                    ConfigType::Genesis,
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    format!("committing genesis {}", transaction_hash),
+                )
+            } else {
+                (
+                    ConfigType::Regular,
+                    TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    format!("committing {}", transaction_hash),
+                )
+            };
             let mut lock_execution_cache = self.execution_cache.lock();
             let processed = lock_execution_cache.execute_transaction(
                 write_store.deref(),
@@ -798,8 +825,8 @@ where
                 &transaction_hash,
                 &self
                     .execution_configurator
-                    .wrap(executable, ConfigType::Regular)
-                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
+                    .wrap(executable, execution_config_type)
+                    .warn_after(warn_threshold, &logged_description),
             );
             let commit = processed.expect_commit(logged_description);
 

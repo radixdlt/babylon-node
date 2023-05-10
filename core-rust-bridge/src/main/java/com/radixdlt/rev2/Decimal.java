@@ -71,12 +71,15 @@ import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.utils.UInt256;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
 /** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
+
+  public static final Decimal ZERO = Decimal.of(0L);
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -102,6 +105,23 @@ public class Decimal implements Comparable<Decimal> {
 
   public static Decimal from(UInt256 fixedPointRepresentation) {
     return new Decimal(fixedPointRepresentation);
+  }
+
+  public static Decimal unsafeFromBigInt(BigInteger i) {
+    final var dec = new Decimal(UInt256.from(i.toByteArray()));
+    if (!dec.toBigInt().equals(i)) {
+      throw new IllegalArgumentException("Decimal overflow");
+    }
+    return dec;
+  }
+
+  public Decimal add(Decimal other) {
+    var newUnderlying = this.underlyingValue.add(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
+  public BigInteger toBigInt() {
+    return underlyingValue.toBigInt();
   }
 
   public static Decimal of(long amount) {

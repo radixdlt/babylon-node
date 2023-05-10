@@ -91,6 +91,14 @@ public record ResourceAddress(byte[] value) {
     return new ResourceAddress(addressBytes);
   }
 
+  // TODO(genesis): move to rust
+  public static ResourceAddress globalFungible(byte[] bytes) {
+    byte[] arr = new byte[BYTE_LENGTH];
+    arr[0] = 0b01011101;
+    System.arraycopy(bytes, 0, arr, 1, bytes.length);
+    return new ResourceAddress(arr);
+  }
+
   public String toHexString() {
     return Hex.toHexString(value);
   }
