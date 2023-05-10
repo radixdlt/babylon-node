@@ -75,23 +75,13 @@ use crate::{
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 
-use radix_engine::types::{scrypto_decode, scrypto_encode};
-use radix_engine_common::types::GlobalAddress;
-use radix_engine_interface::data::manifest::manifest_decode;
-use radix_engine_interface::data::scrypto::ScryptoDecode;
-use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
-};
-use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
-};
+use radix_engine::types::*;
+use radix_engine_store_interface::interface::*;
+use radix_engine_stores::hash_tree::tree_store::*;
 
-use rocksdb::{
-    ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
-};
+use rocksdb::*;
 use std::path::PathBuf;
 use tracing::{error, info, warn};
-use utils::copy_u8_array;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
@@ -925,18 +915,23 @@ impl RecoverableVertexStore for RocksDBStore {
 
 fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
     let mut buffer = Vec::new();
-    buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
-    buffer.extend(partition_key.0.clone());
-    buffer.extend(sort_key.0.clone());
+    buffer.extend_from_slice(&partition_key.0);
+    buffer.extend_from_slice(&sort_key.0);
+    buffer.push(
+        u8::try_from(partition_key.0.len())
+            .expect("Partition key length is effectively constant 32 so should fit in a u8"),
+    );
     buffer
 }
 
 fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
-    let partition_key_len =
-        usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
-    let sort_key_offset = 4 + partition_key_len;
-    let partition_key = buffer[4..sort_key_offset].to_vec();
-    let sort_key = buffer[sort_key_offset..].to_vec();
+    let last_byte_index = buffer
+        .len()
+        .checked_sub(1)
+        .expect("Expected DB key to be at least 1 byte");
+    let partition_key_len = usize::from(buffer[last_byte_index]);
+    let partition_key = buffer[..partition_key_len].to_vec();
+    let sort_key = buffer[partition_key_len..last_byte_index].to_vec();
     (DbPartitionKey(partition_key), DbSortKey(sort_key))
 }
 
@@ -1123,5 +1118,22 @@ impl AccountChangeIndexExtension for RocksDBStore {
         }
 
         results
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rust_encoding_is_invertible() {
+        let partition_key = DbPartitionKey(vec![1, 2, 3, 4, 132]);
+        let sort_key = DbSortKey(vec![13, 5]);
+        let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+
+        let decoded = decode_from_rocksdb_bytes(&buffer);
+
+        assert_eq!(partition_key, decoded.0);
+        assert_eq!(sort_key, decoded.1);
     }
 }
