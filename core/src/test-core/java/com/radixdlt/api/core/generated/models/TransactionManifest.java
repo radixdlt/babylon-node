@@ -43,7 +43,7 @@ public class TransactionManifest {
   private String instructions;
 
   public static final String JSON_PROPERTY_BLOBS_HEX = "blobs_hex";
-  private Map<String, String> blobsHex = new HashMap<>();
+  private Map<String, String> blobsHex = null;
 
   public TransactionManifest() { 
   }
@@ -54,13 +54,13 @@ public class TransactionManifest {
   }
 
    /**
-   * The decompiled transaction manifest instructions
+   * The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
    * @return instructions
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The decompiled transaction manifest instructions")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.")
   @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getInstructions() {
     return instructions;
@@ -68,7 +68,7 @@ public class TransactionManifest {
 
 
   @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setInstructions(String instructions) {
     this.instructions = instructions;
   }
@@ -80,18 +80,21 @@ public class TransactionManifest {
   }
 
   public TransactionManifest putBlobsHexItem(String key, String blobsHexItem) {
+    if (this.blobsHex == null) {
+      this.blobsHex = new HashMap<>();
+    }
     this.blobsHex.put(key, blobsHexItem);
     return this;
   }
 
    /**
-   * A map of the hex-encoded blob hash, to hex-encoded blob content
+   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
    * @return blobsHex
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map of the hex-encoded blob hash, to hex-encoded blob content")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.")
   @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Map<String, String> getBlobsHex() {
     return blobsHex;
@@ -99,7 +102,7 @@ public class TransactionManifest {
 
 
   @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBlobsHex(Map<String, String> blobsHex) {
     this.blobsHex = blobsHex;
   }

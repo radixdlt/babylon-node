@@ -87,13 +87,13 @@ public class CreatedOrUpdatedSubstate {
   }
 
    /**
-   * The hex-encoded, SBOR-encoded substate data bytes
+   * The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
    * @return substateHex
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded, SBOR-encoded substate data bytes")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).")
   @JsonProperty(JSON_PROPERTY_SUBSTATE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getSubstateHex() {
     return substateHex;
@@ -101,7 +101,7 @@ public class CreatedOrUpdatedSubstate {
 
 
   @JsonProperty(JSON_PROPERTY_SUBSTATE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSubstateHex(String substateHex) {
     this.substateHex = substateHex;
   }
@@ -113,13 +113,13 @@ public class CreatedOrUpdatedSubstate {
   }
 
    /**
-   * The hex-encoded Blake2b-256 hash of the substate data bytes
+   * The hex-encoded Blake2b-256 hash of the substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
    * @return substateDataHash
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded Blake2b-256 hash of the substate data bytes")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded Blake2b-256 hash of the substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).")
   @JsonProperty(JSON_PROPERTY_SUBSTATE_DATA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getSubstateDataHash() {
     return substateDataHash;
@@ -127,7 +127,7 @@ public class CreatedOrUpdatedSubstate {
 
 
   @JsonProperty(JSON_PROPERTY_SUBSTATE_DATA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSubstateDataHash(String substateDataHash) {
     this.substateDataHash = substateDataHash;
   }
@@ -142,10 +142,10 @@ public class CreatedOrUpdatedSubstate {
    * Get substateData
    * @return substateData
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_SUBSTATE_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Substate getSubstateData() {
     return substateData;
@@ -153,7 +153,7 @@ public class CreatedOrUpdatedSubstate {
 
 
   @JsonProperty(JSON_PROPERTY_SUBSTATE_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSubstateData(Substate substateData) {
     this.substateData = substateData;
   }

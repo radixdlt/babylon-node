@@ -1102,16 +1102,49 @@ components:
       description: The logical name of the network
       type: string
       example: "{{network}}"
-    SborFormats:
+    SborFormatOptions:
       type: object
-      description: Requested SBOR formats
+      description: Requested SBOR formats to include in the response
       properties:
-        raw_hex:
+        raw:
           description: Whether to return the raw hex-encoded bytes (default true)
           type: boolean
         programmatic_json:
           description: Whether to return the programmatic json format (default true)
           type: boolean
+    TransactionFormatOptions:
+      type: object
+      description: Requested transaction formats to include in the response
+      properties:
+        manifest:
+          description: Whether to return the raw manifest (default true)
+          type: boolean
+        blobs:
+          description: Whether to return the raw manifest (default false)
+          type: boolean
+        raw_system_transaction:
+          description: Whether to return the raw hex-encoded system transaction bytes (default false)
+          type: boolean
+        raw_notarized_transaction:
+          description: Whether to return the raw hex-encoded notarized transaction bytes (default true)
+          type: boolean
+        raw_ledger_transaction:
+          description: Whether to return the raw hex-encoded ledger transaction bytes (default false)
+          type: boolean
+    SubstateFormatOptions:
+      type: object
+      description: Requested substate formats to include in the response
+      properties:
+        raw:
+          description: Whether to return the raw substate value bytes (default false)
+          type: boolean
+        hash:
+          description: Whether to return the raw substate value bytes hash (default false)
+          type: boolean
+        typed:
+          description: Whether to return the typed substate information (default true)
+          type: boolean
+
 ##########################################
 # GENERAL / SHARED MODELS - Transactions #
 ##########################################
@@ -1154,7 +1187,6 @@ components:
       type: object
       required:
         - hash
-        - payload_hex
         - signed_intent
         - notary_signature
       properties:
@@ -1162,7 +1194,7 @@ components:
           $ref: "#/components/schemas/PayloadHash"
         payload_hex:
           type: string
-          description: The hex-encoded full notarized transaction payload
+          description: The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
         signed_intent:
           $ref: "#/components/schemas/SignedTransactionIntent"
         notary_signature:
@@ -1254,16 +1286,13 @@ components:
           description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     TransactionManifest:
       type: object
-      required:
-        - instructions
-        - blobs_hex
       properties:
         instructions:
           type: string
-          description: The decompiled transaction manifest instructions
+          description: The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
         blobs_hex:
           type: object
-          description: A map of the hex-encoded blob hash, to hex-encoded blob content
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
           additionalProperties:
             type: string
             description: The hex-encoded blob content
@@ -1512,20 +1541,18 @@ components:
       type: object
       required:
         - substate_id
-        - substate_hex
-        - substate_data_hash
-        - substate_data
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         substate_hex:
           type: string
-          description: The hex-encoded, SBOR-encoded substate data bytes
+          description: The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
         substate_data_hash:
           type: string
-          description: The hex-encoded Blake2b-256 hash of the substate data bytes
+          description: The hex-encoded Blake2b-256 hash of the substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
         substate_data:
           $ref: "#/components/schemas/Substate"
+          description: The typed substate value. Only returned if enabled in SubstateFormatOptions on your request (default true).
     DeletedSubstate:
       type: object
       required:
@@ -4010,6 +4037,8 @@ components:
             "Basic" includes the type, validity information, and any relevant identifiers.
             "Full" also includes the fully parsed information.
             If omitted, "Full" is used.
+        transaction_format_options:
+          $ref: "#/components/schemas/TransactionFormatOptions"
     TransactionParseResponse:
       type: object
       required:
@@ -4567,8 +4596,12 @@ components:
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
-        sbor_formats:
-          $ref: "#/components/schemas/SborFormats"
+        sbor_format_options:
+          $ref: "#/components/schemas/SborFormatOptions"
+        transaction_format_options:
+          $ref: "#/components/schemas/TransactionFormatOptions"
+        substate_format_options:
+          $ref: "#/components/schemas/SubstateFormatOptions"
     StreamTransactionsResponse:
       type: object
       required:
@@ -4638,13 +4671,12 @@ components:
       type: object
       required:
         - type
-        - payload_hex
       properties:
         type:
           $ref: "#/components/schemas/LedgerTransactionType"
         payload_hex:
           type: string
-          description: The hex-encoded full ledger transaction payload
+          description: The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
       discriminator:
         propertyName: type
         mapping:
@@ -4723,12 +4755,10 @@ components:
               description: An integer between `0` and `10^10`, marking the consensus round in the epoch
     SystemTransaction:
       type: object
-      required:
-        - payload_hex
       properties:
         payload_hex:
           type: string
-          description: The hex-encoded system transaction payload
+          description: The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
 #########################
 # REQUEST: /state/epoch #
 #########################

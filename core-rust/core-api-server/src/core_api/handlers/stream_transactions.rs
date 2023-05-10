@@ -23,8 +23,10 @@ pub(crate) async fn handle_stream_transactions(
     Json(request): Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
-    let mapping_context =
-        MappingContext::new(&state.network).with_sbor_formats(&request.sbor_formats);
+    let mapping_context = MappingContext::new(&state.network)
+        .with_sbor_formats(&request.sbor_format_options)
+        .with_transaction_formats(&request.transaction_format_options)
+        .with_substate_formats(&request.substate_format_options);
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
@@ -117,32 +119,28 @@ pub fn to_api_ledger_transaction(
     context: &MappingContext,
     ledger_transaction: &LedgerTransaction,
 ) -> Result<models::LedgerTransaction, MappingError> {
+    let payload_hex = if context.transaction_options.include_raw_ledger {
+        Some(to_hex(ledger_transaction.create_payload().map_err(
+            |err| MappingError::SborEncodeError {
+                encode_error: err,
+                message: "Error encoding ledger payload sbor".to_string(),
+            },
+        )?))
+    } else {
+        None
+    };
+
     Ok(match ledger_transaction {
         LedgerTransaction::User(tx) => models::LedgerTransaction::UserLedgerTransaction {
-            payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
-                MappingError::SborEncodeError {
-                    encode_error: err,
-                    message: "Error encoding user payload sbor".to_string(),
-                }
-            })?),
+            payload_hex,
             notarized_transaction: Box::new(to_api_notarized_transaction(context, tx)?),
         },
         LedgerTransaction::Validator(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
-            payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
-                MappingError::SborEncodeError {
-                    encode_error: err,
-                    message: "Error encoding validator payload sbor".to_string(),
-                }
-            })?),
+            payload_hex,
             validator_transaction: Box::new(to_api_validator_transaction(context, tx)?),
         },
         LedgerTransaction::System(tx) => models::LedgerTransaction::SystemLedgerTransaction {
-            payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
-                MappingError::SborEncodeError {
-                    encode_error: err,
-                    message: "Error encoding system payload sbor".to_string(),
-                }
-            })?),
+            payload_hex,
             system_transaction: Box::new(to_api_system_transaction(context, tx)?),
         },
     })
@@ -153,17 +151,21 @@ pub fn to_api_notarized_transaction(
     context: &MappingContext,
     tx: &NotarizedTransaction,
 ) -> Result<models::NotarizedTransaction, MappingError> {
-    // NOTE: We don't use the .hash() method on the struct impls themselves,
-    //       because they use the wrong hash function
-    let payload = tx.to_bytes().map_err(|err| MappingError::SborEncodeError {
-        encode_error: err,
-        message: "Error encoding user payload sbor".to_string(),
-    })?;
+    let payload_hex = if context.transaction_options.include_raw_notarized {
+        Some(to_hex(tx.to_bytes().map_err(|err| {
+            MappingError::SborEncodeError {
+                encode_error: err,
+                message: "Error encoding user payload sbor".to_string(),
+            }
+        })?))
+    } else {
+        None
+    };
     let payload_hash = UserPayloadHash::for_transaction(tx);
 
     Ok(models::NotarizedTransaction {
         hash: to_api_payload_hash(&payload_hash),
-        payload_hex: to_hex(payload),
+        payload_hex,
         signed_intent: Box::new(to_api_signed_intent(context, &tx.signed_intent)?),
         notary_signature: Some(to_api_signature(&tx.notary_signature)),
     })
@@ -174,8 +176,6 @@ pub fn to_api_signed_intent(
     context: &MappingContext,
     signed_intent: &SignedTransactionIntent,
 ) -> Result<models::SignedTransactionIntent, MappingError> {
-    // NOTE: We don't use the .hash() method on the struct impls themselves,
-    //       because they use the wrong hash function
     let signed_intent_hash = SignaturesHash::for_signed_intent(signed_intent);
 
     Ok(models::SignedTransactionIntent {
@@ -194,8 +194,6 @@ pub fn to_api_intent(
     context: &MappingContext,
     intent: &TransactionIntent,
 ) -> Result<models::TransactionIntent, MappingError> {
-    // NOTE: We don't use the .hash() method on the struct impls themselves,
-    //       because they use the wrong hash function
     let intent_hash = IntentHash::for_intent(intent);
     let header = &intent.header;
 
@@ -221,19 +219,36 @@ pub fn to_api_manifest(
     context: &MappingContext,
     manifest: &TransactionManifest,
 ) -> Result<models::TransactionManifest, MappingError> {
+    let instructions = if context.transaction_options.include_manifest {
+        Some(
+            manifest::decompile(&manifest.instructions, &context.network_definition).map_err(
+                |err| MappingError::InvalidManifest {
+                    message: format!(
+                        "Failed to decompile a transaction manifest: {err:?}, instructions: {:?}",
+                        &manifest.instructions
+                    ),
+                },
+            )?,
+        )
+    } else {
+        None
+    };
+
+    let blobs_hex = if context.transaction_options.include_blobs {
+        Some(
+            manifest
+                .blobs
+                .iter()
+                .map(|blob| (to_hex(hash(blob)), to_hex(blob)))
+                .collect::<HashMap<String, String>>(),
+        )
+    } else {
+        None
+    };
+
     Ok(models::TransactionManifest {
-        instructions: manifest::decompile(&manifest.instructions, &context.network_definition)
-            .map_err(|err| MappingError::InvalidManifest {
-                message: format!(
-                    "Failed to decompile a transaction manifest: {err:?}, instructions: {:?}",
-                    &manifest.instructions
-                ),
-            })?,
-        blobs_hex: manifest
-            .blobs
-            .iter()
-            .map(|blob| (to_hex(hash(blob)), to_hex(blob)))
-            .collect::<HashMap<String, String>>(),
+        instructions,
+        blobs_hex,
     })
 }
 
@@ -257,17 +272,18 @@ pub fn to_api_validator_transaction(
 }
 
 pub fn to_api_system_transaction(
-    _context: &MappingContext,
+    context: &MappingContext,
     system_transaction: &SystemTransaction,
 ) -> Result<models::SystemTransaction, MappingError> {
-    // NOTE: We don't use the .hash() method on the struct impls themselves,
-    //       because they use the wrong hash function
-    let payload =
-        manifest_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
-            encode_error: err,
-            message: "Error encoding user system sbor".to_string(),
-        })?;
-    Ok(models::SystemTransaction {
-        payload_hex: to_hex(payload),
-    })
+    let payload_hex = if context.transaction_options.include_raw_system {
+        Some(to_hex(manifest_encode(system_transaction).map_err(
+            |err| MappingError::SborEncodeError {
+                encode_error: err,
+                message: "Error encoding system transaction sbor".to_string(),
+            },
+        )?))
+    } else {
+        None
+    };
+    Ok(models::SystemTransaction { payload_hex })
 }

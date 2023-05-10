@@ -16,9 +16,9 @@ pub struct NotarizedTransaction {
     /// The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
     #[serde(rename = "hash")]
     pub hash: String,
-    /// The hex-encoded full notarized transaction payload
-    #[serde(rename = "payload_hex")]
-    pub payload_hex: String,
+    /// The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
+    #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+    pub payload_hex: Option<String>,
     #[serde(rename = "signed_intent")]
     pub signed_intent: Box<crate::core_api::generated::models::SignedTransactionIntent>,
     #[serde(rename = "notary_signature")]
@@ -26,10 +26,10 @@ pub struct NotarizedTransaction {
 }
 
 impl NotarizedTransaction {
-    pub fn new(hash: String, payload_hex: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: crate::core_api::generated::models::Signature) -> NotarizedTransaction {
+    pub fn new(hash: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: crate::core_api::generated::models::Signature) -> NotarizedTransaction {
         NotarizedTransaction {
             hash,
-            payload_hex,
+            payload_hex: None,
             signed_intent: Box::new(signed_intent),
             notary_signature: Option::Some(notary_signature),
         }

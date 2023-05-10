@@ -15,23 +15,23 @@
 pub struct CreatedOrUpdatedSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    /// The hex-encoded, SBOR-encoded substate data bytes
-    #[serde(rename = "substate_hex")]
-    pub substate_hex: String,
-    /// The hex-encoded Blake2b-256 hash of the substate data bytes
-    #[serde(rename = "substate_data_hash")]
-    pub substate_data_hash: String,
-    #[serde(rename = "substate_data")]
-    pub substate_data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    /// The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
+    #[serde(rename = "substate_hex", skip_serializing_if = "Option::is_none")]
+    pub substate_hex: Option<String>,
+    /// The hex-encoded Blake2b-256 hash of the substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
+    #[serde(rename = "substate_data_hash", skip_serializing_if = "Option::is_none")]
+    pub substate_data_hash: Option<String>,
+    #[serde(rename = "substate_data", skip_serializing_if = "Option::is_none")]
+    pub substate_data: Option<Box<crate::core_api::generated::models::Substate>>,
 }
 
 impl CreatedOrUpdatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_hex: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> CreatedOrUpdatedSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId) -> CreatedOrUpdatedSubstate {
         CreatedOrUpdatedSubstate {
             substate_id: Box::new(substate_id),
-            substate_hex,
-            substate_data_hash,
-            substate_data: Option::Some(substate_data),
+            substate_hex: None,
+            substate_data_hash: None,
+            substate_data: None,
         }
     }
 }

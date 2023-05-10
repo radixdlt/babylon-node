@@ -28,78 +28,108 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Requested SBOR formats
+ * Requested substate formats to include in the response
  */
-@ApiModel(description = "Requested SBOR formats")
+@ApiModel(description = "Requested substate formats to include in the response")
 @JsonPropertyOrder({
-  SborFormats.JSON_PROPERTY_RAW_HEX,
-  SborFormats.JSON_PROPERTY_PROGRAMMATIC_JSON
+  SubstateFormatOptions.JSON_PROPERTY_RAW,
+  SubstateFormatOptions.JSON_PROPERTY_HASH,
+  SubstateFormatOptions.JSON_PROPERTY_TYPED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class SborFormats {
-  public static final String JSON_PROPERTY_RAW_HEX = "raw_hex";
-  private Boolean rawHex;
+public class SubstateFormatOptions {
+  public static final String JSON_PROPERTY_RAW = "raw";
+  private Boolean raw;
 
-  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
-  private Boolean programmaticJson;
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private Boolean hash;
 
-  public SborFormats() { 
+  public static final String JSON_PROPERTY_TYPED = "typed";
+  private Boolean typed;
+
+  public SubstateFormatOptions() { 
   }
 
-  public SborFormats rawHex(Boolean rawHex) {
-    this.rawHex = rawHex;
+  public SubstateFormatOptions raw(Boolean raw) {
+    this.raw = raw;
     return this;
   }
 
    /**
-   * Whether to return the raw hex-encoded bytes (default true)
-   * @return rawHex
+   * Whether to return the raw substate value bytes (default false)
+   * @return raw
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the raw hex-encoded bytes (default true)")
-  @JsonProperty(JSON_PROPERTY_RAW_HEX)
+  @ApiModelProperty(value = "Whether to return the raw substate value bytes (default false)")
+  @JsonProperty(JSON_PROPERTY_RAW)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getRawHex() {
-    return rawHex;
+  public Boolean getRaw() {
+    return raw;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RAW_HEX)
+  @JsonProperty(JSON_PROPERTY_RAW)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRawHex(Boolean rawHex) {
-    this.rawHex = rawHex;
+  public void setRaw(Boolean raw) {
+    this.raw = raw;
   }
 
 
-  public SborFormats programmaticJson(Boolean programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public SubstateFormatOptions hash(Boolean hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * Whether to return the programmatic json format (default true)
-   * @return programmaticJson
+   * Whether to return the raw substate value bytes hash (default false)
+   * @return hash
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the programmatic json format (default true)")
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @ApiModelProperty(value = "Whether to return the raw substate value bytes hash (default false)")
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getProgrammaticJson() {
-    return programmaticJson;
+  public Boolean getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setProgrammaticJson(Boolean programmaticJson) {
-    this.programmaticJson = programmaticJson;
+  public void setHash(Boolean hash) {
+    this.hash = hash;
+  }
+
+
+  public SubstateFormatOptions typed(Boolean typed) {
+    this.typed = typed;
+    return this;
+  }
+
+   /**
+   * Whether to return the typed substate information (default true)
+   * @return typed
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to return the typed substate information (default true)")
+  @JsonProperty(JSON_PROPERTY_TYPED)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getTyped() {
+    return typed;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TYPED)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTyped(Boolean typed) {
+    this.typed = typed;
   }
 
 
   /**
-   * Return true if this SborFormats object is equal to o.
+   * Return true if this SubstateFormatOptions object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +139,24 @@ public class SborFormats {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SborFormats sborFormats = (SborFormats) o;
-    return Objects.equals(this.rawHex, sborFormats.rawHex) &&
-        Objects.equals(this.programmaticJson, sborFormats.programmaticJson);
+    SubstateFormatOptions substateFormatOptions = (SubstateFormatOptions) o;
+    return Objects.equals(this.raw, substateFormatOptions.raw) &&
+        Objects.equals(this.hash, substateFormatOptions.hash) &&
+        Objects.equals(this.typed, substateFormatOptions.typed);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rawHex, programmaticJson);
+    return Objects.hash(raw, hash, typed);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SborFormats {\n");
-    sb.append("    rawHex: ").append(toIndentedString(rawHex)).append("\n");
-    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
+    sb.append("class SubstateFormatOptions {\n");
+    sb.append("    raw: ").append(toIndentedString(raw)).append("\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    typed: ").append(toIndentedString(typed)).append("\n");
     sb.append("}");
     return sb.toString();
   }

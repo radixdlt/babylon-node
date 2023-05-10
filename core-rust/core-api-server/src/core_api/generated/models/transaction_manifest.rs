@@ -13,19 +13,19 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionManifest {
-    /// The decompiled transaction manifest instructions
-    #[serde(rename = "instructions")]
-    pub instructions: String,
-    /// A map of the hex-encoded blob hash, to hex-encoded blob content
-    #[serde(rename = "blobs_hex")]
-    pub blobs_hex: ::std::collections::HashMap<String, String>,
+    /// The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "instructions", skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+    /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
+    pub blobs_hex: Option<::std::collections::HashMap<String, String>>,
 }
 
 impl TransactionManifest {
-    pub fn new(instructions: String, blobs_hex: ::std::collections::HashMap<String, String>) -> TransactionManifest {
+    pub fn new() -> TransactionManifest {
         TransactionManifest {
-            instructions,
-            blobs_hex,
+            instructions: None,
+            blobs_hex: None,
         }
     }
 }

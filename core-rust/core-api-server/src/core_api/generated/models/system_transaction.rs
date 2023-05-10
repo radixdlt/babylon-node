@@ -13,15 +13,15 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SystemTransaction {
-    /// The hex-encoded system transaction payload
-    #[serde(rename = "payload_hex")]
-    pub payload_hex: String,
+    /// The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+    pub payload_hex: Option<String>,
 }
 
 impl SystemTransaction {
-    pub fn new(payload_hex: String) -> SystemTransaction {
+    pub fn new() -> SystemTransaction {
         SystemTransaction {
-            payload_hex,
+            payload_hex: None,
         }
     }
 }

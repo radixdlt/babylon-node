@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TransactionFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,7 +36,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionParseRequest.JSON_PROPERTY_PAYLOAD_HEX,
   TransactionParseRequest.JSON_PROPERTY_PARSE_MODE,
   TransactionParseRequest.JSON_PROPERTY_VALIDATION_MODE,
-  TransactionParseRequest.JSON_PROPERTY_RESPONSE_MODE
+  TransactionParseRequest.JSON_PROPERTY_RESPONSE_MODE,
+  TransactionParseRequest.JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionParseRequest {
@@ -168,6 +170,9 @@ public class TransactionParseRequest {
 
   public static final String JSON_PROPERTY_RESPONSE_MODE = "response_mode";
   private ResponseModeEnum responseMode;
+
+  public static final String JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS = "transaction_format_options";
+  private TransactionFormatOptions transactionFormatOptions;
 
   public TransactionParseRequest() { 
   }
@@ -302,6 +307,32 @@ public class TransactionParseRequest {
   }
 
 
+  public TransactionParseRequest transactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get transactionFormatOptions
+   * @return transactionFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionFormatOptions getTransactionFormatOptions() {
+    return transactionFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+  }
+
+
   /**
    * Return true if this TransactionParseRequest object is equal to o.
    */
@@ -318,12 +349,13 @@ public class TransactionParseRequest {
         Objects.equals(this.payloadHex, transactionParseRequest.payloadHex) &&
         Objects.equals(this.parseMode, transactionParseRequest.parseMode) &&
         Objects.equals(this.validationMode, transactionParseRequest.validationMode) &&
-        Objects.equals(this.responseMode, transactionParseRequest.responseMode);
+        Objects.equals(this.responseMode, transactionParseRequest.responseMode) &&
+        Objects.equals(this.transactionFormatOptions, transactionParseRequest.transactionFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, payloadHex, parseMode, validationMode, responseMode);
+    return Objects.hash(network, payloadHex, parseMode, validationMode, responseMode, transactionFormatOptions);
   }
 
   @Override
@@ -335,6 +367,7 @@ public class TransactionParseRequest {
     sb.append("    parseMode: ").append(toIndentedString(parseMode)).append("\n");
     sb.append("    validationMode: ").append(toIndentedString(validationMode)).append("\n");
     sb.append("    responseMode: ").append(toIndentedString(responseMode)).append("\n");
+    sb.append("    transactionFormatOptions: ").append(toIndentedString(transactionFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -28,47 +28,78 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * SystemTransaction
+ * Requested SBOR formats to include in the response
  */
+@ApiModel(description = "Requested SBOR formats to include in the response")
 @JsonPropertyOrder({
-  SystemTransaction.JSON_PROPERTY_PAYLOAD_HEX
+  SborFormatOptions.JSON_PROPERTY_RAW,
+  SborFormatOptions.JSON_PROPERTY_PROGRAMMATIC_JSON
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class SystemTransaction {
-  public static final String JSON_PROPERTY_PAYLOAD_HEX = "payload_hex";
-  private String payloadHex;
+public class SborFormatOptions {
+  public static final String JSON_PROPERTY_RAW = "raw";
+  private Boolean raw;
 
-  public SystemTransaction() { 
+  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
+  private Boolean programmaticJson;
+
+  public SborFormatOptions() { 
   }
 
-  public SystemTransaction payloadHex(String payloadHex) {
-    this.payloadHex = payloadHex;
+  public SborFormatOptions raw(Boolean raw) {
+    this.raw = raw;
     return this;
   }
 
    /**
-   * The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-   * @return payloadHex
+   * Whether to return the raw hex-encoded bytes (default true)
+   * @return raw
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.")
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
+  @ApiModelProperty(value = "Whether to return the raw hex-encoded bytes (default true)")
+  @JsonProperty(JSON_PROPERTY_RAW)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getPayloadHex() {
-    return payloadHex;
+  public Boolean getRaw() {
+    return raw;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
+  @JsonProperty(JSON_PROPERTY_RAW)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setPayloadHex(String payloadHex) {
-    this.payloadHex = payloadHex;
+  public void setRaw(Boolean raw) {
+    this.raw = raw;
+  }
+
+
+  public SborFormatOptions programmaticJson(Boolean programmaticJson) {
+    this.programmaticJson = programmaticJson;
+    return this;
+  }
+
+   /**
+   * Whether to return the programmatic json format (default true)
+   * @return programmaticJson
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to return the programmatic json format (default true)")
+  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getProgrammaticJson() {
+    return programmaticJson;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProgrammaticJson(Boolean programmaticJson) {
+    this.programmaticJson = programmaticJson;
   }
 
 
   /**
-   * Return true if this SystemTransaction object is equal to o.
+   * Return true if this SborFormatOptions object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -78,20 +109,22 @@ public class SystemTransaction {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SystemTransaction systemTransaction = (SystemTransaction) o;
-    return Objects.equals(this.payloadHex, systemTransaction.payloadHex);
+    SborFormatOptions sborFormatOptions = (SborFormatOptions) o;
+    return Objects.equals(this.raw, sborFormatOptions.raw) &&
+        Objects.equals(this.programmaticJson, sborFormatOptions.programmaticJson);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(payloadHex);
+    return Objects.hash(raw, programmaticJson);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SystemTransaction {\n");
-    sb.append("    payloadHex: ").append(toIndentedString(payloadHex)).append("\n");
+    sb.append("class SborFormatOptions {\n");
+    sb.append("    raw: ").append(toIndentedString(raw)).append("\n");
+    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
     sb.append("}");
     return sb.toString();
   }

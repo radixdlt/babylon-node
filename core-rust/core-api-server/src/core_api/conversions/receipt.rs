@@ -181,8 +181,6 @@ pub fn to_api_created_or_updated_substate(
     typed_substate_key: &TypedSubstateKey,
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::CreatedOrUpdatedSubstate, MappingError> {
-    let substate_hex = to_hex(value);
-    let substate_data_hash = to_hex(hash(value));
     let substate_id = to_api_substate_id(
         context,
         node_id,
@@ -190,11 +188,29 @@ pub fn to_api_created_or_updated_substate(
         substate_key,
         typed_substate_key,
     )?;
-    let substate_data = Some(to_api_substate(
-        context,
-        substate_key,
-        typed_substate_value,
-    )?);
+
+    let substate_hex = if context.substate_options.include_raw {
+        Some(to_hex(value))
+    } else {
+        None
+    };
+
+    let substate_data_hash = if context.substate_options.include_hash {
+        Some(to_hex(hash(value)))
+    } else {
+        None
+    };
+
+    let substate_data = if context.substate_options.include_typed {
+        Some(Box::new(to_api_substate(
+            context,
+            substate_key,
+            typed_substate_value,
+        )?))
+    } else {
+        None
+    };
+
     Ok(models::CreatedOrUpdatedSubstate {
         substate_id: Box::new(substate_id),
         substate_hex,
