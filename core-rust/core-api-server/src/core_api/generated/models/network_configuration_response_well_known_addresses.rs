@@ -14,30 +14,93 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NetworkConfigurationResponseWellKnownAddresses {
-    #[serde(rename = "faucet")]
-    pub faucet: String,
+    #[serde(rename = "xrd")]
+    pub xrd: String,
+    #[serde(rename = "secp256k1_signature_virtual_badge")]
+    pub secp256k1_signature_virtual_badge: String,
+    #[serde(rename = "ed25519_signature_virtual_badge")]
+    pub ed25519_signature_virtual_badge: String,
+    #[serde(rename = "package_of_direct_caller_virtual_badge")]
+    pub package_of_direct_caller_virtual_badge: String,
+    #[serde(rename = "global_caller_virtual_badge")]
+    pub global_caller_virtual_badge: String,
+    #[serde(rename = "system_transaction_badge")]
+    pub system_transaction_badge: String,
+    #[serde(rename = "package_owner_badge")]
+    pub package_owner_badge: String,
+    #[serde(rename = "validator_owner_badge")]
+    pub validator_owner_badge: String,
+    #[serde(rename = "account_owner_badge")]
+    pub account_owner_badge: String,
+    #[serde(rename = "identity_owner_badge")]
+    pub identity_owner_badge: String,
+    #[serde(rename = "package_package")]
+    pub package_package: String,
+    #[serde(rename = "resource_package")]
+    pub resource_package: String,
+    #[serde(rename = "account_package")]
+    pub account_package: String,
+    #[serde(rename = "identity_package")]
+    pub identity_package: String,
+    #[serde(rename = "epoch_manager_package")]
+    pub epoch_manager_package: String,
+    #[serde(rename = "clock_package")]
+    pub clock_package: String,
+    #[serde(rename = "access_controller_package")]
+    pub access_controller_package: String,
+    #[serde(rename = "transaction_processor_package")]
+    pub transaction_processor_package: String,
+    #[serde(rename = "metadata_module_package")]
+    pub metadata_module_package: String,
+    #[serde(rename = "royalty_module_package")]
+    pub royalty_module_package: String,
+    #[serde(rename = "access_rules_package")]
+    pub access_rules_package: String,
+    #[serde(rename = "genesis_helper_package")]
+    pub genesis_helper_package: String,
+    #[serde(rename = "faucet_package")]
+    pub faucet_package: String,
     #[serde(rename = "epoch_manager")]
     pub epoch_manager: String,
     #[serde(rename = "clock")]
     pub clock: String,
-    #[serde(rename = "ecdsa_secp256k1")]
-    pub ecdsa_secp256k1: String,
-    #[serde(rename = "eddsa_ed25519")]
-    pub eddsa_ed25519: String,
-    #[serde(rename = "xrd")]
-    pub xrd: String,
+    #[serde(rename = "genesis_helper")]
+    pub genesis_helper: String,
+    #[serde(rename = "faucet")]
+    pub faucet: String,
 }
 
 impl NetworkConfigurationResponseWellKnownAddresses {
     /// Key addresses for this network.
-    pub fn new(faucet: String, epoch_manager: String, clock: String, ecdsa_secp256k1: String, eddsa_ed25519: String, xrd: String) -> NetworkConfigurationResponseWellKnownAddresses {
+    pub fn new(xrd: String, secp256k1_signature_virtual_badge: String, ed25519_signature_virtual_badge: String, package_of_direct_caller_virtual_badge: String, global_caller_virtual_badge: String, system_transaction_badge: String, package_owner_badge: String, validator_owner_badge: String, account_owner_badge: String, identity_owner_badge: String, package_package: String, resource_package: String, account_package: String, identity_package: String, epoch_manager_package: String, clock_package: String, access_controller_package: String, transaction_processor_package: String, metadata_module_package: String, royalty_module_package: String, access_rules_package: String, genesis_helper_package: String, faucet_package: String, epoch_manager: String, clock: String, genesis_helper: String, faucet: String) -> NetworkConfigurationResponseWellKnownAddresses {
         NetworkConfigurationResponseWellKnownAddresses {
-            faucet,
+            xrd,
+            secp256k1_signature_virtual_badge,
+            ed25519_signature_virtual_badge,
+            package_of_direct_caller_virtual_badge,
+            global_caller_virtual_badge,
+            system_transaction_badge,
+            package_owner_badge,
+            validator_owner_badge,
+            account_owner_badge,
+            identity_owner_badge,
+            package_package,
+            resource_package,
+            account_package,
+            identity_package,
+            epoch_manager_package,
+            clock_package,
+            access_controller_package,
+            transaction_processor_package,
+            metadata_module_package,
+            royalty_module_package,
+            access_rules_package,
+            genesis_helper_package,
+            faucet_package,
             epoch_manager,
             clock,
-            ecdsa_secp256k1,
-            eddsa_ed25519,
-            xrd,
+            genesis_helper,
+            faucet,
         }
     }
 }

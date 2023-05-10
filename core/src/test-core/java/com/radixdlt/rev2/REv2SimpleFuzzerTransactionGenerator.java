@@ -68,7 +68,6 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -81,23 +80,22 @@ import java.util.Random;
  */
 public final class REv2SimpleFuzzerTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
-  private static final Addressing ADDRESSING = Addressing.ofNetwork(Network.LOCALSIMULATOR);
-  private static final String SIM_FAUCET_ADDRESS =
-      ADDRESSING.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-
+  private final Addressing addressing;
   private final Random random;
   private int transactionNonce = 0;
 
-  public REv2SimpleFuzzerTransactionGenerator(Random random) {
+  public REv2SimpleFuzzerTransactionGenerator(NetworkDefinition networkDefinition, Random random) {
+    this.addressing = Addressing.ofNetwork(networkDefinition);
     this.random = random;
   }
 
   private String nextInstruction() {
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_ADDRESS);
     return switch (random.nextInt(4)) {
       case 0 -> String.format(
-          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
-          SIM_FAUCET_ADDRESS);
-      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", SIM_FAUCET_ADDRESS);
+          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");", faucetAddress);
+      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", faucetAddress);
       case 2 -> "CREATE_ACCOUNT Enum(\"AccessRule::AllowAll\");";
       default -> {
         ComponentAddress accountAddress =
@@ -106,7 +104,7 @@ public final class REv2SimpleFuzzerTransactionGenerator
             """
                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                 """,
-            ADDRESSING.encodeAccountAddress(accountAddress));
+            addressing.encodeAccountAddress(accountAddress));
       }
     };
   }

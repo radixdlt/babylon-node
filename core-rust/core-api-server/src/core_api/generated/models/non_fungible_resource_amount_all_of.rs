@@ -13,13 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleResourceAmountAllOf {
+    /// The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
     #[serde(rename = "non_fungible_ids")]
-    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>,
 }
 
 impl NonFungibleResourceAmountAllOf {
-    pub fn new(non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> NonFungibleResourceAmountAllOf {
+    pub fn new(amount: String, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>) -> NonFungibleResourceAmountAllOf {
         NonFungibleResourceAmountAllOf {
+            amount,
             non_fungible_ids,
         }
     }

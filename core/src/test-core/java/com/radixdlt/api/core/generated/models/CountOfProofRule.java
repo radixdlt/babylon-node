@@ -30,13 +30,14 @@ import com.radixdlt.api.core.generated.models.AmountOfProofRule;
 import com.radixdlt.api.core.generated.models.AnyOfProofRule;
 import com.radixdlt.api.core.generated.models.CountOfProofRule;
 import com.radixdlt.api.core.generated.models.CountOfProofRuleAllOf;
-import com.radixdlt.api.core.generated.models.DynamicCount;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorList;
 import com.radixdlt.api.core.generated.models.ProofRule;
 import com.radixdlt.api.core.generated.models.ProofRuleType;
 import com.radixdlt.api.core.generated.models.RequireProofRule;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -64,15 +65,15 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class CountOfProofRule extends ProofRule {
   public static final String JSON_PROPERTY_COUNT = "count";
-  private DynamicCount count;
+  private Integer count;
 
   public static final String JSON_PROPERTY_LIST = "list";
-  private DynamicResourceDescriptorList _list;
+  private List<Requirement> _list = new ArrayList<>();
 
   public CountOfProofRule() { 
   }
 
-  public CountOfProofRule count(DynamicCount count) {
+  public CountOfProofRule count(Integer count) {
     this.count = count;
     return this;
   }
@@ -86,20 +87,25 @@ public class CountOfProofRule extends ProofRule {
   @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicCount getCount() {
+  public Integer getCount() {
     return count;
   }
 
 
   @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCount(DynamicCount count) {
+  public void setCount(Integer count) {
     this.count = count;
   }
 
 
-  public CountOfProofRule _list(DynamicResourceDescriptorList _list) {
+  public CountOfProofRule _list(List<Requirement> _list) {
     this._list = _list;
+    return this;
+  }
+
+  public CountOfProofRule addListItem(Requirement _listItem) {
+    this._list.add(_listItem);
     return this;
   }
 
@@ -112,14 +118,14 @@ public class CountOfProofRule extends ProofRule {
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptorList getList() {
+  public List<Requirement> getList() {
     return _list;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setList(DynamicResourceDescriptorList _list) {
+  public void setList(List<Requirement> _list) {
     this._list = _list;
   }
 

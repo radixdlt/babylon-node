@@ -71,7 +71,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
@@ -87,7 +86,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
 
-      var faucetAddress = ScryptoConstants.FAUCET_COMPONENT_ADDRESS;
+      var faucetAddress = ScryptoConstants.FAUCET_ADDRESS;
       var faucetAddressStr = addressing.encodeNormalComponentAddress(faucetAddress);
       var account1KeyPair = ECKeyPair.generateNew();
       var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());
@@ -100,12 +99,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account1FaucetClaim =
           submitAndWaitForSuccess(
               test,
-              constructDepositFromFaucetManifest(networkDefinition, account1Address),
+              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, account1Address),
               List.of());
       var account2FaucetClaim =
           submitAndWaitForSuccess(
               test,
-              constructDepositFromFaucetManifest(networkDefinition, account2Address),
+              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, account2Address),
               List.of());
 
       var account1SelfXrdTransferAmount = 1L;
@@ -159,46 +158,46 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       validateAccountTransactions(
           account1Address,
           List.of(
-              account1FaucetClaim.intentHash,
-              account1SelfXrdTransfer.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash));
+              account1FaucetClaim.intentHash(),
+              account1SelfXrdTransfer.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
       validateAccountTransactions(
           account2Address,
           List.of(
-              account2FaucetClaim.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash,
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash));
+              account2FaucetClaim.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
 
       var faucetFreeXrdAmount = 10000L;
       assertNonFeeXrdBalanceChange(
-          account1FaucetClaim.stateVersion, faucetAddressStr, -faucetFreeXrdAmount);
+          account1FaucetClaim.stateVersion(), faucetAddressStr, -faucetFreeXrdAmount);
       assertNonFeeXrdBalanceChange(
-          account1FaucetClaim.stateVersion, account1AddressStr, faucetFreeXrdAmount);
-      assertNoNonFeeXrdBalanceChange(account1FaucetClaim.stateVersion, account2AddressStr);
+          account1FaucetClaim.stateVersion(), account1AddressStr, faucetFreeXrdAmount);
+      assertNoNonFeeXrdBalanceChange(account1FaucetClaim.stateVersion(), account2AddressStr);
 
       assertNonFeeXrdBalanceChange(
-          account2FaucetClaim.stateVersion, faucetAddressStr, -faucetFreeXrdAmount);
-      assertNoNonFeeXrdBalanceChange(account2FaucetClaim.stateVersion, account1AddressStr);
+          account2FaucetClaim.stateVersion(), faucetAddressStr, -faucetFreeXrdAmount);
+      assertNoNonFeeXrdBalanceChange(account2FaucetClaim.stateVersion(), account1AddressStr);
       assertNonFeeXrdBalanceChange(
-          account2FaucetClaim.stateVersion, account2AddressStr, faucetFreeXrdAmount);
+          account2FaucetClaim.stateVersion(), account2AddressStr, faucetFreeXrdAmount);
 
       // In the self-transfer, there was no net balance transfer
-      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion, faucetAddressStr);
-      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion, account1AddressStr);
-      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion, account2AddressStr);
+      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion(), faucetAddressStr);
+      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion(), account1AddressStr);
+      assertNoNonFeeXrdBalanceChange(account1SelfXrdTransfer.stateVersion(), account2AddressStr);
 
       // Check
       assertNoNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion, faucetAddressStr);
+          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion(), faucetAddressStr);
       assertNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion,
+          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion(),
           account1AddressStr,
           -account1ToAccount2XrdTransferWithFeeFromAccount1Amount);
       assertNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion,
+          account1ToAccount2XrdTransferWithFeeFromAccount1.stateVersion(),
           account2AddressStr,
           account1ToAccount2XrdTransferWithFeeFromAccount1Amount);
 
@@ -215,13 +214,13 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       // Even though the faucet paid the fee, it didn't have any other balance transfers
       assertNoNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion, faucetAddressStr);
+          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion(), faucetAddressStr);
       assertNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion,
+          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion(),
           account1AddressStr,
           -account1ToAccount2XrdTransferWithFeeFromFaucetAmount);
       assertNonFeeXrdBalanceChange(
-          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion,
+          account1ToAccount2XrdTransferWithFeeFromFaucet.stateVersion(),
           account2AddressStr,
           account1ToAccount2XrdTransferWithFeeFromFaucetAmount);
     }
@@ -308,62 +307,5 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       assertThat(transactionIdentifiers.getIntentHash())
           .isEqualTo(Bytes.toHexString(intentHashes.get(i).asBytes()));
     }
-  }
-
-  public record CommittedResult(HashCode intentHash, long stateVersion) {}
-
-  public CommittedResult submitAndWaitForSuccess(
-      DeterministicTest test, String manifest, List<ECKeyPair> signatories) throws Exception {
-    var metadata =
-        getLtsApi()
-            .ltsTransactionConstructionPost(
-                new LtsTransactionConstructionRequest().network(networkLogicalName));
-
-    var transactionBuilder =
-        buildTransactionWithDefaultNotary(
-            networkDefinition, manifest, metadata.getCurrentEpoch(), 0, signatories);
-
-    var intentHash = transactionBuilder.hashedIntent();
-    var payload = transactionBuilder.constructRawTransaction().getPayload();
-
-    var submitResponse =
-        getLtsApi()
-            .ltsTransactionSubmitPost(
-                new LtsTransactionSubmitRequest()
-                    .network(networkLogicalName)
-                    .notarizedTransactionHex(Bytes.toHexString(payload)));
-
-    assertThat(submitResponse.getDuplicate()).isFalse();
-
-    int messagesProcessedPerAttempt = 20;
-    long attempts = 50;
-
-    LtsTransactionStatusResponse statusResponse = null;
-    for (long i = 0; i < attempts; i++) {
-      statusResponse =
-          getLtsApi()
-              .ltsTransactionStatusPost(
-                  new LtsTransactionStatusRequest()
-                      .network(networkLogicalName)
-                      .intentHash(Bytes.toHexString(intentHash.asBytes())));
-      switch (statusResponse.getIntentStatus()) {
-        case COMMITTEDSUCCESS -> {
-          var stateVersion = statusResponse.getCommittedStateVersion();
-          if (stateVersion == null) {
-            throw new RuntimeException(
-                "Transaction got committed as success without state version on response");
-          }
-          return new CommittedResult(intentHash, stateVersion);
-        }
-        case COMMITTEDFAILURE -> throw new RuntimeException("Transaction got committed as failure");
-        case PERMANENTREJECTION -> throw new RuntimeException(
-            "Transaction got permanently rejected");
-        default -> test.runForCount(messagesProcessedPerAttempt);
-      }
-    }
-    throw new RuntimeException(
-        String.format(
-            "Transaction submit didn't complete in after running for count of %s. Status still: %s",
-            attempts * messagesProcessedPerAttempt, statusResponse.getIntentStatus()));
   }
 }

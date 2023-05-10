@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -78,7 +78,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   public void test_mempool_queries() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
       var payloadHash = rawTransaction.getPayloadHash();
@@ -113,7 +113,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
       assertThat(mempoolTransaction.getNotarizedTransaction().getHash())
           .isEqualTo(Bytes.toHexString(payloadHash.asBytes()));
 
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       assertThat(
               getMempoolApi()

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.GlobalEntityReference;
 import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -49,7 +48,7 @@ public class DataStruct {
   private List<EntityReference> ownedEntities = new ArrayList<>();
 
   public static final String JSON_PROPERTY_REFERENCED_ENTITIES = "referenced_entities";
-  private List<GlobalEntityReference> referencedEntities = new ArrayList<>();
+  private List<EntityReference> referencedEntities = new ArrayList<>();
 
   public DataStruct() { 
   }
@@ -111,12 +110,12 @@ public class DataStruct {
   }
 
 
-  public DataStruct referencedEntities(List<GlobalEntityReference> referencedEntities) {
+  public DataStruct referencedEntities(List<EntityReference> referencedEntities) {
     this.referencedEntities = referencedEntities;
     return this;
   }
 
-  public DataStruct addReferencedEntitiesItem(GlobalEntityReference referencedEntitiesItem) {
+  public DataStruct addReferencedEntitiesItem(EntityReference referencedEntitiesItem) {
     this.referencedEntities.add(referencedEntitiesItem);
     return this;
   }
@@ -130,14 +129,14 @@ public class DataStruct {
   @JsonProperty(JSON_PROPERTY_REFERENCED_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<GlobalEntityReference> getReferencedEntities() {
+  public List<EntityReference> getReferencedEntities() {
     return referencedEntities;
   }
 
 
   @JsonProperty(JSON_PROPERTY_REFERENCED_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setReferencedEntities(List<GlobalEntityReference> referencedEntities) {
+  public void setReferencedEntities(List<EntityReference> referencedEntities) {
     this.referencedEntities = referencedEntities;
   }
 

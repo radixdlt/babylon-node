@@ -15,18 +15,18 @@
 pub struct SystemLedgerTransaction {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::LedgerTransactionType,
-    /// The hex-encoded full ledger transaction payload
-    #[serde(rename = "payload_hex")]
-    pub payload_hex: String,
+    /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+    pub payload_hex: Option<String>,
     #[serde(rename = "system_transaction")]
     pub system_transaction: Box<crate::core_api::generated::models::SystemTransaction>,
 }
 
 impl SystemLedgerTransaction {
-    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, payload_hex: String, system_transaction: crate::core_api::generated::models::SystemTransaction) -> SystemLedgerTransaction {
+    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, system_transaction: crate::core_api::generated::models::SystemTransaction) -> SystemLedgerTransaction {
         SystemLedgerTransaction {
             _type,
-            payload_hex,
+            payload_hex: None,
             system_transaction: Box::new(system_transaction),
         }
     }

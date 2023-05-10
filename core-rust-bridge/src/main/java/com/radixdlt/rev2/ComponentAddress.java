@@ -64,6 +64,8 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -77,57 +79,27 @@ public record ComponentAddress(byte[] value) {
         ComponentAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ADDRESS,
+                TypeId.TYPE_CUSTOM_REFERENCE,
                 BYTE_LENGTH,
                 ComponentAddress::value,
                 ComponentAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
-  // See entity.rs
-  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 0x03;
-  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID =
-      (byte) 0x06; // Search for VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID
-
-  public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
-      // See constants.rs (component.rs defines the encoding)
-      ComponentAddress.create(
-          new byte[] {
-            NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          });
+  // See entity_type.rs
+  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 130;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 192;
 
   public static ComponentAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);
+  }
+
+  public static ComponentAddress virtualAccountFromPublicKey(ECDSASecp256k1PublicKey key) {
+    return Address.virtualAccountAddress(key);
   }
 
   public String toHexString() {

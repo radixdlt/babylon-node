@@ -13,8 +13,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AddressType {
-    #[serde(rename = "subtype")]
-    pub subtype: Subtype,
     #[serde(rename = "hrp_prefix")]
     pub hrp_prefix: String,
     #[serde(rename = "entity_type")]
@@ -26,9 +24,8 @@ pub struct AddressType {
 }
 
 impl AddressType {
-    pub fn new(subtype: Subtype, hrp_prefix: String, entity_type: crate::core_api::generated::models::EntityType, address_byte_prefix: i32, address_byte_length: i32) -> AddressType {
+    pub fn new(hrp_prefix: String, entity_type: crate::core_api::generated::models::EntityType, address_byte_prefix: i32, address_byte_length: i32) -> AddressType {
         AddressType {
-            subtype,
             hrp_prefix,
             entity_type,
             address_byte_prefix,
@@ -37,42 +34,4 @@ impl AddressType {
     }
 }
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Subtype {
-    #[serde(rename = "Package")]
-    Package,
-    #[serde(rename = "FungibleResource")]
-    FungibleResource,
-    #[serde(rename = "NonFungibleResource")]
-    NonFungibleResource,
-    #[serde(rename = "NormalComponent")]
-    NormalComponent,
-    #[serde(rename = "AccountComponent")]
-    AccountComponent,
-    #[serde(rename = "EcdsaSecp256k1VirtualAccountComponent")]
-    EcdsaSecp256k1VirtualAccountComponent,
-    #[serde(rename = "EddsaEd25519VirtualAccountComponent")]
-    EddsaEd25519VirtualAccountComponent,
-    #[serde(rename = "IdentityComponent")]
-    IdentityComponent,
-    #[serde(rename = "EcdsaSecp256k1VirtualIdentityComponent")]
-    EcdsaSecp256k1VirtualIdentityComponent,
-    #[serde(rename = "EddsaEd25519VirtualIdentityComponent")]
-    EddsaEd25519VirtualIdentityComponent,
-    #[serde(rename = "EpochManager")]
-    EpochManager,
-    #[serde(rename = "Validator")]
-    Validator,
-    #[serde(rename = "Clock")]
-    Clock,
-    #[serde(rename = "AccessController")]
-    AccessController,
-}
-
-impl Default for Subtype {
-    fn default() -> Subtype {
-        Self::Package
-    }
-}
 

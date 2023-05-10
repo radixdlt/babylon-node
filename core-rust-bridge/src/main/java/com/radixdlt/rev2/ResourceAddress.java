@@ -76,13 +76,13 @@ public record ResourceAddress(byte[] value) {
         ResourceAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ADDRESS,
+                TypeId.TYPE_CUSTOM_REFERENCE,
                 BYTE_LENGTH,
                 ResourceAddress::value,
                 ResourceAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
   public static ResourceAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {

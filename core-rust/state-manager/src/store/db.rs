@@ -64,22 +64,23 @@
 
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::types::UserPayloadHash;
 
-use enum_dispatch::enum_dispatch;
-use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::node_substates::PersistedSubstate;
-
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::CommittedTransactionIdentifiers;
-use crate::{IntentHash, LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash};
-use radix_engine::types::*;
-use radix_engine::types::{KeyValueStoreId, SubstateId};
+use crate::{
+    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, ReceiptTreeHash,
+    TransactionTreeHash,
+};
+use enum_dispatch::enum_dispatch;
+use radix_engine_store_interface::interface::{
+    DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
+};
+
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
+use sbor::{Categorize, Decode, Encode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseBackendConfig {
@@ -132,6 +133,38 @@ impl StateManagerDatabase {
                 };
                 StateManagerDatabase::RocksDB(db)
             }
+        }
+    }
+}
+
+impl SubstateDatabase for StateManagerDatabase {
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_substate(partition_key, sort_key),
+            StateManagerDatabase::RocksDB(store) => store.get_substate(partition_key, sort_key),
+        }
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.list_entries(partition_key),
+            StateManagerDatabase::RocksDB(store) => store.list_entries(partition_key),
+        }
+    }
+}
+
+impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_node(key),
+            StateManagerDatabase::RocksDB(store) => store.get_node(key),
         }
     }
 }
@@ -189,36 +222,6 @@ impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
-        }
-    }
-}
-
-impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_node(key),
-            StateManagerDatabase::RocksDB(store) => store.get_node(key),
-        }
-    }
-}
-
-impl ReadableSubstateStore for StateManagerDatabase {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_substate(substate_id),
-            StateManagerDatabase::RocksDB(store) => store.get_substate(substate_id),
-        }
-    }
-}
-
-impl QueryableSubstateStore for StateManagerDatabase {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.get_kv_store_entries(kv_store_id),
-            StateManagerDatabase::RocksDB(store) => store.get_kv_store_entries(kv_store_id),
         }
     }
 }

@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateEpochResponse.JSON_PROPERTY_EPOCH,
   StateEpochResponse.JSON_PROPERTY_EPOCH_MANAGER,
-  StateEpochResponse.JSON_PROPERTY_ACTIVE_VALIDATOR_SET
+  StateEpochResponse.JSON_PROPERTY_CURRENT_VALIDATOR_SET
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateEpochResponse {
@@ -44,8 +44,8 @@ public class StateEpochResponse {
   public static final String JSON_PROPERTY_EPOCH_MANAGER = "epoch_manager";
   private Substate epochManager;
 
-  public static final String JSON_PROPERTY_ACTIVE_VALIDATOR_SET = "active_validator_set";
-  private Substate activeValidatorSet;
+  public static final String JSON_PROPERTY_CURRENT_VALIDATOR_SET = "current_validator_set";
+  private Substate currentValidatorSet;
 
   public StateEpochResponse() { 
   }
@@ -104,29 +104,29 @@ public class StateEpochResponse {
   }
 
 
-  public StateEpochResponse activeValidatorSet(Substate activeValidatorSet) {
-    this.activeValidatorSet = activeValidatorSet;
+  public StateEpochResponse currentValidatorSet(Substate currentValidatorSet) {
+    this.currentValidatorSet = currentValidatorSet;
     return this;
   }
 
    /**
-   * Get activeValidatorSet
-   * @return activeValidatorSet
+   * Get currentValidatorSet
+   * @return currentValidatorSet
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACTIVE_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_CURRENT_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getActiveValidatorSet() {
-    return activeValidatorSet;
+  public Substate getCurrentValidatorSet() {
+    return currentValidatorSet;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACTIVE_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_CURRENT_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setActiveValidatorSet(Substate activeValidatorSet) {
-    this.activeValidatorSet = activeValidatorSet;
+  public void setCurrentValidatorSet(Substate currentValidatorSet) {
+    this.currentValidatorSet = currentValidatorSet;
   }
 
 
@@ -144,12 +144,12 @@ public class StateEpochResponse {
     StateEpochResponse stateEpochResponse = (StateEpochResponse) o;
     return Objects.equals(this.epoch, stateEpochResponse.epoch) &&
         Objects.equals(this.epochManager, stateEpochResponse.epochManager) &&
-        Objects.equals(this.activeValidatorSet, stateEpochResponse.activeValidatorSet);
+        Objects.equals(this.currentValidatorSet, stateEpochResponse.currentValidatorSet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, epochManager, activeValidatorSet);
+    return Objects.hash(epoch, epochManager, currentValidatorSet);
   }
 
   @Override
@@ -158,7 +158,7 @@ public class StateEpochResponse {
     sb.append("class StateEpochResponse {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    epochManager: ").append(toIndentedString(epochManager)).append("\n");
-    sb.append("    activeValidatorSet: ").append(toIndentedString(activeValidatorSet)).append("\n");
+    sb.append("    currentValidatorSet: ").append(toIndentedString(currentValidatorSet)).append("\n");
     sb.append("}");
     return sb.toString();
   }

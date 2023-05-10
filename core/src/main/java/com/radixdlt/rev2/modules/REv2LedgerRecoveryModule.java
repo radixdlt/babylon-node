@@ -68,12 +68,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
@@ -82,23 +79,18 @@ import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class REv2LedgerRecoveryModule extends AbstractModule {
 
   private static final Logger log = LogManager.getLogger();
-  private final AccumulatorState initialAccumulatorState;
-  private final RawLedgerTransaction genesis;
+  private final Optional<GenesisData> genesis;
 
-  public REv2LedgerRecoveryModule(
-      AccumulatorState initialAccumulatorState, RawLedgerTransaction genesis) {
-    this.initialAccumulatorState = initialAccumulatorState;
+  public REv2LedgerRecoveryModule(Optional<GenesisData> genesis) {
     this.genesis = genesis;
   }
 
@@ -106,34 +98,15 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastStoredProof
   private LedgerProof lastProof(
-      RustStateComputer stateComputer,
-      TransactionsAndProofReader transactionsAndProofReader,
-      LedgerAccumulator ledgerAccumulator) {
+      RustStateComputer stateComputer, TransactionsAndProofReader transactionsAndProofReader) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
             () -> {
-              /* TODO: Move this into StateManager init() when Proof generation is supported by state_manager */
-              var result = stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
-              var validatorSet =
-                  result
-                      .validatorSet()
-                      .map(REv2ToConsensus::validatorSet)
-                      .or((BFTValidatorSet) null);
-              var accumulatorState =
-                  ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-              var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
-              var proof =
-                  LedgerProof.genesis(
-                      accumulatorState, ledgerHashes, validatorSet, timestamp, timestamp);
-              var commitRequest =
-                  new CommitRequest(
-                      List.of(genesis), REv2ToConsensus.ledgerProof(proof), Option.none());
-              var commitResult = stateComputer.commit(commitRequest);
-              commitResult.unwrap();
-
-              return proof;
+              final var genesisData =
+                  this.genesis.orElseThrow(() -> new RuntimeException("Missing genesis data"));
+              return REv2ToConsensus.ledgerProof(stateComputer.executeGenesis(genesisData));
             });
   }
 

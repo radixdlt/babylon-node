@@ -1,12 +1,12 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{NodeModuleId, SubstateOffset, ValidatorOffset};
-use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
+use radix_engine::types::*;
 
-use state_manager::query::{dump_component_state, VaultData};
+use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::system::node_modules::access_rules::*;
+use state_manager::query::dump_component_state;
 use std::ops::Deref;
 
-use super::map_to_descendent_id;
+use super::component_dump_to_vaults_and_nodes;
 
 pub(crate) async fn handle_state_validator(
     state: State<CoreApiState>,
@@ -29,69 +29,36 @@ pub(crate) async fn handle_state_validator(
 
     let database = state.database.read();
 
-    let component_state = {
-        let substate_offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::Validator(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let component_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let validator_substate: ValidatorSubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        validator_address.as_node_id(),
+        &ValidatorField::Validator.into(),
+    )?;
 
-    let component_dump = dump_component_state(database.deref(), validator_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        validator_address.as_node_id(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
+    )?;
 
-    let state_owned_vaults = component_dump
-        .vaults
-        .into_iter()
-        .map(|vault| match vault {
-            VaultData::NonFungible {
-                resource_address,
-                ids,
-            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
-            VaultData::Fungible {
-                resource_address,
-                amount,
-            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let component_dump = dump_component_state(database.deref(), validator_address);
 
-    let descendent_ids = component_dump
-        .descendents
-        .into_iter()
-        .filter(|(_, _, depth)| *depth > 0)
-        .map(|(parent, node, depth)| map_to_descendent_id(parent, node, depth))
-        .collect::<Result<Vec<_>, _>>()?;
+    let (vaults, descendent_nodes) =
+        component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateValidatorResponse {
+        address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_substate(
             &mapping_context,
-            &component_state,
+            &validator_substate,
         )?),
-        access_rules: Some(to_api_access_rules_chain_substate(
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &component_access_rules,
+            &method_access_rules_substate,
         )?),
-        state_owned_vaults,
-        descendent_ids,
+        vaults,
+        descendent_nodes,
     })
     .map(Json)
 }

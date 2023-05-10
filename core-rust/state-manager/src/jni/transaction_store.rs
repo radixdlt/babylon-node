@@ -66,7 +66,7 @@ use crate::store::traits::*;
 
 use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
-use crate::LedgerTransactionOutcome;
+use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -77,6 +77,7 @@ use crate::jni::utils::jni_sbor_coded_call;
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
+    error_message: Option<String>,
     consensus_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
 }
@@ -122,11 +123,17 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
             let committed_ledger_transaction_receipt =
                 read_database.get_committed_ledger_transaction_receipt(state_version)?;
+            let local_transaction_execution =
+                read_database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
+                },
+                error_message: match local_transaction_execution.outcome {
+                    DetailedTransactionOutcome::Success(_) => None,
+                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),

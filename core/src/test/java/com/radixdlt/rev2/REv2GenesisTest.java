@@ -65,11 +65,13 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.rev2.ComponentAddress.NORMAL_COMPONENT_ADDRESS_ENTITY_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
@@ -82,7 +84,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Map;
 import org.junit.Test;
@@ -93,6 +94,41 @@ public final class REv2GenesisTest {
   private static final Decimal XRD_ALLOC_AMOUNT = Decimal.of(100123);
   private static final ECDSASecp256k1PublicKey XRD_ALLOC_ACCOUNT_PUB_KEY =
       ECKeyPair.generateNew().getPublicKey();
+
+  public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
+      ComponentAddress.create(
+          new byte[] {
+            NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          });
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -108,10 +144,10 @@ public final class REv2GenesisTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidatorsAndXrdAlloc(
+                        GenesisBuilder.createGenesisWithNumValidatorsAndXrdBalances(
                             1,
-                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             INITIAL_STAKE,
+                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -126,17 +162,23 @@ public final class REv2GenesisTest {
 
       // Assert
       var stateReader = test.getInstance(0, REv2StateReader.class);
-
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
-      var genesisDetails = transactionStore.getTransactionDetailsAtStateVersion(1).unwrap();
-      assertThat(genesisDetails.newComponentAddresses())
-          .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+
+      // should correspond to the genesis wrap up transaction
+      final var latestStateVersion =
+          transactionStore.getLastProof().get().ledgerHeader().accumulatorState().stateVersion();
+      final var genesisWrapUp =
+          transactionStore
+              .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
+              .unwrap();
+      assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
 
       final var xrdLeftInFaucet =
           REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
-      var systemAmount =
-          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(xrdLeftInFaucet);
+
+      final var readFaucetAmount =
+          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
+      assertThat(readFaucetAmount).isEqualTo(xrdLeftInFaucet);
 
       // Check genesis XRD alloc
       final var allocatedAmount =
@@ -144,8 +186,7 @@ public final class REv2GenesisTest {
               Address.virtualAccountAddress(XRD_ALLOC_ACCOUNT_PUB_KEY));
       assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
-      var emptyAccountAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
+      var emptyAccountAmount = stateReader.getComponentXrdAmount(NON_EXISTENT_COMPONENT_ADDRESS);
       assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
     }
   }

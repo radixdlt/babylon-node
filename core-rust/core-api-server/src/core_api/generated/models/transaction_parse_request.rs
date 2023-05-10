@@ -28,6 +28,8 @@ pub struct TransactionParseRequest {
     /// The amount of information to return in the response. \"Basic\" includes the type, validity information, and any relevant identifiers. \"Full\" also includes the fully parsed information. If omitted, \"Full\" is used. 
     #[serde(rename = "response_mode", skip_serializing_if = "Option::is_none")]
     pub response_mode: Option<ResponseMode>,
+    #[serde(rename = "transaction_format_options", skip_serializing_if = "Option::is_none")]
+    pub transaction_format_options: Option<Box<crate::core_api::generated::models::TransactionFormatOptions>>,
 }
 
 impl TransactionParseRequest {
@@ -38,6 +40,7 @@ impl TransactionParseRequest {
             parse_mode: None,
             validation_mode: None,
             response_mode: None,
+            transaction_format_options: None,
         }
     }
 }

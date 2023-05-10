@@ -31,7 +31,7 @@ import com.radixdlt.api.core.generated.models.EventEmitterIdentifierType;
 import com.radixdlt.api.core.generated.models.FunctionEventEmitterIdentifier;
 import com.radixdlt.api.core.generated.models.FunctionEventEmitterIdentifierAllOf;
 import com.radixdlt.api.core.generated.models.MethodEventEmitterIdentifier;
-import com.radixdlt.api.core.generated.models.ModuleType;
+import com.radixdlt.api.core.generated.models.ObjectModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -43,7 +43,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   FunctionEventEmitterIdentifier.JSON_PROPERTY_ENTITY,
-  FunctionEventEmitterIdentifier.JSON_PROPERTY_MODULE_TYPE,
+  FunctionEventEmitterIdentifier.JSON_PROPERTY_OBJECT_MODULE_ID,
   FunctionEventEmitterIdentifier.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -61,8 +61,8 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
   public static final String JSON_PROPERTY_ENTITY = "entity";
   private EntityReference entity;
 
-  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
-  private ModuleType moduleType;
+  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
+  private ObjectModuleId objectModuleId;
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
@@ -96,29 +96,29 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
   }
 
 
-  public FunctionEventEmitterIdentifier moduleType(ModuleType moduleType) {
-    this.moduleType = moduleType;
+  public FunctionEventEmitterIdentifier objectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
     return this;
   }
 
    /**
-   * Get moduleType
-   * @return moduleType
+   * Get objectModuleId
+   * @return objectModuleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleType getModuleType() {
-    return moduleType;
+  public ObjectModuleId getObjectModuleId() {
+    return objectModuleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
+  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModuleType(ModuleType moduleType) {
-    this.moduleType = moduleType;
+  public void setObjectModuleId(ObjectModuleId objectModuleId) {
+    this.objectModuleId = objectModuleId;
   }
 
 
@@ -161,14 +161,14 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
     }
     FunctionEventEmitterIdentifier functionEventEmitterIdentifier = (FunctionEventEmitterIdentifier) o;
     return Objects.equals(this.entity, functionEventEmitterIdentifier.entity) &&
-        Objects.equals(this.moduleType, functionEventEmitterIdentifier.moduleType) &&
+        Objects.equals(this.objectModuleId, functionEventEmitterIdentifier.objectModuleId) &&
         Objects.equals(this.blueprintName, functionEventEmitterIdentifier.blueprintName) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entity, moduleType, blueprintName, super.hashCode());
+    return Objects.hash(entity, objectModuleId, blueprintName, super.hashCode());
   }
 
   @Override
@@ -177,7 +177,7 @@ public class FunctionEventEmitterIdentifier extends EventEmitterIdentifier {
     sb.append("class FunctionEventEmitterIdentifier {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
-    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
+    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("}");
     return sb.toString();

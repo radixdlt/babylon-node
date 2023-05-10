@@ -19,13 +19,16 @@ pub struct LocalTypeIndex {
     /// Either the well known identifier, of the schema-local index, depending on the kind. 
     #[serde(rename = "index")]
     pub index: i32,
+    #[serde(rename = "as_sbor")]
+    pub as_sbor: Box<crate::core_api::generated::models::SborData>,
 }
 
 impl LocalTypeIndex {
-    pub fn new(kind: Kind, index: i32) -> LocalTypeIndex {
+    pub fn new(kind: Kind, index: i32, as_sbor: crate::core_api::generated::models::SborData) -> LocalTypeIndex {
         LocalTypeIndex {
             kind,
             index,
+            as_sbor: Box::new(as_sbor),
         }
     }
 }

@@ -13,126 +13,146 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
-    #[serde(rename="AccessController")]
-    AccessControllerSubstate {
+    #[serde(rename="AccessControllerFieldState")]
+    AccessControllerFieldStateSubstate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="AccessRules")]
-    AccessRulesSubstate {
+    #[serde(rename="AccessRulesModuleFieldAccessRules")]
+    AccessRulesModuleFieldAccessRulesSubstate {
         #[serde(rename = "access_rules")]
         access_rules: Box<crate::core_api::generated::models::AccessRules>,
+        #[serde(rename = "child_blueprint_rules")]
+        child_blueprint_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
     },
-    #[serde(rename="Account")]
-    AccountSubstate {
+    #[serde(rename="AccountVaultIndexEntry")]
+    AccountVaultIndexEntrySubstate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="Clock")]
-    ClockSubstate {
+    #[serde(rename="ClockFieldState")]
+    ClockFieldStateSubstate {
         #[serde(rename = "timestamp_rounded_down_to_minute")]
         timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
     },
-    #[serde(rename="ComponentRoyaltyAccumulator")]
-    ComponentRoyaltyAccumulatorSubstate {
-        #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
-        vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
-    },
-    #[serde(rename="ComponentRoyaltyConfig")]
-    ComponentRoyaltyConfigSubstate {
-        #[serde(rename = "royalty_config")]
-        royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
-    },
-    #[serde(rename="ComponentState")]
-    ComponentStateSubstate {
-        #[serde(rename = "data_struct")]
-        data_struct: Box<crate::core_api::generated::models::DataStruct>,
-    },
-    #[serde(rename="EpochManager")]
-    EpochManagerSubstate {
-        /// The Bech32m-encoded human readable version of the component address
-        #[serde(rename = "address")]
-        address: String,
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "validator_owner_resource")]
-        validator_owner_resource: String,
-        /// An integer between `0` and `10^10`, marking the current epoch
-        #[serde(rename = "epoch")]
-        epoch: i64,
-        /// An integer between `0` and `10^10`, marking the current round in an epoch
-        #[serde(rename = "round")]
-        round: i64,
+    #[serde(rename="EpochManagerFieldConfig")]
+    EpochManagerFieldConfigSubstate {
+        #[serde(rename = "max_validators")]
+        max_validators: i64,
         /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
         #[serde(rename = "rounds_per_epoch")]
         rounds_per_epoch: i64,
         #[serde(rename = "num_unstake_epochs")]
         num_unstake_epochs: i64,
     },
-    #[serde(rename="FungibleResourceManager")]
-    FungibleResourceManagerSubstate {
+    #[serde(rename="EpochManagerFieldCurrentValidatorSet")]
+    EpochManagerFieldCurrentValidatorSetSubstate {
+        #[serde(rename = "validator_set")]
+        validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
+    },
+    #[serde(rename="EpochManagerFieldState")]
+    EpochManagerFieldStateSubstate {
+        /// An integer between `0` and `10^10`, marking the current epoch
+        #[serde(rename = "epoch")]
+        epoch: i64,
+        /// An integer between `0` and `10^10`, marking the current round in an epoch
+        #[serde(rename = "round")]
+        round: i64,
+    },
+    #[serde(rename="EpochManagerRegisteredValidatorsByStakeIndexEntry")]
+    EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate {
+        #[serde(rename = "active_validator")]
+        active_validator: Box<crate::core_api::generated::models::ActiveValidator>,
+    },
+    #[serde(rename="FungibleResourceManagerFieldDivisibility")]
+    FungibleResourceManagerFieldDivisibilitySubstate {
         #[serde(rename = "divisibility")]
         divisibility: i32,
+    },
+    #[serde(rename="FungibleResourceManagerFieldTotalSupply")]
+    FungibleResourceManagerFieldTotalSupplySubstate {
         /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "total_supply")]
         total_supply: String,
     },
-    #[serde(rename="KeyValueStoreEntry")]
-    KeyValueStoreEntrySubstate {
-        /// The hex-encoded bytes of its key
-        #[serde(rename = "key_hex")]
-        key_hex: String,
-        #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
-        key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
+    #[serde(rename="FungibleVaultFieldBalance")]
+    FungibleVaultFieldBalanceSubstate {
+        /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "amount")]
+        amount: String,
+    },
+    #[serde(rename="GenericKeyValueStoreEntry")]
+    GenericKeyValueStoreEntrySubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    },
+    #[serde(rename="GenericScryptoComponentFieldState")]
+    GenericScryptoComponentFieldStateSubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    },
+    #[serde(rename="MetadataModuleEntry")]
+    MetadataModuleEntrySubstate {
+        #[serde(rename = "field_name")]
+        field_name: String,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
-    #[serde(rename="MetadataEntry")]
-    MetadataEntrySubstate {
-        /// The hex-encoded bytes of its key
-        #[serde(rename = "key_hex")]
-        key_hex: String,
-        #[serde(rename = "is_deleted")]
-        is_deleted: bool,
-        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename="NonFungibleResourceManagerDataEntry")]
+    NonFungibleResourceManagerDataEntrySubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="NonFungibleResourceManager")]
-    NonFungibleResourceManagerSubstate {
+    #[serde(rename="NonFungibleResourceManagerFieldIdType")]
+    NonFungibleResourceManagerFieldIdTypeSubstate {
         #[serde(rename = "non_fungible_id_type")]
         non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType,
+    },
+    #[serde(rename="NonFungibleResourceManagerFieldMutableFields")]
+    NonFungibleResourceManagerFieldMutableFieldsSubstate {
+        /// The field names of the NF Metadata which are mutable. 
+        #[serde(rename = "mutable_fields")]
+        mutable_fields: Vec<String>,
+    },
+    #[serde(rename="NonFungibleResourceManagerFieldTotalSupply")]
+    NonFungibleResourceManagerFieldTotalSupplySubstate {
         /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "total_supply")]
         total_supply: String,
-        #[serde(rename = "non_fungible_data_table")]
-        non_fungible_data_table: Box<crate::core_api::generated::models::EntityReference>,
-        #[serde(rename = "non_fungible_data_type_index")]
-        non_fungible_data_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
-        /// The field names of the NF Metadata which are mutable. 
-        #[serde(rename = "non_fungible_data_mutable_fields")]
-        non_fungible_data_mutable_fields: Vec<String>,
     },
-    #[serde(rename="PackageCode")]
-    PackageCodeSubstate {
+    #[serde(rename="NonFungibleVaultContentsIndexEntry")]
+    NonFungibleVaultContentsIndexEntrySubstate {
+        #[serde(rename = "non_fungible_local_id")]
+        non_fungible_local_id: Box<crate::core_api::generated::models::NonFungibleLocalId>,
+    },
+    #[serde(rename="NonFungibleVaultFieldBalance")]
+    NonFungibleVaultFieldBalanceSubstate {
+        /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "amount")]
+        amount: String,
+    },
+    #[serde(rename="PackageFieldCode")]
+    PackageFieldCodeSubstate {
         /// The hex-encoded package code
         #[serde(rename = "code_hex")]
         code_hex: String,
     },
-    #[serde(rename="PackageCodeType")]
-    PackageCodeTypeSubstate {
+    #[serde(rename="PackageFieldCodeType")]
+    PackageFieldCodeTypeSubstate {
         #[serde(rename = "code_type")]
-        code_type: String,
+        code_type: crate::core_api::generated::models::PackageCodeType,
     },
-    #[serde(rename="PackageFunctionAccessRules")]
-    PackageFunctionAccessRulesSubstate {
+    #[serde(rename="PackageFieldFunctionAccessRules")]
+    PackageFieldFunctionAccessRulesSubstate {
         #[serde(rename = "function_auth")]
         function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>,
         #[serde(rename = "default_auth")]
         default_auth: Box<crate::core_api::generated::models::AccessRule>,
     },
-    #[serde(rename="PackageInfo")]
-    PackageInfoSubstate {
+    #[serde(rename="PackageFieldInfo")]
+    PackageFieldInfoSubstate {
         #[serde(rename = "package_schema")]
         package_schema: Box<crate::core_api::generated::models::PackageSchema>,
         #[serde(rename = "dependent_resources")]
@@ -140,28 +160,34 @@ pub enum Substate {
         #[serde(rename = "dependent_components")]
         dependent_components: Vec<String>,
     },
-    #[serde(rename="PackageRoyalty")]
-    PackageRoyaltySubstate {
+    #[serde(rename="PackageFieldRoyalty")]
+    PackageFieldRoyaltySubstate {
         #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
         vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
         #[serde(rename = "blueprint_royalties")]
         blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
     },
-    #[serde(rename="TypeInfo")]
-    TypeInfoSubstate {
+    #[serde(rename="RoyaltyModuleFieldAccumulator")]
+    RoyaltyModuleFieldAccumulatorSubstate {
+        #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
+        vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    },
+    #[serde(rename="RoyaltyModuleFieldConfig")]
+    RoyaltyModuleFieldConfigSubstate {
+        #[serde(rename = "royalty_config")]
+        royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+    },
+    #[serde(rename="TypeInfoModuleFieldTypeInfo")]
+    TypeInfoModuleFieldTypeInfoSubstate {
         #[serde(rename = "details")]
         details: Box<crate::core_api::generated::models::TypeInfoDetails>,
     },
-    #[serde(rename="Validator")]
-    ValidatorSubstate {
-        /// The Bech32m-encoded human readable version of the component address
-        #[serde(rename = "epoch_manager_address")]
-        epoch_manager_address: String,
-        /// The Bech32m-encoded human readable version of the component address
-        #[serde(rename = "validator_address")]
-        validator_address: String,
+    #[serde(rename="ValidatorFieldState")]
+    ValidatorFieldStateSubstate {
         #[serde(rename = "public_key")]
         public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+        #[serde(rename = "is_registered")]
+        is_registered: bool,
         #[serde(rename = "stake_vault")]
         stake_vault: Box<crate::core_api::generated::models::EntityReference>,
         #[serde(rename = "unstake_vault")]
@@ -172,35 +198,8 @@ pub enum Substate {
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "unstake_claim_token_resource_address")]
         unstake_claim_token_resource_address: String,
-        #[serde(rename = "is_registered")]
-        is_registered: bool,
-    },
-    #[serde(rename="ValidatorSet")]
-    ValidatorSetSubstate {
-        #[serde(rename = "validator_set")]
-        validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
-        /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
-        #[serde(rename = "epoch")]
-        epoch: i64,
-    },
-    #[serde(rename="VaultFungible")]
-    VaultFungibleSubstate {
-        /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-        #[serde(rename = "amount")]
-        amount: String,
-    },
-    #[serde(rename="VaultInfo")]
-    VaultInfoSubstate {
-        #[serde(rename = "resource_type")]
-        resource_type: crate::core_api::generated::models::ResourceType,
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "resource_address")]
-        resource_address: String,
-    },
-    #[serde(rename="VaultNonFungible")]
-    VaultNonFungibleSubstate {
-        #[serde(rename = "non_fungible_ids")]
-        non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
+        #[serde(rename = "sorted_key", skip_serializing_if = "Option::is_none")]
+        sorted_key: Option<Box<crate::core_api::generated::models::SubstateKey>>,
     },
 }
 

@@ -1,16 +1,10 @@
 use radix_engine::types::*;
 
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{
-    ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
-};
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerNextRoundInput, EPOCH_MANAGER_NEXT_ROUND_IDENT,
-};
+use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::crypto::{hash, Hash};
-use std::collections::BTreeSet;
-use transaction::model::{AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction};
+use transaction::model::*;
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
@@ -47,14 +41,14 @@ impl ValidatorTransaction {
                     .unwrap(),
                 };
 
+                // TODO: Fix this to be correct when we pass through the relevant data from the engine.
+                let next_round_input = EpochManagerNextRoundInput::successful(*round_in_epoch, 0);
+
                 let update_round = Instruction::CallMethod {
                     component_address: EPOCH_MANAGER,
                     method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
                     args: manifest_decode::<ManifestValue>(
-                        &manifest_encode(&EpochManagerNextRoundInput {
-                            round: *round_in_epoch,
-                        })
-                        .unwrap(),
+                        &manifest_encode(&next_round_input).unwrap(),
                     )
                     .unwrap(),
                 };
@@ -81,7 +75,7 @@ impl PreparedValidatorTransaction {
         };
 
         Executable::new_no_blobs(
-            self.instructions,
+            self.instructions.as_ref(),
             ExecutionContext {
                 transaction_hash: self.hash,
                 payload_size: 0,

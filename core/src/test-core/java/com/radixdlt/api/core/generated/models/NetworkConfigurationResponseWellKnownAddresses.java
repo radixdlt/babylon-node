@@ -32,17 +32,104 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "Key addresses for this network.")
 @JsonPropertyOrder({
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_XRD,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_PACKAGE_OWNER_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_VALIDATOR_OWNER_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCOUNT_OWNER_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_IDENTITY_OWNER_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_PACKAGE_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_RESOURCE_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCOUNT_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_IDENTITY_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EPOCH_MANAGER_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CLOCK_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_TRANSACTION_PROCESSOR_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_METADATA_MODULE_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ROYALTY_MODULE_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCESS_RULES_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EPOCH_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CLOCK,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ECDSA_SECP256K1,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EDDSA_ED25519,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_XRD
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NetworkConfigurationResponseWellKnownAddresses {
-  public static final String JSON_PROPERTY_FAUCET = "faucet";
-  private String faucet;
+  public static final String JSON_PROPERTY_XRD = "xrd";
+  private String xrd;
+
+  public static final String JSON_PROPERTY_SECP256K1_SIGNATURE_VIRTUAL_BADGE = "secp256k1_signature_virtual_badge";
+  private String secp256k1SignatureVirtualBadge;
+
+  public static final String JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE = "ed25519_signature_virtual_badge";
+  private String ed25519SignatureVirtualBadge;
+
+  public static final String JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE = "package_of_direct_caller_virtual_badge";
+  private String packageOfDirectCallerVirtualBadge;
+
+  public static final String JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE = "global_caller_virtual_badge";
+  private String globalCallerVirtualBadge;
+
+  public static final String JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE = "system_transaction_badge";
+  private String systemTransactionBadge;
+
+  public static final String JSON_PROPERTY_PACKAGE_OWNER_BADGE = "package_owner_badge";
+  private String packageOwnerBadge;
+
+  public static final String JSON_PROPERTY_VALIDATOR_OWNER_BADGE = "validator_owner_badge";
+  private String validatorOwnerBadge;
+
+  public static final String JSON_PROPERTY_ACCOUNT_OWNER_BADGE = "account_owner_badge";
+  private String accountOwnerBadge;
+
+  public static final String JSON_PROPERTY_IDENTITY_OWNER_BADGE = "identity_owner_badge";
+  private String identityOwnerBadge;
+
+  public static final String JSON_PROPERTY_PACKAGE_PACKAGE = "package_package";
+  private String packagePackage;
+
+  public static final String JSON_PROPERTY_RESOURCE_PACKAGE = "resource_package";
+  private String resourcePackage;
+
+  public static final String JSON_PROPERTY_ACCOUNT_PACKAGE = "account_package";
+  private String accountPackage;
+
+  public static final String JSON_PROPERTY_IDENTITY_PACKAGE = "identity_package";
+  private String identityPackage;
+
+  public static final String JSON_PROPERTY_EPOCH_MANAGER_PACKAGE = "epoch_manager_package";
+  private String epochManagerPackage;
+
+  public static final String JSON_PROPERTY_CLOCK_PACKAGE = "clock_package";
+  private String clockPackage;
+
+  public static final String JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE = "access_controller_package";
+  private String accessControllerPackage;
+
+  public static final String JSON_PROPERTY_TRANSACTION_PROCESSOR_PACKAGE = "transaction_processor_package";
+  private String transactionProcessorPackage;
+
+  public static final String JSON_PROPERTY_METADATA_MODULE_PACKAGE = "metadata_module_package";
+  private String metadataModulePackage;
+
+  public static final String JSON_PROPERTY_ROYALTY_MODULE_PACKAGE = "royalty_module_package";
+  private String royaltyModulePackage;
+
+  public static final String JSON_PROPERTY_ACCESS_RULES_PACKAGE = "access_rules_package";
+  private String accessRulesPackage;
+
+  public static final String JSON_PROPERTY_GENESIS_HELPER_PACKAGE = "genesis_helper_package";
+  private String genesisHelperPackage;
+
+  public static final String JSON_PROPERTY_FAUCET_PACKAGE = "faucet_package";
+  private String faucetPackage;
 
   public static final String JSON_PROPERTY_EPOCH_MANAGER = "epoch_manager";
   private String epochManager;
@@ -50,41 +137,610 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   public static final String JSON_PROPERTY_CLOCK = "clock";
   private String clock;
 
-  public static final String JSON_PROPERTY_ECDSA_SECP256K1 = "ecdsa_secp256k1";
-  private String ecdsaSecp256k1;
+  public static final String JSON_PROPERTY_GENESIS_HELPER = "genesis_helper";
+  private String genesisHelper;
 
-  public static final String JSON_PROPERTY_EDDSA_ED25519 = "eddsa_ed25519";
-  private String eddsaEd25519;
-
-  public static final String JSON_PROPERTY_XRD = "xrd";
-  private String xrd;
+  public static final String JSON_PROPERTY_FAUCET = "faucet";
+  private String faucet;
 
   public NetworkConfigurationResponseWellKnownAddresses() { 
   }
 
-  public NetworkConfigurationResponseWellKnownAddresses faucet(String faucet) {
-    this.faucet = faucet;
+  public NetworkConfigurationResponseWellKnownAddresses xrd(String xrd) {
+    this.xrd = xrd;
     return this;
   }
 
    /**
-   * Get faucet
-   * @return faucet
+   * Get xrd
+   * @return xrd
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FAUCET)
+  @JsonProperty(JSON_PROPERTY_XRD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getFaucet() {
-    return faucet;
+  public String getXrd() {
+    return xrd;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FAUCET)
+  @JsonProperty(JSON_PROPERTY_XRD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFaucet(String faucet) {
-    this.faucet = faucet;
+  public void setXrd(String xrd) {
+    this.xrd = xrd;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses secp256k1SignatureVirtualBadge(String secp256k1SignatureVirtualBadge) {
+    this.secp256k1SignatureVirtualBadge = secp256k1SignatureVirtualBadge;
+    return this;
+  }
+
+   /**
+   * Get secp256k1SignatureVirtualBadge
+   * @return secp256k1SignatureVirtualBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SECP256K1_SIGNATURE_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSecp256k1SignatureVirtualBadge() {
+    return secp256k1SignatureVirtualBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SECP256K1_SIGNATURE_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSecp256k1SignatureVirtualBadge(String secp256k1SignatureVirtualBadge) {
+    this.secp256k1SignatureVirtualBadge = secp256k1SignatureVirtualBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses ed25519SignatureVirtualBadge(String ed25519SignatureVirtualBadge) {
+    this.ed25519SignatureVirtualBadge = ed25519SignatureVirtualBadge;
+    return this;
+  }
+
+   /**
+   * Get ed25519SignatureVirtualBadge
+   * @return ed25519SignatureVirtualBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getEd25519SignatureVirtualBadge() {
+    return ed25519SignatureVirtualBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEd25519SignatureVirtualBadge(String ed25519SignatureVirtualBadge) {
+    this.ed25519SignatureVirtualBadge = ed25519SignatureVirtualBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses packageOfDirectCallerVirtualBadge(String packageOfDirectCallerVirtualBadge) {
+    this.packageOfDirectCallerVirtualBadge = packageOfDirectCallerVirtualBadge;
+    return this;
+  }
+
+   /**
+   * Get packageOfDirectCallerVirtualBadge
+   * @return packageOfDirectCallerVirtualBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPackageOfDirectCallerVirtualBadge() {
+    return packageOfDirectCallerVirtualBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPackageOfDirectCallerVirtualBadge(String packageOfDirectCallerVirtualBadge) {
+    this.packageOfDirectCallerVirtualBadge = packageOfDirectCallerVirtualBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses globalCallerVirtualBadge(String globalCallerVirtualBadge) {
+    this.globalCallerVirtualBadge = globalCallerVirtualBadge;
+    return this;
+  }
+
+   /**
+   * Get globalCallerVirtualBadge
+   * @return globalCallerVirtualBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getGlobalCallerVirtualBadge() {
+    return globalCallerVirtualBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGlobalCallerVirtualBadge(String globalCallerVirtualBadge) {
+    this.globalCallerVirtualBadge = globalCallerVirtualBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses systemTransactionBadge(String systemTransactionBadge) {
+    this.systemTransactionBadge = systemTransactionBadge;
+    return this;
+  }
+
+   /**
+   * Get systemTransactionBadge
+   * @return systemTransactionBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSystemTransactionBadge() {
+    return systemTransactionBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSystemTransactionBadge(String systemTransactionBadge) {
+    this.systemTransactionBadge = systemTransactionBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses packageOwnerBadge(String packageOwnerBadge) {
+    this.packageOwnerBadge = packageOwnerBadge;
+    return this;
+  }
+
+   /**
+   * Get packageOwnerBadge
+   * @return packageOwnerBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPackageOwnerBadge() {
+    return packageOwnerBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PACKAGE_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPackageOwnerBadge(String packageOwnerBadge) {
+    this.packageOwnerBadge = packageOwnerBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses validatorOwnerBadge(String validatorOwnerBadge) {
+    this.validatorOwnerBadge = validatorOwnerBadge;
+    return this;
+  }
+
+   /**
+   * Get validatorOwnerBadge
+   * @return validatorOwnerBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getValidatorOwnerBadge() {
+    return validatorOwnerBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorOwnerBadge(String validatorOwnerBadge) {
+    this.validatorOwnerBadge = validatorOwnerBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses accountOwnerBadge(String accountOwnerBadge) {
+    this.accountOwnerBadge = accountOwnerBadge;
+    return this;
+  }
+
+   /**
+   * Get accountOwnerBadge
+   * @return accountOwnerBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAccountOwnerBadge() {
+    return accountOwnerBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccountOwnerBadge(String accountOwnerBadge) {
+    this.accountOwnerBadge = accountOwnerBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses identityOwnerBadge(String identityOwnerBadge) {
+    this.identityOwnerBadge = identityOwnerBadge;
+    return this;
+  }
+
+   /**
+   * Get identityOwnerBadge
+   * @return identityOwnerBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IDENTITY_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIdentityOwnerBadge() {
+    return identityOwnerBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IDENTITY_OWNER_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIdentityOwnerBadge(String identityOwnerBadge) {
+    this.identityOwnerBadge = identityOwnerBadge;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses packagePackage(String packagePackage) {
+    this.packagePackage = packagePackage;
+    return this;
+  }
+
+   /**
+   * Get packagePackage
+   * @return packagePackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPackagePackage() {
+    return packagePackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PACKAGE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPackagePackage(String packagePackage) {
+    this.packagePackage = packagePackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses resourcePackage(String resourcePackage) {
+    this.resourcePackage = resourcePackage;
+    return this;
+  }
+
+   /**
+   * Get resourcePackage
+   * @return resourcePackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RESOURCE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getResourcePackage() {
+    return resourcePackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RESOURCE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setResourcePackage(String resourcePackage) {
+    this.resourcePackage = resourcePackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses accountPackage(String accountPackage) {
+    this.accountPackage = accountPackage;
+    return this;
+  }
+
+   /**
+   * Get accountPackage
+   * @return accountPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAccountPackage() {
+    return accountPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccountPackage(String accountPackage) {
+    this.accountPackage = accountPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses identityPackage(String identityPackage) {
+    this.identityPackage = identityPackage;
+    return this;
+  }
+
+   /**
+   * Get identityPackage
+   * @return identityPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IDENTITY_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIdentityPackage() {
+    return identityPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IDENTITY_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIdentityPackage(String identityPackage) {
+    this.identityPackage = identityPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses epochManagerPackage(String epochManagerPackage) {
+    this.epochManagerPackage = epochManagerPackage;
+    return this;
+  }
+
+   /**
+   * Get epochManagerPackage
+   * @return epochManagerPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getEpochManagerPackage() {
+    return epochManagerPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEpochManagerPackage(String epochManagerPackage) {
+    this.epochManagerPackage = epochManagerPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses clockPackage(String clockPackage) {
+    this.clockPackage = clockPackage;
+    return this;
+  }
+
+   /**
+   * Get clockPackage
+   * @return clockPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CLOCK_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getClockPackage() {
+    return clockPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CLOCK_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setClockPackage(String clockPackage) {
+    this.clockPackage = clockPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses accessControllerPackage(String accessControllerPackage) {
+    this.accessControllerPackage = accessControllerPackage;
+    return this;
+  }
+
+   /**
+   * Get accessControllerPackage
+   * @return accessControllerPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAccessControllerPackage() {
+    return accessControllerPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccessControllerPackage(String accessControllerPackage) {
+    this.accessControllerPackage = accessControllerPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses transactionProcessorPackage(String transactionProcessorPackage) {
+    this.transactionProcessorPackage = transactionProcessorPackage;
+    return this;
+  }
+
+   /**
+   * Get transactionProcessorPackage
+   * @return transactionProcessorPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_PROCESSOR_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getTransactionProcessorPackage() {
+    return transactionProcessorPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_PROCESSOR_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTransactionProcessorPackage(String transactionProcessorPackage) {
+    this.transactionProcessorPackage = transactionProcessorPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses metadataModulePackage(String metadataModulePackage) {
+    this.metadataModulePackage = metadataModulePackage;
+    return this;
+  }
+
+   /**
+   * Get metadataModulePackage
+   * @return metadataModulePackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METADATA_MODULE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getMetadataModulePackage() {
+    return metadataModulePackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METADATA_MODULE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMetadataModulePackage(String metadataModulePackage) {
+    this.metadataModulePackage = metadataModulePackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses royaltyModulePackage(String royaltyModulePackage) {
+    this.royaltyModulePackage = royaltyModulePackage;
+    return this;
+  }
+
+   /**
+   * Get royaltyModulePackage
+   * @return royaltyModulePackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_MODULE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getRoyaltyModulePackage() {
+    return royaltyModulePackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_MODULE_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoyaltyModulePackage(String royaltyModulePackage) {
+    this.royaltyModulePackage = royaltyModulePackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses accessRulesPackage(String accessRulesPackage) {
+    this.accessRulesPackage = accessRulesPackage;
+    return this;
+  }
+
+   /**
+   * Get accessRulesPackage
+   * @return accessRulesPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAccessRulesPackage() {
+    return accessRulesPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccessRulesPackage(String accessRulesPackage) {
+    this.accessRulesPackage = accessRulesPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses genesisHelperPackage(String genesisHelperPackage) {
+    this.genesisHelperPackage = genesisHelperPackage;
+    return this;
+  }
+
+   /**
+   * Get genesisHelperPackage
+   * @return genesisHelperPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_GENESIS_HELPER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getGenesisHelperPackage() {
+    return genesisHelperPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GENESIS_HELPER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGenesisHelperPackage(String genesisHelperPackage) {
+    this.genesisHelperPackage = genesisHelperPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses faucetPackage(String faucetPackage) {
+    this.faucetPackage = faucetPackage;
+    return this;
+  }
+
+   /**
+   * Get faucetPackage
+   * @return faucetPackage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FAUCET_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getFaucetPackage() {
+    return faucetPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FAUCET_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFaucetPackage(String faucetPackage) {
+    this.faucetPackage = faucetPackage;
   }
 
 
@@ -140,81 +796,55 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
-  public NetworkConfigurationResponseWellKnownAddresses ecdsaSecp256k1(String ecdsaSecp256k1) {
-    this.ecdsaSecp256k1 = ecdsaSecp256k1;
+  public NetworkConfigurationResponseWellKnownAddresses genesisHelper(String genesisHelper) {
+    this.genesisHelper = genesisHelper;
     return this;
   }
 
    /**
-   * Get ecdsaSecp256k1
-   * @return ecdsaSecp256k1
+   * Get genesisHelper
+   * @return genesisHelper
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ECDSA_SECP256K1)
+  @JsonProperty(JSON_PROPERTY_GENESIS_HELPER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEcdsaSecp256k1() {
-    return ecdsaSecp256k1;
+  public String getGenesisHelper() {
+    return genesisHelper;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ECDSA_SECP256K1)
+  @JsonProperty(JSON_PROPERTY_GENESIS_HELPER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEcdsaSecp256k1(String ecdsaSecp256k1) {
-    this.ecdsaSecp256k1 = ecdsaSecp256k1;
+  public void setGenesisHelper(String genesisHelper) {
+    this.genesisHelper = genesisHelper;
   }
 
 
-  public NetworkConfigurationResponseWellKnownAddresses eddsaEd25519(String eddsaEd25519) {
-    this.eddsaEd25519 = eddsaEd25519;
+  public NetworkConfigurationResponseWellKnownAddresses faucet(String faucet) {
+    this.faucet = faucet;
     return this;
   }
 
    /**
-   * Get eddsaEd25519
-   * @return eddsaEd25519
+   * Get faucet
+   * @return faucet
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EDDSA_ED25519)
+  @JsonProperty(JSON_PROPERTY_FAUCET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEddsaEd25519() {
-    return eddsaEd25519;
+  public String getFaucet() {
+    return faucet;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EDDSA_ED25519)
+  @JsonProperty(JSON_PROPERTY_FAUCET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEddsaEd25519(String eddsaEd25519) {
-    this.eddsaEd25519 = eddsaEd25519;
-  }
-
-
-  public NetworkConfigurationResponseWellKnownAddresses xrd(String xrd) {
-    this.xrd = xrd;
-    return this;
-  }
-
-   /**
-   * Get xrd
-   * @return xrd
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_XRD)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getXrd() {
-    return xrd;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrd(String xrd) {
-    this.xrd = xrd;
+  public void setFaucet(String faucet) {
+    this.faucet = faucet;
   }
 
 
@@ -230,29 +860,71 @@ public class NetworkConfigurationResponseWellKnownAddresses {
       return false;
     }
     NetworkConfigurationResponseWellKnownAddresses networkConfigurationResponseWellKnownAddresses = (NetworkConfigurationResponseWellKnownAddresses) o;
-    return Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
+    return Objects.equals(this.xrd, networkConfigurationResponseWellKnownAddresses.xrd) &&
+        Objects.equals(this.secp256k1SignatureVirtualBadge, networkConfigurationResponseWellKnownAddresses.secp256k1SignatureVirtualBadge) &&
+        Objects.equals(this.ed25519SignatureVirtualBadge, networkConfigurationResponseWellKnownAddresses.ed25519SignatureVirtualBadge) &&
+        Objects.equals(this.packageOfDirectCallerVirtualBadge, networkConfigurationResponseWellKnownAddresses.packageOfDirectCallerVirtualBadge) &&
+        Objects.equals(this.globalCallerVirtualBadge, networkConfigurationResponseWellKnownAddresses.globalCallerVirtualBadge) &&
+        Objects.equals(this.systemTransactionBadge, networkConfigurationResponseWellKnownAddresses.systemTransactionBadge) &&
+        Objects.equals(this.packageOwnerBadge, networkConfigurationResponseWellKnownAddresses.packageOwnerBadge) &&
+        Objects.equals(this.validatorOwnerBadge, networkConfigurationResponseWellKnownAddresses.validatorOwnerBadge) &&
+        Objects.equals(this.accountOwnerBadge, networkConfigurationResponseWellKnownAddresses.accountOwnerBadge) &&
+        Objects.equals(this.identityOwnerBadge, networkConfigurationResponseWellKnownAddresses.identityOwnerBadge) &&
+        Objects.equals(this.packagePackage, networkConfigurationResponseWellKnownAddresses.packagePackage) &&
+        Objects.equals(this.resourcePackage, networkConfigurationResponseWellKnownAddresses.resourcePackage) &&
+        Objects.equals(this.accountPackage, networkConfigurationResponseWellKnownAddresses.accountPackage) &&
+        Objects.equals(this.identityPackage, networkConfigurationResponseWellKnownAddresses.identityPackage) &&
+        Objects.equals(this.epochManagerPackage, networkConfigurationResponseWellKnownAddresses.epochManagerPackage) &&
+        Objects.equals(this.clockPackage, networkConfigurationResponseWellKnownAddresses.clockPackage) &&
+        Objects.equals(this.accessControllerPackage, networkConfigurationResponseWellKnownAddresses.accessControllerPackage) &&
+        Objects.equals(this.transactionProcessorPackage, networkConfigurationResponseWellKnownAddresses.transactionProcessorPackage) &&
+        Objects.equals(this.metadataModulePackage, networkConfigurationResponseWellKnownAddresses.metadataModulePackage) &&
+        Objects.equals(this.royaltyModulePackage, networkConfigurationResponseWellKnownAddresses.royaltyModulePackage) &&
+        Objects.equals(this.accessRulesPackage, networkConfigurationResponseWellKnownAddresses.accessRulesPackage) &&
+        Objects.equals(this.genesisHelperPackage, networkConfigurationResponseWellKnownAddresses.genesisHelperPackage) &&
+        Objects.equals(this.faucetPackage, networkConfigurationResponseWellKnownAddresses.faucetPackage) &&
         Objects.equals(this.epochManager, networkConfigurationResponseWellKnownAddresses.epochManager) &&
         Objects.equals(this.clock, networkConfigurationResponseWellKnownAddresses.clock) &&
-        Objects.equals(this.ecdsaSecp256k1, networkConfigurationResponseWellKnownAddresses.ecdsaSecp256k1) &&
-        Objects.equals(this.eddsaEd25519, networkConfigurationResponseWellKnownAddresses.eddsaEd25519) &&
-        Objects.equals(this.xrd, networkConfigurationResponseWellKnownAddresses.xrd);
+        Objects.equals(this.genesisHelper, networkConfigurationResponseWellKnownAddresses.genesisHelper) &&
+        Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(faucet, epochManager, clock, ecdsaSecp256k1, eddsaEd25519, xrd);
+    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, epochManagerPackage, clockPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, accessRulesPackage, genesisHelperPackage, faucetPackage, epochManager, clock, genesisHelper, faucet);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NetworkConfigurationResponseWellKnownAddresses {\n");
-    sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");
+    sb.append("    xrd: ").append(toIndentedString(xrd)).append("\n");
+    sb.append("    secp256k1SignatureVirtualBadge: ").append(toIndentedString(secp256k1SignatureVirtualBadge)).append("\n");
+    sb.append("    ed25519SignatureVirtualBadge: ").append(toIndentedString(ed25519SignatureVirtualBadge)).append("\n");
+    sb.append("    packageOfDirectCallerVirtualBadge: ").append(toIndentedString(packageOfDirectCallerVirtualBadge)).append("\n");
+    sb.append("    globalCallerVirtualBadge: ").append(toIndentedString(globalCallerVirtualBadge)).append("\n");
+    sb.append("    systemTransactionBadge: ").append(toIndentedString(systemTransactionBadge)).append("\n");
+    sb.append("    packageOwnerBadge: ").append(toIndentedString(packageOwnerBadge)).append("\n");
+    sb.append("    validatorOwnerBadge: ").append(toIndentedString(validatorOwnerBadge)).append("\n");
+    sb.append("    accountOwnerBadge: ").append(toIndentedString(accountOwnerBadge)).append("\n");
+    sb.append("    identityOwnerBadge: ").append(toIndentedString(identityOwnerBadge)).append("\n");
+    sb.append("    packagePackage: ").append(toIndentedString(packagePackage)).append("\n");
+    sb.append("    resourcePackage: ").append(toIndentedString(resourcePackage)).append("\n");
+    sb.append("    accountPackage: ").append(toIndentedString(accountPackage)).append("\n");
+    sb.append("    identityPackage: ").append(toIndentedString(identityPackage)).append("\n");
+    sb.append("    epochManagerPackage: ").append(toIndentedString(epochManagerPackage)).append("\n");
+    sb.append("    clockPackage: ").append(toIndentedString(clockPackage)).append("\n");
+    sb.append("    accessControllerPackage: ").append(toIndentedString(accessControllerPackage)).append("\n");
+    sb.append("    transactionProcessorPackage: ").append(toIndentedString(transactionProcessorPackage)).append("\n");
+    sb.append("    metadataModulePackage: ").append(toIndentedString(metadataModulePackage)).append("\n");
+    sb.append("    royaltyModulePackage: ").append(toIndentedString(royaltyModulePackage)).append("\n");
+    sb.append("    accessRulesPackage: ").append(toIndentedString(accessRulesPackage)).append("\n");
+    sb.append("    genesisHelperPackage: ").append(toIndentedString(genesisHelperPackage)).append("\n");
+    sb.append("    faucetPackage: ").append(toIndentedString(faucetPackage)).append("\n");
     sb.append("    epochManager: ").append(toIndentedString(epochManager)).append("\n");
     sb.append("    clock: ").append(toIndentedString(clock)).append("\n");
-    sb.append("    ecdsaSecp256k1: ").append(toIndentedString(ecdsaSecp256k1)).append("\n");
-    sb.append("    eddsaEd25519: ").append(toIndentedString(eddsaEd25519)).append("\n");
-    sb.append("    xrd: ").append(toIndentedString(xrd)).append("\n");
+    sb.append("    genesisHelper: ").append(toIndentedString(genesisHelper)).append("\n");
+    sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");
     sb.append("}");
     return sb.toString();
   }

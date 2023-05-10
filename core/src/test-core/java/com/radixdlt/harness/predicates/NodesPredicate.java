@@ -98,14 +98,15 @@ public final class NodesPredicate {
     return allNodesMatch(NodePredicate.atOrOverEpoch(epoch));
   }
 
-  public static Predicate<List<Injector>> allCommittedTransaction(
+  public static Predicate<List<Injector>> allCommittedTransactionSuccess(
       RawNotarizedTransaction transaction) {
-    return allNodesMatch(NodePredicate.committedUserTransaction(transaction));
+    return allNodesMatch(NodePredicate.committedUserTransaction(transaction, true, true));
   }
 
-  public static Predicate<List<Injector>> anyCommittedTransaction(
+  public static Predicate<List<Injector>> anyCommittedTransactionSuccess(
       RawNotarizedTransaction transaction) {
-    return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction));
+    return n ->
+        n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction, true, true));
   }
 
   public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {

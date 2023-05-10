@@ -99,13 +99,13 @@ public class LedgerTransaction {
   }
 
    /**
-   * The hex-encoded full ledger transaction payload
+   * The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
    * @return payloadHex
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded full ledger transaction payload")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getPayloadHex() {
     return payloadHex;
@@ -113,7 +113,7 @@ public class LedgerTransaction {
 
 
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPayloadHex(String payloadHex) {
     this.payloadHex = payloadHex;
   }

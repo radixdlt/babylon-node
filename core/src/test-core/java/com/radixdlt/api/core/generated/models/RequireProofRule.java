@@ -29,11 +29,11 @@ import com.radixdlt.api.core.generated.models.AllOfProofRule;
 import com.radixdlt.api.core.generated.models.AmountOfProofRule;
 import com.radixdlt.api.core.generated.models.AnyOfProofRule;
 import com.radixdlt.api.core.generated.models.CountOfProofRule;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptor;
 import com.radixdlt.api.core.generated.models.ProofRule;
 import com.radixdlt.api.core.generated.models.ProofRuleType;
 import com.radixdlt.api.core.generated.models.RequireProofRule;
 import com.radixdlt.api.core.generated.models.RequireProofRuleAllOf;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -44,7 +44,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * RequireProofRule
  */
 @JsonPropertyOrder({
-  RequireProofRule.JSON_PROPERTY_RESOURCE
+  RequireProofRule.JSON_PROPERTY_REQUIREMENT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -61,35 +61,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class RequireProofRule extends ProofRule {
-  public static final String JSON_PROPERTY_RESOURCE = "resource";
-  private DynamicResourceDescriptor resource;
+  public static final String JSON_PROPERTY_REQUIREMENT = "requirement";
+  private Requirement requirement;
 
   public RequireProofRule() { 
   }
 
-  public RequireProofRule resource(DynamicResourceDescriptor resource) {
-    this.resource = resource;
+  public RequireProofRule requirement(Requirement requirement) {
+    this.requirement = requirement;
     return this;
   }
 
    /**
-   * Get resource
-   * @return resource
+   * Get requirement
+   * @return requirement
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE)
+  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptor getResource() {
-    return resource;
+  public Requirement getRequirement() {
+    return requirement;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE)
+  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResource(DynamicResourceDescriptor resource) {
-    this.resource = resource;
+  public void setRequirement(Requirement requirement) {
+    this.requirement = requirement;
   }
 
 
@@ -105,13 +105,13 @@ public class RequireProofRule extends ProofRule {
       return false;
     }
     RequireProofRule requireProofRule = (RequireProofRule) o;
-    return Objects.equals(this.resource, requireProofRule.resource) &&
+    return Objects.equals(this.requirement, requireProofRule.requirement) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resource, super.hashCode());
+    return Objects.hash(requirement, super.hashCode());
   }
 
   @Override
@@ -119,7 +119,7 @@ public class RequireProofRule extends ProofRule {
     StringBuilder sb = new StringBuilder();
     sb.append("class RequireProofRule {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    resource: ").append(toIndentedString(resource)).append("\n");
+    sb.append("    requirement: ").append(toIndentedString(requirement)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceAmount;
-import com.radixdlt.api.core.generated.models.StateComponentDescendentId;
+import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
+import com.radixdlt.api.core.generated.models.VaultBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -38,8 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateAccessControllerResponse.JSON_PROPERTY_STATE,
   StateAccessControllerResponse.JSON_PROPERTY_ACCESS_RULES,
-  StateAccessControllerResponse.JSON_PROPERTY_STATE_OWNED_VAULTS,
-  StateAccessControllerResponse.JSON_PROPERTY_DESCENDENT_IDS
+  StateAccessControllerResponse.JSON_PROPERTY_VAULTS,
+  StateAccessControllerResponse.JSON_PROPERTY_DESCENDENT_NODES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateAccessControllerResponse {
@@ -49,11 +49,11 @@ public class StateAccessControllerResponse {
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
 
-  public static final String JSON_PROPERTY_STATE_OWNED_VAULTS = "state_owned_vaults";
-  private List<ResourceAmount> stateOwnedVaults = new ArrayList<>();
+  public static final String JSON_PROPERTY_VAULTS = "vaults";
+  private List<VaultBalance> vaults = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_DESCENDENT_IDS = "descendent_ids";
-  private List<StateComponentDescendentId> descendentIds = new ArrayList<>();
+  public static final String JSON_PROPERTY_DESCENDENT_NODES = "descendent_nodes";
+  private List<StateComponentDescendentNode> descendentNodes = new ArrayList<>();
 
   public StateAccessControllerResponse() { 
   }
@@ -110,65 +110,65 @@ public class StateAccessControllerResponse {
   }
 
 
-  public StateAccessControllerResponse stateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
-    this.stateOwnedVaults = stateOwnedVaults;
+  public StateAccessControllerResponse vaults(List<VaultBalance> vaults) {
+    this.vaults = vaults;
     return this;
   }
 
-  public StateAccessControllerResponse addStateOwnedVaultsItem(ResourceAmount stateOwnedVaultsItem) {
-    this.stateOwnedVaults.add(stateOwnedVaultsItem);
+  public StateAccessControllerResponse addVaultsItem(VaultBalance vaultsItem) {
+    this.vaults.add(vaultsItem);
     return this;
   }
 
    /**
    * Any vaults owned directly or indirectly by the component
-   * @return stateOwnedVaults
+   * @return vaults
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Any vaults owned directly or indirectly by the component")
-  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ResourceAmount> getStateOwnedVaults() {
-    return stateOwnedVaults;
+  public List<VaultBalance> getVaults() {
+    return vaults;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
-    this.stateOwnedVaults = stateOwnedVaults;
+  public void setVaults(List<VaultBalance> vaults) {
+    this.vaults = vaults;
   }
 
 
-  public StateAccessControllerResponse descendentIds(List<StateComponentDescendentId> descendentIds) {
-    this.descendentIds = descendentIds;
+  public StateAccessControllerResponse descendentNodes(List<StateComponentDescendentNode> descendentNodes) {
+    this.descendentNodes = descendentNodes;
     return this;
   }
 
-  public StateAccessControllerResponse addDescendentIdsItem(StateComponentDescendentId descendentIdsItem) {
-    this.descendentIds.add(descendentIdsItem);
+  public StateAccessControllerResponse addDescendentNodesItem(StateComponentDescendentNode descendentNodesItem) {
+    this.descendentNodes.add(descendentNodesItem);
     return this;
   }
 
    /**
    * Any descendent nodes owned directly or indirectly by the component
-   * @return descendentIds
+   * @return descendentNodes
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Any descendent nodes owned directly or indirectly by the component")
-  @JsonProperty(JSON_PROPERTY_DESCENDENT_IDS)
+  @JsonProperty(JSON_PROPERTY_DESCENDENT_NODES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<StateComponentDescendentId> getDescendentIds() {
-    return descendentIds;
+  public List<StateComponentDescendentNode> getDescendentNodes() {
+    return descendentNodes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DESCENDENT_IDS)
+  @JsonProperty(JSON_PROPERTY_DESCENDENT_NODES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDescendentIds(List<StateComponentDescendentId> descendentIds) {
-    this.descendentIds = descendentIds;
+  public void setDescendentNodes(List<StateComponentDescendentNode> descendentNodes) {
+    this.descendentNodes = descendentNodes;
   }
 
 
@@ -186,13 +186,13 @@ public class StateAccessControllerResponse {
     StateAccessControllerResponse stateAccessControllerResponse = (StateAccessControllerResponse) o;
     return Objects.equals(this.state, stateAccessControllerResponse.state) &&
         Objects.equals(this.accessRules, stateAccessControllerResponse.accessRules) &&
-        Objects.equals(this.stateOwnedVaults, stateAccessControllerResponse.stateOwnedVaults) &&
-        Objects.equals(this.descendentIds, stateAccessControllerResponse.descendentIds);
+        Objects.equals(this.vaults, stateAccessControllerResponse.vaults) &&
+        Objects.equals(this.descendentNodes, stateAccessControllerResponse.descendentNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, accessRules, stateOwnedVaults, descendentIds);
+    return Objects.hash(state, accessRules, vaults, descendentNodes);
   }
 
   @Override
@@ -201,8 +201,8 @@ public class StateAccessControllerResponse {
     sb.append("class StateAccessControllerResponse {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    stateOwnedVaults: ").append(toIndentedString(stateOwnedVaults)).append("\n");
-    sb.append("    descendentIds: ").append(toIndentedString(descendentIds)).append("\n");
+    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
+    sb.append("    descendentNodes: ").append(toIndentedString(descendentNodes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

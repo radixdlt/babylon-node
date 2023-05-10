@@ -1,7 +1,7 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{PackageOffset, SubstateOffset};
-use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENodeId};
+use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
+use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_package(
@@ -17,45 +17,25 @@ pub(crate) async fn handle_state_package(
 
     let database = state.database.read();
 
-    let package_info = {
-        let substate_offset = SubstateOffset::Package(PackageOffset::Info);
-        let loaded_substate = read_mandatory_substate(
+    let package_info: PackageInfoSubstate = read_optional_main_field_substate(
+        database.deref(),
+        package_address.as_node_id(),
+        &PackageField::Info.into(),
+    )
+    .ok_or_else(|| not_found_error("Package not found".to_string()))?;
+
+    let package_royalty: PackageRoyaltySubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        package_address.as_node_id(),
+        &PackageField::Royalty.into(),
+    )?;
+
+    let method_access_rules_substate: MethodAccessRulesSubstate =
+        read_mandatory_main_field_substate(
             database.deref(),
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
+            package_address.as_node_id(),
+            &AccessRulesField::AccessRules.into(),
         )?;
-        let PersistedSubstate::PackageInfo(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let package_royalty = {
-        let substate_offset = SubstateOffset::Package(PackageOffset::Royalty);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::PackageRoyalty(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let package_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
 
     Ok(models::StatePackageResponse {
         info: Some(to_api_package_info_substate(
@@ -66,9 +46,9 @@ pub(crate) async fn handle_state_package(
             &mapping_context,
             &package_royalty,
         )?),
-        access_rules: Some(to_api_access_rules_chain_substate(
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &package_access_rules,
+            &method_access_rules_substate,
         )?),
     })
     .map(Json)

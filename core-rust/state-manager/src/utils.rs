@@ -62,20 +62,21 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{Address, ComponentAddress};
+use radix_engine::types::GlobalAddress;
+use radix_engine_common::types::EntityType;
 
 pub trait IsAccountExt {
     fn is_account(&self) -> bool;
 }
 
-impl IsAccountExt for Address {
+impl IsAccountExt for GlobalAddress {
     fn is_account(&self) -> bool {
-        match self {
-            Address::Component(component_address) => matches!(
-                component_address,
-                ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
-                    | ComponentAddress::EddsaEd25519VirtualAccount(_)
-                    | ComponentAddress::Account(_)
+        match self.as_node_id().entity_type() {
+            Some(entity_type) => matches!(
+                entity_type,
+                EntityType::GlobalAccount
+                    | EntityType::GlobalVirtualSecp256k1Account
+                    | EntityType::GlobalVirtualEd25519Account
             ),
             _ => false,
         }

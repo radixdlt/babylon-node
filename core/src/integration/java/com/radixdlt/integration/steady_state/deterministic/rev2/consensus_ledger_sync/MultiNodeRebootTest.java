@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -85,7 +86,6 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
@@ -211,7 +211,7 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    TransactionBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createGenesisWithNumValidators(
                         numValidators, Decimal.of(1), this.roundsPerEpoch),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(

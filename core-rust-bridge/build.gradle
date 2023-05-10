@@ -74,17 +74,40 @@ dependencies {
 }
 
 compileJava {
-    // See log levels here: https://docs.gradle.org/current/userguide/logging.html
-    // We need to choose a level which outputs for a normal build in IntelliJ, but it doesn't output in quiet mode
-    // This prevents it being output by the jobs EG generateDevUniverse run in quiet mode. Hence, lifecycle.
-    // Side note: The method of using stdout for generateDevUniverse and friends should really be changed.
     if (System.getenv("SKIP_NATIVE_RUST_BUILD") == "TRUE") {
-        logger.lifecycle("As SKIP_NATIVE_RUST_BUILD=TRUE, the native core-rust build is being skipped at this point.")
+        dependsOn(":core-rust-bridge:skipCompileRust")
     } else {
-        logger.lifecycle("A native debug rust build required for the node to run natively will be run.")
-        logger.lifecycle("This can be skipped with SKIP_NATIVE_RUST_BUILD=TRUE, if the rust is being built separately.")
-        dependsOn(":core-rust:buildRustDebug")
+        dependsOn(":core-rust-bridge:compileRust")
     }
+}
+
+tasks.register('compileRust') {
+    // We do this in this rather weird way in order to try to ensure that the
+    // compileRustMessage task occurs before the buildRustDebug task
+    dependsOn(":core-rust-bridge:compileRustMessage")
+    dependsOn(":core-rust:buildRustDebug")
+}
+
+tasks.register('compileRustMessage') {
+    doFirst {
+        // See log levels here: https://docs.gradle.org/current/userguide/logging.html
+        // We need to choose a level which outputs for a normal build in IntelliJ, but it doesn't output in quiet mode
+        // This prevents it being output by the jobs EG generateDevUniverse run in quiet mode. Hence, lifecycle.
+        // Side note: The method of using stdout for generateDevUniverse and friends should really be changed.
+        logger.lifecycle("A native debug rust build required for the node to run natively will now run.")
+        logger.lifecycle("This can be skipped with SKIP_NATIVE_RUST_BUILD=TRUE, if the rust is being built separately.")
+        logger.lifecycle("If this fails, be sure to install the rust/cargo toolchain as per /docs/development.")
+    }
+}
+
+tasks.register('skipCompileRust') {
+    doFirst {
+        logger.lifecycle("As SKIP_NATIVE_RUST_BUILD=TRUE, the native core-rust build is being skipped at this point.")
+    }
+}
+
+test {
+    dependsOn(":core-rust:runUnitTests")
 }
 
 jacocoTestReport {

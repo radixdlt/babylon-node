@@ -74,6 +74,7 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -86,7 +87,6 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.DatabaseFlags;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -128,13 +128,15 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var rustStateComputer = injector.getInstance(RustStateComputer.class);
     var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
+        GenesisBuilder.createGenesisWithNumValidators(
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     var accumulatorHash =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
-    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
+    var validTransaction =
+        REv2TestTransactions.constructValidRawTransaction(ScryptoConstants.FAUCET_ADDRESS, 0, 0);
 
     // Act
     var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
@@ -151,7 +153,7 @@ public class REv2StateComputerTest {
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
+        GenesisBuilder.createGenesisWithNumValidators(
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     var accumulatorHash =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))

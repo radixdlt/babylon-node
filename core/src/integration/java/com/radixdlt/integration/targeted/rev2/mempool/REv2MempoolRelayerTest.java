@@ -70,9 +70,9 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -83,19 +83,14 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
   private final int MEMPOOL_SIZE = 100;
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -110,7 +105,7 @@ public final class REv2MempoolRelayerTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -120,6 +115,7 @@ public final class REv2MempoolRelayerTest {
 
   @Test
   public void relayer_fills_mempool_of_all_nodes() {
+    final var transactionGenerator = new REV2TransactionGenerator();
     try (var test = createTest()) {
       test.startAllNodes();
 

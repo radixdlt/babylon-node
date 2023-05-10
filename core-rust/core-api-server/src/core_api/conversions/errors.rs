@@ -1,4 +1,5 @@
-use radix_engine::types::{AddressError, NonFungibleIdType};
+use radix_engine::types::NonFungibleIdType;
+use radix_engine_common::{address::EncodeBech32AddressError, types::PartitionNumber};
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
@@ -9,15 +10,20 @@ use crate::core_api::*;
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
-    UnsupportedSubstatePersisted {
+    SubstateKey {
+        entity_address: String,
+        partition_number: PartitionNumber,
+        substate_key: models::SubstateKey,
         message: String,
     },
-    UnknownNodeTypePersisted {
+    SubstateValue {
+        bytes: Vec<u8>,
         message: String,
     },
-    TransientSubstatePersisted {
+    InvalidMetadataKey {
         message: String,
     },
+    EntityTypeError,
     ScryptoValueDecode {
         decode_error: DecodeError,
         bytes: Vec<u8>,
@@ -32,6 +38,9 @@ pub enum MappingError {
     },
     InvalidManifest {
         message: String,
+    },
+    InvalidEntityAddress {
+        encode_error: EncodeBech32AddressError,
     },
     MismatchedSubstateId {
         message: String,
@@ -60,7 +69,7 @@ pub enum ExtractionError {
     InvalidPublicKey,
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
-    InvalidAddress(AddressError),
+    InvalidAddress,
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
     WrongNonFungibleIdType {
         expected: NonFungibleIdType,

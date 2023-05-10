@@ -65,7 +65,7 @@
 package com.radixdlt.api.core;
 
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -79,7 +79,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
 
@@ -104,7 +104,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       // Check the status response again
       var statusResponse2 =
@@ -160,7 +160,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
     try (var test = buildRunningServerTest(100)) {
-      var transaction = REv2TestTransactions.constructValidTransaction(2, 0);
+      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 2, 0);
       var rawTransaction = transaction.constructRawTransaction();
       var intentHash = transaction.hashedIntent().asBytes();
 
@@ -190,7 +190,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
       assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
       assertThat(rejectedDetails.getErrorMessage())
-          .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 1 }");
+          .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 0 }");
 
       // Now we run consensus up to epoch 2
       test.runUntilState(allAtOrOverEpoch(2), 10000);
@@ -205,7 +205,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(response2.getDuplicate()).isFalse();
 
       // And get committed...
-      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
 
       // Check the status response again to check it's been marked as committed
       var statusResponse2 =

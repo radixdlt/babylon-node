@@ -1,36 +1,30 @@
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{RENodeId, SubstateId, SubstateOffset};
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine::types::*;
 
+use radix_engine_interface::api::CollectionIndex;
+use radix_engine_queries::typed_substate_layout::AccountVaultIndexEntry;
 use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
 use std::io::Write;
 
 use super::{MappingError, ResponseError};
+use radix_engine::track::db_key_mapper::*;
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate(
+pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
-    renode_id: RENodeId,
-    node_module_id: NodeModuleId,
-    substate_offset: &SubstateOffset,
-) -> Result<PersistedSubstate, ResponseError<()>> {
-    let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
-    read_mandatory_substate_from_id(database, &substate_id)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate_from_id(
-    database: &StateManagerDatabase,
-    substate_id: &SubstateId,
-) -> Result<PersistedSubstate, ResponseError<()>> {
-    read_optional_substate_from_id(database, substate_id).ok_or_else(
+    node_id: &NodeId,
+    substate_key: &SubstateKey,
+) -> Result<D, ResponseError<()>> {
+    read_optional_substate(
+        database,
+        node_id,
+        OBJECT_BASE_PARTITION,
+        substate_key
+    ).ok_or_else(
         || {
-            let SubstateId(renode_id, node_module_id, substate_offset) = substate_id;
             MappingError::MismatchedSubstateId {
                 message: format!(
-                    "Substate {substate_offset:?} not found under RE node {renode_id:?} and module {node_module_id:?}"
+                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and partition number {OBJECT_BASE_PARTITION:?}"
                 ),
             }
             .into()
@@ -39,30 +33,76 @@ pub(crate) fn read_mandatory_substate_from_id(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_substate(
+pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
-    renode_id: RENodeId,
-    node_module_id: NodeModuleId,
-    substate_offset: &SubstateOffset,
-) -> Option<PersistedSubstate> {
-    let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
-    read_optional_substate_from_id(database, &substate_id)
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<D, ResponseError<()>> {
+    read_optional_substate(
+        database,
+        node_id,
+        partition_number,
+        substate_key
+    ).ok_or_else(
+        || {
+            MappingError::MismatchedSubstateId {
+                message: format!(
+                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and partition number {partition_number:?}"
+                ),
+            }
+            .into()
+        },
+    )
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_substate_from_id(
+pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
-    substate_id: &SubstateId,
-) -> Option<PersistedSubstate> {
-    database.get_substate(substate_id).map(|o| o.substate)
+    node_id: &NodeId,
+    substate_key: &SubstateKey,
+) -> Option<D> {
+    read_optional_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> ResponseError<()> {
-    MappingError::MismatchedSubstateId {
-        message: format!("{substate_offset:?} not of expected type"),
-    }
-    .into()
+pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    collection_index: CollectionIndex,
+    substate_key: &SubstateKey,
+) -> Option<D> {
+    // Note - the field partition (if it exists) takes the first partition number,
+    // the collections go after - so start at offset 1
+    // (assuming there is a tuple partition on the node...)
+    let partition_number = OBJECT_BASE_PARTITION
+        .at_offset(PartitionOffset(1 + collection_index))
+        .unwrap();
+    database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
+}
+
+#[tracing::instrument(skip_all)]
+pub(crate) fn read_optional_account_vault_substate(
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    substate_key: &SubstateKey,
+) -> Option<AccountVaultIndexEntry> {
+    // Note - there is no tuple at present, so the account vault collection is at OBJECT_BASE_PARTITION
+    database.get_mapped::<SpreadPrefixKeyMapper, AccountVaultIndexEntry>(
+        node_id,
+        OBJECT_BASE_PARTITION,
+        substate_key,
+    )
+}
+
+#[tracing::instrument(skip_all)]
+pub(crate) fn read_optional_substate<D: ScryptoDecode>(
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Option<D> {
+    database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
 }
 
 struct ByteCountWriter<'a> {

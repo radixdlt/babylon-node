@@ -28,72 +28,73 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * SborData
+ * Various representations of an SBOR payload. Some endpoints may allow opting in/out of each representation. 
  */
+@ApiModel(description = "Various representations of an SBOR payload. Some endpoints may allow opting in/out of each representation. ")
 @JsonPropertyOrder({
-  SborData.JSON_PROPERTY_DATA_HEX,
-  SborData.JSON_PROPERTY_DATA_JSON
+  SborData.JSON_PROPERTY_HEX,
+  SborData.JSON_PROPERTY_PROGRAMMATIC_JSON
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SborData {
-  public static final String JSON_PROPERTY_DATA_HEX = "data_hex";
-  private String dataHex;
+  public static final String JSON_PROPERTY_HEX = "hex";
+  private String hex;
 
-  public static final String JSON_PROPERTY_DATA_JSON = "data_json";
-  private Object dataJson = null;
+  public static final String JSON_PROPERTY_PROGRAMMATIC_JSON = "programmatic_json";
+  private Object programmaticJson = null;
 
   public SborData() { 
   }
 
-  public SborData dataHex(String dataHex) {
-    this.dataHex = dataHex;
+  public SborData hex(String hex) {
+    this.hex = hex;
     return this;
   }
 
    /**
    * The hex-encoded, raw SBOR-encoded data
-   * @return dataHex
+   * @return hex
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded, raw SBOR-encoded data")
-  @JsonProperty(JSON_PROPERTY_DATA_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded, raw SBOR-encoded data")
+  @JsonProperty(JSON_PROPERTY_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getDataHex() {
-    return dataHex;
+  public String getHex() {
+    return hex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataHex(String dataHex) {
-    this.dataHex = dataHex;
+  @JsonProperty(JSON_PROPERTY_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setHex(String hex) {
+    this.hex = hex;
   }
 
 
-  public SborData dataJson(Object dataJson) {
-    this.dataJson = dataJson;
+  public SborData programmaticJson(Object programmaticJson) {
+    this.programmaticJson = programmaticJson;
     return this;
   }
 
    /**
-   * An untyped JSON body representing the content of the SBOR data
-   * @return dataJson
+   * The (untyped) unannotated programmatic SBOR JSON
+   * @return programmaticJson
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(required = true, value = "An untyped JSON body representing the content of the SBOR data")
-  @JsonProperty(JSON_PROPERTY_DATA_JSON)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @ApiModelProperty(value = "The (untyped) unannotated programmatic SBOR JSON")
+  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Object getDataJson() {
-    return dataJson;
+  public Object getProgrammaticJson() {
+    return programmaticJson;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_JSON)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataJson(Object dataJson) {
-    this.dataJson = dataJson;
+  @JsonProperty(JSON_PROPERTY_PROGRAMMATIC_JSON)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setProgrammaticJson(Object programmaticJson) {
+    this.programmaticJson = programmaticJson;
   }
 
 
@@ -109,21 +110,21 @@ public class SborData {
       return false;
     }
     SborData sborData = (SborData) o;
-    return Objects.equals(this.dataHex, sborData.dataHex) &&
-        Objects.equals(this.dataJson, sborData.dataJson);
+    return Objects.equals(this.hex, sborData.hex) &&
+        Objects.equals(this.programmaticJson, sborData.programmaticJson);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataHex, dataJson);
+    return Objects.hash(hex, programmaticJson);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class SborData {\n");
-    sb.append("    dataHex: ").append(toIndentedString(dataHex)).append("\n");
-    sb.append("    dataJson: ").append(toIndentedString(dataJson)).append("\n");
+    sb.append("    hex: ").append(toIndentedString(hex)).append("\n");
+    sb.append("    programmaticJson: ").append(toIndentedString(programmaticJson)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -202,9 +202,6 @@ impl JNIStateManager {
             cached_commitability_validator,
             &metric_registry,
         ));
-        // TODO(resolve during code review): the previewer is not needed by StateManager itself; it
-        // is stored in JniStateManager only to be transferred to the CoreApiState - is there a more
-        // elegant way here than Arc?
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
             database.clone(),

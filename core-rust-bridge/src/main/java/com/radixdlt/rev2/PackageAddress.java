@@ -76,13 +76,13 @@ public record PackageAddress(byte[] value) {
         PackageAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ADDRESS,
+                TypeId.TYPE_CUSTOM_REFERENCE,
                 BYTE_LENGTH,
                 PackageAddress::value,
                 PackageAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  private static final int BYTE_LENGTH = 30;
 
   public static PackageAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {

@@ -1,7 +1,7 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ClockOffset, EpochManagerOffset, SubstateOffset, CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
+use radix_engine::blueprints::clock::ClockSubstate;
+use radix_engine::blueprints::epoch_manager::EpochManagerSubstate;
+use radix_engine::types::*;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -14,33 +14,18 @@ pub(crate) async fn handle_lts_transaction_construction(
 
     let database = state.database.read();
 
-    let epoch_manager_substate = {
-        let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::EpochManager(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let epoch_manager_substate: EpochManagerSubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        EPOCH_MANAGER.as_node_id(),
+        &EpochManagerField::EpochManager.into(),
+    )?;
 
-    let clock_substate = {
-        let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(CLOCK.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::CurrentTimeRoundedToMinutes(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
+    let clock_substate: ClockSubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        CLOCK.as_node_id(),
+        // TODO - change this to a better resolution of time when we have it
+        &ClockField::CurrentTimeRoundedToMinutes.into(),
+    )?;
 
     Ok(models::LtsTransactionConstructionResponse {
         current_epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,

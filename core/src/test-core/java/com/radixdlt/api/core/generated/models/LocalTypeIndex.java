@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   LocalTypeIndex.JSON_PROPERTY_KIND,
-  LocalTypeIndex.JSON_PROPERTY_INDEX
+  LocalTypeIndex.JSON_PROPERTY_INDEX,
+  LocalTypeIndex.JSON_PROPERTY_AS_SBOR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LocalTypeIndex {
@@ -76,6 +78,9 @@ public class LocalTypeIndex {
 
   public static final String JSON_PROPERTY_INDEX = "index";
   private Integer index;
+
+  public static final String JSON_PROPERTY_AS_SBOR = "as_sbor";
+  private SborData asSbor;
 
   public LocalTypeIndex() { 
   }
@@ -132,6 +137,32 @@ public class LocalTypeIndex {
   }
 
 
+  public LocalTypeIndex asSbor(SborData asSbor) {
+    this.asSbor = asSbor;
+    return this;
+  }
+
+   /**
+   * Get asSbor
+   * @return asSbor
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AS_SBOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public SborData getAsSbor() {
+    return asSbor;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AS_SBOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAsSbor(SborData asSbor) {
+    this.asSbor = asSbor;
+  }
+
+
   /**
    * Return true if this LocalTypeIndex object is equal to o.
    */
@@ -145,12 +176,13 @@ public class LocalTypeIndex {
     }
     LocalTypeIndex localTypeIndex = (LocalTypeIndex) o;
     return Objects.equals(this.kind, localTypeIndex.kind) &&
-        Objects.equals(this.index, localTypeIndex.index);
+        Objects.equals(this.index, localTypeIndex.index) &&
+        Objects.equals(this.asSbor, localTypeIndex.asSbor);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(kind, index);
+    return Objects.hash(kind, index, asSbor);
   }
 
   @Override
@@ -159,6 +191,7 @@ public class LocalTypeIndex {
     sb.append("class LocalTypeIndex {\n");
     sb.append("    kind: ").append(toIndentedString(kind)).append("\n");
     sb.append("    index: ").append(toIndentedString(index)).append("\n");
+    sb.append("    asSbor: ").append(toIndentedString(asSbor)).append("\n");
     sb.append("}");
     return sb.toString();
   }

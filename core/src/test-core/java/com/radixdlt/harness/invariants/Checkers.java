@@ -118,14 +118,18 @@ public final class Checkers {
   }
 
   public static void assertOneTransactionCommittedOutOf(
-      List<Injector> nodeInjectors, List<RawNotarizedTransaction> transactions) {
+      List<Injector> nodeInjectors,
+      List<RawNotarizedTransaction> transactions,
+      boolean allowMoreCommittedIfFailed) {
     nodeInjectors.forEach(
         injector -> {
           var numCommitted =
               transactions.stream()
                   .filter(
                       transaction ->
-                          NodePredicate.committedUserTransaction(transaction).test(injector))
+                          NodePredicate.committedUserTransaction(
+                                  transaction, allowMoreCommittedIfFailed, false)
+                              .test(injector))
                   .count();
           assertThat(numCommitted).isEqualTo(1);
         });

@@ -5,6 +5,7 @@
         <map>
           <entry key="RADIXDLT_HOST_IP_ADDRESS" value="127.0.0.1" />
           <entry key="RADIXDLT_NODE_KEY" value="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=" />
+          <entry key="RUST_BACKTRACE" value="1" />
         </map>
       </option>
       <option name="executionName" />
@@ -24,6 +25,7 @@
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
     <DebugAllEnabled>false</DebugAllEnabled>
+    <ForceTestExec>false</ForceTestExec>
     <method v="2" />
   </configuration>
 </component>

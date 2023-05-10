@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
@@ -75,6 +75,7 @@ import java.util.List;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
+
   @Test
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
@@ -89,7 +90,8 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
               .getTransactions();
 
       var rawTransaction =
-          REv2TestTransactions.constructValidTransaction(0, 0).constructRawTransaction();
+          REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0)
+              .constructRawTransaction();
 
       // Submit transaction
       var response =
@@ -101,7 +103,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       assertThat(response.getDuplicate()).isFalse();
 
-      test.runUntilState(allCommittedTransaction(rawTransaction), 100);
+      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 100);
 
       var newTransactions =
           getStreamApi()
