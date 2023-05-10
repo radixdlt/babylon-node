@@ -8,35 +8,13 @@ on:
         required: true
         type: string
   pull_request:
-  release:
-    types: [published]
+    paths:
+      - 'cli-tools/src/**'
 
 jobs:
-
-  dockerhub-keygen-docker:
-    if: github.event_name == 'release'
-    name: Build Keygen Image Dockerhub
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-    with:
-      environment: release
-      runs_on: ubuntu-latest
-      image_registry: "docker.io"
-      image_organization: "radixdlt"
-      image_name: "keygen"
-      tag: ${{ github.event.release.tag_name }}
-      context: "."
-      dockerfile: "./Dockerfile"
-      target: "keygen"
-      platforms: "linux/amd64"
-      enable_dockerhub: "true"
-    secrets:
-      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
-
   gcr-keygen-docker:
     if: github.event_name == 'workflow_dispatch'
-    name: Build Keygen Image
+    name: Dispatch - GCR
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -51,16 +29,41 @@ jobs:
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+  dockerhub-keygen-docker:
+    if: github.event_name == 'workflow_dispatch'
+    name: Dispatch - Dockerhub
+    needs: gcr-keygen-docker
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      environment: release
+      runs_on: ubuntu-latest
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "keygen"
+      tag: ${{ inputs.image_tag }}
+      context: "."
+      dockerfile: "./Dockerfile"
+      target: "keygen"
+      platforms: "linux/amd64"
+      enable_dockerhub: "true"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
   gcr-keygen-docker-test:
-    name: Build Keygen Image
+    if: github.event_name == 'pull_request'
+    name: PR
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
       image_registry: "eu.gcr.io"
       image_organization: "dev-container-repo"
       image_name: "keygen"
-      tag: "test"
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
       context: "."
       dockerfile: "./Dockerfile"
       target: "keygen"
@@ -68,4 +71,3 @@ jobs:
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      
