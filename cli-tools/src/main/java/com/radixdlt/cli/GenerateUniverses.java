@@ -151,3 +151,4 @@ public final class GenerateUniverses {
     formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
   }
 }
+
