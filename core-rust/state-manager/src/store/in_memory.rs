@@ -84,7 +84,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{btree_set, BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -498,20 +498,42 @@ impl AccountChangeIndexExtension for InMemoryStore {
             );
         }
     }
+}
 
-    fn get_state_versions_for_account(
+pub struct InMemoryAccountChangeIndexIterator<'a> {
+    iterator: Option<btree_set::Range<'a, u64>>,
+}
+
+impl<'a> InMemoryAccountChangeIndexIterator<'a> {
+    fn new(from_state_version: u64, account: Address, store: &'a InMemoryStore) -> Self {
+        let iterator = store
+            .account_change_index_set
+            .get(&account)
+            .map(|state_versions| state_versions.range((Included(from_state_version), Unbounded)));
+
+        Self { iterator }
+    }
+}
+
+impl Iterator for InMemoryAccountChangeIndexIterator<'_> {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<u64> {
+        match &mut self.iterator {
+            None => None,
+            Some(iterator) => iterator.next().cloned(),
+        }
+    }
+}
+
+impl IterableAccountChangeIndex for InMemoryStore {
+    type AccountChangeIndexIterator<'a> = InMemoryAccountChangeIndexIterator<'a>;
+
+    fn get_state_versions_for_account_iter(
         &self,
         account: Address,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<u64> {
-        match self.account_change_index_set.get(&account) {
-            None => Vec::new(),
-            Some(state_versions) => state_versions
-                .range((Included(start_state_version_inclusive), Unbounded))
-                .take(limit)
-                .cloned()
-                .collect(),
-        }
+        from_state_version: u64,
+    ) -> Self::AccountChangeIndexIterator<'_> {
+        InMemoryAccountChangeIndexIterator::new(from_state_version, account, self)
     }
 }

@@ -81,8 +81,13 @@ use radix_engine::types::*;
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
-use super::in_memory::InMemoryCommittedTransactionBundleIterator;
-use super::rocks_db::RocksDBCommittedTransactionBundleIterator;
+use super::in_memory::{
+    InMemoryAccountChangeIndexIterator, InMemoryCommittedTransactionBundleIterator,
+};
+use super::rocks_db::{
+    RocksDBAccountChangeIndexIterator, RocksDBCommittedTransactionBundleIterator,
+};
+use super::traits::extensions::IterableAccountChangeIndex;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseBackendConfig {
@@ -177,6 +182,46 @@ impl IterableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 StateManagerDatabaseCommittedTransactionBundleIterator::RocksDB(
                     store.get_committed_transaction_bundle_iter(from_state_version),
+                )
+            }
+        }
+    }
+}
+
+#[allow(clippy::large_enum_variant)]
+pub enum StateManagerDatabaseAccountChangeIndexIterator<'a> {
+    InMemory(InMemoryAccountChangeIndexIterator<'a>),
+    RocksDB(RocksDBAccountChangeIndexIterator<'a>),
+}
+
+impl Iterator for StateManagerDatabaseAccountChangeIndexIterator<'_> {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            StateManagerDatabaseAccountChangeIndexIterator::InMemory(iterator) => iterator.next(),
+            StateManagerDatabaseAccountChangeIndexIterator::RocksDB(iterator) => iterator.next(),
+        }
+    }
+}
+
+impl IterableAccountChangeIndex for StateManagerDatabase {
+    type AccountChangeIndexIterator<'a> = StateManagerDatabaseAccountChangeIndexIterator<'a>;
+
+    fn get_state_versions_for_account_iter(
+        &self,
+        account: Address,
+        from_state_version: u64,
+    ) -> Self::AccountChangeIndexIterator<'_> {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                StateManagerDatabaseAccountChangeIndexIterator::InMemory(
+                    store.get_state_versions_for_account_iter(account, from_state_version),
+                )
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                StateManagerDatabaseAccountChangeIndexIterator::RocksDB(
+                    store.get_state_versions_for_account_iter(account, from_state_version),
                 )
             }
         }

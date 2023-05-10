@@ -340,12 +340,17 @@ pub mod extensions {
         fn account_change_index_last_processed_state_version(&self) -> u64;
 
         fn catchup_account_change_index(&mut self);
+    }
 
-        fn get_state_versions_for_account(
+    pub trait IterableAccountChangeIndex {
+        type AccountChangeIndexIterator<'a>: Iterator<Item = u64>
+        where
+            Self: 'a;
+
+        fn get_state_versions_for_account_iter(
             &self,
             account: Address,
-            start_state_version_inclusive: u64,
-            limit: usize,
-        ) -> Vec<u64>;
+            from_state_version: u64,
+        ) -> Self::AccountChangeIndexIterator<'_>;
     }
 }

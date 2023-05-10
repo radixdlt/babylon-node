@@ -522,7 +522,7 @@ pub struct RocksDBCommittedTransactionBundleIterator<'a> {
 impl<'a> RocksDBCommittedTransactionBundleIterator<'a> {
     fn new(from_state_version: u64, store: &'a RocksDBStore) -> Self {
         let start_state_version_bytes = from_state_version.to_be_bytes();
-        RocksDBCommittedTransactionBundleIterator {
+        Self {
             state_version: from_state_version,
             txns_iter: store.db.iterator_cf(
                 store.cf_handle(&TxnByStateVersion),
@@ -1110,42 +1110,56 @@ impl AccountChangeIndexExtension for RocksDBStore {
 
         info!("Account Change Index catchup done!");
     }
+}
 
-    fn get_state_versions_for_account(
-        &self,
-        account: Address,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<u64> {
+pub struct RocksDBAccountChangeIndexIterator<'a> {
+    account_bytes: Vec<u8>,
+    account_change_iter: DBIteratorWithThreadMode<'a, DB>,
+}
+
+impl<'a> RocksDBAccountChangeIndexIterator<'a> {
+    fn new(from_state_version: u64, account: Address, store: &'a RocksDBStore) -> Self {
         let mut key = account.to_vec();
-        key.extend(start_state_version_inclusive.to_be_bytes());
+        key.extend(from_state_version.to_be_bytes());
+        Self {
+            account_bytes: account.to_vec(),
+            account_change_iter: store.db.iterator_cf(
+                store.cf_handle(&AccountChangeStateVersions),
+                IteratorMode::From(&key, Direction::Forward),
+            ),
+        }
+    }
+}
 
-        let account_bytes = account.to_vec();
+impl Iterator for RocksDBAccountChangeIndexIterator<'_> {
+    type Item = u64;
 
-        let mut account_change_iter = self.db.iterator_cf(
-            self.cf_handle(&AccountChangeStateVersions),
-            IteratorMode::From(&key, Direction::Forward),
-        );
-
-        let mut results = Vec::new();
-        while results.len() < limit {
-            match account_change_iter.next() {
-                Some(entry) => {
-                    let (key, _value) = entry.unwrap();
-                    let (address_bytes, state_version_bytes) =
-                        key.split_at(key.len() - size_of::<u64>());
-                    let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
-                    if address_bytes != account_bytes {
-                        break;
-                    }
-                    results.push(state_version);
-                }
-                None => {
-                    break;
+    fn next(&mut self) -> Option<u64> {
+        match self.account_change_iter.next() {
+            Some(entry) => {
+                let (key, _value) = entry.unwrap();
+                let (address_bytes, state_version_bytes) =
+                    key.split_at(key.len() - size_of::<u64>());
+                let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
+                if address_bytes != self.account_bytes {
+                    None
+                } else {
+                    Some(state_version)
                 }
             }
+            None => None,
         }
+    }
+}
 
-        results
+impl IterableAccountChangeIndex for RocksDBStore {
+    type AccountChangeIndexIterator<'a> = RocksDBAccountChangeIndexIterator<'a>;
+
+    fn get_state_versions_for_account_iter(
+        &self,
+        account: Address,
+        from_state_version: u64,
+    ) -> Self::AccountChangeIndexIterator<'_> {
+        RocksDBAccountChangeIndexIterator::new(from_state_version, account, self)
     }
 }
