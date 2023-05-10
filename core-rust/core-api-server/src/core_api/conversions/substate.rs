@@ -519,10 +519,7 @@ pub fn to_api_proof_rule(
 ) -> Result<models::ProofRule, MappingError> {
     Ok(match proof_rule {
         ProofRule::Require(resource_or_non_fungible) => models::ProofRule::RequireProofRule {
-            resource_or_non_fungible: Box::new(to_api_resource_or_non_fungible(
-                context,
-                resource_or_non_fungible,
-            )?),
+            requirement: Box::new(to_api_requirement(context, resource_or_non_fungible)?),
         },
         ProofRule::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
             amount: to_api_decimal(amount),
@@ -545,34 +542,31 @@ pub fn to_api_proof_rule(
 
 pub fn to_api_resource_or_non_fungible_list(
     context: &MappingContext,
-    resource_or_non_fungible_list: &[ResourceOrNonFungible],
-) -> Result<Vec<models::ResourceOrNonFungible>, MappingError> {
+    requirement_list: &[ResourceOrNonFungible],
+) -> Result<Vec<models::Requirement>, MappingError> {
     let mut res = Vec::new();
-    for resource_or_non_fungible in resource_or_non_fungible_list.iter() {
-        res.push(to_api_resource_or_non_fungible(
-            context,
-            resource_or_non_fungible,
-        )?);
+    for resource_or_non_fungible in requirement_list.iter() {
+        res.push(to_api_requirement(context, resource_or_non_fungible)?);
     }
     Ok(res)
 }
 
-pub fn to_api_resource_or_non_fungible(
+pub fn to_api_requirement(
     context: &MappingContext,
-    resource_or_non_fungible: &ResourceOrNonFungible,
-) -> Result<models::ResourceOrNonFungible, MappingError> {
-    Ok(match resource_or_non_fungible {
-        ResourceOrNonFungible::Resource(resource_address) => models::ResourceOrNonFungible {
-            resource: Some(to_api_resource_address(context, resource_address)?),
-            non_fungible: None,
-        },
+    requirement: &ResourceOrNonFungible,
+) -> Result<models::Requirement, MappingError> {
+    Ok(match requirement {
+        ResourceOrNonFungible::Resource(resource_address) => {
+            models::Requirement::ResourceRequirement {
+                resource: to_api_resource_address(context, resource_address)?,
+            }
+        }
         ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
-            models::ResourceOrNonFungible {
-                resource: None,
-                non_fungible: Some(Box::new(to_api_non_fungible_global_id(
+            models::Requirement::NonFungibleRequirement {
+                non_fungible: Box::new(to_api_non_fungible_global_id(
                     context,
                     non_fungible_global_id,
-                )?)),
+                )?),
             }
         }
     })

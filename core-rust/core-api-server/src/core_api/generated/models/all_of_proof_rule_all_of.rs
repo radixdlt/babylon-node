@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AllOfProofRuleAllOf {
     #[serde(rename = "list")]
-    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+    pub list: Vec<crate::core_api::generated::models::Requirement>,
 }
 
 impl AllOfProofRuleAllOf {
-    pub fn new(list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> AllOfProofRuleAllOf {
+    pub fn new(list: Vec<crate::core_api::generated::models::Requirement>) -> AllOfProofRuleAllOf {
         AllOfProofRuleAllOf {
             list,
         }

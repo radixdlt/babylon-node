@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RequireProofRule {
+pub struct ResourceRequirement {
     #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::ProofRuleType,
-    #[serde(rename = "requirement")]
-    pub requirement: Option<crate::core_api::generated::models::Requirement>, // Using Option permits Default trait; Will always be Some in normal use
+    pub _type: crate::core_api::generated::models::RequirementType,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "resource")]
+    pub resource: String,
 }
 
-impl RequireProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, requirement: crate::core_api::generated::models::Requirement) -> RequireProofRule {
-        RequireProofRule {
+impl ResourceRequirement {
+    pub fn new(_type: crate::core_api::generated::models::RequirementType, resource: String) -> ResourceRequirement {
+        ResourceRequirement {
             _type,
-            requirement: Option::Some(requirement),
+            resource,
         }
     }
 }

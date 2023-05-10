@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SortedKey {
-    #[serde(rename = "sorted")]
-    pub sorted: i32,
-    #[serde(rename = "key")]
-    pub key: String,
+pub struct NonFungibleRequirement {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::RequirementType,
+    #[serde(rename = "non_fungible")]
+    pub non_fungible: Box<crate::core_api::generated::models::NonFungibleGlobalId>,
 }
 
-impl SortedKey {
-    pub fn new(sorted: i32, key: String) -> SortedKey {
-        SortedKey {
-            sorted,
-            key,
+impl NonFungibleRequirement {
+    pub fn new(_type: crate::core_api::generated::models::RequirementType, non_fungible: crate::core_api::generated::models::NonFungibleGlobalId) -> NonFungibleRequirement {
+        NonFungibleRequirement {
+            _type,
+            non_fungible: Box::new(non_fungible),
         }
     }
 }

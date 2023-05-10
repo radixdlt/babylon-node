@@ -25,15 +25,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AllOfProofRule;
-import com.radixdlt.api.core.generated.models.AmountOfProofRule;
-import com.radixdlt.api.core.generated.models.AnyOfProofRule;
-import com.radixdlt.api.core.generated.models.CountOfProofRule;
-import com.radixdlt.api.core.generated.models.ProofRule;
-import com.radixdlt.api.core.generated.models.ProofRuleType;
-import com.radixdlt.api.core.generated.models.RequireProofRule;
-import com.radixdlt.api.core.generated.models.RequireProofRuleAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleGlobalId;
+import com.radixdlt.api.core.generated.models.NonFungibleRequirement;
+import com.radixdlt.api.core.generated.models.NonFungibleRequirementAllOf;
 import com.radixdlt.api.core.generated.models.Requirement;
+import com.radixdlt.api.core.generated.models.RequirementType;
+import com.radixdlt.api.core.generated.models.ResourceRequirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -41,10 +38,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * RequireProofRule
+ * NonFungibleRequirement
  */
 @JsonPropertyOrder({
-  RequireProofRule.JSON_PROPERTY_REQUIREMENT
+  NonFungibleRequirement.JSON_PROPERTY_NON_FUNGIBLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -53,48 +50,45 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = AllOfProofRule.class, name = "AllOf"),
-  @JsonSubTypes.Type(value = AmountOfProofRule.class, name = "AmountOf"),
-  @JsonSubTypes.Type(value = AnyOfProofRule.class, name = "AnyOf"),
-  @JsonSubTypes.Type(value = CountOfProofRule.class, name = "CountOf"),
-  @JsonSubTypes.Type(value = RequireProofRule.class, name = "Require"),
+  @JsonSubTypes.Type(value = NonFungibleRequirement.class, name = "NonFungible"),
+  @JsonSubTypes.Type(value = ResourceRequirement.class, name = "Resource"),
 })
 
-public class RequireProofRule extends ProofRule {
-  public static final String JSON_PROPERTY_REQUIREMENT = "requirement";
-  private Requirement requirement;
+public class NonFungibleRequirement extends Requirement {
+  public static final String JSON_PROPERTY_NON_FUNGIBLE = "non_fungible";
+  private NonFungibleGlobalId nonFungible;
 
-  public RequireProofRule() { 
+  public NonFungibleRequirement() { 
   }
 
-  public RequireProofRule requirement(Requirement requirement) {
-    this.requirement = requirement;
+  public NonFungibleRequirement nonFungible(NonFungibleGlobalId nonFungible) {
+    this.nonFungible = nonFungible;
     return this;
   }
 
    /**
-   * Get requirement
-   * @return requirement
+   * Get nonFungible
+   * @return nonFungible
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Requirement getRequirement() {
-    return requirement;
+  public NonFungibleGlobalId getNonFungible() {
+    return nonFungible;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRequirement(Requirement requirement) {
-    this.requirement = requirement;
+  public void setNonFungible(NonFungibleGlobalId nonFungible) {
+    this.nonFungible = nonFungible;
   }
 
 
   /**
-   * Return true if this RequireProofRule object is equal to o.
+   * Return true if this NonFungibleRequirement object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -104,22 +98,22 @@ public class RequireProofRule extends ProofRule {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RequireProofRule requireProofRule = (RequireProofRule) o;
-    return Objects.equals(this.requirement, requireProofRule.requirement) &&
+    NonFungibleRequirement nonFungibleRequirement = (NonFungibleRequirement) o;
+    return Objects.equals(this.nonFungible, nonFungibleRequirement.nonFungible) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(requirement, super.hashCode());
+    return Objects.hash(nonFungible, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RequireProofRule {\n");
+    sb.append("class NonFungibleRequirement {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    requirement: ").append(toIndentedString(requirement)).append("\n");
+    sb.append("    nonFungible: ").append(toIndentedString(nonFungible)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -138,13 +132,10 @@ public class RequireProofRule extends ProofRule {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AllOf", AllOfProofRule.class);
-  mappings.put("AmountOf", AmountOfProofRule.class);
-  mappings.put("AnyOf", AnyOfProofRule.class);
-  mappings.put("CountOf", CountOfProofRule.class);
-  mappings.put("Require", RequireProofRule.class);
-  mappings.put("RequireProofRule", RequireProofRule.class);
-  JSON.registerDiscriminator(RequireProofRule.class, "type", mappings);
+  mappings.put("NonFungible", NonFungibleRequirement.class);
+  mappings.put("Resource", ResourceRequirement.class);
+  mappings.put("NonFungibleRequirement", NonFungibleRequirement.class);
+  JSON.registerDiscriminator(NonFungibleRequirement.class, "type", mappings);
 }
 }
 

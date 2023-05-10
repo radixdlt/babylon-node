@@ -16,7 +16,7 @@ pub enum ProofRule {
     #[serde(rename="AllOf")]
     AllOfProofRule {
         #[serde(rename = "list")]
-        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+        list: Vec<crate::core_api::generated::models::Requirement>,
     },
     #[serde(rename="AmountOf")]
     AmountOfProofRule {
@@ -29,19 +29,19 @@ pub enum ProofRule {
     #[serde(rename="AnyOf")]
     AnyOfProofRule {
         #[serde(rename = "list")]
-        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+        list: Vec<crate::core_api::generated::models::Requirement>,
     },
     #[serde(rename="CountOf")]
     CountOfProofRule {
         #[serde(rename = "count")]
         count: i32,
         #[serde(rename = "list")]
-        list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+        list: Vec<crate::core_api::generated::models::Requirement>,
     },
     #[serde(rename="Require")]
     RequireProofRule {
-        #[serde(rename = "resource_or_non_fungible")]
-        resource_or_non_fungible: Box<crate::core_api::generated::models::ResourceOrNonFungible>,
+        #[serde(rename = "requirement")]
+        requirement: Box<crate::core_api::generated::models::Requirement>,
     },
 }
 

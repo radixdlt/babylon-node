@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RequireProofRule {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::ProofRuleType,
-    #[serde(rename = "requirement")]
-    pub requirement: Option<crate::core_api::generated::models::Requirement>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct NonFungibleRequirementAllOf {
+    #[serde(rename = "non_fungible")]
+    pub non_fungible: Box<crate::core_api::generated::models::NonFungibleGlobalId>,
 }
 
-impl RequireProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, requirement: crate::core_api::generated::models::Requirement) -> RequireProofRule {
-        RequireProofRule {
-            _type,
-            requirement: Option::Some(requirement),
+impl NonFungibleRequirementAllOf {
+    pub fn new(non_fungible: crate::core_api::generated::models::NonFungibleGlobalId) -> NonFungibleRequirementAllOf {
+        NonFungibleRequirementAllOf {
+            non_fungible: Box::new(non_fungible),
         }
     }
 }

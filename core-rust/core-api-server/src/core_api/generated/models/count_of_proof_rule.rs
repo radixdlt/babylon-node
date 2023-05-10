@@ -18,11 +18,11 @@ pub struct CountOfProofRule {
     #[serde(rename = "count")]
     pub count: i32,
     #[serde(rename = "list")]
-    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+    pub list: Vec<crate::core_api::generated::models::Requirement>,
 }
 
 impl CountOfProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, count: i32, list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> CountOfProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, count: i32, list: Vec<crate::core_api::generated::models::Requirement>) -> CountOfProofRule {
         CountOfProofRule {
             _type,
             count,

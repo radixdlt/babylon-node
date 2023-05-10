@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceOrNonFungible;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -39,17 +39,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AllOfProofRuleAllOf {
   public static final String JSON_PROPERTY_LIST = "list";
-  private List<ResourceOrNonFungible> _list = new ArrayList<>();
+  private List<Requirement> _list = new ArrayList<>();
 
   public AllOfProofRuleAllOf() { 
   }
 
-  public AllOfProofRuleAllOf _list(List<ResourceOrNonFungible> _list) {
+  public AllOfProofRuleAllOf _list(List<Requirement> _list) {
     this._list = _list;
     return this;
   }
 
-  public AllOfProofRuleAllOf addListItem(ResourceOrNonFungible _listItem) {
+  public AllOfProofRuleAllOf addListItem(Requirement _listItem) {
     this._list.add(_listItem);
     return this;
   }
@@ -63,14 +63,14 @@ public class AllOfProofRuleAllOf {
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ResourceOrNonFungible> getList() {
+  public List<Requirement> getList() {
     return _list;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setList(List<ResourceOrNonFungible> _list) {
+  public void setList(List<Requirement> _list) {
     this._list = _list;
   }
 

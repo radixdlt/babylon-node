@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceOrNonFungible;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * RequireProofRuleAllOf
  */
 @JsonPropertyOrder({
-  RequireProofRuleAllOf.JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE
+  RequireProofRuleAllOf.JSON_PROPERTY_REQUIREMENT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RequireProofRuleAllOf {
-  public static final String JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE = "resource_or_non_fungible";
-  private ResourceOrNonFungible resourceOrNonFungible;
+  public static final String JSON_PROPERTY_REQUIREMENT = "requirement";
+  private Requirement requirement;
 
   public RequireProofRuleAllOf() { 
   }
 
-  public RequireProofRuleAllOf resourceOrNonFungible(ResourceOrNonFungible resourceOrNonFungible) {
-    this.resourceOrNonFungible = resourceOrNonFungible;
+  public RequireProofRuleAllOf requirement(Requirement requirement) {
+    this.requirement = requirement;
     return this;
   }
 
    /**
-   * Get resourceOrNonFungible
-   * @return resourceOrNonFungible
+   * Get requirement
+   * @return requirement
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceOrNonFungible getResourceOrNonFungible() {
-    return resourceOrNonFungible;
+  public Requirement getRequirement() {
+    return requirement;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_OR_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_REQUIREMENT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceOrNonFungible(ResourceOrNonFungible resourceOrNonFungible) {
-    this.resourceOrNonFungible = resourceOrNonFungible;
+  public void setRequirement(Requirement requirement) {
+    this.requirement = requirement;
   }
 
 
@@ -80,19 +80,19 @@ public class RequireProofRuleAllOf {
       return false;
     }
     RequireProofRuleAllOf requireProofRuleAllOf = (RequireProofRuleAllOf) o;
-    return Objects.equals(this.resourceOrNonFungible, requireProofRuleAllOf.resourceOrNonFungible);
+    return Objects.equals(this.requirement, requireProofRuleAllOf.requirement);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceOrNonFungible);
+    return Objects.hash(requirement);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class RequireProofRuleAllOf {\n");
-    sb.append("    resourceOrNonFungible: ").append(toIndentedString(resourceOrNonFungible)).append("\n");
+    sb.append("    requirement: ").append(toIndentedString(requirement)).append("\n");
     sb.append("}");
     return sb.toString();
   }

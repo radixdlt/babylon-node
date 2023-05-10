@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceOrNonFungible;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class CountOfProofRuleAllOf {
   private Integer count;
 
   public static final String JSON_PROPERTY_LIST = "list";
-  private List<ResourceOrNonFungible> _list = new ArrayList<>();
+  private List<Requirement> _list = new ArrayList<>();
 
   public CountOfProofRuleAllOf() { 
   }
@@ -74,12 +74,12 @@ public class CountOfProofRuleAllOf {
   }
 
 
-  public CountOfProofRuleAllOf _list(List<ResourceOrNonFungible> _list) {
+  public CountOfProofRuleAllOf _list(List<Requirement> _list) {
     this._list = _list;
     return this;
   }
 
-  public CountOfProofRuleAllOf addListItem(ResourceOrNonFungible _listItem) {
+  public CountOfProofRuleAllOf addListItem(Requirement _listItem) {
     this._list.add(_listItem);
     return this;
   }
@@ -93,14 +93,14 @@ public class CountOfProofRuleAllOf {
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ResourceOrNonFungible> getList() {
+  public List<Requirement> getList() {
     return _list;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setList(List<ResourceOrNonFungible> _list) {
+  public void setList(List<Requirement> _list) {
     this._list = _list;
   }
 

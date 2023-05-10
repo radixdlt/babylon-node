@@ -2142,13 +2142,6 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AccessRuleNode'
-    ResourceOrNonFungible:
-      type: object
-      properties:
-        resource:
-          $ref: '#/components/schemas/ResourceAddress'
-        non_fungible:
-          $ref: '#/components/schemas/NonFungibleGlobalId'
     ProofRuleType:
       type: string
       enum:
@@ -2178,10 +2171,10 @@ components:
         - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
-            - resource_or_non_fungible
+            - requirement
           properties:
-            resource_or_non_fungible:
-              $ref: '#/components/schemas/ResourceOrNonFungible'
+            requirement:
+              $ref: '#/components/schemas/Requirement'
     AmountOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2204,7 +2197,7 @@ components:
             list:
               type: array
               items:
-                $ref: '#/components/schemas/ResourceOrNonFungible'
+                $ref: '#/components/schemas/Requirement'
     AnyOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2215,7 +2208,7 @@ components:
             list:
               type: array
               items:
-                $ref: '#/components/schemas/ResourceOrNonFungible'
+                $ref: '#/components/schemas/Requirement'
     CountOfProofRule:
       allOf:
         - $ref: '#/components/schemas/ProofRule'
@@ -2229,17 +2222,43 @@ components:
             list:
               type: array
               items:
-                $ref: '#/components/schemas/ResourceOrNonFungible'
-    SortedKey:
+                $ref: '#/components/schemas/Requirement'
+    Requirement:
       type: object
       required:
-        - sorted
-        - key
+        - type
       properties:
-        sorted:
-          type: integer
-        key:
-          type: string
+        type:
+          $ref: '#/components/schemas/RequirementType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match RequirementType options below
+          Resource: '#/components/schemas/ResourceRequirement'
+          NonFungible: '#/components/schemas/NonFungibleRequirement'
+    RequirementType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    ResourceRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/ResourceAddress'
+    NonFungibleRequirement:
+      allOf:
+        - $ref: '#/components/schemas/Requirement'
+        - type: object
+          required:
+            - non_fungible
+          properties:
+            non_fungible:
+              $ref: '#/components/schemas/NonFungibleGlobalId'
 #######################################
 # GENERAL / SHARED MODELS - Resources #
 #######################################

@@ -40,12 +40,13 @@ pub(crate) async fn handle_state_non_fungible(
         .into_response_error("non_fungible_id"));
     }
 
-    let non_fungible: Vec<u8> = read_optional_collection_substate(
+    let non_fungible = read_optional_collection_substate::<Option<ScryptoRawValue>>(
         database.deref(),
         resource_address.as_node_id(),
         NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
         &SubstateKey::Map(non_fungible_id.to_key()),
     )
+    .flatten()
     .ok_or_else(|| {
         not_found_error("The given non_fungible_id doesn't exist under that resource address")
     })?;
@@ -53,7 +54,7 @@ pub(crate) async fn handle_state_non_fungible(
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
-            &non_fungible,
+            &scrypto_encode(&non_fungible).unwrap(),
         )?),
     })
     .map(Json)

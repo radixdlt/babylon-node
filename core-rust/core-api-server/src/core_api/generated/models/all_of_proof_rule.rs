@@ -16,11 +16,11 @@ pub struct AllOfProofRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ProofRuleType,
     #[serde(rename = "list")]
-    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+    pub list: Vec<crate::core_api::generated::models::Requirement>,
 }
 
 impl AllOfProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> AllOfProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, list: Vec<crate::core_api::generated::models::Requirement>) -> AllOfProofRule {
         AllOfProofRule {
             _type,
             list,

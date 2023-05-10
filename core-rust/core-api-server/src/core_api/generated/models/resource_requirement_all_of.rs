@@ -12,19 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ResourceOrNonFungible {
+pub struct ResourceRequirementAllOf {
     /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "resource", skip_serializing_if = "Option::is_none")]
-    pub resource: Option<String>,
-    #[serde(rename = "non_fungible", skip_serializing_if = "Option::is_none")]
-    pub non_fungible: Option<Box<crate::core_api::generated::models::NonFungibleGlobalId>>,
+    #[serde(rename = "resource")]
+    pub resource: String,
 }
 
-impl ResourceOrNonFungible {
-    pub fn new() -> ResourceOrNonFungible {
-        ResourceOrNonFungible {
-            resource: None,
-            non_fungible: None,
+impl ResourceRequirementAllOf {
+    pub fn new(resource: String) -> ResourceRequirementAllOf {
+        ResourceRequirementAllOf {
+            resource,
         }
     }
 }

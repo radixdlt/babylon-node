@@ -16,11 +16,11 @@ pub struct CountOfProofRuleAllOf {
     #[serde(rename = "count")]
     pub count: i32,
     #[serde(rename = "list")]
-    pub list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>,
+    pub list: Vec<crate::core_api::generated::models::Requirement>,
 }
 
 impl CountOfProofRuleAllOf {
-    pub fn new(count: i32, list: Vec<crate::core_api::generated::models::ResourceOrNonFungible>) -> CountOfProofRuleAllOf {
+    pub fn new(count: i32, list: Vec<crate::core_api::generated::models::Requirement>) -> CountOfProofRuleAllOf {
         CountOfProofRuleAllOf {
             count,
             list,

@@ -9,23 +9,31 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum RequirementType {
+    #[serde(rename = "Resource")]
+    Resource,
+    #[serde(rename = "NonFungible")]
+    NonFungible,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RequireProofRule {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::ProofRuleType,
-    #[serde(rename = "requirement")]
-    pub requirement: Option<crate::core_api::generated::models::Requirement>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl RequireProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, requirement: crate::core_api::generated::models::Requirement) -> RequireProofRule {
-        RequireProofRule {
-            _type,
-            requirement: Option::Some(requirement),
+impl ToString for RequirementType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Resource => String::from("Resource"),
+            Self::NonFungible => String::from("NonFungible"),
         }
     }
 }
+
+impl Default for RequirementType {
+    fn default() -> RequirementType {
+        Self::Resource
+    }
+}
+
+
 
 
