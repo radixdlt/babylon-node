@@ -69,8 +69,10 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
 import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.*;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
@@ -136,31 +138,51 @@ public final class REv2RegisterValidatorTest {
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
           allCommittedTransaction(createValidatorTransaction),
-          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
       var transactionDetails =
           NodesReader.getCommittedTransactionDetails(
               test.getNodeInjectors(), createValidatorTransaction);
       var validatorAddress = transactionDetails.newComponentAddresses().get(0);
 
+      // Sanity check
+      assertThat(validatorAddress.value()[0]).isEqualTo(ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID);
+
       // Act: Submit transaction to mempool and run consensus
-      var registerValidatorTransaction =
-          REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
-      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
       var stakeValidatorTransaction =
-          REv2TestTransactions.constructStakeValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
+              REv2TestTransactions.constructStakeValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      test.faucetAddress(),
+                      0L,
+                      1,
+                      validatorAddress,
+                      TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
+
+      test.runUntilState(
+              allCommittedTransaction(stakeValidatorTransaction),
+              onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
+
+      var registerValidatorTransaction =
+              REv2TestTransactions.constructRegisterValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      test.faucetAddress(),
+                      0L,
+                      1,
+                      validatorAddress,
+                      TEST_KEY);
+      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
+
+      test.runUntilState(
+              allCommittedTransaction(registerValidatorTransaction),
+              onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
+//      test.runUntilState(
+//              anyCommittedProof(p -> p.getNextEpoch().isPresent()),
+//              onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
+      test.runUntilState(
+              allCommittedTransaction(registerValidatorTransaction),
+              onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
+
+      // Sanity check
 
       // Assert: Validator becomes part of validator set
       test.runUntilState(
@@ -175,7 +197,9 @@ public final class REv2RegisterValidatorTest {
                                           v.getValidatorId()
                                               .equals(
                                                   BFTValidatorId.create(
-                                                      validatorAddress, TEST_KEY.getPublicKey()))))
+                                                      validatorAddress, TEST_KEY.getPublicKey()))
+                                  )
+                        )
                       .orElse(false)),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
     }

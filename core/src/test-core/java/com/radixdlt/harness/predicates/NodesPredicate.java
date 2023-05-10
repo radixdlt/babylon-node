@@ -100,7 +100,7 @@ public final class NodesPredicate {
 
   public static Predicate<List<Injector>> allCommittedTransaction(
       RawNotarizedTransaction transaction) {
-    return allNodesMatch(NodePredicate.committedUserTransaction(transaction, false));
+    return allNodesMatch(NodePredicate.committedUserTransaction(transaction, true));
   }
 
   public static Predicate<List<Injector>> anyCommittedTransaction(
