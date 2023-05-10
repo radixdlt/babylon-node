@@ -15,8 +15,8 @@
 pub enum TypeInfoDetails {
     #[serde(rename="KeyValueStore")]
     KeyValueStoreTypeInfoDetails {
-        #[serde(rename = "key_value_store_schema")]
-        key_value_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
+        #[serde(rename = "key_value_store_info")]
+        key_value_store_info: Box<crate::core_api::generated::models::KeyValueStoreInfo>,
     },
     #[serde(rename="Object")]
     ObjectTypeInfoDetails {
@@ -27,6 +27,11 @@ pub enum TypeInfoDetails {
         blueprint_name: String,
         #[serde(rename = "global")]
         global: bool,
+        /// The Bech32m-encoded human readable version of any global address
+        #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
+        outer_object: Option<String>,
+        #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
+        instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
     },
 }
 

@@ -1,5 +1,4 @@
 use crate::core_api::*;
-use radix_engine::types::Address;
 use state_manager::store::traits::{
     extensions::IterableAccountChangeIndex, ConfigurableDatabase, QueryableProofStore,
     QueryableTransactionStore,
@@ -21,7 +20,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
 
-    let account_address = extract_component_address(&extraction_context, &request.account_address)
+    let account_address = extract_global_address(&extraction_context, &request.account_address)
         .map_err(|err| err.into_response_error("account_address"))?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
@@ -62,10 +61,8 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
     let max_state_version = database.max_state_version();
 
-    let state_versions = database.get_state_versions_for_account_iter(
-        Address::Component(account_address),
-        from_state_version,
-    );
+    let state_versions =
+        database.get_state_versions_for_account_iter(account_address, from_state_version);
 
     let mut response = models::LtsStreamAccountTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,

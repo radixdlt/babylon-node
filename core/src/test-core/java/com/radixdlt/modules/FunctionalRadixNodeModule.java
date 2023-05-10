@@ -72,12 +72,10 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -93,6 +91,7 @@ import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
@@ -400,9 +399,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
-            var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-
-            install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
+            install(new REv2LedgerRecoveryModule(Optional.of(rev2Config.genesis())));
             install(new REv2ConsensusRecoveryModule());
 
             switch (rev2Config.proposerConfig()) {

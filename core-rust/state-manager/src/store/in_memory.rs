@@ -75,15 +75,16 @@ use crate::{
 };
 
 use crate::query::TransactionIdentifierLoader;
-use radix_engine::ledger::OutputValue;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::rust::ops::Bound::{Included, Unbounded};
-use radix_engine::types::Address;
-use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
+use core::ops::Bound::{Included, Unbounded};
+use radix_engine_common::types::GlobalAddress;
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
+    SubstateDatabase,
+};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
-use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::collections::{btree_set, BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
@@ -99,12 +100,12 @@ pub struct InMemoryStore {
     proofs: BTreeMap<u64, LedgerProof>,
     epoch_proofs: BTreeMap<u64, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
-    substate_store: SerializedInMemorySubstateStore,
+    substate_store: InMemorySubstateDatabase,
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
     account_change_index_last_state_version: u64,
-    account_change_index_set: HashMap<Address, BTreeSet<u64>>,
+    account_change_index_set: HashMap<GlobalAddress, BTreeSet<u64>>,
 }
 
 impl InMemoryStore {
@@ -121,7 +122,7 @@ impl InMemoryStore {
             proofs: BTreeMap::new(),
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
-            substate_store: SerializedInMemorySubstateStore::new(),
+            substate_store: InMemorySubstateDatabase::standard(),
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
@@ -231,9 +232,20 @@ impl TransactionIndex<&LedgerPayloadHash> for InMemoryStore {
     }
 }
 
-impl ReadableSubstateStore for InMemoryStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.substate_store.get_substate(substate_id)
+impl SubstateDatabase for InMemoryStore {
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        self.substate_store.get_substate(partition_key, sort_key)
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        self.substate_store.list_entries(partition_key)
     }
 }
 
@@ -255,15 +267,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
     }
 }
 
-impl QueryableSubstateStore for InMemoryStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        self.substate_store.get_kv_store_entries(kv_store_id)
-    }
-}
-
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
         for (txn, receipt, identifiers) in commit_bundle.transactions {
@@ -279,10 +282,8 @@ impl CommitStore for InMemoryStore {
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
-        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
-            self.substate_store.put_substate(substate_id, substate);
-        }
-        // TODO: handle the `substate_store_update.deleted_ids` once the store is ready for it
+        self.substate_store
+            .commit(&commit_bundle.substate_store_update.updates);
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
@@ -505,7 +506,7 @@ pub struct InMemoryAccountChangeIndexIterator<'a> {
 }
 
 impl<'a> InMemoryAccountChangeIndexIterator<'a> {
-    fn new(from_state_version: u64, account: Address, store: &'a InMemoryStore) -> Self {
+    fn new(from_state_version: u64, account: GlobalAddress, store: &'a InMemoryStore) -> Self {
         let iterator = store
             .account_change_index_set
             .get(&account)
@@ -531,7 +532,7 @@ impl IterableAccountChangeIndex for InMemoryStore {
 
     fn get_state_versions_for_account_iter(
         &self,
-        account: Address,
+        account: GlobalAddress,
         from_state_version: u64,
     ) -> Self::AccountChangeIndexIterator<'_> {
         InMemoryAccountChangeIndexIterator::new(from_state_version, account, self)

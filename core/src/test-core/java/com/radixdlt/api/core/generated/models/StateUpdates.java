@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DeletedSubstateVersionRef;
-import com.radixdlt.api.core.generated.models.GlobalEntityReference;
-import com.radixdlt.api.core.generated.models.NewSubstateVersion;
+import com.radixdlt.api.core.generated.models.CreatedOrUpdatedSubstate;
+import com.radixdlt.api.core.generated.models.DeletedSubstate;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -45,26 +45,26 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateUpdates {
   public static final String JSON_PROPERTY_CREATED_SUBSTATES = "created_substates";
-  private List<NewSubstateVersion> createdSubstates = new ArrayList<>();
+  private List<CreatedOrUpdatedSubstate> createdSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_UPDATED_SUBSTATES = "updated_substates";
-  private List<NewSubstateVersion> updatedSubstates = new ArrayList<>();
+  private List<CreatedOrUpdatedSubstate> updatedSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_DELETED_SUBSTATES = "deleted_substates";
-  private List<DeletedSubstateVersionRef> deletedSubstates = new ArrayList<>();
+  private List<DeletedSubstate> deletedSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_NEW_GLOBAL_ENTITIES = "new_global_entities";
-  private List<GlobalEntityReference> newGlobalEntities = new ArrayList<>();
+  private List<EntityReference> newGlobalEntities = new ArrayList<>();
 
   public StateUpdates() { 
   }
 
-  public StateUpdates createdSubstates(List<NewSubstateVersion> createdSubstates) {
+  public StateUpdates createdSubstates(List<CreatedOrUpdatedSubstate> createdSubstates) {
     this.createdSubstates = createdSubstates;
     return this;
   }
 
-  public StateUpdates addCreatedSubstatesItem(NewSubstateVersion createdSubstatesItem) {
+  public StateUpdates addCreatedSubstatesItem(CreatedOrUpdatedSubstate createdSubstatesItem) {
     this.createdSubstates.add(createdSubstatesItem);
     return this;
   }
@@ -78,24 +78,24 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_CREATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<NewSubstateVersion> getCreatedSubstates() {
+  public List<CreatedOrUpdatedSubstate> getCreatedSubstates() {
     return createdSubstates;
   }
 
 
   @JsonProperty(JSON_PROPERTY_CREATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCreatedSubstates(List<NewSubstateVersion> createdSubstates) {
+  public void setCreatedSubstates(List<CreatedOrUpdatedSubstate> createdSubstates) {
     this.createdSubstates = createdSubstates;
   }
 
 
-  public StateUpdates updatedSubstates(List<NewSubstateVersion> updatedSubstates) {
+  public StateUpdates updatedSubstates(List<CreatedOrUpdatedSubstate> updatedSubstates) {
     this.updatedSubstates = updatedSubstates;
     return this;
   }
 
-  public StateUpdates addUpdatedSubstatesItem(NewSubstateVersion updatedSubstatesItem) {
+  public StateUpdates addUpdatedSubstatesItem(CreatedOrUpdatedSubstate updatedSubstatesItem) {
     this.updatedSubstates.add(updatedSubstatesItem);
     return this;
   }
@@ -109,24 +109,24 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_UPDATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<NewSubstateVersion> getUpdatedSubstates() {
+  public List<CreatedOrUpdatedSubstate> getUpdatedSubstates() {
     return updatedSubstates;
   }
 
 
   @JsonProperty(JSON_PROPERTY_UPDATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUpdatedSubstates(List<NewSubstateVersion> updatedSubstates) {
+  public void setUpdatedSubstates(List<CreatedOrUpdatedSubstate> updatedSubstates) {
     this.updatedSubstates = updatedSubstates;
   }
 
 
-  public StateUpdates deletedSubstates(List<DeletedSubstateVersionRef> deletedSubstates) {
+  public StateUpdates deletedSubstates(List<DeletedSubstate> deletedSubstates) {
     this.deletedSubstates = deletedSubstates;
     return this;
   }
 
-  public StateUpdates addDeletedSubstatesItem(DeletedSubstateVersionRef deletedSubstatesItem) {
+  public StateUpdates addDeletedSubstatesItem(DeletedSubstate deletedSubstatesItem) {
     this.deletedSubstates.add(deletedSubstatesItem);
     return this;
   }
@@ -140,24 +140,24 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_DELETED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<DeletedSubstateVersionRef> getDeletedSubstates() {
+  public List<DeletedSubstate> getDeletedSubstates() {
     return deletedSubstates;
   }
 
 
   @JsonProperty(JSON_PROPERTY_DELETED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDeletedSubstates(List<DeletedSubstateVersionRef> deletedSubstates) {
+  public void setDeletedSubstates(List<DeletedSubstate> deletedSubstates) {
     this.deletedSubstates = deletedSubstates;
   }
 
 
-  public StateUpdates newGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
+  public StateUpdates newGlobalEntities(List<EntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
     return this;
   }
 
-  public StateUpdates addNewGlobalEntitiesItem(GlobalEntityReference newGlobalEntitiesItem) {
+  public StateUpdates addNewGlobalEntitiesItem(EntityReference newGlobalEntitiesItem) {
     this.newGlobalEntities.add(newGlobalEntitiesItem);
     return this;
   }
@@ -171,14 +171,14 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<GlobalEntityReference> getNewGlobalEntities() {
+  public List<EntityReference> getNewGlobalEntities() {
     return newGlobalEntities;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNewGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
+  public void setNewGlobalEntities(List<EntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
   }
 

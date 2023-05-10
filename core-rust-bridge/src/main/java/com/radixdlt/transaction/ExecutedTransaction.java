@@ -64,6 +64,7 @@
 
 package com.radixdlt.transaction;
 
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -72,7 +73,10 @@ import java.util.Objects;
 
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
-    CommittedTransactionStatus status, byte[] consensusReceiptBytes, byte[] transactionBytes) {
+    CommittedTransactionStatus status,
+    Option<String> errorMessage,
+    byte[] consensusReceiptBytes,
+    byte[] transactionBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
@@ -89,6 +93,7 @@ public record ExecutedTransaction(
     if (o == null || getClass() != o.getClass()) return false;
     ExecutedTransaction that = (ExecutedTransaction) o;
     return Objects.equals(status, that.status)
+        && Objects.equals(errorMessage, that.errorMessage)
         && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes)
         && Arrays.equals(transactionBytes, that.transactionBytes);
   }
@@ -96,6 +101,7 @@ public record ExecutedTransaction(
   @Override
   public int hashCode() {
     int result = Objects.hash(status);
+    result = 31 * result + Objects.hash(errorMessage);
     result = 31 * result + Arrays.hashCode(consensusReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;

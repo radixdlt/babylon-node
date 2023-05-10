@@ -83,7 +83,7 @@ use transaction::model::NotarizedTransaction;
 /// A high-level API giving a thread-safe access to the `SimpleMempool`.
 pub struct MempoolManager {
     mempool: Arc<RwLock<SimpleMempool>>,
-    relay_dispatcher: MempoolRelayDispatcher,
+    relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
     metrics: MempoolMetrics,
 }
@@ -98,7 +98,21 @@ impl MempoolManager {
     ) -> Self {
         Self {
             mempool,
-            relay_dispatcher,
+            relay_dispatcher: Some(relay_dispatcher),
+            cached_commitability_validator,
+            metrics: MempoolMetrics::new(metric_registry),
+        }
+    }
+
+    /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
+    pub fn new_for_testing(
+        mempool: Arc<RwLock<SimpleMempool>>,
+        cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
+        metric_registry: &Registry,
+    ) -> Self {
+        Self {
+            mempool,
+            relay_dispatcher: None,
             cached_commitability_validator,
             metrics: MempoolMetrics::new(metric_registry),
         }
@@ -195,8 +209,11 @@ impl MempoolManager {
         transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
         self.add_if_commitable(source, transaction.clone())?;
-        if let Err(error) = self.relay_dispatcher.trigger_relay(transaction) {
-            warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
+
+        if let Some(relay_dispatcher) = &self.relay_dispatcher {
+            if let Err(error) = relay_dispatcher.trigger_relay(transaction) {
+                warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
+            }
         }
         Ok(())
     }

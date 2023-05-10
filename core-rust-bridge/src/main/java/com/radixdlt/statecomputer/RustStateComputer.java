@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
@@ -79,14 +80,15 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class RustStateComputer {
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.prepareGenesisFunc =
-        Natives.builder(stateManager, RustStateComputer::prepareGenesis)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "prepareGenesis")))
+    this.executeGenesisFunc =
+        Natives.builder(stateManager, RustStateComputer::executeGenesis)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "executeGenesis")))
             .build(new TypeToken<>() {});
     this.prepareFunc =
         Natives.builder(stateManager, RustStateComputer::prepare)
@@ -110,13 +112,13 @@ public class RustStateComputer {
             .build(new TypeToken<>() {});
   }
 
-  public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
-    return prepareGenesisFunc.call(prepareGenesisRequest);
+  public LedgerProof executeGenesis(GenesisData genesisData) {
+    return executeGenesisFunc.call(genesisData);
   }
 
-  private final Natives.Call1<PrepareGenesisRequest, PrepareGenesisResult> prepareGenesisFunc;
+  private final Natives.Call1<GenesisData, LedgerProof> executeGenesisFunc;
 
-  private static native byte[] prepareGenesis(StateManager stateManager, byte[] payload);
+  private static native byte[] executeGenesis(StateManager stateManager, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);

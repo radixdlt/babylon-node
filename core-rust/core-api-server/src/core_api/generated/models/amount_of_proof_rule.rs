@@ -16,17 +16,18 @@ pub struct AmountOfProofRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ProofRuleType,
     #[serde(rename = "amount")]
-    pub amount: Option<crate::core_api::generated::models::DynamicAmount>, // Using Option permits Default trait; Will always be Some in normal use
+    pub amount: String,
+    /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource")]
-    pub resource: Option<crate::core_api::generated::models::DynamicResourceDescriptor>, // Using Option permits Default trait; Will always be Some in normal use
+    pub resource: String,
 }
 
 impl AmountOfProofRule {
-    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, amount: crate::core_api::generated::models::DynamicAmount, resource: crate::core_api::generated::models::DynamicResourceDescriptor) -> AmountOfProofRule {
+    pub fn new(_type: crate::core_api::generated::models::ProofRuleType, amount: String, resource: String) -> AmountOfProofRule {
         AmountOfProofRule {
             _type,
-            amount: Option::Some(amount),
-            resource: Option::Some(resource),
+            amount,
+            resource,
         }
     }
 }

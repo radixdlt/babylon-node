@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.FungibleResourceAmount;
-import com.radixdlt.api.core.generated.models.NonFungibleId;
+import com.radixdlt.api.core.generated.models.NonFungibleLocalId;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceAmount;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceAmountAllOf;
 import com.radixdlt.api.core.generated.models.ResourceAmount;
@@ -43,6 +43,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleResourceAmount
  */
 @JsonPropertyOrder({
+  NonFungibleResourceAmount.JSON_PROPERTY_AMOUNT,
   NonFungibleResourceAmount.JSON_PROPERTY_NON_FUNGIBLE_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -57,18 +58,47 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleResourceAmount extends ResourceAmount {
+  public static final String JSON_PROPERTY_AMOUNT = "amount";
+  private String amount;
+
   public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
-  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
+  private List<NonFungibleLocalId> nonFungibleIds = new ArrayList<>();
 
   public NonFungibleResourceAmount() { 
   }
 
-  public NonFungibleResourceAmount nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+  public NonFungibleResourceAmount amount(String amount) {
+    this.amount = amount;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources). A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return amount
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAmount() {
+    return amount;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAmount(String amount) {
+    this.amount = amount;
+  }
+
+
+  public NonFungibleResourceAmount nonFungibleIds(List<NonFungibleLocalId> nonFungibleIds) {
     this.nonFungibleIds = nonFungibleIds;
     return this;
   }
 
-  public NonFungibleResourceAmount addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+  public NonFungibleResourceAmount addNonFungibleIdsItem(NonFungibleLocalId nonFungibleIdsItem) {
     this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
@@ -82,14 +112,14 @@ public class NonFungibleResourceAmount extends ResourceAmount {
   @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<NonFungibleId> getNonFungibleIds() {
+  public List<NonFungibleLocalId> getNonFungibleIds() {
     return nonFungibleIds;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+  public void setNonFungibleIds(List<NonFungibleLocalId> nonFungibleIds) {
     this.nonFungibleIds = nonFungibleIds;
   }
 
@@ -106,13 +136,14 @@ public class NonFungibleResourceAmount extends ResourceAmount {
       return false;
     }
     NonFungibleResourceAmount nonFungibleResourceAmount = (NonFungibleResourceAmount) o;
-    return Objects.equals(this.nonFungibleIds, nonFungibleResourceAmount.nonFungibleIds) &&
+    return Objects.equals(this.amount, nonFungibleResourceAmount.amount) &&
+        Objects.equals(this.nonFungibleIds, nonFungibleResourceAmount.nonFungibleIds) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleIds, super.hashCode());
+    return Objects.hash(amount, nonFungibleIds, super.hashCode());
   }
 
   @Override
@@ -120,6 +151,7 @@ public class NonFungibleResourceAmount extends ResourceAmount {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceAmount {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("    nonFungibleIds: ").append(toIndentedString(nonFungibleIds)).append("\n");
     sb.append("}");
     return sb.toString();

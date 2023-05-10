@@ -1,13 +1,13 @@
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::ScryptoVm;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use radix_engine_interface::*;
+use radix_engine_store_interface::interface::SubstateDatabase;
 
 use tracing::warn;
 
@@ -32,7 +32,7 @@ pub enum ConfigType {
 /// A preconfigured set of execution settings, allowing to turn `Executable` transactions into
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
-    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
     execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
@@ -41,7 +41,7 @@ impl ExecutionConfigurator {
     pub fn new(logging_config: &LoggingConfig) -> Self {
         let trace = logging_config.engine_trace;
         Self {
-            scrypto_interpreter: ScryptoInterpreter {
+            scrypto_interpreter: ScryptoVm {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
                 wasm_metering_config: WasmMeteringConfig::default(),
@@ -83,7 +83,7 @@ impl ExecutionConfigurator {
 /// An `Executable` transaction bound to a specific execution configuration.
 pub struct ConfiguredExecutable<'a> {
     executable: Executable<'a>,
-    scrypto_interpreter: &'a ScryptoInterpreter<DefaultWasmEngine>,
+    scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
     fee_reserve_config: &'a FeeReserveConfig,
     execution_config: &'a ExecutionConfig,
 }
@@ -104,7 +104,7 @@ impl<'a> ConfiguredExecutable<'a> {
     }
 }
 
-impl<'a, S: ReadableSubstateStore> TransactionLogic<S> for ConfiguredExecutable<'a> {
+impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
     fn execute_on(&self, store: &S) -> TransactionReceipt {
         execute_transaction(
             store,
@@ -125,7 +125,7 @@ pub struct TimeWarningTransactionLogic<U> {
 
 impl<U, S> TransactionLogic<S> for TimeWarningTransactionLogic<U>
 where
-    S: ReadableSubstateStore,
+    S: SubstateDatabase,
     U: TransactionLogic<S>,
 {
     fn execute_on(&self, store: &S) -> TransactionReceipt {

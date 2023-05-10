@@ -18,15 +18,19 @@ pub struct NonFungibleResourceAmount {
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
+    /// The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
     #[serde(rename = "non_fungible_ids")]
-    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>,
 }
 
 impl NonFungibleResourceAmount {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> NonFungibleResourceAmount {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String, amount: String, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleLocalId>) -> NonFungibleResourceAmount {
         NonFungibleResourceAmount {
             resource_type,
             resource_address,
+            amount,
             non_fungible_ids,
         }
     }

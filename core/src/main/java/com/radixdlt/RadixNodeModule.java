@@ -75,13 +75,12 @@ import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.*;
@@ -99,10 +98,10 @@ import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
+import java.util.Optional;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -122,13 +121,13 @@ public final class RadixNodeModule extends AbstractModule {
 
   private final RuntimeProperties properties;
   private final Network network;
-  private final RawLedgerTransaction genesisTxn;
+  private final Optional<GenesisData> genesisData;
 
   public RadixNodeModule(
-      RuntimeProperties properties, Network network, RawLedgerTransaction genesisTxn) {
+      RuntimeProperties properties, Network network, Optional<GenesisData> genesisData) {
     this.properties = properties;
     this.network = network;
-    this.genesisTxn = genesisTxn;
+    this.genesisData = genesisData;
   }
 
   @Override
@@ -237,8 +236,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
-    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesisTxn));
+    install(new REv2LedgerRecoveryModule(genesisData));
     install(new REv2ConsensusRecoveryModule());
 
     install(new MetricsModule());

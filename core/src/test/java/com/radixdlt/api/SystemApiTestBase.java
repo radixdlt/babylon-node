@@ -77,6 +77,7 @@ import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -93,7 +94,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -103,7 +103,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 
@@ -128,9 +127,8 @@ public abstract class SystemApiTestBase {
                     LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            TransactionBuilder.createGenesis(
+                            GenesisBuilder.createGenesisWithSingleValidator(
                                 TEST_KEY.getPublicKey(),
-                                Map.of(),
                                 Decimal.of(1),
                                 UInt64.fromNonNegativeLong(10),
                                 UInt64.fromNonNegativeLong(1)),

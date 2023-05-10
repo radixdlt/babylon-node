@@ -14,16 +14,17 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AmountOfProofRuleAllOf {
     #[serde(rename = "amount")]
-    pub amount: Option<crate::core_api::generated::models::DynamicAmount>, // Using Option permits Default trait; Will always be Some in normal use
+    pub amount: String,
+    /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource")]
-    pub resource: Option<crate::core_api::generated::models::DynamicResourceDescriptor>, // Using Option permits Default trait; Will always be Some in normal use
+    pub resource: String,
 }
 
 impl AmountOfProofRuleAllOf {
-    pub fn new(amount: crate::core_api::generated::models::DynamicAmount, resource: crate::core_api::generated::models::DynamicResourceDescriptor) -> AmountOfProofRuleAllOf {
+    pub fn new(amount: String, resource: String) -> AmountOfProofRuleAllOf {
         AmountOfProofRuleAllOf {
-            amount: Option::Some(amount),
-            resource: Option::Some(resource),
+            amount,
+            resource,
         }
     }
 }

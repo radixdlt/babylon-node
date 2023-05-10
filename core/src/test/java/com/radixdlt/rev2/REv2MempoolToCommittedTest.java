@@ -71,6 +71,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
@@ -81,7 +82,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
@@ -120,7 +120,7 @@ public class REv2MempoolToCommittedTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -134,14 +134,15 @@ public class REv2MempoolToCommittedTest {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
+      var transaction =
+          REv2TestTransactions.constructValidRawTransaction(test.faucetAddress(), 0, 5);
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act/Assert
-      test.runUntilState(anyCommittedTransaction(transaction), 20000);
+      test.runUntilState(anyCommittedTransactionSuccess(transaction), 20000);
     }
   }
 }

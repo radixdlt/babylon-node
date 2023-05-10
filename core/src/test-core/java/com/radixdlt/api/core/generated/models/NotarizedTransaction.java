@@ -87,13 +87,13 @@ public class NotarizedTransaction {
   }
 
    /**
-   * The hex-encoded full notarized transaction payload
+   * The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
    * @return payloadHex
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded full notarized transaction payload")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getPayloadHex() {
     return payloadHex;
@@ -101,7 +101,7 @@ public class NotarizedTransaction {
 
 
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPayloadHex(String payloadHex) {
     this.payloadHex = payloadHex;
   }

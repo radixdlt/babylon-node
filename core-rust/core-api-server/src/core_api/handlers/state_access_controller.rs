@@ -1,12 +1,11 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{AccessControllerOffset, NodeModuleId, SubstateOffset};
-use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
-
-use state_manager::query::{dump_component_state, VaultData};
+use radix_engine::blueprints::access_controller::*;
+use radix_engine::system::node_modules::access_rules::*;
+use radix_engine::types::*;
+use state_manager::query::dump_component_state;
 use std::ops::Deref;
 
-use super::map_to_descendent_id;
+use super::component_dump_to_vaults_and_nodes;
 
 pub(crate) async fn handle_state_access_controller(
     state: State<CoreApiState>,
@@ -21,77 +20,41 @@ pub(crate) async fn handle_state_access_controller(
         extract_component_address(&extraction_context, &request.controller_address)
             .map_err(|err| err.into_response_error("controller_address"))?;
 
-    if !request.controller_address.starts_with("accesscontroller_")
-        && !request.controller_address.starts_with("controller_")
-    {
+    if !request.controller_address.starts_with("accesscontroller_") {
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
     let database = state.database.read();
-    let component_state = {
-        let substate_offset =
-            SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(controller_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::AccessController(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let component_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(controller_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
 
-    let component_dump = dump_component_state(database.deref(), controller_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
+    let access_controller_substate: AccessControllerSubstate = read_optional_main_field_substate(
+        database.deref(),
+        controller_address.as_node_id(),
+        &AccessControllerField::AccessController.into(),
+    )
+    .ok_or_else(|| not_found_error("Access controller not found".to_string()))?;
 
-    let state_owned_vaults = component_dump
-        .vaults
-        .into_iter()
-        .map(|vault| match vault {
-            VaultData::NonFungible {
-                resource_address,
-                ids,
-            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
-            VaultData::Fungible {
-                resource_address,
-                amount,
-            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        controller_address.as_node_id(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
+    )?;
 
-    let descendent_ids = component_dump
-        .descendents
-        .into_iter()
-        .filter(|(_, _, depth)| *depth > 0)
-        .map(|(parent, node, depth)| map_to_descendent_id(parent, node, depth))
-        .collect::<Result<Vec<_>, _>>()?;
+    let component_dump = dump_component_state(database.deref(), controller_address);
+    let (vaults, descendent_nodes) =
+        component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateAccessControllerResponse {
         state: Some(to_api_access_controller_substate(
             &mapping_context,
-            &component_state,
+            &access_controller_substate,
         )?),
-        access_rules: Some(to_api_access_rules_chain_substate(
+        access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
-            &component_access_rules,
+            &method_access_rules_substate,
         )?),
-        state_owned_vaults,
-        descendent_ids,
+        vaults,
+        descendent_nodes,
     })
     .map(Json)
 }

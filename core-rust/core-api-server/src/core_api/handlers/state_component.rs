@@ -1,12 +1,15 @@
 use crate::core_api::*;
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ComponentOffset, RENodeId, SubstateId, SubstateOffset};
-use radix_engine_interface::api::types::{
-    AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
+use radix_engine::types::*;
+use radix_engine::{
+    system::node_modules::type_info::TypeInfoSubstate, track::db_key_mapper::DatabaseKeyMapper,
+    track::db_key_mapper::SpreadPrefixKeyMapper,
 };
-
-use state_manager::query::{dump_component_state, VaultData};
+use radix_engine_interface::api::component::*;
+use radix_engine_queries::typed_substate_layout::*;
+use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
 use std::ops::Deref;
+
+use super::map_to_vault_balance;
 
 pub(crate) async fn handle_state_component(
     state: State<CoreApiState>,
@@ -21,169 +24,128 @@ pub(crate) async fn handle_state_component(
         extract_component_address(&extraction_context, &request.component_address)
             .map_err(|err| err.into_response_error("component_address"))?;
 
-    if !request.component_address.starts_with("component_")
-        && !request.component_address.starts_with("account_")
-    {
-        // Until we have improvements to the state model for objects, only components should be supported here
-        return Err(client_error("Only component addresses starting component_ or account_ currently work with this endpoint. Try another endpoint instead."));
+    if !request.component_address.starts_with("component_") {
+        return Err(client_error("Only component addresses starting component_ currently work with this endpoint. Try another endpoint instead."));
     }
 
     let database = state.database.read();
-    let type_info = {
-        let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-        let loaded_substate = read_mandatory_substate(
+    let type_info: TypeInfoSubstate = read_optional_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        TYPE_INFO_FIELD_PARTITION,
+        &TypeInfoField::TypeInfo.into(),
+    )
+    .ok_or_else(|| not_found_error("Component not found".to_string()))?;
+
+    let component_state: ComponentStateSubstate = read_mandatory_main_field_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        &ComponentField::State0.into(),
+    )?;
+
+    let component_royalty_config: ComponentRoyaltyConfigSubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        ROYALTY_FIELD_PARTITION,
+        &RoyaltyField::RoyaltyConfig.into(),
+    )?;
+
+    let component_royalty_accumulator: ComponentRoyaltyAccumulatorSubstate =
+        read_mandatory_substate(
             database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::TypeInfo,
-            &substate_offset,
+            component_address.as_node_id(),
+            ROYALTY_FIELD_PARTITION,
+            &RoyaltyField::RoyaltyAccumulator.into(),
         )?;
-        let PersistedSubstate::TypeInfo(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let component_state = {
-        let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentState(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let account_state = {
-        let substate_offset = SubstateOffset::Account(AccountOffset::Account);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::SELF,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::Account(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    // TODO: royalty_* should be non-optional once fixed on the engine side
-    let component_royalty_config = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::ComponentRoyalty,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentRoyaltyConfig(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let component_royalty_accumulator = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate_opt = read_optional_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::ComponentRoyalty,
-            &substate_offset,
-        );
-        match loaded_substate_opt {
-            Some(PersistedSubstate::ComponentRoyaltyAccumulator(substate)) => Some(substate),
-            Some(..) => return Err(wrong_substate_type(substate_offset)),
-            None => None,
-        }
-    };
-    let component_access_rules = {
-        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate(
-            database.deref(),
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::AccessRules,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
 
-    let component_dump = dump_component_state(database.deref(), component_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
+    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
+    )?;
 
-    let state_owned_vaults = component_dump
-        .vaults
-        .into_iter()
-        .map(|vault| match vault {
-            VaultData::NonFungible {
-                resource_address,
-                ids,
-            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
-            VaultData::Fungible {
-                resource_address,
-                amount,
-            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let component_dump = dump_component_state(database.deref(), component_address);
 
-    let descendent_ids = component_dump
-        .descendents
-        .into_iter()
-        .filter(|(_, _, depth)| *depth > 0)
-        .map(|(parent, node, depth)| map_to_descendent_id(parent, node, depth))
-        .collect::<Result<Vec<_>, _>>()?;
+    let (vaults, descendent_nodes) =
+        component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateComponentResponse {
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: if let Some(c) = component_state {
-            Some(Box::new(to_api_component_state_substate(
-                &mapping_context,
-                &c,
-            )?))
-        } else {
-            None
-        },
-        account: if let Some(a) = account_state {
-            Some(Box::new(to_api_account_substate(&mapping_context, &a)?))
-        } else {
-            None
-        },
-        royalty_config: if let Some(r) = component_royalty_config {
-            Some(Box::new(to_api_component_royalty_config_substate(
-                &mapping_context,
-                &r,
-            )?))
-        } else {
-            None
-        },
-        royalty_accumulator: if let Some(r) = component_royalty_accumulator {
-            Some(Box::new(to_api_component_royalty_accumulator_substate(&r)?))
-        } else {
-            None
-        },
-        access_rules: Some(to_api_access_rules_chain_substate(
+        state: Some(to_api_component_state_substate(
             &mapping_context,
-            &component_access_rules,
+            &component_state,
         )?),
-        state_owned_vaults,
-        descendent_ids,
+        royalty_config: Some(to_api_component_royalty_config_substate(
+            &mapping_context,
+            &component_royalty_config,
+        )?),
+        royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
+            &mapping_context,
+            &component_royalty_accumulator,
+        )?),
+        access_rules: Some(to_api_method_access_rules_substate(
+            &mapping_context,
+            &method_access_rules_substate,
+        )?),
+        vaults,
+        descendent_nodes,
     })
     .map(Json)
 }
 
+pub(crate) fn component_dump_to_vaults_and_nodes(
+    context: &MappingContext,
+    component_dump: ComponentStateDump,
+) -> Result<
+    (
+        Vec<models::VaultBalance>,
+        Vec<models::StateComponentDescendentNode>,
+    ),
+    MappingError,
+> {
+    let vaults = component_dump
+        .vaults
+        .into_iter()
+        .map(|(vault_id, vault_data)| map_to_vault_balance(context, vault_id, vault_data))
+        .collect::<Result<Vec<_>, MappingError>>()?;
+
+    let descendent_nodes = component_dump
+        .descendents
+        .into_iter()
+        .filter(|(_, _, depth)| *depth > 0)
+        .map(|(parent, node, depth)| map_to_descendent_id(context, parent, node, depth))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok((vaults, descendent_nodes))
+}
+
 pub(crate) fn map_to_descendent_id(
-    parent: Option<SubstateId>,
-    node: RENodeId,
+    context: &MappingContext,
+    parent: DescendantParentOpt,
+    node_id: NodeId,
     depth: u32,
-) -> Result<models::StateComponentDescendentId, MappingError> {
-    Ok(models::StateComponentDescendentId {
-        parent: Box::new(to_api_substate_id(parent.unwrap())?),
-        entity: Box::new(to_api_entity_reference(node)?),
+) -> Result<models::StateComponentDescendentNode, MappingError> {
+    let parent = parent.unwrap();
+    Ok(models::StateComponentDescendentNode {
+        parent_entity: Box::new(to_api_entity_reference(context, &parent.0)?),
+        parent_partition_number: parent.1 .0 as i32,
+        parent_substate_key_hex: substate_key_to_hex(&parent.2),
+        parent_substate_db_sort_key_hex: to_hex(SpreadPrefixKeyMapper::to_db_sort_key(&parent.2).0),
+        entity: Box::new(to_api_entity_reference(context, &node_id)?),
         depth: depth as i32, // Won't go over 100 due to component dumper max depth
     })
+}
+
+pub(crate) fn substate_key_to_hex(substate_key: &SubstateKey) -> String {
+    match substate_key {
+        SubstateKey::Tuple(tuple_key) => to_hex([*tuple_key]),
+        SubstateKey::Map(map_key) => to_hex(map_key),
+        SubstateKey::Sorted((sort_key, map_key)) => {
+            let mut vec = Vec::with_capacity(2 + map_key.len());
+            vec.extend_from_slice(&sort_key.to_be_bytes());
+            vec.extend_from_slice(map_key);
+            to_hex(&vec)
+        }
+    }
 }

@@ -33,15 +33,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EntityReference.JSON_PROPERTY_ENTITY_TYPE,
-  EntityReference.JSON_PROPERTY_ENTITY_ID_HEX
+  EntityReference.JSON_PROPERTY_IS_GLOBAL,
+  EntityReference.JSON_PROPERTY_ENTITY_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EntityReference {
   public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
   private EntityType entityType;
 
-  public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
-  private String entityIdHex;
+  public static final String JSON_PROPERTY_IS_GLOBAL = "is_global";
+  private Boolean isGlobal;
+
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
   public EntityReference() { 
   }
@@ -72,29 +76,55 @@ public class EntityReference {
   }
 
 
-  public EntityReference entityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public EntityReference isGlobal(Boolean isGlobal) {
+    this.isGlobal = isGlobal;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the entity id.
-   * @return entityIdHex
+   * Get isGlobal
+   * @return isGlobal
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_GLOBAL)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityIdHex() {
-    return entityIdHex;
+  public Boolean getIsGlobal() {
+    return isGlobal;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_IS_GLOBAL)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public void setIsGlobal(Boolean isGlobal) {
+    this.isGlobal = isGlobal;
+  }
+
+
+  public EntityReference entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
+    return this;
+  }
+
+   /**
+   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * @return entityAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getEntityAddress() {
+    return entityAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
@@ -111,12 +141,13 @@ public class EntityReference {
     }
     EntityReference entityReference = (EntityReference) o;
     return Objects.equals(this.entityType, entityReference.entityType) &&
-        Objects.equals(this.entityIdHex, entityReference.entityIdHex);
+        Objects.equals(this.isGlobal, entityReference.isGlobal) &&
+        Objects.equals(this.entityAddress, entityReference.entityAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex);
+    return Objects.hash(entityType, isGlobal, entityAddress);
   }
 
   @Override
@@ -124,7 +155,8 @@ public class EntityReference {
     StringBuilder sb = new StringBuilder();
     sb.append("class EntityReference {\n");
     sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
-    sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
+    sb.append("    isGlobal: ").append(toIndentedString(isGlobal)).append("\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

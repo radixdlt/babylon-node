@@ -23,6 +23,12 @@ pub struct StreamTransactionsRequest {
     /// The maximum number of transactions that will be returned.
     #[serde(rename = "limit")]
     pub limit: i32,
+    #[serde(rename = "sbor_format_options", skip_serializing_if = "Option::is_none")]
+    pub sbor_format_options: Option<Box<crate::core_api::generated::models::SborFormatOptions>>,
+    #[serde(rename = "transaction_format_options", skip_serializing_if = "Option::is_none")]
+    pub transaction_format_options: Option<Box<crate::core_api::generated::models::TransactionFormatOptions>>,
+    #[serde(rename = "substate_format_options", skip_serializing_if = "Option::is_none")]
+    pub substate_format_options: Option<Box<crate::core_api::generated::models::SubstateFormatOptions>>,
 }
 
 impl StreamTransactionsRequest {
@@ -32,6 +38,9 @@ impl StreamTransactionsRequest {
             network,
             from_state_version,
             limit,
+            sbor_format_options: None,
+            transaction_format_options: None,
+            substate_format_options: None,
         }
     }
 }

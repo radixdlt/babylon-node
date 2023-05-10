@@ -22,9 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BlueprintSchemaCollectionPartition;
+import com.radixdlt.api.core.generated.models.BlueprintSchemaFieldPartition;
 import com.radixdlt.api.core.generated.models.FunctionSchema;
 import com.radixdlt.api.core.generated.models.LocalTypeIndex;
-import com.radixdlt.api.core.generated.models.SborData;
+import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import com.radixdlt.api.core.generated.models.VirtualLazyLoadSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -39,19 +41,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintSchema
  */
 @JsonPropertyOrder({
+  BlueprintSchema.JSON_PROPERTY_OUTER_BLUEPRINT,
   BlueprintSchema.JSON_PROPERTY_SCHEMA,
-  BlueprintSchema.JSON_PROPERTY_SUBSTATES,
   BlueprintSchema.JSON_PROPERTY_FUNCTION_SCHEMAS,
   BlueprintSchema.JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS,
-  BlueprintSchema.JSON_PROPERTY_EVENT_SCHEMAS
+  BlueprintSchema.JSON_PROPERTY_EVENT_SCHEMAS,
+  BlueprintSchema.JSON_PROPERTY_FIELD_PARTITION,
+  BlueprintSchema.JSON_PROPERTY_COLLECTION_PARTITIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchema {
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private SborData schema;
+  public static final String JSON_PROPERTY_OUTER_BLUEPRINT = "outer_blueprint";
+  private String outerBlueprint;
 
-  public static final String JSON_PROPERTY_SUBSTATES = "substates";
-  private List<LocalTypeIndex> substates = new ArrayList<>();
+  public static final String JSON_PROPERTY_SCHEMA = "schema";
+  private ScryptoSchema schema;
 
   public static final String JSON_PROPERTY_FUNCTION_SCHEMAS = "function_schemas";
   private Map<String, FunctionSchema> functionSchemas = new HashMap<>();
@@ -62,10 +66,42 @@ public class BlueprintSchema {
   public static final String JSON_PROPERTY_EVENT_SCHEMAS = "event_schemas";
   private Map<String, LocalTypeIndex> eventSchemas = new HashMap<>();
 
+  public static final String JSON_PROPERTY_FIELD_PARTITION = "field_partition";
+  private BlueprintSchemaFieldPartition fieldPartition;
+
+  public static final String JSON_PROPERTY_COLLECTION_PARTITIONS = "collection_partitions";
+  private List<BlueprintSchemaCollectionPartition> collectionPartitions = new ArrayList<>();
+
   public BlueprintSchema() { 
   }
 
-  public BlueprintSchema schema(SborData schema) {
+  public BlueprintSchema outerBlueprint(String outerBlueprint) {
+    this.outerBlueprint = outerBlueprint;
+    return this;
+  }
+
+   /**
+   * Get outerBlueprint
+   * @return outerBlueprint
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_OUTER_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getOuterBlueprint() {
+    return outerBlueprint;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_OUTER_BLUEPRINT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setOuterBlueprint(String outerBlueprint) {
+    this.outerBlueprint = outerBlueprint;
+  }
+
+
+  public BlueprintSchema schema(ScryptoSchema schema) {
     this.schema = schema;
     return this;
   }
@@ -79,46 +115,15 @@ public class BlueprintSchema {
   @JsonProperty(JSON_PROPERTY_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SborData getSchema() {
+  public ScryptoSchema getSchema() {
     return schema;
   }
 
 
   @JsonProperty(JSON_PROPERTY_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(SborData schema) {
+  public void setSchema(ScryptoSchema schema) {
     this.schema = schema;
-  }
-
-
-  public BlueprintSchema substates(List<LocalTypeIndex> substates) {
-    this.substates = substates;
-    return this;
-  }
-
-  public BlueprintSchema addSubstatesItem(LocalTypeIndex substatesItem) {
-    this.substates.add(substatesItem);
-    return this;
-  }
-
-   /**
-   * The type index of the substates under the SELF module - in the context of the blueprint&#39;s SBOR schema. 
-   * @return substates
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The type index of the substates under the SELF module - in the context of the blueprint's SBOR schema. ")
-  @JsonProperty(JSON_PROPERTY_SUBSTATES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<LocalTypeIndex> getSubstates() {
-    return substates;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBSTATES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstates(List<LocalTypeIndex> substates) {
-    this.substates = substates;
   }
 
 
@@ -215,6 +220,63 @@ public class BlueprintSchema {
   }
 
 
+  public BlueprintSchema fieldPartition(BlueprintSchemaFieldPartition fieldPartition) {
+    this.fieldPartition = fieldPartition;
+    return this;
+  }
+
+   /**
+   * Get fieldPartition
+   * @return fieldPartition
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_FIELD_PARTITION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public BlueprintSchemaFieldPartition getFieldPartition() {
+    return fieldPartition;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FIELD_PARTITION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFieldPartition(BlueprintSchemaFieldPartition fieldPartition) {
+    this.fieldPartition = fieldPartition;
+  }
+
+
+  public BlueprintSchema collectionPartitions(List<BlueprintSchemaCollectionPartition> collectionPartitions) {
+    this.collectionPartitions = collectionPartitions;
+    return this;
+  }
+
+  public BlueprintSchema addCollectionPartitionsItem(BlueprintSchemaCollectionPartition collectionPartitionsItem) {
+    this.collectionPartitions.add(collectionPartitionsItem);
+    return this;
+  }
+
+   /**
+   * The collection partitions for this blueprint.
+   * @return collectionPartitions
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The collection partitions for this blueprint.")
+  @JsonProperty(JSON_PROPERTY_COLLECTION_PARTITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<BlueprintSchemaCollectionPartition> getCollectionPartitions() {
+    return collectionPartitions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_COLLECTION_PARTITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCollectionPartitions(List<BlueprintSchemaCollectionPartition> collectionPartitions) {
+    this.collectionPartitions = collectionPartitions;
+  }
+
+
   /**
    * Return true if this BlueprintSchema object is equal to o.
    */
@@ -227,27 +289,31 @@ public class BlueprintSchema {
       return false;
     }
     BlueprintSchema blueprintSchema = (BlueprintSchema) o;
-    return Objects.equals(this.schema, blueprintSchema.schema) &&
-        Objects.equals(this.substates, blueprintSchema.substates) &&
+    return Objects.equals(this.outerBlueprint, blueprintSchema.outerBlueprint) &&
+        Objects.equals(this.schema, blueprintSchema.schema) &&
         Objects.equals(this.functionSchemas, blueprintSchema.functionSchemas) &&
         Objects.equals(this.virtualLazyLoadFunctionSchemas, blueprintSchema.virtualLazyLoadFunctionSchemas) &&
-        Objects.equals(this.eventSchemas, blueprintSchema.eventSchemas);
+        Objects.equals(this.eventSchemas, blueprintSchema.eventSchemas) &&
+        Objects.equals(this.fieldPartition, blueprintSchema.fieldPartition) &&
+        Objects.equals(this.collectionPartitions, blueprintSchema.collectionPartitions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, substates, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas);
+    return Objects.hash(outerBlueprint, schema, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas, fieldPartition, collectionPartitions);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintSchema {\n");
+    sb.append("    outerBlueprint: ").append(toIndentedString(outerBlueprint)).append("\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
-    sb.append("    substates: ").append(toIndentedString(substates)).append("\n");
     sb.append("    functionSchemas: ").append(toIndentedString(functionSchemas)).append("\n");
     sb.append("    virtualLazyLoadFunctionSchemas: ").append(toIndentedString(virtualLazyLoadFunctionSchemas)).append("\n");
     sb.append("    eventSchemas: ").append(toIndentedString(eventSchemas)).append("\n");
+    sb.append("    fieldPartition: ").append(toIndentedString(fieldPartition)).append("\n");
+    sb.append("    collectionPartitions: ").append(toIndentedString(collectionPartitions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

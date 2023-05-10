@@ -72,6 +72,7 @@ import com.google.inject.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -88,7 +89,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -118,7 +118,7 @@ public final class REv2LargeTransactionTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
@@ -126,11 +126,11 @@ public final class REv2LargeTransactionTest {
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 
-  private static RawNotarizedTransaction createLargeValidTransaction() {
+  private static RawNotarizedTransaction createLargeValidTransaction(ComponentAddress faucet) {
     final var blobsSize = 1024 * 1024 - 462 /* space for other intent/notarized txn fields */;
     final var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
-            NETWORK_DEFINITION, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
+            NETWORK_DEFINITION, faucet, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
     return REv2TestTransactions.constructRawTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
@@ -140,12 +140,12 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_mempool_syncable_committable_and_ledger_syncable() {
     try (var test = createTest()) {
       // Arrange: Start single node network
+      test.startAllNodes();
       var validatorIndex = 0;
       var fullNodeIndex = 1;
-      var largeTransaction = createLargeValidTransaction();
+      var largeTransaction = createLargeValidTransaction(test.faucetAddress());
 
       // Act: Submit transaction to fullnode mempool
-      test.startAllNodes();
       var mempoolDispatcher =
           test.getInstance(
               fullNodeIndex, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
@@ -154,12 +154,14 @@ public final class REv2LargeTransactionTest {
 
       // Now wait for mempool sync to the validator and commit
       test.runUntilState(
-          nodeAt(validatorIndex, NodePredicate.committedUserTransaction(largeTransaction)),
+          nodeAt(
+              validatorIndex, NodePredicate.committedUserTransaction(largeTransaction, true, true)),
           onlyConsensusEvents());
 
       // Act: Sync
       test.runUntilState(
-          nodeAt(fullNodeIndex, NodePredicate.committedUserTransaction(largeTransaction)),
+          nodeAt(
+              fullNodeIndex, NodePredicate.committedUserTransaction(largeTransaction, true, true)),
           onlyLedgerSyncEvents());
 
       // Assert: Check transaction and post submission state

@@ -64,7 +64,7 @@
 
 use crate::types::UserPayloadHash;
 use crate::utils::IsAccountExt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 use std::mem::size_of;
 
@@ -74,13 +74,7 @@ use crate::{
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
-use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{
-    scrypto_decode, scrypto_encode, Address, KeyValueStoreId, KeyValueStoreOffset, RENodeId,
-    SubstateId, SubstateOffset,
-};
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine::types::*;
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
@@ -90,6 +84,9 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBIteratorWithThreadMode, Direction, IteratorMode,
     Options, WriteBatch, DB,
 };
+
+use radix_engine_store_interface::interface::*;
+
 use std::path::PathBuf;
 use tracing::{error, info, warn};
 
@@ -454,18 +451,18 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
-            batch.put_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-                scrypto_encode(&substate).unwrap(),
-            );
-        }
-        for substate_id in commit_bundle.substate_store_update.deleted_ids {
-            batch.delete_cf(
-                self.cf_handle(&Substates),
-                scrypto_encode(&substate_id).unwrap(),
-            );
+        for (partition_key, partition_updates) in commit_bundle.substate_store_update.updates {
+            for (sort_key, database_update) in partition_updates {
+                let encoded_key_bytes = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+                match database_update {
+                    DatabaseUpdate::Set(value) => {
+                        batch.put_cf(self.cf_handle(&Substates), encoded_key_bytes, value);
+                    }
+                    DatabaseUpdate::Delete => {
+                        batch.delete_cf(self.cf_handle(&Substates), encoded_key_bytes);
+                    }
+                }
+            }
         }
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
@@ -880,9 +877,39 @@ impl QueryableProofStore for RocksDBStore {
     }
 }
 
-impl ReadableSubstateStore for RocksDBStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.get_by_key(&Substates, &scrypto_encode(substate_id).unwrap())
+impl SubstateDatabase for RocksDBStore {
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        let encoded_key_bytes = encode_to_rocksdb_bytes(partition_key, sort_key);
+        self.db
+            .get_cf(self.cf_handle(&Substates), encoded_key_bytes)
+            .unwrap()
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let partition_key = partition_key.clone();
+        let start = encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![]));
+        let iter = self
+            .db
+            .iterator_cf(
+                self.cf_handle(&Substates),
+                IteratorMode::From(&start, Direction::Forward),
+            )
+            .map(|kv| {
+                let (k, v) = kv.unwrap();
+                let (partition_key, sort_key) = decode_from_rocksdb_bytes(k.as_ref());
+                ((partition_key, sort_key), v)
+            })
+            .take_while(move |((next_partition_key, _), _)| next_partition_key.eq(&partition_key))
+            .map(|((_, sort_key), value)| (sort_key, value.as_ref().to_vec()));
+
+        Box::new(iter)
     }
 }
 
@@ -910,46 +937,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
     }
 }
 
-impl QueryableSubstateStore for RocksDBStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let id = scrypto_encode(&SubstateId(
-            RENodeId::KeyValueStore(*kv_store_id),
-            NodeModuleId::SELF,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
-        ))
-        .unwrap();
-
-        let iter = self.db.iterator_cf(
-            self.cf_handle(&Substates),
-            IteratorMode::From(&id, Direction::Forward),
-        );
-        let mut items = HashMap::new();
-        for res in iter {
-            let (key, value) = res.unwrap();
-            let substate: OutputValue = scrypto_decode(&value).unwrap();
-            let substate_id: SubstateId = scrypto_decode(&key).unwrap();
-            if let SubstateId(
-                RENodeId::KeyValueStore(id),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ) = substate_id
-            {
-                if id == *kv_store_id {
-                    items.insert(key, substate.substate)
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            };
-        }
-        items
-    }
-}
-
 impl WriteableVertexStore for RocksDBStore {
     fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
         self.db
@@ -962,6 +949,25 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<Vec<u8>> {
         self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
     }
+}
+
+fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
+    let mut buffer = Vec::with_capacity(1 + partition_key.0.len() + sort_key.0.len());
+    buffer.push(
+        u8::try_from(partition_key.0.len())
+            .expect("Partition key length is effectively constant 32 so should fit in a u8"),
+    );
+    buffer.extend_from_slice(&partition_key.0);
+    buffer.extend_from_slice(&sort_key.0);
+    buffer
+}
+
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
+    let partition_key_start: usize = 1usize;
+    let sort_key_start = 1 + usize::from(buffer[0]);
+    let partition_key = buffer[partition_key_start..sort_key_start].to_vec();
+    let sort_key = buffer[sort_key_start..].to_vec();
+    (DbPartitionKey(partition_key), DbSortKey(sort_key))
 }
 
 impl RocksDBStore {
@@ -1118,7 +1124,7 @@ pub struct RocksDBAccountChangeIndexIterator<'a> {
 }
 
 impl<'a> RocksDBAccountChangeIndexIterator<'a> {
-    fn new(from_state_version: u64, account: Address, store: &'a RocksDBStore) -> Self {
+    fn new(from_state_version: u64, account: GlobalAddress, store: &'a RocksDBStore) -> Self {
         let mut key = account.to_vec();
         key.extend(from_state_version.to_be_bytes());
         Self {
@@ -1157,9 +1163,43 @@ impl IterableAccountChangeIndex for RocksDBStore {
 
     fn get_state_versions_for_account_iter(
         &self,
-        account: Address,
+        account: GlobalAddress,
         from_state_version: u64,
     ) -> Self::AccountChangeIndexIterator<'_> {
         RocksDBAccountChangeIndexIterator::new(from_state_version, account, self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rocksdb_key_encoding_is_invertible() {
+        let partition_key = DbPartitionKey(vec![1, 2, 3, 4, 132]);
+        let sort_key = DbSortKey(vec![13, 5]);
+        let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+
+        let decoded = decode_from_rocksdb_bytes(&buffer);
+
+        assert_eq!(partition_key, decoded.0);
+        assert_eq!(sort_key, decoded.1);
+    }
+
+    /// This is needed for the iteration to work correctly
+    #[test]
+    fn rocksdb_key_encoding_respects_lexicographic_ordering_on_sort_keys() {
+        let partition_key = DbPartitionKey(vec![73, 85]);
+        let sort_key = DbSortKey(vec![0, 4]);
+        let iterator_start = encode_to_rocksdb_bytes(&partition_key, &sort_key);
+
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0])) < iterator_start);
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 3])) < iterator_start);
+        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])) == iterator_start);
+        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5])));
+        assert!(
+            iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))
+        );
+        assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![1, 51])));
     }
 }

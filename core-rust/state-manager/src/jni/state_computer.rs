@@ -65,31 +65,35 @@
 use crate::jni::mempool::JavaRawTransaction;
 
 use crate::{
-    AccumulatorHash, AccumulatorState, ActiveValidatorInfo, LedgerHashes, LedgerHeader,
-    LedgerProof, PreviousVertex, ReceiptTreeHash, StateHash, TimestampedValidatorSignature,
-    TransactionTreeHash,
+    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
+    ReceiptTreeHash, StateHash, TimestampedValidatorSignature, TransactionTreeHash,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
-use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::types::*;
+use radix_engine_queries::query::ResourceAccounter;
 use std::ops::Deref;
 
 use crate::jni::common_types::JavaHashCode;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::query::{ResourceAccounter, StateManagerSubstateQueries};
+use crate::query::StateManagerSubstateQueries;
+
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, NextEpoch};
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::system::bootstrap::GenesisDataChunk;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
 //
 // JNI Interface
 //
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
@@ -98,9 +102,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGene
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |prepare_request: JavaPrepareGenesisRequest| -> JavaPrepareGenesisResult {
+        |genesis_data: JavaGenesisData| -> JavaLedgerProof {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            let result = state_manager.prepare_genesis(prepare_request.into());
+            let result = state_manager.execute_genesis(
+                genesis_data.chunks,
+                genesis_data.initial_epoch,
+                genesis_data.max_validators,
+                genesis_data.rounds_per_epoch,
+                genesis_data.num_unstake_epochs,
+            );
             result.into()
         },
     )
@@ -136,7 +146,9 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         request_payload,
         |commit_request: JavaCommitRequest| -> Result<(), CommitError> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            state_manager.commit(commit_request.into())
+            state_manager
+                .commit(commit_request.into(), false)
+                .map(|_unused| ())
         },
     )
 }
@@ -152,15 +164,30 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
         &env,
         request_payload,
         |component_address: ComponentAddress| -> Decimal {
+            let node_id = component_address.as_node_id();
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let mut resource_accounter = ResourceAccounter::new(read_store.deref());
-            let resources = resource_accounter
-                .add_resources(RENodeId::GlobalObject(component_address.into()))
-                .map_or(None, |()| Some(resource_accounter.into_map()));
-            resources
-                .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
-                .unwrap_or_else(Decimal::zero)
+
+            // a quick fix for handling virtual accounts
+            // TODO: fix upstream
+            if read_store
+                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .is_some()
+            {
+                let mut accounter = ResourceAccounter::new(read_store.deref());
+                accounter.traverse(*node_id);
+                let balances = accounter.close().balances;
+                balances
+                    .get(&RADIX_TOKEN)
+                    .cloned()
+                    .unwrap_or_else(Decimal::zero)
+            } else {
+                Decimal::zero()
+            }
         },
     )
 }
@@ -178,13 +205,14 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let substate_id = SubstateId(
-                RENodeId::GlobalObject(validator_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::Validator(ValidatorOffset::Validator),
-            );
-            let output = read_store.get_substate(&substate_id).unwrap();
-            let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+            let validator_substate: ValidatorSubstate = read_store
+                .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
+                    validator_address.as_node_id(),
+                    OBJECT_BASE_PARTITION,
+                    &ValidatorField::Validator.into(),
+                )
+                .unwrap();
+
             JavaValidatorInfo {
                 lp_token_address: validator_substate.liquidity_token,
                 unstake_resource: validator_substate.unstake_nft,
@@ -208,6 +236,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
 }
 
 pub fn export_extern_functions() {}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaGenesisData {
+    pub chunks: Vec<GenesisDataChunk>,
+    pub initial_epoch: u64,
+    pub max_validators: u32,
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
+}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaCommitRequest {
@@ -324,34 +361,6 @@ impl From<PrepareResult> for JavaPrepareResult {
             rejected: prepare_results.rejected,
             next_epoch: prepare_results.next_epoch,
             ledger_hashes: prepare_results.ledger_hashes.into(),
-        }
-    }
-}
-
-#[derive(Debug, Decode, Encode, Categorize)]
-pub struct JavaPrepareGenesisRequest {
-    pub genesis: JavaRawTransaction,
-}
-
-impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
-    fn from(prepare_genesis_request: JavaPrepareGenesisRequest) -> Self {
-        PrepareGenesisRequest {
-            genesis: prepare_genesis_request.genesis.payload,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
-    pub ledger_hashes: JavaLedgerHashes,
-}
-
-impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
-    fn from(prepare_result: PrepareGenesisResult) -> Self {
-        JavaPrepareGenesisResult {
-            validator_set: prepare_result.validator_set,
-            ledger_hashes: prepare_result.ledger_hashes.into(),
         }
     }
 }

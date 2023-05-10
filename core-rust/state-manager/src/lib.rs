@@ -83,5 +83,6 @@ pub use crate::mempool::*;
 pub use crate::metrics::*;
 pub use crate::pending_transaction_result_cache::*;
 pub use crate::receipt::*;
+pub use crate::staging::*;
 pub use crate::state_manager::*;
 pub use crate::types::*;

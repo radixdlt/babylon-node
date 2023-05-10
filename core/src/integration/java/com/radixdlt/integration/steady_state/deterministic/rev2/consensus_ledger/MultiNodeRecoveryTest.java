@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
+import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -82,7 +83,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.Collections;
@@ -141,37 +141,35 @@ public final class MultiNodeRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createGenesisWithNumValidators(
                             NUM_VALIDATORS, Decimal.of(1), this.roundsPerEpoch),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
   }
 
-  private void runTest(DeterministicTest test) {
-    test.startAllNodes();
-
-    for (int i = 0; i < 50; i++) {
-      long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
-      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 1000000);
-
-      // Reboot some count of random nodes
-      var validatorIndices =
-          IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
-      Collections.shuffle(validatorIndices, random);
-      var nodesToReboot = validatorIndices.subList(0, random.nextInt(NUM_VALIDATORS));
-      logger.info("Rebooting round {} nodes: {}", i, nodesToReboot);
-      for (var index : nodesToReboot) {
-        test.restartNode(index);
-      }
-    }
-
-    // Post-run assertions
-    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-  }
-
   @Test
   public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues() {
-    runTest(createTest());
+    try (var test = createTest()) {
+      test.startAllNodes();
+
+      for (int i = 0; i < 50; i++) {
+        long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
+        test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 1000000);
+
+        // Reboot some count of random nodes
+        var validatorIndices =
+            IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
+        Collections.shuffle(validatorIndices, random);
+        var nodesToReboot = validatorIndices.subList(0, random.nextInt(NUM_VALIDATORS));
+        logger.info("Rebooting round {} nodes: {}", i, nodesToReboot);
+        for (var index : nodesToReboot) {
+          test.restartNode(index);
+        }
+      }
+
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
+    }
   }
 }

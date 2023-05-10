@@ -30,12 +30,14 @@ import com.radixdlt.api.core.generated.models.AllOfProofRuleAllOf;
 import com.radixdlt.api.core.generated.models.AmountOfProofRule;
 import com.radixdlt.api.core.generated.models.AnyOfProofRule;
 import com.radixdlt.api.core.generated.models.CountOfProofRule;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorList;
 import com.radixdlt.api.core.generated.models.ProofRule;
 import com.radixdlt.api.core.generated.models.ProofRuleType;
 import com.radixdlt.api.core.generated.models.RequireProofRule;
+import com.radixdlt.api.core.generated.models.Requirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -62,13 +64,18 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class AnyOfProofRule extends ProofRule {
   public static final String JSON_PROPERTY_LIST = "list";
-  private DynamicResourceDescriptorList _list;
+  private List<Requirement> _list = new ArrayList<>();
 
   public AnyOfProofRule() { 
   }
 
-  public AnyOfProofRule _list(DynamicResourceDescriptorList _list) {
+  public AnyOfProofRule _list(List<Requirement> _list) {
     this._list = _list;
+    return this;
+  }
+
+  public AnyOfProofRule addListItem(Requirement _listItem) {
+    this._list.add(_listItem);
     return this;
   }
 
@@ -81,14 +88,14 @@ public class AnyOfProofRule extends ProofRule {
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptorList getList() {
+  public List<Requirement> getList() {
     return _list;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LIST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setList(DynamicResourceDescriptorList _list) {
+  public void setList(List<Requirement> _list) {
     this._list = _list;
   }
 

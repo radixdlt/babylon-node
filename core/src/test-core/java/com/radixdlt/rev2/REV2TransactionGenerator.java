@@ -85,6 +85,6 @@ public final class REV2TransactionGenerator
   @Override
   public RawNotarizedTransaction nextTransaction() {
     return REv2TestTransactions.constructDepositFromFaucetTransaction(
-        networkDefinition, 0, currentTransactionNonce++);
+        networkDefinition, ScryptoConstants.FAUCET_ADDRESS, 0, currentTransactionNonce++);
   }
 }

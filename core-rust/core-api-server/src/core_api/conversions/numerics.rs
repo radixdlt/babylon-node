@@ -12,7 +12,6 @@ use super::*;
 const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
-const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 
@@ -53,19 +52,6 @@ pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
     Ok(state_version
         .try_into()
         .expect("State version too large somehow"))
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingError> {
-    let substate_version: u64 = substate_version.into();
-    if substate_version > MAX_API_SUBSTATE_VERSION {
-        return Err(MappingError::IntegerError {
-            message: "Substate version larger than max api state version".to_owned(),
-        });
-    }
-    Ok(substate_version
-        .try_into()
-        .expect("Substate version too large somehow"))
 }
 
 pub fn to_api_decimal(value: &Decimal) -> String {

@@ -22,6 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SborFormatOptions;
+import com.radixdlt.api.core.generated.models.SubstateFormatOptions;
+import com.radixdlt.api.core.generated.models.TransactionFormatOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +37,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StreamTransactionsRequest.JSON_PROPERTY_NETWORK,
   StreamTransactionsRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  StreamTransactionsRequest.JSON_PROPERTY_LIMIT
+  StreamTransactionsRequest.JSON_PROPERTY_LIMIT,
+  StreamTransactionsRequest.JSON_PROPERTY_SBOR_FORMAT_OPTIONS,
+  StreamTransactionsRequest.JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS,
+  StreamTransactionsRequest.JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StreamTransactionsRequest {
@@ -46,6 +52,15 @@ public class StreamTransactionsRequest {
 
   public static final String JSON_PROPERTY_LIMIT = "limit";
   private Integer limit;
+
+  public static final String JSON_PROPERTY_SBOR_FORMAT_OPTIONS = "sbor_format_options";
+  private SborFormatOptions sborFormatOptions;
+
+  public static final String JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS = "transaction_format_options";
+  private TransactionFormatOptions transactionFormatOptions;
+
+  public static final String JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS = "substate_format_options";
+  private SubstateFormatOptions substateFormatOptions;
 
   public StreamTransactionsRequest() { 
   }
@@ -130,6 +145,84 @@ public class StreamTransactionsRequest {
   }
 
 
+  public StreamTransactionsRequest sborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get sborFormatOptions
+   * @return sborFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SborFormatOptions getSborFormatOptions() {
+    return sborFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SBOR_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSborFormatOptions(SborFormatOptions sborFormatOptions) {
+    this.sborFormatOptions = sborFormatOptions;
+  }
+
+
+  public StreamTransactionsRequest transactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get transactionFormatOptions
+   * @return transactionFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionFormatOptions getTransactionFormatOptions() {
+    return transactionFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransactionFormatOptions(TransactionFormatOptions transactionFormatOptions) {
+    this.transactionFormatOptions = transactionFormatOptions;
+  }
+
+
+  public StreamTransactionsRequest substateFormatOptions(SubstateFormatOptions substateFormatOptions) {
+    this.substateFormatOptions = substateFormatOptions;
+    return this;
+  }
+
+   /**
+   * Get substateFormatOptions
+   * @return substateFormatOptions
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SubstateFormatOptions getSubstateFormatOptions() {
+    return substateFormatOptions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SUBSTATE_FORMAT_OPTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSubstateFormatOptions(SubstateFormatOptions substateFormatOptions) {
+    this.substateFormatOptions = substateFormatOptions;
+  }
+
+
   /**
    * Return true if this StreamTransactionsRequest object is equal to o.
    */
@@ -144,12 +237,15 @@ public class StreamTransactionsRequest {
     StreamTransactionsRequest streamTransactionsRequest = (StreamTransactionsRequest) o;
     return Objects.equals(this.network, streamTransactionsRequest.network) &&
         Objects.equals(this.fromStateVersion, streamTransactionsRequest.fromStateVersion) &&
-        Objects.equals(this.limit, streamTransactionsRequest.limit);
+        Objects.equals(this.limit, streamTransactionsRequest.limit) &&
+        Objects.equals(this.sborFormatOptions, streamTransactionsRequest.sborFormatOptions) &&
+        Objects.equals(this.transactionFormatOptions, streamTransactionsRequest.transactionFormatOptions) &&
+        Objects.equals(this.substateFormatOptions, streamTransactionsRequest.substateFormatOptions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, fromStateVersion, limit);
+    return Objects.hash(network, fromStateVersion, limit, sborFormatOptions, transactionFormatOptions, substateFormatOptions);
   }
 
   @Override
@@ -159,6 +255,9 @@ public class StreamTransactionsRequest {
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    limit: ").append(toIndentedString(limit)).append("\n");
+    sb.append("    sborFormatOptions: ").append(toIndentedString(sborFormatOptions)).append("\n");
+    sb.append("    transactionFormatOptions: ").append(toIndentedString(transactionFormatOptions)).append("\n");
+    sb.append("    substateFormatOptions: ").append(toIndentedString(substateFormatOptions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

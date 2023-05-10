@@ -70,12 +70,12 @@ import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -105,7 +105,7 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId,
-      RawLedgerTransaction genesis,
+      GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
@@ -116,7 +116,7 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId,
-      RawLedgerTransaction genesis,
+      GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
@@ -126,7 +126,7 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId,
-      RawLedgerTransaction genesis,
+      GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
@@ -172,7 +172,7 @@ public sealed interface StateComputerConfig {
 
   record REv2StateComputerConfig(
       int networkId,
-      RawLedgerTransaction genesis,
+      GenesisData genesis,
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,

@@ -23,20 +23,22 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-51c6a43af" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
 
 jni = "0.19.0"
 
 blake2 = { version = "0.10.6", default-features = false }
 serde = { version = "1.0.81", features = ["derive"] }
-serde_json = { version = "1.0.81" }
+serde_json = { version = "1.0.81", features = ["preserve_order"] }
 hex = { version = "0.4.3", default-features = false }
 futures = "0.3"
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }

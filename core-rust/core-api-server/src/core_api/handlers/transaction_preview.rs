@@ -1,13 +1,11 @@
 use crate::core_api::*;
-use radix_engine::{
-    transaction::{PreviewError, PreviewResult, TransactionResult},
-    types::RENodeId,
-};
+use radix_engine::transaction::{PreviewError, TransactionResult};
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
 
-use state_manager::{LocalTransactionReceipt, PreviewRequest};
+use state_manager::transaction::ProcessedPreviewResult;
+use state_manager::{LocalTransactionReceipt, PreviewRequest, ProcessedTransactionReceipt};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
@@ -88,9 +86,15 @@ fn extract_preview_request(
 
 fn to_api_response(
     context: &MappingContext,
-    result: PreviewResult,
+    result: ProcessedPreviewResult,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
+    let substate_changes = match result.processed_receipt {
+        ProcessedTransactionReceipt::Commit(commit) => {
+            commit.local_receipt.on_ledger.substate_changes
+        }
+        _ => vec![],
+    };
 
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
@@ -103,11 +107,14 @@ fn to_api_response(
                     .iter()
                     .map(|v| {
                         Ok(models::ResourceChange {
-                            resource_address: to_api_resource_address(context, &v.resource_address),
-                            component_entity: Box::new(to_api_entity_reference(v.node_id)?),
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
-                                v.vault_id,
-                            ))?),
+                            resource_address: to_api_resource_address(
+                                context,
+                                &v.resource_address,
+                            )?,
+                            component_entity: Box::new(to_api_entity_reference(
+                                context, &v.node_id,
+                            )?),
+                            vault_entity: Box::new(to_api_entity_reference(context, &v.vault_id)?),
                             amount: to_api_decimal(&v.amount),
                         })
                     })
@@ -133,8 +140,11 @@ fn to_api_response(
                 )
                 .collect();
 
-            let local_receipt =
-                LocalTransactionReceipt::from((commit_result, receipt.execution_trace));
+            let local_receipt = LocalTransactionReceipt::from((
+                commit_result,
+                substate_changes,
+                receipt.execution_trace,
+            ));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,

@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import io.swagger.annotations.ApiModel;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -25,57 +24,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules) 
+ * Gets or Sets SubstateKeyType
  */
 public enum SubstateKeyType {
   
-  TYPEINFO("TypeInfo"),
+  FIELD("Field"),
   
-  METADATAENTRY("MetadataEntry"),
+  MAP("Map"),
   
-  ACCESSRULES("AccessRules"),
-  
-  COMPONENTSTATE("ComponentState"),
-  
-  COMPONENTROYALTYCONFIG("ComponentRoyaltyConfig"),
-  
-  COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
-  
-  PACKAGEINFO("PackageInfo"),
-  
-  PACKAGECODE("PackageCode"),
-  
-  PACKAGECODETYPE("PackageCodeType"),
-  
-  PACKAGEROYALTY("PackageRoyalty"),
-  
-  PACKAGEFUNCTIONACCESSRULES("PackageFunctionAccessRules"),
-  
-  FUNGIBLERESOURCEMANAGER("FungibleResourceManager"),
-  
-  NONFUNGIBLERESOURCEMANAGER("NonFungibleResourceManager"),
-  
-  EPOCHMANAGER("EpochManager"),
-  
-  CURRENTVALIDATORSET("CurrentValidatorSet"),
-  
-  PREPARINGVALIDATORSET("PreparingValidatorSet"),
-  
-  VALIDATOR("Validator"),
-  
-  CLOCK("Clock"),
-  
-  KEYVALUESTOREENTRY("KeyValueStoreEntry"),
-  
-  VAULTINFO("VaultInfo"),
-  
-  VAULTFUNGIBLE("VaultFungible"),
-  
-  VAULTNONFUNGIBLE("VaultNonFungible"),
-  
-  ACCESSCONTROLLER("AccessController"),
-  
-  ACCOUNT("Account");
+  SORTED("Sorted");
 
   private String value;
 

@@ -64,73 +64,13 @@
 
 package com.radixdlt.genesis.olympia;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public final class OlympiaStateToBabylonGenesisMapper {
 
   public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
-    final var accounts = olympiaStateIR.accounts();
-    final var validators = olympiaStateIR.validators();
-    final var resources = olympiaStateIR.resources();
-
-    final var xrdAllocations =
-        olympiaStateIR.balances().stream()
-            .map(
-                bal -> {
-                  final var acc = accounts.get(bal.accountIndex());
-                  final var resource = resources.get(bal.resourceIndex());
-                  if (resource.addr().isNativeToken()) {
-                    return Optional.of(Pair.of(acc.publicKey(), Decimal.from(bal.amount())));
-                  } else {
-                    return Optional.<Pair<ECDSASecp256k1PublicKey, Decimal>>empty();
-                  }
-                })
-            .filter(Optional::isPresent)
-            .map(Optional::orElseThrow)
-            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-
-    final var stakesByValidator =
-        olympiaStateIR.stakes().stream()
-            .map(
-                stake -> {
-                  final var acc = accounts.get(stake.accountIndex());
-                  final var validator = validators.get(stake.validatorIndex());
-                  return Pair.of(
-                      validator.validatorKey(), Map.of(acc.publicKey(), stake.stakeUnitAmount()));
-                })
-            .collect(
-                Collectors.toMap(
-                    Pair::getFirst,
-                    Pair::getSecond,
-                    (m1, m2) -> {
-                      m2.forEach((k, v) -> m1.merge(k, v, UInt256::add));
-                      return m1;
-                    }));
-
-    final var validatorsAndStakeOwners =
-        stakesByValidator.entrySet().stream()
-            .map(
-                e -> {
-                  // TODO: this is just a mock for testing!
-                  // Just using the first stake entry for now
-                  // and the stake value is in stake units!
-                  final var firstStake = e.getValue().entrySet().stream().findFirst().get();
-                  final var firstStakeAddr = Address.virtualAccountAddress(firstStake.getKey());
-                  final var firstStakeValue = Decimal.from(firstStake.getValue());
-                  return Pair.of(e.getKey(), Tuple.Tuple2.of(firstStakeValue, firstStakeAddr));
-                })
-            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-
-    return new GenesisData(validatorsAndStakeOwners, xrdAllocations);
+    // TODO(genesis): coming in a separate PR
+    return GenesisData.testing_default_empty();
   }
 }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.InstanceSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,7 +34,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_OUTER_OBJECT,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_INSTANCE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectTypeInfoDetailsAllOf {
@@ -45,6 +48,12 @@ public class ObjectTypeInfoDetailsAllOf {
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
+
+  public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
+  private String outerObject;
+
+  public static final String JSON_PROPERTY_INSTANCE_SCHEMA = "instance_schema";
+  private InstanceSchema instanceSchema;
 
   public ObjectTypeInfoDetailsAllOf() { 
   }
@@ -127,6 +136,58 @@ public class ObjectTypeInfoDetailsAllOf {
   }
 
 
+  public ObjectTypeInfoDetailsAllOf outerObject(String outerObject) {
+    this.outerObject = outerObject;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of any global address
+   * @return outerObject
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The Bech32m-encoded human readable version of any global address")
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getOuterObject() {
+    return outerObject;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setOuterObject(String outerObject) {
+    this.outerObject = outerObject;
+  }
+
+
+  public ObjectTypeInfoDetailsAllOf instanceSchema(InstanceSchema instanceSchema) {
+    this.instanceSchema = instanceSchema;
+    return this;
+  }
+
+   /**
+   * Get instanceSchema
+   * @return instanceSchema
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public InstanceSchema getInstanceSchema() {
+    return instanceSchema;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setInstanceSchema(InstanceSchema instanceSchema) {
+    this.instanceSchema = instanceSchema;
+  }
+
+
   /**
    * Return true if this ObjectTypeInfoDetails_allOf object is equal to o.
    */
@@ -141,12 +202,14 @@ public class ObjectTypeInfoDetailsAllOf {
     ObjectTypeInfoDetailsAllOf objectTypeInfoDetailsAllOf = (ObjectTypeInfoDetailsAllOf) o;
     return Objects.equals(this.packageAddress, objectTypeInfoDetailsAllOf.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetailsAllOf.blueprintName) &&
-        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global);
+        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global) &&
+        Objects.equals(this.outerObject, objectTypeInfoDetailsAllOf.outerObject) &&
+        Objects.equals(this.instanceSchema, objectTypeInfoDetailsAllOf.instanceSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global);
+    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema);
   }
 
   @Override
@@ -156,6 +219,8 @@ public class ObjectTypeInfoDetailsAllOf {
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
+    sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
+    sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");
     sb.append("}");
     return sb.toString();
   }

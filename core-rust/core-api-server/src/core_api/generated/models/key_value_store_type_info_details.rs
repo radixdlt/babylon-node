@@ -15,15 +15,15 @@
 pub struct KeyValueStoreTypeInfoDetails {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::TypeInfoType,
-    #[serde(rename = "key_value_store_schema")]
-    pub key_value_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
+    #[serde(rename = "key_value_store_info")]
+    pub key_value_store_info: Box<crate::core_api::generated::models::KeyValueStoreInfo>,
 }
 
 impl KeyValueStoreTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, key_value_store_schema: crate::core_api::generated::models::KeyValueStoreSchema) -> KeyValueStoreTypeInfoDetails {
+    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, key_value_store_info: crate::core_api::generated::models::KeyValueStoreInfo) -> KeyValueStoreTypeInfoDetails {
         KeyValueStoreTypeInfoDetails {
             _type,
-            key_value_store_schema: Box::new(key_value_store_schema),
+            key_value_store_info: Box::new(key_value_store_info),
         }
     }
 }

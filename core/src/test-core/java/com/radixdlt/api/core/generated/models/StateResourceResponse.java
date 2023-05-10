@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.StateResourceManager;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -33,24 +34,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateResourceResponse.JSON_PROPERTY_MANAGER,
-  StateResourceResponse.JSON_PROPERTY_ACCESS_RULES,
-  StateResourceResponse.JSON_PROPERTY_VAULT_ACCESS_RULES
+  StateResourceResponse.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateResourceResponse {
   public static final String JSON_PROPERTY_MANAGER = "manager";
-  private Substate manager;
+  private StateResourceManager manager;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
 
-  public static final String JSON_PROPERTY_VAULT_ACCESS_RULES = "vault_access_rules";
-  private Substate vaultAccessRules;
-
   public StateResourceResponse() { 
   }
 
-  public StateResourceResponse manager(Substate manager) {
+  public StateResourceResponse manager(StateResourceManager manager) {
     this.manager = manager;
     return this;
   }
@@ -64,14 +61,14 @@ public class StateResourceResponse {
   @JsonProperty(JSON_PROPERTY_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getManager() {
+  public StateResourceManager getManager() {
     return manager;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setManager(Substate manager) {
+  public void setManager(StateResourceManager manager) {
     this.manager = manager;
   }
 
@@ -102,32 +99,6 @@ public class StateResourceResponse {
   }
 
 
-  public StateResourceResponse vaultAccessRules(Substate vaultAccessRules) {
-    this.vaultAccessRules = vaultAccessRules;
-    return this;
-  }
-
-   /**
-   * Get vaultAccessRules
-   * @return vaultAccessRules
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ACCESS_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getVaultAccessRules() {
-    return vaultAccessRules;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VAULT_ACCESS_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultAccessRules(Substate vaultAccessRules) {
-    this.vaultAccessRules = vaultAccessRules;
-  }
-
-
   /**
    * Return true if this StateResourceResponse object is equal to o.
    */
@@ -141,13 +112,12 @@ public class StateResourceResponse {
     }
     StateResourceResponse stateResourceResponse = (StateResourceResponse) o;
     return Objects.equals(this.manager, stateResourceResponse.manager) &&
-        Objects.equals(this.accessRules, stateResourceResponse.accessRules) &&
-        Objects.equals(this.vaultAccessRules, stateResourceResponse.vaultAccessRules);
+        Objects.equals(this.accessRules, stateResourceResponse.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, accessRules, vaultAccessRules);
+    return Objects.hash(manager, accessRules);
   }
 
   @Override
@@ -156,7 +126,6 @@ public class StateResourceResponse {
     sb.append("class StateResourceResponse {\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    vaultAccessRules: ").append(toIndentedString(vaultAccessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
