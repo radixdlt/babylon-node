@@ -608,6 +608,8 @@ impl IterableTransactionStore for RocksDBStore {
         &self,
         from_state_version: u64,
     ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
+        // This should not happen. This interface should be used after checking (e.g. `core-api-server/src/core-api/handlers/`).
+        // However, with or without this debug_assert there would still be a panic if LocalTransactionExecution is missing.
         debug_assert!(self.is_local_transaction_execution_index_enabled());
 
         Box::new(RocksDBCommittedTransactionBundleIterator::new(

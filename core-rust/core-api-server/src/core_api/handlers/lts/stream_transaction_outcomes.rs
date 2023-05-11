@@ -1,5 +1,7 @@
 use crate::core_api::*;
-use state_manager::store::traits::{IterableTransactionStore, QueryableProofStore};
+use state_manager::store::traits::{
+    ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
+};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -30,6 +32,14 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
     let limit = limit.try_into().expect("limit out of usize bounds");
 
     let database = state.database.read();
+
+    if !database.is_local_transaction_execution_index_enabled() {
+        return Err(client_error(
+            "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
+            Please note the resync will take awhile.",
+        ));
+    }
 
     let max_state_version = database.max_state_version();
 

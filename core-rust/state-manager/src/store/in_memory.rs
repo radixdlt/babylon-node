@@ -85,7 +85,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use std::collections::{btree_set, BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -357,6 +357,7 @@ impl IterableTransactionStore for InMemoryStore {
         &self,
         from_state_version: u64,
     ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
+        // This is to align behaviour with the RocksDB implementation. See comment there.
         debug_assert!(self.is_local_transaction_execution_index_enabled());
 
         Box::new(InMemoryCommittedTransactionBundleIterator::new(
@@ -502,42 +503,17 @@ impl AccountChangeIndexExtension for InMemoryStore {
     }
 }
 
-pub struct InMemoryAccountChangeIndexIterator<'a> {
-    iterator: Option<btree_set::Range<'a, u64>>,
-}
-
-impl<'a> InMemoryAccountChangeIndexIterator<'a> {
-    fn new(from_state_version: u64, account: GlobalAddress, store: &'a InMemoryStore) -> Self {
-        let iterator = store
-            .account_change_index_set
-            .get(&account)
-            .map(|state_versions| state_versions.range((Included(from_state_version), Unbounded)));
-
-        Self { iterator }
-    }
-}
-
-impl Iterator for InMemoryAccountChangeIndexIterator<'_> {
-    type Item = u64;
-
-    fn next(&mut self) -> Option<u64> {
-        match &mut self.iterator {
-            None => None,
-            Some(iterator) => iterator.next().cloned(),
-        }
-    }
-}
-
 impl IterableAccountChangeIndex for InMemoryStore {
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
         from_state_version: u64,
     ) -> Box<dyn Iterator<Item = u64> + '_> {
-        Box::new(InMemoryAccountChangeIndexIterator::new(
-            from_state_version,
-            account,
-            self,
-        ))
+        let Some(index) = self.account_change_index_set.get(&account) else { return Box::new(vec![].into_iter()); };
+        return Box::new(
+            index
+                .range((Included(from_state_version), Unbounded))
+                .cloned(),
+        );
     }
 }

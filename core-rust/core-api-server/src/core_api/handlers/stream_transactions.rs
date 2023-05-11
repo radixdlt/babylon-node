@@ -50,6 +50,14 @@ pub(crate) async fn handle_stream_transactions(
 
     let database = state.database.read();
 
+    if !database.is_local_transaction_execution_index_enabled() {
+        return Err(client_error(
+            "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
+            Please note the resync will take awhile.",
+        ));
+    }
+
     let max_state_version = database.max_state_version();
 
     let mut response = models::StreamTransactionsResponse {
