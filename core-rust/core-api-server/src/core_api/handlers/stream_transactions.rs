@@ -46,14 +46,19 @@ pub(crate) async fn handle_stream_transactions(
         )));
     }
 
+    let limit = limit.try_into().expect("limit out of usize bounds");
+
     let database = state.database.read();
 
-    let max_state_version = database.max_state_version();
+    if !database.is_local_transaction_execution_index_enabled() {
+        return Err(client_error(
+            "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
+            Please note the resync will take awhile.",
+        ));
+    }
 
-    let transactions = database.get_committed_transaction_bundles(
-        from_state_version,
-        limit.try_into().expect("limit out of usize bounds"),
-    );
+    let max_state_version = database.max_state_version();
 
     let mut response = models::StreamTransactionsResponse {
         from_state_version: to_api_state_version(from_state_version)?,
@@ -64,7 +69,10 @@ pub(crate) async fn handle_stream_transactions(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for (ledger_transaction, receipt, identifiers) in transactions {
+    for (ledger_transaction, receipt, identifiers) in database
+        .get_committed_transaction_bundle_iter(from_state_version)
+        .take(limit)
+    {
         let committed_transaction = to_api_committed_transaction(
             &mapping_context,
             ledger_transaction,

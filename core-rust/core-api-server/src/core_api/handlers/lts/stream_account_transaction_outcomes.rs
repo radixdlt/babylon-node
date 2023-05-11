@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use state_manager::store::traits::{
-    extensions::AccountChangeIndexExtension, ConfigurableDatabase, QueryableProofStore,
+    extensions::IterableAccountChangeIndex, ConfigurableDatabase, QueryableProofStore,
     QueryableTransactionStore,
 };
 
@@ -62,7 +62,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     let max_state_version = database.max_state_version();
 
     let state_versions =
-        database.get_state_versions_for_account(account_address, from_state_version, limit);
+        database.get_state_versions_for_account_iter(account_address, from_state_version);
 
     let mut response = models::LtsStreamAccountTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
@@ -73,7 +73,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for state_version in state_versions {
+    for state_version in state_versions.take(limit) {
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
             &mapping_context,
             database

@@ -75,6 +75,7 @@ use crate::{
 };
 
 use crate::query::TransactionIdentifierLoader;
+use core::ops::Bound::{Included, Unbounded};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
@@ -83,8 +84,6 @@ use radix_engine_store_interface::interface::{
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
-
-use core::ops::Bound::{Included, Unbounded};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -305,39 +304,70 @@ impl CommitStore for InMemoryStore {
     }
 }
 
-impl QueryableTransactionStore for InMemoryStore {
-    fn get_committed_transaction_bundles(
-        &self,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<CommittedTransactionBundle> {
-        let mut res = Vec::new();
+pub struct InMemoryCommittedTransactionBundleIterator<'a> {
+    state_version: u64,
+    store: &'a InMemoryStore,
+}
 
-        while res.len() < limit {
-            let next_state_version = start_state_version_inclusive + res.len() as u64;
-            res.push((
-                self.transactions.get(&next_state_version).unwrap().clone(),
+impl<'a> InMemoryCommittedTransactionBundleIterator<'a> {
+    fn new(from_state_version: u64, store: &'a InMemoryStore) -> Self {
+        InMemoryCommittedTransactionBundleIterator {
+            state_version: from_state_version,
+            store,
+        }
+    }
+}
+
+impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
+    type Item = CommittedTransactionBundle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let state_version = self.state_version;
+        self.state_version += 1;
+        match self.store.transactions.get(&state_version) {
+            None => None,
+            Some(transaction) => Some((
+                transaction.clone(),
                 LocalTransactionReceipt {
                     on_ledger: self
+                        .store
                         .ledger_receipts
-                        .get(&next_state_version)
+                        .get(&state_version)
                         .unwrap()
                         .clone(),
                     local_execution: self
+                        .store
                         .local_transaction_executions
-                        .get(&next_state_version)
+                        .get(&state_version)
                         .unwrap()
                         .clone(),
                 },
-                self.transaction_identifiers
-                    .get(&next_state_version)
+                self.store
+                    .transaction_identifiers
+                    .get(&state_version)
                     .unwrap()
                     .clone(),
-            ));
+            )),
         }
-        res
     }
+}
 
+impl IterableTransactionStore for InMemoryStore {
+    fn get_committed_transaction_bundle_iter(
+        &self,
+        from_state_version: u64,
+    ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
+        // This is to align behaviour with the RocksDB implementation. See comment there.
+        debug_assert!(self.is_local_transaction_execution_index_enabled());
+
+        Box::new(InMemoryCommittedTransactionBundleIterator::new(
+            from_state_version,
+            self,
+        ))
+    }
+}
+
+impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         Some(self.transactions.get(&state_version)?.clone())
     }
@@ -471,20 +501,19 @@ impl AccountChangeIndexExtension for InMemoryStore {
             );
         }
     }
+}
 
-    fn get_state_versions_for_account(
+impl IterableAccountChangeIndex for InMemoryStore {
+    fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
-        start_state_version_inclusive: u64,
-        limit: usize,
-    ) -> Vec<u64> {
-        match self.account_change_index_set.get(&account) {
-            None => Vec::new(),
-            Some(state_versions) => state_versions
-                .range((Included(start_state_version_inclusive), Unbounded))
-                .take(limit)
-                .cloned()
-                .collect(),
-        }
+        from_state_version: u64,
+    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        let Some(index) = self.account_change_index_set.get(&account) else { return Box::new(vec![].into_iter()); };
+        return Box::new(
+            index
+                .range((Included(from_state_version), Unbounded))
+                .cloned(),
+        );
     }
 }

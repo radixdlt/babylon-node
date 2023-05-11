@@ -100,7 +100,9 @@ pub enum DatabaseBackendConfig {
     RecoverableVertexStore,
     AccountChangeIndexExtension,
     QueryableTransactionStore,
-    CommitStore
+    CommitStore,
+    IterableAccountChangeIndex,
+    IterableTransactionStore
 )]
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),
