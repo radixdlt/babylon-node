@@ -604,15 +604,16 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
 }
 
 impl IterableTransactionStore for RocksDBStore {
-    type CommittedTransactionBundleIterator<'a> = RocksDBCommittedTransactionBundleIterator<'a>;
-
     fn get_committed_transaction_bundle_iter(
         &self,
         from_state_version: u64,
-    ) -> Self::CommittedTransactionBundleIterator<'_> {
+    ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
         debug_assert!(self.is_local_transaction_execution_index_enabled());
 
-        RocksDBCommittedTransactionBundleIterator::new(from_state_version, self)
+        Box::new(RocksDBCommittedTransactionBundleIterator::new(
+            from_state_version,
+            self,
+        ))
     }
 }
 
@@ -1159,14 +1160,16 @@ impl Iterator for RocksDBAccountChangeIndexIterator<'_> {
 }
 
 impl IterableAccountChangeIndex for RocksDBStore {
-    type AccountChangeIndexIterator<'a> = RocksDBAccountChangeIndexIterator<'a>;
-
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
         from_state_version: u64,
-    ) -> Self::AccountChangeIndexIterator<'_> {
-        RocksDBAccountChangeIndexIterator::new(from_state_version, account, self)
+    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        Box::new(RocksDBAccountChangeIndexIterator::new(
+            from_state_version,
+            account,
+            self,
+        ))
     }
 }
 

@@ -353,15 +353,16 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
 }
 
 impl IterableTransactionStore for InMemoryStore {
-    type CommittedTransactionBundleIterator<'a> = InMemoryCommittedTransactionBundleIterator<'a>;
-
     fn get_committed_transaction_bundle_iter(
         &self,
         from_state_version: u64,
-    ) -> Self::CommittedTransactionBundleIterator<'_> {
+    ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
         debug_assert!(self.is_local_transaction_execution_index_enabled());
 
-        InMemoryCommittedTransactionBundleIterator::new(from_state_version, self)
+        Box::new(InMemoryCommittedTransactionBundleIterator::new(
+            from_state_version,
+            self,
+        ))
     }
 }
 
@@ -528,13 +529,15 @@ impl Iterator for InMemoryAccountChangeIndexIterator<'_> {
 }
 
 impl IterableAccountChangeIndex for InMemoryStore {
-    type AccountChangeIndexIterator<'a> = InMemoryAccountChangeIndexIterator<'a>;
-
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
         from_state_version: u64,
-    ) -> Self::AccountChangeIndexIterator<'_> {
-        InMemoryAccountChangeIndexIterator::new(from_state_version, account, self)
+    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        Box::new(InMemoryAccountChangeIndexIterator::new(
+            from_state_version,
+            account,
+            self,
+        ))
     }
 }

@@ -174,15 +174,12 @@ pub mod transactions {
         LocalTransactionReceipt,
     };
 
+    #[enum_dispatch]
     pub trait IterableTransactionStore {
-        type CommittedTransactionBundleIterator<'a>: Iterator<Item = CommittedTransactionBundle>
-        where
-            Self: 'a;
-
         fn get_committed_transaction_bundle_iter(
             &self,
             from_state_version: u64,
-        ) -> Self::CommittedTransactionBundleIterator<'_>;
+        ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_>;
     }
 
     #[enum_dispatch]
@@ -210,7 +207,6 @@ pub mod transactions {
         ) -> Option<LocalTransactionReceipt>;
     }
 
-    #[enum_dispatch]
     pub trait TransactionIndex<T>: QueryableTransactionStore {
         fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<u64>;
     }
@@ -333,15 +329,12 @@ pub mod extensions {
         fn catchup_account_change_index(&mut self);
     }
 
+    #[enum_dispatch]
     pub trait IterableAccountChangeIndex {
-        type AccountChangeIndexIterator<'a>: Iterator<Item = u64>
-        where
-            Self: 'a;
-
         fn get_state_versions_for_account_iter(
             &self,
             account: GlobalAddress,
             from_state_version: u64,
-        ) -> Self::AccountChangeIndexIterator<'_>;
+        ) -> Box<dyn Iterator<Item = u64> + '_>;
     }
 }
