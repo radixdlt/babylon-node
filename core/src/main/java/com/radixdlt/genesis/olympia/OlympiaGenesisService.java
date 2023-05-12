@@ -92,14 +92,6 @@ import org.xerial.snappy.Snappy;
 public final class OlympiaGenesisService {
   private static final Logger log = LogManager.getLogger();
 
-  // A placeholder hash included in the "not ready" response
-  // used to be able to verify that the configured Olympia node public key
-  // is correct, even before the network has shutdown. Used as an early
-  // feedback mechanism in case of a misconfiguration. Must be the same
-  // on Olympia and Babylon nodes.
-  private static final HashCode PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE =
-      HashUtils.sha256Twice(new byte[] {1});
-
   // Polling interval when connection to Olympia node succeeds
   private static final long POLL_INTERVAL_AFTER_NOT_READY_MS = 1000;
 
@@ -133,14 +125,16 @@ public final class OlympiaGenesisService {
             newSingleThreadScheduledExecutor(ThreadFactories.threads("OlympiaGenesisService")));
 
     final var completableFuture = new CompletableFuture<GenesisData>();
-    this.executor.orElseThrow().execute(() -> poll(completableFuture));
+    this.executor.orElseThrow().execute(() -> poll(completableFuture, 0));
     return completableFuture;
   }
 
-  private void poll(CompletableFuture<GenesisData> completableFuture) {
+  private void poll(CompletableFuture<GenesisData> completableFuture, int counter) {
+    // Every 1000th request we'll ask for a test payload (in case of a not-ready response)
+    final var includeTestPayload = counter % 1000 == 0;
     final OlympiaEndStateResponse response;
     try {
-      response = olympiaEndStateApiClient.getOlympiaEndState();
+      response = olympiaEndStateApiClient.getOlympiaEndState(includeTestPayload);
     } catch (Exception ex /* just catch anything */) {
       log.warn(
           """
@@ -151,7 +145,9 @@ public final class OlympiaGenesisService {
       this.executor
           .orElseThrow()
           .schedule(
-              () -> poll(completableFuture), POLL_INTERVAL_AFTER_ERROR_MS, TimeUnit.MILLISECONDS);
+              () -> poll(completableFuture, counter + 1),
+              POLL_INTERVAL_AFTER_ERROR_MS,
+              TimeUnit.MILLISECONDS);
       return;
     }
 
@@ -195,24 +191,47 @@ public final class OlympiaGenesisService {
         }
       }
       case OlympiaEndStateResponse.NotReady notReadyResponse -> {
-        final var receivedPlaceholderHash =
-            HashCode.fromBytes(Bytes.fromHexString(notReadyResponse.placeholderHash()));
+        if (includeTestPayload) {
+          // We've asked for a test payload to be included.
+          // The fact that the response made it to this point means that
+          // the large payload was successfully transferred.
+          // Here we'll just verify the signature which should help us detect
+          // Olympia node public key misconfiguration ahead of time.
 
-        if (!receivedPlaceholderHash.equals(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE)) {
-          completableFuture.completeExceptionally(hashMismatchErr("placeholder"));
-          return;
+          if (notReadyResponse.testPayload().isEmpty()
+              || notReadyResponse.testPayloadHash().isEmpty()
+              || notReadyResponse.signature().isEmpty()) {
+            completableFuture.completeExceptionally(
+                new RuntimeException(
+                    """
+              Successfully connected to the Olympia node, but the test payload \
+              that was requested wasn't included in the response. \
+              This might indicate node misconfiguration. Please make sure your \
+              genesis.olympia.* configuration is correct and that the specified Olympia \
+              node is running the latest version."""));
+            return;
+          }
+
+          final var receivedTestHash =
+              HashCode.fromBytes(Bytes.fromHexString(notReadyResponse.testPayloadHash().get()));
+          final var calculatedTestHash =
+              HashUtils.sha256Twice(Bytes.fromHexString(notReadyResponse.testPayload().get()));
+
+          if (!receivedTestHash.equals(calculatedTestHash)) {
+            completableFuture.completeExceptionally(hashMismatchErr("test payload"));
+            return;
+          }
+
+          final var signature =
+              ECDSASecp256k1Signature.decodeFromHexDer(notReadyResponse.signature().get());
+
+          if (!this.olympiaGenesisConfig.nodePublicKey().verify(calculatedTestHash, signature)) {
+            completableFuture.completeExceptionally(signatureErr());
+            return;
+          }
         }
 
-        final var signature =
-            ECDSASecp256k1Signature.decodeFromHexDer(notReadyResponse.signature());
-        if (!this.olympiaGenesisConfig
-            .nodePublicKey()
-            .verify(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE, signature)) {
-          completableFuture.completeExceptionally(signatureErr());
-          return;
-        }
-
-        // All good, the node has been verified and the configuration is correct, continue polling
+        // Continue polling
 
         if (notReadyLogRateLimiter.tryAcquire()) {
           log.info(
@@ -225,7 +244,7 @@ public final class OlympiaGenesisService {
         this.executor
             .orElseThrow()
             .schedule(
-                () -> poll(completableFuture),
+                () -> poll(completableFuture, counter + 1),
                 POLL_INTERVAL_AFTER_NOT_READY_MS,
                 TimeUnit.MILLISECONDS);
       }

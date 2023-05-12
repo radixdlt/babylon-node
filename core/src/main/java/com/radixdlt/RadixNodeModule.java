@@ -76,7 +76,6 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -101,7 +100,6 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
-import java.util.Optional;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -121,13 +119,10 @@ public final class RadixNodeModule extends AbstractModule {
 
   private final RuntimeProperties properties;
   private final Network network;
-  private final Optional<GenesisData> genesisData;
 
-  public RadixNodeModule(
-      RuntimeProperties properties, Network network, Optional<GenesisData> genesisData) {
+  public RadixNodeModule(RuntimeProperties properties, Network network) {
     this.properties = properties;
     this.network = network;
-    this.genesisData = genesisData;
   }
 
   @Override
@@ -236,7 +231,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
-    install(new REv2LedgerRecoveryModule(genesisData));
+    install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());
 
     install(new MetricsModule());

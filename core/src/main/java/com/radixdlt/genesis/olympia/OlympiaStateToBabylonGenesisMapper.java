@@ -82,7 +82,6 @@ import com.radixdlt.utils.UInt64;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -110,7 +109,10 @@ public final class OlympiaStateToBabylonGenesisMapper {
   // More specifically these are Validators, Resources and XrdBalances chunks.
   // The size limit parameter (maxPerChunk) applies to the length of a list in a chunk.
   private static <I, E, C> ImmutableList<C> createChunks(
-          List<I> input, int maxPerChunk, BiFunction<Integer, I, Optional<E>> mkElement, Function<ImmutableList<E>, C> mkChunk) {
+      List<I> input,
+      int maxPerChunk,
+      BiFunction<Integer, I, Optional<E>> mkElement,
+      Function<ImmutableList<E>, C> mkChunk) {
     final ImmutableList.Builder<C> chunksBuilder = ImmutableList.builder();
     ImmutableList.Builder<E> elementsInCurrentChunkBuilder = ImmutableList.builder();
     int numElementsInCurrentChunk = 0;
@@ -134,70 +136,14 @@ public final class OlympiaStateToBabylonGenesisMapper {
     return chunksBuilder.build();
   }
 
-
-  // Given an input, creates chunks that are in a
-  // form of record C(ImmutableList<X> index, ImmutableList<Tuple<K, ImmutableList<V>>> values).
-  // More specifically these are Stakes and ResourceBalances chunks.
-  // The size limit parameter (maxPerChunk) applies to sum of lengths of the nested ImmutableList<V> lists.
-  // For example: it can happen that a given chunk fits values for multiple K's (multiple Tuples in a values list)
-  // but it can also happen that a single chunk can't fit the whole list for the given K, in which case
-  // multiple chunks will contain the same K (with different V lists).
-  private static <I, S, K, V, X, C> ImmutableList<C> createChunksWithIndex(
-          List<I> input,
-          int maxPerChunk,
-          Function<I, List<S>> expand,
-          Function<I, K> getKey,
-          Function<Tuple.Tuple4<Integer, Integer, I, S>, X> getValueToIndex,
-          Function<Tuple.Tuple5<Integer, Integer, Integer, I, S>, V> getNextElement,
-          BiFunction<ImmutableList<X>, ImmutableList<Tuple.Tuple2<K, ImmutableList<V>>>, C> mkChunk) {
-
-    final ImmutableList.Builder<C> chunksBuilder = ImmutableList.builder();
-    ImmutableList.Builder<Tuple.Tuple2<K, ImmutableList<V>>> elementsInCurrentChunkBuilder = ImmutableList.builder();
-    LinkedHashMap<X, Integer> indexForCurrentChunk = new LinkedHashMap<>();
-    int numElementsInCurrentChunk = 0;
-
-    for (var i = 0; i < input.size(); i++) {
-      final var entry = input.get(i);
-      final var items = expand.apply(entry);
-
-      ImmutableList.Builder<V> outElements = ImmutableList.builder();
-
-      for (var j = 0; j < items.size(); j++) {
-        final var item = items.get(j);
-        final var isLast = i == input.size() - 1 && j == items.size() - 1;
-        final var valueToIndex = getValueToIndex.apply(Tuple.Tuple4.of(i, j, entry, item));
-        final var currIndexSize = indexForCurrentChunk.size();
-        final var indexOfWhateverMustBeIndexed = indexForCurrentChunk.computeIfAbsent(valueToIndex, unused -> currIndexSize);
-        outElements.add(getNextElement.apply(Tuple.Tuple5.of(i, j, indexOfWhateverMustBeIndexed, entry, item)));
-        numElementsInCurrentChunk += 1;
-        if (numElementsInCurrentChunk >= maxPerChunk || isLast) {
-          elementsInCurrentChunkBuilder.add(
-                  Tuple.Tuple2.of(getKey.apply(entry), outElements.build()));
-          outElements = ImmutableList.builder();
-          final var index = indexForCurrentChunk.keySet().stream().collect(ImmutableList.toImmutableList());
-          chunksBuilder.add(mkChunk.apply(index, elementsInCurrentChunkBuilder.build()));
-          indexForCurrentChunk = new LinkedHashMap<>();
-          elementsInCurrentChunkBuilder = ImmutableList.builder();
-          numElementsInCurrentChunk = 0;
-        }
-      }
-      // IF the chunk hasn't been finalized, finalize the resource entry (but not the whole chunk)
-      final var lastElements = outElements.build();
-      if (!lastElements.isEmpty()) {
-        elementsInCurrentChunkBuilder.add(
-                Tuple.Tuple2.of(getKey.apply(entry), lastElements));
-      }
-    }
-    return chunksBuilder.build();
-  }
-
-
   public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
-    final var validatorsChunks = createChunks(
-      olympiaStateIR.validators(),
-      MAX_VALIDATORS_PER_TX,
-      (idx, olympiaValidator) -> Optional.of(convertValidator(olympiaStateIR.accounts(), olympiaValidator)),
-      GenesisDataChunk.Validators::new);
+    final var validatorsChunks =
+        createChunks(
+            olympiaStateIR.validators(),
+            MAX_VALIDATORS_PER_TX,
+            (idx, olympiaValidator) ->
+                Optional.of(convertValidator(olympiaStateIR.accounts(), olympiaValidator)),
+            GenesisDataChunk.Validators::new);
 
     final var olympiaXrdResourceIndex = findXrdResourceIndex(olympiaStateIR);
     final var partitionedOlympiaBalances =
@@ -207,33 +153,32 @@ public final class OlympiaStateToBabylonGenesisMapper {
     final var olympiaXrdBalances = partitionedOlympiaBalances.getOrDefault(true, List.of());
     final var olympiaNonXrdBalances = partitionedOlympiaBalances.getOrDefault(false, List.of());
 
-    final var xrdBalancesChunks = createChunks(
-      olympiaXrdBalances,
-      MAX_XRD_BALANCES_PER_TX,
-      (idx, olympiaXrdBalance) -> {
-        final var account = olympiaStateIR.accounts().get(olympiaXrdBalance.accountIndex());
-        return Optional.of(Tuple.Tuple2.of(
-          Address.virtualAccountAddress(account.publicKeyBytes().asBytes()),
-          Decimal.from(olympiaXrdBalance.amount())));
-      },
-      GenesisDataChunk.XrdBalances::new);
+    final var xrdBalancesChunks =
+        createChunks(
+            olympiaXrdBalances,
+            MAX_XRD_BALANCES_PER_TX,
+            (idx, olympiaXrdBalance) -> {
+              final var account = olympiaStateIR.accounts().get(olympiaXrdBalance.accountIndex());
+              return Optional.of(
+                  Tuple.Tuple2.of(
+                      Address.virtualAccountAddress(account.publicKeyBytes().asBytes()),
+                      Decimal.unsafeFromBigInt(olympiaXrdBalance.amount())));
+            },
+            GenesisDataChunk.XrdBalances::new);
 
-    // TODO: consider optimizing/merging with balance chunks preparation (and iterate the balances
-    // once)
     final BigInteger[] resourceTotalSuppliesOnOlympia =
         new BigInteger[olympiaStateIR.resources().size()];
     for (var balance : olympiaStateIR.balances()) {
       final var resIdx = balance.resourceIndex();
       if (resourceTotalSuppliesOnOlympia[resIdx] == null) {
-        resourceTotalSuppliesOnOlympia[resIdx] =
-            balance.amount().toBigInt(); // TODO(genesis): remove toBigInt
+        resourceTotalSuppliesOnOlympia[resIdx] = balance.amount();
       } else {
         resourceTotalSuppliesOnOlympia[resIdx] =
-            resourceTotalSuppliesOnOlympia[resIdx].add(
-                balance.amount().toBigInt()); // TODO(genesis) remove to big int
+            resourceTotalSuppliesOnOlympia[resIdx].add(balance.amount());
       }
     }
 
+    // We'll be updating this on the occasion of preparing the resource balances chunks below
     final Decimal[] resourceTotalSuppliesOnBabylon = new Decimal[olympiaStateIR.resources().size()];
 
     final ImmutableList.Builder<GenesisDataChunk.ResourceBalances> resourceBalancesChunksBuilder =
@@ -262,18 +207,14 @@ public final class OlympiaStateToBabylonGenesisMapper {
               ? BigInteger.ZERO
               : resourceTotalSuppliesOnOlympia[resourceIndex];
 
-      // for current resource and current chunk
-      ImmutableList.Builder<GenesisResourceAllocation> resourceAllocations =
-          ImmutableList.builder();
+      ImmutableList.Builder<GenesisResourceAllocation> currentAllocations = ImmutableList.builder();
 
       for (var j = 0; j < balances.size(); j++) {
         final var balance = balances.get(j);
         final var olympiaAmount = balance.amount();
         final var babylonAmount =
             scaleResourceAmount(
-                olympiaAmount.toBigInt(),
-                totalSupplyOnOlympia,
-                MAX_GENESIS_RESOURCE_SUPPLY.toBigInt());
+                olympiaAmount, totalSupplyOnOlympia, MAX_GENESIS_RESOURCE_SUPPLY.toBigInt());
 
         if (resourceTotalSuppliesOnBabylon[resourceIndex] == null) {
           resourceTotalSuppliesOnBabylon[resourceIndex] = babylonAmount;
@@ -291,15 +232,15 @@ public final class OlympiaStateToBabylonGenesisMapper {
         final var accountIndex =
             accountsForCurrentResourceBalancesChunk.computeIfAbsent(
                 accountAddress, unused -> currAccountsSize);
-        resourceAllocations.add(
+        currentAllocations.add(
             new GenesisResourceAllocation(UInt32.fromNonNegativeInt(accountIndex), babylonAmount));
         numResourceBalancesInCurrentChunk += 1;
         if (numResourceBalancesInCurrentChunk >= MAX_RESOURCE_BALANCES_PER_TX || isLast) {
           resourceBalancesInCurrentChunkBuilder.add(
               Tuple.Tuple2.of(
                   ResourceAddress.globalFungible(resource.addr().getBytes()),
-                  resourceAllocations.build()));
-          resourceAllocations = ImmutableList.builder();
+                  currentAllocations.build()));
+          currentAllocations = ImmutableList.builder();
 
           final var accounts =
               accountsForCurrentResourceBalancesChunk.keySet().stream()
@@ -313,40 +254,52 @@ public final class OlympiaStateToBabylonGenesisMapper {
         }
       }
 
-      // IF the chunk hasn't been finalized, finalize the resource entry (but not the whole chunk)
-      final var lastAllocations = resourceAllocations.build();
-      if (!lastAllocations.isEmpty()) {
+      final var remainingAllocations = currentAllocations.build();
+      if (!remainingAllocations.isEmpty()) {
         resourceBalancesInCurrentChunkBuilder.add(
             Tuple.Tuple2.of(
-                ResourceAddress.globalFungible(resource.addr().getBytes()), lastAllocations));
+                ResourceAddress.globalFungible(resource.addr().getBytes()), remainingAllocations));
       }
     }
     final var resourceBalancesChunks = resourceBalancesChunksBuilder.build();
 
-    final var resourceChunks = createChunks(
-      olympiaStateIR.resources(),
-      MAX_RESOURCES_PER_TX,
-      (idx, olympiaResource) -> {
-        if (idx == olympiaXrdResourceIndex) {
-          // skip xrd
-          return Optional.empty();
-        }
-        final var initialSupply =
-          resourceTotalSuppliesOnBabylon[idx] == null
-            ? Decimal.ZERO
-            : resourceTotalSuppliesOnBabylon[idx];
-        return Optional.of(convertResource(olympiaStateIR.accounts(), initialSupply, olympiaResource));
-      },
-      GenesisDataChunk.Resources::new);
+    final var resourceChunks =
+        createChunks(
+            olympiaStateIR.resources(),
+            MAX_RESOURCES_PER_TX,
+            (idx, olympiaResource) -> {
+              if (idx == olympiaXrdResourceIndex) {
+                // skip xrd
+                return Optional.empty();
+              }
+              final var initialSupply =
+                  resourceTotalSuppliesOnBabylon[idx] == null
+                      ? Decimal.ZERO
+                      : resourceTotalSuppliesOnBabylon[idx];
+              return Optional.of(
+                  convertResource(olympiaStateIR.accounts(), initialSupply, olympiaResource));
+            },
+            GenesisDataChunk.Resources::new);
 
-    final ImmutableList.Builder<GenesisDataChunk.Stakes> stakesChunksBuilder =
-        ImmutableList.builder();
-    ImmutableList.Builder<
-            Tuple.Tuple2<ECDSASecp256k1PublicKey, ImmutableList<GenesisStakeAllocation>>>
-        stakesInCurrentChunkBuilder = ImmutableList.builder();
-    LinkedHashMap<ComponentAddress, Integer> accountsForCurrentStakesChunk = new LinkedHashMap<>();
-    int numStakesInCurrentChunk = 0;
+    final var stakesChunks = prepareStakesChunks(olympiaStateIR);
 
+    return new GenesisData(
+        Stream.of(
+                validatorsChunks.stream(),
+                stakesChunks.stream(),
+                resourceChunks.stream(),
+                resourceBalancesChunks.stream(),
+                xrdBalancesChunks.stream())
+            .flatMap(s -> s)
+            .collect(ImmutableList.toImmutableList()),
+        UInt64.fromNonNegativeLong(0L),
+        UInt32.fromNonNegativeInt(10),
+        UInt64.fromNonNegativeLong(100),
+        UInt64.fromNonNegativeLong(10));
+  }
+
+  private static ImmutableList<GenesisDataChunk.Stakes> prepareStakesChunks(
+      OlympiaStateIR olympiaStateIR) {
     final var olympiaStakesGrouped =
         olympiaStateIR.stakes().stream()
             .collect(Collectors.groupingBy(OlympiaStateIR.Stake::validatorIndex))
@@ -354,39 +307,12 @@ public final class OlympiaStateToBabylonGenesisMapper {
             .stream()
             .toList();
 
-
-    final var asd = createChunksWithIndex(
-            olympiaStakesGrouped,
-            MAX_STAKES_PER_TX,
-            list -> list.getValue(),
-            entry -> {
-              final var validatorIndex = entry.getKey();
-              final var validator = olympiaStateIR.validators().get(validatorIndex);
-              final ECDSASecp256k1PublicKey validatorPublicKey;
-              try {
-                return ECDSASecp256k1PublicKey.fromBytes(validator.publicKeyBytes().asBytes());
-              } catch (PublicKeyException e) {
-                throw new RuntimeException(e);
-              }
-            },
-            tuple -> {
-              return tuple.map((i, j, entry, item) -> {
-                final var account = olympiaStateIR.accounts().get(item.accountIndex());
-                return Address.virtualAccountAddress(account.publicKeyBytes().asBytes());
-              })
-            },
-            tuple -> {
-              return tuple.map((i, j, index, entry, item) -> {
-                final var decimalXrdAmount = Decimal.from(item.stakeUnitAmount());
-                return new GenesisStakeAllocation(UInt32.fromNonNegativeInt(index), decimalXrdAmount));
-              }
-
-            }
-    )
-
-
-
-
+    final ImmutableList.Builder<GenesisDataChunk.Stakes> chunksBuilder = ImmutableList.builder();
+    ImmutableList.Builder<
+            Tuple.Tuple2<ECDSASecp256k1PublicKey, ImmutableList<GenesisStakeAllocation>>>
+        stakesInCurrentChunkBuilder = ImmutableList.builder();
+    LinkedHashMap<ComponentAddress, Integer> accountsForCurrentChunk = new LinkedHashMap<>();
+    int numStakesInCurrentChunk = 0;
 
     for (var i = 0; i < olympiaStakesGrouped.size(); i++) {
       final var entry = olympiaStakesGrouped.get(i);
@@ -402,8 +328,7 @@ public final class OlympiaStateToBabylonGenesisMapper {
         throw new RuntimeException(e);
       }
 
-      // for current validator and current chunk
-      ImmutableList.Builder<GenesisStakeAllocation> stakeAllocations = ImmutableList.builder();
+      ImmutableList.Builder<GenesisStakeAllocation> allocationsBuilder = ImmutableList.builder();
 
       for (var j = 0; j < stakes.size(); j++) {
         final var stake = stakes.get(j);
@@ -414,49 +339,32 @@ public final class OlympiaStateToBabylonGenesisMapper {
         final var accountAddress =
             Address.virtualAccountAddress(account.publicKeyBytes().asBytes());
 
-        final var currAccountsSize = accountsForCurrentStakesChunk.size();
+        final var currAccountsSize = accountsForCurrentChunk.size();
         final var accountIndex =
-            accountsForCurrentStakesChunk.computeIfAbsent(
-                accountAddress, unused -> currAccountsSize);
-        stakeAllocations.add(
+            accountsForCurrentChunk.computeIfAbsent(accountAddress, unused -> currAccountsSize);
+        allocationsBuilder.add(
             new GenesisStakeAllocation(UInt32.fromNonNegativeInt(accountIndex), decimalXrdAmount));
         numStakesInCurrentChunk += 1;
         if (numStakesInCurrentChunk >= MAX_STAKES_PER_TX || isLast) {
           stakesInCurrentChunkBuilder.add(
-              Tuple.Tuple2.of(validatorPublicKey, stakeAllocations.build()));
-          stakeAllocations = ImmutableList.builder();
+              Tuple.Tuple2.of(validatorPublicKey, allocationsBuilder.build()));
+          allocationsBuilder = ImmutableList.builder();
 
           final var accounts =
-              accountsForCurrentStakesChunk.keySet().stream()
-                  .collect(ImmutableList.toImmutableList());
-          stakesChunksBuilder.add(
+              accountsForCurrentChunk.keySet().stream().collect(ImmutableList.toImmutableList());
+          chunksBuilder.add(
               new GenesisDataChunk.Stakes(accounts, stakesInCurrentChunkBuilder.build()));
-          accountsForCurrentStakesChunk = new LinkedHashMap<>();
+          accountsForCurrentChunk = new LinkedHashMap<>();
           stakesInCurrentChunkBuilder = ImmutableList.builder();
           numStakesInCurrentChunk = 0;
         }
       }
-      // IF the chunk hasn't been finalized, finalize the resource entry (but not the whole chunk)
-      final var lastAllocations = stakeAllocations.build();
-      if (!lastAllocations.isEmpty()) {
-        stakesInCurrentChunkBuilder.add(Tuple.Tuple2.of(validatorPublicKey, lastAllocations));
+      final var remainingAllocations = allocationsBuilder.build();
+      if (!remainingAllocations.isEmpty()) {
+        stakesInCurrentChunkBuilder.add(Tuple.Tuple2.of(validatorPublicKey, remainingAllocations));
       }
     }
-    final var stakesChunks = stakesChunksBuilder.build();
-
-    return new GenesisData(
-        Stream.of(
-                validatorsChunks.stream(),
-                stakesChunks.stream(),
-                resourceChunks.stream(),
-                resourceBalancesChunks.stream(),
-                xrdBalancesChunks.stream())
-            .flatMap(s -> s)
-            .collect(ImmutableList.toImmutableList()),
-        UInt64.fromNonNegativeLong(0L),
-        UInt32.fromNonNegativeInt(10),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10));
+    return chunksBuilder.build();
   }
 
   public static int findXrdResourceIndex(OlympiaStateIR olympiaStateIR) {

@@ -223,6 +223,7 @@ pub mod proofs {
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
         ) -> Option<(Vec<Vec<u8>>, LedgerProof)>;
+        fn get_first_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
         fn get_last_epoch_proof(&self) -> Option<LedgerProof>;

@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import java.math.BigInteger;
 import java.util.Optional;
 
 /** The intermediate representation (IR) of the Olympia ledger state. */
@@ -76,7 +77,9 @@ public record OlympiaStateIR(
     ImmutableList<Resource> resources,
     ImmutableList<Account> accounts,
     ImmutableList<AccountBalance> balances,
-    ImmutableList<Stake> stakes) {
+    ImmutableList<Stake> stakes,
+    long lastConsensusTimestamp,
+    long lastEpoch) {
 
   public record Validator(
       HashCode publicKeyBytes,
@@ -102,8 +105,7 @@ public record OlympiaStateIR(
 
   public record Account(HashCode publicKeyBytes) {}
 
-  // TODO(genesis) amount -> BigInteger
-  public record AccountBalance(int accountIndex, int resourceIndex, UInt256 amount) {}
+  public record AccountBalance(int accountIndex, int resourceIndex, BigInteger amount) {}
 
   public record Stake(int accountIndex, int validatorIndex, UInt256 stakeUnitAmount) {}
 }

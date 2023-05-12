@@ -67,11 +67,11 @@ package com.radixdlt.shell;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.RadixNodeModule;
+import com.radixdlt.RadixNode;
+import com.radixdlt.RadixNodeBootstrapper;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -207,10 +207,9 @@ public final class RadixShell {
           new GenesisFromPropertiesLoader(properties, network)
               .loadGenesisDataFromProperties()
               .orElseThrow();
-
-      final var injector =
-          Guice.createInjector(new RadixNodeModule(properties, network, Optional.of(genesisData)));
-      final var node = new Node(injector);
+      final var radixNode =
+          RadixNodeBootstrapper.bootstrapRadixNode(properties).radixNodeFuture().get();
+      final var node = new Node(radixNode);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);
 
@@ -223,24 +222,30 @@ public final class RadixShell {
   }
 
   public static final class Node {
-    private final Injector injector;
+    private final RadixNode underlyingRadixNode;
     private final Map<String, ModuleRunner> moduleRunners;
     private final Set<Disposable> msgConsumers = new HashSet<>();
     private final Set<Disposable> eventConsumers = new HashSet<>();
     private final Set<Disposable> remoteEventConsumers = new HashSet<>();
 
-    public Node(Injector injector) {
-      this.injector = injector;
+    public Node(RadixNode underlyingRadixNode) {
+      this.underlyingRadixNode = underlyingRadixNode;
       this.moduleRunners =
-          injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
+          underlyingRadixNode
+              .injector()
+              .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
+    }
+
+    private Injector injector() {
+      return underlyingRadixNode.injector();
     }
 
     public <T> T getInstance(Key<T> key) {
-      return injector.getInstance(key);
+      return injector().getInstance(key);
     }
 
     public <T> T getInstance(Class<T> clz) {
-      return injector.getInstance(clz);
+      return injector().getInstance(clz);
     }
 
     public void startRunner(String runner) {
@@ -252,19 +257,19 @@ public final class RadixShell {
     }
 
     public void startP2PServer() {
-      final var peerServer = injector.getInstance(PeerServerBootstrap.class);
+      final var peerServer = injector().getInstance(PeerServerBootstrap.class);
       peerServer.start();
       log.info("P2P server started: " + self());
     }
 
     public void stopP2PServer() {
-      final var peerServer = injector.getInstance(PeerServerBootstrap.class);
+      final var peerServer = injector().getInstance(PeerServerBootstrap.class);
       peerServer.stop();
       log.info("P2P server stop: " + self());
     }
 
     public RadixNodeUri self() {
-      return injector.getInstance(Key.get(RadixNodeUri.class, Self.class));
+      return injector().getInstance(Key.get(RadixNodeUri.class, Self.class));
     }
 
     public void connectTo(String uri) throws DeserializeException {
@@ -284,13 +289,13 @@ public final class RadixShell {
 
     @SuppressWarnings("unchecked")
     public <T> void dispatch(T t) {
-      ((EventDispatcher<T>) injector.getInstance(Environment.class).getDispatcher(t.getClass()))
+      ((EventDispatcher<T>) injector().getInstance(Environment.class).getDispatcher(t.getClass()))
           .dispatch(t);
     }
 
     public <T> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
       final var disposable =
-          injector
+          injector()
               .getInstance(RxEnvironment.class)
               .getObservable(eventClass)
               .subscribe(consumer::accept);
@@ -315,7 +320,7 @@ public final class RadixShell {
     public <T> Disposable onRemoteEvent(
         Class<T> eventClass, Consumer<RemoteEvent<NodeId, T>> consumer) {
       final var disposable =
-          injector
+          injector()
               .getInstance(RxRemoteEnvironment.class)
               .remoteEvents(eventClass)
               .subscribe(consumer::accept);
@@ -332,7 +337,7 @@ public final class RadixShell {
     @SuppressWarnings("unchecked")
     public <T> void dispatchRemote(NodeId receiver, T t) {
       ((RemoteEventDispatcher<NodeId, T>)
-              injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
+              injector().getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
           .dispatch(receiver, t);
     }
 
@@ -341,7 +346,7 @@ public final class RadixShell {
     }
 
     public void sendMsg(String nodeAddress, Message message) throws DeserializeException {
-      final var addressing = injector.getInstance(Addressing.class);
+      final var addressing = injector().getInstance(Addressing.class);
       sendMsg(NodeId.fromPublicKey(addressing.decodeNodeAddress(nodeAddress)), message);
     }
 

@@ -91,7 +91,6 @@ import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
-import java.util.Optional;
 import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
@@ -399,7 +398,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
-            install(new REv2LedgerRecoveryModule(Optional.of(rev2Config.genesis())));
+            // TODO(genesis): run database initializer with rev2Config.genesis()
+            install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
 
             switch (rev2Config.proposerConfig()) {

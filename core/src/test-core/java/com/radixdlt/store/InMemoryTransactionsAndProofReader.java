@@ -146,6 +146,14 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   }
 
   @Override
+  public Optional<LedgerProof> getFirstEpochProof() {
+    synchronized (lock) {
+      final var iter = store.epochProofs.values().iterator();
+      return iter.hasNext() ? Optional.of(iter.next()) : Optional.empty();
+    }
+  }
+
+  @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
     synchronized (lock) {
       return Optional.ofNullable(store.epochProofs.get(epoch));

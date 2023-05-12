@@ -192,6 +192,20 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getFirstEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<JavaLedgerProof> {
+        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let epoch_proof = database.read().get_first_epoch_proof();
+        epoch_proof.map(JavaLedgerProof::from)
+    })
+}
+
+#[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getEpochProof(
     env: JNIEnv,
     _class: JClass,

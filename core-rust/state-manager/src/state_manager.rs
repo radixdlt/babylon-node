@@ -539,6 +539,9 @@ where
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> LedgerProof {
+        // TODO: pass as parameter (hash of genesis data)
+        let genesis_opaque_hash = Hash([0; Hash::LENGTH]);
+
         let mut curr_state_version = 0;
         let mut curr_accumulator_hash = AccumulatorHash::pre_genesis();
 
@@ -697,13 +700,15 @@ where
             next_epoch,
         };
 
+        let genesis_wrap_up_ledger_proof = LedgerProof {
+            opaque: genesis_opaque_hash,
+            ledger_header: genesis_wrap_up_ledger_header,
+            timestamped_signatures: vec![],
+        };
+
         let genesis_wrap_up_commit_request = CommitRequest {
             transaction_payloads: vec![genesis_wrap_up_ledger_payload],
-            proof: LedgerProof {
-                opaque: Hash([0; Hash::LENGTH]),
-                ledger_header: genesis_wrap_up_ledger_header.clone(),
-                timestamped_signatures: vec![],
-            },
+            proof: genesis_wrap_up_ledger_proof.clone(),
             vertex_store: None,
         };
 
@@ -722,11 +727,7 @@ where
             }
         }
 
-        LedgerProof {
-            opaque: Hash([0; Hash::LENGTH]),
-            ledger_header: genesis_wrap_up_ledger_header,
-            timestamped_signatures: vec![],
-        }
+        genesis_wrap_up_ledger_proof
     }
 
     pub fn commit(

@@ -64,9 +64,13 @@
 
 package com.radixdlt;
 
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.api.system.SystemApi;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.PreGenesisNodeModule;
@@ -76,6 +80,10 @@ import com.radixdlt.genesis.olympia.OlympiaGenesisService;
 import com.radixdlt.lang.Either;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
+import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
@@ -163,6 +171,12 @@ public final class RadixNodeBootstrapper {
     final var preGenesisInjector =
         Guice.createInjector(new PreGenesisNodeModule(properties, network));
 
+    final var hasher = preGenesisInjector.getInstance(Hasher.class);
+
+    final var maybeExistingGenesisEpochProof =
+        preGenesisInjector.getInstance(TransactionsAndProofReader.class).getFirstEpochProof();
+    final var maybeExistingGenesisHash = maybeExistingGenesisEpochProof.map(LedgerProof::getOpaque);
+
     final Optional<GenesisData> configuredGenesis =
         preGenesisInjector
             .getInstance(GenesisFromPropertiesLoader.class)
@@ -184,42 +198,95 @@ public final class RadixNodeBootstrapper {
      * Finally, if neither the genesis transaction nor any means to obtain it (from the Olympia node)
      * have been configured, we fail with an error.
      * */
-    if (configuredGenesis.isPresent()) {
-      // The ledger isn't initialized, but there is a configured genesis transaction in properties
-      // So just need to make sure it matches the fixed network genesis
-      if (isPresentAndNotEqual(configuredGenesis.get(), fixedNetworkGenesis)) {
+    if (maybeExistingGenesisHash.isPresent()) {
+      // The database has already been initialized, so no need to execute any genesis,
+      // but we do some sanity checks: if any other genesis source is configured
+      // it must match the one that was already committed.
+
+      final var existingGenesisHash = maybeExistingGenesisHash.get();
+
+      final var maybeConfiguredGenesisHash =
+          configuredGenesis.map(gd -> genesisDataHash(gd, hasher));
+
+      if (isPresentAndNotEqual(existingGenesisHash, maybeConfiguredGenesisHash)) {
         return new RadixNodeBootstrapperHandle.Failed(
             new RuntimeException(
                 String.format(
                     """
-                    Network %s has a genesis configuration that doesn't match \
-                    the genesis that has been configured for this node. \
-                    Make sure your configuration is correct (`network.id` and/or \
-                    `network.genesis_txn` and/or `network.genesis_file`).""",
-                    network.getLogicalName())));
+              Configured genesis data (of hash %s) doesn't match the genesis data that has already \
+              been used to initialize the database (%s). \
+              Make sure your configuration is correct (check `network.id` and/or \
+               `network.genesis_txn` and/or `network.genesis_file`).""",
+                    maybeConfiguredGenesisHash.orElseThrow(), existingGenesisHash)));
       }
-      final var radixNode = RadixNode.start(properties, network, configuredGenesis);
+
+      final var maybeFixedNetworkGenesisHash =
+          fixedNetworkGenesis.map(gd -> genesisDataHash(gd, hasher));
+
+      if (isPresentAndNotEqual(existingGenesisHash, maybeFixedNetworkGenesisHash)) {
+        return new RadixNodeBootstrapperHandle.Failed(
+            new RuntimeException(
+                String.format(
+                    """
+              Network %s uses fixed genesis data (of hash %s) that doesn't match the genesis data" \
+              that has previously been executed and stored on ledger (%s)." \
+              Make sure your configuration is correct (check `network.id` and/or" \
+              `db.location`).""",
+                    network.getLogicalName(),
+                    fixedNetworkGenesis.orElseThrow(),
+                    existingGenesisHash)));
+      }
+
+      final var radixNode = RadixNode.start(properties, network);
+      return new RadixNodeBootstrapperHandle.Resolved(radixNode);
+    }
+    if (configuredGenesis.isPresent()) {
+      // The ledger isn't initialized, but there is a configured genesis in properties
+      // So just need to make sure it matches the fixed network genesis
+
+      final var configuredGenesisHash = genesisDataHash(configuredGenesis.get(), hasher);
+
+      final var maybeFixedNetworkGenesisHash =
+          fixedNetworkGenesis.map(gd -> genesisDataHash(gd, hasher));
+
+      if (isPresentAndNotEqual(configuredGenesisHash, maybeFixedNetworkGenesisHash)) {
+        return new RadixNodeBootstrapperHandle.Failed(
+            new RuntimeException(
+                String.format(
+                    """
+                    Network %s uses a fixed genesis data (of hash %s) that doesn't match \
+                    the genesis that has been configured for this node (%s). \
+                    Make sure your configuration is correct (check `network.id` and/or \
+                    `network.genesis_txn` and/or `network.genesis_file`).""",
+                    network.getLogicalName(),
+                    maybeFixedNetworkGenesisHash.orElseThrow(),
+                    configuredGenesisHash)));
+      }
+
+      preGenesisInjector
+          .getInstance(RustStateComputer.class)
+          .executeGenesis(configuredGenesis.get());
+      preGenesisInjector.getInstance(StateManager.class).shutdown();
+
+      final var radixNode = RadixNode.start(properties, network);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (fixedNetworkGenesis.isPresent()) {
       // There's no configured genesis data in properties, so we can just use
       // the network fixed genesis without any additional validation
-      final var radixNode = RadixNode.start(properties, network, fixedNetworkGenesis);
+      preGenesisInjector
+          .getInstance(RustStateComputer.class)
+          .executeGenesis(fixedNetworkGenesis.get());
+      preGenesisInjector.getInstance(StateManager.class).shutdown();
+
+      final var radixNode = RadixNode.start(properties, network);
       return new RadixNodeBootstrapperHandle.Resolved(radixNode);
     } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
-      final var olympiaBootstrapper = OlympiaGenesisBootstrapper.start(properties, network);
+      final var olympiaBootstrapper =
+          OlympiaGenesisBootstrapper.start(properties, network, preGenesisInjector);
       return new RadixNodeBootstrapperHandle.AsyncFromOlympia(olympiaBootstrapper);
     } else {
-      // TODO(genesis): for now just starting the node without any genesis configuration,
-      //                the node will start if the database was already initialized
-      //                or fail in the recovery module.
-      final var radixNode = RadixNode.start(properties, network, Optional.empty());
-      return new RadixNodeBootstrapperHandle.Resolved(radixNode);
-      // TODO(genesis): bring back the error message once the genesis check
-      //                against the database is brought back
-
       // TODO(post-babylon): remove Olympia ref from the message below
-      /*
       return new RadixNodeBootstrapperHandle.Failed(
           new RuntimeException(
               """
@@ -228,8 +295,13 @@ public final class RadixNodeBootstrapper {
         you're using a well known network (`network.id`). If you're running an Olympia \
         node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
         documentation for more details."""));
-       */
     }
+  }
+
+  private static HashCode genesisDataHash(GenesisData genesisData, Hasher hasher) {
+    final var encoded =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    return hasher.hashBytes(encoded);
   }
 
   private static Either<Exception, Network> readNetworkFromProperties(
@@ -279,18 +351,23 @@ public final class RadixNodeBootstrapper {
   private static class OlympiaGenesisBootstrapper {
     private final RuntimeProperties properties;
     private final Network network;
+    private final Injector preGenesisInjector;
     private final Injector injector;
     private final CompletableFuture<RadixNode> radixNodeFuture;
 
-    private OlympiaGenesisBootstrapper(RuntimeProperties properties, Network network) {
+    private OlympiaGenesisBootstrapper(
+        RuntimeProperties properties, Network network, Injector preGenesisInjector) {
       this.properties = properties;
       this.network = network;
+      this.preGenesisInjector = preGenesisInjector;
       this.injector = Guice.createInjector(new GenesisFromOlympiaNodeModule(properties, network));
       this.radixNodeFuture = new CompletableFuture<>();
     }
 
-    static OlympiaGenesisBootstrapper start(RuntimeProperties properties, Network network) {
-      final var bootstrapper = new OlympiaGenesisBootstrapper(properties, network);
+    static OlympiaGenesisBootstrapper start(
+        RuntimeProperties properties, Network network, Injector preGenesisInjector) {
+      final var bootstrapper =
+          new OlympiaGenesisBootstrapper(properties, network, preGenesisInjector);
       bootstrapper.startInternal();
       return bootstrapper;
     }
@@ -325,8 +402,11 @@ public final class RadixNodeBootstrapper {
               Genesis data has been successfully received from the Olympia node \
               ({} data chunks). Initializing the Babylon node...""",
                   genesisData.chunks().size());
-              radixNodeFuture.complete(
-                  RadixNode.start(properties, network, Optional.of(genesisData)));
+
+              preGenesisInjector.getInstance(RustStateComputer.class).executeGenesis(genesisData);
+              preGenesisInjector.getInstance(StateManager.class).shutdown();
+
+              radixNodeFuture.complete(RadixNode.start(properties, network));
             }
           });
     }

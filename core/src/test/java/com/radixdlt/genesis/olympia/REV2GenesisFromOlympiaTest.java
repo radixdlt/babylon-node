@@ -83,12 +83,11 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Base64;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
 
 public final class REV2GenesisFromOlympiaTest {
-  private DeterministicTest createTest(GenesisData genesisData) throws IOException {
+  private DeterministicTest createTest(GenesisData genesisData) {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -122,7 +121,7 @@ public final class REV2GenesisFromOlympiaTest {
           final var xrdAmount =
               stateReader.getComponentXrdAmount(
                   Address.virtualAccountAddress(acc.publicKeyBytes().asBytes()));
-          assertEquals(xrdAmount, Decimal.from(balance.amount()));
+          assertEquals(xrdAmount, Decimal.unsafeFromBigInt(balance.amount()));
         }
       }
     }
@@ -132,8 +131,8 @@ public final class REV2GenesisFromOlympiaTest {
     try (var is =
         REV2GenesisFromOlympiaTest.class
             .getClassLoader()
-            .getResourceAsStream("genesis/olympia-end-state-2023-04-12.base64")) {
-      final var compressed = Base64.getDecoder().decode(is.readAllBytes());
+            .getResourceAsStream("genesis/test-olympia-end-state-compressed.raw")) {
+      final var compressed = is.readAllBytes();
       final var uncompressed = Snappy.uncompress(compressed);
       return new OlympiaStateIRDeserializer().deserialize(new ByteArrayInputStream(uncompressed));
     }

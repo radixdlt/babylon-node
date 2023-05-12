@@ -69,6 +69,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -104,7 +105,10 @@ public final class OlympiaStateIRDeserializer {
       final var accounts = readAccounts();
       final var balances = readBalances();
       final var stakes = readStakes();
-      return new OlympiaStateIR(validators, resources, accounts, balances, stakes);
+      final var lastConsensusTimestamp = readLong();
+      final var lastEpoch = readLong();
+      return new OlympiaStateIR(
+          validators, resources, accounts, balances, stakes, lastConsensusTimestamp, lastEpoch);
     }
 
     private ImmutableList<OlympiaStateIR.Validator> readValidators() {
@@ -146,7 +150,7 @@ public final class OlympiaStateIRDeserializer {
     }
 
     private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
-      return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readUint256()));
+      return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readBigInt()));
     }
 
     private ImmutableList<OlympiaStateIR.Stake> readStakes() {
@@ -182,6 +186,10 @@ public final class OlympiaStateIRDeserializer {
 
     private int readInt() {
       return Ints.fromByteArray(readNBytes(Integer.BYTES));
+    }
+
+    private long readLong() {
+      return Longs.fromByteArray(readNBytes(Long.BYTES));
     }
 
     private UInt256 readUint256() {

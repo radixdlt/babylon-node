@@ -86,8 +86,9 @@ public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
               ignored, // This is included as a hack to ensure that genesis exists in the proof
       // reader
       TransactionsAndProofReader transactionsAndProofReader) {
-    // TODO: fixme, this should get epoch proof of the _initial epoch_, not 0
+    // TODO(genesis): fixme, this should get epoch proof of the _initial epoch_, not 0
     // also fix this weird hack with relying on LastProof dependency to execute genesis
+    // I think the hack can be removed...genesis is now run in bootstrapper
     var genesisProof = transactionsAndProofReader.getEpochProof(0).orElseThrow();
     var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
     var potentialBFTValidators =

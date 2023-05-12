@@ -75,7 +75,6 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
@@ -88,7 +87,6 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,11 +99,10 @@ public final class RadixNode {
     this.injector = injector;
   }
 
-  public static RadixNode start(
-      RuntimeProperties properties, Network network, Optional<GenesisData> genesisTxn) {
+  public static RadixNode start(RuntimeProperties properties, Network network) {
     log.info("Starting Radix node");
 
-    final var injector = Guice.createInjector(new RadixNodeModule(properties, network, genesisTxn));
+    final var injector = Guice.createInjector(new RadixNodeModule(properties, network));
 
     final var metrics = injector.getInstance(Metrics.class);
     injector.getInstance(MetricInstaller.class).installAt(metrics);
@@ -146,6 +143,10 @@ public final class RadixNode {
 
   public BFTValidatorId self() {
     return this.injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
+  }
+
+  public Injector injector() {
+    return this.injector;
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {
