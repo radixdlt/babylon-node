@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 core-api-server = { path = "../core-api-server" }
 state-manager = { path = "../state-manager" }
-jni = "0.19.0"
+
+jni = { workspace = true }
 
 [lib]
 name = "corerust"

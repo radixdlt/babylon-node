@@ -5,51 +5,30 @@ edition = "2021"
 
 [dependencies]
 state-manager = { path = "../state-manager" }
-parking_lot = { version = "0.12" }
 
-# DEPENDENCIES ON RADIXDLT-SCRYPTO
-#
-# To make builds reproducible, for merged in node code, please specify a fixed tag below, not a branch.
-#
-# * In development, feel free to use branch="branch-name", instead of tag="X"
-# * When ready to put in a PR to the node, please merge your upstream PR into develop.
-# * Then create a tag in radixdlt-scrypto against the develop branch:
-#   $ git checkout develop
-#   $ git pull
-#   $ git rev-parse --short HEAD
-#   $ git tag "develop-<8 char hash id from previous command>"
-#   $ git push origin "develop-BLAH"
-# * Then use tag="develop-BLAH" in the below dependencies.
-#
-# Ensure this version is also identically updated in ../state-manager/Cargo.toml
-#
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "ash-8b6530b5d" }
+sbor = { workspace = true }
+transaction = { workspace = true }
+radix-engine-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-engine = { workspace = true }
+radix-engine-constants = { workspace = true }
+radix-engine-stores = { workspace = true }
+radix-engine-store-interface = { workspace = true }
+radix-engine-queries = { workspace = true }
+utils = { workspace = true }
 
-jni = "0.19.0"
+# Non-Radix Engine Dependencies:
+jni = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+parking_lot = { workspace = true }
+prometheus = { workspace = true }
+blake2 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
-blake2 = { version = "0.10.6", default-features = false }
-serde = { version = "1.0.81", features = ["derive"] }
-serde_json = { version = "1.0.81", features = ["preserve_order"] }
-hex = { version = "0.4.3", default-features = false }
-futures = "0.3"
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
-
-prometheus = { version = "0.13.2", default-features = false, features = [] }
-tracing = { version = "0.1" }
-
-### TYPES FOR THE SERVER
-# Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
+hex = { version = "0.4.3", default-features = false }
+futures = { version = "0.3" }
 axum = { version = "0.6.6", features = ["http1", "json"] }
-# Hyper - see https://docs.rs/axum/latest/axum/#required-dependencies
 hyper = { version = "0.14.20", features = ["server", "http1"] }
-# Tokio - see https://docs.rs/tokio/latest/tokio/
-tokio = { version = "1.21.0", features = ["rt-multi-thread"] }
