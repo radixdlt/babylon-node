@@ -55,7 +55,7 @@ Construction and submission looks something like this:
 ```typescript
 import { LtsCommittedTransactionStatus } from "@radixdlt/babylon-core-api-sdk";
 
-const constructionMetadata = await coreApiClient.LTS.getConstructionMetadata();
+const constructionMetadata = await coreApiClient.lts.getConstructionMetadata();
 
 const currentEpoch = constructionMetadata.current_epoch;
 const { notarizedTransactionHex, intentHash } = buildTransaction(currentEpoch, ...);
@@ -65,7 +65,7 @@ const { notarizedTransactionHex, intentHash } = buildTransaction(currentEpoch, .
  * Some of these possible results will need to be handled.
  * See the integrators guide for more information.
  */
-const submitResponse = await coreApiClient.LTS.submitTransaction({
+const submitResponse = await coreApiClient.lts.submitTransaction({
     notarized_transaction_hex: notarizedTransactionHex
 });
 console.log(submitResponse);
@@ -80,13 +80,13 @@ console.log(submitResponse);
  * 
  * See the integrators guide for more information.
  */
-const statusResponse = await coreApiClient.LTS.getTransactionStatus({
+const statusResponse = await coreApiClient.lts.getTransactionStatus({
     intent_hash: intentHash
 });
 console.log(statusResponse);
 
 if (statusResponse.committed_state_version) {
-    const committedOutcomeResponse = await coreApiClient.LTS.getTransactionOutcome({
+    const committedOutcomeResponse = await coreApiClient.lts.getTransactionOutcome({
         state_version: statusResponse.committed_state_version
     });
 
@@ -106,12 +106,12 @@ Account balance queries look like this:
 const accountAddress = "..";
 const resourceAddress = "..";
 
-const balanceResponse = await coreApiClient.LTS.getAccountFungibleResourceBalance({
+const balanceResponse = await coreApiClient.lts.getAccountFungibleResourceBalance({
     account_address: accountAddress,
     resource_address: resourceAddress,
 });
 
-const allBalancesResponse = await coreApiClient.LTS.getAccountAllFungibleResourceBalances({
+const allBalancesResponse = await coreApiClient.lts.getAccountAllFungibleResourceBalances({
     account_address: accountAddress,
 }); 
 ```
@@ -125,12 +125,12 @@ You can sum the `fungible_entity_balance_changes` from the transaction outcomes 
 ```typescript
 const accountAddress = "..";
 
-const transactionsBatch = await coreApiClient.LTS.getTransactionOutcomes({
+const transactionsBatch = await coreApiClient.lts.getTransactionOutcomes({
     from_state_version: 1,
     limit: 100,
 });
 
-const accountTransactionsBatch = await coreApiClient.LTS.getAccountTransactionOutcomes({
+const accountTransactionsBatch = await coreApiClient.lts.getAccountTransactionOutcomes({
     account_address: accountAddress,
     from_state_version: 1,
     limit: 100,

@@ -25,29 +25,31 @@ interface CoreApiClientSettings {
 }
 
 export class CoreApiClient {
-  public Status: Status;
+  public status: Status;
   public LTS: LTS;
-  public LowLevel: {
-    Status: StatusApi;
-    LTS: LTSApi;
-    Transaction: TransactionApi;
-    Mempool: MempoolApi;
-    Stream: StreamApi;
+  public lts: LTS;
+  public lowLevel: {
+    status: StatusApi;
+    lts: LTSApi;
+    transaction: TransactionApi;
+    mempool: MempoolApi;
+    stream: StreamApi;
   };
 
   private constructor(
     configuration: Configuration,
     public logicalNetworkName: string
   ) {
-    this.LowLevel = {
-      Status: new StatusApi(configuration),
-      LTS: new LTSApi(configuration),
-      Transaction: new TransactionApi(configuration),
-      Mempool: new MempoolApi(configuration),
-      Stream: new StreamApi(configuration),
+    this.lowLevel = {
+      status: new StatusApi(configuration),
+      lts: new LTSApi(configuration),
+      transaction: new TransactionApi(configuration),
+      mempool: new MempoolApi(configuration),
+      stream: new StreamApi(configuration),
     };
-    this.Status = new Status(this.LowLevel.Status, logicalNetworkName);
-    this.LTS = new LTS(this.LowLevel.LTS, logicalNetworkName);
+    this.status = new Status(this.lowLevel.status, logicalNetworkName);
+    this.lts = new LTS(this.lowLevel.lts, logicalNetworkName);
+    this.LTS = this.lts; // NOTE: this is to keep backwards compatibility
   }
 
   private static constructConfiguration(
