@@ -67,7 +67,6 @@ use crate::store::traits::extensions::*;
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
-use crate::utils::IsAccountExt;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
     IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
@@ -76,6 +75,7 @@ use crate::{
 
 use crate::query::TransactionIdentifierLoader;
 use core::ops::Bound::{Included, Unbounded};
+use node_common::utils::IsAccountExt;
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,

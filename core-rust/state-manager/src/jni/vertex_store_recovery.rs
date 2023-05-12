@@ -63,11 +63,11 @@
  */
 
 use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::jni_sbor_coded_call;
 use crate::store::traits::{RecoverableVertexStore, WriteableVertexStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::jni::utils::jni_sbor_coded_call;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(

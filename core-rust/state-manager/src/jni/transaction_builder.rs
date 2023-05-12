@@ -62,8 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::utils::{jni_sbor_coded_call, jni_sbor_coded_fallible_call};
-use crate::result::StateManagerResult;
 use crate::transaction::{
     create_intent_bytes, create_manifest, create_notarized_bytes, create_signed_intent_bytes,
     LedgerTransaction,
@@ -71,6 +69,8 @@ use crate::transaction::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::java::*;
+use node_common::jni::utils::*;
 use radix_engine::types::PublicKey;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::network::NetworkDefinition;
@@ -159,7 +159,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 
 fn do_create_signed_intent_bytes(
     (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
-) -> StateManagerResult<Vec<u8>> {
+) -> JavaResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = manifest_decode(&intent_bytes)?;
 
@@ -177,7 +177,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
 
 fn do_create_notarized_bytes(
     (signed_intent_bytes, signature): (Vec<u8>, Signature),
-) -> StateManagerResult<Vec<u8>> {
+) -> JavaResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
     let signed_intent = manifest_decode(&signed_intent_bytes)?;
 
@@ -190,14 +190,12 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(&env, request_payload, do_user_transaction_to_ledger)
-}
-
-fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
-    let notarized_transaction: NotarizedTransaction = manifest_decode(&args)?;
-    Ok(manifest_encode(&LedgerTransaction::User(
-        notarized_transaction,
-    ))?)
+    jni_sbor_coded_fallible_call(&env, request_payload, |args: Vec<u8>| {
+        let notarized_transaction: NotarizedTransaction = manifest_decode(&args)?;
+        Ok(manifest_encode(&LedgerTransaction::User(
+            notarized_transaction,
+        ))?)
+    })
 }
 
 #[no_mangle]
@@ -206,21 +204,15 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionB
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(
-        &env,
-        request_payload,
-        do_transaction_bytes_to_notarized_transaction_bytes,
-    )
-}
-
-fn do_transaction_bytes_to_notarized_transaction_bytes(
-    args: Vec<u8>,
-) -> StateManagerResult<Option<Vec<u8>>> {
-    let transaction: LedgerTransaction = manifest_decode(&args)?;
-    Ok(match transaction {
-        LedgerTransaction::User(notarized_transaction) => Some(notarized_transaction.to_bytes()?),
-        LedgerTransaction::Validator(..) => None,
-        LedgerTransaction::System(..) => None,
+    jni_sbor_coded_fallible_call(&env, request_payload, |args: Vec<u8>| {
+        let transaction: LedgerTransaction = manifest_decode(&args)?;
+        Ok(match transaction {
+            LedgerTransaction::User(notarized_transaction) => {
+                Some(notarized_transaction.to_bytes()?)
+            }
+            LedgerTransaction::Validator(..) => None,
+            LedgerTransaction::System(..) => None,
+        })
     })
 }
 

@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-core-api-server = { path = "../core-api-server" }
+node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
+core-api-server = { path = "../core-api-server" }
 
 jni = { workspace = true }
 

@@ -69,14 +69,13 @@ use futures::FutureExt;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-
-use state_manager::jni::state_manager::JNIStateManager;
-use state_manager::jni::utils::*;
 use std::str;
-
-use state_manager::jni::java_structure::StructFromJava;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
+
+use node_common::java::*;
+use node_common::jni::utils::*;
+use state_manager::jni::state_manager::JNIStateManager;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 

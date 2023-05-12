@@ -68,10 +68,10 @@ use jni::{JNIEnv, JavaVM};
 use radix_engine_common::data::scrypto::scrypto_encode;
 use std::ops::Deref;
 
+use node_common::jni::utils::jni_slice_to_jbytearray;
 use transaction::model::NotarizedTransaction;
 
 use crate::jni::mempool::JavaRawTransaction;
-use crate::jni::utils::jni_slice_to_jbytearray;
 
 /// A Java dispatcher for a "new transaction from Core API" event.
 pub struct MempoolRelayDispatcher {

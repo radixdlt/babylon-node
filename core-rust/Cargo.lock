@@ -311,6 +311,7 @@ dependencies = [
  "hex",
  "hyper",
  "jni",
+ "node-common",
  "parking_lot",
  "prometheus",
  "radix-engine",
@@ -336,6 +337,7 @@ version = "0.1.0"
 dependencies = [
  "core-api-server",
  "jni",
+ "node-common",
  "state-manager",
 ]
 
@@ -1061,6 +1063,33 @@ dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
+ "utils",
+]
+
+[[package]]
+name = "node-common"
+version = "0.1.0"
+dependencies = [
+ "bech32",
+ "blake2",
+ "jni",
+ "opentelemetry",
+ "opentelemetry-jaeger",
+ "parking_lot",
+ "prometheus",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-constants",
+ "radix-engine-interface",
+ "radix-engine-queries",
+ "radix-engine-store-interface",
+ "radix-engine-stores",
+ "sbor",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "transaction",
  "utils",
 ]
 
@@ -1918,16 +1947,13 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 name = "state-manager"
 version = "0.1.0"
 dependencies = [
- "bech32",
  "blake2",
  "enum_dispatch",
  "hex",
  "im",
  "jni",
- "lazy_static",
  "lru",
- "opentelemetry",
- "opentelemetry-jaeger",
+ "node-common",
  "parking_lot",
  "prometheus",
  "radix-engine",
@@ -1943,8 +1969,6 @@ dependencies = [
  "slotmap",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
  "transaction",
  "utils",
 ]

@@ -62,9 +62,74 @@
  * permissions under this License.
  */
 
-pub mod mempool;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod vertex_store_recovery;
+use crate::jni::utils::jni_sbor_coded_call;
+use bech32::{FromBase32, ToBase32, Variant};
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::types::ComponentAddress;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |(hrp, full_data): (String, Vec<u8>)| -> Result<String, String> {
+            let base32_data = full_data.to_base32();
+
+            let address = bech32::encode(&hrp, base32_data, Variant::Bech32m)
+                .map_err(|e| format!("Unable to encode bech32m address: {e:?}"))?;
+
+            Ok(address)
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |address: String| -> Result<(String, Vec<u8>), String> {
+            let (hrp, base32_data, variant) = bech32::decode(&address)
+                .map_err(|e| format!("Unable to decode bech32 address: {e:?}"))?;
+
+            check_variant_is_bech32m(variant)?;
+
+            let data = Vec::<u8>::from_base32(&base32_data).map_err(|e| {
+                format!("Unable to decode bech32 data from 5 bits to 8 bits: {e:?}")
+            })?;
+
+            Ok((hrp, data))
+        },
+    )
+}
+
+fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
+    match variant {
+        Variant::Bech32 => Err("Address was bech32 encoded, not bech32m".to_owned()),
+        Variant::Bech32m => Ok(()),
+    }
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |key: EcdsaSecp256k1PublicKey| {
+        ComponentAddress::virtual_account_from_public_key(&key)
+    })
+}
+
+pub fn export_extern_functions() {}

@@ -62,17 +62,15 @@
  * permissions under this License.
  */
 
-use crate::store::traits::*;
-
 use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
+use crate::store::traits::*;
 use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::jni::utils::jni_sbor_coded_call;
 use radix_engine::types::*;
-
-use crate::jni::utils::jni_sbor_coded_call;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {

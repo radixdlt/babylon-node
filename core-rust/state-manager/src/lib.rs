@@ -65,19 +65,16 @@
 extern crate core;
 
 mod accumulator_tree;
-mod environment;
 pub mod jni;
 pub mod mempool;
 mod metrics;
 pub mod query;
 mod receipt;
-mod result;
 mod staging;
 mod state_manager;
 pub mod store;
 pub mod transaction;
 mod types;
-mod utils;
 
 pub use crate::mempool::*;
 pub use crate::metrics::*;

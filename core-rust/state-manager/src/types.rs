@@ -63,9 +63,10 @@
  */
 
 use crate::{
-    accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
-    LedgerTransactionOutcome, SubstateChange,
+    accumulator_tree::IsHash, transaction::LedgerTransaction, LedgerTransactionOutcome,
+    SubstateChange,
 };
+use node_common::java::*;
 use radix_engine::types::*;
 use std::fmt;
 use std::ops::Range;

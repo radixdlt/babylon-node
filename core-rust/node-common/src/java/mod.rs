@@ -62,80 +62,10 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::*;
-use sbor::{DecodeError, EncodeError};
+pub use result::*;
+pub use structure::*;
+pub use types::*;
 
-// System Errors.
-pub const ERRCODE_JNI: i16 = 0;
-pub const ERRCODE_SBOR: i16 = 1;
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct StateManagerError {
-    error_code: i16,
-    error_msg: String,
-}
-
-impl StateManagerError {
-    pub fn create(error_code: i16, error_msg: String) -> StateManagerError {
-        StateManagerError {
-            error_code,
-            error_msg,
-        }
-    }
-
-    pub fn create_result<T>(error_code: i16, error_msg: String) -> StateManagerResult<T> {
-        Err(StateManagerError::create(error_code, error_msg))
-    }
-}
-
-impl From<DecodeError> for StateManagerError {
-    fn from(err: DecodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {err:?}"))
-    }
-}
-
-impl From<EncodeError> for StateManagerError {
-    fn from(err: EncodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR encode failed: {err:?}"))
-    }
-}
-
-pub type StateManagerResult<T> = Result<T, StateManagerError>;
-
-pub trait ResultStateManagerMaps<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>;
-
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>;
-}
-
-impl<T, E> ResultStateManagerMaps<T, E> for Result<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>,
-    {
-        match self {
-            Ok(value) => match op(value) {
-                Ok(mapped_value) => Ok(Ok(mapped_value)),
-                Err(sys_error) => Err(sys_error),
-            },
-            Err(err) => Ok(Err(err)),
-        }
-    }
-
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>,
-    {
-        match self {
-            Ok(t) => Ok(Ok(t)),
-            Err(err) => match op(err) {
-                Ok(mapped_error) => Ok(Err(mapped_error)),
-                Err(sys_error) => Err(sys_error),
-            },
-        }
-    }
-}
+pub mod result;
+pub mod structure;
+pub mod types;
