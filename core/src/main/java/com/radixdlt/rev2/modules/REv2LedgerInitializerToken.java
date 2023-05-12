@@ -62,34 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.rev2.modules;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
-
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
-  }
-}
+/**
+ * A marker object that can be used as a Guice dependency to ensure that the ledger database has
+ * been initialized with the genesis data.
+ */
+public record REv2LedgerInitializerToken() {}

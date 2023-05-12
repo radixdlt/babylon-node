@@ -104,12 +104,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
         request_payload,
         |genesis_data: JavaGenesisData| -> JavaLedgerProof {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let genesis_data_hash = hash(scrypto_encode(&genesis_data).unwrap());
             let result = state_manager.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 genesis_data.max_validators,
                 genesis_data.rounds_per_epoch,
                 genesis_data.num_unstake_epochs,
+                genesis_data.initial_timestamp_ms,
+                genesis_data_hash,
             );
             result.into()
         },
@@ -244,6 +247,7 @@ pub struct JavaGenesisData {
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
+    pub initial_timestamp_ms: i64,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

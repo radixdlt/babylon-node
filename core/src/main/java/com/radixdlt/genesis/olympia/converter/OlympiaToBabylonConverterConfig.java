@@ -62,15 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia;
+package com.radixdlt.genesis.olympia.converter;
 
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.utils.UInt256;
 
-public final class OlympiaStateToBabylonGenesisMapper {
-
-  public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
-    // TODO(genesis): coming in a separate PR
-    return GenesisData.testing_default_empty();
-  }
+public record OlympiaToBabylonConverterConfig(
+    /* Maximum number of validators in a single genesis chunk (transaction) */
+    int maxValidatorsPerChunk,
+    /* Maximum number of stakes in a single genesis chunk (transaction) */
+    int maxStakesPerChunk,
+    /* Maximum number of XRD balances in a single genesis chunk (transaction) */
+    int maxXrdBalancesPerChunk,
+    /* Maximum number of resources in a single genesis chunk (transaction) */
+    int maxResourcesPerChunk,
+    /* Maximum number of non-XRD resource balances in a single genesis chunk (transaction) */
+    int maxNonXrdResourceBalancesPerChunk,
+    /* Maximum resource supply that can be converted unmodified.
+    Any value above the threshold will be scaled down (including the
+    corresponding balances). */
+    Decimal maxGenesisResourceUnscaledSupply) {
+  public static final OlympiaToBabylonConverterConfig DEFAULT =
+      new OlympiaToBabylonConverterConfig(
+          100,
+          100,
+          100,
+          100,
+          100,
+          // TODO(REP-73): Decimal.from(UInt256.TWO.pow(160))
+          Decimal.from(UInt256.from("1000000000000000000")));
 }

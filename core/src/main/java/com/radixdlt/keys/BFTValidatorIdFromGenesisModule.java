@@ -67,12 +67,11 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.LastProof;
+import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
@@ -80,15 +79,11 @@ public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
   @Singleton
   @Self
   private BFTValidatorId self(
+      // Require the token to ensure ledger genesis init
+      REv2LedgerInitializerToken rev2LedgerInitializerToken,
       @Self ECDSASecp256k1PublicKey key,
-      @LastProof
-          LedgerProof
-              ignored, // This is included as a hack to ensure that genesis exists in the proof
-      // reader
       TransactionsAndProofReader transactionsAndProofReader) {
-    // TODO: fixme, this should get epoch proof of the _initial epoch_, not 0
-    // also fix this weird hack with relying on LastProof dependency to execute genesis
-    var genesisProof = transactionsAndProofReader.getEpochProof(0).orElseThrow();
+    var genesisProof = transactionsAndProofReader.getFirstEpochProof().orElseThrow();
     var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
     var potentialBFTValidators =
         genesisValidatorSet.getValidators().stream()

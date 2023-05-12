@@ -93,7 +93,7 @@ public final class LedgerFileSync {
   public static void writeToFile(
       String fileName, Serialization serialization, TransactionsAndProofReader committedReader)
       throws IOException {
-    final var initialProof = committedReader.getEpochProof(1L);
+    final var initialProof = committedReader.getFirstEpochProof();
     final var endProofOpt = committedReader.getLastProof();
     if (initialProof.isPresent() && endProofOpt.isPresent()) {
       final var endProof = endProofOpt.get();

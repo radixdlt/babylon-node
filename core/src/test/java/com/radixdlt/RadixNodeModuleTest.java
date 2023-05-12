@@ -77,7 +77,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
-import java.util.Optional;
 import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
 import org.json.JSONObject;
@@ -101,9 +100,9 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
+
     Guice.createInjector(
-            new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+            new RadixNodeModule(properties, NETWORK, GenesisData.testingDefaultEmpty()))
         .injectMembers(this);
   }
 
@@ -119,8 +118,7 @@ public class RadixNodeModuleTest {
             com.google.inject.CreationException.class,
             () ->
                 Guice.createInjector(
-                        new RadixNodeModule(
-                            properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+                        new RadixNodeModule(properties, NETWORK, GenesisData.testingDefaultEmpty()))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -138,8 +136,7 @@ public class RadixNodeModuleTest {
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
     Guice.createInjector(
-            new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+            new RadixNodeModule(properties, NETWORK, GenesisData.testingDefaultEmpty()))
         .injectMembers(this);
   }
 

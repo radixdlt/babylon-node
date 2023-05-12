@@ -73,6 +73,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -87,7 +88,9 @@ public final class OlympiaEndStateApiClient {
     record Ready(String signature, String hash, String base64Contents)
         implements OlympiaEndStateResponse {}
 
-    record NotReady(String signature, String placeholderHash) implements OlympiaEndStateResponse {}
+    record NotReady(
+        Optional<String> testPayload, Optional<String> testPayloadHash, Optional<String> signature)
+        implements OlympiaEndStateResponse {}
   }
 
   private final URL endStateApiUrl;
@@ -109,12 +112,14 @@ public final class OlympiaEndStateApiClient {
     this.network = network;
   }
 
-  public OlympiaEndStateResponse getOlympiaEndState() throws IOException, JSONException {
+  public OlympiaEndStateResponse getOlympiaEndState(boolean includeTestPayload)
+      throws IOException, JSONException {
     final var requestData =
         new JSONObject()
             .put(
                 "network_identifier",
-                new JSONObject().put("network", toOlympiaNetworkIdentifier(network)));
+                new JSONObject().put("network", toOlympiaNetworkIdentifier(network)))
+            .put("include_test_payload", includeTestPayload);
 
     final var response = postForJson(endStateApiUrl, requestData);
 
@@ -129,7 +134,15 @@ public final class OlympiaEndStateApiClient {
       }
       case STATUS_NOT_READY -> {
         return new OlympiaEndStateResponse.NotReady(
-            response.getString("signature"), response.getString("placeholder_hash"));
+            response.has("test_payload")
+                ? Optional.ofNullable(response.getString("test_payload"))
+                : Optional.empty(),
+            response.has("test_payload_hash")
+                ? Optional.ofNullable(response.getString("test_payload_hash"))
+                : Optional.empty(),
+            response.has("signature")
+                ? Optional.ofNullable(response.getString("signature"))
+                : Optional.empty());
       }
       default -> throw new RuntimeException("Unexpected response status " + status);
     }

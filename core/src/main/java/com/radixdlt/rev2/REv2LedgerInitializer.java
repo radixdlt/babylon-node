@@ -62,34 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.rev2;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+public record REv2LedgerInitializer(
+    Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
+  public void initialize(GenesisData genesisData) {
+    // Opaque value of the first epoch proof is the hash of GenesisData
+    final var maybeExistingGenesisHash = reader.getFirstEpochProof().map(LedgerProof::getOpaque);
 
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+    // If the database was already initialized, we verify that the
+    // previous genesis matches the current configuration
+    // to protect from node misconfiguration
+    // (i.e. configuring genesis A, but node really using prev genesis B).
+    maybeExistingGenesisHash.ifPresentOrElse(
+        prevGenesisHash -> {
+          final var currentGenesisHash =
+              hasher.hashBytes(
+                  StateManagerSbor.encode(
+                      genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+          if (!currentGenesisHash.equals(prevGenesisHash)) {
+            throw new IllegalStateException(
+                String.format(
+                    """
+                  Configured genesis data (of hash %s) doesn't match the genesis data that has previously \
+                  been used to initialize the database (%s). \
+                  Make sure your configuration is correct (check `network.id` and/or \
+                   `network.genesis_txn` and/or `network.genesis_file`).""",
+                    currentGenesisHash, prevGenesisHash));
+          }
+        },
+        () -> {
+          // It's a fresh database, so execute the genesis
+          // TODO(genesis): this will fail (with commit/prepare error) if the genesis data
+          // ingestion was interrupted. Consider cleaning up the database from any partially
+          // committed genesis data.
+          rustStateComputer.executeGenesis(genesisData);
+        });
   }
 }

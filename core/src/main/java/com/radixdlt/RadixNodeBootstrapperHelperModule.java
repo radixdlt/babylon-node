@@ -62,34 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.modules.MetricsModule;
+import com.radixdlt.networks.Network;
+import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+public final class RadixNodeBootstrapperHelperModule extends AbstractModule {
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
+  private final RuntimeProperties properties;
+  private final Network network;
+
+  public RadixNodeBootstrapperHelperModule(RuntimeProperties properties, Network network) {
+    this.properties = properties;
+    this.network = network;
   }
 
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+  @Override
+  public void configure() {
+    bind(RuntimeProperties.class).toInstance(this.properties);
+    bind(Network.class).toInstance(this.network);
+    install(new MetricsModule());
+    install(new CryptoModule());
+    install(new NodeStorageLocationFromPropertiesModule());
+  }
+
+  @Provides
+  @Singleton
+  GenesisFromPropertiesLoader genesisFromPropertiesLoader() {
+    return new GenesisFromPropertiesLoader(properties, network);
   }
 }

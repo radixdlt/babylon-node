@@ -68,6 +68,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::ComponentAddress;
+use radix_engine_common::types::{EntityType, NodeId, ResourceAddress};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 #[no_mangle]
@@ -117,7 +118,7 @@ fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualAccountAddress(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
@@ -125,8 +126,34 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
     jni_sbor_coded_call(&env, request_payload, do_virtual_account_address)
 }
 
-fn do_virtual_account_address(key: EcdsaSecp256k1PublicKey) -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&key)
+fn do_virtual_account_address(
+    unchecked_public_key_bytes: [u8; EcdsaSecp256k1PublicKey::LENGTH],
+) -> ComponentAddress {
+    // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
+    // this is okay. We need to support this because there are such accounts on Olympia.
+    let public_key = EcdsaSecp256k1PublicKey(unchecked_public_key_bytes);
+    ComponentAddress::virtual_account_from_public_key(&public_key)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeGlobalFungible(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, do_global_fungible)
+}
+
+fn do_global_fungible(
+    address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+) -> ResourceAddress {
+    ResourceAddress::new_or_panic(
+        NodeId::new(
+            EntityType::GlobalFungibleResource as u8,
+            &address_bytes_without_entity_id,
+        )
+        .0,
+    )
 }
 
 pub fn export_extern_functions() {}

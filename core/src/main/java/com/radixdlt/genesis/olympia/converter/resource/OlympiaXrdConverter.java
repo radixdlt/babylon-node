@@ -62,34 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.genesis.olympia.converter.resource;
+
+import static com.radixdlt.genesis.olympia.converter.GenesisDataChunkUtils.createChunks;
+import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.genesis.GenesisDataChunk;
+import com.radixdlt.genesis.olympia.converter.OlympiaToBabylonConverterConfig;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Decimal;
+import java.util.List;
+import java.util.Optional;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
-
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+public final class OlympiaXrdConverter {
+  static ImmutableList<GenesisDataChunk.XrdBalances> prepareXrdBalancesChunks(
+      OlympiaToBabylonConverterConfig config,
+      List<OlympiaStateIR.Account> accounts,
+      List<OlympiaStateIR.AccountBalance> olympiaXrdBalances) {
+    return createChunks(
+        olympiaXrdBalances,
+        config.maxXrdBalancesPerChunk(),
+        (idx, olympiaXrdBalance) -> {
+          final var account = accounts.get(olympiaXrdBalance.accountIndex());
+          return Optional.of(
+              tuple(
+                  Address.virtualAccountAddress(account.publicKeyBytes().asBytes()),
+                  Decimal.unsafeFromRawBigIntRepr(olympiaXrdBalance.amount())));
+        },
+        GenesisDataChunk.XrdBalances::new);
   }
 }

@@ -64,8 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.Address;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -96,10 +94,6 @@ public record ComponentAddress(byte[] value) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);
-  }
-
-  public static ComponentAddress virtualAccountFromPublicKey(ECDSASecp256k1PublicKey key) {
-    return Address.virtualAccountAddress(key);
   }
 
   public String toHexString() {

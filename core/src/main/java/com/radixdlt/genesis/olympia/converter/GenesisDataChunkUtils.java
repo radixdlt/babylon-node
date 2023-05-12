@@ -62,24 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.genesis.olympia.converter;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.statecomputer.RustStateComputer;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-public final class LedgerInitializer {
-  private final RustStateComputer stateComputer;
-
-  public LedgerInitializer(RustStateComputer stateComputer) {
-    this.stateComputer = stateComputer;
-  }
-
-  public HashCode prepareAndCommit(GenesisData genesis) {
-    return this.stateComputer
-        .executeGenesis(genesis)
-        .ledgerHeader()
-        .accumulatorState()
-        .accumulatorHash();
+public final class GenesisDataChunkUtils {
+  // Given a list of input elements I, creates chunks that are in a
+  // form of List<E> wrapped in objects of type C (f.e. record C(ImmutableList<E> value)).
+  // More specifically these are Validators, Resources and XrdBalances chunks.
+  // The size limit parameter (maxPerChunk) applies to the length of a list in a chunk.
+  public static <I, E, C> ImmutableList<C> createChunks(
+      List<I> input,
+      int maxPerChunk,
+      BiFunction<Integer, I, Optional<E>> mkElement,
+      Function<ImmutableList<E>, C> mkChunk) {
+    final ImmutableList.Builder<C> chunksBuilder = ImmutableList.builder();
+    ImmutableList.Builder<E> elementsInCurrentChunkBuilder = ImmutableList.builder();
+    int numElementsInCurrentChunk = 0;
+    final var lastIndex = input.size() - 1;
+    for (var i = 0; i < input.size(); i++) {
+      final var next = input.get(i);
+      final var isLast = i == lastIndex;
+      final var maybeElement = mkElement.apply(i, next);
+      if (maybeElement.isEmpty()) {
+        continue;
+      }
+      final var element = maybeElement.get();
+      elementsInCurrentChunkBuilder.add(element);
+      numElementsInCurrentChunk += 1;
+      if (numElementsInCurrentChunk >= maxPerChunk || isLast) {
+        chunksBuilder.add(mkChunk.apply(elementsInCurrentChunkBuilder.build()));
+        elementsInCurrentChunkBuilder = ImmutableList.builder();
+        numElementsInCurrentChunk = 0;
+      }
+    }
+    return chunksBuilder.build();
   }
 }

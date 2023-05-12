@@ -62,34 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.genesis.olympia.converter.resource;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.genesis.GenesisDataChunk;
+import com.radixdlt.genesis.olympia.converter.OlympiaToBabylonConverterConfig;
+import com.radixdlt.genesis.olympia.converter.OlympiaToBabylonGenesisConverterException;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.identifiers.REAddr;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+public final class OlympiaResourcesConverter {
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
+  public record ResourcesAndBalances(
+      ImmutableList<GenesisDataChunk.Resources> resourcesChunks,
+      ImmutableList<GenesisDataChunk.ResourceBalances> nonXrdBalancesChunks,
+      ImmutableList<GenesisDataChunk.XrdBalances> xrdBalancesChunks) {}
+
+  public static ResourcesAndBalances convertResourcesAndBalances(
+      OlympiaToBabylonConverterConfig config,
+      ImmutableList<OlympiaStateIR.Account> accounts,
+      ImmutableList<OlympiaStateIR.Resource> resources,
+      ImmutableList<OlympiaStateIR.AccountBalance> balances) {
+    final var olympiaXrdResourceIndex = findXrdResourceIndex(resources);
+    final var partitionedOlympiaBalances =
+        balances.stream()
+            .collect(
+                Collectors.partitioningBy(bal -> bal.resourceIndex() == olympiaXrdResourceIndex));
+    final var olympiaXrdBalances = partitionedOlympiaBalances.getOrDefault(true, List.of());
+    final var olympiaNonXrdBalances = partitionedOlympiaBalances.getOrDefault(false, List.of());
+
+    final var nonXrdResourcesAndBalancesChunks =
+        OlympiaNonXrdConverter.prepareResourcesAndBalancesChunks(
+            config, accounts, resources, olympiaXrdResourceIndex, olympiaNonXrdBalances);
+
+    final var xrdBalances =
+        OlympiaXrdConverter.prepareXrdBalancesChunks(config, accounts, olympiaXrdBalances);
+
+    return new ResourcesAndBalances(
+        nonXrdResourcesAndBalancesChunks.first(),
+        nonXrdResourcesAndBalancesChunks.last(),
+        xrdBalances);
   }
 
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+  public static int findXrdResourceIndex(ImmutableList<OlympiaStateIR.Resource> resources) {
+    int olympiaXrdResourceIndex = -1;
+    for (int i = 0; i < resources.size(); i++) {
+      final var resource = resources.get(i);
+      if (resource.addr().equals(REAddr.ofNativeToken())) {
+        if (olympiaXrdResourceIndex > 0) {
+          throw new OlympiaToBabylonGenesisConverterException(
+              "Duplicate native token found on the Olympia resource list!");
+        }
+        olympiaXrdResourceIndex = i;
+      }
+    }
+    if (olympiaXrdResourceIndex < 0) {
+      throw new OlympiaToBabylonGenesisConverterException(
+          "Native token was not found on the Olympia resource list!");
+    } else {
+      return olympiaXrdResourceIndex;
+    }
   }
 }

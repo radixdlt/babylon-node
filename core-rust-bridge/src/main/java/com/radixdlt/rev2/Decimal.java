@@ -69,14 +69,18 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
 /** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
+
+  public static final Decimal ZERO = Decimal.of(0L);
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -86,9 +90,7 @@ public class Decimal implements Comparable<Decimal> {
             new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_DECIMAL,
                 SBOR_BYTE_LENGTH,
-                decimal -> {
-                  return Arrays.reverse(decimal.underlyingValue.toByteArray());
-                },
+                decimal -> Arrays.reverse(decimal.underlyingValue.toByteArray()),
                 bytes -> new Decimal(UInt256.from(Arrays.reverse(bytes)))));
   }
 
@@ -102,6 +104,33 @@ public class Decimal implements Comparable<Decimal> {
 
   public static Decimal from(UInt256 fixedPointRepresentation) {
     return new Decimal(fixedPointRepresentation);
+  }
+
+  /**
+   * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
+   * value of 1 translates to 1e-18 Decimal unit, not 1.
+   */
+  public static Decimal unsafeFromRawBigIntRepr(BigInteger rawBigIntRepr) {
+    if (rawBigIntRepr.compareTo(BigInteger.ZERO) < 0) {
+      throw new IllegalArgumentException(
+          "Can't create a Decimal from a negative BigInteger representation");
+    }
+    final var bigIntSignedBytes = rawBigIntRepr.toByteArray();
+    final var unsignedBytes = Bytes.signedNonNegativeIntegerBytesToUnsigned(bigIntSignedBytes);
+    final var dec = Decimal.from(UInt256.from(unsignedBytes));
+    if (!dec.toRawBigIntRepresentation().equals(rawBigIntRepr)) {
+      throw new IllegalArgumentException("Decimal overflow");
+    }
+    return dec;
+  }
+
+  public Decimal add(Decimal other) {
+    var newUnderlying = this.underlyingValue.add(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
+  public BigInteger toRawBigIntRepresentation() {
+    return underlyingValue.toBigInt();
   }
 
   public static Decimal of(long amount) {

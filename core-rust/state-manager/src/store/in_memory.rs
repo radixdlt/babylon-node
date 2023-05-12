@@ -449,6 +449,10 @@ impl QueryableProofStore for InMemoryStore {
             })
     }
 
+    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+        self.epoch_proofs.first_key_value().map(|(_, v)| v).cloned()
+    }
+
     fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.epoch_proofs.get(&epoch).cloned()
     }

@@ -90,10 +90,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
-import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
-import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
@@ -101,7 +98,6 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
-import java.util.Optional;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -121,10 +117,10 @@ public final class RadixNodeModule extends AbstractModule {
 
   private final RuntimeProperties properties;
   private final Network network;
-  private final Optional<GenesisData> genesisData;
 
-  public RadixNodeModule(
-      RuntimeProperties properties, Network network, Optional<GenesisData> genesisData) {
+  private final GenesisData genesisData;
+
+  public RadixNodeModule(RuntimeProperties properties, Network network, GenesisData genesisData) {
     this.properties = properties;
     this.network = network;
     this.genesisData = genesisData;
@@ -225,6 +221,8 @@ public final class RadixNodeModule extends AbstractModule {
     var databaseFlags =
         new DatabaseFlags(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
 
+    install(new REv2LedgerInitializerModule(genesisData));
+
     install(
         REv2StateManagerModule.create(
             MAX_TRANSACTIONS_PER_PROPOSAL,
@@ -236,7 +234,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
-    install(new REv2LedgerRecoveryModule(genesisData));
+    install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());
 
     install(new MetricsModule());

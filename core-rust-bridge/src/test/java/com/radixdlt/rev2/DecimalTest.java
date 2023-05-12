@@ -62,34 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.rev2;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+import com.radixdlt.utils.UInt256;
+import java.math.BigInteger;
+import java.util.List;
+import org.junit.Test;
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
+public final class DecimalTest {
+  @Test
+  public void testDecimalBigIntConversions() {
+    final var positiveTestCases =
+        List.of(
+            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation(),
+            new BigInteger(
+                "57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation().divide(BigInteger.TWO),
+            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation().divide(BigInteger.TEN),
+            BigInteger.ONE,
+            BigInteger.TWO,
+            BigInteger.ZERO);
 
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+    for (var testBigInt : positiveTestCases) {
+      assertEquals(
+          Decimal.unsafeFromRawBigIntRepr(testBigInt).toRawBigIntRepresentation(), testBigInt);
+    }
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(-1L)));
   }
 }

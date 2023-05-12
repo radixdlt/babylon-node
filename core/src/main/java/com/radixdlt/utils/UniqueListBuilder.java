@@ -62,35 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.utils;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.networks.Network;
-import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.google.common.collect.ImmutableList;
+import java.util.LinkedHashMap;
 
-public final class PreGenesisNodeModule extends AbstractModule {
+/**
+ * A utility class for creating lists containing unique elements that makes it easy to work with
+ * their indices.
+ */
+public final class UniqueListBuilder<T> {
+  private final LinkedHashMap<T, Integer> underlying;
 
-  private final RuntimeProperties properties;
-  private final Network network;
-
-  public PreGenesisNodeModule(RuntimeProperties properties, Network network) {
-    this.properties = properties;
-    this.network = network;
+  public UniqueListBuilder() {
+    this.underlying = new LinkedHashMap<>();
   }
 
-  @Override
-  public void configure() {
-    bind(RuntimeProperties.class).toInstance(this.properties);
-    bind(Network.class).toInstance(this.network);
-    install(new NodeStorageLocationFromPropertiesModule());
+  /**
+   * Inserts element `t` to the end of the list if it is not already present. Returns the index of
+   * `t` (either the previous index if the element was already on the list, or the new index [equal
+   * to current list size-1] if it was just inserted).
+   */
+  public int insertIfMissingAndGetIndex(T t) {
+    final var currSize = underlying.size();
+    return underlying.computeIfAbsent(t, unused -> currSize);
   }
 
-  @Provides
-  @Singleton
-  GenesisFromPropertiesLoader genesisFromPropertiesLoader() {
-    return new GenesisFromPropertiesLoader(properties, network);
+  public int size() {
+    return underlying.size();
+  }
+
+  public ImmutableList<T> build() {
+    return underlying.keySet().stream().collect(ImmutableList.toImmutableList());
   }
 }

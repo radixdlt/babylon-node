@@ -62,34 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.genesis.olympia.converter;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.genesis.*;
+import com.radixdlt.genesis.olympia.converter.resource.OlympiaResourcesConverter;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.util.stream.Stream;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+public final class OlympiaStateToBabylonGenesisConverter {
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
+  public static GenesisData toGenesisData(
+      OlympiaStateIR olympiaStateIR, OlympiaToBabylonConverterConfig config) {
+    final var validatorsChunks =
+        OlympiaValidatorsConverter.prepareValidatorsChunks(
+            config, olympiaStateIR.accounts(), olympiaStateIR.validators());
 
-  public static GenesisData testingDefaultEmpty() {
+    final var stakesChunks =
+        OlympiaStakesConverter.prepareStakesChunks(
+            config,
+            olympiaStateIR.accounts(),
+            olympiaStateIR.validators(),
+            olympiaStateIR.stakes());
+
+    final var resourcesAndBalances =
+        OlympiaResourcesConverter.convertResourcesAndBalances(
+            config,
+            olympiaStateIR.accounts(),
+            olympiaStateIR.resources(),
+            olympiaStateIR.balances());
+    final var resourcesChunks = resourcesAndBalances.resourcesChunks();
+    final var nonXrdBalancesChunks = resourcesAndBalances.nonXrdBalancesChunks();
+    final var xrdBalancesChunks = resourcesAndBalances.xrdBalancesChunks();
+
     return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
+        Stream.of(
+                validatorsChunks.stream(),
+                stakesChunks.stream(),
+                resourcesChunks.stream(),
+                nonXrdBalancesChunks.stream(),
+                xrdBalancesChunks.stream())
+            .flatMap(s -> s)
+            .collect(ImmutableList.toImmutableList()),
+        UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
+        UInt32.fromNonNegativeInt(10),
         UInt64.fromNonNegativeLong(100),
         UInt64.fromNonNegativeLong(10),
-        1L);
+        olympiaStateIR.lastConsensusTimestamp());
   }
 }

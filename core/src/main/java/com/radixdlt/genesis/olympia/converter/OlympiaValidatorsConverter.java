@@ -62,34 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.genesis.olympia.converter;
+
+import static com.radixdlt.genesis.olympia.converter.GenesisDataChunkUtils.createChunks;
+import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.genesis.GenesisDataChunk;
+import com.radixdlt.genesis.GenesisValidator;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.identifiers.Address;
+import java.util.Optional;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
+public final class OlympiaValidatorsConverter {
+  public static ImmutableList<GenesisDataChunk.Validators> prepareValidatorsChunks(
+      OlympiaToBabylonConverterConfig config,
+      ImmutableList<OlympiaStateIR.Account> accounts,
+      ImmutableList<OlympiaStateIR.Validator> validators) {
+    return createChunks(
+        validators,
+        config.maxValidatorsPerChunk(),
+        (idx, olympiaValidator) -> Optional.of(convertValidator(accounts, olympiaValidator)),
+        GenesisDataChunk.Validators::new);
   }
 
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+  private static GenesisValidator convertValidator(
+      ImmutableList<OlympiaStateIR.Account> accounts, OlympiaStateIR.Validator olympiaValidator) {
+    final ECDSASecp256k1PublicKey publicKey;
+    try {
+      publicKey = ECDSASecp256k1PublicKey.fromBytes(olympiaValidator.publicKeyBytes().asBytes());
+    } catch (PublicKeyException e) {
+      throw new OlympiaToBabylonGenesisConverterException(
+          "Olympia validator public key is invalid", e);
+    }
+    final var metadata =
+        ImmutableList.of(
+            tuple("name", olympiaValidator.name()), tuple("url", olympiaValidator.url()));
+
+    final var owner = accounts.get(olympiaValidator.ownerAccountIndex());
+    return new GenesisValidator(
+        publicKey,
+        olympiaValidator.allowsDelegation(),
+        olympiaValidator.isRegistered(),
+        metadata,
+        Address.virtualAccountAddress(owner.publicKeyBytes().asBytes()));
   }
 }

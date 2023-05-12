@@ -68,12 +68,15 @@ import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransactio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.HashSet;
 import java.util.List;
@@ -87,9 +90,13 @@ public final class RustMempoolTest {
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
 
   private static void initStateComputer(StateManager stateManager) {
-    new LedgerInitializer(
-            new RustStateComputer(new MetricsInitializer().initialize(), stateManager))
-        .prepareAndCommit(GenesisData.testing_default_empty());
+    final var metrics = new MetricsInitializer().initialize();
+    new REv2LedgerInitializer(
+            new Blake2b256Hasher(DefaultSerialization.getInstance()),
+            new RustStateComputer(metrics, stateManager),
+            new REv2TransactionsAndProofReader(
+                new REv2TransactionAndProofStore(metrics, stateManager)))
+        .initialize(GenesisData.testingDefaultEmpty());
   }
 
   @Test

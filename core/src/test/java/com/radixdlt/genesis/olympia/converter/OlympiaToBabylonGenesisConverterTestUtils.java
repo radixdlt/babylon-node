@@ -62,34 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.genesis.olympia.converter;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 
-public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
-    UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
-  }
-
-  public static GenesisData testingDefaultEmpty() {
-    return new GenesisData(
-        ImmutableList.of(),
-        UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L);
+final class OlympiaToBabylonGenesisConverterTestUtils {
+  static OlympiaStateIR.Resource createXrdResource() {
+    return new OlympiaStateIR.Resource(
+        REAddr.ofNativeToken(),
+        UInt256.from(18),
+        true,
+        Optional.empty(),
+        "XRD",
+        "Radix native token",
+        "Radix native token",
+        "",
+        "");
   }
 }

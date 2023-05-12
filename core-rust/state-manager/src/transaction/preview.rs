@@ -149,7 +149,7 @@ mod tests {
     use radix_engine::system::bootstrap::{
         GenesisDataChunk, GenesisStakeAllocation, GenesisValidator,
     };
-    use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
+    use radix_engine_common::crypto::{EcdsaSecp256k1PublicKey, Hash};
     use radix_engine_common::network::NetworkDefinition;
     use radix_engine_common::types::ComponentAddress;
     use radix_engine_common::{dec, manifest_args};
@@ -222,9 +222,15 @@ mod tests {
             },
         ];
 
-        state_manager
-            .read()
-            .execute_genesis(genesis_chunks, 0, 100, 10, 10);
+        state_manager.read().execute_genesis(
+            genesis_chunks,
+            0,
+            100,
+            10,
+            10,
+            1,
+            Hash([0; Hash::LENGTH]),
+        );
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,

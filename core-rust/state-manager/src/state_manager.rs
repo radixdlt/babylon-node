@@ -116,6 +116,8 @@ pub struct StateManagerLoggingConfig {
 
 const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
+const GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(2000);
+
 pub struct StateManager<S> {
     store: Arc<RwLock<S>>,
     mempool_manager: Arc<MempoolManager>,
@@ -203,7 +205,10 @@ where
             &self
                 .execution_configurator
                 .wrap(executable, ConfigType::Genesis)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
+                .warn_after(
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    &logged_description,
+                ),
         );
 
         let commit = processed.expect_commit("prepare genesis");
@@ -533,7 +538,12 @@ where
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
+        initial_timestamp_ms: i64,
+        genesis_opaque_hash: Hash,
     ) -> LedgerProof {
+        let genesis_data_chunks_len = genesis_data_chunks.len();
+        let num_genesis_txns = genesis_data_chunks_len + 2; // + bootstrap + wrap up
+
         let mut curr_state_version = 0;
         let mut curr_accumulator_hash = AccumulatorHash::pre_genesis();
 
@@ -553,6 +563,8 @@ where
                 .create_payload_and_hash()
                 .unwrap();
 
+        info!("Committing genesis txn {} of {}", 1, num_genesis_txns);
+
         let (ledger_hashes, next_epoch) = self.prepare_genesis(system_bootstrap_ledger_transaction);
 
         curr_state_version += 1;
@@ -563,15 +575,15 @@ where
             proof: LedgerProof {
                 opaque: Hash([0; Hash::LENGTH]),
                 ledger_header: LedgerHeader {
-                    epoch: 0, // TODO(genesis): use genesis epoch
+                    epoch: initial_epoch,
                     round: 0,
                     accumulator_state: AccumulatorState {
                         state_version: curr_state_version,
                         accumulator_hash: curr_accumulator_hash,
                     },
                     hashes: ledger_hashes,
-                    consensus_parent_round_timestamp_ms: 0, /* TODO(genesis): use genesis timestamp */
-                    proposer_timestamp_ms: 0, /* TODO(genesis): use genesis timestamp */
+                    consensus_parent_round_timestamp_ms: initial_timestamp_ms,
+                    proposer_timestamp_ms: initial_timestamp_ms,
                     next_epoch,
                 },
                 timestamped_signatures: vec![],
@@ -597,7 +609,8 @@ where
         let mut next_nonce = 1;
 
         // Data ingestion
-        for chunk in genesis_data_chunks {
+        for (idx, chunk) in genesis_data_chunks.into_iter().enumerate() {
+            info!("Committing genesis txn {} of {}", idx + 1, num_genesis_txns);
             let genesis_data_ingestion_transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, next_nonce);
             next_nonce += 1;
@@ -622,15 +635,15 @@ where
                 proof: LedgerProof {
                     opaque: Hash([0; Hash::LENGTH]),
                     ledger_header: LedgerHeader {
-                        epoch: 0, // TODO(genesis): use genesis epoch
+                        epoch: initial_epoch,
                         round: 0,
                         accumulator_state: AccumulatorState {
                             state_version: curr_state_version,
                             accumulator_hash: curr_accumulator_hash,
                         },
                         hashes: ledger_hashes,
-                        consensus_parent_round_timestamp_ms: 0, /* TODO(genesis): use genesis timestamp */
-                        proposer_timestamp_ms: 0, /* TODO(genesis): use genesis timestamp */
+                        consensus_parent_round_timestamp_ms: initial_timestamp_ms,
+                        proposer_timestamp_ms: initial_timestamp_ms,
                         next_epoch,
                     },
                     timestamped_signatures: vec![],
@@ -663,31 +676,38 @@ where
                 .create_payload_and_hash()
                 .unwrap();
 
+        info!(
+            "Committing genesis txn {} of {}",
+            num_genesis_txns, num_genesis_txns
+        );
+
         let (ledger_hashes, next_epoch) = self.prepare_genesis(genesis_wrap_up_ledger_transaction);
 
         curr_state_version += 1;
         curr_accumulator_hash = curr_accumulator_hash.accumulate(&genesis_wrap_up_txn_hash);
 
         let genesis_wrap_up_ledger_header = LedgerHeader {
-            epoch: 0, // TODO(genesis): use genesis epoch
+            epoch: initial_epoch,
             round: 0,
             accumulator_state: AccumulatorState {
                 state_version: curr_state_version,
                 accumulator_hash: curr_accumulator_hash,
             },
             hashes: ledger_hashes,
-            consensus_parent_round_timestamp_ms: 0, /* TODO(genesis): use genesis timestamp */
-            proposer_timestamp_ms: 0,               /* TODO(genesis): use genesis timestamp */
+            consensus_parent_round_timestamp_ms: initial_timestamp_ms,
+            proposer_timestamp_ms: initial_timestamp_ms,
             next_epoch,
+        };
+
+        let genesis_wrap_up_ledger_proof = LedgerProof {
+            opaque: genesis_opaque_hash,
+            ledger_header: genesis_wrap_up_ledger_header,
+            timestamped_signatures: vec![],
         };
 
         let genesis_wrap_up_commit_request = CommitRequest {
             transaction_payloads: vec![genesis_wrap_up_ledger_payload],
-            proof: LedgerProof {
-                opaque: Hash([0; Hash::LENGTH]),
-                ledger_header: genesis_wrap_up_ledger_header.clone(),
-                timestamped_signatures: vec![],
-            },
+            proof: genesis_wrap_up_ledger_proof.clone(),
             vertex_store: None,
         };
 
@@ -706,11 +726,7 @@ where
             }
         }
 
-        LedgerProof {
-            opaque: Hash([0; Hash::LENGTH]),
-            ledger_header: genesis_wrap_up_ledger_header,
-            timestamped_signatures: vec![],
-        }
+        genesis_wrap_up_ledger_proof
     }
 
     pub fn commit(
@@ -788,8 +804,19 @@ where
                 });
 
             let transaction_hash = transaction.get_hash();
-            let logged_description = format!("committing {}", transaction_hash);
-
+            let (execution_config_type, warn_threshold, logged_description) = if genesis {
+                (
+                    ConfigType::Genesis,
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    format!("committing genesis {}", transaction_hash),
+                )
+            } else {
+                (
+                    ConfigType::Regular,
+                    TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    format!("committing {}", transaction_hash),
+                )
+            };
             let mut lock_execution_cache = self.execution_cache.lock();
             let processed = lock_execution_cache.execute_transaction(
                 write_store.deref(),
@@ -798,8 +825,8 @@ where
                 &transaction_hash,
                 &self
                     .execution_configurator
-                    .wrap(executable, ConfigType::Regular)
-                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &logged_description),
+                    .wrap(executable, execution_config_type)
+                    .warn_after(warn_threshold, &logged_description),
             );
             let commit = processed.expect_commit(logged_description);
 

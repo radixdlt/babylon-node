@@ -864,6 +864,16 @@ impl QueryableProofStore for RocksDBStore {
         latest_usable_proof.map(|proof| (txns, proof))
     }
 
+    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+        self.db
+            .iterator_cf(self.cf_handle(&LedgerProofByEpoch), IteratorMode::Start)
+            .next()
+            .map(|kv_result| {
+                let (_, bytes) = kv_result.unwrap();
+                scrypto_decode(bytes.as_ref()).unwrap()
+            })
+    }
+
     fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.db
             .get_cf(self.cf_handle(&LedgerProofByEpoch), epoch.to_be_bytes())

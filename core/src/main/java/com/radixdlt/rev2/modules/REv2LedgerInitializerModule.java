@@ -62,25 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.rev2.modules;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.rev2.REv2LedgerInitializer;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import java.util.Optional;
 
-public final class NoOpCommittedReader implements TransactionsAndProofReader {
-  @Override
-  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-    return null;
+public final class REv2LedgerInitializerModule extends AbstractModule {
+  private final GenesisData genesisData;
+
+  public REv2LedgerInitializerModule(GenesisData genesisData) {
+    this.genesisData = genesisData;
   }
 
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
+  @Provides
+  @Singleton
+  REv2LedgerInitializerToken initializeLedger(REv2LedgerInitializer ledgerInitializer) {
+    ledgerInitializer.initialize(genesisData);
+    return new REv2LedgerInitializerToken();
   }
 
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.empty();
+  @Provides
+  @Singleton
+  REv2LedgerInitializer rev2LedgerInitializer(
+      Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
+    return new REv2LedgerInitializer(hasher, rustStateComputer, reader);
   }
 }

@@ -82,7 +82,7 @@ public record ResourceAddress(byte[] value) {
                 ResourceAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 30;
+  public static final int BYTE_LENGTH = 30;
 
   public static ResourceAddress create(byte[] addressBytes) {
     if (addressBytes.length != BYTE_LENGTH) {
