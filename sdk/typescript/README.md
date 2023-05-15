@@ -2,9 +2,15 @@
 
 This SDK is a thin wrapper around the [Babylon Core API](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
 
-The `CoreApiClient` is the main exported object. It currently includes high-level wrappers around two sub-APIs: `LTS` and `Status`.
+The **`CoreApiClient`** is the main exported object. It includes high-level wrappers around every sub-API: 
+- **`LTS`** / **`lts`** - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
+- **`Status`** - For status and configuration details for the node / engine.
+- **`Mempool`** - For information on the contents of the node's mempool.
+- **`State`** - For reading the state of entities. 
+- **`Stream`** -  For reading the committed transactions.
+- **`Transaction`** - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
 
-For querying other sub-APIs, for now, use methods on `coreApiClient.LowLevel.X` where `X` is each of the different sub-APIs.
+All high level wrappers internally instantiate classes generated from OpenAPI specification. In order to query automatically generated code, you can either use `innerClient` property on each of high level APIs or access them through `coreApiClient.lowLevel.X` where `X` is each of the different sub-APIs.
 
 ## End-to-end examples
 

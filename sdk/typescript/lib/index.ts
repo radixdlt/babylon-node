@@ -4,11 +4,12 @@ import {
   LTSApi,
   MempoolApi,
   RequestContext,
+  StateApi,
   StatusApi,
   StreamApi,
   TransactionApi,
 } from "./generated";
-import { LTS, Status } from "./subapis";
+import { LTS, Mempool, State, Status, Stream, Transaction } from "./subapis";
 export * from "./subapis";
 export * from "./generated";
 
@@ -25,15 +26,20 @@ interface CoreApiClientSettings {
 }
 
 export class CoreApiClient {
-  public status: Status;
   public LTS: LTS;
   public lts: LTS;
+  public mempool: Mempool;
+  public state: State;
+  public status: Status;
+  public stream: Stream;
+  public transaction: Transaction;
   public lowLevel: {
-    status: StatusApi;
     lts: LTSApi;
-    transaction: TransactionApi;
     mempool: MempoolApi;
+    state: StateApi;
+    status: StatusApi;
     stream: StreamApi;
+    transaction: TransactionApi;
   };
 
   private constructor(
@@ -41,15 +47,20 @@ export class CoreApiClient {
     public logicalNetworkName: string
   ) {
     this.lowLevel = {
-      status: new StatusApi(configuration),
       lts: new LTSApi(configuration),
-      transaction: new TransactionApi(configuration),
       mempool: new MempoolApi(configuration),
+      state: new StateApi(configuration),
+      status: new StatusApi(configuration),
       stream: new StreamApi(configuration),
+      transaction: new TransactionApi(configuration),      
     };
-    this.status = new Status(this.lowLevel.status, logicalNetworkName);
     this.lts = new LTS(this.lowLevel.lts, logicalNetworkName);
     this.LTS = this.lts; // NOTE: this is to keep backwards compatibility
+    this.mempool = new Mempool(this.lowLevel.mempool)
+    this.state = new State(this.lowLevel.state)
+    this.status = new Status(this.lowLevel.status, logicalNetworkName);
+    this.stream = new Stream(this.lowLevel.stream);
+    this.transaction = new Transaction(this.lowLevel.transaction);
   }
 
   private static constructConfiguration(

@@ -1,6 +1,5 @@
 import {
   StatusApi,
-  LtsStateAccountAllFungibleResourceBalancesResponse,
   NetworkConfigurationResponse,
   NetworkStatusResponse,
 } from "../generated";
