@@ -69,6 +69,26 @@ RUN SKIP_NATIVE_RUST_BUILD=TRUE gradle clean build -x test -Pci=true -PrustBinar
 USER nobody
 
 # =================================================================================================
+# LAYER: Keygen
+# An alternative build target that executes the keygeneration
+# =================================================================================================
+FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine AS keygen
+LABEL org.opencontainers.image.authors="devops@radixdlt.com"
+
+COPY --from=java-build-stage /radixdlt/cli-tools/build/distributions /tmp/
+
+RUN mkdir -p /keygen
+
+WORKDIR /keygen/
+
+RUN unzip -j /tmp/*.zip && \
+    mkdir -p /keygen/bin /keygen/lib && \
+    mv /keygen/*.jar /keygen/lib && \
+    mv /keygen/keygen /keygen/bin/keygen 
+    
+ENTRYPOINT ["bin/keygen"]
+
+# =================================================================================================
 # LAYER: java-container
 # Exports only the java application artifacts from the java-build-stage
 # =================================================================================================
