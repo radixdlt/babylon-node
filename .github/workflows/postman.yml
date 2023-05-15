@@ -47,10 +47,10 @@ jobs:
           parse_json: true
       - name: Set current date
         id: date
-        run: echo "::set-output name=date::$(date +'%b %d, %H:%M')"
+        run: echo "date::$(date +'%b %d, %H:%M')" >> $GITHUB_OUTPUT
       - name: Set git tags
         id: gittag
-        run: echo "::set-output name=gittag::$(git describe --tags --dirty)"
+        run: echo "gittag=$(git describe --tags --dirty)" >> $GITHUB_OUTPUT
 
       # ========== Mapping whatever network was selected to postman variables ==========
       - name: Map network name to its variables
