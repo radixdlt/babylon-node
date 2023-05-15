@@ -3,7 +3,8 @@ use radix_engine::{
     system::node_substates::PersistedSubstate,
     types::{
         scrypto_encode, AccountOffset, Address, ComponentAddress, Decimal, KeyValueStoreOffset,
-        NodeModuleId, RENodeId, ResourceAddress, SubstateOffset,
+        NodeModuleId, Own, RENodeId, ResourceAddress, ScryptoCustomValue, ScryptoValue,
+        SubstateOffset,
     },
 };
 use state_manager::{jni::state_manager::ActualStateManager, store::traits::QueryableProofStore};
@@ -129,8 +130,21 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
                 })
             }
         };
-        let PersistedSubstate::VaultLiquidFungible(substate) = loaded_substate else {
+        let PersistedSubstate::KeyValueStoreEntry(Some(ScryptoValue::Custom { value: ScryptoCustomValue::Own(Own::Vault(vault_id)) })) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
+        };
+
+        let vault_substate_offset =
+            SubstateOffset::Vault(radix_engine::types::VaultOffset::LiquidFungible);
+        let vault_substate = read_mandatory_substate(
+            state_manager,
+            RENodeId::Object(vault_id),
+            NodeModuleId::SELF,
+            &vault_substate_offset,
+        )?;
+
+        let PersistedSubstate::VaultLiquidFungible(substate) = vault_substate else {
+            return Err(wrong_substate_type(vault_substate_offset));
         };
         substate
     };
