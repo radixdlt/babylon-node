@@ -69,7 +69,7 @@ use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use node_common::jni::utils::jni_sbor_coded_call;
+use node_common::java::*;
 use radix_engine::types::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

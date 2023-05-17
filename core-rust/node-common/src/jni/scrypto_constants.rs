@@ -66,7 +66,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use crate::jni::utils::jni_sbor_coded_call;
+use crate::java::utils::jni_sbor_coded_call;
 use radix_engine::types::{EPOCH_MANAGER, RADIX_TOKEN, VALIDATOR_OWNER_BADGE};
 use radix_engine_interface::constants::FAUCET;
 

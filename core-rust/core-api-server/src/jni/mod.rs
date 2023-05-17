@@ -74,7 +74,6 @@ use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
 
 use node_common::java::*;
-use node_common::jni::utils::*;
 use state_manager::jni::state_manager::JNIStateManager;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";

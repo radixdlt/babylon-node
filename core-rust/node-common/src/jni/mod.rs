@@ -64,4 +64,3 @@
 
 pub mod addressing;
 pub mod scrypto_constants;
-pub mod utils;

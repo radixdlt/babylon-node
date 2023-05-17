@@ -78,7 +78,6 @@ use std::ops::Deref;
 use crate::jni::state_manager::JNIStateManager;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
-use node_common::jni::utils::*;
 
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch};

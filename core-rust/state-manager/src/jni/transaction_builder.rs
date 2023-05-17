@@ -70,7 +70,6 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
-use node_common::jni::utils::*;
 use radix_engine::types::PublicKey;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::network::NetworkDefinition;

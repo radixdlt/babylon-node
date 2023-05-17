@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::utils::jni_sbor_coded_call;
+use crate::java::utils::jni_sbor_coded_call;
 use bech32::{FromBase32, ToBase32, Variant};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;

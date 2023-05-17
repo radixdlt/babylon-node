@@ -79,7 +79,6 @@ use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
 use crate::{mempool::*, UserPayloadHash};
 use node_common::java::*;
-use node_common::jni::utils::*;
 
 //
 // JNI Interface

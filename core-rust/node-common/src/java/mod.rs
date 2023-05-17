@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+pub use self::utils::*;
 pub use result::*;
 pub use structure::*;
 pub use types::*;
@@ -69,3 +70,4 @@ pub use types::*;
 pub mod result;
 pub mod structure;
 pub mod types;
+pub mod utils;

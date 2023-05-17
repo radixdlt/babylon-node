@@ -73,7 +73,6 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
-use node_common::jni::utils::*;
 use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine_interface::network::NetworkDefinition;
