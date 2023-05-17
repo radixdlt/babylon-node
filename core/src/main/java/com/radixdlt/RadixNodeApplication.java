@@ -137,18 +137,19 @@ public final class RadixNodeApplication {
     radixNodeBootstrapperHandle
         .radixNodeFuture()
         .whenComplete(
-            (radixNode, ex) -> {
+            (unstartedRadixNode, ex) -> {
               if (ex != null) {
                 log.warn("Radix node couldn't be started", ex);
                 exitWithError();
               } else {
                 final var startupTime = nodeBootStopwatch.elapsed();
+                final var runningNode = RunningRadixNode.run(unstartedRadixNode);
                 log.info(
                     "Radix node {} started successfully in {} ms",
-                    radixNode.self(),
+                    runningNode.self(),
                     startupTime.toMillis());
-                radixNode.reportSelfStartupTime(startupTime);
-                Runtime.getRuntime().addShutdownHook(new Thread(radixNode::shutdown));
+                runningNode.reportSelfStartupTime(startupTime);
+                Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
               }
             });
   }

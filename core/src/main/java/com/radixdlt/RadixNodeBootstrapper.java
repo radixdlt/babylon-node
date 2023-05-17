@@ -101,13 +101,13 @@ public final class RadixNodeBootstrapper {
   private static final Logger log = LogManager.getLogger();
 
   public sealed interface RadixNodeBootstrapperHandle {
-    CompletableFuture<RadixNode> radixNodeFuture();
+    CompletableFuture<UnstartedRadixNode> radixNodeFuture();
 
     void shutdown();
 
-    record Resolved(RadixNode radixNode) implements RadixNodeBootstrapperHandle {
+    record Resolved(UnstartedRadixNode radixNode) implements RadixNodeBootstrapperHandle {
       @Override
-      public CompletableFuture<RadixNode> radixNodeFuture() {
+      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
         return CompletableFuture.completedFuture(radixNode);
       }
 
@@ -120,7 +120,7 @@ public final class RadixNodeBootstrapper {
     record AsyncFromOlympia(OlympiaGenesisBootstrapper olympiaGenesisBootstrapper)
         implements RadixNodeBootstrapperHandle {
       @Override
-      public CompletableFuture<RadixNode> radixNodeFuture() {
+      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
         return olympiaGenesisBootstrapper.radixNodeFuture();
       }
 
@@ -132,7 +132,7 @@ public final class RadixNodeBootstrapper {
 
     record Failed(Exception e) implements RadixNodeBootstrapperHandle {
       @Override
-      public CompletableFuture<RadixNode> radixNodeFuture() {
+      public CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
         return CompletableFuture.failedFuture(e);
       }
 
@@ -197,14 +197,14 @@ public final class RadixNodeBootstrapper {
                     network.getLogicalName(), fixedNetworkGenesisHash, configuredGenesisHash)));
       } else {
         return new RadixNodeBootstrapperHandle.Resolved(
-            RadixNode.start(properties, network, configuredGenesis.get()));
+            new UnstartedRadixNode(properties, network, configuredGenesis.get()));
       }
     } else if (configuredGenesis.isPresent()) {
       return new RadixNodeBootstrapperHandle.Resolved(
-          RadixNode.start(properties, network, configuredGenesis.get()));
+          new UnstartedRadixNode(properties, network, configuredGenesis.get()));
     } else if (fixedNetworkGenesis.isPresent()) {
       return new RadixNodeBootstrapperHandle.Resolved(
-          RadixNode.start(properties, network, fixedNetworkGenesis.get()));
+          new UnstartedRadixNode(properties, network, fixedNetworkGenesis.get()));
     } else if (useOlympiaFlagIsSet) {
       // If neither standard genesis source is configured
       // we may try to get it from Olympia
@@ -265,7 +265,7 @@ public final class RadixNodeBootstrapper {
     private final RuntimeProperties properties;
     private final Network network;
     private final Injector injector;
-    private final CompletableFuture<RadixNode> radixNodeFuture;
+    private final CompletableFuture<UnstartedRadixNode> radixNodeFuture;
 
     private OlympiaGenesisBootstrapper(RuntimeProperties properties, Network network) {
       this.properties = properties;
@@ -310,12 +310,12 @@ public final class RadixNodeBootstrapper {
               Genesis data has been successfully received from the Olympia node \
               ({} data chunks). Initializing the Babylon node...""",
                   genesisData.chunks().size());
-              radixNodeFuture.complete(RadixNode.start(properties, network, genesisData));
+              radixNodeFuture.complete(new UnstartedRadixNode(properties, network, genesisData));
             }
           });
     }
 
-    CompletableFuture<RadixNode> radixNodeFuture() {
+    CompletableFuture<UnstartedRadixNode> radixNodeFuture() {
       return this.radixNodeFuture;
     }
 

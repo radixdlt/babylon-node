@@ -64,7 +64,6 @@
 
 package com.radixdlt;
 
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -75,37 +74,32 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class RadixNode {
+public final class RunningRadixNode {
   private static final Logger log = LogManager.getLogger();
 
   private final Injector injector;
 
-  private RadixNode(Injector injector) {
+  private RunningRadixNode(Injector injector) {
     this.injector = injector;
   }
 
-  public static RadixNode start(
-      RuntimeProperties properties, Network network, GenesisData genesisData) {
+  public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
     log.info("Starting Radix node");
 
-    final var injector =
-        Guice.createInjector(new RadixNodeModule(properties, network, genesisData));
+    final var injector = unstartedRadixNode.instantiateRadixNodeModule();
 
     final var metrics = injector.getInstance(Metrics.class);
     injector.getInstance(MetricInstaller.class).installAt(metrics);
@@ -141,15 +135,11 @@ public final class RadixNode {
     final var coreApiServer = injector.getInstance(CoreApiServer.class);
     coreApiServer.start();
 
-    return new RadixNode(injector);
+    return new RunningRadixNode(injector);
   }
 
   public BFTValidatorId self() {
     return this.injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
-  }
-
-  public Injector injector() {
-    return this.injector;
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {
