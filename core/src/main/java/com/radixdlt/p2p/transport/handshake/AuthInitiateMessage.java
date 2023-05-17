@@ -76,7 +76,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.Set;
 
-@SerializerId2("message.handshake.auth_initiate")
+@SerializerId2("message.handshake.v2.auth_initiate")
 public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -95,7 +95,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
-  @JsonProperty("networkId")
+  @JsonProperty("nid")
   @DsonOutput(DsonOutput.Output.ALL)
   private final byte networkId;
 
@@ -108,7 +108,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
       @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("networkId") byte networkId,
+      @JsonProperty("nid") byte networkId,
       @JsonProperty("networkVersion") byte networkVersion,
       @JsonProperty("newestForkName") String rawNewestForkName,
       @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
