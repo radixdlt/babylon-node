@@ -332,16 +332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-rust"
-version = "0.1.0"
-dependencies = [
- "core-api-server",
- "jni",
- "node-common",
- "state-manager",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -871,6 +861,16 @@ dependencies = [
  "log",
  "thiserror",
  "walkdir",
+]
+
+[[package]]
+name = "jni-export"
+version = "0.1.0"
+dependencies = [
+ "core-api-server",
+ "jni",
+ "node-common",
+ "state-manager",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "node-common",
-    "core-rust",
+    "jni-export",
     "core-api-server",
     "state-manager",
 ]
