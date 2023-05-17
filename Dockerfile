@@ -154,17 +154,20 @@ WORKDIR /app
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
-  && mkdir -p ./state-manager/src \
-  && mkdir -p ./core-rust/src \
   && mkdir -p ./core-api-server/src \
-  && touch ./state-manager/src/lib.rs \
-  && touch ./core-rust/src/lib.rs \
-  && touch ./core-api-server/src/lib.rs
+  && mkdir -p ./jni-export/src \
+  && mkdir -p ./node-common/src \
+  && mkdir -p ./state-manager/src \
+  && touch ./core-api-server/src/lib.rs \
+  && touch ./jni-export/src/lib.rs \
+  && touch ./node-common/src/lib.rs \
+  && touch ./state-manager/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
-COPY core-rust/core-rust/Cargo.toml ./core-rust
-COPY core-rust/state-manager/Cargo.toml ./state-manager
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
+COPY core-rust/jni-export/Cargo.toml ./jni-export
+COPY core-rust/node-common/Cargo.toml ./node-common
+COPY core-rust/state-manager/Cargo.toml ./state-manager
 
 COPY docker/build_scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
 
@@ -183,7 +186,7 @@ RUN --mount=type=cache,id=radixdlt-babylon-node-rust-cache,target=/root/.cache/s
 FROM library-build-stage-cache-packages as library-build-stage
 
 # Tidy up from the previous layer
-RUN rm -rf state-manager core-rust core-api-server
+RUN rm -rf core-api-server jni-export node-common state-manager
 
 # Copy across all the code (docker ignore excepted)
 COPY core-rust ./

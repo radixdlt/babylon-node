@@ -62,9 +62,49 @@
  * permissions under this License.
  */
 
-pub mod mempool;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod vertex_store_recovery;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+
+use crate::java::structure::{StructFromJava, StructToJava};
+
+use crate::java::result::{JavaError, JavaResult};
+
+pub fn jni_jbytearray_to_vector(env: &JNIEnv, jbytearray: jbyteArray) -> JavaResult<Vec<u8>> {
+    env.convert_byte_array(jbytearray)
+        .map_err(|jerr| JavaError::JNI(jerr.to_string()))
+}
+
+pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
+    // Unwrap looks bad here, but:
+    //
+    // 1. by looking at the source code of the JNI, it seems this
+    // cannot really fail unless OOM.
+    //
+    // 2. in case this fails, we would still have to map the error
+    // code in a jbyteArray, so possibly the only way to solve this is
+    // by having a static bytearray to return in this extremely remote
+    // case.
+    env.byte_array_from_slice(slice)
+        .expect("Can't convert &[u8] back to jbyteArray - likely due to OOM")
+}
+
+pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+    env: &JNIEnv,
+    encoded_request: jbyteArray,
+    method: impl FnOnce(Args) -> Response,
+) -> jbyteArray {
+    jni_sbor_coded_fallible_call(env, encoded_request, |args| Ok(method(args)))
+}
+
+pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+    env: &JNIEnv,
+    encoded_request: jbyteArray,
+    method: impl FnOnce(Args) -> JavaResult<Response>,
+) -> jbyteArray {
+    let result = jni_jbytearray_to_vector(env, encoded_request)
+        .and_then(|bytes| Args::from_java(&bytes))
+        .map(method)
+        .and_then(|result| result);
+    jni_slice_to_jbytearray(env, &result.to_java().unwrap())
+}

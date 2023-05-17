@@ -62,80 +62,74 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::*;
-use sbor::{DecodeError, EncodeError};
+use crate::java::utils::jni_sbor_coded_call;
+use bech32::{FromBase32, ToBase32, Variant};
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::types::ComponentAddress;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
-// System Errors.
-pub const ERRCODE_JNI: i16 = 0;
-pub const ERRCODE_SBOR: i16 = 1;
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |(hrp, full_data): (String, Vec<u8>)| -> Result<String, String> {
+            let base32_data = full_data.to_base32();
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct StateManagerError {
-    error_code: i16,
-    error_msg: String,
+            let address = bech32::encode(&hrp, base32_data, Variant::Bech32m)
+                .map_err(|e| format!("Unable to encode bech32m address: {e:?}"))?;
+
+            Ok(address)
+        },
+    )
 }
 
-impl StateManagerError {
-    pub fn create(error_code: i16, error_msg: String) -> StateManagerError {
-        StateManagerError {
-            error_code,
-            error_msg,
-        }
-    }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |address: String| -> Result<(String, Vec<u8>), String> {
+            let (hrp, base32_data, variant) = bech32::decode(&address)
+                .map_err(|e| format!("Unable to decode bech32 address: {e:?}"))?;
 
-    pub fn create_result<T>(error_code: i16, error_msg: String) -> StateManagerResult<T> {
-        Err(StateManagerError::create(error_code, error_msg))
+            check_variant_is_bech32m(variant)?;
+
+            let data = Vec::<u8>::from_base32(&base32_data).map_err(|e| {
+                format!("Unable to decode bech32 data from 5 bits to 8 bits: {e:?}")
+            })?;
+
+            Ok((hrp, data))
+        },
+    )
+}
+
+fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
+    match variant {
+        Variant::Bech32 => Err("Address was bech32 encoded, not bech32m".to_owned()),
+        Variant::Bech32m => Ok(()),
     }
 }
 
-impl From<DecodeError> for StateManagerError {
-    fn from(err: DecodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {err:?}"))
-    }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |key: EcdsaSecp256k1PublicKey| {
+        ComponentAddress::virtual_account_from_public_key(&key)
+    })
 }
 
-impl From<EncodeError> for StateManagerError {
-    fn from(err: EncodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR encode failed: {err:?}"))
-    }
-}
-
-pub type StateManagerResult<T> = Result<T, StateManagerError>;
-
-pub trait ResultStateManagerMaps<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>;
-
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>;
-}
-
-impl<T, E> ResultStateManagerMaps<T, E> for Result<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>,
-    {
-        match self {
-            Ok(value) => match op(value) {
-                Ok(mapped_value) => Ok(Ok(mapped_value)),
-                Err(sys_error) => Err(sys_error),
-            },
-            Err(err) => Ok(Err(err)),
-        }
-    }
-
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>,
-    {
-        match self {
-            Ok(t) => Ok(Ok(t)),
-            Err(err) => match op(err) {
-                Ok(mapped_error) => Ok(Err(mapped_error)),
-                Err(sys_error) => Err(sys_error),
-            },
-        }
-    }
-}
+pub fn export_extern_functions() {}
