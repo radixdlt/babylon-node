@@ -24,8 +24,7 @@ The client checks that it can connect to the Core API at `initialize` time. If y
 ```typescript
 import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
 import http from "node:http";
-import https from "node:http";
-import { CoreApiClient} from "@radixdlt/babylon-core-api-sdk";
+import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     // Note - in nodeJS, you may need to use 127.0.0.1 instead of localhost
@@ -33,8 +32,37 @@ const coreApiClient = await CoreApiClient.initialize({
     logicalNetworkName: "kisharnet",
     fetch,
     // Configuration for fixing issues with node-fetch
-    httpAgent: new http.Agent({ keepAlive: true }),
-    httpsAgent: new https.Agent({ keepAlive: true }),
+    advanced: {
+        agent: new http.Agent({ keepAlive: true }) // Make sure this matches the basePath protocol (http/https)
+    }
+});
+
+```
+
+If using the Radix Node CLI, then you want to also pass authorization header using `advanced.headers` field:
+
+```typescript
+const coreApiClient = await CoreApiClient.initialize({
+    ...
+    advanced: {
+        ...
+        headers: {
+            "Authorization": `Basic ${Buffer.from(`${basicAuthUsername}:${basicAuthPassword}`).toString("base64")}`
+        }
+    }
+});
+
+```
+
+If you are using self signed certificates and want to bypass verification (although not recommended):
+
+```typescript
+const coreApiClient = await CoreApiClient.initialize({
+    ...
+    advanced: {
+        ...
+        agent: new https.Agent({ keepAlive: true, rejectUnauthorized: false })
+    }
 });
 
 ```

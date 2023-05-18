@@ -20,12 +20,9 @@ export const BASE_PATH = "http://localhost:3333/core".replace(/\/+$/, "");
 export interface ConfigurationParameters {
     basePath?: string; // Override base path
     fetchApi?: FetchAPI; // Override for fetch implementation
+    agent?: any; // Override for HTTP/s agent
     middleware?: Middleware[]; // Middleware to apply before/after fetch requests
     queryParamsStringify?: (params: HTTPQuery) => string; // stringify function for query strings
-    username?: string; // Parameter for basic security
-    password?: string; // Parameter for basic security
-    apiKey?: string | ((name: string) => string); // Parameter for apiKey security
-    accessToken?: string | Promise<string> | ((name?: string, scopes?: string[]) => string | Promise<string>); // Parameter for oauth2 security
     headers?: HTTPHeaders; // Header params we want to use on every request
     credentials?: RequestCredentials; // Value for the credentials param we want to use on each request
 }
@@ -45,36 +42,16 @@ export class Configuration {
         return this.configuration.fetchApi;
     }
 
+    get agent(): any {
+        return this.configuration.agent;
+    }
+
     get middleware(): Middleware[] {
         return this.configuration.middleware || [];
     }
 
     get queryParamsStringify(): (params: HTTPQuery) => string {
         return this.configuration.queryParamsStringify || querystring;
-    }
-
-    get username(): string | undefined {
-        return this.configuration.username;
-    }
-
-    get password(): string | undefined {
-        return this.configuration.password;
-    }
-
-    get apiKey(): ((name: string) => string) | undefined {
-        const apiKey = this.configuration.apiKey;
-        if (apiKey) {
-            return typeof apiKey === 'function' ? apiKey : () => apiKey;
-        }
-        return undefined;
-    }
-
-    get accessToken(): ((name?: string, scopes?: string[]) => string | Promise<string>) | undefined {
-        const accessToken = this.configuration.accessToken;
-        if (accessToken) {
-            return typeof accessToken === 'function' ? accessToken : async () => accessToken;
-        }
-        return undefined;
     }
 
     get headers(): HTTPHeaders | undefined {
@@ -142,6 +119,7 @@ export class BaseAPI {
                 : async () => initOverrides;
 
         const initParams = {
+            agent: this.configuration.agent,
             method: context.method,
             headers,
             body: context.body,
