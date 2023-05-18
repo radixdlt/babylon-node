@@ -94,8 +94,8 @@ pub fn to_api_substate(
         )) => to_api_non_fungible_resource_manager_mutable_fields_substate(context, substate)?,
 
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResourceData(
-            substate_payload,
-        )) => to_api_non_fungible_resource_manager_data_substate(context, &substate_payload.data)?,
+            value,
+        )) => to_api_non_fungible_resource_manager_data_substate(context, value)?,
 
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
             TypedFungibleVaultFieldValue::Balance(fungible_vault_balance_substate),
@@ -141,8 +141,8 @@ pub fn to_api_substate(
             &generic_scrypto_sbor_payload.data,
         )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericKeyValueStore(
-            payload,
-        )) => to_api_generic_key_value_store_substate(context, &payload.data)?,
+            value,
+        )) => to_api_generic_key_value_store_substate(context, value)?,
     })
 }
 
@@ -169,10 +169,20 @@ pub fn to_api_generic_scrypto_component_state_substate(
 
 pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
-    data: &Vec<u8>,
+    value_opt: &Option<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
+    let (is_deleted, data_struct) = match value_opt {
+        Some(value) => (
+            false,
+            Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
+                context, value,
+            )?)),
+        ),
+        None => (true, None),
+    };
     Ok(models::Substate::GenericKeyValueStoreEntrySubstate {
-        data_struct: Box::new(to_api_data_struct_from_bytes(context, data.as_ref())?),
+        is_deleted,
+        data_struct,
     })
 }
 
@@ -638,6 +648,15 @@ pub fn to_api_data_struct_from_scrypto_value(
     scrypto_value: &ScryptoValue,
 ) -> Result<models::DataStruct, MappingError> {
     let scrypto_value = IndexedScryptoValue::from_typed(scrypto_value);
+    to_api_data_struct_from_indexed_scrypto_value(context, scrypto_value)
+}
+
+pub fn to_api_data_struct_from_scrypto_raw_value(
+    context: &MappingContext,
+    scrypto_raw_value: &ScryptoRawValue<'_>,
+) -> Result<models::DataStruct, MappingError> {
+    let scrypto_value =
+        IndexedScryptoValue::from_vec(scrypto_encode(scrypto_raw_value).unwrap()).unwrap();
     to_api_data_struct_from_indexed_scrypto_value(context, scrypto_value)
 }
 
@@ -1228,11 +1247,21 @@ pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
 
 pub fn to_api_non_fungible_resource_manager_data_substate(
     context: &MappingContext,
-    raw_substate: &[u8],
+    value_opt: &Option<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
+    let (is_deleted, data_struct) = match value_opt {
+        Some(value) => (
+            false,
+            Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
+                context, value,
+            )?)),
+        ),
+        None => (true, None),
+    };
     Ok(
         models::Substate::NonFungibleResourceManagerDataEntrySubstate {
-            data_struct: Box::new(to_api_data_struct_from_bytes(context, raw_substate)?),
+            is_deleted,
+            data_struct,
         },
     )
 }

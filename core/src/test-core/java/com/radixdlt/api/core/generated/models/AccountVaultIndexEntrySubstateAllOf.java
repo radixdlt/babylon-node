@@ -29,50 +29,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * NonFungibleResourceManagerDataEntrySubstateAllOf
+ * AccountVaultIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
-  NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class NonFungibleResourceManagerDataEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
-
+public class AccountVaultIndexEntrySubstateAllOf {
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
-  public NonFungibleResourceManagerDataEntrySubstateAllOf() { 
+  public AccountVaultIndexEntrySubstateAllOf() { 
   }
 
-  public NonFungibleResourceManagerDataEntrySubstateAllOf isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-    return this;
-  }
-
-   /**
-   * Get isDeleted
-   * @return isDeleted
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsDeleted() {
-    return isDeleted;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-  }
-
-
-  public NonFungibleResourceManagerDataEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
+  public AccountVaultIndexEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
     this.dataStruct = dataStruct;
     return this;
   }
@@ -81,10 +51,10 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
    * Get dataStruct
    * @return dataStruct
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public DataStruct getDataStruct() {
     return dataStruct;
@@ -92,14 +62,14 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDataStruct(DataStruct dataStruct) {
     this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this NonFungibleResourceManagerDataEntrySubstate_allOf object is equal to o.
+   * Return true if this AccountVaultIndexEntrySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,21 +79,19 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NonFungibleResourceManagerDataEntrySubstateAllOf nonFungibleResourceManagerDataEntrySubstateAllOf = (NonFungibleResourceManagerDataEntrySubstateAllOf) o;
-    return Objects.equals(this.isDeleted, nonFungibleResourceManagerDataEntrySubstateAllOf.isDeleted) &&
-        Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstateAllOf.dataStruct);
+    AccountVaultIndexEntrySubstateAllOf accountVaultIndexEntrySubstateAllOf = (AccountVaultIndexEntrySubstateAllOf) o;
+    return Objects.equals(this.dataStruct, accountVaultIndexEntrySubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isDeleted, dataStruct);
+    return Objects.hash(dataStruct);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NonFungibleResourceManagerDataEntrySubstateAllOf {\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
+    sb.append("class AccountVaultIndexEntrySubstateAllOf {\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -12,21 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NonFungibleResourceManagerDataEntrySubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+pub struct AccountVaultIndexEntrySubstateAllOf {
+    #[serde(rename = "data_struct")]
+    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
-impl NonFungibleResourceManagerDataEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_deleted: bool) -> NonFungibleResourceManagerDataEntrySubstate {
-        NonFungibleResourceManagerDataEntrySubstate {
-            substate_type,
-            is_deleted,
-            data_struct: None,
+impl AccountVaultIndexEntrySubstateAllOf {
+    pub fn new(data_struct: crate::core_api::generated::models::DataStruct) -> AccountVaultIndexEntrySubstateAllOf {
+        AccountVaultIndexEntrySubstateAllOf {
+            data_struct: Box::new(data_struct),
         }
     }
 }

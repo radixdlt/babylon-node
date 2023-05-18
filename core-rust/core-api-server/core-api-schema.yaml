@@ -2710,19 +2710,25 @@ components:
     EntityType:
       type: string
       enum:
-        - Package
-        - NonFungibleResource
-        - FungibleResource
-        - NormalComponent
-        - Account
-        - Identity
-        - EpochManager
-        - Validator
-        - Clock
-        - AccessController
-        - KeyValueStore
-        - FungibleVault
-        - NonFungibleVault
+        - GlobalPackage
+        - GlobalEpochManager
+        - GlobalValidator
+        - GlobalClock
+        - GlobalGenericComponent
+        - GlobalAccount
+        - GlobalIdentity
+        - GlobalAccessController
+        - GlobalVirtualSecp256k1Account
+        - GlobalVirtualSecp256k1Identity
+        - GlobalVirtualEd25519Account
+        - GlobalVirtualEd25519Identity
+        - GlobalFungibleResource
+        - InternalFungibleVault
+        - GlobalNonFungibleResource
+        - InternalNonFungibleVault
+        - InternalGenericComponent
+        - InternalAccount
+        - InternalKeyValueStore
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -3071,8 +3077,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - data_struct
+            - is_deleted
           properties:
+            is_deleted:
+              type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
     FungibleVaultFieldBalanceSubstate:
@@ -3242,8 +3250,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - data_struct
+            - is_deleted
           properties:
+            is_deleted:
+              type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
 ##########################################

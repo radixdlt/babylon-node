@@ -28,31 +28,43 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum EntityType {
   
-  PACKAGE("Package"),
+  GLOBALPACKAGE("GlobalPackage"),
   
-  NONFUNGIBLERESOURCE("NonFungibleResource"),
+  GLOBALEPOCHMANAGER("GlobalEpochManager"),
   
-  FUNGIBLERESOURCE("FungibleResource"),
+  GLOBALVALIDATOR("GlobalValidator"),
   
-  NORMALCOMPONENT("NormalComponent"),
+  GLOBALCLOCK("GlobalClock"),
   
-  ACCOUNT("Account"),
+  GLOBALGENERICCOMPONENT("GlobalGenericComponent"),
   
-  IDENTITY("Identity"),
+  GLOBALACCOUNT("GlobalAccount"),
   
-  EPOCHMANAGER("EpochManager"),
+  GLOBALIDENTITY("GlobalIdentity"),
   
-  VALIDATOR("Validator"),
+  GLOBALACCESSCONTROLLER("GlobalAccessController"),
   
-  CLOCK("Clock"),
+  GLOBALVIRTUALSECP256K1ACCOUNT("GlobalVirtualSecp256k1Account"),
   
-  ACCESSCONTROLLER("AccessController"),
+  GLOBALVIRTUALSECP256K1IDENTITY("GlobalVirtualSecp256k1Identity"),
   
-  KEYVALUESTORE("KeyValueStore"),
+  GLOBALVIRTUALED25519ACCOUNT("GlobalVirtualEd25519Account"),
   
-  FUNGIBLEVAULT("FungibleVault"),
+  GLOBALVIRTUALED25519IDENTITY("GlobalVirtualEd25519Identity"),
   
-  NONFUNGIBLEVAULT("NonFungibleVault");
+  GLOBALFUNGIBLERESOURCE("GlobalFungibleResource"),
+  
+  INTERNALFUNGIBLEVAULT("InternalFungibleVault"),
+  
+  GLOBALNONFUNGIBLERESOURCE("GlobalNonFungibleResource"),
+  
+  INTERNALNONFUNGIBLEVAULT("InternalNonFungibleVault"),
+  
+  INTERNALGENERICCOMPONENT("InternalGenericComponent"),
+  
+  INTERNALACCOUNT("InternalAccount"),
+  
+  INTERNALKEYVALUESTORE("InternalKeyValueStore");
 
   private String value;
 
