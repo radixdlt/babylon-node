@@ -216,7 +216,7 @@ jobs:
 
   build_push_container_gcr:
     name: (GCR) Docker AMD
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1472
     with:
       runs_on: ubuntu-latest
       image_registry: "eu.gcr.io"
@@ -268,7 +268,7 @@ jobs:
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker AMD
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1472
     with:
       environment: release
       runs_on: ubuntu-latest
@@ -291,7 +291,7 @@ jobs:
   build_push_container_dockerhub_arm:
     if: github.event_name == 'release'
     name: (DockerHub) Docker ARM
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1472
     with:
       environment: release
       runs_on: babylon-node-arm
