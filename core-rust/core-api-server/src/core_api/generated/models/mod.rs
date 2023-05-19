@@ -20,6 +20,8 @@ pub mod access_rules_module_field_access_rules_substate_all_of;
 pub use self::access_rules_module_field_access_rules_substate_all_of::AccessRulesModuleFieldAccessRulesSubstateAllOf;
 pub mod account_vault_index_entry_substate;
 pub use self::account_vault_index_entry_substate::AccountVaultIndexEntrySubstate;
+pub mod account_vault_index_entry_substate_all_of;
+pub use self::account_vault_index_entry_substate_all_of::AccountVaultIndexEntrySubstateAllOf;
 pub mod active_validator;
 pub use self::active_validator::ActiveValidator;
 pub mod address_type;

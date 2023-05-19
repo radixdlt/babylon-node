@@ -83,8 +83,10 @@ pub enum Substate {
     },
     #[serde(rename="GenericKeyValueStoreEntry")]
     GenericKeyValueStoreEntrySubstate {
-        #[serde(rename = "data_struct")]
-        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+        #[serde(rename = "is_deleted")]
+        is_deleted: bool,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="GenericScryptoComponentFieldState")]
     GenericScryptoComponentFieldStateSubstate {
@@ -102,8 +104,10 @@ pub enum Substate {
     },
     #[serde(rename="NonFungibleResourceManagerDataEntry")]
     NonFungibleResourceManagerDataEntrySubstate {
-        #[serde(rename = "data_struct")]
-        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+        #[serde(rename = "is_deleted")]
+        is_deleted: bool,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="NonFungibleResourceManagerFieldIdType")]
     NonFungibleResourceManagerFieldIdTypeSubstate {

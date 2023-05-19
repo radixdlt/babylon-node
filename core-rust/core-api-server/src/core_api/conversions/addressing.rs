@@ -59,25 +59,31 @@ pub fn to_api_entity_reference(
 
 pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
     match entity_type {
-        EntityType::GlobalPackage => models::EntityType::Package,
-        EntityType::GlobalFungibleResource => models::EntityType::FungibleResource,
-        EntityType::GlobalNonFungibleResource => models::EntityType::NonFungibleResource,
-        EntityType::GlobalEpochManager => models::EntityType::EpochManager,
-        EntityType::GlobalValidator => models::EntityType::Validator,
-        EntityType::GlobalClock => models::EntityType::Clock,
-        EntityType::GlobalAccessController => models::EntityType::AccessController,
-        EntityType::GlobalAccount => models::EntityType::Account,
-        EntityType::GlobalIdentity => models::EntityType::Identity,
-        EntityType::GlobalGenericComponent => models::EntityType::NormalComponent,
-        EntityType::GlobalVirtualSecp256k1Account => models::EntityType::Account,
-        EntityType::GlobalVirtualEd25519Account => models::EntityType::Account,
-        EntityType::GlobalVirtualSecp256k1Identity => models::EntityType::Identity,
-        EntityType::GlobalVirtualEd25519Identity => models::EntityType::Identity,
-        EntityType::InternalFungibleVault => models::EntityType::FungibleVault,
-        EntityType::InternalNonFungibleVault => models::EntityType::NonFungibleVault,
-        EntityType::InternalAccount => models::EntityType::Account,
-        EntityType::InternalKeyValueStore => models::EntityType::KeyValueStore,
-        EntityType::InternalGenericComponent => models::EntityType::NormalComponent,
+        EntityType::GlobalPackage => models::EntityType::GlobalPackage,
+        EntityType::GlobalFungibleResource => models::EntityType::GlobalFungibleResource,
+        EntityType::GlobalNonFungibleResource => models::EntityType::GlobalNonFungibleResource,
+        EntityType::GlobalEpochManager => models::EntityType::GlobalEpochManager,
+        EntityType::GlobalValidator => models::EntityType::GlobalValidator,
+        EntityType::GlobalClock => models::EntityType::GlobalClock,
+        EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
+        EntityType::GlobalAccount => models::EntityType::GlobalAccount,
+        EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
+        EntityType::GlobalGenericComponent => models::EntityType::GlobalGenericComponent,
+        EntityType::GlobalVirtualSecp256k1Account => {
+            models::EntityType::GlobalVirtualSecp256k1Account
+        }
+        EntityType::GlobalVirtualEd25519Account => models::EntityType::GlobalVirtualEd25519Account,
+        EntityType::GlobalVirtualSecp256k1Identity => {
+            models::EntityType::GlobalVirtualSecp256k1Identity
+        }
+        EntityType::GlobalVirtualEd25519Identity => {
+            models::EntityType::GlobalVirtualEd25519Identity
+        }
+        EntityType::InternalFungibleVault => models::EntityType::InternalFungibleVault,
+        EntityType::InternalNonFungibleVault => models::EntityType::InternalNonFungibleVault,
+        EntityType::InternalAccount => models::EntityType::InternalAccount,
+        EntityType::InternalKeyValueStore => models::EntityType::InternalKeyValueStore,
+        EntityType::InternalGenericComponent => models::EntityType::InternalGenericComponent,
     }
 }
 

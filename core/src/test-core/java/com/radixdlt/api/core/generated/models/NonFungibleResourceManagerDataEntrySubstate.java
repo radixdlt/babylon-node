@@ -68,6 +68,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleResourceManagerDataEntrySubstate
  */
 @JsonPropertyOrder({
+  NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_IS_DELETED,
   NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -109,11 +110,40 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
+  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
+  private Boolean isDeleted;
+
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
   public NonFungibleResourceManagerDataEntrySubstate() { 
   }
+
+  public NonFungibleResourceManagerDataEntrySubstate isDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
+   /**
+   * Get isDeleted
+   * @return isDeleted
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+  }
+
 
   public NonFungibleResourceManagerDataEntrySubstate dataStruct(DataStruct dataStruct) {
     this.dataStruct = dataStruct;
@@ -124,10 +154,10 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
    * Get dataStruct
    * @return dataStruct
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public DataStruct getDataStruct() {
     return dataStruct;
@@ -135,7 +165,7 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
 
 
   @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDataStruct(DataStruct dataStruct) {
     this.dataStruct = dataStruct;
   }
@@ -153,13 +183,14 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
       return false;
     }
     NonFungibleResourceManagerDataEntrySubstate nonFungibleResourceManagerDataEntrySubstate = (NonFungibleResourceManagerDataEntrySubstate) o;
-    return Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstate.dataStruct) &&
+    return Objects.equals(this.isDeleted, nonFungibleResourceManagerDataEntrySubstate.isDeleted) &&
+        Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstate.dataStruct) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(isDeleted, dataStruct, super.hashCode());
   }
 
   @Override
@@ -167,6 +198,7 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerDataEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
