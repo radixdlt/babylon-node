@@ -95,7 +95,10 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
-  @JsonProperty("nid")
+  // We're using a different property name here than on Olympia
+  // to make it impossible for Olympia nodes to deserialize Babylon
+  // handshake messages
+  @JsonProperty("babylonNetworkId")
   @DsonOutput(DsonOutput.Output.ALL)
   private final byte networkId;
 
@@ -108,7 +111,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
       @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("nid") byte networkId,
+      @JsonProperty("babylonNetworkId") byte networkId,
       @JsonProperty("networkVersion") byte networkVersion,
       @JsonProperty("newestForkName") String rawNewestForkName,
       @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
