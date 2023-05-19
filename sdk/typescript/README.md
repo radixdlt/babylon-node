@@ -23,11 +23,24 @@ The client checks that it can connect to the Core API at `initialize` time. If y
 
 ```typescript
 import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
-import http from "node:http";
 import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     // Note - in nodeJS, you may need to use 127.0.0.1 instead of localhost
+    basePath: "http://127.0.0.1:3333/core",
+    logicalNetworkName: "kisharnet",
+    fetch,
+});
+
+```
+
+With current stable NodeJS version (v20) there is a bug with `node-fetch` (report: https://github.com/node-fetch/node-fetch/issues/1735). To fix it you need to enable HTTP `keepAlive`:
+```typescript
+import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
+import http from "node:http";
+import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
+
+const coreApiClient = await CoreApiClient.initialize({
     basePath: "http://127.0.0.1:3333/core",
     logicalNetworkName: "kisharnet",
     fetch,
@@ -39,13 +52,20 @@ const coreApiClient = await CoreApiClient.initialize({
 
 ```
 
-If using the Radix Node CLI, then you want to also pass authorization header using `advanced.headers` field:
+If you have set up your node using the Radix Node CLI, then you want to also pass authorization header using `advanced.headers` field:
 
 ```typescript
+import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
+import http from "node:http";
+import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
+
 const coreApiClient = await CoreApiClient.initialize({
-    ...
+    basePath: "http://127.0.0.1:3333/core",
+    logicalNetworkName: "kisharnet",
+    fetch,
+    // Configuration for fixing issues with node-fetch
     advanced: {
-        ...
+        agent: new http.Agent({ keepAlive: true }), // Make sure this matches the basePath protocol (http/https)
         headers: {
             "Authorization": `Basic ${Buffer.from(`${basicAuthUsername}:${basicAuthPassword}`).toString("base64")}`
         }
@@ -54,14 +74,23 @@ const coreApiClient = await CoreApiClient.initialize({
 
 ```
 
-If you are using self signed certificates and want to bypass verification (although not recommended):
+If you are also using self signed certificates and want to bypass verification (although not recommended):
 
 ```typescript
+import fetch from "node-fetch" // Optional polyfill for fetch required if running in nodeJS - we recommend version 2.7.3 
+import https from "node:http";
+import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
+
 const coreApiClient = await CoreApiClient.initialize({
-    ...
+    basePath: "https://127.0.0.1:3333/core",
+    logicalNetworkName: "kisharnet",
+    fetch,
+    // Configuration for fixing issues with node-fetch
     advanced: {
-        ...
-        agent: new https.Agent({ keepAlive: true, rejectUnauthorized: false })
+        agent: new https.Agent({ keepAlive: true, rejectUnauthorized: false }), // Make sure this matches the basePath protocol (http/https)
+        headers: {
+            "Authorization": `Basic ${Buffer.from(`${basicAuthUsername}:${basicAuthPassword}`).toString("base64")}`
+        }
     }
 });
 
