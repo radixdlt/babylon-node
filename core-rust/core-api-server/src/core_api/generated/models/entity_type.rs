@@ -12,58 +12,76 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "Package")]
-    Package,
-    #[serde(rename = "NonFungibleResource")]
-    NonFungibleResource,
-    #[serde(rename = "FungibleResource")]
-    FungibleResource,
-    #[serde(rename = "NormalComponent")]
-    NormalComponent,
-    #[serde(rename = "Account")]
-    Account,
-    #[serde(rename = "Identity")]
-    Identity,
-    #[serde(rename = "EpochManager")]
-    EpochManager,
-    #[serde(rename = "Validator")]
-    Validator,
-    #[serde(rename = "Clock")]
-    Clock,
-    #[serde(rename = "AccessController")]
-    AccessController,
-    #[serde(rename = "KeyValueStore")]
-    KeyValueStore,
-    #[serde(rename = "FungibleVault")]
-    FungibleVault,
-    #[serde(rename = "NonFungibleVault")]
-    NonFungibleVault,
+    #[serde(rename = "GlobalPackage")]
+    GlobalPackage,
+    #[serde(rename = "GlobalEpochManager")]
+    GlobalEpochManager,
+    #[serde(rename = "GlobalValidator")]
+    GlobalValidator,
+    #[serde(rename = "GlobalClock")]
+    GlobalClock,
+    #[serde(rename = "GlobalGenericComponent")]
+    GlobalGenericComponent,
+    #[serde(rename = "GlobalAccount")]
+    GlobalAccount,
+    #[serde(rename = "GlobalIdentity")]
+    GlobalIdentity,
+    #[serde(rename = "GlobalAccessController")]
+    GlobalAccessController,
+    #[serde(rename = "GlobalVirtualSecp256k1Account")]
+    GlobalVirtualSecp256k1Account,
+    #[serde(rename = "GlobalVirtualSecp256k1Identity")]
+    GlobalVirtualSecp256k1Identity,
+    #[serde(rename = "GlobalVirtualEd25519Account")]
+    GlobalVirtualEd25519Account,
+    #[serde(rename = "GlobalVirtualEd25519Identity")]
+    GlobalVirtualEd25519Identity,
+    #[serde(rename = "GlobalFungibleResource")]
+    GlobalFungibleResource,
+    #[serde(rename = "InternalFungibleVault")]
+    InternalFungibleVault,
+    #[serde(rename = "GlobalNonFungibleResource")]
+    GlobalNonFungibleResource,
+    #[serde(rename = "InternalNonFungibleVault")]
+    InternalNonFungibleVault,
+    #[serde(rename = "InternalGenericComponent")]
+    InternalGenericComponent,
+    #[serde(rename = "InternalAccount")]
+    InternalAccount,
+    #[serde(rename = "InternalKeyValueStore")]
+    InternalKeyValueStore,
 
 }
 
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::Package => String::from("Package"),
-            Self::NonFungibleResource => String::from("NonFungibleResource"),
-            Self::FungibleResource => String::from("FungibleResource"),
-            Self::NormalComponent => String::from("NormalComponent"),
-            Self::Account => String::from("Account"),
-            Self::Identity => String::from("Identity"),
-            Self::EpochManager => String::from("EpochManager"),
-            Self::Validator => String::from("Validator"),
-            Self::Clock => String::from("Clock"),
-            Self::AccessController => String::from("AccessController"),
-            Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::FungibleVault => String::from("FungibleVault"),
-            Self::NonFungibleVault => String::from("NonFungibleVault"),
+            Self::GlobalPackage => String::from("GlobalPackage"),
+            Self::GlobalEpochManager => String::from("GlobalEpochManager"),
+            Self::GlobalValidator => String::from("GlobalValidator"),
+            Self::GlobalClock => String::from("GlobalClock"),
+            Self::GlobalGenericComponent => String::from("GlobalGenericComponent"),
+            Self::GlobalAccount => String::from("GlobalAccount"),
+            Self::GlobalIdentity => String::from("GlobalIdentity"),
+            Self::GlobalAccessController => String::from("GlobalAccessController"),
+            Self::GlobalVirtualSecp256k1Account => String::from("GlobalVirtualSecp256k1Account"),
+            Self::GlobalVirtualSecp256k1Identity => String::from("GlobalVirtualSecp256k1Identity"),
+            Self::GlobalVirtualEd25519Account => String::from("GlobalVirtualEd25519Account"),
+            Self::GlobalVirtualEd25519Identity => String::from("GlobalVirtualEd25519Identity"),
+            Self::GlobalFungibleResource => String::from("GlobalFungibleResource"),
+            Self::InternalFungibleVault => String::from("InternalFungibleVault"),
+            Self::GlobalNonFungibleResource => String::from("GlobalNonFungibleResource"),
+            Self::InternalNonFungibleVault => String::from("InternalNonFungibleVault"),
+            Self::InternalGenericComponent => String::from("InternalGenericComponent"),
+            Self::InternalAccount => String::from("InternalAccount"),
+            Self::InternalKeyValueStore => String::from("InternalKeyValueStore"),
         }
     }
 }
 
 impl Default for EntityType {
     fn default() -> EntityType {
-        Self::Package
+        Self::GlobalPackage
     }
 }
 

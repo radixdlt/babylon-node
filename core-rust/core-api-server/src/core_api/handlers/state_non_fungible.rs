@@ -54,7 +54,7 @@ pub(crate) async fn handle_state_non_fungible(
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
-            &scrypto_encode(&non_fungible).unwrap(),
+            &Some(non_fungible),
         )?),
     })
     .map(Json)
