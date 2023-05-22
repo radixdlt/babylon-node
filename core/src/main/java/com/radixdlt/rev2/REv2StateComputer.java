@@ -128,7 +128,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
-  private final AtomicReference<ProposerElection> proposerElection;
+  private final AtomicReference<ProposerElection> currentProposerElection;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
@@ -154,7 +154,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
     this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
-    this.proposerElection = new AtomicReference<>(initialProposerElection);
+    this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
   }
 
@@ -250,9 +250,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var gapRoundLeaderKeys =
         LongStream.range(roundDetails.previousQcRoundNumber() + 1, roundDetails.roundNumber())
             .mapToObj(Round::of)
-            .map(this.proposerElection.get()::getProposer)
+            .map(this.currentProposerElection.get()::getProposer)
             .map(BFTValidatorId::getKey)
-            .collect(Collectors.toList());
+            .toList();
     var prepareRequest =
         new PrepareRequest(
             parentAccumulatorHash,
@@ -330,7 +330,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var outputBuilder = ImmutableClassToInstanceMap.builder();
     epochChangeOptional.ifPresent(
         epochChange -> {
-          this.proposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
+          this.currentProposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
           outputBuilder.put(EpochChange.class, epochChange);
         });
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
