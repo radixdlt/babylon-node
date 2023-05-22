@@ -64,9 +64,6 @@
 
 use std::sync::{Arc, MutexGuard};
 
-use crate::environment::setup_tracing;
-use crate::jni::java_structure::StructFromJava;
-use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
@@ -74,6 +71,8 @@ use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::environment::setup_tracing;
+use node_common::java::*;
 use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine_interface::network::NetworkDefinition;

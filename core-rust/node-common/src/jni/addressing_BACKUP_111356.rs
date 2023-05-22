@@ -62,48 +62,109 @@
  * permissions under this License.
  */
 
+use crate::java::utils::jni_sbor_coded_call;
+use bech32::{FromBase32, ToBase32, Variant};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-
-use crate::jni::utils::jni_sbor_coded_call;
-use radix_engine::types::{EPOCH_MANAGER, RADIX_TOKEN, VALIDATOR_OWNER_BADGE};
-use radix_engine_interface::constants::FAUCET;
+use radix_engine::types::ComponentAddress;
+use radix_engine_common::types::{EntityType, NodeId, ResourceAddress};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| RADIX_TOKEN)
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |(hrp, full_data): (String, Vec<u8>)| -> Result<String, String> {
+            let base32_data = full_data.to_base32();
+
+            let address = bech32::encode(&hrp, base32_data, Variant::Bech32m)
+                .map_err(|e| format!("Unable to encode bech32m address: {e:?}"))?;
+
+            Ok(address)
+        },
+    )
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetAddress(
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| FAUCET)
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |address: String| -> Result<(String, Vec<u8>), String> {
+            let (hrp, base32_data, variant) = bech32::decode(&address)
+                .map_err(|e| format!("Unable to decode bech32 address: {e:?}"))?;
+
+            check_variant_is_bech32m(variant)?;
+
+            let data = Vec::<u8>::from_base32(&base32_data).map_err(|e| {
+                format!("Unable to decode bech32 data from 5 bits to 8 bits: {e:?}")
+            })?;
+
+            Ok((hrp, data))
+        },
+    )
+}
+
+fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
+    match variant {
+        Variant::Bech32 => Err("Address was bech32 encoded, not bech32m".to_owned()),
+        Variant::Bech32m => Ok(()),
+    }
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getEpochManagerComponentAddress(
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualAccountAddress(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| EPOCH_MANAGER)
+<<<<<<< HEAD:core-rust/state-manager/src/jni/addressing.rs
+    jni_sbor_coded_call(&env, request_payload, do_virtual_account_address)
+}
+
+fn do_virtual_account_address(
+    unchecked_public_key_bytes: [u8; EcdsaSecp256k1PublicKey::LENGTH],
+) -> ComponentAddress {
+    // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
+    // this is okay. We need to support this because there are such accounts on Olympia.
+    let public_key = EcdsaSecp256k1PublicKey(unchecked_public_key_bytes);
+    ComponentAddress::virtual_account_from_public_key(&public_key)
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerTokenResourceAddress(
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeGlobalFungible(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| VALIDATOR_OWNER_BADGE)
+    jni_sbor_coded_call(&env, request_payload, do_global_fungible)
+}
+
+fn do_global_fungible(
+    address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH],
+) -> ResourceAddress {
+    ResourceAddress::new_or_panic(
+        NodeId::new(
+            EntityType::GlobalFungibleResource as u8,
+            &address_bytes_without_entity_id,
+        )
+        .0,
+    )
+=======
+    jni_sbor_coded_call(&env, request_payload, |key: EcdsaSecp256k1PublicKey| {
+        ComponentAddress::virtual_account_from_public_key(&key)
+    })
+>>>>>>> origin/develop:core-rust/node-common/src/jni/addressing.rs
 }
 
 pub fn export_extern_functions() {}

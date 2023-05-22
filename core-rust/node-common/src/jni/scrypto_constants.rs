@@ -62,9 +62,48 @@
  * permissions under this License.
  */
 
-pub mod mempool;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod vertex_store_recovery;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+
+use crate::java::utils::jni_sbor_coded_call;
+use radix_engine::types::{EPOCH_MANAGER, RADIX_TOKEN, VALIDATOR_OWNER_BADGE};
+use radix_engine_interface::constants::FAUCET;
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| RADIX_TOKEN)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| FAUCET)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getEpochManagerComponentAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| EPOCH_MANAGER)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerTokenResourceAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| VALIDATOR_OWNER_BADGE)
+}
+
+pub fn export_extern_functions() {}

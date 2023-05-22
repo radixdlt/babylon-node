@@ -70,13 +70,14 @@ import java.util.Arrays;
 import java.util.Locale;
 
 /**
- * Implementation from https://github.com/bitcoinj/bitcoinj/blob/4dea86a0151e947cd46b2c5f38d15464059f18f5/core/src/main/java/org/bitcoinj/base/Bech32.java
+ * Implementation from
+ * https://github.com/bitcoinj/bitcoinj/blob/4dea86a0151e947cd46b2c5f38d15464059f18f5/core/src/main/java/org/bitcoinj/base/Bech32.java
  * Licensed under the Apache License, Version 2.0 (the "License").
  *
- * <p>Implementation of the Bech32 encoding.</p>
+ * <p>Implementation of the Bech32 encoding.
  *
- * <p>See <a href="https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki">BIP350</a> and
- * <a href="https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki">BIP173</a> for details.</p>
+ * <p>See <a href="https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki">BIP350</a> and <a
+ * href="https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki">BIP173</a> for details.
  */
 public final class OlympiaBech32 {
   /** The Bech32 character set for encoding. */

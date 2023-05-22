@@ -62,29 +62,29 @@
  * permissions under this License.
  */
 
-use crate::result::StateManagerResult;
+use crate::java::result::JavaResult;
 use radix_engine::types::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 
 pub use sbor::{Decode, Encode};
 
 pub trait StructFromJava {
-    fn from_java(data: &[u8]) -> StateManagerResult<Self>
+    fn from_java(data: &[u8]) -> JavaResult<Self>
     where
         Self: Sized;
 }
 
 pub trait StructToJava {
-    fn to_java(&self) -> StateManagerResult<Vec<u8>>;
+    fn to_java(&self) -> JavaResult<Vec<u8>>;
 }
 
 impl<T: ScryptoDecode> StructFromJava for T {
-    fn from_java(data: &[u8]) -> StateManagerResult<Self> {
+    fn from_java(data: &[u8]) -> JavaResult<Self> {
         Ok(scrypto_decode(data)?)
     }
 }
 
 impl<T: ScryptoEncode> StructToJava for T {
-    fn to_java(&self) -> StateManagerResult<Vec<u8>> {
+    fn to_java(&self) -> JavaResult<Vec<u8>> {
         Ok(scrypto_encode(self)?)
     }
 }

@@ -75,11 +75,10 @@ use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::NotarizedTransaction;
 
-use crate::jni::common_types::JavaHashCode;
-use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
 use crate::{mempool::*, UserPayloadHash};
+use node_common::java::*;
 
 //
 // JNI Interface

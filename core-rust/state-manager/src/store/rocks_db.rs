@@ -63,7 +63,6 @@
  */
 
 use crate::types::UserPayloadHash;
-use crate::utils::IsAccountExt;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem::size_of;
@@ -74,6 +73,7 @@ use crate::{
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
+use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;

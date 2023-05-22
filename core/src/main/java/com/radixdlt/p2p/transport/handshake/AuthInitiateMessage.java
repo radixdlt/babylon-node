@@ -76,7 +76,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.Set;
 
-@SerializerId2("message.handshake.auth_initiate")
+@SerializerId2("message.handshake.v2.auth_initiate")
 public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -95,27 +95,42 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
-  @JsonProperty("networkId")
+  // We're using a different property name here than on Olympia
+  // to make it impossible for Olympia nodes to deserialize Babylon
+  // handshake messages
+  @JsonProperty("babylonNetworkId")
   @DsonOutput(DsonOutput.Output.ALL)
-  private final int networkId;
+  private final byte networkId;
+
+  @JsonProperty("networkVersion")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final byte networkVersion;
 
   @JsonCreator
   public static AuthInitiateMessage deserialize(
       @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("networkId") int networkId,
+      @JsonProperty("babylonNetworkId") byte networkId,
+      @JsonProperty("networkVersion") byte networkVersion,
       @JsonProperty("newestForkName") String rawNewestForkName,
       @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
     return new AuthInitiateMessage(
-        signature, publicKey, nonce, networkId, rawNewestForkName, nullableCapabilities);
+        signature,
+        publicKey,
+        nonce,
+        networkId,
+        networkVersion,
+        rawNewestForkName,
+        nullableCapabilities);
   }
 
   public AuthInitiateMessage(
       ECDSASecp256k1Signature signature,
       HashCode publicKey,
       HashCode nonce,
-      int networkId,
+      byte networkId,
+      byte networkVersion,
       String rawNewestForkName,
       Set<RemotePeerCapability> nullableCapabilities) {
     super(rawNewestForkName, nullableCapabilities);
@@ -123,6 +138,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
+    this.networkVersion = networkVersion;
   }
 
   public ECDSASecp256k1Signature getSignature() {
@@ -137,8 +153,12 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
     return nonce;
   }
 
-  public int getNetworkId() {
+  public byte getNetworkId() {
     return networkId;
+  }
+
+  public byte getNetworkVersion() {
+    return networkVersion;
   }
 
   @Override
@@ -152,12 +172,14 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
         && Objects.equals(publicKey, that.publicKey)
         && Objects.equals(nonce, that.nonce)
         && networkId == that.networkId
+        && networkVersion == that.networkVersion
         && Objects.equals(newestForkName, that.newestForkName)
         && Objects.equals(capabilities, that.capabilities);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName, capabilities);
+    return Objects.hash(
+        signature, publicKey, nonce, networkId, networkVersion, newestForkName, capabilities);
   }
 }

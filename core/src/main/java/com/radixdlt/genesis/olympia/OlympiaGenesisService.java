@@ -250,8 +250,10 @@ public final class OlympiaGenesisService {
                   but the end state hasn't yet been generated (will keep polling)...""",
               network.getLogicalName(),
               includeTestPayload
-                ? " (rcvd test payload size " +  notReadyResponse.testPayload().orElse("").length() + ")"
-                : "");
+                  ? " (rcvd test payload size "
+                      + notReadyResponse.testPayload().orElse("").length()
+                      + ")"
+                  : "");
         }
 
         this.executor

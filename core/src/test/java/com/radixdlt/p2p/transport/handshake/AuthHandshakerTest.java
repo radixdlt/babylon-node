@@ -91,6 +91,8 @@ public final class AuthHandshakerTest {
   private final Capabilities capabilities =
       new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
 
+  private final byte networkVersion = 0x02;
+
   @Test
   public void test_auth_handshake() throws Exception {
     final var nodeKey1 = ECKeyPair.generateNew();
@@ -105,6 +107,7 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
             Network.INTEGRATIONTESTNET,
+            networkVersion,
             "fork1",
             peer1Capabilities);
     final var handshaker2 =
@@ -113,6 +116,7 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
             Network.INTEGRATIONTESTNET,
+            networkVersion,
             "fork1",
             capabilities);
 
@@ -148,6 +152,7 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
             Network.INTEGRATIONTESTNET,
+            networkVersion,
             "fork1",
             peer1Capabilities);
     final var handshaker2 =
@@ -156,6 +161,7 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
             Network.INTEGRATIONTESTNET,
+            networkVersion,
             "fork1",
             capabilities);
 
@@ -186,6 +192,7 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
             Network.INTEGRATIONTESTNET,
+            networkVersion,
             "fork1",
             capabilities);
     final var handshaker2 =
@@ -194,6 +201,38 @@ public final class AuthHandshakerTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
             Network.LOCALNET,
+            networkVersion,
+            "fork1",
+            capabilities);
+
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var handshaker2ResultPair =
+        handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
+    assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);
+    assertArrayEquals(new byte[] {0x02}, handshaker2ResultPair.getFirst());
+  }
+
+  @Test
+  public void test_auth_handshake_fail_on_network_version_mismatch() {
+    final var nodeKey1 = ECKeyPair.generateNew();
+    final var nodeKey2 = ECKeyPair.generateNew();
+
+    final var handshaker1 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            Network.INTEGRATIONTESTNET,
+            networkVersion,
+            "fork1",
+            capabilities);
+    final var handshaker2 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            Network.INTEGRATIONTESTNET,
+            (byte) (networkVersion + 1),
             "fork1",
             capabilities);
 

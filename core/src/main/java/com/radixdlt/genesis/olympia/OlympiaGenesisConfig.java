@@ -108,7 +108,7 @@ public record OlympiaGenesisConfig(
                 VALID_NODE_HRPS, decodedBech32.hrp));
       }
       final var publicKeyBytes =
-        Bits.convertBits(decodedBech32.data, 0, decodedBech32.data.length, 5, 8, false);
+          Bits.convertBits(decodedBech32.data, 0, decodedBech32.data.length, 5, 8, false);
       nodePublicKey = ECDSASecp256k1PublicKey.fromBytes(publicKeyBytes);
     } catch (Exception e) {
       throw new RuntimeException(

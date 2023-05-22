@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-pub mod mempool;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod vertex_store_recovery;
+pub mod environment;
+pub mod java;
+pub mod jni;
+pub mod utils;
