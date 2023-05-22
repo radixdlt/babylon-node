@@ -81,6 +81,7 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
@@ -115,6 +116,7 @@ public final class AuthHandshaker {
   private final byte[] nonce;
   private final ECKeyPair ephemeralKey;
   private final Network network;
+  private final byte networkVersion;
   private final String newestForkName;
   private boolean isInitiator = false;
   private Optional<byte[]> initiatePacketOpt = Optional.empty();
@@ -127,6 +129,7 @@ public final class AuthHandshaker {
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       Network network,
+      byte networkVersion,
       String newestForkName,
       Capabilities capabilities) {
     this.serialization = Objects.requireNonNull(serialization);
@@ -136,6 +139,7 @@ public final class AuthHandshaker {
     this.nonce = randomBytes(NONCE_SIZE);
     this.ephemeralKey = ECKeyPair.generateNew();
     this.network = network;
+    this.networkVersion = networkVersion;
     this.newestForkName = newestForkName;
   }
 
@@ -169,7 +173,8 @@ public final class AuthHandshaker {
         signature,
         HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
         HashCode.fromBytes(nonce),
-        network.getId(),
+        network.getByteId(),
+        networkVersion,
         newestForkName,
         this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
   }
@@ -181,16 +186,34 @@ public final class AuthHandshaker {
       final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
       data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
       final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
-      final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
+      final AuthInitiateMessage message;
+      try {
+        message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
+      } catch (DeserializeException ex) {
+        return Pair.of(
+            new byte[] {STATUS_ERROR},
+            AuthHandshakeResult.error(
+                "Auth handshake failed (possible network version mismatch)", Optional.empty()));
+      }
       final var remotePubKey = ECDSASecp256k1PublicKey.fromBytes(message.getPublicKey().asBytes());
 
-      if (message.getNetworkId() != this.network.getId()) {
+      if (message.getNetworkId() != this.network.getByteId()) {
         return Pair.of(
             new byte[] {STATUS_ERROR},
             AuthHandshakeResult.error(
                 String.format(
                     "Network ID mismatch (expected %s, got %s)",
                     this.network.getId(), message.getNetworkId()),
+                Optional.of(NodeId.fromPublicKey(remotePubKey))));
+      }
+
+      if (message.getNetworkVersion() != networkVersion) {
+        return Pair.of(
+            new byte[] {STATUS_ERROR},
+            AuthHandshakeResult.error(
+                String.format(
+                    "Network version mismatch (expected %s, got %s)",
+                    networkVersion, message.getNetworkId()),
                 Optional.of(NodeId.fromPublicKey(remotePubKey))));
       }
 
@@ -233,7 +256,7 @@ public final class AuthHandshaker {
               message.getNewestForkName(),
               message.getCapabilities());
       return Pair.of(packet, handshakeResult);
-    } catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
+    } catch (PublicKeyException | InvalidCipherTextException ex) {
       return Pair.of(
           new byte[] {STATUS_ERROR},
           AuthHandshakeResult.error(

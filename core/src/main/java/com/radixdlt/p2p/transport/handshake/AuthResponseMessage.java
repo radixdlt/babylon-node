@@ -75,7 +75,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.Set;
 
-@SerializerId2("message.handshake.auth_response")
+@SerializerId2("message.handshake.v2.auth_response")
 public final class AuthResponseMessage extends BaseHandshakeMessage {
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)

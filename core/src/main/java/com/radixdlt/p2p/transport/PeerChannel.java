@@ -123,6 +123,8 @@ import org.apache.logging.log4j.Logger;
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private static final Logger log = LogManager.getLogger();
 
+  private static final byte NETWORK_VERSION = 0x02; // Babylon, the 2nd network version
+
   enum ChannelState {
     INACTIVE,
     AUTH_HANDSHAKE,
@@ -174,7 +176,13 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
     this.authHandshaker =
         new AuthHandshaker(
-            serialization, secureRandom, ecKeyOps, network, newestForkName, capabilities);
+            serialization,
+            secureRandom,
+            ecKeyOps,
+            network,
+            NETWORK_VERSION,
+            newestForkName,
+            capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 

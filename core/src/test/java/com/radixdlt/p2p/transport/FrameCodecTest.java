@@ -126,6 +126,7 @@ public final class FrameCodecTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
             Network.INTEGRATIONTESTNET,
+            (byte) 0x01,
             "fork1",
             capabilities);
     final var handshaker2 =
@@ -134,6 +135,7 @@ public final class FrameCodecTest {
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
             Network.INTEGRATIONTESTNET,
+            (byte) 0x01,
             "fork1",
             capabilities);
 
