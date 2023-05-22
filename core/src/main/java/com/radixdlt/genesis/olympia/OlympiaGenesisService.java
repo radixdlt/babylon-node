@@ -266,7 +266,7 @@ public final class OlympiaGenesisService {
             """
             Successfully connected to the Olympia node, but the signature received along with the \
             response doesn't match a configured value. Double check that the \
-            genesis.olympia.node_public_key configuration matches the public key of Olympia \
+            genesis.olympia.node_bech32_address configuration matches the address of Olympia \
             node running at %s""",
             olympiaGenesisConfig.nodeCoreApiUrl()));
   }

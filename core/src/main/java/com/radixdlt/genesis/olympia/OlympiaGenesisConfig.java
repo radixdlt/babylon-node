@@ -65,11 +65,21 @@
 package com.radixdlt.genesis.olympia;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.genesis.olympia.bech32.OlympiaBech32;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
+import org.bouncycastle.util.encoders.Base64;
 
-public record OlympiaGenesisConfig(URL nodeCoreApiUrl, ECDSASecp256k1PublicKey nodePublicKey) {
+public record OlympiaGenesisConfig(
+    URL nodeCoreApiUrl,
+    Optional<String> basicAuthCredentialsBase64,
+    ECDSASecp256k1PublicKey nodePublicKey) {
+  private static final List<String> VALID_NODE_HRPS =
+      List.of("rn", "tn", "tn3", "tn4", "tn5", "tn6", "tn7", "dn");
   private static final String PREFIX = "genesis.olympia";
 
   public static OlympiaGenesisConfig fromRuntimeProperties(RuntimeProperties properties) {
@@ -87,17 +97,46 @@ public record OlympiaGenesisConfig(URL nodeCoreApiUrl, ECDSASecp256k1PublicKey n
 
     final ECDSASecp256k1PublicKey nodePublicKey;
     try {
-      nodePublicKey =
-          ECDSASecp256k1PublicKey.fromHex(
-              properties.get(String.format("%s.node_public_key", PREFIX)));
+      final var nodeBech32Address = properties.get(String.format("%s.node_bech32_address", PREFIX));
+      final var decodedBech32 = OlympiaBech32.decode(nodeBech32Address);
+      if (!VALID_NODE_HRPS.contains(decodedBech32.hrp)) {
+        throw new RuntimeException(
+            String.format(
+                "The property genesis.olympia.node_bech32_address is not a valid Olympia node"
+                    + " address. Expected one of HRPs: %s, but got %s",
+                VALID_NODE_HRPS, decodedBech32.hrp));
+      }
+      nodePublicKey = ECDSASecp256k1PublicKey.fromBytes(decodedBech32.data);
     } catch (Exception e) {
       throw new RuntimeException(
           """
-              Olympia genesis was configured, but the provided genesis.olympia.node_public_key value \
-              is invalid (expected hex-encoded ECDSA public key)""",
+              Olympia genesis was configured, but the provided genesis.olympia.node_bech32_address value \
+              is invalid (expected a Bech32-encoded Olympia node address)""",
           e);
     }
 
-    return new OlympiaGenesisConfig(nodeCoreApiUrl, nodePublicKey);
+    final var maybeAuthUser =
+        Optional.ofNullable(properties.get(String.format("%s.node_core_api_auth_user", PREFIX)));
+    final Optional<String> maybeBasicAuthCredentialsBase64;
+    if (maybeAuthUser.isPresent()) {
+      final var authUser = maybeAuthUser.get();
+      final var authPassword =
+          Optional.ofNullable(
+                  properties.get(String.format("%s.node_core_api_auth_password", PREFIX)))
+              .orElseThrow(
+                  () ->
+                      new RuntimeException(
+                          "Olympia genesis auth user was specified, but the password is missing."
+                              + " Make sure both genesis.olympia.node_core_api_auth_user and"
+                              + " genesis.olympia.node_core_api_auth_password are set correctly."));
+      maybeBasicAuthCredentialsBase64 =
+          Optional.of(
+              Base64.toBase64String(
+                  String.format("%s:%s", authUser, authPassword).getBytes(StandardCharsets.UTF_8)));
+    } else {
+      maybeBasicAuthCredentialsBase64 = Optional.empty();
+    }
+
+    return new OlympiaGenesisConfig(nodeCoreApiUrl, maybeBasicAuthCredentialsBase64, nodePublicKey);
   }
 }

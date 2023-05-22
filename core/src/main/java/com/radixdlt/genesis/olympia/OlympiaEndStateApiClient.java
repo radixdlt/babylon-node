@@ -77,6 +77,7 @@ import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class OlympiaEndStateApiClient {
   private static final String END_STATE_API_PATH = "/olympia-end-state";
 
@@ -94,6 +95,7 @@ public final class OlympiaEndStateApiClient {
   }
 
   private final URL endStateApiUrl;
+  private final Optional<String> basicAuthCredentialsBase64;
   private final Network network;
 
   @Inject
@@ -109,6 +111,7 @@ public final class OlympiaEndStateApiClient {
                   Invalid endStateApiUrl (coreApiUrl=%s path=%s)""",
               config.nodeCoreApiUrl(), END_STATE_API_PATH));
     }
+    this.basicAuthCredentialsBase64 = config.basicAuthCredentialsBase64();
     this.network = network;
   }
 
@@ -148,12 +151,20 @@ public final class OlympiaEndStateApiClient {
     }
   }
 
-  private static JSONObject postForJson(URL url, JSONObject request) throws IOException {
+  private JSONObject postForJson(URL url, JSONObject requestData) throws IOException {
+    final var baseRequest =
+        new JdkRequest(url).header("Content-Type", "application/json").method(JdkRequest.POST);
+
+    final var requestWithOptionalAuth =
+        this.basicAuthCredentialsBase64
+            .map(
+                basicAuthCreds ->
+                    baseRequest.header("Authorization", String.format("Basic %s", basicAuthCreds)))
+            .orElse(baseRequest);
+
     final var response =
-        new JdkRequest(url)
-            .header("Content-Type", "application/json")
-            .method(JdkRequest.POST)
-            .fetch(new ByteArrayInputStream(request.toString().getBytes(StandardCharsets.UTF_8)));
+        requestWithOptionalAuth.fetch(
+            new ByteArrayInputStream(requestData.toString().getBytes(StandardCharsets.UTF_8)));
 
     if (response.status() != HttpURLConnection.HTTP_OK) {
       throw new RuntimeException(
