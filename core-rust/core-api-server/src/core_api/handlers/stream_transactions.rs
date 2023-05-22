@@ -267,8 +267,9 @@ pub fn to_api_validator_transaction(
     Ok(match validator_transaction {
         ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms,
-            consensus_epoch,
-            round_in_epoch,
+            epoch: consensus_epoch,
+            round: round_in_epoch,
+            ..
         } => models::ValidatorTransaction::RoundUpdateValidatorTransaction {
             proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
                 *proposer_timestamp_ms,

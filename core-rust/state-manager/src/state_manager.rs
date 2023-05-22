@@ -95,12 +95,14 @@ use radix_engine::system::bootstrap::{
     create_genesis_data_ingestion_transaction, create_genesis_wrap_up_transaction,
     create_system_bootstrap_transaction, GenesisDataChunk,
 };
-use radix_engine_common::crypto::Hash;
+use radix_engine_common::crypto::{EcdsaSecp256k1PublicKey, Hash};
+use radix_engine_interface::blueprints::epoch_manager::{LeaderProposalHistory, ValidatorIndex};
 use radix_engine_interface::constants::GENESIS_HELPER;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
+use utils::rust::collections::NonIterMap;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -182,7 +184,7 @@ where
         let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
         let epoch_identifiers = read_store
             .get_last_epoch_proof()
-            .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
+            .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
@@ -215,10 +217,11 @@ where
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
         let read_store = self.store.read();
         let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
-        let epoch_identifiers = read_store
+        let epoch_header = read_store
             .get_last_epoch_proof()
-            .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
-            .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
+            .expect("at least genesis epoch must exist")
+            .ledger_header;
+        let epoch_identifiers = EpochTransactionIdentifiers::from(&epoch_header);
 
         debug_assert_eq!(
             base_transaction_identifiers.accumulator_hash,
@@ -308,15 +311,31 @@ where
 
         // Round Update
         // TODO: Unify this with the proposed payloads execution
+        let validator_index_by_key = Self::to_validator_set_index(epoch_header);
         let round_update = ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-            consensus_epoch: prepare_request.consensus_epoch,
-            round_in_epoch: prepare_request.round_number,
+            epoch: prepare_request.epoch,
+            round: prepare_request.round,
+            leader_proposal_history: LeaderProposalHistory {
+                gap_round_leaders: prepare_request
+                    .gap_round_leader_keys
+                    .iter()
+                    .map(|leader_key| {
+                        *validator_index_by_key
+                            .get(leader_key)
+                            .expect("gap round leader must belong to the validator set")
+                    })
+                    .collect::<Vec<_>>(),
+                current_leader: *validator_index_by_key
+                    .get(&prepare_request.proposer_key)
+                    .expect("proposer must belong to the validator set"),
+                is_fallback: prepare_request.is_fallback,
+            },
         };
+        let executable = round_update.prepare().to_executable();
         let ledger_round_update = LedgerTransaction::Validator(round_update);
 
-        let logged_description = format!("round update {}", prepare_request.round_number);
-        let executable = round_update.prepare().to_executable();
+        let logged_description = format!("round update {}", prepare_request.round);
         let mut lock_execution_cache = self.execution_cache.lock();
         let processed_round_update = lock_execution_cache.execute_transaction(
             read_store.deref(),
@@ -487,6 +506,26 @@ where
             next_epoch,
             ledger_hashes: *state_tracker.latest_ledger_hashes(),
         }
+    }
+
+    fn to_validator_set_index(
+        epoch_header: LedgerHeader,
+    ) -> NonIterMap<EcdsaSecp256k1PublicKey, u8> {
+        epoch_header
+            .next_epoch
+            .expect("epoch header must contain next epoch information")
+            .validator_set
+            .into_iter()
+            .map(|validator_info| validator_info.key)
+            .enumerate()
+            .map(|(validator_index, validator_key)| {
+                (
+                    validator_key,
+                    ValidatorIndex::try_from(validator_index)
+                        .expect("validator set size limit guarantees this"),
+                )
+            })
+            .collect::<NonIterMap<_, _>>()
     }
 }
 
@@ -749,7 +788,7 @@ where
         let base_transaction_identifiers = write_store.get_top_transaction_identifiers();
         let epoch_identifiers = write_store
             .get_last_epoch_proof()
-            .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
+            .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
         let base_state_version = base_transaction_identifiers.state_version;
         if base_state_version != commit_request_start_state_version {

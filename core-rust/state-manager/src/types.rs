@@ -756,8 +756,11 @@ pub struct PrepareRequest {
     pub parent_accumulator: AccumulatorHash,
     pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
-    pub consensus_epoch: u64,
-    pub round_number: u64,
+    pub is_fallback: bool,
+    pub epoch: u64,
+    pub round: u64,
+    pub gap_round_leader_keys: Vec<EcdsaSecp256k1PublicKey>,
+    pub proposer_key: EcdsaSecp256k1PublicKey,
     pub proposer_timestamp_ms: i64,
 }
 
@@ -835,7 +838,7 @@ impl EpochTransactionIdentifiers {
         }
     }
 
-    pub fn from(epoch_header: LedgerHeader) -> Self {
+    pub fn from(epoch_header: &LedgerHeader) -> Self {
         Self {
             state_version: epoch_header.accumulator_state.state_version,
             transaction_hash: epoch_header.hashes.transaction_root,

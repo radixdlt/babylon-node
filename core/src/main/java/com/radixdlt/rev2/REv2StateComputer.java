@@ -69,8 +69,11 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
@@ -95,7 +98,9 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -123,6 +128,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
+  private final AtomicReference<ProposerElection> proposerElection;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
@@ -135,6 +141,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
       Serialization serialization,
+      ProposerElection initialProposerElection,
       Metrics metrics) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
@@ -147,6 +154,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
     this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
+    this.proposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
   }
 
@@ -239,13 +247,22 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                             .toList(),
                         v.getLedgerHeader().getAccumulatorState().getAccumulatorHash()))
             .toList();
+    var gapRoundLeaderKeys =
+        LongStream.range(roundDetails.previousQcRoundNumber() + 1, roundDetails.roundNumber())
+            .mapToObj(Round::of)
+            .map(this.proposerElection.get()::getProposer)
+            .map(BFTValidatorId::getKey)
+            .collect(Collectors.toList());
     var prepareRequest =
         new PrepareRequest(
             parentAccumulatorHash,
             mappedPreviousVertices,
             proposedTransactions,
+            roundDetails.isFallback(),
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
+            gapRoundLeaderKeys,
+            roundDetails.roundProposer().getKey(),
             roundDetails.proposerTimestampMs());
 
     var result = stateComputer.prepare(prepareRequest);
@@ -309,9 +326,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(header, bftConfiguration);
                 });
-    var outputBuilder = ImmutableClassToInstanceMap.builder();
-    epochChangeOptional.ifPresent(e -> outputBuilder.put(EpochChange.class, e));
 
+    var outputBuilder = ImmutableClassToInstanceMap.builder();
+    epochChangeOptional.ifPresent(
+        epochChange -> {
+          this.proposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
+          outputBuilder.put(EpochChange.class, epochChange);
+        });
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
