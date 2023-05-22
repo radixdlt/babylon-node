@@ -141,14 +141,15 @@ public final class OlympiaGenesisService {
     } catch (Exception ex /* just catch anything */) {
       log.warn(
           """
-              An error occurred while querying the Olympia node for the genesis state. \
+              An error occurred while querying the Olympia node for the genesis state (include_test_payload? {}). \
               Retrying in {} ms... ({})""",
+          includeTestPayload,
           POLL_INTERVAL_AFTER_ERROR_MS,
           ex.getMessage());
       this.executor
           .orElseThrow()
           .schedule(
-              () -> poll(completableFuture, counter + 1),
+              () -> poll(completableFuture, counter),
               POLL_INTERVAL_AFTER_ERROR_MS,
               TimeUnit.MILLISECONDS);
       return;
@@ -245,9 +246,12 @@ public final class OlympiaGenesisService {
         if (notReadyLogRateLimiter.tryAcquire()) {
           log.info(
               """
-                  Successfully connected to the Olympia node ({}), \
+                  Successfully connected to the Olympia {} node{}, \
                   but the end state hasn't yet been generated (will keep polling)...""",
-              network.getLogicalName());
+              network.getLogicalName(),
+              includeTestPayload
+                ? " (rcvd test payload size " +  notReadyResponse.testPayload().orElse("").length() + ")"
+                : "");
         }
 
         this.executor
