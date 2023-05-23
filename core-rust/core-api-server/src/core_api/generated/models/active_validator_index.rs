@@ -10,24 +10,20 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
-pub enum ValidatorTransaction {
-    #[serde(rename="RoundUpdate")]
-    RoundUpdateValidatorTransaction {
-        #[serde(rename = "proposer_timestamp")]
-        proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
-        /// An integer between `0` and `10^10`, marking the consensus epoch. 
-        #[serde(rename = "consensus_epoch")]
-        consensus_epoch: i64,
-        /// An integer between `0` and `10^10`, marking the consensus round in the epoch
-        #[serde(rename = "round_in_epoch")]
-        round_in_epoch: i64,
-        #[serde(rename = "leader_proposal_history")]
-        leader_proposal_history: Box<crate::core_api::generated::models::LeaderProposalHistory>,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct ActiveValidatorIndex {
+    /// An index of a validator within a specific active validator set ordered by their `ComponentAddress`. Please note that some other endpoints of this API list an active validator set ordered by their stake descending, which is different and needs reordering to correctly interpret this validator index.
+    #[serde(rename = "index")]
+    pub index: i32,
 }
 
-
+impl ActiveValidatorIndex {
+    pub fn new(index: i32) -> ActiveValidatorIndex {
+        ActiveValidatorIndex {
+            index,
+        }
+    }
+}
 
 

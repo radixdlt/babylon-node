@@ -23,15 +23,18 @@ pub struct RoundUpdateValidatorTransaction {
     /// An integer between `0` and `10^10`, marking the consensus round in the epoch
     #[serde(rename = "round_in_epoch")]
     pub round_in_epoch: i64,
+    #[serde(rename = "leader_proposal_history")]
+    pub leader_proposal_history: Box<crate::core_api::generated::models::LeaderProposalHistory>,
 }
 
 impl RoundUpdateValidatorTransaction {
-    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType, proposer_timestamp: crate::core_api::generated::models::Instant, consensus_epoch: i64, round_in_epoch: i64) -> RoundUpdateValidatorTransaction {
+    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType, proposer_timestamp: crate::core_api::generated::models::Instant, consensus_epoch: i64, round_in_epoch: i64, leader_proposal_history: crate::core_api::generated::models::LeaderProposalHistory) -> RoundUpdateValidatorTransaction {
         RoundUpdateValidatorTransaction {
             _type,
             proposer_timestamp: Box::new(proposer_timestamp),
             consensus_epoch,
             round_in_epoch,
+            leader_proposal_history: Box::new(leader_proposal_history),
         }
     }
 }
