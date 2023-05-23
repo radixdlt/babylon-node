@@ -96,6 +96,7 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -190,6 +191,7 @@ public final class P2PTestNetworkRunner {
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                     bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
+                    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
                   }
 
                   @Provides
