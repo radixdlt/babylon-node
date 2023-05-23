@@ -68,20 +68,20 @@ import com.radixdlt.p2p.NodeId;
 import java.util.Arrays;
 import java.util.Objects;
 
-public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
+public record InboundMessage(long receiveNanoTime, NodeId source, byte[] message) {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     InboundMessage that = (InboundMessage) o;
-    return receiveTime == that.receiveTime
+    return receiveNanoTime == that.receiveNanoTime
         && Objects.equals(source, that.source)
         && Arrays.equals(message, that.message);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(receiveTime, source);
+    int result = Objects.hash(receiveNanoTime, source);
     result = 31 * result + Arrays.hashCode(message);
     return result;
   }
@@ -90,7 +90,7 @@ public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
   public String toString() {
     return "InboundMessage{"
         + "receiveTime="
-        + receiveTime
+        + receiveNanoTime
         + ", source="
         + source
         + ", message="

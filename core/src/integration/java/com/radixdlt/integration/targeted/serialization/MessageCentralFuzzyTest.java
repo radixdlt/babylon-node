@@ -171,7 +171,7 @@ public class MessageCentralFuzzyTest {
     while (true) {
       try {
         var compressedMessage = Compress.compress(generateRandomBytes());
-        return new InboundMessage(System.currentTimeMillis(), randomNodeId(), compressedMessage);
+        return new InboundMessage(System.nanoTime(), randomNodeId(), compressedMessage);
       } catch (Exception e) {
         // Ignore exception and generate new message
       }

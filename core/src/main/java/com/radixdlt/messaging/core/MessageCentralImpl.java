@@ -160,7 +160,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
     final var messageQueuedTime =
-        Duration.ofMillis(timeSupplier.currentTime() - inboundMessage.receiveTime());
+        Duration.ofNanos(System.nanoTime() - inboundMessage.receiveNanoTime());
     this.metrics.messages().inbound().queueWait().observe(messageQueuedTime);
     final var processingStopwatch = Stopwatch.createStarted();
     try {
