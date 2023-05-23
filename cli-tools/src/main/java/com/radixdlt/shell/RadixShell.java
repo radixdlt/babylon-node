@@ -110,7 +110,6 @@ import java.util.function.Consumer;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
 
 @SuppressWarnings("unused")
 public final class RadixShell {
@@ -134,7 +133,7 @@ public final class RadixShell {
     private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
     public NodeBuilder() throws ParseException {
-      properties = new RuntimeProperties(new JSONObject(), new String[] {});
+      properties = RuntimeProperties.fromCommandLineArgs(new String[] {});
     }
 
     public NodeBuilder p2pServer(int p2pServerPort) {

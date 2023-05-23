@@ -76,7 +76,6 @@ import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.time.Time;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.time.Duration;
@@ -91,6 +90,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   // Dependencies
   private final Metrics metrics;
+  private final TimeSupplier timeSupplier;
 
   // Message dispatching
   private final MessageDispatcher messageDispatcher;
@@ -113,26 +113,29 @@ public final class MessageCentralImpl implements MessageCentral {
       MessageCentralConfiguration config,
       Serialization serialization,
       PeerManager peerManager,
-      TimeSupplier timeSource,
+      TimeSupplier timeSupplier,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       Metrics metrics,
       Provider<PeerControl> peerControl,
       Addressing addressing,
       Capabilities capabilities) {
     this.metrics = Objects.requireNonNull(metrics);
+    this.timeSupplier = Objects.requireNonNull(timeSupplier);
+
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
             config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
 
-    Objects.requireNonNull(timeSource);
+    Objects.requireNonNull(timeSupplier);
     Objects.requireNonNull(serialization);
 
     this.messageDispatcher =
-        new MessageDispatcher(metrics, config, serialization, timeSource, peerManager, addressing);
+        new MessageDispatcher(
+            metrics, config, serialization, timeSupplier, peerManager, addressing);
 
     this.messagePreprocessor =
         new MessagePreprocessor(
-            metrics, config, timeSource, serialization, peerControl, addressing, capabilities);
+            metrics, config, timeSupplier, serialization, peerControl, addressing, capabilities);
 
     // Start outbound processing thread
     this.outboundThreadPool =
@@ -157,7 +160,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
     final var messageQueuedTime =
-        Duration.ofMillis(Time.currentTimestamp() - inboundMessage.receiveTime());
+        Duration.ofMillis(timeSupplier.currentTime() - inboundMessage.receiveTime());
     this.metrics.messages().inbound().queueWait().observe(messageQueuedTime);
     final var processingStopwatch = Stopwatch.createStarted();
     try {

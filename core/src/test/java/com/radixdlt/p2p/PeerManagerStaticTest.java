@@ -88,7 +88,6 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -167,7 +166,7 @@ public class PeerManagerStaticTest {
 
   private static RuntimeProperties defaultProperties() {
     try {
-      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      final var props = RuntimeProperties.fromCommandLineArgs(new String[] {});
       props.set("network.p2p.max_inbound_channels", 10);
       props.set("network.p2p.max_outbound_channels", 10);
       return props;

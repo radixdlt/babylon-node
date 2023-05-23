@@ -74,6 +74,7 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.TimeSupplier;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -89,6 +90,7 @@ public final class PeerServerBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
+  private final TimeSupplier timeSupplier;
   private final String newestForkName;
   private final Metrics metrics;
   private final Serialization serialization;
@@ -104,6 +106,7 @@ public final class PeerServerBootstrap {
       Addressing addressing,
       Network network,
       Metrics metrics,
+      TimeSupplier timeSupplier,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -114,6 +117,7 @@ public final class PeerServerBootstrap {
     this.network = network;
     this.newestForkName = "SomeForkName";
     this.metrics = Objects.requireNonNull(metrics);
+    this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
@@ -139,6 +143,7 @@ public final class PeerServerBootstrap {
                 network,
                 newestForkName,
                 metrics,
+                timeSupplier,
                 serialization,
                 secureRandom,
                 ecKeyOps,

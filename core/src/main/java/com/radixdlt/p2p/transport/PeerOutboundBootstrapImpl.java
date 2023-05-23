@@ -75,6 +75,7 @@ import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.TimeSupplier;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -89,6 +90,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final Network network;
   private final String newestForkName;
   private final Metrics metrics;
+  private final TimeSupplier timeSupplier;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
@@ -103,6 +105,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       Addressing addressing,
       Network network,
       Metrics metrics,
+      TimeSupplier timeSupplier,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -113,6 +116,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
     this.network = network;
     this.newestForkName = "SomeForkName";
     this.metrics = Objects.requireNonNull(metrics);
+    this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
@@ -137,6 +141,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 network,
                 newestForkName,
                 metrics,
+                timeSupplier,
                 serialization,
                 secureRandom,
                 ecKeyOps,

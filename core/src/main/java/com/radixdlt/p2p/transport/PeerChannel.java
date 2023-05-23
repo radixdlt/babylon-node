@@ -94,7 +94,7 @@ import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuc
 import com.radixdlt.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
-import com.radixdlt.utils.time.Time;
+import com.radixdlt.utils.TimeSupplier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -136,6 +136,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
   private final Flowable<InboundMessage> inboundMessages;
   private final Metrics metrics;
+  private final TimeSupplier timeSupplier;
   private final Addressing addressing;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Optional<RadixNodeUri> uri;
@@ -159,6 +160,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Network network,
       String newestForkName,
       Metrics metrics,
+      TimeSupplier timeSupplier,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -168,6 +170,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Optional<InetSocketAddress> remoteAddress,
       Capabilities capabilities) {
     this.metrics = requireNonNull(metrics);
+    this.timeSupplier = requireNonNull(timeSupplier);
     this.addressing = requireNonNull(addressing);
     this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
     this.uri = requireNonNull(uri);
@@ -264,7 +267,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void handleMessage(ByteBuf buf) throws IOException {
-    final var receiveTime = Time.currentTimestamp();
+    final var receiveTime = timeSupplier.currentTime();
 
     synchronized (this.lock) {
       final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);

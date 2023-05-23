@@ -70,7 +70,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Ints;
-import com.radixdlt.utils.time.Time;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -89,7 +88,7 @@ public abstract class Message extends BasicContainer {
   private final long timestamp;
 
   protected Message() {
-    this.timestamp = Time.currentTimestamp();
+    this.timestamp = System.currentTimeMillis();
   }
 
   public long getTimestamp() {

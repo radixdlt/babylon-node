@@ -86,7 +86,6 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.time.Time;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Comparator;
 import java.util.Random;
@@ -124,7 +123,7 @@ public class MessageCentralFuzzyTest {
             config,
             serialization,
             peerManager,
-            Time::currentTimestamp,
+            System::currentTimeMillis,
             queueFactory,
             new MetricsInitializer().initialize(),
             () -> peerControl,
@@ -153,7 +152,7 @@ public class MessageCentralFuzzyTest {
     try {
       var bytes =
           Compress.compress(serialization.toDson(new PeerPingMessage(), DsonOutput.Output.WIRE));
-      var valid = new InboundMessage(Time.currentTimestamp(), randomNodeId(), bytes);
+      var valid = new InboundMessage(1L, randomNodeId(), bytes);
       subject.onNext(valid);
     } catch (Exception e) {
       // Ignore
@@ -172,7 +171,7 @@ public class MessageCentralFuzzyTest {
     while (true) {
       try {
         var compressedMessage = Compress.compress(generateRandomBytes());
-        return new InboundMessage(Time.currentTimestamp(), randomNodeId(), compressedMessage);
+        return new InboundMessage(System.currentTimeMillis(), randomNodeId(), compressedMessage);
       } catch (Exception e) {
         // Ignore exception and generate new message
       }

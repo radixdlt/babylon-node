@@ -75,14 +75,13 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.ThreadContext;
-import org.json.JSONObject;
 
 public class DeterministicP2PNetworkTest {
   protected P2PTestNetworkRunner testNetworkRunner;
 
   protected RuntimeProperties defaultProperties() {
     try {
-      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      final var props = RuntimeProperties.fromCommandLineArgs(new String[] {});
       props.set("network.p2p.max_inbound_channels", 10);
       props.set("network.p2p.max_outbound_channels", 10);
       return props;

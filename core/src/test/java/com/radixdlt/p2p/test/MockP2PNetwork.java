@@ -82,6 +82,7 @@ import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.TimeSupplier;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -119,6 +120,7 @@ final class MockP2PNetwork {
             Network.INTEGRATIONTESTNET,
             "fork1",
             clientPeer.injector.getInstance(Metrics.class),
+            clientPeer.injector.getInstance(TimeSupplier.class),
             clientPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
             ECKeyOps.fromKeyPair(clientPeer.keyPair),
@@ -145,6 +147,7 @@ final class MockP2PNetwork {
             Network.INTEGRATIONTESTNET,
             "fork1",
             serverPeer.injector.getInstance(Metrics.class),
+            serverPeer.injector.getInstance(TimeSupplier.class),
             serverPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
             ECKeyOps.fromKeyPair(serverPeer.keyPair),
