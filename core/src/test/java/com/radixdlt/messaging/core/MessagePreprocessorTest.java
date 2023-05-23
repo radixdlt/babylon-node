@@ -103,7 +103,6 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.time.Time;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
@@ -208,7 +207,7 @@ public class MessagePreprocessorTest {
       throw new RuntimeException("unreachable"); // tame compiler
     }
 
-    return new InboundMessage(Time.currentTimestamp(), source, serialize(message));
+    return new InboundMessage(1L, source, serialize(message));
   }
 
   private static byte[] serialize(Message message) {

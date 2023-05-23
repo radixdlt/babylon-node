@@ -81,7 +81,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import org.json.JSONObject;
 import org.junit.Test;
 
 public final class PendingOutboundChannelsManagerTest {
@@ -99,8 +98,7 @@ public final class PendingOutboundChannelsManagerTest {
 
     final var sut =
         new PendingOutboundChannelsManager(
-            P2PConfig.fromRuntimeProperties(
-                new RuntimeProperties(new JSONObject(), new String[] {})),
+            P2PConfig.fromRuntimeProperties(RuntimeProperties.fromCommandLineArgs(new String[] {})),
             mock(PeerOutboundBootstrap.class),
             rmock(ScheduledEventDispatcher.class),
             rmock(EventDispatcher.class));

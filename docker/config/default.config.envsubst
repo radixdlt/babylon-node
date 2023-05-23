@@ -1,6 +1,3 @@
-ntp=false
-ntp.pool=pool.ntp.org
-
 network.id=$RADIXDLT_NETWORK_ID
 network.genesis_txn=$RADIXDLT_GENESIS_TXN
 network.genesis_file=$RADIXDLT_GENESIS_FILE

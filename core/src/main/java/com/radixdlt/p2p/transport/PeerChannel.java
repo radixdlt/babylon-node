@@ -94,7 +94,6 @@ import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuc
 import com.radixdlt.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
-import com.radixdlt.utils.time.Time;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -264,7 +263,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void handleMessage(ByteBuf buf) throws IOException {
-    final var receiveTime = Time.currentTimestamp();
+    final var receiveTime = System.nanoTime();
 
     synchronized (this.lock) {
       final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
