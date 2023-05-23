@@ -21,7 +21,7 @@ jobs:
       contents: read
     steps:
       - name: Connect to tailnet
-        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@update-tailscale-action
         with:
           secret_name: "${{ secrets.TAILNET_SECRET_NAME }}"
           role_name: "${{ secrets.TAILNET_ROLE_NAME }}"
