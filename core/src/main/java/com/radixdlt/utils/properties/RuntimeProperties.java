@@ -64,64 +64,212 @@
 
 package com.radixdlt.utils.properties;
 
-import java.util.Arrays;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
+import static com.radixdlt.utils.RadixConstants.STANDARD_CHARSET;
+
+import com.radixdlt.utils.BooleanUtils;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.function.Function;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Runtime properties are temporary property sets that are discarded upon client termination.
- *
- * <p>They combine a set of persisted properties, with a set of command line properties.
+ * Persisted properties are property sets that are committed to storage and may be reloaded on the
+ * next application execution.
  */
-public final class RuntimeProperties extends PersistedProperties {
-  private final CommandLine commandLine;
+public class RuntimeProperties {
+  private static final Logger log = LogManager.getLogger();
 
-  public RuntimeProperties(JSONObject commandLineConfig, String[] commandLineArguments)
+  private final Properties properties;
+
+  public static RuntimeProperties fromCommandLineArgs(String[] commandLineArguments)
       throws ParseException {
-    CommandLineParser parser = new DefaultParser();
-    Options gnuOptions = new Options();
-
-    for (String clKey : commandLineConfig.keySet()) {
-      JSONObject clOption = commandLineConfig.getJSONObject(clKey);
-      gnuOptions.addOption(
-          clOption.getString("short"),
-          clKey,
-          clOption.getBoolean("has_arg"),
-          clOption.optString("desc", ""));
-    }
-
-    commandLine = parser.parse(gnuOptions, commandLineArguments);
-
-    load(commandLine.getOptionValue("config", "default.config"));
+    final var parser = new DefaultParser();
+    final var options = new Options();
+    options.addOption(
+        "config",
+        "config",
+        true,
+        "A path to the configuration file to use (defaults to default.config)");
+    final var commandLine = parser.parse(options, commandLineArguments);
+    final var runtimeProperties = new RuntimeProperties();
+    runtimeProperties.load(commandLine.getOptionValue("config", "default.config"));
+    return runtimeProperties;
   }
 
-  @Override
-  public String get(String key) {
-    for (Option commandLineOption : commandLine.getOptions()) {
-      if (commandLineOption.getOpt().equals(key)) {
-        if (commandLineOption.hasArg()) {
-          return commandLineOption.getValue();
-        } else {
-          return "1";
+  RuntimeProperties() {
+    this.properties = new Properties();
+  }
+
+  /**
+   * Loads properties from specified file.
+   *
+   * @param filename the file to load the properties from
+   * @throws ParseException if the properties cannot be loaded
+   */
+  public void load(String filename) throws ParseException {
+    var loaded = false;
+    var file = new File(filename);
+
+    try (var propertiesInput = new FileInputStream(file)) {
+      loadProperties(propertiesInput);
+      // No need to immediately save, we just loaded them
+      log.info("Loaded properties from {}", file);
+      loaded = true;
+    } catch (FileNotFoundException ex) {
+      log.info("Can not open properties file {}, using default", file);
+    } catch (IOException ex) {
+      log.error(String.format("Can not open properties file %s, using default", file), ex);
+    }
+
+    // Try in resource if not loaded
+    if (!loaded) {
+      try (var propertiesInput = this.getClass().getResourceAsStream("/" + filename)) {
+        if (propertiesInput == null) {
+          throw new FileNotFoundException("Default properties for " + file + " not found");
+        }
+        loadProperties(propertiesInput);
+        log.info("Loaded default properties for {}", file);
+        // Save to file, so they can be edited later
+        save(filename);
+        log.info("Saved default properties in {}", file);
+      } catch (FileNotFoundException ex) {
+        log.error("Can not find properties file {}", file);
+        throw new ParseException("Can not find properties file " + file);
+      } catch (IOException ex) {
+        log.error(String.format("Can not load default properties for %s", file), ex);
+        throw new ParseException(
+            String.format("Can not load properties file '%s' (%s)", file, ex.getMessage()));
+      }
+    }
+  }
+
+  private void loadProperties(InputStream is) throws IOException {
+    var out = new ByteArrayOutputStream();
+
+    // Strip redundant whitespace characters
+    try (var writer = new BufferedWriter(new OutputStreamWriter(out))) {
+      try (var reader = new BufferedReader(new InputStreamReader(is, STANDARD_CHARSET))) {
+        for (var line = reader.readLine(); line != null; line = reader.readLine()) {
+          writer.write(line.trim());
+          writer.newLine();
         }
       }
     }
 
-    return super.get(key);
+    this.properties.load(new ByteArrayInputStream(out.toByteArray()));
+  }
+
+  /**
+   * Saves properties to the specified file.
+   *
+   * @param filename The file to save the properties to
+   * @throws IOException if the properties cannot be saved
+   */
+  public void save(String filename) throws IOException {
+    try (var propertiesOutput = new FileOutputStream(filename)) {
+      this.properties.store(propertiesOutput, "");
+    }
+  }
+
+  /**
+   * Returns the property if there is a property matching the key, otherwise {@code null}.
+   *
+   * @param key the property key
+   * @return the property if there is a property matching the key, otherwise {@code null}
+   */
+  public String get(String key) {
+    return this.properties.getProperty(key);
+  }
+
+  /**
+   * Returns a property value as an {@code int}.
+   *
+   * @param key the property key
+   * @param defaultValue the default value returned if no value is set
+   * @return either the property value, or {@code defaultValue} if no value set
+   */
+  public int get(String key, int defaultValue) {
+    return get(key, defaultValue, Integer::parseInt);
+  }
+
+  /**
+   * Returns a property value as a {@code long}.
+   *
+   * @param key the property key
+   * @param defaultValue the default value returned if no value is set
+   * @return either the property value, or {@code defaultValue} if no value set
+   */
+  public long get(String key, long defaultValue) {
+    return get(key, defaultValue, Long::parseLong);
+  }
+
+  /**
+   * Returns a property value as a {@code double}.
+   *
+   * @param key the property key
+   * @param defaultValue the default value returned if no value is set
+   * @return either the property value, or {@code defaultValue} if no value set
+   */
+  public double get(String key, double defaultValue) {
+    return get(key, defaultValue, Double::parseDouble);
+  }
+
+  /**
+   * Returns a property value as a {@code boolean}. Only the strings "true" and "false", ignoring
+   * case, are considered valid values, all others are invalid and cause an exception to be thrown.
+   *
+   * @param key the property key
+   * @param defaultValue the default value returned if no value is set
+   * @return either the property value, or {@code defaultValue} if no value set
+   * @throws IllegalArgumentException if the property value is not equal to "true" or "false",
+   *     ignoring case.
+   */
+  public boolean get(String key, boolean defaultValue) {
+    return get(key, defaultValue, BooleanUtils::parseBoolean);
+  }
+
+  /**
+   * Returns a property value as a {@code String}.
+   *
+   * @param key the property key
+   * @param defaultValue the default value returned if no value is set
+   * @return either the property value, or {@code defaultValue} if no value set
+   */
+  public String get(String key, String defaultValue) {
+    var value = get(key);
+    return value == null ? defaultValue : value;
+  }
+
+  /**
+   * Sets a property value.
+   *
+   * @param key the property name
+   * @param value the property value
+   */
+  public void set(String key, Object value) {
+    this.properties.setProperty(key, value.toString());
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + Arrays.hashCode(commandLine.getArgs());
-    result = prime * result + Arrays.hashCode(commandLine.getOptions());
-    return result;
+    return Objects.hash(this.properties);
   }
 
   @Override
@@ -129,21 +277,60 @@ public final class RuntimeProperties extends PersistedProperties {
     if (this == obj) {
       return true;
     }
-    if (super.equals(obj) && obj instanceof RuntimeProperties) {
-      RuntimeProperties other = (RuntimeProperties) obj;
-      return Arrays.equals(commandLine.getArgs(), other.commandLine.getArgs())
-          && Arrays.equals(commandLine.getOptions(), other.commandLine.getOptions());
+
+    if (obj == null || !this.getClass().equals(obj.getClass())) {
+      return false;
     }
-    return false;
+
+    var other = (RuntimeProperties) obj;
+    return Objects.equals(this.properties, other.properties);
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "%s[%s, args=%s, options=%s]",
-        getClass().getSimpleName(),
-        super.toString(),
-        Arrays.toString(commandLine.getArgs()),
-        Arrays.toString(commandLine.getOptions()));
+    return this.properties.keySet().toString();
+  }
+
+  /**
+   * Parses a property value using the parser function specified or uses a default value if no value
+   * was provided.
+   *
+   * @param key the property key.
+   * @param defaultValue the default value returned if no value is set.
+   * @param parser a function which receives the property value and computes a new value.
+   * @return parsed value or defaultValue if no value was provided.
+   * @throws IllegalArgumentException if there is an error when parsing the property value.
+   */
+  public <T> T get(String key, T defaultValue, Function<String, T> parser) {
+    var value = get(key);
+    try {
+      return value == null ? defaultValue : parser.apply(value);
+    } catch (Exception ex) {
+      var msg =
+          String.format(
+              "There was an error when parsing configuration '%s' with value '%s'.", key, value);
+      throw new IllegalArgumentException(msg, ex);
+    }
+  }
+
+  /**
+   * Parses a property value using the parser function specified and returns an Optional value. The
+   * empty instance is returned if no value was provided.
+   *
+   * @param key the property key.
+   * @param parser the default value returned if no value is set.
+   * @return {@link Optional} with parsed value or empty if no value was provided.
+   * @throws IllegalArgumentException if there is an error when parsing the property value.
+   */
+  public <T> Optional<T> get(String key, Function<String, T> parser) {
+    var value = get(key);
+    try {
+      return value == null ? Optional.empty() : Optional.of(parser.apply(value));
+    } catch (Exception ex) {
+      var msg =
+          String.format(
+              "There was an error when parsing configuration '%s' with value '%s'.", key, value);
+      throw new IllegalArgumentException(msg, ex);
+    }
   }
 }

@@ -67,17 +67,13 @@ package com.radixdlt.serialization;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import com.radixdlt.utils.time.NtpService;
 import org.junit.BeforeClass;
-import org.mockito.stubbing.Answer;
 
 public abstract class RadixTest {
   private static Serialization serialization;
-  private static NtpService ntpService;
   private static RuntimeProperties properties;
   private static ECKeyPair ecKeyPair;
 
@@ -90,10 +86,6 @@ public abstract class RadixTest {
         .when(properties)
         .get(anyString(), anyString());
 
-    ntpService = mock(NtpService.class);
-    when(ntpService.getUTCTimeMS())
-        .thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-
     serialization = DefaultSerialization.getInstance();
 
     ecKeyPair = ECKeyPair.generateNew();
@@ -101,10 +93,6 @@ public abstract class RadixTest {
 
   public static Serialization getSerialization() {
     return serialization;
-  }
-
-  public static NtpService getNtpService() {
-    return ntpService;
   }
 
   public static RuntimeProperties getProperties() {

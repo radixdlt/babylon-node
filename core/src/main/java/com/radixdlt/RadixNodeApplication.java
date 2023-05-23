@@ -66,18 +66,13 @@ package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.monitoring.ApplicationVersion;
-import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.json.JSONObject;
 
 public final class RadixNodeApplication {
   private static final Logger log = LogManager.getLogger();
@@ -111,7 +106,7 @@ public final class RadixNodeApplication {
       dumpExecutionLocation();
       // Bouncy Castle is required for loading the node key, so set it up now.
       setupBouncyCastle();
-      final var properties = loadProperties(args);
+      final var properties = RuntimeProperties.fromCommandLineArgs(args);
       bootstrapRadixNode(properties);
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
@@ -192,16 +187,5 @@ public final class RadixNodeApplication {
     } catch (URISyntaxException e) {
       throw new IllegalStateException("Error while fetching execution location", e);
     }
-  }
-
-  private static RuntimeProperties loadProperties(String[] args)
-      throws IOException, ParseException {
-    JSONObject runtimeConfigurationJSON = new JSONObject();
-    try (InputStream is = RadixNodeApplication.class.getResourceAsStream("/runtime_options.json")) {
-      if (is != null) {
-        runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
-      }
-    }
-    return new RuntimeProperties(runtimeConfigurationJSON, args);
   }
 }
