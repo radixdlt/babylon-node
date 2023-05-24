@@ -76,16 +76,16 @@ import org.junit.Test;
 
 public class PersistedPropertiesTest {
 
-  private PersistedProperties properties;
+  private RuntimeProperties properties;
 
   @Before
   public void setUp() {
-    this.properties = new PersistedProperties();
+    this.properties = new RuntimeProperties();
   }
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(PersistedProperties.class).usingGetClass().verify();
+    EqualsVerifier.forClass(RuntimeProperties.class).usingGetClass().verify();
   }
 
   @Test
@@ -114,7 +114,7 @@ public class PersistedPropertiesTest {
     this.properties.save(testProperties);
     assertTrue(Files.exists(Paths.get(testProperties))); // Now have properties file on disk
 
-    PersistedProperties newCut = new PersistedProperties();
+    RuntimeProperties newCut = new RuntimeProperties();
     newCut.load(testProperties); // Should load from file
 
     assertEquals("a", this.properties.get("a"));

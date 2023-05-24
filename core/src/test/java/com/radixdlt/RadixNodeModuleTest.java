@@ -79,7 +79,6 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
-import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -144,7 +143,7 @@ public class RadixNodeModuleTest {
     final RuntimeProperties properties;
     try {
       // Changing it to a spy as it is the only to test polymorphism with mockito.
-      properties = spy(new RuntimeProperties(new JSONObject(), new String[0]));
+      properties = spy(RuntimeProperties.fromCommandLineArgs(new String[0]));
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }

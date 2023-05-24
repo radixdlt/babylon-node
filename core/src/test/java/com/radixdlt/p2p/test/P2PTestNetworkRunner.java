@@ -102,7 +102,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
 import org.junit.rules.TemporaryFolder;
 
 public final class P2PTestNetworkRunner {
@@ -180,7 +179,7 @@ public final class P2PTestNetworkRunner {
       RadixNodeUri selfUri,
       int selfNodeIndex)
       throws ParseException {
-    final var properties = new RuntimeProperties(new JSONObject(), new String[] {});
+    final var properties = RuntimeProperties.fromCommandLineArgs(new String[] {});
     return Guice.createInjector(
         Modules.override(new P2PModule(properties))
             .with(

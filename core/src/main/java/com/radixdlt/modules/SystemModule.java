@@ -65,12 +65,8 @@
 package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import com.radixdlt.utils.time.Time;
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -79,12 +75,6 @@ public class SystemModule extends AbstractModule {
   @Override
   public void configure() {
     bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
-  }
-
-  @Provides
-  @Singleton
-  TimeSupplier time(RuntimeProperties properties) {
-    Time.start(properties);
-    return Time::currentTimestamp;
+    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
   }
 }
