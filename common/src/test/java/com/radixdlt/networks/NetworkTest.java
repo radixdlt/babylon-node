@@ -89,6 +89,9 @@ public class NetworkTest {
       } else if (network.getLogicalName().equals("inttestnet")) {
         assertEquals("account_test", network.getAccountComponentHrp());
         assertEquals("validator_test", network.getValidatorHrp());
+      } else if (network.getLogicalName().equals("genesis_test")) {
+        assertEquals("account_genesis_test", network.getAccountComponentHrp());
+        assertEquals("validator_genesis_test", network.getValidatorHrp());
       } else {
         var hexId = Integer.toString(network.getId(), 16).toLowerCase();
         assertEquals(String.format("account_tdx_%s_", hexId), network.getAccountComponentHrp());
