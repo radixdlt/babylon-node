@@ -20,7 +20,8 @@ export const BASE_PATH = "http://localhost:3333/core".replace(/\/+$/, "");
 export interface ConfigurationParameters {
     basePath?: string; // Override base path
     fetchApi?: FetchAPI; // Override for fetch implementation
-    agent?: any; // Override for HTTP/s agent
+    agent?: any; // Override for HTTP/s agent (for eg node-fetch)
+    dispatcher?: any; // Override for undici dispatcher (for eg native Node.JS fetch)
     middleware?: Middleware[]; // Middleware to apply before/after fetch requests
     queryParamsStringify?: (params: HTTPQuery) => string; // stringify function for query strings
     headers?: HTTPHeaders; // Header params we want to use on every request
@@ -44,6 +45,10 @@ export class Configuration {
 
     get agent(): any {
         return this.configuration.agent;
+    }
+
+    get dispatcher(): any {
+        return this.configuration.dispatcher;
     }
 
     get middleware(): Middleware[] {
@@ -120,6 +125,7 @@ export class BaseAPI {
 
         const initParams = {
             agent: this.configuration.agent,
+            dispatcher: this.configuration.dispatcher,
             method: context.method,
             headers,
             body: context.body,

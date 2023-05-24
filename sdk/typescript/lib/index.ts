@@ -15,8 +15,8 @@ export * from "./generated";
 interface CoreApiClientSettings {
   basePath: string;
   logicalNetworkName?: string;
-  /** On the browser, `window.fetch`, on NodeJS, this will need to be provided by a library such as `node-fetch` */
-  fetch: any;
+  /** On Node.JS < 18, this will need to be provided by a library such as `node-fetch` */
+  fetch?: any;
   advanced?: ConfigurationParameters;
 }
 
