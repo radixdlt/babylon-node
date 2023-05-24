@@ -62,11 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.bootstrap;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.radixdlt.UnstartedRadixNode;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisData;
@@ -74,29 +77,16 @@ import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
 import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
 import com.radixdlt.genesis.olympia.OlympiaGenesisService;
-import com.radixdlt.lang.Either;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.util.Optional;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Bootstrapper's main responsibility is to acquire the genesis information (GenesisData) from one
- * of the configured sources. To do so it utilizes two top-level Guice modules:
- *
- * <p>- RadixNodeBootstrapperHelperModule: A basic module containing utils for loading the genesis
- * transaction from properties. This module is always instantiated.
- *
- * <p>- GenesisFromOlympiaNodeModule: A module used to acquire the genesis transaction from a
- * running Olympia node. This is only instantiated if both are true: a) no other genesis source is
- * present (properties or network-specific genesis) b) Olympia-based genesis has been configured in
- * properties This module is managed by an encapsulating utility class: OlympiaGenesisBootstrapper.
- */
 public final class RadixNodeBootstrapper {
   private static final Logger log = LogManager.getLogger();
 
@@ -143,29 +133,36 @@ public final class RadixNodeBootstrapper {
     }
   }
 
-  public static RadixNodeBootstrapperHandle bootstrapRadixNode(RuntimeProperties properties) {
-    final var networkEither = readNetworkFromProperties(properties);
-    final Network network;
-    if (networkEither.isLeft()) {
-      return new RadixNodeBootstrapperHandle.Failed(networkEither.unwrapLeft());
-    } else {
-      network = networkEither.unwrapRight();
-    }
+  private final Network network;
+  private final Hasher hasher;
+  private final RuntimeProperties properties;
+  private final GenesisFromPropertiesLoader genesisFromPropertiesLoader;
+  private final GenesisStore genesisStore;
 
-    final var helperInjector =
-        Guice.createInjector(new RadixNodeBootstrapperHelperModule(properties, network));
+  @Inject
+  public RadixNodeBootstrapper(
+      Network network,
+      Hasher hasher,
+      RuntimeProperties properties,
+      GenesisFromPropertiesLoader genesisFromPropertiesLoader,
+      GenesisStore genesisStore) {
+    this.network = network;
+    this.hasher = hasher;
+    this.properties = properties;
+    this.genesisFromPropertiesLoader = genesisFromPropertiesLoader;
+    this.genesisStore = genesisStore;
+  }
 
-    final var hasher = helperInjector.getInstance(Hasher.class);
-
+  public RadixNodeBootstrapperHandle bootstrapRadixNode() {
     // Genesis source #1: node configuration parameters / genesis file
-    final var configuredGenesis =
-        helperInjector
-            .getInstance(GenesisFromPropertiesLoader.class)
-            .loadGenesisDataFromProperties();
+    final var configuredGenesis = genesisFromPropertiesLoader.loadGenesisDataFromProperties();
 
     // Genesis source #2: a fixed genesis associated with the given network
     final var fixedNetworkGenesis =
         network.fixedGenesis().map(RadixNodeBootstrapper::resolveFixedNetworkGenesis);
+
+    // Genesis source #3: the genesis stored from previous runs
+    final var maybeStoredGenesis = genesisStore.readGenesisData();
 
     // Whether to use an optional genesis source #3: a running Olympia node
     final var useOlympiaFlagIsSet =
@@ -175,15 +172,8 @@ public final class RadixNodeBootstrapper {
       // Both standard genesis sources have been configured
       // We need to make sure they contain the same data
       // to protect from unintended misconfiguration.
-      final var configuredGenesisHash =
-          hasher.hashBytes(
-              StateManagerSbor.encode(
-                  configuredGenesis.get(), StateManagerSbor.resolveCodec(new TypeToken<>() {})));
-
-      final var fixedNetworkGenesisHash =
-          hasher.hashBytes(
-              StateManagerSbor.encode(
-                  fixedNetworkGenesis.get(), StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+      final var configuredGenesisHash = hashGenesisData(configuredGenesis.get());
+      final var fixedNetworkGenesisHash = hashGenesisData(fixedNetworkGenesis.get());
 
       if (!configuredGenesisHash.equals(fixedNetworkGenesisHash)) {
         return new RadixNodeBootstrapperHandle.Failed(
@@ -196,15 +186,15 @@ public final class RadixNodeBootstrapper {
               `network.genesis_txn` and/or `network.genesis_file`).""",
                     network.getLogicalName(), fixedNetworkGenesisHash, configuredGenesisHash)));
       } else {
-        return new RadixNodeBootstrapperHandle.Resolved(
-            new UnstartedRadixNode(properties, network, configuredGenesis.get()));
+        return tryProceedWithConfiguredGenesis(configuredGenesis.get());
       }
     } else if (configuredGenesis.isPresent()) {
-      return new RadixNodeBootstrapperHandle.Resolved(
-          new UnstartedRadixNode(properties, network, configuredGenesis.get()));
+      return tryProceedWithConfiguredGenesis(configuredGenesis.get());
     } else if (fixedNetworkGenesis.isPresent()) {
+      return tryProceedWithConfiguredGenesis(fixedNetworkGenesis.get());
+    } else if (maybeStoredGenesis.isPresent()) {
       return new RadixNodeBootstrapperHandle.Resolved(
-          new UnstartedRadixNode(properties, network, fixedNetworkGenesis.get()));
+          new UnstartedRadixNode(properties, network, maybeStoredGenesis.get()));
     } else if (useOlympiaFlagIsSet) {
       // If neither standard genesis source is configured
       // we may try to get it from Olympia
@@ -223,41 +213,53 @@ public final class RadixNodeBootstrapper {
     }
   }
 
-  private static Either<Exception, Network> readNetworkFromProperties(
-      RuntimeProperties properties) {
-    return Optional.ofNullable(properties.get("network.id"))
-        .map(Integer::parseInt)
-        .map(
-            networkId -> {
-              if (networkId <= 0) {
-                return Either.<Exception, Network>left(
-                    new IllegalStateException(
-                        String.format(
-                            "Invalid networkId %s. Must be a positive value.", networkId)));
-              }
+  private RadixNodeBootstrapperHandle tryProceedWithConfiguredGenesis(GenesisData genesisData) {
+    final var maybePrevGenesis = genesisStore.readGenesisData();
+    if (maybePrevGenesis.isPresent()) {
+      final var prevGenesisHash = hashGenesisData(maybePrevGenesis.get());
+      final var currGenesisDataHash = hashGenesisData(genesisData);
+      if (!prevGenesisHash.equals(currGenesisDataHash)) {
+        return new RadixNodeBootstrapperHandle.Failed(
+            new RuntimeException(
+                String.format(
+                    """
+              Database is in inconsistent state: current node configuration uses \
+              a genesis of hash %s, but the node previously run with a different genesis of hash %s. \
+              Make sure your configuration is correct (check `network.id` and/or \
+              `network.genesis_txn` and/or `network.genesis_file`). Or wipe your ledger dir \
+              if the configuration is correct.""",
+                    currGenesisDataHash, prevGenesisHash)));
+      }
+    } else {
+      genesisStore.saveGenesisData(genesisData);
+    }
 
-              return Network.ofId(networkId)
-                  .map(Either::<Exception, Network>right)
-                  .orElseGet(
-                      () ->
-                          Either.left(
-                              new IllegalStateException(
-                                  String.format(
-                                      "Network ID %s does not match any known networks",
-                                      networkId))));
-            })
-        .orElseGet(
-            () ->
-                Either.left(
-                    new IllegalStateException(
-                        """
-            Can't determine the Radix network \
-            (missing or invalid network.id config).""")));
+    return new RadixNodeBootstrapperHandle.Resolved(
+        new UnstartedRadixNode(properties, network, genesisData));
+  }
+
+  private HashCode hashGenesisData(GenesisData genesisData) {
+    return hasher.hashBytes(
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
   }
 
   private static GenesisData resolveFixedNetworkGenesis(FixedNetworkGenesis fixedNetworkGenesis) {
-    // TODO(genesis): read genesis data from resources or parse from raw bytes
-    throw new RuntimeException("Not implemented yet");
+    return switch (fixedNetworkGenesis) {
+      case FixedNetworkGenesis.Constant constantGenesis -> StateManagerSbor.decode(
+          constantGenesis.genesisData(), StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+      case FixedNetworkGenesis.Resource resourceGenesis -> {
+        try (var is =
+            RadixNodeBootstrapper.class
+                .getClassLoader()
+                .getResourceAsStream(resourceGenesis.resourcePath())) {
+          final var genesisBytes = is.readAllBytes();
+          yield StateManagerSbor.decode(
+              genesisBytes, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to load network genesis from resources", e);
+        }
+      }
+    };
   }
 
   /** A utility class encapsulating the Olympia-based genesis functionality */

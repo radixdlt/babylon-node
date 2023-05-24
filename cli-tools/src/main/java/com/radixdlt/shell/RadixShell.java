@@ -67,11 +67,13 @@ package com.radixdlt.shell;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.RadixNodeBootstrapper;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.bootstrap.RadixNodeBootstrapper;
+import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
@@ -202,11 +204,15 @@ public final class RadixShell {
       }
 
       final var genesisData =
-          new GenesisFromPropertiesLoader(properties, network)
-              .loadGenesisDataFromProperties()
-              .orElseThrow();
+          new GenesisFromPropertiesLoader(properties).loadGenesisDataFromProperties().orElseThrow();
+      final var bootstrapperInjector =
+          Guice.createInjector(new RadixNodeBootstrapperModule(properties));
       final var unstartedRadixNode =
-          RadixNodeBootstrapper.bootstrapRadixNode(properties).radixNodeFuture().get();
+          bootstrapperInjector
+              .getInstance(RadixNodeBootstrapper.class)
+              .bootstrapRadixNode()
+              .radixNodeFuture()
+              .get();
       final var node = new Node(unstartedRadixNode.instantiateRadixNodeModule());
 
       moduleRunnersBuilder.build().forEach(node::startRunner);

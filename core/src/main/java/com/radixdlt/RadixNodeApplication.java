@@ -65,6 +65,9 @@
 package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
+import com.google.inject.Guice;
+import com.radixdlt.bootstrap.RadixNodeBootstrapper;
+import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -117,7 +120,10 @@ public final class RadixNodeApplication {
 
   private static void bootstrapRadixNode(RuntimeProperties properties) {
     final var nodeBootStopwatch = Stopwatch.createStarted();
-    final var radixNodeBootstrapperHandle = RadixNodeBootstrapper.bootstrapRadixNode(properties);
+    final var bootstrapperModule =
+        Guice.createInjector(new RadixNodeBootstrapperModule(properties));
+    final var bootstrapper = bootstrapperModule.getInstance(RadixNodeBootstrapper.class);
+    final var radixNodeBootstrapperHandle = bootstrapper.bootstrapRadixNode();
     /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
      shutdown hook doesn't guarantee that these resources will be correctly freed up.
      For example, when an error occurs while Guice is building its object graph,

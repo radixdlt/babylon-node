@@ -69,6 +69,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public enum Network {
 
   /// Public Facing Permanent Networks (0x00 - 0x09)
@@ -109,7 +110,13 @@ public enum Network {
   // - inttestnet = The network used when running integration tests
   LOCALNET(240 /* 0xF0 */, "localnet", "loc"),
   INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "test"),
-  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim");
+  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim"),
+  // A dedicated network for testing genesis
+  GENESIS_TEST(
+      243 /* 0xF2 */,
+      "genesis_test",
+      "genesis_test",
+      FixedNetworkGenesis.resource("genesis/test_genesis.bin"));
 
   // For the Radix Shell to provide a default
   public static final String DefaultHexGenesisTransaction =

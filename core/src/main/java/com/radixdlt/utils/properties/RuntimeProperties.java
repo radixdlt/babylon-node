@@ -79,6 +79,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -110,6 +111,16 @@ public class RuntimeProperties {
     final var commandLine = parser.parse(options, commandLineArguments);
     final var runtimeProperties = new RuntimeProperties();
     runtimeProperties.load(commandLine.getOptionValue("config", "default.config"));
+    return runtimeProperties;
+  }
+
+  public static RuntimeProperties defaultWithOverrides(Map<String, String> map)
+      throws ParseException {
+    final var runtimeProperties = new RuntimeProperties();
+    runtimeProperties.load("default.config");
+    for (var e : map.entrySet()) {
+      runtimeProperties.set(e.getKey(), e.getValue());
+    }
     return runtimeProperties;
   }
 

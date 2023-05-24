@@ -62,51 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.bootstrap;
 
-import com.google.common.base.Strings;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.IOUtils;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Base64;
+import com.radixdlt.genesis.GenesisData;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/**
- * Responsible for loading the genesis data from a configured file, or directly from a property
- * value.
- */
-public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
-  private static final Logger log = LogManager.getLogger();
+public interface GenesisStore {
+  void saveGenesisData(GenesisData genesisData);
 
-  public Optional<GenesisData> loadGenesisDataFromProperties() {
-    final var genesisFileProp = properties.get("network.genesis_file");
-    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
-      log.info("Loading genesis from file: {}", genesisFileProp);
-      return Optional.of(decodeFromBase64(readFileToString(genesisFileProp)));
-    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_txn"))) {
-      log.info("Loading genesis from genesis_txn property");
-      return Optional.of(decodeFromBase64(properties.get("network.genesis_txn")));
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private GenesisData decodeFromBase64(String base64) {
-    final var bytes = Base64.getDecoder().decode(base64);
-    return StateManagerSbor.decode(bytes, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-  }
-
-  private String readFileToString(String genesisFile) {
-    try (var genesisJsonString = new FileInputStream(genesisFile)) {
-      return IOUtils.toString(genesisJsonString);
-    } catch (IOException e) {
-      throw new RuntimeException(
-          String.format("Failed to read the genesis data from %s", genesisFile), e);
-    }
-  }
+  Optional<GenesisData> readGenesisData();
 }

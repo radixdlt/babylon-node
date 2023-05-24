@@ -62,51 +62,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.bootstrap;
 
-import com.google.common.base.Strings;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.IOUtils;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.lang.Either;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.modules.MetricsModule;
+import com.radixdlt.networks.Network;
+import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Base64;
+import java.io.File;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/**
- * Responsible for loading the genesis data from a configured file, or directly from a property
- * value.
- */
-public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
-  private static final Logger log = LogManager.getLogger();
+public final class RadixNodeBootstrapperModule extends AbstractModule {
 
-  public Optional<GenesisData> loadGenesisDataFromProperties() {
-    final var genesisFileProp = properties.get("network.genesis_file");
-    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
-      log.info("Loading genesis from file: {}", genesisFileProp);
-      return Optional.of(decodeFromBase64(readFileToString(genesisFileProp)));
-    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_txn"))) {
-      log.info("Loading genesis from genesis_txn property");
-      return Optional.of(decodeFromBase64(properties.get("network.genesis_txn")));
-    } else {
-      return Optional.empty();
-    }
+  private final RuntimeProperties properties;
+
+  public RadixNodeBootstrapperModule(RuntimeProperties properties) {
+    this.properties = properties;
   }
 
-  private GenesisData decodeFromBase64(String base64) {
-    final var bytes = Base64.getDecoder().decode(base64);
-    return StateManagerSbor.decode(bytes, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+  @Override
+  public void configure() {
+    bind(RuntimeProperties.class).toInstance(this.properties);
+    bind(Network.class).toInstance(readNetworkFromProperties(this.properties).unwrapRight());
+    bind(GenesisFromPropertiesLoader.class).toInstance(new GenesisFromPropertiesLoader(properties));
+    bind(RadixNodeBootstrapper.class).in(Scopes.SINGLETON);
+    install(new MetricsModule());
+    install(new CryptoModule());
+    install(new NodeStorageLocationFromPropertiesModule());
   }
 
-  private String readFileToString(String genesisFile) {
-    try (var genesisJsonString = new FileInputStream(genesisFile)) {
-      return IOUtils.toString(genesisJsonString);
-    } catch (IOException e) {
-      throw new RuntimeException(
-          String.format("Failed to read the genesis data from %s", genesisFile), e);
-    }
+  @Provides
+  @Singleton
+  GenesisStore genesisStore(@NodeStorageLocation String nodeStorageLocation) {
+    return new GenesisFileStore(new File(nodeStorageLocation, "genesis.bin"));
+  }
+
+  private static Either<Exception, Network> readNetworkFromProperties(
+      RuntimeProperties properties) {
+    return Optional.ofNullable(properties.get("network.id"))
+        .map(Integer::parseInt)
+        .map(
+            networkId -> {
+              if (networkId <= 0) {
+                return Either.<Exception, Network>left(
+                    new IllegalStateException(
+                        String.format(
+                            "Invalid networkId %s. Must be a positive value.", networkId)));
+              }
+
+              return Network.ofId(networkId)
+                  .map(Either::<Exception, Network>right)
+                  .orElseGet(
+                      () ->
+                          Either.left(
+                              new IllegalStateException(
+                                  String.format(
+                                      "Network ID %s does not match any known networks",
+                                      networkId))));
+            })
+        .orElseGet(
+            () ->
+                Either.left(
+                    new IllegalStateException(
+                        """
+                                Can't determine the Radix network \
+                                (missing or invalid network.id config).""")));
   }
 }

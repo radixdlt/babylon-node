@@ -62,40 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.bootstrap;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.genesis.GenesisFromPropertiesLoader;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.modules.MetricsModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.sbor.StateManagerSbor;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Optional;
 
-public final class RadixNodeBootstrapperHelperModule extends AbstractModule {
+public final class GenesisFileStore implements GenesisStore {
 
-  private final RuntimeProperties properties;
-  private final Network network;
+  private final File file;
 
-  public RadixNodeBootstrapperHelperModule(RuntimeProperties properties, Network network) {
-    this.properties = properties;
-    this.network = network;
+  public GenesisFileStore(File file) {
+    this.file = file;
   }
 
   @Override
-  public void configure() {
-    bind(RuntimeProperties.class).toInstance(this.properties);
-    bind(Network.class).toInstance(this.network);
-    install(new MetricsModule());
-    install(new CryptoModule());
-    install(new NodeStorageLocationFromPropertiesModule());
+  public void saveGenesisData(GenesisData genesisData) {
+    final var encoded =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    if (!file.exists()) {
+      try {
+        file.getParentFile().mkdirs();
+        file.createNewFile();
+      } catch (IOException e) {
+        throw new RuntimeException("Genesis file doesn't exist and failed to create", e);
+      }
+    }
+    try (FileOutputStream outputStream = new FileOutputStream(this.file)) {
+      outputStream.write(encoded);
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't write to the genesis file", e);
+    }
   }
 
-  @Provides
-  @Singleton
-  GenesisFromPropertiesLoader genesisFromPropertiesLoader() {
-    return new GenesisFromPropertiesLoader(properties, network);
+  @Override
+  public Optional<GenesisData> readGenesisData() {
+    if (!file.exists()) {
+      return Optional.empty();
+    }
+    try {
+      final var bytes = Files.readAllBytes(file.toPath());
+      if (bytes.length == 0) {
+        return Optional.empty();
+      }
+      final var genesisData =
+          StateManagerSbor.decode(
+              bytes, StateManagerSbor.resolveCodec(new TypeToken<GenesisData>() {}));
+      return Optional.of(genesisData);
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't read the genesis file", e);
+    }
   }
 }

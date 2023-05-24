@@ -64,25 +64,55 @@
 
 package com.radixdlt.cli;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
+import com.radixdlt.utils.UniqueListBuilder;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
-import java.util.HashSet;
+import java.util.*;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONObject;
 
-/** Generates the universe (genesis commit) for the Olympia Radix Engine */
-public final class GenerateUniverses {
-  private GenerateUniverses() {}
+/** Generates the genesis data for the Babylon Radix network */
+public final class GenerateGenesis {
+
+  // Genesis parameters for XRD allocation for testnets
+  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
+      Set.of(
+          Network.GILGANET,
+          Network.ENKINET,
+          Network.HAMMUNET,
+          Network.MARDUNET,
+          Network.NERGALNET,
+          Network.NEBUNET,
+          Network.KISHARNET,
+          Network.ANSHARNET);
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
+      Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
+  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
+      ECDSASecp256k1PublicKey.tryFromHex(
+              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
+          .unwrap();
+  private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1); // Allow it to be easily changed in eg tests
+
+  private GenerateGenesis() {}
 
   public static void main(String[] args) throws Exception {
     Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -91,6 +121,7 @@ public final class GenerateUniverses {
     options.addOption("h", "help", false, "Show usage information (this message)");
     options.addOption("p", "public-keys", true, "Specify validator keys");
     options.addOption("v", "validator-count", true, "Specify number of validators to generate");
+    options.addOption("n", "network-id", true, "Specify the network ID");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -105,17 +136,19 @@ public final class GenerateUniverses {
       return;
     }
 
-    var validatorKeys = new HashSet<ECDSASecp256k1PublicKey>();
+    final var validatorsBuilder = new UniqueListBuilder<ECDSASecp256k1PublicKey>();
     if (cmd.getOptionValue("p") != null) {
       var hexKeys = cmd.getOptionValue("p").split(",");
       for (var hexKey : hexKeys) {
-        validatorKeys.add(ECDSASecp256k1PublicKey.fromHex(hexKey));
+        validatorsBuilder.insertIfMissingAndGetIndex(ECDSASecp256k1PublicKey.fromHex(hexKey));
       }
     }
     final int validatorsCount =
         cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
     var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
-    generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
+    generatedValidatorKeys.stream()
+        .map(ECKeyPair::getPublicKey)
+        .forEach(validatorsBuilder::insertIfMissingAndGetIndex);
     IntStream.range(0, generatedValidatorKeys.size())
         .forEach(
             i -> {
@@ -129,25 +162,51 @@ public final class GenerateUniverses {
                       .encodeNodeAddress(generatedValidatorKeys.get(i).getPublicKey()));
             });
 
-    final var genesisTxnBuilder = new StringBuilder();
-    for (var key : validatorKeys) {
-      genesisTxnBuilder.append(Hex.toHexString(key.getCompressedBytes()));
-    }
-
-    final var genesisTxn = genesisTxnBuilder.toString();
+    final var networkId = Integer.parseInt(cmd.getOptionValue("n"));
+    final var network = Network.ofId(networkId).orElseThrow();
+    final var validators = validatorsBuilder.build();
+    final var genesisData = createGenesisData(network, validators);
+    final var encodedGenesisData =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
 
     if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisTxn);
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisDataBase64);
     } else {
-      try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
-
-        writer.write(new JSONObject().put("genesis", genesisTxn).toString());
+      try (var writer = new BufferedWriter(new FileWriter("genesis.base64"))) {
+        writer.write(genesisDataBase64);
       }
     }
   }
 
+  private static GenesisData createGenesisData(
+      Network network, ImmutableList<ECDSASecp256k1PublicKey> validators) {
+    final var usePowerfulStakingAccount =
+        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
+
+    final var stakeAmount =
+        usePowerfulStakingAccount
+            ? GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
+            : GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR;
+
+    final var stakingAccount =
+        usePowerfulStakingAccount
+            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
+            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+
+    final Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances =
+        usePowerfulStakingAccount
+            ? Map.of(
+                GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
+                GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
+            : Map.of();
+
+    return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
+        validators, stakeAmount, stakingAccount, xrdBalances, UInt64.fromNonNegativeLong(100));
+  }
+
   private static void usage(Options options) {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
+    formatter.printHelp(GenerateGenesis.class.getSimpleName(), options, true);
   }
 }
