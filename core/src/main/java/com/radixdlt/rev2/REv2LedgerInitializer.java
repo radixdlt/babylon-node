@@ -65,7 +65,6 @@
 package com.radixdlt.rev2;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.sbor.StateManagerSbor;
@@ -76,36 +75,34 @@ public record REv2LedgerInitializer(
     Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
 
   public void initialize(GenesisData genesisData) {
-    // Opaque value of the first epoch proof is the hash of GenesisData
-    final var maybeExistingGenesisHash = reader.getFirstEpochProof().map(LedgerProof::getOpaque);
-
     // If the database was already initialized, we verify that the
     // previous genesis matches the current configuration
     // to protect from node misconfiguration
     // (i.e. configuring genesis A, but node really using prev genesis B).
-    maybeExistingGenesisHash.ifPresentOrElse(
-        prevGenesisHash -> {
-          final var currentGenesisHash =
-              hasher.hashBytes(
-                  StateManagerSbor.encode(
-                      genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
-          if (!currentGenesisHash.equals(prevGenesisHash)) {
-            throw new IllegalStateException(
-                String.format(
-                    """
+    reader
+        .getFirstEpochProof()
+        .ifPresentOrElse(
+            firstEpochProof -> {
+              // Opaque value of the first epoch proof is the hash of GenesisData
+              final var existingGenesisHash = firstEpochProof.getOpaque();
+              final var currentGenesisHash =
+                  hasher.hashBytes(
+                      StateManagerSbor.encode(
+                          genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+              if (!currentGenesisHash.equals(existingGenesisHash)) {
+                throw new IllegalStateException(
+                    String.format(
+                        """
                   Configured genesis data (of hash %s) doesn't match the genesis data that has previously \
                   been used to initialize the database (%s). \
                   Make sure your configuration is correct (check `network.id` and/or \
                    `network.genesis_txn` and/or `network.genesis_file`).""",
-                    currentGenesisHash, prevGenesisHash));
-          }
-        },
-        () -> {
-          // It's a fresh database, so execute the genesis
-          // TODO(genesis): this will fail (with commit/prepare error) if the genesis data
-          // ingestion was interrupted. Consider cleaning up the database from any partially
-          // committed genesis data.
-          rustStateComputer.executeGenesis(genesisData);
-        });
+                        currentGenesisHash, existingGenesisHash));
+              }
+            },
+            () -> {
+              // It's a fresh database, so execute the genesis
+              rustStateComputer.executeGenesis(genesisData);
+            });
   }
 }

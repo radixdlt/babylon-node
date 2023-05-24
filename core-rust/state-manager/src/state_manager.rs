@@ -541,6 +541,21 @@ where
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
     ) -> LedgerProof {
+        let read_db = self.store.read();
+        if read_db.get_first_epoch_proof().is_some() {
+            panic!("Can't execute genesis: database already initialized")
+        }
+        let top_state_version = read_db.get_top_transaction_identifiers().state_version;
+        drop(read_db);
+        if top_state_version != 0 {
+            // No epoch proof, but there are some committed txns
+            panic!(
+                "The database is in inconsistent state: \
+                there are committed transactions (up to state version {}), but there's no epoch proof. \
+                This is likely caused by the the genesis data ingestion being interrupted. \
+                Consider wiping your database dir and trying again.", top_state_version);
+        }
+
         let genesis_data_chunks_len = genesis_data_chunks.len();
         let num_genesis_txns = genesis_data_chunks_len + 2; // + bootstrap + wrap up
 
@@ -602,7 +617,7 @@ where
         match system_bootstrap_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis system bootstrap txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!("Genesis system bootstrap txn didn't succeed");
             }
         }
 
@@ -659,7 +674,7 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed"); // TODO(genesis): better error handling?
+                    panic!("Genesis data ingestion txn didn't succeed");
                 }
             }
         }
@@ -722,7 +737,7 @@ where
         match genesis_wrap_up_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis wrap up txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!("Genesis wrap up txn didn't succeed");
             }
         }
 

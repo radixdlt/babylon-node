@@ -90,11 +90,11 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import java.io.File;
 import java.time.Duration;
 import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class FunctionalRadixNodeModule extends AbstractModule {
   public sealed interface NodeStorageConfig {
     /**
@@ -106,14 +106,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
      * For tests that use a real storage. Either BerkeleyDB (on the Java side; I think it's just
      * BerkeleySafetyStore) or RocksRb (on the Rust side).
      */
-    record TempFolder(TemporaryFolder tempFolder) implements NodeStorageConfig {}
+    record FileStorage(File file) implements NodeStorageConfig {}
 
     static NodeStorageConfig none() {
       return new None();
     }
 
     static NodeStorageConfig tempFolder(TemporaryFolder tempFolder) {
-      return new TempFolder(tempFolder);
+      return file(tempFolder.getRoot());
+    }
+
+    static NodeStorageConfig file(File file) {
+      return new FileStorage(file);
     }
   }
 
@@ -301,8 +305,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     switch (this.nodeStorageConfig) {
       case NodeStorageConfig.None none -> {}
-      case NodeStorageConfig.TempFolder tempFolder -> {
-        final var tempFolderPath = tempFolder.tempFolder().getRoot().getAbsolutePath();
+      case NodeStorageConfig.FileStorage fileStorage -> {
+        final var tempFolderPath = fileStorage.file.getAbsolutePath();
         install(new PrefixedNodeStorageLocationModule(tempFolderPath));
 
         final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;
