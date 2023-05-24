@@ -12,7 +12,7 @@ See [here for a full end-to-end example working with the TypeScript Radix Engine
 
 ## Client creation
 
-You can instantiate a Core API Client with the `CoreApiClient.function` method and various configuration options.
+You can instantiate a Core API Client with `CoreApiClient.initialize({ ... })` and various configuration options.
 The options you provide will depend on how your node is configured, and how you're connecting to it.
 
 The client checks that it can connect to the Core API at `initialize` time.
