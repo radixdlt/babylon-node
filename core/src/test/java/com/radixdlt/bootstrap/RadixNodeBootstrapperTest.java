@@ -66,14 +66,17 @@ package com.radixdlt.bootstrap;
 
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.genesis.*;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -82,7 +85,6 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.cli.ParseException;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -96,9 +98,7 @@ public final class RadixNodeBootstrapperTest {
     final var network = Network.LOCALNET;
     final var genesisStore = new GenesisFileStore(new File(tmpFolder.getRoot(), "genesis.bin"));
 
-    final var genesisTxn1 =
-        Hex.toHexString(
-            ECKeyPair.fromSeed(new byte[] {1, 2, 3}).getPublicKey().getCompressedBytes());
+    final var genesisTxn1 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn1));
     final var nodeHandle1 =
@@ -112,9 +112,7 @@ public final class RadixNodeBootstrapperTest {
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
     // Let's try again, same genesis store but a different genesis txn
-    final var genesisTxn2 =
-        Hex.toHexString(
-            ECKeyPair.fromSeed(new byte[] {9, 8, 7}).getPublicKey().getCompressedBytes());
+    final var genesisTxn2 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties2 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn2));
     final var nodeHandle2 =
@@ -135,8 +133,7 @@ public final class RadixNodeBootstrapperTest {
 
     // This transaction matches the genesis of GENESIS_TEST network
     final var genesisTxn1 =
-        Hex.toHexString(
-            ECKeyPair.fromSeed(new byte[] {1, 2, 3}).getPublicKey().getCompressedBytes());
+        encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn1));
     final var nodeHandle1 =
@@ -151,8 +148,7 @@ public final class RadixNodeBootstrapperTest {
 
     // This transaction doesn't match the genesis of GENESIS_TEST network
     final var genesisTxn2 =
-        Hex.toHexString(
-            ECKeyPair.fromSeed(new byte[] {4, 4, 4}).getPublicKey().getCompressedBytes());
+        encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {9, 9, 9})));
     final var properties2 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn2));
     final var nodeHandle2 =
@@ -224,5 +220,30 @@ public final class RadixNodeBootstrapperTest {
             .bootstrapRadixNode();
 
     assertTrue(nodeHandle instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
+  }
+
+  private GenesisData genesisWithSingleValidator(ECKeyPair key) {
+    return new GenesisData(
+        ImmutableList.of(
+            new GenesisDataChunk.Validators(
+                ImmutableList.of(
+                    new GenesisValidator(
+                        key.getPublicKey(),
+                        true,
+                        true,
+                        ImmutableList.of(),
+                        Address.virtualAccountAddress(key.getPublicKey()))))),
+        UInt64.fromNonNegativeLong(1),
+        UInt32.fromNonNegativeInt(1),
+        UInt64.fromNonNegativeLong(1),
+        UInt64.fromNonNegativeLong(1),
+        1);
+  }
+
+  private String encodeToString(GenesisData genesisData) {
+    return Base64.getEncoder()
+        .encodeToString(
+            StateManagerSbor.encode(
+                genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
   }
 }
