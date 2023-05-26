@@ -120,18 +120,11 @@ task buildRustForDocker(type: Exec) {
     // Trigger a custom error message on failure...
     ignoreExitValue true
     if (project.hasProperty('ci')) {
-        def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
-        def rustCacheRepo = "europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/babylon-node"
         def envRustProfile =
                 (project.property("rustBinaryBuildType") == "" || project.property("rustBinaryBuildType") == null) ? "release"
                 : project.property("rustBinaryBuildType") == "debug" ? "dev"
                 : project.property("rustBinaryBuildType")
-        def cacheTag = project.properties['cacheBranch'] ?: "latest"
-        def cacheRef = "$rustCacheRepo:$cacheTag-$target-$envRustProfile"
-        def tag = "$rustBuilderRepo:$cacheTag"
         project.logger.lifecycle("Running build in CI:")
-        project.logger.lifecycle("- tag: $tag")
-        project.logger.lifecycle("- cacheRef: $cacheRef")
         def dockerMultiStageCmd = """
             set -ex
 
@@ -147,7 +140,6 @@ task buildRustForDocker(type: Exec) {
                 --cache-from type=local,src=/tmp/outputs/cache/docker \
                 --cache-to type=local,dest=/tmp/outputs/cache/docker,mode=max \
                 --platform $dockerPlatform \
-                --tag $tag \
                 --target library-container \
                 --output type=local,dest=$outputDir/ \
                 .
