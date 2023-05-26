@@ -87,8 +87,10 @@ public final class GenesisFileStore implements GenesisStore {
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     if (!file.exists()) {
       try {
-        file.getParentFile().mkdirs();
-        file.createNewFile();
+        final var unused = file.getParentFile().mkdirs();
+        if (!file.createNewFile()) {
+          throw new RuntimeException("Genesis file doesn't exist and failed to create");
+        }
       } catch (IOException e) {
         throw new RuntimeException("Genesis file doesn't exist and failed to create", e);
       }
