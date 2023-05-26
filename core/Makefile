@@ -49,12 +49,15 @@ buildx-driver:
 
 
 
-.PHONY: build-push-using-remote-cache
-build-push-using-remote-cache:  buildx-driver gcloud-token build-core
+.PHONY: build-push-using-local-cache
+build-push-using-local-cache:  buildx-driver gcloud-token build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
+# Use local cache instead remote cache.
+# Remote cache has shown to be too expensive in the long run.
+# Might be reintroduced with private DockerHub Images if sufficient image-pulls are available
 	$(shell cd ../ && DOCKER_BUILDKIT=1 docker buildx build \
-          --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache \
-          --cache-to=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=min \
+		  --cache-from=type=local,src=/tmp/outputs/cache/docker \
+		  --cache-to=type=local,dest=/tmp/outputs/cache/docker,mode=min \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile . --push)
 
 .PHONY: run-docker-node
