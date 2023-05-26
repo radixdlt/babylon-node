@@ -137,7 +137,9 @@ task buildRustForDocker(type: Exec) {
 
             if [ -d $outputDir ]; then rm -Rf $outputDir; fi
             export DOCKER_BUILDKIT=1
-
+// Use local cache instead remote cache.
+// Remote cache has shown to be too expensive in the long run.
+// Might be reintroduced with private DockerHub Images if sufficient image-pulls are available
             docker buildx build \
                 --file Dockerfile \
                 --build-arg RUST_PROFILE=$envRustProfile \
