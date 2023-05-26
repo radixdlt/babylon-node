@@ -72,6 +72,7 @@ USER nobody
 # LAYER: Keygen
 # An alternative build target that executes the keygeneration
 # =================================================================================================
+# hadolint ignore=DL3029
 FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine AS keygen
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
@@ -104,6 +105,7 @@ WORKDIR /app
 
 # Install dependencies needed for building the Rust library
 # - NB: ca-certificates is needed for the rustup installation, and is not a fixed version for security reasons
+# hadolint ignore=DL3008
 RUN apt-get update \
   && apt-get -y --no-install-recommends install \
     ca-certificates \
