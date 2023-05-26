@@ -266,7 +266,7 @@ impl From<JavaCommitRequest> for CommitRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
     pub parent_accumulator_hash: JavaHashCode,
     pub previous_vertices: Vec<JavaPreviousVertex>,
@@ -274,8 +274,8 @@ pub struct JavaPrepareRequest {
     pub is_fallback: bool,
     pub epoch: u64,
     pub round: u64,
-    pub gap_round_leader_keys: Vec<EcdsaSecp256k1PublicKey>,
-    pub proposer_key: EcdsaSecp256k1PublicKey,
+    pub gap_round_leader_addresses: Vec<ComponentAddress>,
+    pub proposer_address: ComponentAddress,
     pub proposer_timestamp_ms: i64,
 }
 
@@ -296,8 +296,8 @@ impl From<JavaPrepareRequest> for PrepareRequest {
             is_fallback: prepare_request.is_fallback,
             epoch: prepare_request.epoch,
             round: prepare_request.round,
-            gap_round_leader_keys: prepare_request.gap_round_leader_keys,
-            proposer_key: prepare_request.proposer_key,
+            gap_round_leader_addresses: prepare_request.gap_round_leader_addresses,
+            proposer_address: prepare_request.proposer_address,
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
         }
     }

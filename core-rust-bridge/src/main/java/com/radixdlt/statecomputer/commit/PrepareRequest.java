@@ -65,7 +65,7 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -79,8 +79,8 @@ public record PrepareRequest(
     boolean isFallback,
     UInt64 epoch,
     UInt64 roundNumber,
-    List<ECDSASecp256k1PublicKey> gapRoundLeaderKeys,
-    ECDSASecp256k1PublicKey proposerKey,
+    List<ComponentAddress> gapRoundLeaderAddresses,
+    ComponentAddress proposerAddress,
     long proposerTimestampMs) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

@@ -759,8 +759,8 @@ pub struct PrepareRequest {
     pub is_fallback: bool,
     pub epoch: u64,
     pub round: u64,
-    pub gap_round_leader_keys: Vec<EcdsaSecp256k1PublicKey>,
-    pub proposer_key: EcdsaSecp256k1PublicKey,
+    pub gap_round_leader_addresses: Vec<ComponentAddress>,
+    pub proposer_address: ComponentAddress,
     pub proposer_timestamp_ms: i64,
 }
 

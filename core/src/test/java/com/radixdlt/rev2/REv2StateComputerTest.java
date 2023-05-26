@@ -143,16 +143,18 @@ public class REv2StateComputerTest {
             Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
             Map.of(),
             UInt64.fromNonNegativeLong(10));
-    var accumulatorHash =
+    var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
     var validTransaction =
         REv2TestTransactions.constructValidRawTransaction(ScryptoConstants.FAUCET_ADDRESS, 0, 0);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, false, 0, ONLY_VALIDATOR_ID, 1000, 1000);
+    var roundDetails =
+        new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
     var result =
-        stateComputer.prepare(accumulatorHash, List.of(), List.of(validTransaction), roundDetails);
+        stateComputer.prepare(
+            genesisResult.accumulatorHash(), List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).isEmpty();
@@ -170,16 +172,17 @@ public class REv2StateComputerTest {
             Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
             Map.of(),
             UInt64.fromNonNegativeLong(10));
-    var accumulatorHash =
+    var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, false, 0, ONLY_VALIDATOR_ID, 1000, 1000);
+    var roundDetails =
+        new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
     var result =
         stateComputer.prepare(
-            accumulatorHash, List.of(), List.of(invalidTransaction), roundDetails);
+            genesisResult.accumulatorHash(), List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).hasSize(1);

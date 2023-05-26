@@ -95,7 +95,7 @@ use radix_engine::system::bootstrap::{
     create_genesis_data_ingestion_transaction, create_genesis_wrap_up_transaction,
     create_system_bootstrap_transaction, GenesisDataChunk,
 };
-use radix_engine_common::crypto::{EcdsaSecp256k1PublicKey, Hash};
+use radix_engine_common::crypto::Hash;
 use radix_engine_interface::blueprints::epoch_manager::{LeaderProposalHistory, ValidatorIndex};
 use radix_engine_interface::constants::GENESIS_HELPER;
 use radix_engine_interface::data::manifest::manifest_encode;
@@ -311,23 +311,23 @@ where
 
         // Round Update
         // TODO: Unify this with the proposed payloads execution
-        let validator_index_by_key = Self::to_validator_set_index(epoch_header);
+        let validator_index_by_address = Self::to_validator_set_index(epoch_header);
         let round_update = ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
             epoch: prepare_request.epoch,
             round: prepare_request.round,
             leader_proposal_history: LeaderProposalHistory {
                 gap_round_leaders: prepare_request
-                    .gap_round_leader_keys
+                    .gap_round_leader_addresses
                     .iter()
-                    .map(|leader_key| {
-                        *validator_index_by_key
-                            .get(leader_key)
+                    .map(|leader_address| {
+                        *validator_index_by_address
+                            .get(leader_address)
                             .expect("gap round leader must belong to the validator set")
                     })
                     .collect::<Vec<_>>(),
-                current_leader: *validator_index_by_key
-                    .get(&prepare_request.proposer_key)
+                current_leader: *validator_index_by_address
+                    .get(&prepare_request.proposer_address)
                     .expect("proposer must belong to the validator set"),
                 is_fallback: prepare_request.is_fallback,
             },
@@ -508,19 +508,21 @@ where
         }
     }
 
-    fn to_validator_set_index(
-        epoch_header: LedgerHeader,
-    ) -> NonIterMap<EcdsaSecp256k1PublicKey, u8> {
+    fn to_validator_set_index(epoch_header: LedgerHeader) -> NonIterMap<ComponentAddress, u8> {
         epoch_header
             .next_epoch
             .expect("epoch header must contain next epoch information")
             .validator_set
             .into_iter()
-            .map(|validator_info| validator_info.key)
+            .map(|validator_info| {
+                validator_info
+                    .address
+                    .expect("validators from active validator set must have addresses")
+            })
             .enumerate()
-            .map(|(validator_index, validator_key)| {
+            .map(|(validator_index, validator_address)| {
                 (
-                    validator_key,
+                    validator_address,
                     ValidatorIndex::try_from(validator_index)
                         .expect("validator set size limit guarantees this"),
                 )
