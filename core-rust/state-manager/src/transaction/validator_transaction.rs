@@ -6,15 +6,15 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use transaction::model::*;
 
-#[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
     RoundUpdate {
         proposer_timestamp_ms: i64,
         // We include epoch because our current database implementation needs
         // to ensure all ledger payloads are unique.
-        // Currently scrypto epoch != consensus epoch, but this will change
-        consensus_epoch: u64,
-        round_in_epoch: u64,
+        epoch: u64,
+        round: u64,
+        leader_proposal_history: LeaderProposalHistory,
     },
 }
 
@@ -25,32 +25,26 @@ impl ValidatorTransaction {
 
         let instructions = match self {
             ValidatorTransaction::RoundUpdate {
-                proposer_timestamp_ms: timestamp_ms,
-                round_in_epoch,
-                ..
+                proposer_timestamp_ms,
+                epoch: _, // we deliberately ignore this bit, which is only needed for transaction uniqueness
+                round,
+                leader_proposal_history,
             } => {
                 let update_time = Instruction::CallMethod {
                     component_address: CLOCK,
                     method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-                    args: manifest_decode::<ManifestValue>(
-                        &manifest_encode(&ClockSetCurrentTimeInput {
-                            current_time_ms: *timestamp_ms,
-                        })
-                        .unwrap(),
-                    )
-                    .unwrap(),
+                    args: to_manifest_value(&ClockSetCurrentTimeInput {
+                        current_time_ms: *proposer_timestamp_ms,
+                    }),
                 };
-
-                // TODO: Fix this to be correct when we pass through the relevant data from the engine.
-                let next_round_input = EpochManagerNextRoundInput::successful(*round_in_epoch, 0);
 
                 let update_round = Instruction::CallMethod {
                     component_address: EPOCH_MANAGER,
                     method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                    args: manifest_decode::<ManifestValue>(
-                        &manifest_encode(&next_round_input).unwrap(),
-                    )
-                    .unwrap(),
+                    args: to_manifest_value(&EpochManagerNextRoundInput {
+                        round: *round,
+                        leader_proposal_history: leader_proposal_history.clone(),
+                    }),
                 };
 
                 vec![update_time, update_round]

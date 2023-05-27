@@ -244,18 +244,14 @@ pub fn to_api_next_epoch(
     context: &MappingContext,
     next_epoch: (BTreeMap<ComponentAddress, Validator>, u64),
 ) -> Result<models::NextEpoch, MappingError> {
-    let mut sorted_validators: Vec<(ComponentAddress, Validator)> =
-        next_epoch.0.into_iter().map(|e| (e.0, e.1)).collect();
-    sorted_validators.sort_by(|a, b| b.1.stake.cmp(&a.1.stake));
-
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, next_epoch.1)?,
-        validators: sorted_validators
+        validators: next_epoch
+            .0
             .into_iter()
             .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
             .collect::<Result<_, _>>()?,
     };
-
     Ok(next_epoch)
 }
 

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.LeaderProposalHistory;
 import com.radixdlt.api.core.generated.models.RoundUpdateValidatorTransaction;
 import com.radixdlt.api.core.generated.models.RoundUpdateValidatorTransactionAllOf;
 import com.radixdlt.api.core.generated.models.ValidatorTransaction;
@@ -42,7 +43,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   RoundUpdateValidatorTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP,
   RoundUpdateValidatorTransaction.JSON_PROPERTY_CONSENSUS_EPOCH,
-  RoundUpdateValidatorTransaction.JSON_PROPERTY_ROUND_IN_EPOCH
+  RoundUpdateValidatorTransaction.JSON_PROPERTY_ROUND_IN_EPOCH,
+  RoundUpdateValidatorTransaction.JSON_PROPERTY_LEADER_PROPOSAL_HISTORY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -63,6 +65,9 @@ public class RoundUpdateValidatorTransaction extends ValidatorTransaction {
 
   public static final String JSON_PROPERTY_ROUND_IN_EPOCH = "round_in_epoch";
   private Long roundInEpoch;
+
+  public static final String JSON_PROPERTY_LEADER_PROPOSAL_HISTORY = "leader_proposal_history";
+  private LeaderProposalHistory leaderProposalHistory;
 
   public RoundUpdateValidatorTransaction() { 
   }
@@ -149,6 +154,32 @@ public class RoundUpdateValidatorTransaction extends ValidatorTransaction {
   }
 
 
+  public RoundUpdateValidatorTransaction leaderProposalHistory(LeaderProposalHistory leaderProposalHistory) {
+    this.leaderProposalHistory = leaderProposalHistory;
+    return this;
+  }
+
+   /**
+   * Get leaderProposalHistory
+   * @return leaderProposalHistory
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEADER_PROPOSAL_HISTORY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LeaderProposalHistory getLeaderProposalHistory() {
+    return leaderProposalHistory;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEADER_PROPOSAL_HISTORY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLeaderProposalHistory(LeaderProposalHistory leaderProposalHistory) {
+    this.leaderProposalHistory = leaderProposalHistory;
+  }
+
+
   /**
    * Return true if this RoundUpdateValidatorTransaction object is equal to o.
    */
@@ -164,12 +195,13 @@ public class RoundUpdateValidatorTransaction extends ValidatorTransaction {
     return Objects.equals(this.proposerTimestamp, roundUpdateValidatorTransaction.proposerTimestamp) &&
         Objects.equals(this.consensusEpoch, roundUpdateValidatorTransaction.consensusEpoch) &&
         Objects.equals(this.roundInEpoch, roundUpdateValidatorTransaction.roundInEpoch) &&
+        Objects.equals(this.leaderProposalHistory, roundUpdateValidatorTransaction.leaderProposalHistory) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerTimestamp, consensusEpoch, roundInEpoch, super.hashCode());
+    return Objects.hash(proposerTimestamp, consensusEpoch, roundInEpoch, leaderProposalHistory, super.hashCode());
   }
 
   @Override
@@ -180,6 +212,7 @@ public class RoundUpdateValidatorTransaction extends ValidatorTransaction {
     sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("    consensusEpoch: ").append(toIndentedString(consensusEpoch)).append("\n");
     sb.append("    roundInEpoch: ").append(toIndentedString(roundInEpoch)).append("\n");
+    sb.append("    leaderProposalHistory: ").append(toIndentedString(leaderProposalHistory)).append("\n");
     sb.append("}");
     return sb.toString();
   }
