@@ -80,6 +80,7 @@ import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -131,9 +132,13 @@ public final class REv2RegisterValidatorTest {
       test.startAllNodes();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
+      var ownerAccount = Address.virtualAccountAddress(TEST_KEY.getPublicKey());
       var createValidatorTransaction =
-          REv2TestTransactions.constructCreateValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.createValidator(TEST_KEY.getPublicKey(), ownerAccount))
+              .prepare()
+              .toRaw();
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
           allCommittedTransactionSuccess(createValidatorTransaction),
@@ -149,23 +154,18 @@ public final class REv2RegisterValidatorTest {
 
       // Act: Submit transaction to mempool and run consensus
       var stakeValidatorTransaction =
-          REv2TestTransactions.constructStakeValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.stakeValidator(validatorAddress, ownerAccount))
+              .prepare()
+              .toRaw();
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
 
       var registerValidatorTransaction =
-          REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
+              .prepare()
+              .toRaw();
+      ;
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
       // Sanity check that they both get committed

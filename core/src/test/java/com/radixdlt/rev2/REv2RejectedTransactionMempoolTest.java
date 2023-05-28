@@ -145,7 +145,7 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Arrange
       var rawRejectableTransaction =
-          REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
+          TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare().toRaw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
@@ -153,7 +153,7 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Act: Submit valid transaction to mempool
       mempoolDispatcher.dispatch(
-          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(faucet, 0, 0)));
+          MempoolAdd.create(TransactionBuilder.forTests().prepare().toRaw()));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
@@ -187,15 +187,10 @@ public class REv2RejectedTransactionMempoolTest {
 
       // create account
       var accountTxn =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructNewAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.newAccountAllowAllOwner())
+              .prepare()
+              .toRaw();
       executeTransaction(test, accountTxn);
       var transactionDetails =
           NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), accountTxn);
@@ -203,41 +198,27 @@ public class REv2RejectedTransactionMempoolTest {
 
       // deposit xrd into it
       var depositTxn =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructDepositFromFaucetManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.depositFromFaucet(accountAddress))
+              .prepare()
+              .toRaw();
       executeTransaction(test, depositTxn);
 
       // dispatch 2 competing transactions (depositing from the above account)
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
       var transferTxn1 =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.drainAccount(accountAddress))
+              .prepare()
+              .toRaw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              1,
-              REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.drainAccount(accountAddress))
+              .prepare()
+              .toRaw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 

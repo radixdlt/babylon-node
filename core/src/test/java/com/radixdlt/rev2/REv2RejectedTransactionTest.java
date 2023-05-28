@@ -156,7 +156,11 @@ public final class REv2RejectedTransactionTest {
 
     try (var test = createTest(proposalGenerator)) {
       var rawRejectableTransaction =
-          REv2TestTransactions.validButRejectTransaction(1, 1).constructRawTransaction();
+          TransactionBuilder.forTests()
+              .manifest(Manifest.validButReject())
+              .fromEpoch(1)
+              .prepare()
+              .toRaw();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

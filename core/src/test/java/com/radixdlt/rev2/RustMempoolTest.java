@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransaction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -108,9 +107,9 @@ public final class RustMempoolTest {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var faucet = ScryptoConstants.FAUCET_ADDRESS;
-      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
-      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
-      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
+      final var transaction1 = constructValidRawTransaction(0, 0);
+      final var transaction2 = constructValidRawTransaction(0, 1);
+      final var transaction3 = constructValidRawTransaction(0, 2);
 
       assertEquals(0, rustMempool.getCount());
 
@@ -171,10 +170,9 @@ public final class RustMempoolTest {
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
-      final var faucet = ScryptoConstants.FAUCET_ADDRESS;
-      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
-      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
-      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
+      final var transaction1 = constructValidRawTransaction(0, 0);
+      final var transaction2 = constructValidRawTransaction(0, 1);
+      final var transaction3 = constructValidRawTransaction(0, 2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -297,10 +295,9 @@ public final class RustMempoolTest {
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
-      final var faucet = ScryptoConstants.FAUCET_ADDRESS;
-      final var transaction1 = constructValidRawTransaction(faucet, 0, 0);
-      final var transaction2 = constructValidRawTransaction(faucet, 0, 1);
-      final var transaction3 = constructValidRawTransaction(faucet, 0, 2);
+      final var transaction1 = constructValidRawTransaction(0, 0);
+      final var transaction2 = constructValidRawTransaction(0, 1);
+      final var transaction3 = constructValidRawTransaction(0, 2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);
@@ -334,5 +331,9 @@ public final class RustMempoolTest {
       returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 3 - 1);
       assertEquals(2, returnedList.size());
     }
+  }
+
+  private static RawNotarizedTransaction constructValidRawTransaction(long fromEpoch, int nonce) {
+    return TransactionBuilder.forTests().fromEpoch(fromEpoch).nonce(nonce).prepare().toRaw();
   }
 }

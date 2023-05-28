@@ -68,7 +68,29 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::ComponentAddress;
+use radix_engine_common::prelude::{Bech32Encoder, NetworkDefinition};
+use radix_engine_common::types::NodeId;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |(network_definition, address_data): (NetworkDefinition, Vec<u8>)| -> Result<String, String> {
+            if address_data.len() != NodeId::LENGTH {
+                return Err(format!("Raw address length must be {}", NodeId::LENGTH));
+            }
+
+            Bech32Encoder::new(&network_definition).encode(&address_data)
+                .map_err(|err| format!("{err:?}"))
+        },
+    )
+}
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(

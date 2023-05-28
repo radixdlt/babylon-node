@@ -76,9 +76,11 @@ import com.radixdlt.utils.Pair;
 /** Performs Bech32m encoding/decoding. */
 public final class Addressing {
   private final Network network;
+  private final NetworkDefinition networkDefinition;
 
   private Addressing(Network network) {
     this.network = network;
+    this.networkDefinition = NetworkDefinition.from(network);
   }
 
   public static Addressing ofNetwork(Network network) {
@@ -93,8 +95,16 @@ public final class Addressing {
     return ofNetwork(Network.ofIdOrThrow(networkId));
   }
 
-  public String encodePackageAddress(PackageAddress packageAddress) {
-    return Bech32mCoder.encode(network.getPackageHrp(), packageAddress.value());
+  public String encode(PackageAddress address) {
+    return address.encode(this.networkDefinition);
+  }
+
+  public String encode(ComponentAddress address) {
+    return address.encode(this.networkDefinition);
+  }
+
+  public String encode(ResourceAddress address) {
+    return address.encode(this.networkDefinition);
   }
 
   public PackageAddress decodePackageAddress(String address) {
@@ -102,44 +112,22 @@ public final class Addressing {
         Bech32mCoder.decodeWithExpectedHrp(network.getPackageHrp(), address));
   }
 
-  public String encodeResourceAddress(ResourceAddress resourceAddress) {
-    return Bech32mCoder.encode(network.getResourceHrp(), resourceAddress.value());
-  }
-
   public ResourceAddress decodeResourceAddress(String address) {
     return ResourceAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getResourceHrp(), address));
   }
 
-  public String encodeNormalComponentAddress(ComponentAddress componentAddress) {
-    // TODO - checks on first byte of address
-    return Bech32mCoder.encode(network.getNormalComponentHrp(), componentAddress.value());
-  }
-
   public ComponentAddress decodeNormalComponentAddress(String address) {
-    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getNormalComponentHrp(), address));
   }
 
-  public String encodeAccountAddress(ComponentAddress componentAddress) {
-    // TODO - checks on first byte of address
-    return Bech32mCoder.encode(network.getAccountComponentHrp(), componentAddress.value());
-  }
-
   public ComponentAddress decodeAccountAddress(String address) {
-    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
   }
 
-  public String encodeValidatorAddress(ComponentAddress systemAddress) {
-    // TODO - checks on first byte of address
-    return Bech32mCoder.encode(network.getValidatorHrp(), systemAddress.value());
-  }
-
   public ComponentAddress decodeValidatorAddress(String address) {
-    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getValidatorHrp(), address));
   }

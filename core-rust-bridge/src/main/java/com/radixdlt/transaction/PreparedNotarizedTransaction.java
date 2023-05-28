@@ -64,94 +64,37 @@
 
 package com.radixdlt.transaction;
 
-import static com.radixdlt.lang.Tuple.tuple;
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.Bytes;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.*;
-import com.radixdlt.exceptions.ManifestCompilationException;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.TransactionHeader;
-import com.radixdlt.sbor.Natives;
-import java.util.List;
-
-public final class TransactionBuilder {
-  static {
-    // This is idempotent with the other calls
-    System.loadLibrary("corerust");
+public record PreparedNotarizedTransaction(
+    byte[] notarizedTransactionBytes,
+    HashCode intentHash,
+    HashCode signedIntentHash,
+    HashCode notarizedTransactionHash
+) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreparedNotarizedTransaction.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedNotarizedTransaction.class, codecs));
   }
 
-  public static byte[] compileManifest(
-      NetworkDefinition network, String manifest, List<byte[]> blobs) {
-    return compileManifestFunc
-        .call(tuple(network, manifest, blobs))
-        .unwrap(ManifestCompilationException::new);
+  public String hexIntentHash() {
+    return Bytes.toHexString(this.intentHash.asBytes());
   }
 
-  public static byte[] createIntent(
-      NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
-    return createIntentFunc
-        .call(tuple(network, header, manifest, blobs))
-        .unwrap(ManifestCompilationException::new);
+  public String hexNotarizedTransactionHash() {
+    return Bytes.toHexString(this.intentHash.asBytes());
   }
 
-  public static byte[] createSignedIntentBytes(
-      byte[] intent, List<SignatureWithPublicKey> signatures) {
-
-    return createSignedIntentBytesFunc.call(tuple(intent, signatures));
+  public String hexPayloadBytes() {
+    return Bytes.toHexString(this.notarizedTransactionBytes);
   }
 
-  public static byte[] createNotarizedBytes(byte[] signedIntent, Signature signature) {
-    return createNotarizedBytesFunc.call(tuple(signedIntent, signature));
+  public RawNotarizedTransaction toRaw() {
+    return RawNotarizedTransaction.create(this.notarizedTransactionBytes);
   }
-
-  private static final Natives.Call1<
-          Tuple.Tuple3<NetworkDefinition, String, List<byte[]>>, Result<byte[], String>>
-      compileManifestFunc =
-          Natives.builder(TransactionBuilder::compileManifest).build(new TypeToken<>() {});
-
-  private static native byte[] compileManifest(byte[] payload);
-
-  private static final Natives.Call1<
-          Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
-          Result<byte[], String>>
-      createIntentFunc =
-          Natives.builder(TransactionBuilder::createIntent).build(new TypeToken<>() {});
-
-  private static native byte[] createIntent(byte[] requestPayload);
-
-  private static final Natives.Call1<Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, byte[]>
-      createSignedIntentBytesFunc =
-          Natives.builder(TransactionBuilder::createSignedIntentBytes).build(new TypeToken<>() {});
-
-  private static native byte[] createSignedIntentBytes(byte[] requestPayload);
-
-  private static final Natives.Call1<Tuple.Tuple2<byte[], Signature>, byte[]>
-      createNotarizedBytesFunc =
-          Natives.builder(TransactionBuilder::createNotarizedBytes).build(new TypeToken<>() {});
-
-  private static native byte[] createNotarizedBytes(byte[] requestPayload);
-
-  public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
-    return userTransactionToLedger.call(userTransactionBytes);
-  }
-
-  public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
-      byte[] transactionBytes) {
-    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
-  }
-
-  private static final Natives.Call1<byte[], byte[]> userTransactionToLedger =
-      Natives.builder(TransactionBuilder::userTransactionToLedger).build(new TypeToken<>() {});
-
-  private static final Natives.Call1<byte[], Option<byte[]>>
-      transactionBytesToNotarizedTransactionBytesFn =
-          Natives.builder(TransactionBuilder::transactionBytesToNotarizedTransactionBytes)
-              .build(new TypeToken<>() {});
-
-  private static native byte[] userTransactionToLedger(byte[] requestPayload);
-
-  private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }

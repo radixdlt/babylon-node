@@ -70,8 +70,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.rev2.REv2TestTransactions;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.TransactionBuilder;
 import org.junit.Test;
 
 public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
@@ -79,9 +79,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
-      var rawTransaction = transaction.constructRawTransaction();
-      var intentHash = transaction.hashedIntent().asBytes();
+      var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction
       var response =
@@ -89,7 +87,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
 
       assertThat(response.getDuplicate()).isFalse();
 
@@ -99,12 +97,12 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(Bytes.toHexString(intentHash)));
+                      .intentHash(transaction.hexIntentHash()));
 
       assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
-      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 1000);
 
       // Check the status response again
       var statusResponse2 =
@@ -112,7 +110,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(Bytes.toHexString(intentHash)));
+                      .intentHash(transaction.hexIntentHash()));
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
@@ -123,8 +121,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("try")
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
     try (var ignored = buildRunningServerTest()) {
-      var rawTransaction =
-          REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
+      var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
 
       var response =
           assertErrorResponseOfType(
@@ -133,8 +130,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .transactionSubmitPost(
                           new TransactionSubmitRequest()
                               .network(networkLogicalName)
-                              .notarizedTransactionHex(
-                                  Bytes.toHexString(rawTransaction.getPayload()))),
+                              .notarizedTransactionHex(transaction.hexPayloadBytes())),
               TransactionSubmitErrorResponse.class);
 
       var details = response.getDetails();
@@ -160,9 +156,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
     try (var test = buildRunningServerTest(100)) {
-      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 2, 0);
-      var rawTransaction = transaction.constructRawTransaction();
-      var intentHash = transaction.hashedIntent().asBytes();
+      var transaction = TransactionBuilder.forTests().fromEpoch(2).prepare();
 
       var response =
           assertErrorResponseOfType(
@@ -171,8 +165,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .transactionSubmitPost(
                           new TransactionSubmitRequest()
                               .network(networkLogicalName)
-                              .notarizedTransactionHex(
-                                  Bytes.toHexString(rawTransaction.getPayload()))),
+                              .notarizedTransactionHex(transaction.hexPayloadBytes())),
               TransactionSubmitErrorResponse.class);
 
       var details = response.getDetails();
@@ -201,11 +194,11 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
       assertThat(response2.getDuplicate()).isFalse();
 
       // And get committed...
-      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 1000);
 
       // Check the status response again to check it's been marked as committed
       var statusResponse2 =
@@ -213,7 +206,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(Bytes.toHexString(intentHash)));
+                      .intentHash(transaction.hexIntentHash()));
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);

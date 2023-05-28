@@ -146,8 +146,7 @@ public class REv2StateComputerTest {
     var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
-    var validTransaction =
-        REv2TestTransactions.constructValidRawTransaction(ScryptoConstants.FAUCET_ADDRESS, 0, 0);
+    var validTransaction = TransactionBuilder.forTests().prepare().toRaw();
 
     // Act
     var roundDetails =

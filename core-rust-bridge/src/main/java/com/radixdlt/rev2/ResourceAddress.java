@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -89,6 +90,10 @@ public record ResourceAddress(byte[] value) {
       throw new IllegalArgumentException("Invalid resource address length");
     }
     return new ResourceAddress(addressBytes);
+  }
+
+  public String encode(NetworkDefinition networkDefinition) {
+    return Bech32mCoder.encodeAddress(networkDefinition, this.value);
   }
 
   public String toHexString() {

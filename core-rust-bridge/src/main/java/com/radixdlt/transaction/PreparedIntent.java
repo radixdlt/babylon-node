@@ -62,10 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.exceptions;
+package com.radixdlt.transaction;
 
-public class ManifestCompilationException extends RuntimeException {
-  public ManifestCompilationException(String message) {
-    super(message);
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+
+public record PreparedIntent(
+    byte[] intentBytes,
+    HashCode intentHash
+) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreparedIntent.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedIntent.class, codecs));
   }
 }

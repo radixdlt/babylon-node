@@ -62,51 +62,84 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::network::NetworkDefinition;
+package com.radixdlt.transaction;
 
-use transaction::manifest::{compile, CompileError};
-use transaction::model::{
-    NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
-    TransactionHeader, TransactionIntent, TransactionManifest,
-};
+import static com.radixdlt.lang.Tuple.tuple;
 
-pub fn create_intent_bytes(
-    network_definition: &NetworkDefinition,
-    header: TransactionHeader,
-    manifest_str: String,
-    blobs: Vec<Vec<u8>>,
-) -> Result<Vec<u8>, CompileError> {
-    let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
-    let intent = TransactionIntent { header, manifest };
-    Ok(intent.to_bytes().unwrap())
-}
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.*;
+import com.radixdlt.exceptions.TransactionPreparationException;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.TransactionHeader;
+import com.radixdlt.sbor.Natives;
+import java.util.List;
 
-pub fn create_manifest(
-    network_definition: &NetworkDefinition,
-    manifest_str: &str,
-    blobs: Vec<Vec<u8>>,
-) -> Result<TransactionManifest, CompileError> {
-    compile(manifest_str, network_definition, blobs)
-}
+public final class TransactionPreparer {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
 
-pub fn create_signed_intent_bytes(
-    intent: TransactionIntent,
-    signatures: Vec<SignatureWithPublicKey>,
-) -> Vec<u8> {
-    let signed_intent = SignedTransactionIntent {
-        intent,
-        intent_signatures: signatures,
-    };
-    signed_intent.to_bytes().unwrap()
-}
+  public static PreparedIntent prepareIntent(
+      NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
+    return prepareIntentFunc
+        .call(tuple(network, header, manifest, blobs))
+        .unwrap(TransactionPreparationException::new);
+  }
 
-pub fn create_notarized_bytes(
-    signed_intent: SignedTransactionIntent,
-    notary_signature: Signature,
-) -> Vec<u8> {
-    let notarized = NotarizedTransaction {
-        signed_intent,
-        notary_signature,
-    };
-    notarized.to_bytes().unwrap()
+  private static final Natives.Call1<
+          Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
+          Result<PreparedIntent, String>>
+          prepareIntentFunc =
+          Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
+
+  public static PreparedSignedIntent prepareSignedIntent(
+      byte[] intent, List<SignatureWithPublicKey> signatures) {
+
+    return prepareSignedIntentBytesFunc.call(tuple(intent, signatures))
+            .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
+          prepareSignedIntentBytesFunc =
+          Natives.builder(TransactionPreparer::prepareSignedIntent).build(new TypeToken<>() {});
+
+  public static PreparedNotarizedTransaction prepareNotarizedTransaction(byte[] signedIntent, Signature signature) {
+    return prepareNotarizedTransactionFunc.call(tuple(signedIntent, signature))
+            .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<Tuple.Tuple2<byte[], Signature>, Result<PreparedNotarizedTransaction, String>>
+          prepareNotarizedTransactionFunc =
+          Natives.builder(TransactionPreparer::prepareNotarizedTransaction).build(new TypeToken<>() {});
+
+  public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
+    return userTransactionToLedger.call(userTransactionBytes);
+  }
+
+  private static final Natives.Call1<byte[], byte[]> userTransactionToLedger =
+          Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
+
+  public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
+          byte[] transactionBytes) {
+    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
+  }
+
+  private static final Natives.Call1<byte[], Option<byte[]>>
+          transactionBytesToNotarizedTransactionBytesFn =
+          Natives.builder(TransactionPreparer::transactionBytesToNotarizedTransactionBytes)
+                  .build(new TypeToken<>() {});
+
+  private static native byte[] prepareIntent(byte[] requestPayload);
+
+  private static native byte[] prepareSignedIntent(byte[] requestPayload);
+
+  private static native byte[] prepareNotarizedTransaction(byte[] requestPayload);
+
+  private static native byte[] userTransactionToLedger(byte[] requestPayload);
+
+  private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }

@@ -68,14 +68,12 @@ use crate::{
 };
 use node_common::java::*;
 use radix_engine::types::*;
+use transaction::builder::TransactionManifestV1;
 use std::fmt;
 use std::ops::Range;
 
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
-use transaction::model::{
-    NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
-    TransactionManifest,
-};
+use transaction::model::PreviewFlags;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, Categorize)]
 pub struct AccumulatorHash([u8; Self::LENGTH]);
@@ -376,197 +374,6 @@ impl fmt::Debug for LedgerReceiptHash {
     }
 }
 
-#[derive(
-    PartialEq,
-    Eq,
-    Hash,
-    Clone,
-    Copy,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
-pub struct UserPayloadHash([u8; Self::LENGTH]);
-
-impl UserPayloadHash {
-    pub const LENGTH: usize = 32;
-
-    pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self::for_manifest_encoded_notarized_transaction(manifest_encode(transaction).unwrap())
-    }
-
-    pub fn for_manifest_encoded_notarized_transaction<T: AsRef<[u8]>>(transaction: T) -> Self {
-        Self(blake2b_256_hash(transaction).0)
-    }
-
-    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
-        Self(hash_bytes)
-    }
-
-    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
-    }
-}
-
-impl AsRef<[u8]> for UserPayloadHash {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl fmt::Display for UserPayloadHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
-    }
-}
-
-impl fmt::Debug for UserPayloadHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("UserPayloadHash")
-            .field(&hex::encode(self.0))
-            .finish()
-    }
-}
-
-pub trait HasUserPayloadHash {
-    fn user_payload_hash(&self) -> UserPayloadHash;
-}
-
-impl HasUserPayloadHash for NotarizedTransaction {
-    fn user_payload_hash(&self) -> UserPayloadHash {
-        UserPayloadHash::for_transaction(self)
-    }
-}
-
-#[derive(
-    PartialEq,
-    Eq,
-    Hash,
-    Clone,
-    Copy,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
-pub struct SignaturesHash([u8; Self::LENGTH]);
-
-impl SignaturesHash {
-    pub const LENGTH: usize = 32;
-
-    pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(blake2b_256_hash(manifest_encode(signed_intent).unwrap()).0)
-    }
-
-    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
-        Self(hash_bytes)
-    }
-
-    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
-    }
-}
-
-impl AsRef<[u8]> for SignaturesHash {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl fmt::Display for SignaturesHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
-    }
-}
-
-impl fmt::Debug for SignaturesHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("SignaturesHash")
-            .field(&hex::encode(self.0))
-            .finish()
-    }
-}
-
-pub trait HasSignaturesHash {
-    fn signatures_hash(&self) -> SignaturesHash;
-}
-
-impl HasSignaturesHash for SignedTransactionIntent {
-    fn signatures_hash(&self) -> SignaturesHash {
-        SignaturesHash::for_signed_intent(self)
-    }
-}
-
-impl HasSignaturesHash for NotarizedTransaction {
-    fn signatures_hash(&self) -> SignaturesHash {
-        self.signed_intent.signatures_hash()
-    }
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct IntentHash([u8; Self::LENGTH]);
-
-impl IntentHash {
-    pub const LENGTH: usize = 32;
-
-    pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(blake2b_256_hash(manifest_encode(intent).unwrap()).0)
-    }
-
-    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
-        Self(hash_bytes)
-    }
-
-    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
-        self.0
-    }
-}
-
-impl AsRef<[u8]> for IntentHash {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl fmt::Display for IntentHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
-    }
-}
-
-impl fmt::Debug for IntentHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("IntentHash")
-            .field(&hex::encode(self.0))
-            .finish()
-    }
-}
-
-pub trait HasIntentHash {
-    fn intent_hash(&self) -> IntentHash;
-}
-
-impl HasIntentHash for TransactionIntent {
-    fn intent_hash(&self) -> IntentHash {
-        IntentHash::for_intent(self)
-    }
-}
-
-impl HasIntentHash for SignedTransactionIntent {
-    fn intent_hash(&self) -> IntentHash {
-        self.intent.intent_hash()
-    }
-}
-
-impl HasIntentHash for NotarizedTransaction {
-    fn intent_hash(&self) -> IntentHash {
-        self.signed_intent.intent.intent_hash()
-    }
-}
-
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
 pub struct StateHash([u8; Self::LENGTH]);
 
@@ -725,7 +532,7 @@ impl From<NotarizedTransaction> for PendingTransaction {
 
 #[derive(Debug)]
 pub struct PreviewRequest {
-    pub manifest: TransactionManifest,
+    pub manifest: TransactionManifestV1,
     pub explicit_epoch_range: Option<Range<u64>>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_as_signatory: bool,

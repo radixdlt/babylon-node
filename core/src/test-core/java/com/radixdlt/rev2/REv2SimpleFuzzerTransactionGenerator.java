@@ -68,7 +68,6 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
@@ -82,7 +81,6 @@ public final class REv2SimpleFuzzerTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private final Addressing addressing;
   private final Random random;
-  private int transactionNonce = 0;
 
   public REv2SimpleFuzzerTransactionGenerator(NetworkDefinition networkDefinition, Random random) {
     this.addressing = Addressing.ofNetwork(networkDefinition);
@@ -90,8 +88,7 @@ public final class REv2SimpleFuzzerTransactionGenerator
   }
 
   private String nextInstruction() {
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_ADDRESS);
+    final var faucetAddress = addressing.encode(ScryptoConstants.FAUCET_ADDRESS);
     return switch (random.nextInt(4)) {
       case 0 -> String.format(
           "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");", faucetAddress);
@@ -104,14 +101,15 @@ public final class REv2SimpleFuzzerTransactionGenerator
             """
                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                 """,
-            addressing.encodeAccountAddress(accountAddress));
+            addressing.encode(accountAddress));
       }
     };
   }
 
   @Override
   public RawNotarizedTransaction nextTransaction() {
-    final var keyPair = PrivateKeys.numeric(1 + random.nextInt(10)).findFirst().orElseThrow();
+    final var notaryAndExplicitSignatory =
+        PrivateKeys.numeric(1 + random.nextInt(10)).findFirst().orElseThrow();
     var manifestBuilder = new StringBuilder();
 
     var numInstructions = 1 + random.nextInt(20);
@@ -119,17 +117,11 @@ public final class REv2SimpleFuzzerTransactionGenerator
       manifestBuilder.append(this.nextInstruction());
     }
 
-    var header =
-        TransactionHeader.defaults(
-            NetworkDefinition.LOCAL_SIMULATOR,
-            0,
-            100,
-            transactionNonce++,
-            keyPair.getPublicKey().toPublicKey(),
-            false);
-    var intentBytes =
-        TransactionBuilder.createIntent(
-            NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString(), List.of());
-    return REv2TestTransactions.constructRawTransaction(intentBytes, keyPair, List.of(keyPair));
+    return TransactionBuilder.forNetwork(NetworkDefinition.LOCAL_SIMULATOR)
+        .manifest(manifestBuilder.toString())
+        .notary(notaryAndExplicitSignatory)
+        .signatories(List.of(notaryAndExplicitSignatory))
+        .prepare()
+        .toRaw();
   }
 }

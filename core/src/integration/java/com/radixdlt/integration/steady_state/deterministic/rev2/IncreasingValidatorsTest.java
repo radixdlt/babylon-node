@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
+import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -80,18 +81,16 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -136,18 +135,22 @@ public final class IncreasingValidatorsTest {
       var transactions =
           PrivateKeys.numeric(2)
               .map(
-                  k ->
-                      Pair.of(
-                          REv2TestTransactions.constructCreateValidatorTransaction(
-                              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0, 12, k),
-                          k))
+                  k -> {
+                    var ownerAccount = Address.virtualAccountAddress(k.getPublicKey());
+                    var createValidatorTransaction =
+                        TransactionBuilder.forTests()
+                            .manifest(Manifest.createValidator(k.getPublicKey(), ownerAccount))
+                            .prepare()
+                            .toRaw();
+                    return tuple(createValidatorTransaction, k, ownerAccount);
+                  })
               .limit(NUM_VALIDATORS - 1)
               .toList();
 
       // Create Validators
       for (var txn : transactions) {
         test.runForCount(100);
-        mempoolDispatcher.dispatch(MempoolAdd.create(txn.getFirst()));
+        mempoolDispatcher.dispatch(MempoolAdd.create(txn.first()));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
 
@@ -156,30 +159,24 @@ public final class IncreasingValidatorsTest {
         var txn = transactions.get(i);
         test.runForCount(1000);
         test.runUntilState(
-            nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst(), true, true)));
+            nodeAt(0, NodePredicate.committedUserTransaction(txn.first(), true, true)));
         var transactionDetails =
-            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), txn.getFirst());
+            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), txn.first());
         var validatorAddress = transactionDetails.newComponentAddresses().get(0);
         test.restartNodeWithConfig(
             i + 1,
             PhysicalNodeConfig.create(
                 PrivateKeys.ofNumeric(i + 2).getPublicKey(), validatorAddress));
         var registerValidatorTxn =
-            REv2TestTransactions.constructRegisterValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET,
-                test.faucetAddress(),
-                0,
-                13,
-                validatorAddress,
-                txn.getSecond());
+            TransactionBuilder.forTests()
+                .manifest(Manifest.registerValidator(validatorAddress, txn.third()))
+                .prepare()
+                .toRaw();
         var stakeValidatorTxn =
-            REv2TestTransactions.constructStakeValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET,
-                test.faucetAddress(),
-                0,
-                13,
-                validatorAddress,
-                txn.getSecond());
+            TransactionBuilder.forTests()
+                .manifest(Manifest.stakeValidator(validatorAddress, txn.third()))
+                .prepare()
+                .toRaw();
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
         mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
       }

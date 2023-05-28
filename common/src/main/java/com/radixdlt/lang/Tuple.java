@@ -127,6 +127,12 @@ public interface Tuple {
     static <P1, P2, P3> Tuple3<P1, P2, P3> of(P1 param1, P2 param2, P3 param3) {
       return tuple(param1, param2, param3);
     }
+
+    T1 first();
+
+    T2 second();
+
+    T3 third();
   }
 
   interface Tuple4<T1, T2, T3, T4> extends Tuple {
@@ -363,6 +369,21 @@ public interface Tuple {
       @Override
       public void accept(Action3<T1, T2, T3> consumer) {
         consumer.accept(param1(), param2(), param3());
+      }
+
+      @Override
+      public T1 first() {
+        return param1();
+      }
+
+      @Override
+      public T2 second() {
+        return param2();
+      }
+
+      @Override
+      public T3 third() {
+        return param3();
       }
     }
 

@@ -63,7 +63,6 @@
  */
 
 use crate::transaction::{
-    create_intent_bytes, create_manifest, create_notarized_bytes, create_signed_intent_bytes,
     LedgerTransaction,
 };
 use jni::objects::JClass;
@@ -71,120 +70,171 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
 use radix_engine::types::PublicKey;
+use radix_engine_common::types::Epoch;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use transaction::model::{
-    NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
-};
+use transaction::manifest::compile;
+use transaction::model::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareIntentRequest {
+    network_definition: NetworkDefinition,
+    header: TransactionHeaderJava,
+    manifest: String,
+    blobs: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareIntentResponse {
+    intent_bytes: Vec<u8>,
+    intent_hash: IntentHash,
+}
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManifest(
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareIntent(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, do_compile_manifest)
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareIntentRequest| -> Result<PrepareIntentResponse, String> {
+        let manifest = compile(&request.manifest, &request.network_definition, request.blobs)
+            .map_err(|err| format!("{err:?}"))?;
+
+        let (instructions, blobs) = manifest.for_intent();
+        let intent = IntentV1 {
+            header: request.header.into(),
+            instructions,
+            blobs,
+            attachments: AttachmentsV1 {},
+        };
+
+        let prepared_intent = intent.prepare()
+            .map_err(|err| format!("{err:?}"))?;
+
+        let intent_bytes = intent.to_payload_bytes()
+            .map_err(|err| format!("{err:?}"))?;
+        
+        Ok(PrepareIntentResponse {
+            intent_bytes,
+            intent_hash: prepared_intent.intent_hash(),
+        })
+    })
 }
 
-fn do_compile_manifest(
-    (network, manifest_str, blobs): (NetworkDefinition, String, Vec<Vec<u8>>),
-) -> Result<Vec<u8>, String> {
-    create_manifest(&network, &manifest_str, blobs)
-        .map_err(|err| format!("{err:?}"))
-        .map(|manifest| manifest_encode(&manifest).unwrap())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, do_create_intent_bytes)
-}
-
-// To ensure that any change to TransactionHeader is picked up as a compile error,
-// not an SBOR error
+// We use a separate model to ensure that any change to
+// TransactionHeader is picked up as a compile error, not an SBOR error
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TransactionHeaderJava {
-    pub version: u8,
     pub network_id: u8,
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
-    pub nonce: u64,
+    pub nonce: u32,
     pub notary_public_key: PublicKey,
-    pub notary_as_signatory: bool,
-    pub cost_unit_limit: u32,
+    pub notary_is_signatory: bool,
     pub tip_percentage: u16,
 }
 
-impl From<TransactionHeaderJava> for TransactionHeader {
+impl From<TransactionHeaderJava> for TransactionHeaderV1 {
     fn from(header: TransactionHeaderJava) -> Self {
-        TransactionHeader {
-            version: header.version,
+        TransactionHeaderV1 {
             network_id: header.network_id,
-            start_epoch_inclusive: header.start_epoch_inclusive,
-            end_epoch_exclusive: header.end_epoch_exclusive,
+            start_epoch_inclusive: Epoch::of(header.start_epoch_inclusive),
+            end_epoch_exclusive: Epoch::of(header.end_epoch_exclusive),
             nonce: header.nonce,
             notary_public_key: header.notary_public_key,
-            notary_as_signatory: header.notary_as_signatory,
-            cost_unit_limit: header.cost_unit_limit,
+            notary_is_signatory: header.notary_is_signatory,
             tip_percentage: header.tip_percentage,
         }
     }
 }
 
-fn do_create_intent_bytes(
-    (network_definition, header, manifest, blobs): (
-        NetworkDefinition,
-        TransactionHeaderJava,
-        String,
-        Vec<Vec<u8>>,
-    ),
-) -> Result<Vec<u8>, String> {
-    create_intent_bytes(&network_definition, header.into(), manifest, blobs)
-        .map_err(|err| format!("{err:?}"))
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareSignedIntentRequest {
+    intent_bytes: Vec<u8>,
+    signatures: Vec<SignatureWithPublicKeyV1>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareSignedIntentResponse {
+    signed_intent_bytes: Vec<u8>,
+    intent_hash: IntentHash,
+    signed_intent_hash: SignedIntentHash,
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSignedIntentBytes(
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSignedIntent(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(&env, request_payload, do_create_signed_intent_bytes)
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, String> {
+        let intent = manifest_decode(&request.intent_bytes)
+            .map_err(|err| format!("{err:?}"))?;
+
+        let signed_intent = SignedIntentV1 {
+            intent,
+            intent_signatures: IntentSignaturesV1 {
+                signatures: request.signatures.into_iter().map(|sig| IntentSignatureV1(sig)).collect(),
+            },
+        };
+
+        let prepared_signed_intent = signed_intent.prepare()
+            .map_err(|err| format!("{err:?}"))?;
+
+        Ok(PrepareSignedIntentResponse {
+            signed_intent_bytes: signed_intent.to_payload_bytes()
+                .map_err(|err| format!("{err:?}"))?,
+            intent_hash: prepared_signed_intent.intent_hash(),
+            signed_intent_hash: prepared_signed_intent.signed_intent_hash()
+        })
+    })
 }
 
-fn do_create_signed_intent_bytes(
-    (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
-) -> JavaResult<Vec<u8>> {
-    // It's passed through to us as bytes - and need to decode these bytes
-    let intent = manifest_decode(&intent_bytes)?;
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareNotarizedTransactionRequest {
+    signed_intent_bytes: Vec<u8>,
+    notary_signature: SignatureV1,
+}
 
-    Ok(create_signed_intent_bytes(intent, signatures))
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PrepareNotarizedTransactionResponse {
+    notarized_transaction_bytes: Vec<u8>,
+    intent_hash: IntentHash,
+    signed_intent_hash: SignedIntentHash,
+    notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotarizedBytes(
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareNotarizedTransaction(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(&env, request_payload, do_create_notarized_bytes)
-}
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareNotarizedTransactionRequest| -> Result<PrepareNotarizedTransactionResponse, String> {
+        let signed_intent = manifest_decode(&request.signed_intent_bytes)
+            .map_err(|err| format!("{err:?}"))?;
 
-fn do_create_notarized_bytes(
-    (signed_intent_bytes, signature): (Vec<u8>, Signature),
-) -> JavaResult<Vec<u8>> {
-    // It's passed through to us as bytes - and need to decode these bytes
-    let signed_intent = manifest_decode(&signed_intent_bytes)?;
+        let notarized_transaction = NotarizedTransactionV1 {
+            signed_intent,
+            notary_signature: NotarySignatureV1(request.notary_signature),
+        };
 
-    Ok(create_notarized_bytes(signed_intent, signature))
+        let prepared = notarized_transaction.prepare()
+            .map_err(|err| format!("{err:?}"))?;
+
+        Ok(PrepareNotarizedTransactionResponse {
+            notarized_transaction_bytes: signed_intent.to_payload_bytes()
+                .map_err(|err| format!("{err:?}"))?,
+            intent_hash: prepared.intent_hash(),
+            signed_intent_hash: prepared.signed_intent_hash(),
+            notarized_transaction_hash: prepared.notarized_transaction_hash(),
+        })
+    })
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToLedger(
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransactionToLedger(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
@@ -198,7 +248,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionBytesToNotarizedTransactionBytes(
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_transactionBytesToNotarizedTransactionBytes(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,

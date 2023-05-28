@@ -169,6 +169,9 @@ public final class StateManagerSbor {
     GenesisResourceAllocation.registerCodec(codecMap);
     GenesisValidator.registerCodec(codecMap);
     GenesisStakeAllocation.registerCodec(codecMap);
+    PreparedIntent.registerCodec(codecMap);
+    PreparedSignedIntent.registerCodec(codecMap);
+    PreparedNotarizedTransaction.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

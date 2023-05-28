@@ -93,7 +93,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.commit.PreviousVertex;
-import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -189,7 +189,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         previousExecutedTransactions.stream()
             .flatMap(
                 executedTx ->
-                    TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
+                    TransactionPreparer.convertTransactionBytesToNotarizedTransactionBytes(
                             executedTx.transaction().getPayload())
                         .stream()
                         .map(RawNotarizedTransaction::create))

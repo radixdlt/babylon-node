@@ -62,51 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.exceptions;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
-import com.radixdlt.exceptions.ManifestCompilationException;
-import com.radixdlt.rev2.NetworkDefinition;
-import java.util.List;
-import org.junit.Test;
-
-public final class TransactionBuilderTest {
-
-  @Test
-  public void test_compile_manifest() {
-    // Arrange
-    // Just a bunch of random instructions, copied over from scrypto repo tests
-    final var manifest =
-        """
-			CALL_METHOD Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q") "withdraw_by_amount" Decimal("5.0") Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha");
-			TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha") Bucket("xrd");
-			CALL_METHOD Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu") "buy_gumball" Bucket("xrd");
-			ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");
-			ASSERT_WORKTOP_CONTAINS Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");
-			TAKE_FROM_WORKTOP Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez") Bucket("some_xrd");
-			CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
-			CLONE_PROOF Proof("proof1") Proof("proof2");
-			DROP_PROOF Proof("proof1");
-			DROP_PROOF Proof("proof2");""";
-
-    // Act
-    final var result =
-        TransactionBuilder.compileManifest(NetworkDefinition.LOCAL_SIMULATOR, manifest, List.of());
-
-    // Assert
-    assertTrue(result.length > 100); // Just to make sure that it's non-empty
-  }
-
-  @Test
-  public void test_compile_manifest_error() {
-    var exception =
-        assertThrows(
-            ManifestCompilationException.class,
-            () ->
-                TransactionBuilder.compileManifest(
-                    NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;", List.of()));
-    assertTrue(exception.getMessage().contains("UnknownIdentifier"));
+public class TransactionPreparationException extends RuntimeException {
+  public TransactionPreparationException(String message) {
+    super(message);
   }
 }

@@ -9,9 +9,9 @@ use transaction::model::*;
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub enum LedgerTransaction {
-    User(NotarizedTransaction),
+    User(NotarizedTransactionV1),
     Validator(ValidatorTransaction),
-    System(SystemTransaction),
+    System(SystemTransactionV1),
 }
 
 impl LedgerTransaction {

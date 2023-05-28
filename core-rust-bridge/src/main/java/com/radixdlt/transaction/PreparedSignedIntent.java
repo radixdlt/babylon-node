@@ -62,29 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.transaction;
 
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-/** Generates a valid transaction for REV2 */
-public final class REV2TransactionGenerator
-    implements TransactionGenerator<RawNotarizedTransaction> {
-  private final NetworkDefinition networkDefinition;
-
-  public REV2TransactionGenerator() {
-    this.networkDefinition = NetworkDefinition.INT_TEST_NET;
-  }
-
-  public REV2TransactionGenerator(NetworkDefinition networkDefinition) {
-    this.networkDefinition = networkDefinition;
-  }
-
-  @Override
-  public RawNotarizedTransaction nextTransaction() {
-    return TransactionBuilder.forNetwork(networkDefinition)
-        .manifest(Manifest.newRandomAccount())
-        .prepare()
-        .toRaw();
+public record PreparedSignedIntent(
+    byte[] signedIntentBytes,
+    HashCode intentHash,
+    HashCode signedIntentHash
+) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreparedSignedIntent.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedSignedIntent.class, codecs));
   }
 }

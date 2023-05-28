@@ -74,15 +74,10 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2TestTransactions;
-import com.radixdlt.rev2.REv2TestTransactions.NotarizedTransactionBuilder;
-import com.radixdlt.rev2.REv2ToConsensus;
-import com.radixdlt.rev2.REv2TransactionsAndProofReader;
+import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Longs;
 import java.util.ArrayList;
@@ -114,7 +109,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         final var proof = LedgerProof.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
         final var commitRequest =
             new CommitRequest(
-                createUniqueTransactions(test.faucetAddress(), NUM_TXNS_IN_A_COMMIT, i),
+                createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
                 REv2ToConsensus.ledgerProof(proof),
                 Option.none());
         stateComputer.commit(commitRequest);
@@ -190,22 +185,18 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   }
 
   private List<RawLedgerTransaction> createUniqueTransactions(
-      ComponentAddress faucet, int numTransactions, int notaryPrivKeySeed)
-      throws PrivateKeyException, PublicKeyException {
+      int numTransactions, int notaryPrivKeySeed) throws PrivateKeyException, PublicKeyException {
     final List<RawLedgerTransaction> res = new ArrayList<>();
     final byte[] prvBytes = new byte[ECKeyPair.BYTES];
     final byte[] seedBytes = Longs.toByteArray(notaryPrivKeySeed + 1);
     System.arraycopy(seedBytes, 0, prvBytes, prvBytes.length - seedBytes.length, seedBytes.length);
     final var notary = ECKeyPair.fromPrivateKey(prvBytes);
     for (int i = 0; i < numTransactions; i++) {
-      final var intentBytes =
-          REv2TestTransactions.constructValidIntentBytes(
-              NetworkDefinition.INT_TEST_NET, faucet, 0, i, notary.getPublicKey().toPublicKey());
-      final var rawTransaction =
-          new NotarizedTransactionBuilder(intentBytes, notary, List.of()).constructRawTransaction();
+      final var transaction = TransactionBuilder.forTests().nonce(i).notary(notary).prepare();
       res.add(
           RawLedgerTransaction.create(
-              TransactionBuilder.userTransactionToLedgerBytes(rawTransaction.getPayload())));
+              TransactionPreparer.userTransactionToLedgerBytes(
+                  transaction.notarizedTransactionBytes())));
     }
     return res;
   }

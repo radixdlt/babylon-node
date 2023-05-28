@@ -71,6 +71,7 @@ import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.exceptions.Bech32EncodeException;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.Natives;
 import java.util.Objects;
 
@@ -80,13 +81,22 @@ public final class Bech32mCoder {
     System.loadLibrary("corerust");
   }
 
+  public static String encodeAddress(NetworkDefinition networkDefinition, byte[] addressData) {
+    return encodeAddressFunc.call(tuple(networkDefinition, addressData)).unwrap(Bech32EncodeException::new);
+  }
+
+  private static final Natives.Call1<Tuple.Tuple2<NetworkDefinition, byte[]>, Result<String, String>>
+          encodeAddressFunc = Natives.builder(Bech32mCoder::encodeAddress).build(new TypeToken<>() {});
+
   public static String encode(String hrp, byte[] data) {
     return encodeBech32mFunc.call(tuple(hrp, data)).unwrap(Bech32EncodeException::new);
   }
 
+  private static final Natives.Call1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
+          encodeBech32mFunc = Natives.builder(Bech32mCoder::encodeBech32m).build(new TypeToken<>() {});
+
   public static byte[] decodeWithExpectedHrp(String expectedHrp, String address) {
-    var result = decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
-    return result.map(
+    return decode(address).map(
         (returnedHrp, data) -> {
           if (!Objects.equals(returnedHrp, expectedHrp)) {
             throw new Bech32DecodeException(
@@ -102,13 +112,12 @@ public final class Bech32mCoder {
     return decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
   }
 
-  private static final Natives.Call1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
-      encodeBech32mFunc = Natives.builder(Bech32mCoder::encodeBech32m).build(new TypeToken<>() {});
+  private static final Natives.Call1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
+          decodeBech32mFunc = Natives.builder(Bech32mCoder::decodeBech32m).build(new TypeToken<>() {});
+
+  private static native byte[] encodeAddress(byte[] requestPayload);
 
   private static native byte[] encodeBech32m(byte[] requestPayload);
-
-  private static final Natives.Call1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
-      decodeBech32mFunc = Natives.builder(Bech32mCoder::decodeBech32m).build(new TypeToken<>() {});
 
   private static native byte[] decodeBech32m(byte[] requestPayload);
 }
