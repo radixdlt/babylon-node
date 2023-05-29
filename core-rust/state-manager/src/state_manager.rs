@@ -98,7 +98,6 @@ use radix_engine::system::bootstrap::{
 use radix_engine_common::crypto::Hash;
 use radix_engine_interface::blueprints::epoch_manager::{LeaderProposalHistory, ValidatorIndex};
 use radix_engine_interface::constants::GENESIS_HELPER;
-use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
@@ -258,15 +257,15 @@ where
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
-        let already_prepared_payloads: Vec<_> = prepare_request
+        let already_prepared_payloads = prepare_request
             .prepared_vertices
-            .into_iter()
-            .flat_map(|v| v.transaction_payloads)
-            .collect();
+            .iter()
+            .flat_map(|v| &v.transaction_payloads)
+            .collect::<Vec<_>>();
 
         for prepared in already_prepared_payloads {
             let parsed_transaction =
-                LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
+                LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(prepared)
                     .expect("Already prepared transactions should be decodeable");
 
             let executable = match &parsed_transaction {
@@ -287,7 +286,7 @@ where
             }
             .expect("Already prepared transactions should be valid");
 
-            let transaction_hash = parsed_transaction.get_hash();
+            let transaction_hash = LedgerPayloadHash::for_ledger_payload_bytes(prepared);
             let logged_description = format!("already prepared {}", transaction_hash);
             let mut lock_execution_cache = self.execution_cache.lock();
             let processed = lock_execution_cache.execute_transaction(
@@ -311,29 +310,11 @@ where
 
         // Round Update
         // TODO: Unify this with the proposed payloads execution
-        let validator_index_by_address = Self::to_validator_set_index(epoch_header);
-        let round_update = ValidatorTransaction::RoundUpdate {
-            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-            epoch: prepare_request.epoch,
-            round: prepare_request.round,
-            leader_proposal_history: LeaderProposalHistory {
-                gap_round_leaders: prepare_request
-                    .gap_round_leader_addresses
-                    .iter()
-                    .map(|leader_address| {
-                        *validator_index_by_address
-                            .get(leader_address)
-                            .expect("gap round leader must belong to the validator set")
-                    })
-                    .collect::<Vec<_>>(),
-                current_leader: *validator_index_by_address
-                    .get(&prepare_request.proposer_address)
-                    .expect("proposer must belong to the validator set"),
-                is_fallback: prepare_request.is_fallback,
-            },
-        };
+        let round_update = Self::create_round_update(&prepare_request, epoch_header);
         let executable = round_update.prepare().to_executable();
         let ledger_round_update = LedgerTransaction::Validator(round_update);
+        let (round_update_payload, round_update_hash) =
+            ledger_round_update.create_payload_and_hash();
 
         let logged_description = format!("round update {}", prepare_request.round);
         let mut lock_execution_cache = self.execution_cache.lock();
@@ -341,7 +322,7 @@ where
             read_store.deref(),
             &epoch_identifiers,
             state_tracker.latest_transaction_identifiers(),
-            &ledger_round_update.get_hash(),
+            &round_update_hash,
             &self
                 .execution_configurator
                 .wrap(executable, ConfigType::Regular)
@@ -354,7 +335,7 @@ where
         let mut next_epoch = round_update_commit.next_epoch();
         drop(lock_execution_cache);
 
-        committed.push(manifest_encode(&ledger_round_update).unwrap());
+        committed.push(round_update_payload);
 
         let mut rejected_payloads = Vec::new();
         let pending_transaction_timestamp = SystemTime::now();
@@ -416,9 +397,7 @@ where
                 }
             };
 
-            let (payload, hash) = LedgerTransaction::User(parsed.clone())
-                .create_payload_and_hash()
-                .unwrap();
+            let (payload, hash) = LedgerTransaction::User(parsed.clone()).create_payload_and_hash();
 
             let logged_description = format!("newly proposed {}", hash);
             let mut lock_execution_cache = self.execution_cache.lock();
@@ -508,6 +487,34 @@ where
         }
     }
 
+    fn create_round_update(
+        prepare_request: &PrepareRequest,
+        epoch_header: LedgerHeader,
+    ) -> ValidatorTransaction {
+        let validator_index_by_address = Self::to_validator_set_index(epoch_header);
+        let round_update = ValidatorTransaction::RoundUpdate {
+            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+            epoch: prepare_request.epoch,
+            round: prepare_request.round,
+            leader_proposal_history: LeaderProposalHistory {
+                gap_round_leaders: prepare_request
+                    .gap_round_leader_addresses
+                    .iter()
+                    .map(|leader_address| {
+                        *validator_index_by_address
+                            .get(leader_address)
+                            .expect("gap round leader must belong to the validator set")
+                    })
+                    .collect::<Vec<_>>(),
+                current_leader: *validator_index_by_address
+                    .get(&prepare_request.proposer_address)
+                    .expect("proposer must belong to the validator set"),
+                is_fallback: prepare_request.is_fallback,
+            },
+        };
+        round_update
+    }
+
     fn to_validator_set_index(epoch_header: LedgerHeader) -> NonIterMap<ComponentAddress, u8> {
         epoch_header
             .next_epoch
@@ -590,9 +597,7 @@ where
             LedgerTransaction::System(system_bootstrap_transaction);
 
         let (system_bootstrap_ledger_payload, system_bootstrap_txn_hash) =
-            system_bootstrap_ledger_transaction
-                .create_payload_and_hash()
-                .unwrap();
+            system_bootstrap_ledger_transaction.create_payload_and_hash();
 
         let (ledger_hashes, next_epoch) = self.prepare_genesis(system_bootstrap_ledger_transaction);
 
@@ -647,9 +652,7 @@ where
                 LedgerTransaction::System(genesis_data_ingestion_transaction);
 
             let (genesis_data_ingestion_ledger_payload, genesis_data_ingestion_txn_hash) =
-                genesis_data_ingestion_ledger_transaction
-                    .create_payload_and_hash()
-                    .unwrap();
+                genesis_data_ingestion_ledger_transaction.create_payload_and_hash();
 
             let (ledger_hashes, next_epoch) =
                 self.prepare_genesis(genesis_data_ingestion_ledger_transaction);
@@ -700,9 +703,7 @@ where
             LedgerTransaction::System(genesis_wrap_up_transaction);
 
         let (genesis_wrap_up_ledger_payload, genesis_wrap_up_txn_hash) =
-            genesis_wrap_up_ledger_transaction
-                .create_payload_and_hash()
-                .unwrap();
+            genesis_wrap_up_ledger_transaction.create_payload_and_hash();
 
         let (ledger_hashes, next_epoch) = self.prepare_genesis(genesis_wrap_up_ledger_transaction);
 
@@ -773,17 +774,18 @@ where
         // Whilst we should probably validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
 
-        let parsed_transactions =
+        let transactions_with_payloads =
             commit_request
                 .transaction_payloads
                 .into_iter()
-                .map(|payload| {
+                .map(|payload| (
                     LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&payload)
                         .unwrap_or_else(|error| {
                             panic!("Committed transaction cannot be decoded - likely byzantine quorum: {error:?}");
-                        })
+                        }),
+                    payload
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
-                })
+                ))
                 .collect::<Vec<_>>();
 
         let mut write_store = self.store.write();
@@ -812,7 +814,7 @@ where
         let mut intent_hashes = Vec::new();
 
         let mut result_receipts = vec![];
-        for (i, transaction) in parsed_transactions.into_iter().enumerate() {
+        for (i, (transaction, payload)) in transactions_with_payloads.into_iter().enumerate() {
             if let LedgerTransaction::System(..) = transaction {
                 if !genesis {
                     panic!("Non Genesis system transaction cannot be committed.");
@@ -828,7 +830,7 @@ where
                     );
                 });
 
-            let transaction_hash = transaction.get_hash();
+            let transaction_hash = LedgerPayloadHash::for_ledger_payload_bytes(&payload);
             let logged_description = format!("committing {}", transaction_hash);
 
             let mut lock_execution_cache = self.execution_cache.lock();

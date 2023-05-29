@@ -27,10 +27,10 @@ impl LedgerTransaction {
         manifest_encode(self)
     }
 
-    pub fn create_payload_and_hash(&self) -> Result<(Vec<u8>, LedgerPayloadHash), EncodeError> {
-        let payload = manifest_encode(self)?;
+    pub fn create_payload_and_hash(&self) -> (Vec<u8>, LedgerPayloadHash) {
+        let payload = self.create_payload().unwrap();
         let hash = LedgerPayloadHash::for_ledger_payload_bytes(&payload);
-        Ok((payload, hash))
+        (payload, hash)
     }
 
     pub fn user(&self) -> Option<&NotarizedTransaction> {
