@@ -67,7 +67,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            eu.gcr.io/dev-container-repo/babylon-node
+            docker.io/radixdlt/babylon-node
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -77,9 +77,9 @@ jobs:
             type=sha
       - name: Join multiarch images
         run: |
-          docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
-            eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} 
-#           eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
+          docker buildx imagetools create -t docker.io/radixdlt/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
+            docker.io/radixdlt/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} 
+#           docker.io/radixdlt/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
 
   join_multiarch_image_dockerhub:
     permissions:
@@ -152,7 +152,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            eu.gcr.io/dev-container-repo/babylon-node
+            docker.io/radixdlt/babylon-node
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -225,8 +225,8 @@ jobs:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
-      image_registry: "eu.gcr.io"
-      image_organization: "dev-container-repo"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
       image_name: "babylon-node"
       tags: |
         type=ref,event=branch
@@ -250,8 +250,8 @@ jobs:
   #   uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
   #   with:
   #     runs_on: babylon-node-arm
-  #     image_registry: "eu.gcr.io"
-  #     image_organization: "dev-container-repo"
+  #     image_registry: "docker.io"
+  #     image_organization: "radixdlt"
   #     image_name: "babylon-node"
   #     tags: |
   #       type=ref,event=branch

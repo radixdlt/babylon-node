@@ -18,8 +18,8 @@ jobs:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
-      image_registry: "eu.gcr.io"
-      image_organization: "dev-container-repo"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
       image_name: "keygen"
       tag: ${{ inputs.image_tag }}
       context: "."
@@ -58,8 +58,8 @@ jobs:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
-      image_registry: "eu.gcr.io"
-      image_organization: "dev-container-repo"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
       image_name: "keygen"
       tags: |
         type=ref,event=branch
