@@ -65,21 +65,41 @@
 package com.radixdlt.rev2;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import java.util.Comparator;
+import java.util.Set;
 
 public final class LedgerInitializer {
+
+  public record GenesisResult(HashCode accumulatorHash, Set<ActiveValidatorInfo> validatorSet) {
+
+    public BFTValidatorId getActiveValidator(int validatorIndex) {
+      var validator =
+          this.validatorSet().stream()
+              .sorted(Comparator.comparing(ActiveValidatorInfo::stake).reversed())
+              .skip(validatorIndex)
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("some validator expected"));
+      return BFTValidatorId.create(
+          validator
+              .address()
+              .unwrap(() -> new IllegalStateException("active validator must have address")),
+          validator.key());
+    }
+  }
+
   private final RustStateComputer stateComputer;
 
   public LedgerInitializer(RustStateComputer stateComputer) {
     this.stateComputer = stateComputer;
   }
 
-  public HashCode prepareAndCommit(GenesisData genesis) {
-    return this.stateComputer
-        .executeGenesis(genesis)
-        .ledgerHeader()
-        .accumulatorState()
-        .accumulatorHash();
+  public GenesisResult prepareAndCommit(GenesisData genesis) {
+    var header = this.stateComputer.executeGenesis(genesis).ledgerHeader();
+    return new GenesisResult(
+        header.accumulatorState().accumulatorHash(), header.nextEpoch().unwrap().validators());
   }
 }

@@ -68,6 +68,7 @@ import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -214,6 +215,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
               Serialization serialization,
+              ProposerElection initialProposerElection,
               Metrics metrics) {
             return new REv2StateComputer(
                 stateComputer,
@@ -226,6 +228,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 mempoolAddSuccessEventDispatcher,
                 byzantineEventEventDispatcher,
                 serialization,
+                initialProposerElection,
                 metrics);
           }
 
