@@ -19,7 +19,7 @@ gcloud-authenticate:
 .PHONY: dockerhub-authenticate
 dockerhub-authenticate:
 	 echo "Authenticating to dockerhub account "
-	 echo -n "$(DOCKERHUB_TOKEN)" | docker login -u radixprivatepull --password-stdin
+	 echo -n "${DOCKERHUB_TOKEN}" | docker login -u radixdevops --password-stdin
 
 .PHONY: gcloud-token
 gcloud-token: gcloud-authenticate
