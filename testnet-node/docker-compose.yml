@@ -1,4 +1,4 @@
-version: '2.2'
+version: '3.8'
 name: radixdlt-babylon-node-testnet-node
 services:
   core:
