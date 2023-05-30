@@ -64,7 +64,6 @@
 
 package com.radixdlt.networks;
 
-import com.radixdlt.crypto.ECKeyPair;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -78,6 +77,13 @@ public enum Network {
   // TODO(post-babylon): add a fixed genesis from resources for mainnet
   MAINNET(1 /* 0x01 */, "mainnet", "rdx"),
   STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_"),
+
+  // Temporary networks that match Olympia - for genesis testing mostly
+  OLYMPIA_RELEASENET(3, "releasenet", "tdx_3_"),
+  OLYMPIA_RCNET(4, "rcnet", "tdx_4_"),
+  OLYMPIA_MILESTONENET(5, "milestonenet", "tdx_5_"),
+  OLYMPIA_DEVOPSNET(6, "devopsnet", "tdx_6_"),
+  OLYMPIA_SANDPITNET(7, "sandpitnet", "tdx_7_"),
 
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
@@ -117,10 +123,6 @@ public enum Network {
       "genesis_test",
       "genesis_test",
       FixedNetworkGenesis.resource("genesis/test_genesis.bin"));
-
-  // For the Radix Shell to provide a default
-  public static final String DefaultHexGenesisTransaction =
-      ECKeyPair.generateNew().getPublicKey().toHex();
 
   private final int intId;
   private final byte byteId;
