@@ -60,7 +60,6 @@ build-push-using-local-cache:  buildx-driver dockerhub-authenticate build-core
 		  --cache-to=type=local,dest=/tmp/outputs/cache/docker,mode=min \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile . --push)
 
-
 .PHONY: build-push-using-remote-cache
 build-push-using-remote-cache:  buildx-driver gcloud-token dockerhub-authenticate build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
