@@ -6,8 +6,7 @@ all:
     $(eval GIT_COMMIT=$(shell git log -1 --format=%h ))
     TAG ?= $(GIT_BRANCH)-$(GIT_COMMIT)
     CORE_REPO ?= $(REGISTRY)/private-babylon-node
-	GOOGLE_ARTIFICAT_REGISTRY ?= europe-west2-docker.pkg.dev
-    GAR_CACHE_REPO ?= $(GOOGLE_ARTIFICAT_REGISTRY)/dev-container-repo/eu-cache-repo
+    DOCKERHUB_CACHE_REPO ?= $(REGISTRY)private-babylon-node-cache
 
 .PHONY: gcloud-authenticate
 gcloud-authenticate:
@@ -64,8 +63,8 @@ build-push-using-local-cache:  buildx-driver dockerhub-authenticate build-core
 build-push-using-remote-cache:  buildx-driver gcloud-token dockerhub-authenticate build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
 	$(shell cd ../ && DOCKER_BUILDKIT=1 docker buildx build \
-          --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache \
-          --cache-to=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=min \
+          --cache-from=type=registry,ref=$(DOCKERHUB_CACHE_REPO):main \
+          --cache-to=type=registry,ref=$(DOCKERHUB_CACHE_REPO):main,mode=max \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile . --push)
 
 .PHONY: run-docker-node
