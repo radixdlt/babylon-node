@@ -12,7 +12,7 @@ all:
 gcloud-authenticate:
 	 export CLOUDSDK_PYTHON_SITEPACKAGES=1
 	 echo "Authenticating service  account "
-	 gcloud auth activate-service-account dev-container-uploader@radixdlt.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
+	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
 	 gcloud auth list
 
 .PHONY: dockerhub-authenticate
@@ -60,7 +60,7 @@ build-push-using-local-cache:  buildx-driver dockerhub-authenticate build-core
           --tag $(CORE_REPO):$(TAG) -f Dockerfile . --push)
 
 .PHONY: build-push-using-remote-cache
-build-push-using-remote-cache:  buildx-driver gcloud-token dockerhub-authenticate build-core
+build-push-using-remote-cache:  buildx-driver dockerhub-authenticate build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
 	$(shell cd ../ && DOCKER_BUILDKIT=1 docker buildx build \
           --cache-from=type=registry,ref=$(DOCKERHUB_CACHE_REPO):main \
