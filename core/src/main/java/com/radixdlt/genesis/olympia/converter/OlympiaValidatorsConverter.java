@@ -99,7 +99,7 @@ public final class OlympiaValidatorsConverter {
     }
     final var metadata =
         ImmutableList.of(
-            tuple("name", olympiaValidator.name()), tuple("url", olympiaValidator.url()));
+            tuple("name", olympiaValidator.name()), tuple("info_url", olympiaValidator.url()));
 
     final var owner = accounts.get(olympiaValidator.ownerAccountIndex());
     return new GenesisValidator(

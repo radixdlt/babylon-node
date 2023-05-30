@@ -106,7 +106,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
      * For tests that use a real storage. Either BerkeleyDB (on the Java side; I think it's just
      * BerkeleySafetyStore) or RocksRb (on the Rust side).
      */
-    record FileStorage(File file) implements NodeStorageConfig {}
+    record FileStorage(File folder) implements NodeStorageConfig {}
 
     static NodeStorageConfig none() {
       return new None();
@@ -116,8 +116,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       return file(tempFolder.getRoot());
     }
 
-    static NodeStorageConfig file(File file) {
-      return new FileStorage(file);
+    static NodeStorageConfig file(File folder) {
+      return new FileStorage(folder);
     }
   }
 
@@ -306,7 +306,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     switch (this.nodeStorageConfig) {
       case NodeStorageConfig.None none -> {}
       case NodeStorageConfig.FileStorage fileStorage -> {
-        final var tempFolderPath = fileStorage.file.getAbsolutePath();
+        final var tempFolderPath = fileStorage.folder.getAbsolutePath();
         install(new PrefixedNodeStorageLocationModule(tempFolderPath));
 
         final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;

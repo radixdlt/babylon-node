@@ -133,19 +133,19 @@ public final class OlympiaGenesisService {
   }
 
   private void poll(CompletableFuture<GenesisData> completableFuture, int counter) {
-    // Every 1000th request we'll ask for a test payload (in case of a not-ready response)
-    final var includeTestPayload = counter % 1000 == 0;
+    // Every 1000th request we'll ask for a test payload (in case of a not-ready response).
+    // The first request does not include the test payload (check basic connectivity).
+    final var includeTestPayload = counter % 1000 == 1;
     final OlympiaEndStateResponse response;
     try {
       response = olympiaEndStateApiClient.getOlympiaEndState(includeTestPayload);
     } catch (Exception ex /* just catch anything */) {
       log.warn(
           """
-              An error occurred while querying the Olympia node for the genesis state (include_test_payload? {}). \
-              Retrying in {} ms... ({})""",
-          includeTestPayload,
-          POLL_INTERVAL_AFTER_ERROR_MS,
-          ex.getMessage());
+              An error occurred while querying the Olympia node for the genesis state (include_test_payload? %s). \
+              Retrying in %s ms..."""
+              .formatted(includeTestPayload, POLL_INTERVAL_AFTER_ERROR_MS),
+          ex);
       this.executor
           .orElseThrow()
           .schedule(
@@ -242,8 +242,7 @@ public final class OlympiaGenesisService {
         }
 
         // Continue polling
-
-        if (notReadyLogRateLimiter.tryAcquire()) {
+        if (counter < 2 || notReadyLogRateLimiter.tryAcquire()) {
           log.info(
               """
                   Successfully connected to the Olympia {} node{}, \

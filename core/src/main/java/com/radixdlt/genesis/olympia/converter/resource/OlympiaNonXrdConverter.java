@@ -291,7 +291,7 @@ public final class OlympiaNonXrdConverter {
             tuple("symbol", resource.symbol()),
             tuple("name", resource.name()),
             tuple("description", resource.description()),
-            tuple("url", resource.url()),
+            tuple("info_url", resource.url()),
             tuple("icon_url", resource.iconUrl()));
     final var owner =
         resource
