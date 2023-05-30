@@ -190,7 +190,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
       final var xrdAmount =
           stateReader.getComponentXrdAmount(
               Address.virtualAccountAddress(expectedBalanceEntry.getKey().asBytes()));
-      assertEquals(Decimal.unsafeFromRawBigIntRepr(expectedBalanceEntry.getValue()), xrdAmount);
+      assertEquals(Decimal.fromBigIntegerSubunits(expectedBalanceEntry.getValue()), xrdAmount);
     }
   }
 
@@ -225,7 +225,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
               acceptDelegatedStake,
               isRegistered,
               totalStakedXrd,
-              Decimal.unsafeFromRawBigIntRepr(totalStakeUnitAmount).toUInt256(),
+              Decimal.fromBigIntegerSubunits(totalStakeUnitAmount).toUInt256(),
               1000,
               ownerIndex);
       validatorsBuilder.add(validator);
@@ -306,7 +306,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                           totalSupply,
                           CONVERTER_CONFIG
                               .maxGenesisResourceUnscaledSupply()
-                              .toRawBigIntRepresentation()))
+                              .toBigIntegerSubunits()))
               .reduce(Decimal.ZERO, Decimal::add);
 
       resourcesSummary.add(
@@ -452,7 +452,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                             .toBigInt()
                             .multiply(summaryValidator.totalStakedXrd().toBigInt())
                             .divide(summaryValidator.totalStakeUnits);
-                    assertEquals(Decimal.unsafeFromRawBigIntRepr(stakeInXrd), babylonStakerStake);
+                    assertEquals(Decimal.fromBigIntegerSubunits(stakeInXrd), babylonStakerStake);
                   });
             });
   }
@@ -474,7 +474,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
         (keyBytes, amount) -> {
           final var babylonAmount =
               babylonXrdByAccount.get(Address.virtualAccountAddress(keyBytes.asBytes()));
-          assertEquals(Decimal.unsafeFromRawBigIntRepr(amount), babylonAmount);
+          assertEquals(Decimal.fromBigIntegerSubunits(amount), babylonAmount);
         });
   }
 
@@ -550,9 +550,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                     scaleResourceAmount(
                         amount,
                         summaryResource.totalSupply(),
-                        CONVERTER_CONFIG
-                            .maxGenesisResourceUnscaledSupply()
-                            .toRawBigIntRepresentation()),
+                        CONVERTER_CONFIG.maxGenesisResourceUnscaledSupply().toBigIntegerSubunits()),
                     babylonAmount);
               });
         });
@@ -563,11 +561,11 @@ public final class OlympiaToBabylonGenesisConverterTest {
       BigInteger resourceTotalSupplyOnOlympia,
       BigInteger resourceMaxSupplyOnBabylon) {
     if (resourceTotalSupplyOnOlympia.compareTo(resourceMaxSupplyOnBabylon) <= 0) {
-      return Decimal.unsafeFromRawBigIntRepr(originalAmount);
+      return Decimal.fromBigIntegerSubunits(originalAmount);
     } else {
       final var scaledBigInt =
           resourceMaxSupplyOnBabylon.multiply(originalAmount).divide(resourceTotalSupplyOnOlympia);
-      return Decimal.unsafeFromRawBigIntRepr(scaledBigInt);
+      return Decimal.fromBigIntegerSubunits(scaledBigInt);
     }
   }
 

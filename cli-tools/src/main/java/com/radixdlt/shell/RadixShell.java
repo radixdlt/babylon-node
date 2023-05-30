@@ -67,6 +67,7 @@ package com.radixdlt.shell;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -81,6 +82,7 @@ import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.messaging.core.Message;
@@ -94,6 +96,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -103,10 +106,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
@@ -199,8 +199,13 @@ public final class RadixShell {
       }
 
       properties.set("network.id", network.getId());
-      if (properties.get("network.genesis_txn", "").isEmpty()) {
-        properties.set("network.genesis_txn", Network.DefaultHexGenesisTransaction);
+      if (properties.get("network.genesis_data", "").isEmpty()) {
+        final var encodedGenesisData =
+            StateManagerSbor.encode(
+                GenesisData.testingDefaultEmpty(),
+                StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
+        properties.set("network.genesis_data", genesisDataBase64);
       }
 
       final var genesisData =

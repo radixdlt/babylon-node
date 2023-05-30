@@ -164,7 +164,7 @@ public final class RadixNodeBootstrapper {
     // Genesis source #3: the genesis stored from previous runs
     final var maybeStoredGenesis = genesisStore.readGenesisData();
 
-    // Whether to use an optional genesis source #3: a running Olympia node
+    // Whether to use an optional genesis source #4: a running Olympia node
     final var useOlympiaFlagIsSet =
         properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false);
 
@@ -183,7 +183,7 @@ public final class RadixNodeBootstrapper {
               Network %s uses a fixed genesis data (of hash %s) that doesn't match \
               the genesis that has been configured for this node (%s). \
               Make sure your configuration is correct (check `network.id` and/or \
-              `network.genesis_txn` and/or `network.genesis_file`).""",
+              `network.genesis_data` and/or `network.genesis_file`).""",
                     network.getLogicalName(), fixedNetworkGenesisHash, configuredGenesisHash)));
       } else {
         return tryProceedWithConfiguredGenesis(configuredGenesis.get());
@@ -206,7 +206,7 @@ public final class RadixNodeBootstrapper {
           new RuntimeException(
               """
           Radix node couldn't be initialized. No genesis transaction has been configured. Make \
-          sure that either `network.genesis_txn` or `network.genesis_file` is set or that \
+          sure that either `network.genesis_data` or `network.genesis_file` is set or that \
           you're using a well known network (`network.id`). If you're running an Olympia \
           node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
           documentation for more details."""));
@@ -226,7 +226,7 @@ public final class RadixNodeBootstrapper {
               Database is in inconsistent state: current node configuration uses \
               a genesis of hash %s, but the node previously run with a different genesis of hash %s. \
               Make sure your configuration is correct (check `network.id` and/or \
-              `network.genesis_txn` and/or `network.genesis_file`). Or wipe your ledger dir \
+              `network.genesis_data` and/or `network.genesis_file`). Or wipe your ledger dir \
               if the configuration is correct.""",
                     currGenesisDataHash, prevGenesisHash)));
       }

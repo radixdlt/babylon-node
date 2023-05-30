@@ -141,7 +141,11 @@ public final class GenerateGenesis {
     if (cmd.getOptionValue("p") != null) {
       var hexKeys = cmd.getOptionValue("p").split(",");
       for (var hexKey : hexKeys) {
-        validatorsBuilder.insertIfMissingAndGetIndex(ECDSASecp256k1PublicKey.fromHex(hexKey));
+        final var publicKey = ECDSASecp256k1PublicKey.fromHex(hexKey);
+        if (validatorsBuilder.contains(publicKey)) {
+          throw new RuntimeException("Duplicate validator key: " + hexKey);
+        }
+        validatorsBuilder.insertIfMissingAndGetIndex(publicKey);
       }
     }
     final int validatorsCount =
@@ -172,7 +176,7 @@ public final class GenerateGenesis {
     final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
 
     if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisDataBase64);
+      System.out.format("export RADIXDLT_GENESIS_DATA=%s%n", genesisDataBase64);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.base64"))) {
         writer.write(genesisDataBase64);

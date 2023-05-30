@@ -89,7 +89,7 @@ public final class OlympiaXrdConverter {
           return Optional.of(
               tuple(
                   Address.virtualAccountAddress(account.publicKeyBytes().asBytes()),
-                  Decimal.unsafeFromRawBigIntRepr(olympiaXrdBalance.amount())));
+                  Decimal.fromBigIntegerSubunits(olympiaXrdBalance.amount())));
         },
         GenesisDataChunk.XrdBalances::new);
   }

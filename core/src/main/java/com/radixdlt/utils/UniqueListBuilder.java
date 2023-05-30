@@ -88,6 +88,10 @@ public final class UniqueListBuilder<T> {
     return underlying.computeIfAbsent(t, unused -> currSize);
   }
 
+  public boolean contains(T t) {
+    return underlying.containsKey(t);
+  }
+
   public int size() {
     return underlying.size();
   }

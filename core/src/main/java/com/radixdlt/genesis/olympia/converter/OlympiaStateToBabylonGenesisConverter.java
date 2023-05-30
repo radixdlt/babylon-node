@@ -98,6 +98,11 @@ public final class OlympiaStateToBabylonGenesisConverter {
     final var xrdBalancesChunks = resourcesAndBalances.xrdBalancesChunks();
 
     return new GenesisData(
+        UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
+        UInt32.fromNonNegativeInt(10),
+        UInt64.fromNonNegativeLong(100),
+        UInt64.fromNonNegativeLong(10),
+        olympiaStateIR.lastConsensusTimestamp(),
         Stream.of(
                 validatorsChunks.stream(),
                 stakesChunks.stream(),
@@ -105,11 +110,6 @@ public final class OlympiaStateToBabylonGenesisConverter {
                 nonXrdBalancesChunks.stream(),
                 xrdBalancesChunks.stream())
             .flatMap(s -> s)
-            .collect(ImmutableList.toImmutableList()),
-        UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
-        UInt32.fromNonNegativeInt(10),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        olympiaStateIR.lastConsensusTimestamp());
+            .collect(ImmutableList.toImmutableList()));
   }
 }

@@ -241,12 +241,12 @@ pub fn export_extern_functions() {}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaGenesisData {
-    pub chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
     pub initial_timestamp_ms: i64,
+    pub chunks: Vec<GenesisDataChunk>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -155,7 +155,7 @@ public final class OlympiaNonXrdConverter {
             scaleResourceAmount(
                 olympiaAmount,
                 totalSupplyOnOlympia,
-                config.maxGenesisResourceUnscaledSupply().toRawBigIntRepresentation());
+                config.maxGenesisResourceUnscaledSupply().toBigIntegerSubunits());
 
         if (resourceTotalSuppliesOnBabylon[resourceIndex] == null) {
           resourceTotalSuppliesOnBabylon[resourceIndex] = babylonAmount;
@@ -250,12 +250,12 @@ public final class OlympiaNonXrdConverter {
       BigInteger resourceMaxSupplyOnBabylon) {
     if (resourceTotalSupplyOnOlympia.compareTo(resourceMaxSupplyOnBabylon) <= 0) {
       // No need to scale, guaranteed to fit
-      return Decimal.unsafeFromRawBigIntRepr(originalAmount);
+      return Decimal.fromBigIntegerSubunits(originalAmount);
     } else {
       // Scale it down, using integer div rounding
       final var scaledBigInt =
           resourceMaxSupplyOnBabylon.multiply(originalAmount).divide(resourceTotalSupplyOnOlympia);
-      return Decimal.unsafeFromRawBigIntRepr(scaledBigInt);
+      return Decimal.fromBigIntegerSubunits(scaledBigInt);
     }
   }
 

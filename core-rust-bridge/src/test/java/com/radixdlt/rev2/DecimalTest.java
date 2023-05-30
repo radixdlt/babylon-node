@@ -64,8 +64,7 @@
 
 package com.radixdlt.rev2;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 import com.radixdlt.utils.UInt256;
 import java.math.BigInteger;
@@ -77,22 +76,32 @@ public final class DecimalTest {
   public void testDecimalBigIntConversions() {
     final var positiveTestCases =
         List.of(
-            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation(),
+            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits(),
             new BigInteger(
                 "57896044618658097711785492504343953926634992332820282019728792003956564819967"),
-            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation().divide(BigInteger.TWO),
-            Decimal.from(UInt256.MAX_VALUE).toRawBigIntRepresentation().divide(BigInteger.TEN),
+            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TWO),
+            Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().divide(BigInteger.TEN),
             BigInteger.ONE,
             BigInteger.TWO,
             BigInteger.ZERO);
 
     for (var testBigInt : positiveTestCases) {
-      assertEquals(
-          Decimal.unsafeFromRawBigIntRepr(testBigInt).toRawBigIntRepresentation(), testBigInt);
+      assertEquals(Decimal.fromBigIntegerSubunits(testBigInt).toBigIntegerSubunits(), testBigInt);
     }
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(-1L)));
+        () -> Decimal.fromBigIntegerSubunits(BigInteger.valueOf(-1L)));
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            Decimal.fromBigIntegerSubunits(
+                Decimal.from(UInt256.MAX_VALUE).toBigIntegerSubunits().add(BigInteger.ONE)));
+
+    assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.ZERO), Decimal.ZERO);
+    assertEquals(Decimal.ZERO.toBigIntegerSubunits(), BigInteger.ZERO);
+    assertEquals(Decimal.from(UInt256.ONE).toBigIntegerSubunits(), BigInteger.ONE);
+    assertEquals(Decimal.fromBigIntegerSubunits(BigInteger.TEN.pow(18)), Decimal.of(1L));
   }
 }

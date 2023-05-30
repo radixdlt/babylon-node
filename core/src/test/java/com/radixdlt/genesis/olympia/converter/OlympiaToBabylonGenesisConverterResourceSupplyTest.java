@@ -120,7 +120,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
 
     final var config =
         new OlympiaToBabylonConverterConfig(
-            10, 10, 10, 10, 10, Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(6000L)));
+            10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(BigInteger.valueOf(6000L)));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
     // There are two balance entries: 10000 and 2001 (12k + 1 total), and the maximum supply is 6k.
@@ -130,15 +130,15 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
     assertEquals(
-        Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(5999L)),
+        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(5999L)),
         ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
 
     assertEquals(
-        Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(4999L)),
+        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(4999L)),
         resourceBalancesChunk.allocations().get(0).last().get(0).amount());
 
     assertEquals(
-        Decimal.unsafeFromRawBigIntRepr(BigInteger.valueOf(1000L)),
+        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(1000L)),
         resourceBalancesChunk.allocations().get(0).last().get(1).amount());
   }
 

@@ -311,20 +311,4 @@ public class Bytes {
     System.arraycopy(input, 0, padded, paddingLen, input.length);
     return padded;
   }
-
-  /**
-   * @param input A big-endian byte-order two's-complement integer. Must be non-negative.
-   * @return A big-endian byte-order unsigned integer bytes.
-   */
-  public static byte[] signedNonNegativeIntegerBytesToUnsigned(byte[] input) {
-    if (input.length <= 1) {
-      return input;
-    } else if (input[0] == 0x00) {
-      final var res = new byte[input.length - 1];
-      System.arraycopy(input, 1, res, 0, input.length - 1);
-      return res;
-    } else {
-      return input;
-    }
-  }
 }

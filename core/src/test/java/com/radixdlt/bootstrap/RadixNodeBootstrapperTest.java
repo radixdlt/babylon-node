@@ -98,9 +98,9 @@ public final class RadixNodeBootstrapperTest {
     final var network = Network.LOCALNET;
     final var genesisStore = new GenesisFileStore(new File(tmpFolder.getRoot(), "genesis.bin"));
 
-    final var genesisTxn1 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
+    final var genesisData1 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties1 =
-        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn1));
+        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
     final var nodeHandle1 =
         new RadixNodeBootstrapper(
                 network,
@@ -112,9 +112,9 @@ public final class RadixNodeBootstrapperTest {
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
     // Let's try again, same genesis store but a different genesis txn
-    final var genesisTxn2 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
+    final var genesisData2 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties2 =
-        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn2));
+        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData2));
     final var nodeHandle2 =
         new RadixNodeBootstrapper(
                 network,
@@ -132,10 +132,10 @@ public final class RadixNodeBootstrapperTest {
     final var network = Network.GENESIS_TEST;
 
     // This transaction matches the genesis of GENESIS_TEST network
-    final var genesisTxn1 =
+    final var genesisData1 =
         encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
     final var properties1 =
-        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn1));
+        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
     final var nodeHandle1 =
         new RadixNodeBootstrapper(
                 network,
@@ -147,10 +147,10 @@ public final class RadixNodeBootstrapperTest {
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
     // This transaction doesn't match the genesis of GENESIS_TEST network
-    final var genesisTxn2 =
+    final var genesisData2 =
         encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {9, 9, 9})));
     final var properties2 =
-        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_txn", genesisTxn2));
+        RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData2));
     final var nodeHandle2 =
         new RadixNodeBootstrapper(
                 network,
@@ -208,7 +208,7 @@ public final class RadixNodeBootstrapperTest {
     final var properties =
         RuntimeProperties.defaultWithOverrides(
             Map.of(
-                "network.genesis_txn", "",
+                "network.genesis_data", "",
                 "network.genesis_file", ""));
     final var nodeHandle =
         new RadixNodeBootstrapper(
@@ -224,6 +224,11 @@ public final class RadixNodeBootstrapperTest {
 
   private GenesisData genesisWithSingleValidator(ECKeyPair key) {
     return new GenesisData(
+        UInt64.fromNonNegativeLong(1),
+        UInt32.fromNonNegativeInt(1),
+        UInt64.fromNonNegativeLong(1),
+        UInt64.fromNonNegativeLong(1),
+        1,
         ImmutableList.of(
             new GenesisDataChunk.Validators(
                 ImmutableList.of(
@@ -232,12 +237,7 @@ public final class RadixNodeBootstrapperTest {
                         true,
                         true,
                         ImmutableList.of(),
-                        Address.virtualAccountAddress(key.getPublicKey()))))),
-        UInt64.fromNonNegativeLong(1),
-        UInt32.fromNonNegativeInt(1),
-        UInt64.fromNonNegativeLong(1),
-        UInt64.fromNonNegativeLong(1),
-        1);
+                        Address.virtualAccountAddress(key.getPublicKey()))))));
   }
 
   private String encodeToString(GenesisData genesisData) {

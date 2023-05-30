@@ -88,12 +88,12 @@ public final class GenesisBuilder {
     final var validatorsAndStakesChunks =
         prepareValidatorsAndStakesChunks(ImmutableList.of(tuple(validator, initialStake)));
     return new GenesisData(
-        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
         UInt64.fromNonNegativeLong(0),
         UInt32.fromNonNegativeInt(100),
         roundsPerEpoch,
         numUnstakeEpochs,
-        1L);
+        1L,
+        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()));
   }
 
   public static GenesisData createGenesisWithNumValidators(
@@ -124,12 +124,12 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        chunksBuilder.build(),
         UInt64.fromNonNegativeLong(0),
         UInt32.fromNonNegativeInt(100),
         roundsPerEpoch,
         UInt64.fromNonNegativeLong(10),
-        1L);
+        1L,
+        chunksBuilder.build());
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -155,12 +155,12 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        chunksBuilder.build(),
         UInt64.fromNonNegativeLong(0),
         UInt32.fromNonNegativeInt(100),
         roundsPerEpoch,
         UInt64.fromNonNegativeLong(10),
-        1L);
+        1L,
+        chunksBuilder.build());
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

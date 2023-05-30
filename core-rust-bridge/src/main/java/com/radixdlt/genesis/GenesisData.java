@@ -71,12 +71,12 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record GenesisData(
-    ImmutableList<GenesisDataChunk> chunks,
     UInt64 initialEpoch,
     UInt32 maxValidators,
     UInt64 roundsPerEpoch,
     UInt64 numUnstakeEpochs,
-    long initialTimestampMs) {
+    long initialTimestampMs,
+    ImmutableList<GenesisDataChunk> chunks) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -85,11 +85,11 @@ public record GenesisData(
 
   public static GenesisData testingDefaultEmpty() {
     return new GenesisData(
-        ImmutableList.of(),
         UInt64.fromNonNegativeLong(1L),
         UInt32.fromNonNegativeInt(100),
         UInt64.fromNonNegativeLong(100),
         UInt64.fromNonNegativeLong(10),
-        1L);
+        1L,
+        ImmutableList.of());
   }
 }

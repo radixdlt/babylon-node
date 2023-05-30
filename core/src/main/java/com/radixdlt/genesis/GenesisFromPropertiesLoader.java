@@ -88,9 +88,9 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
       log.info("Loading genesis from file: {}", genesisFileProp);
       return Optional.of(decodeFromBase64(readFileToString(genesisFileProp)));
-    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_txn"))) {
-      log.info("Loading genesis from genesis_txn property");
-      return Optional.of(decodeFromBase64(properties.get("network.genesis_txn")));
+    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_data"))) {
+      log.info("Loading genesis from genesis_data property");
+      return Optional.of(decodeFromBase64(properties.get("network.genesis_data")));
     } else {
       return Optional.empty();
     }

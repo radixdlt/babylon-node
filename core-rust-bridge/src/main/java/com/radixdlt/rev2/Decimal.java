@@ -69,7 +69,6 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -108,20 +107,26 @@ public class Decimal implements Comparable<Decimal> {
 
   /**
    * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
-   * value of 1 translates to 1e-18 Decimal unit, not 1.
+   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt256.
    */
-  public static Decimal unsafeFromRawBigIntRepr(BigInteger rawBigIntRepr) {
-    if (rawBigIntRepr.compareTo(BigInteger.ZERO) < 0) {
+  public static Decimal fromBigIntegerSubunits(BigInteger bigInt) {
+    if (bigInt.compareTo(BigInteger.ZERO) < 0) {
       throw new IllegalArgumentException(
           "Can't create a Decimal from a negative BigInteger representation");
     }
-    final var bigIntSignedBytes = rawBigIntRepr.toByteArray();
-    final var unsignedBytes = Bytes.signedNonNegativeIntegerBytesToUnsigned(bigIntSignedBytes);
-    final var dec = Decimal.from(UInt256.from(unsignedBytes));
-    if (!dec.toRawBigIntRepresentation().equals(rawBigIntRepr)) {
+    final var bigIntSignedBytes = bigInt.toByteArray();
+    final byte[] uint256Bytes;
+    if (bigIntSignedBytes.length == UInt256.BYTES + 1 && bigIntSignedBytes[0] == 0x00) {
+      // A signed representation of a positive 32-bytes integer can actually contain
+      // 33 bytes (additional 0x00 byte), so we just skip it.
+      uint256Bytes = Arrays.copyOfRange(bigIntSignedBytes, 1, bigIntSignedBytes.length);
+    } else if (bigIntSignedBytes.length > UInt256.BYTES) {
+      // Can't fit
       throw new IllegalArgumentException("Decimal overflow");
+    } else {
+      uint256Bytes = bigIntSignedBytes;
     }
-    return dec;
+    return Decimal.from(UInt256.from(uint256Bytes));
   }
 
   public Decimal add(Decimal other) {
@@ -129,7 +134,7 @@ public class Decimal implements Comparable<Decimal> {
     return new Decimal(newUnderlying);
   }
 
-  public BigInteger toRawBigIntRepresentation() {
+  public BigInteger toBigIntegerSubunits() {
     return underlyingValue.toBigInt();
   }
 
