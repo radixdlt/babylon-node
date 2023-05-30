@@ -72,7 +72,7 @@ import java.util.List;
 
 public record PrepareResult(
     List<byte[]> committed,
-    List<Tuple.Tuple2<byte[], String>> rejected,
+    List<RejectedTransaction> rejected,
     Option<NextEpoch> nextEpoch,
     LedgerHashes ledgerHashes) {
   public static void registerCodec(CodecMap codecMap) {

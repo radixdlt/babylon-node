@@ -65,6 +65,7 @@
 use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
+use crate::transaction::RawLedgerTransaction;
 use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -101,7 +102,7 @@ struct TxnsAndProofRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProof {
-    transactions: Vec<Vec<u8>>,
+    transactions: Vec<RawLedgerTransaction>,
     proof: JavaLedgerProof,
 }
 
@@ -137,7 +138,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
                 )
                 .unwrap(),
-                transaction_bytes: committed_transaction.create_payload().unwrap(),
+                transaction_bytes: committed_transaction.0,
             })
         },
     )
@@ -206,7 +207,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |epoch: u64| -> Option<JavaLedgerProof> {
+        |epoch: Epoch| -> Option<JavaLedgerProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let epoch_proof = database.read().get_epoch_proof(epoch);
             epoch_proof.map(JavaLedgerProof::from)

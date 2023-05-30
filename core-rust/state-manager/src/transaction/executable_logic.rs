@@ -17,7 +17,7 @@ use transaction::model::*;
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
 pub trait TransactionLogic<S> {
-    fn execute_on(&self, store: &S) -> TransactionReceipt;
+    fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
 /// A well-known type of execution.
@@ -91,21 +91,21 @@ pub struct ConfiguredExecutable<'a> {
 impl<'a> ConfiguredExecutable<'a> {
     /// Wraps this instance in a time-measuring decorator (which will log a `warn!` after the given
     /// runtime threshold).
-    pub fn warn_after<S: Into<String>>(
+    pub fn warn_after<'b>(
         self,
         threshold: Duration,
-        logged_description: S,
-    ) -> TimeWarningTransactionLogic<Self> {
+        logged_description: impl FnOnce() -> String + 'b,
+    ) -> TimeWarningTransactionLogic<'b, Self> {
         TimeWarningTransactionLogic {
             underlying: self,
             threshold,
-            logged_description: logged_description.into(),
+            logged_description: Box::new(logged_description),
         }
     }
 }
 
 impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
-    fn execute_on(&self, store: &S) -> TransactionReceipt {
+    fn execute_on(self, store: &S) -> TransactionReceipt {
         execute_transaction(
             store,
             self.scrypto_interpreter,
@@ -117,18 +117,18 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
 }
 
 /// A time-measuring decorator for a `TransactionLogic`.
-pub struct TimeWarningTransactionLogic<U> {
+pub struct TimeWarningTransactionLogic<'a, U> {
     underlying: U,
     threshold: Duration,
-    logged_description: String, // for error-surfacing only
+    logged_description: Box<dyn FnOnce() -> String + 'a>, // for error-surfacing only
 }
 
-impl<U, S> TransactionLogic<S> for TimeWarningTransactionLogic<U>
+impl<'a, U, S> TransactionLogic<S> for TimeWarningTransactionLogic<'a, U>
 where
     S: SubstateDatabase,
     U: TransactionLogic<S>,
 {
-    fn execute_on(&self, store: &S) -> TransactionReceipt {
+    fn execute_on(self, store: &S) -> TransactionReceipt {
         let start = Instant::now();
         let result = self.underlying.execute_on(store);
         let elapsed = start.elapsed();
@@ -137,7 +137,7 @@ where
                 "Transaction execution took {}ms, above warning threshold of {}ms ({})",
                 elapsed.as_millis(),
                 self.threshold.as_millis(),
-                self.logged_description
+                (self.logged_description)()
             );
         }
         result

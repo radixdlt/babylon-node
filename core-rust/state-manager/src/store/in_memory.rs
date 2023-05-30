@@ -65,40 +65,37 @@
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::store::traits::extensions::*;
 use crate::store::traits::*;
-use crate::transaction::LedgerTransaction;
-use crate::types::UserPayloadHash;
+use crate::transaction::{LedgerPayloadHash, RawLedgerTransaction, TypedTransactionIdentifiers};
 use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 
 use crate::query::TransactionIdentifierLoader;
 use core::ops::Bound::{Included, Unbounded};
 use node_common::utils::IsAccountExt;
-use radix_engine_common::types::GlobalAddress;
+use radix_engine_common::types::{GlobalAddress, Epoch};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
     SubstateDatabase,
 };
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
-};
+use radix_engine_stores::hash_tree::tree_store::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use transaction::model::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
     flags: DatabaseFlags,
-    transactions: BTreeMap<u64, LedgerTransaction>,
+    transactions: BTreeMap<u64, RawLedgerTransaction>,
     transaction_identifiers: BTreeMap<u64, CommittedTransactionIdentifiers>,
     ledger_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
     local_transaction_executions: BTreeMap<u64, LocalTransactionExecution>,
     transaction_intent_lookup: HashMap<IntentHash, u64>,
-    user_payload_hash_lookup: HashMap<UserPayloadHash, u64>,
+    user_payload_hash_lookup: HashMap<NotarizedTransactionHash, u64>,
     ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
     proofs: BTreeMap<u64, LedgerProof>,
-    epoch_proofs: BTreeMap<u64, LedgerProof>,
+    epoch_proofs: BTreeMap<Epoch, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: InMemorySubstateDatabase,
     tree_node_store: SerializedInMemoryTreeStore,
@@ -133,45 +130,44 @@ impl InMemoryStore {
 
     fn insert_transaction(
         &mut self,
-        transaction: LedgerTransaction,
+        transaction: RawLedgerTransaction,
         receipt: LocalTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         if self.is_account_change_index_enabled() {
             self.update_account_change_index_from_receipt(
-                identifiers.state_version,
+                identifiers.at_commit.state_version,
                 &receipt.local_execution,
             );
         }
 
-        if let LedgerTransaction::User(notarized_transaction) = &transaction {
-            let intent_hash = notarized_transaction.intent_hash();
-            let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
+        if let TypedTransactionIdentifiers::User { intent_hash, notarized_transaction_hash, .. } = &identifiers.payload.typed {
+            let key_already_exists = self.transaction_intent_lookup.get(intent_hash);
             if let Some(existing_payload_hash) = key_already_exists {
                 panic!(
                     "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
                 );
             }
             self.transaction_intent_lookup
-                .insert(intent_hash, identifiers.state_version);
+                .insert(*intent_hash, identifiers.at_commit.state_version);
 
             self.user_payload_hash_lookup.insert(
-                notarized_transaction.user_payload_hash(),
-                identifiers.state_version,
+                *notarized_transaction_hash,
+                identifiers.at_commit.state_version,
             );
         }
 
         self.ledger_payload_hash_lookup
-            .insert(transaction.ledger_payload_hash(), identifiers.state_version);
+            .insert(identifiers.payload.ledger_payload_hash, identifiers.at_commit.state_version);
 
         self.transactions
-            .insert(identifiers.state_version, transaction);
+            .insert(identifiers.at_commit.state_version, transaction);
         self.ledger_receipts
-            .insert(identifiers.state_version, receipt.on_ledger);
+            .insert(identifiers.at_commit.state_version, receipt.on_ledger);
         self.local_transaction_executions
-            .insert(identifiers.state_version, receipt.local_execution);
+            .insert(identifiers.at_commit.state_version, receipt.local_execution);
         self.transaction_identifiers
-            .insert(identifiers.state_version, identifiers);
+            .insert(identifiers.at_commit.state_version, identifiers);
     }
 }
 
@@ -220,8 +216,8 @@ impl TransactionIndex<&IntentHash> for InMemoryStore {
     }
 }
 
-impl TransactionIndex<&UserPayloadHash> for InMemoryStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &UserPayloadHash) -> Option<u64> {
+impl TransactionIndex<&NotarizedTransactionHash> for InMemoryStore {
+    fn get_txn_state_version_by_identifier(&self, identifier: &NotarizedTransactionHash) -> Option<u64> {
         self.user_payload_hash_lookup.get(identifier).cloned()
     }
 }
@@ -269,8 +265,8 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
 
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        for (txn, receipt, identifiers) in commit_bundle.transactions {
-            self.insert_transaction(txn, receipt, identifiers);
+        for CommittedTransactionBundle { raw, receipt, identifiers } in commit_bundle.transactions {
+            self.insert_transaction(raw, receipt, identifiers);
         }
 
         let commit_ledger_header = &commit_bundle.proof.ledger_header;
@@ -326,9 +322,9 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
         self.state_version += 1;
         match self.store.transactions.get(&state_version) {
             None => None,
-            Some(transaction) => Some((
-                transaction.clone(),
-                LocalTransactionReceipt {
+            Some(transaction) => Some(CommittedTransactionBundle {
+                raw: transaction.clone(),
+                receipt: LocalTransactionReceipt {
                     on_ledger: self
                         .store
                         .ledger_receipts
@@ -342,12 +338,12 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
                         .unwrap()
                         .clone(),
                 },
-                self.store
+                identifiers: self.store
                     .transaction_identifiers
                     .get(&state_version)
                     .unwrap()
                     .clone(),
-            )),
+            }),
         }
     }
 }
@@ -368,7 +364,7 @@ impl IterableTransactionStore for InMemoryStore {
 }
 
 impl QueryableTransactionStore for InMemoryStore {
-    fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
+    fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction> {
         Some(self.transactions.get(&state_version)?.clone())
     }
 
@@ -412,12 +408,11 @@ impl QueryableTransactionStore for InMemoryStore {
 }
 
 impl TransactionIdentifierLoader for InMemoryStore {
-    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
+    fn get_top_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
         self.transaction_identifiers
             .iter()
             .next_back()
             .map(|(_, value)| value.clone())
-            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis)
     }
 }
 
@@ -436,20 +431,20 @@ impl QueryableProofStore for InMemoryStore {
         start_state_version_inclusive: u64,
         _max_number_of_txns_if_more_than_one_proof: u32,
         _max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
+    ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
         self.proofs
             .range(start_state_version_inclusive..)
             .next()
             .map(|(v, proof)| {
                 let mut txns = Vec::new();
                 for (_, txn) in self.transactions.range(start_state_version_inclusive..=*v) {
-                    txns.push(txn.create_payload().unwrap());
+                    txns.push(txn.clone());
                 }
                 (txns, proof.clone())
             })
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
+    fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
         self.epoch_proofs.get(&epoch).cloned()
     }
 

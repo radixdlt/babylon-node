@@ -149,7 +149,7 @@ public class TokenResourceTest {
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getLegacyPayloadHash(), 0), addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "test"))
@@ -174,7 +174,7 @@ public class TokenResourceTest {
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getLegacyPayloadHash(), 0), addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
@@ -201,7 +201,7 @@ public class TokenResourceTest {
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getLegacyPayloadHash(), 0), addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
@@ -222,7 +222,7 @@ public class TokenResourceTest {
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getLegacyPayloadHash(), 0), addr.getBytes())
             .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -245,7 +245,7 @@ public class TokenResourceTest {
         TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getLegacyPayloadHash(), 0), addr.getBytes())
             .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign());

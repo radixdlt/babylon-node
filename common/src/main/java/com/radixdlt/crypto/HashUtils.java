@@ -179,7 +179,7 @@ public final class HashUtils {
    * @param payload input bytes to hash
    * @return calculated hash
    */
-  public static HashCode transactionIdHash(byte[] payload) {
+  public static HashCode legacyLedgerPayloadHash(byte[] payload) {
     return blake2b256(payload);
   }
 

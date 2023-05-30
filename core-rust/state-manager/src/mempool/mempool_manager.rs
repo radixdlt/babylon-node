@@ -63,9 +63,11 @@
  */
 
 use crate::mempool::*;
-use crate::types::*;
+use crate::simple_mempool::MempoolTransaction;
 use crate::{MempoolMetrics, TakesMetricLabels};
 use prometheus::Registry;
+use rand::seq::SliceRandom;
+use transaction::model::*;
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -73,12 +75,10 @@ use std::sync::Arc;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::simple_mempool::SimpleMempool;
 use crate::store::StateManagerDatabase;
-use crate::transaction::CachedCommitabilityValidator;
+use crate::transaction::{CachedCommitabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata};
 use parking_lot::RwLock;
-use rand::seq::SliceRandom;
 use rand::thread_rng;
 use tracing::warn;
-use transaction::model::NotarizedTransaction;
 
 /// A high-level API giving a thread-safe access to the `SimpleMempool`.
 pub struct MempoolManager {
@@ -126,15 +126,16 @@ impl MempoolManager {
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
-        user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
-    ) -> Vec<PendingTransaction> {
+        user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
+    ) -> Vec<Arc<MempoolTransaction>> {
+        // TODO - make this more efficient that cloning the whole mempool
         let read_mempool = self.mempool.read();
         let all_transactions = read_mempool.get_all_transactions();
         drop(read_mempool);
 
         let candidate_transactions = all_transactions
             .into_iter()
-            .filter(|candidate| !user_payload_hashes_to_exclude.contains(&candidate.payload_hash))
+            .filter(|candidate| !user_payload_hashes_to_exclude.contains(&candidate.notarized_transaction_hash()))
             .collect();
         Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
     }
@@ -145,10 +146,8 @@ impl MempoolManager {
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
-    ) -> Vec<PendingTransaction> {
-        let read_mempool = self.mempool.read();
-        let candidate_transactions = read_mempool.get_all_transactions();
-        drop(read_mempool);
+    ) -> Vec<Arc<MempoolTransaction>> {
+        let candidate_transactions = self.mempool.read().get_all_transactions();
 
         Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
     }
@@ -157,9 +156,7 @@ impl MempoolManager {
     /// from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_commitability(&self, max_reevaluated_count: u32) {
-        let read_mempool = self.mempool.read();
-        let mut candidate_transactions = read_mempool.get_all_transactions();
-        drop(read_mempool);
+        let mut candidate_transactions = self.mempool.read().get_all_transactions();
 
         let mut transactions_to_remove = Vec::new();
         let mut reevaluated_count = 0;
@@ -167,11 +164,11 @@ impl MempoolManager {
         for candidate_transaction in candidate_transactions {
             let (record, was_cached) = self
                 .cached_commitability_validator
-                .check_for_rejection_cached(&candidate_transaction.payload);
+                .check_for_rejection_cached_prevalidated(&candidate_transaction.validated, ForceRecalculation::No);
             if record.latest_attempt.rejection.is_some() {
                 transactions_to_remove.push(candidate_transaction);
             }
-            if !was_cached {
+            if was_cached == PrevalidatedCheckMetadata::Fresh {
                 reevaluated_count += 1;
                 if reevaluated_count >= max_reevaluated_count {
                     break;
@@ -185,12 +182,11 @@ impl MempoolManager {
                 .iter()
                 .filter_map(|transaction_to_remove| {
                     write_mempool.remove_transaction(
-                        &transaction_to_remove.intent_hash,
-                        &transaction_to_remove.payload_hash,
+                        &transaction_to_remove.validated.prepared.intent_hash(),
+                        &transaction_to_remove.validated.prepared.notarized_transaction_hash(),
                     )
                 })
                 .count();
-            drop(write_mempool);
             self.metrics.current_transactions.sub(removed_count as i64);
         }
     }
@@ -206,58 +202,74 @@ impl MempoolManager {
     pub fn add_and_trigger_relay(
         &self,
         source: MempoolAddSource,
-        transaction: NotarizedTransaction,
+        transaction: RawNotarizedTransaction,
+        force_recalculate: bool,
     ) -> Result<(), MempoolAddError> {
-        self.add_if_commitable(source, transaction.clone())?;
+        let added_transaction = self.add_if_committable(source, transaction, force_recalculate)?;
 
         if let Some(relay_dispatcher) = &self.relay_dispatcher {
-            if let Err(error) = relay_dispatcher.trigger_relay(transaction) {
+            if let Err(error) = relay_dispatcher.trigger_relay(&added_transaction.raw) {
                 warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
             }
         }
         Ok(())
     }
 
-    /// Checks the commitability of the given transaction (see `CachedCommitabilityValidator`) and
+    /// Checks the committability of the given transaction (see `CachedCommitabilityValidator`) and
     /// either adds it to the mempool, or returns the encountered error.
-    pub fn add_if_commitable(
+    pub fn add_if_committable(
         &self,
         source: MempoolAddSource,
-        unvalidated_transaction: NotarizedTransaction,
-    ) -> Result<(), MempoolAddError> {
-        // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
-        let mut write_mempool = self.mempool.write();
-        write_mempool.check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
-        drop(write_mempool);
+        raw_transaction: RawNotarizedTransaction,
+        force_recalculate: bool,
+    ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
+        // STEP 1 - We prepare the transaction to check it's in the right structure and so we have hashes to work with
+        let prepared = match self.cached_commitability_validator.prepare_from_raw(&raw_transaction) {
+            Ok(prepared) => prepared,
+            Err(validation_error) => {
+                // If the transaction fails to prepare at this point then we don't even have a hash to assign against it,
+                // so we can't cache anything - just return an error
+                return Err(MempoolAddError::Rejected(MempoolAddRejection::for_static_rejection(validation_error)));
+            },
+        };
 
-        let (record, was_cached) = self
+        // STEP 2 - Quick check to avoid transaction execution if it couldn't be added to the mempool anyway
+        self.mempool.write().check_add_would_be_possible(&prepared.notarized_transaction_hash())?;
+
+        // STEP 3 - We validate + run the transaction through
+        let force_recalculation = if force_recalculate {
+            ForceRecalculation::Yes 
+        } else {
+            // Note - if we've got to this point then there's room in the mempool for this transaction.
+            // We need to get a validated transaction to add into the mempool, so need to recalculate it.
+            // IMPORTANT: This is also a precondition for calling `should_accept_into_mempool`
+            ForceRecalculation::IfCachedAsValid
+        };
+        let (record, check_result) = self
             .cached_commitability_validator
-            .check_for_rejection_cached(&unvalidated_transaction);
+            .check_for_rejection_cached(prepared, force_recalculation);
+
+        // STEP 4 - We check if the result should mean we add the transaction to our mempool
         let result = record
-            .should_accept_into_mempool(was_cached)
+            .should_accept_into_mempool(check_result)
             .map_err(MempoolAddError::Rejected);
 
-        match &result {
-            Ok(_) => {
-                // Note - we purposefully don't save a validated transaction in the mempool:
-                // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
-                // * Moreover, the engine expects the validated transaction to be presently valid, else panics
-                // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
-                let mut write_mempool = self.mempool.write();
-                write_mempool.add_transaction(unvalidated_transaction.into(), source)?;
-                drop(write_mempool);
+        match result {
+            Ok(validated) => {
+                let mempool_transaction = Arc::new(MempoolTransaction { validated, raw: raw_transaction });
+                self.mempool.write().add_transaction(mempool_transaction.clone(), source)?;
                 self.metrics.submission_added.with_label(source).inc();
                 self.metrics.current_transactions.inc();
+                Ok(mempool_transaction)
             }
             Err(error) => {
                 self.metrics
                     .submission_rejected
-                    .with_two_labels(source, error)
+                    .with_two_labels(source, &error)
                     .inc();
+                Err(error)
             }
-        };
-
-        result
+        }
     }
 
     /// Removes all the transactions that have the given intent hashes.
@@ -288,7 +300,7 @@ impl MempoolManager {
     /// just because transactions were rejected in this history doesn't mean this history will be
     /// committed.
     /// But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-    pub fn remove_rejected(&self, rejected_transactions: &[(&IntentHash, &UserPayloadHash)]) {
+    pub fn remove_rejected(&self, rejected_transactions: &[(&IntentHash, &NotarizedTransactionHash)]) {
         let mut write_mempool = self.mempool.write();
         let removed_count = rejected_transactions
             .iter()
@@ -296,21 +308,20 @@ impl MempoolManager {
                 write_mempool.remove_transaction(intent_hash, user_payload_hash)
             })
             .count();
-        drop(write_mempool);
         self.metrics.current_transactions.sub(removed_count as i64);
     }
 
     fn pick_subset_with_limits(
-        mut candidate_transactions: Vec<PendingTransaction>,
+        mut candidate_transactions: Vec<Arc<MempoolTransaction>>,
         max_count: usize,
         max_payload_size_bytes: u64,
-    ) -> Vec<PendingTransaction> {
+    ) -> Vec<Arc<MempoolTransaction>> {
         candidate_transactions.shuffle(&mut thread_rng());
         let mut payload_size_so_far = 0;
         candidate_transactions
             .into_iter()
             .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.payload_size as u64;
+                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
                 let fits = increased_payload_size <= max_payload_size_bytes;
                 if fits {
                     payload_size_so_far = increased_payload_size;

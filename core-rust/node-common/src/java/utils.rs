@@ -65,6 +65,7 @@
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+use sbor::Sbor;
 
 use crate::java::structure::{StructFromJava, StructToJava};
 
@@ -107,4 +108,17 @@ pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode
         .map(method)
         .and_then(|result| result);
     jni_slice_to_jbytearray(env, &result.to_java().unwrap())
+}
+
+/// A type to allow easy transporting of error messages over the boundary, by returning a Result<X, StringError>
+/// 
+/// Note - doesn't implement Debug itself, to avoid the blanket impl below from failing
+#[derive(Clone, PartialEq, Eq, Sbor)]
+#[sbor(transparent)]
+pub struct StringError(String);
+
+impl<T: std::fmt::Debug> From<T> for StringError {
+    fn from(value: T) -> Self {
+        Self(format!("{value:?}"))
+    }
 }

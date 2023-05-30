@@ -276,7 +276,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               againstAccumulatorState,
               verticesInExtension.stream()
                   .flatMap(
-                      v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
+                      v ->
+                          v.successfulTransactions()
+                              .map(t -> t.transaction().getLegacyPayloadHash()))
                   .collect(ImmutableList.toImmutableList()),
               parentAccumulatorState);
 
@@ -295,7 +297,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
     for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
       accumulatorState =
-          this.accumulator.accumulate(accumulatorState, transaction.transaction().getPayloadHash());
+          this.accumulator.accumulate(
+              accumulatorState, transaction.transaction().getLegacyPayloadHash());
     }
 
     final LedgerHeader ledgerHeader =
@@ -374,7 +377,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           verifier.verifyAndGetExtension(
               againstLedgerHeader.getAccumulatorState(),
               committedTransactionsWithProof.getTransactions(),
-              RawLedgerTransaction::getPayloadHash,
+              RawLedgerTransaction::getLegacyPayloadHash,
               committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {

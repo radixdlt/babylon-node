@@ -1,6 +1,5 @@
-use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use std::collections::BTreeMap;
+use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 
 use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
@@ -15,15 +14,22 @@ use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
+use crate::transaction::PayloadIdentifiers;
 use crate::{AccumulatorHash, ConsensusReceipt, EventHash, SubstateChangeHash};
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiers {
+    pub payload: PayloadIdentifiers,
+    pub at_commit: CommitBasedIdentifiers,
+}
+
+#[derive(Debug, Clone, Sbor)]
+pub struct CommitBasedIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
 }
 
-impl CommittedTransactionIdentifiers {
+impl CommitBasedIdentifiers {
     pub fn pre_genesis() -> Self {
         Self {
             state_version: 0,
@@ -154,7 +160,7 @@ pub struct LocalTransactionExecution {
     pub state_update_summary: StateUpdateSummary,
     // These will be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+    pub next_epoch: Option<EpochChangeEvent>,
 }
 
 impl LedgerTransactionReceipt {

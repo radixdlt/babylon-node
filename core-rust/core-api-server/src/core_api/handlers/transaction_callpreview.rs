@@ -96,7 +96,7 @@ pub(crate) async fn handle_transaction_callpreview(
             },
             explicit_epoch_range: None,
             notary_public_key: None,
-            notary_as_signatory: true,
+            notary_is_signatory: true,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             tip_percentage: 0,
             nonce: 490,

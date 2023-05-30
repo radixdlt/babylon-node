@@ -82,24 +82,18 @@ public final class RawLedgerTransaction {
     codecMap.register(
         RawLedgerTransaction.class,
         codecs ->
-            StructCodec.with(
+            StructCodec.transparent(
                 RawLedgerTransaction::new,
                 codecs.of(byte[].class),
-                codecs.of(HashCode.class),
-                (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
+                RawLedgerTransaction::getPayload));
   }
 
   private final byte[] payload;
-  private final HashCode payloadHash;
-
-  private RawLedgerTransaction(byte[] payload, HashCode payloadHash) {
-    this.payload = Objects.requireNonNull(payload);
-    this.payloadHash = Objects.requireNonNull(payloadHash);
-  }
+  private final HashCode legacyPayloadHash;
 
   private RawLedgerTransaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
-    this.payloadHash = HashUtils.transactionIdHash(payload);
+    this.legacyPayloadHash = HashUtils.legacyLedgerPayloadHash(payload);
   }
 
   @JsonCreator
@@ -107,8 +101,8 @@ public final class RawLedgerTransaction {
     return new RawLedgerTransaction(payload);
   }
 
-  public HashCode getPayloadHash() {
-    return payloadHash;
+  public HashCode getLegacyPayloadHash() {
+    return legacyPayloadHash;
   }
 
   @JsonValue
@@ -118,7 +112,7 @@ public final class RawLedgerTransaction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(payloadHash);
+    return Objects.hash(legacyPayloadHash);
   }
 
   @Override
@@ -127,12 +121,13 @@ public final class RawLedgerTransaction {
       return false;
     }
 
-    return Objects.equals(this.payloadHash, other.payloadHash);
+    return Objects.equals(this.legacyPayloadHash, other.legacyPayloadHash);
   }
 
   @Override
   public String toString() {
-    return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
+    return String.format(
+        "%s{payloadHash=%s}", this.getClass().getSimpleName(), this.legacyPayloadHash);
   }
 
   /*

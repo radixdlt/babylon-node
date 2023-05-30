@@ -140,15 +140,15 @@ pub fn to_api_ledger_transaction(
     };
 
     Ok(match ledger_transaction {
-        LedgerTransaction::User(tx) => models::LedgerTransaction::UserLedgerTransaction {
+        LedgerTransaction::UserV1(tx) => models::LedgerTransaction::UserLedgerTransaction {
             payload_hex,
             notarized_transaction: Box::new(to_api_notarized_transaction(context, tx)?),
         },
-        LedgerTransaction::Validator(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
+        LedgerTransaction::RoundUpdateV1(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
             payload_hex,
             validator_transaction: Box::new(to_api_validator_transaction(context, tx)?),
         },
-        LedgerTransaction::System(tx) => models::LedgerTransaction::SystemLedgerTransaction {
+        LedgerTransaction::Genesis(tx) => models::LedgerTransaction::SystemLedgerTransaction {
             payload_hex,
             system_transaction: Box::new(to_api_system_transaction(context, tx)?),
         },
@@ -266,7 +266,7 @@ pub fn to_api_validator_transaction(
     validator_transaction: &ValidatorTransaction,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
-        ValidatorTransaction::RoundUpdate {
+        ValidatorTransaction::RoundUpdateV1 {
             proposer_timestamp_ms,
             epoch,
             round,

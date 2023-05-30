@@ -62,24 +62,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.transactions;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Bytes;
+import java.util.Objects;
 
 public record PreparedNotarizedTransaction(
     byte[] notarizedTransactionBytes,
     HashCode intentHash,
     HashCode signedIntentHash,
-    HashCode notarizedTransactionHash
-) {
+    HashCode notarizedTransactionHash) {
+  public PreparedNotarizedTransaction {
+    Objects.requireNonNull(notarizedTransactionBytes);
+    Objects.requireNonNull(intentHash);
+    Objects.requireNonNull(signedIntentHash);
+    Objects.requireNonNull(notarizedTransactionHash);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PreparedNotarizedTransaction.class,
         codecs -> StructCodec.fromRecordComponents(PreparedNotarizedTransaction.class, codecs));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(notarizedTransactionHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PreparedNotarizedTransaction other)) {
+      return false;
+    }
+
+    return Objects.equals(this.notarizedTransactionHash, other.notarizedTransactionHash);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{notarizedTxnHash=%s}",
+        this.getClass().getSimpleName(), this.hexNotarizedTransactionHash());
+  }
+
+  public byte[] getPayload() {
+    return notarizedTransactionBytes;
   }
 
   public String hexIntentHash() {
@@ -96,5 +127,13 @@ public record PreparedNotarizedTransaction(
 
   public RawNotarizedTransaction toRaw() {
     return RawNotarizedTransaction.create(this.notarizedTransactionBytes);
+  }
+
+  /*
+   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
+   * TODO - this should ideally be removed
+   */
+  public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
+    return RawLedgerTransaction.create(getPayload());
   }
 }

@@ -85,8 +85,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.*;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.transactions.*;
 import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -179,12 +178,14 @@ public final class StateManagerSbor {
   }
 
   public static void registerCodecForHashCode(CodecMap codecMap) {
+    // Registers as transparent (ie the underlying bytes)
+    // On the Rust side, ensure that all such hashes that are targeted are registered as transparent
     codecMap.register(
         HashCode.class,
         codecs ->
-            StructCodec.with(
+            StructCodec.transparent(
                 HashCode::fromBytes,
                 codecs.of(byte[].class),
-                (t, encoder) -> encoder.encode(t.asBytes())));
+                HashCode::asBytes));
   }
 }

@@ -68,11 +68,11 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
-import java.util.List;
+import java.util.Set;
 
 /** A request for listing a batch of transactions for proposal. */
 public record ProposalTransactionsRequest(
-    UInt32 maxCount, UInt32 maxPayloadSizeBytes, List<HashCode> transactionHashesToExclude) {
+    UInt32 maxCount, UInt32 maxPayloadSizeBytes, Set<HashCode> transactionHashesToExclude) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ProposalTransactionsRequest.class,

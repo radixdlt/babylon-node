@@ -63,22 +63,22 @@
  */
 
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use crate::jni::state_manager::JNIStateManager;
+use crate::simple_mempool::MempoolTransaction;
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::manifest_encode;
 
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
-use transaction::model::NotarizedTransaction;
-
-use crate::transaction::UserTransactionValidator;
-use crate::types::PendingTransaction;
-use crate::{mempool::*, UserPayloadHash};
+use transaction::model::*;
+use crate::mempool::*;
 use node_common::java::*;
+
+use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 
 //
 // JNI Interface
@@ -94,15 +94,10 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |transaction: JavaRawTransaction| -> Result<(), MempoolAddErrorJava> {
-            let notarized_transaction =
-                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-                    &transaction.payload,
-                )?;
-            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-            mempool_manager
-                .add_if_commitable(MempoolAddSource::MempoolSync, notarized_transaction)
-                .map_err(|error| error.into())
+        |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
+            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+                .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)?;
+            Ok(())
         },
     )
 }
@@ -117,22 +112,15 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |request: ProposalTransactionsRequest| -> Vec<JavaRawTransaction> {
-            let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = request
-                .transaction_hashes_to_exclude
-                .into_iter()
-                .map(|hash| UserPayloadHash::from_raw_bytes(hash.into_bytes()))
-                .collect();
-
-            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-            mempool_manager
+        |request: ProposalTransactionsRequest| -> Vec<JavaPreparedNotarizedTransaction> {
+            JNIStateManager::get_mempool_manager(&env, j_state_manager)
                 .get_proposal_transactions(
                     request.max_count.try_into().unwrap(),
                     request.max_payload_size_bytes as u64,
-                    &user_payload_hashes_to_exclude,
+                    &request.transaction_hashes_to_exclude,
                 )
                 .into_iter()
-                .map(|pending_transaction| pending_transaction.into())
+                .map(|mempool_transaction| mempool_transaction.into())
                 .collect()
         },
     )
@@ -162,15 +150,14 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaRawTransaction> {
-            let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-            let transactions_to_relay = mempool_manager.get_relay_transactions(
-                max_num_txns.try_into().unwrap(),
-                max_payload_size_bytes as u64,
-            );
-            transactions_to_relay
+        |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaPreparedNotarizedTransaction> {
+            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+                .get_relay_transactions(
+                    max_num_txns.try_into().unwrap(),
+                    max_payload_size_bytes as u64,
+                )
                 .into_iter()
-                .map(|transaction_to_relay| transaction_to_relay.into())
+                .map(|mempool_transaction| mempool_transaction.into())
                 .collect()
         },
     )
@@ -197,31 +184,18 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCo
 pub struct ProposalTransactionsRequest {
     pub max_count: u32,
     pub max_payload_size_bytes: u32,
-    pub transaction_hashes_to_exclude: Vec<JavaHashCode>,
+    pub transaction_hashes_to_exclude: HashSet<NotarizedTransactionHash>,
 }
 
-#[derive(Debug, Categorize, Encode, Decode)]
-pub struct JavaRawTransaction {
-    pub payload: Vec<u8>,
-    pub payload_hash: JavaHashCode,
-}
-
-impl From<PendingTransaction> for JavaRawTransaction {
-    fn from(transaction: PendingTransaction) -> Self {
-        JavaRawTransaction {
-            payload: manifest_encode(&transaction.payload).unwrap(),
-            payload_hash: JavaHashCode::from_bytes(transaction.payload_hash.into_bytes()),
-        }
-    }
-}
-
-impl From<NotarizedTransaction> for JavaRawTransaction {
-    fn from(transaction: NotarizedTransaction) -> Self {
-        let payload = manifest_encode(&transaction).unwrap();
-        let hash = UserPayloadHash::for_manifest_encoded_notarized_transaction(&payload);
-        JavaRawTransaction {
-            payload,
-            payload_hash: JavaHashCode::from_bytes(hash.into_bytes()),
+impl From<Arc<MempoolTransaction>> for JavaPreparedNotarizedTransaction {
+    fn from(value: Arc<MempoolTransaction>) -> Self {
+        // TODO - Once we have "EncodeAs" SBOR mapping, we can use some, type which wraps an Arc<MempoolTransaction>
+        // to extract the raw payload bytes, to avoid having to clone the full bytes here.
+        Self {
+            notarized_transaction_bytes: value.raw.clone(),
+            intent_hash: value.intent_hash(),
+            signed_intent_hash: value.signed_intent_hash(),
+            notarized_transaction_hash: value.notarized_transaction_hash(),
         }
     }
 }
@@ -229,7 +203,7 @@ impl From<NotarizedTransaction> for JavaRawTransaction {
 #[derive(Debug, Categorize, Encode, Decode)]
 enum MempoolAddErrorJava {
     Full { current_size: u64, max_size: u64 },
-    Duplicate,
+    Duplicate(NotarizedTransactionHash),
     TransactionValidationError(String),
     Rejected(String),
 }
@@ -244,7 +218,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 current_size,
                 max_size,
             },
-            MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
+            MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
             MempoolAddError::Rejected(rejection) => {
                 MempoolAddErrorJava::Rejected(rejection.reason.to_string())
             }

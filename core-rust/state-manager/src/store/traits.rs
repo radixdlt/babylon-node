@@ -64,7 +64,7 @@
 
 use crate::staging::StateHashTreeDiff;
 use crate::store::StateManagerDatabase;
-use crate::transaction::LedgerTransaction;
+use crate::transaction::*;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
 use enum_dispatch::enum_dispatch;
@@ -138,11 +138,11 @@ pub trait ConfigurableDatabase {
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
 }
 
-pub type CommittedTransactionBundle = (
-    LedgerTransaction,
-    LocalTransactionReceipt,
-    CommittedTransactionIdentifiers,
-);
+pub struct CommittedTransactionBundle {
+    pub raw: RawLedgerTransaction,
+    pub receipt: LocalTransactionReceipt,
+    pub identifiers: CommittedTransactionIdentifiers,
+}
 
 pub mod vertex {
     use super::*;
@@ -168,7 +168,6 @@ pub mod transactions {
     use super::*;
 
     use crate::store::traits::CommittedTransactionBundle;
-    use crate::transaction::LedgerTransaction;
     use crate::{
         CommittedTransactionIdentifiers, LedgerTransactionReceipt, LocalTransactionExecution,
         LocalTransactionReceipt,
@@ -184,7 +183,7 @@ pub mod transactions {
 
     #[enum_dispatch]
     pub trait QueryableTransactionStore {
-        fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
+        fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction>;
 
         fn get_committed_transaction_identifiers(
             &self,
@@ -213,6 +212,8 @@ pub mod transactions {
 }
 
 pub mod proofs {
+    use radix_engine_common::types::Epoch;
+
     use super::*;
 
     #[enum_dispatch]
@@ -223,8 +224,8 @@ pub mod proofs {
             start_state_version_inclusive: u64,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<Vec<u8>>, LedgerProof)>;
-        fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof>;
+        ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
+        fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
         fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
     }

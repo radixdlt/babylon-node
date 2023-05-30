@@ -62,54 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.transactions;
 
-import com.radixdlt.transactions.RawLedgerTransaction;
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.Bytes;
+import java.util.Objects;
 
-/** Exception thrown by Radix Engine */
-@SuppressWarnings("serial")
-public final class RadixEngineException extends Exception {
-  private final RawLedgerTransaction transaction;
-  private final int txnIndex;
-  private final int batchSize;
-
-  public RadixEngineException(
-      int txnIndex, int batchSize, RawLedgerTransaction transaction, Exception cause) {
-    super(
-        "index="
-            + txnIndex
-            + " batchSize="
-            + batchSize
-            + " txnId="
-            + transaction.getLegacyPayloadHash()
-            + " txn_size="
-            + transaction.getPayload().length
-            + " txn="
-            + txnToString(transaction),
-        cause);
-    this.transaction = transaction;
-    this.txnIndex = txnIndex;
-    this.batchSize = batchSize;
+public record PreparedSignedIntent(
+    byte[] signedIntentBytes, HashCode intentHash, HashCode signedIntentHash) {
+  public PreparedSignedIntent {
+    Objects.requireNonNull(signedIntentBytes);
+    Objects.requireNonNull(intentHash);
+    Objects.requireNonNull(signedIntentHash);
   }
 
-  private static String txnToString(RawLedgerTransaction transaction) {
-    if (transaction.getPayload().length > 2048) {
-      return Bytes.toHexString(transaction.getPayload()).substring(0, 2048) + "...";
-    } else {
-      return Bytes.toHexString(transaction.getPayload());
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreparedSignedIntent.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedSignedIntent.class, codecs));
+  }
+
+  public String hexIntentHash() {
+    return Bytes.toHexString(this.intentHash.asBytes());
+  }
+
+  public String hexSignedIntentHash() {
+    return Bytes.toHexString(this.intentHash.asBytes());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(signedIntentHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PreparedSignedIntent other)) {
+      return false;
     }
+
+    return Objects.equals(this.signedIntentHash, other.signedIntentHash);
   }
 
-  public int getBatchSize() {
-    return batchSize;
-  }
-
-  public RawLedgerTransaction getTxn() {
-    return transaction;
-  }
-
-  public int getTxnIndex() {
-    return txnIndex;
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{signedIntentHash=%s}", this.getClass().getSimpleName(), this.hexSignedIntentHash());
   }
 }

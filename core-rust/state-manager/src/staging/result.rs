@@ -66,17 +66,17 @@ use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
+use crate::transaction::LegacyLedgerPayloadHash;
 use crate::{
-    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
-    EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
-    NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
+    AccumulatorHash, ChangeAction, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt,
+    NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash, CommitBasedIdentifiers,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
 };
-use radix_engine_common::crypto::hash;
-use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
 use radix_engine::track::db_key_mapper::DatabaseKeyMapper;
@@ -101,8 +101,8 @@ pub struct ProcessedCommitResult {
 pub struct HashUpdateContext<'s, S> {
     pub store: &'s S,
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
-    pub parent_transaction_identifiers: &'s CommittedTransactionIdentifiers,
-    pub transaction_hash: &'s LedgerPayloadHash,
+    pub parent_transaction_identifiers: &'s CommitBasedIdentifiers,
+    pub legacy_payload_hash: &'s LegacyLedgerPayloadHash,
 }
 
 impl ProcessedTransactionReceipt {
@@ -169,7 +169,7 @@ impl ProcessedCommitResult {
     ) -> Self {
         let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
-        let transaction_hash = hash_update_context.transaction_hash;
+        let transaction_hash = hash_update_context.legacy_payload_hash;
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
@@ -216,7 +216,7 @@ impl ProcessedCommitResult {
             epoch_transaction_identifiers.state_version,
             epoch_transaction_identifiers.transaction_hash,
             parent_transaction_identifiers.state_version,
-            TransactionTreeHash::from_raw_bytes(transaction_hash.into_bytes()),
+            TransactionTreeHash::from(transaction_hash.into_hash()),
         );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
         let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
@@ -224,7 +224,7 @@ impl ProcessedCommitResult {
             epoch_transaction_identifiers.state_version,
             epoch_transaction_identifiers.receipt_hash,
             parent_transaction_identifiers.state_version,
-            ReceiptTreeHash::from_raw_bytes(consensus_receipt.get_hash().into_bytes()),
+            ReceiptTreeHash::from(consensus_receipt.get_hash().into_hash()),
         );
         let ledger_hashes = LedgerHashes {
             state_root: state_hash_tree_diff.new_root,
@@ -331,7 +331,7 @@ pub struct StateHashTreeDiff {
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_root: StateHash::from_raw_bytes([0; StateHash::LENGTH]),
+            new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_re_node_layer_nodes: Vec::new(),
             new_substate_layer_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),

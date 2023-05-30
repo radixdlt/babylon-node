@@ -62,16 +62,13 @@
  * permissions under this License.
  */
 
-use crate::transaction::{
-    LedgerTransaction,
-};
+use crate::transaction::*;
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
 use radix_engine::types::PublicKey;
 use radix_engine_common::types::Epoch;
-use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use transaction::manifest::compile;
@@ -97,9 +94,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |request: PrepareIntentRequest| -> Result<PrepareIntentResponse, String> {
-        let manifest = compile(&request.manifest, &request.network_definition, request.blobs)
-            .map_err(|err| format!("{err:?}"))?;
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareIntentRequest| -> Result<PrepareIntentResponse, StringError> {
+        let manifest = compile(&request.manifest, &request.network_definition, request.blobs)?;
 
         let (instructions, blobs) = manifest.for_intent();
         let intent = IntentV1 {
@@ -109,14 +105,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
             attachments: AttachmentsV1 {},
         };
 
-        let prepared_intent = intent.prepare()
-            .map_err(|err| format!("{err:?}"))?;
-
-        let intent_bytes = intent.to_payload_bytes()
-            .map_err(|err| format!("{err:?}"))?;
+        let prepared_intent = intent.prepare()?;
         
         Ok(PrepareIntentResponse {
-            intent_bytes,
+            intent_bytes: intent.to_payload_bytes()?,
             intent_hash: prepared_intent.intent_hash(),
         })
     })
@@ -168,23 +160,18 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, String> {
-        let intent = manifest_decode(&request.intent_bytes)
-            .map_err(|err| format!("{err:?}"))?;
-
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, StringError> {
         let signed_intent = SignedIntentV1 {
-            intent,
+            intent: IntentV1::from_payload_bytes(&request.intent_bytes)?,
             intent_signatures: IntentSignaturesV1 {
-                signatures: request.signatures.into_iter().map(|sig| IntentSignatureV1(sig)).collect(),
+                signatures: request.signatures.into_iter().map(IntentSignatureV1).collect(),
             },
         };
 
-        let prepared_signed_intent = signed_intent.prepare()
-            .map_err(|err| format!("{err:?}"))?;
+        let prepared_signed_intent = signed_intent.prepare()?;
 
         Ok(PrepareSignedIntentResponse {
-            signed_intent_bytes: signed_intent.to_payload_bytes()
-                .map_err(|err| format!("{err:?}"))?,
+            signed_intent_bytes: signed_intent.to_payload_bytes()?,
             intent_hash: prepared_signed_intent.intent_hash(),
             signed_intent_hash: prepared_signed_intent.signed_intent_hash()
         })
@@ -197,12 +184,13 @@ struct PrepareNotarizedTransactionRequest {
     notary_signature: SignatureV1,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-struct PrepareNotarizedTransactionResponse {
-    notarized_transaction_bytes: Vec<u8>,
-    intent_hash: IntentHash,
-    signed_intent_hash: SignedIntentHash,
-    notarized_transaction_hash: NotarizedTransactionHash,
+// NB - this doesn't need to be decode, because we never receive the hashes from Java
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode)]
+pub struct JavaPreparedNotarizedTransaction {
+    pub notarized_transaction_bytes: RawNotarizedTransaction,
+    pub intent_hash: IntentHash,
+    pub signed_intent_hash: SignedIntentHash,
+    pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 #[no_mangle]
@@ -211,21 +199,18 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareNota
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |request: PrepareNotarizedTransactionRequest| -> Result<PrepareNotarizedTransactionResponse, String> {
-        let signed_intent = manifest_decode(&request.signed_intent_bytes)
-            .map_err(|err| format!("{err:?}"))?;
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareNotarizedTransactionRequest| -> Result<JavaPreparedNotarizedTransaction, StringError> {
+        let signed_intent = SignedIntentV1::from_payload_bytes(&request.signed_intent_bytes)?;
 
         let notarized_transaction = NotarizedTransactionV1 {
             signed_intent,
             notary_signature: NotarySignatureV1(request.notary_signature),
         };
 
-        let prepared = notarized_transaction.prepare()
-            .map_err(|err| format!("{err:?}"))?;
+        let prepared = notarized_transaction.prepare()?;
 
-        Ok(PrepareNotarizedTransactionResponse {
-            notarized_transaction_bytes: signed_intent.to_payload_bytes()
-                .map_err(|err| format!("{err:?}"))?,
+        Ok(JavaPreparedNotarizedTransaction {
+            notarized_transaction_bytes: RawNotarizedTransaction(notarized_transaction.to_payload_bytes()?),
             intent_hash: prepared.intent_hash(),
             signed_intent_hash: prepared.signed_intent_hash(),
             notarized_transaction_hash: prepared.notarized_transaction_hash(),
@@ -239,11 +224,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransac
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(&env, request_payload, |args: Vec<u8>| {
-        let notarized_transaction: NotarizedTransaction = manifest_decode(&args)?;
-        Ok(manifest_encode(&LedgerTransaction::User(
-            notarized_transaction,
-        ))?)
+    jni_sbor_coded_call(&env, request_payload, |payload: RawNotarizedTransaction| -> Result<RawLedgerTransaction, StringError> {
+        let notarized_transaction = NotarizedTransactionV1::from_raw(&payload)?;
+        Ok(LedgerTransaction::UserV1(Box::new(notarized_transaction)).to_raw()?)
     })
 }
 
@@ -253,14 +236,14 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_transaction
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_fallible_call(&env, request_payload, |args: Vec<u8>| {
-        let transaction: LedgerTransaction = manifest_decode(&args)?;
+    jni_sbor_coded_call(&env, request_payload, |payload: RawLedgerTransaction| -> Result<Option<RawNotarizedTransaction>, StringError> {
+        let transaction = LedgerTransaction::from_raw(&payload)?;
         Ok(match transaction {
-            LedgerTransaction::User(notarized_transaction) => {
-                Some(notarized_transaction.to_bytes()?)
+            LedgerTransaction::UserV1(notarized_transaction) => {
+                Some(notarized_transaction.to_raw()?)
             }
-            LedgerTransaction::Validator(..) => None,
-            LedgerTransaction::System(..) => None,
+            LedgerTransaction::RoundUpdateV1(..) => None,
+            LedgerTransaction::Genesis(..) => None,
         })
     })
 }

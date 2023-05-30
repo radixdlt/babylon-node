@@ -62,20 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.transactions;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Objects;
 
-public record PreparedSignedIntent(
-    byte[] signedIntentBytes,
-    HashCode intentHash,
-    HashCode signedIntentHash
-) {
+public record PreparedIntent(byte[] intentBytes, HashCode intentHash) {
+  public PreparedIntent {
+    Objects.requireNonNull(intentBytes);
+    Objects.requireNonNull(intentHash);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        PreparedSignedIntent.class,
-        codecs -> StructCodec.fromRecordComponents(PreparedSignedIntent.class, codecs));
+        PreparedIntent.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedIntent.class, codecs));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(intentHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PreparedIntent other)) {
+      return false;
+    }
+
+    return Objects.equals(this.intentHash, other.intentHash);
+  }
+
+  public String hexIntentHash() {
+    return Bytes.toHexString(this.intentHash.asBytes());
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{intentHash=%s}", this.getClass().getSimpleName(), this.hexIntentHash());
   }
 }

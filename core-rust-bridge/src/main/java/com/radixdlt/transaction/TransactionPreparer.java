@@ -75,6 +75,10 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
+import com.radixdlt.transactions.PreparedIntent;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
+import com.radixdlt.transactions.PreparedSignedIntent;
+
 import java.util.List;
 
 public final class TransactionPreparer {
@@ -117,18 +121,20 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareNotarizedTransaction).build(new TypeToken<>() {});
 
   public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
-    return userTransactionToLedger.call(userTransactionBytes);
+    return userTransactionToLedger.call(userTransactionBytes)
+            .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<byte[], byte[]> userTransactionToLedger =
+  private static final Natives.Call1<byte[], Result<byte[], String>> userTransactionToLedger =
           Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
 
   public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
           byte[] transactionBytes) {
-    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
+    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes)
+            .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<byte[], Option<byte[]>>
+  private static final Natives.Call1<byte[], Result<Option<byte[]>, String>>
           transactionBytesToNotarizedTransactionBytesFn =
           Natives.builder(TransactionPreparer::transactionBytesToNotarizedTransactionBytes)
                   .build(new TypeToken<>() {});

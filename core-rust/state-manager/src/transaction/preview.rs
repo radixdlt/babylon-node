@@ -1,6 +1,7 @@
 use parking_lot::RwLock;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine::transaction::{PreviewError, TransactionReceipt};
+use radix_engine_common::types::Epoch;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use std::time::Duration;
@@ -8,14 +9,11 @@ use std::time::Duration;
 use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::{HashUpdateContext, ProcessedTransactionReceipt, ReadableStore};
 use crate::store::traits::QueryableProofStore;
-use crate::transaction::{
-    ConfigType, ExecutionConfigurator, NoopIntentHashManager, TransactionLogic,
-};
-use crate::{EpochTransactionIdentifiers, LedgerPayloadHash, PreviewRequest};
-use radix_engine_common::crypto::PublicKey;
-use radix_engine_common::network::NetworkDefinition;
+use crate::transaction::*;
+use crate::{EpochTransactionIdentifiers, PreviewRequest};
+use radix_engine_common::prelude::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent};
+use transaction::model::*;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
@@ -29,7 +27,6 @@ pub struct TransactionPreviewer<S> {
 }
 
 pub struct ProcessedPreviewResult {
-    pub intent: PreviewIntent,
     pub receipt: TransactionReceipt,
     pub processed_receipt: ProcessedTransactionReceipt,
 }
@@ -57,67 +54,67 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 
-        let transaction_identifiers = read_store.get_top_transaction_identifiers();
+        let transaction_identifiers = read_store.get_top_commit_identifiers();
         let epoch_identifiers = read_store
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
 
         let validator = NotarizedTransactionValidator::new(self.validation_config);
-        let executable = validator
-            .validate_preview_intent(&intent, &NoopIntentHashManager {})
+        let validated = validator
+            .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
         let transaction_logic = self
             .execution_configurator
-            .wrap(executable, ConfigType::Preview)
-            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
+            .wrap(validated.get_executable(), ConfigType::Preview)
+            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, || "preview".to_string());
         let receipt = transaction_logic.execute_on(read_store.deref());
 
-        // Using intent hash as transaction hash for the hash update context; doesn't matter for preview
-        let transaction_hash =
-            LedgerPayloadHash::for_ledger_payload_bytes(intent.to_bytes().unwrap().as_ref());
+        // Fake a LedgerPayloadHash for the purposes of mapping the receipt as it doesn't matter for preview
+        // TODO - don't do most of this work for preview
+        let fake_ledger_hash = LegacyLedgerPayloadHash::from_hash(validated.intent.summary.hash);
         let processed_receipt = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
             HashUpdateContext {
                 store: read_store.deref(),
                 epoch_transaction_identifiers: &epoch_identifiers,
                 parent_transaction_identifiers: &transaction_identifiers,
-                transaction_hash: &transaction_hash,
+                legacy_payload_hash: &fake_ledger_hash,
             },
             receipt.clone(),
         );
 
         Ok(ProcessedPreviewResult {
-            intent,
             receipt,
             processed_receipt,
         })
     }
 
-    fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntent {
+    fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntentV1 {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
             PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
         let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
             let current_epoch = read_store.get_epoch();
             Range {
-                start: current_epoch,
-                end: current_epoch + self.validation_config.max_epoch_range,
+                start: current_epoch.number(),
+                end: current_epoch.number() + self.validation_config.max_epoch_range,
             }
         });
-        PreviewIntent {
-            intent: TransactionIntent {
-                header: TransactionHeader {
-                    version: 1,
+        let (instructions, blobs) = preview_request.manifest.for_intent();
+        PreviewIntentV1 {
+            intent: IntentV1 {
+                header: TransactionHeaderV1 {
                     network_id: self.validation_config.network_id,
-                    start_epoch_inclusive: effective_epoch_range.start,
-                    end_epoch_exclusive: effective_epoch_range.end,
+                    start_epoch_inclusive: Epoch::of(effective_epoch_range.start),
+                    end_epoch_exclusive: Epoch::of(effective_epoch_range.end),
                     nonce: preview_request.nonce,
                     notary_public_key: notary,
-                    notary_as_signatory: preview_request.notary_as_signatory,
-                    cost_unit_limit: preview_request.cost_unit_limit,
+                    notary_is_signatory: preview_request.notary_is_signatory,
                     tip_percentage: preview_request.tip_percentage,
                 },
-                manifest: preview_request.manifest,
+                instructions,
+                blobs,
+                attachments: AttachmentsV1 {},
             },
             signer_public_keys: preview_request.signer_public_keys,
             flags: PreviewFlags {
@@ -146,12 +143,7 @@ mod tests {
     };
     use parking_lot::RwLock;
     use prometheus::Registry;
-    use radix_engine::system::bootstrap::{
-        GenesisDataChunk, GenesisStakeAllocation, GenesisValidator,
-    };
-    use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
     use radix_engine_common::network::NetworkDefinition;
-    use radix_engine_common::types::ComponentAddress;
     use radix_engine_common::{dec, manifest_args};
     use radix_engine_interface::constants::FAUCET;
     use std::sync::Arc;
@@ -205,26 +197,9 @@ mod tests {
                 &metric_registry,
             )));
 
-        let genesis_validator: GenesisValidator = EcdsaSecp256k1PublicKey([0; 33]).into();
-        let genesis_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![ComponentAddress::virtual_account_from_public_key(
-                    &genesis_validator.key,
-                )],
-                allocations: vec![(
-                    genesis_validator.key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: dec!("100"),
-                    }],
-                )],
-            },
-        ];
-
         state_manager
             .read()
-            .execute_genesis(genesis_chunks, 0, 100, 10, 10);
+            .execute_test_genesis();
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
@@ -240,8 +215,7 @@ mod tests {
             manifest: preview_manifest,
             explicit_epoch_range: None,
             notary_public_key: None,
-            notary_as_signatory: true,
-            cost_unit_limit: 100000000,
+            notary_is_signatory: true,
             tip_percentage: 0,
             nonce: 0,
             signer_public_keys: vec![],

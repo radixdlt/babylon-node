@@ -66,8 +66,8 @@ package com.radixdlt.rev2;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Functions;
-import com.radixdlt.transaction.PreparedNotarizedTransaction;
 import com.radixdlt.transaction.TransactionPreparer;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

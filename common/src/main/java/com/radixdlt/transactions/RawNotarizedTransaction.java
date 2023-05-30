@@ -66,48 +66,31 @@ package com.radixdlt.transactions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * A wrapper around the raw bytes of a notarized transaction payload. The transaction is yet to be
  * parsed, and may be invalid.
  */
-public final class RawNotarizedTransaction {
+public record RawNotarizedTransaction(byte[] payload) {
+  public RawNotarizedTransaction {
+    Objects.requireNonNull(payload);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         RawNotarizedTransaction.class,
         codecs ->
-            StructCodec.with(
-                RawNotarizedTransaction::new,
-                codecs.of(byte[].class),
-                codecs.of(HashCode.class),
-                (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
-  }
-
-  private final byte[] payload;
-  private final HashCode payloadHash;
-
-  private RawNotarizedTransaction(byte[] payload, HashCode payloadHash) {
-    this.payload = Objects.requireNonNull(payload);
-    this.payloadHash = Objects.requireNonNull(payloadHash);
-  }
-
-  private RawNotarizedTransaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.payloadHash = HashUtils.transactionIdHash(payload);
+            StructCodec.transparent(
+                RawNotarizedTransaction::new, codecs.of(byte[].class), t -> t.payload));
   }
 
   @JsonCreator
   public static RawNotarizedTransaction create(byte[] payload) {
     return new RawNotarizedTransaction(payload);
-  }
-
-  public HashCode getPayloadHash() {
-    return payloadHash;
   }
 
   @JsonValue
@@ -117,7 +100,7 @@ public final class RawNotarizedTransaction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(payloadHash);
+    return Arrays.hashCode(payload);
   }
 
   @Override
@@ -126,12 +109,7 @@ public final class RawNotarizedTransaction {
       return false;
     }
 
-    return Objects.equals(this.payloadHash, other.payloadHash);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
+    return Arrays.equals(this.payload, other.payload);
   }
 
   /*
@@ -140,13 +118,5 @@ public final class RawNotarizedTransaction {
    */
   public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
     return RawLedgerTransaction.create(getPayload());
-  }
-
-  /*
-   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
-   * TODO - this should ideally be removed
-   */
-  public RawNotarizedTransaction INCORRECTInterpretDirectlyAsRawNotarizedTransaction() {
-    return RawNotarizedTransaction.create(getPayload());
   }
 }

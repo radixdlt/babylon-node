@@ -62,26 +62,54 @@
  * permissions under this License.
  */
 
+use transaction::model::*;
+
 use crate::mempool::*;
-use crate::types::*;
 
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::time::Instant;
 
 #[derive(Clone)]
 pub struct MempoolData {
-    /// The original pending transaction.
-    pub transaction: PendingTransaction,
+    /// The mempool transaction.
+    /// The MempoolTransaction is stored in an Arc for performance, so it's cheap to clone it as part of mempool operations.
+    pub transaction: Arc<MempoolTransaction>,
     /// The instant at which the transaction was added to the mempool.
     pub added_at: Instant,
     /// The source of the transaction.
     pub source: MempoolAddSource,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MempoolTransaction {
+    // TODO - consider making this an Arc for performance if we're cloning MempoolTransaction a lot
+    pub validated: Box<ValidatedNotarizedTransactionV1>,
+    pub raw: RawNotarizedTransaction,
+}
+
+impl HasIntentHash for MempoolTransaction {
+    fn intent_hash(&self) -> IntentHash {
+        self.validated.prepared.intent_hash()
+    }
+}
+
+impl HasSignedIntentHash for MempoolTransaction {
+    fn signed_intent_hash(&self) -> transaction::model::SignedIntentHash {
+        self.validated.prepared.signed_intent_hash()
+    }
+}
+
+impl HasNotarizedTransactionHash for MempoolTransaction {
+    fn notarized_transaction_hash(&self) -> NotarizedTransactionHash {
+        self.validated.prepared.notarized_transaction_hash()
+    }
+}
+
 impl MempoolData {
     fn create(
-        transaction: PendingTransaction,
+        transaction: Arc<MempoolTransaction>,
         added_at: Instant,
         source: MempoolAddSource,
     ) -> MempoolData {
@@ -95,8 +123,8 @@ impl MempoolData {
 
 pub struct SimpleMempool {
     max_size: u64,
-    data: HashMap<UserPayloadHash, MempoolData>,
-    intent_lookup: HashMap<IntentHash, HashSet<UserPayloadHash>>,
+    data: HashMap<NotarizedTransactionHash, MempoolData>,
+    intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
 }
 
 impl SimpleMempool {
@@ -112,16 +140,16 @@ impl SimpleMempool {
 impl SimpleMempool {
     pub fn add_transaction(
         &mut self,
-        transaction: PendingTransaction,
+        transaction: Arc<MempoolTransaction>,
         source: MempoolAddSource,
     ) -> Result<(), MempoolAddError> {
         self.check_if_mempool_full()?;
 
-        let payload_hash = transaction.payload_hash;
-        let intent_hash = transaction.intent_hash;
+        let payload_hash = transaction.notarized_transaction_hash();
+        let intent_hash = transaction.intent_hash();
 
         match self.data.entry(payload_hash) {
-            Entry::Occupied(_) => return Err(MempoolAddError::Duplicate),
+            Entry::Occupied(_) => return Err(MempoolAddError::Duplicate(payload_hash)),
             Entry::Vacant(entry) => {
                 entry.insert(MempoolData::create(transaction, Instant::now(), source));
             }
@@ -140,10 +168,10 @@ impl SimpleMempool {
 
     pub fn check_add_would_be_possible(
         &mut self,
-        payload_hash: &UserPayloadHash,
+        payload_hash: &NotarizedTransactionHash,
     ) -> Result<(), MempoolAddError> {
         if self.data.contains_key(payload_hash) {
-            return Err(MempoolAddError::Duplicate);
+            return Err(MempoolAddError::Duplicate(*payload_hash));
         }
         self.check_if_mempool_full()?;
         Ok(())
@@ -166,18 +194,20 @@ impl SimpleMempool {
         self.data.len().try_into().unwrap()
     }
 
-    pub fn get_all_transactions(&self) -> Vec<PendingTransaction> {
+    pub fn get_all_transactions(&self) -> Vec<Arc<MempoolTransaction>> {
         self.data
             .values()
-            .map(|transaction_data| &transaction_data.transaction)
-            .cloned()
+            .map(|transaction_data| {
+                // Clone the Arc - this is relatively cheap
+                transaction_data.transaction.clone()
+            })
             .collect()
     }
 
     pub fn remove_transaction(
         &mut self,
         intent_hash: &IntentHash,
-        payload_hash: &UserPayloadHash,
+        payload_hash: &NotarizedTransactionHash,
     ) -> Option<MempoolData> {
         let removed = self.data.remove(payload_hash);
         if removed.is_some() {
@@ -209,14 +239,14 @@ impl SimpleMempool {
             .collect()
     }
 
-    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {
+    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<NotarizedTransactionHash> {
         match self.intent_lookup.get(intent_hash) {
             Some(payload_hashes) => payload_hashes.iter().cloned().collect(),
             None => vec![],
         }
     }
 
-    pub fn all_hashes_iter(&self) -> impl Iterator<Item = (&IntentHash, &UserPayloadHash)> {
+    pub fn all_hashes_iter(&self) -> impl Iterator<Item = (&IntentHash, &NotarizedTransactionHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, payload_hashes)| {
@@ -226,7 +256,7 @@ impl SimpleMempool {
             })
     }
 
-    pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {
+    pub fn get_payload(&self, payload_hash: &NotarizedTransactionHash) -> Option<&MempoolTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
     }
 }
@@ -236,12 +266,10 @@ mod tests {
     use std::matches;
 
     use radix_engine::types::PublicKey;
+    use radix_engine_common::types::Epoch;
     use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
-    use transaction::model::{
-        NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
-        TransactionHeader, TransactionIntent, TransactionManifest,
-    };
+    use transaction::model::*;
 
     use crate::mempool::simple_mempool::*;
 
@@ -251,58 +279,56 @@ mod tests {
         ))
     }
 
-    fn create_fake_signature() -> Signature {
-        Signature::EcdsaSecp256k1(EcdsaSecp256k1Signature(
+    fn create_fake_signature() -> NotarySignatureV1 {
+        NotarySignatureV1(SignatureV1::EcdsaSecp256k1(EcdsaSecp256k1Signature(
             [0; EcdsaSecp256k1Signature::LENGTH],
-        ))
+        )))
     }
 
-    fn create_fake_signature_with_public_key() -> SignatureWithPublicKey {
-        SignatureWithPublicKey::EcdsaSecp256k1 {
+    fn create_fake_signature_with_public_key() -> IntentSignatureV1 {
+        IntentSignatureV1(SignatureWithPublicKeyV1::EcdsaSecp256k1 {
             signature: EcdsaSecp256k1Signature([0; EcdsaSecp256k1Signature::LENGTH]),
-        }
+        })
     }
 
-    fn create_fake_notarized_transaction(nonce: u64, sigs_count: usize) -> NotarizedTransaction {
-        NotarizedTransaction {
-            signed_intent: SignedTransactionIntent {
-                intent: TransactionIntent {
-                    header: TransactionHeader {
-                        version: 1,
+    fn create_fake_notarized_transaction(nonce: u32, sigs_count: usize) -> PreparedNotarizedTransactionV1 {
+        NotarizedTransactionV1 {
+            signed_intent: SignedIntentV1 {
+                intent: IntentV1 {
+                    header: TransactionHeaderV1 {
                         network_id: 1,
-                        start_epoch_inclusive: 1,
-                        end_epoch_exclusive: 2,
+                        start_epoch_inclusive: Epoch::of(1),
+                        end_epoch_exclusive: Epoch::of(2),
                         nonce,
                         notary_public_key: create_fake_pub_key(),
-                        notary_as_signatory: false,
-                        cost_unit_limit: 100,
+                        notary_is_signatory: false,
                         tip_percentage: 0,
                     },
-                    manifest: TransactionManifest {
-                        instructions: vec![],
-                        blobs: vec![],
-                    },
+                    instructions: InstructionsV1(vec![]),
+                    blobs: BlobsV1 { blobs: vec![] },
+                    attachments: AttachmentsV1 { },
+                    
                 },
-                intent_signatures: vec![0; sigs_count]
+                intent_signatures: IntentSignaturesV1 { signatures: vec![0; sigs_count]
                     .into_iter()
                     .map(|_| create_fake_signature_with_public_key())
-                    .collect(),
+                    .collect()
+                },
             },
             notary_signature: create_fake_signature(),
-        }
+        }.prepare().expect("Expected that it could be prepared")
     }
 
-    fn create_fake_pending_transaction(nonce: u64, sigs_count: usize) -> PendingTransaction {
-        let notarized_transaction = create_fake_notarized_transaction(nonce, sigs_count);
-        let payload_hash = notarized_transaction.user_payload_hash();
-        let intent_hash = notarized_transaction.intent_hash();
-        let payload_size = notarized_transaction.to_bytes().unwrap().len();
-        PendingTransaction {
-            payload: notarized_transaction,
-            payload_hash,
-            intent_hash,
-            payload_size,
-        }
+    fn create_fake_pending_transaction(nonce: u32, sigs_count: usize) -> Arc<MempoolTransaction> {
+        Arc::new(MempoolTransaction {
+            validated: Box::new(ValidatedNotarizedTransactionV1 {
+                prepared: create_fake_notarized_transaction(nonce, sigs_count),
+                // Fake these
+                encoded_instructions: vec![],
+                signer_keys: vec![],
+            }),
+            raw: RawNotarizedTransaction(vec![]),
+        })
     }
 
     #[test]
@@ -322,7 +348,7 @@ mod tests {
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains_key(&tv1.payload_hash));
+        assert!(mp.data.contains_key(&tv1.notarized_transaction_hash()));
         let rc = mp.get_all_transactions();
         let get = rc;
         assert_eq!(get.len(), 1);
@@ -330,14 +356,14 @@ mod tests {
 
         let rc = mp.add_transaction(tv1.clone(), MempoolAddSource::CoreApi);
         assert!(rc.is_err());
-        assert!(matches!(rc, Err(MempoolAddError::Duplicate)));
+        assert!(matches!(rc, Err(MempoolAddError::Duplicate(_))));
 
         let rc = mp.add_transaction(tv2.clone(), MempoolAddSource::MempoolSync);
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 2);
-        assert!(mp.data.contains_key(&tv1.payload_hash));
-        assert!(mp.data.contains_key(&tv2.payload_hash));
+        assert!(mp.data.contains_key(&tv1.notarized_transaction_hash()));
+        assert!(mp.data.contains_key(&tv2.notarized_transaction_hash()));
 
         let rc = mp.get_all_transactions();
         let get = rc;
@@ -345,24 +371,24 @@ mod tests {
         assert!(get.contains(&tv1));
         assert!(get.contains(&tv2));
 
-        let rem = mp.remove_transactions(&tv1.intent_hash);
+        let rem = mp.remove_transactions(&tv1.intent_hash());
         assert!(rem.iter().any(|d| d.transaction == tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains_key(&tv2.payload_hash));
-        assert!(!mp.data.contains_key(&tv1.payload_hash));
+        assert!(mp.data.contains_key(&tv2.notarized_transaction_hash()));
+        assert!(!mp.data.contains_key(&tv1.notarized_transaction_hash()));
 
-        let rem = mp.remove_transactions(&tv2.intent_hash);
+        let rem = mp.remove_transactions(&tv2.intent_hash());
         assert!(rem.iter().any(|d| d.transaction == tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
-        assert!(!mp.data.contains_key(&tv2.payload_hash));
-        assert!(!mp.data.contains_key(&tv1.payload_hash));
+        assert!(!mp.data.contains_key(&tv2.notarized_transaction_hash()));
+        assert!(!mp.data.contains_key(&tv1.notarized_transaction_hash()));
 
         // mempool is empty. Should return no transactions.
-        assert!(mp.remove_transactions(&tv3.intent_hash).is_empty());
-        assert!(mp.remove_transactions(&tv2.intent_hash).is_empty());
-        assert!(mp.remove_transactions(&tv1.intent_hash).is_empty());
+        assert!(mp.remove_transactions(&tv3.intent_hash()).is_empty());
+        assert!(mp.remove_transactions(&tv2.intent_hash()).is_empty());
+        assert!(mp.remove_transactions(&tv1.intent_hash()).is_empty());
     }
 
     #[test]
@@ -385,50 +411,50 @@ mod tests {
 
         assert_eq!(mp.get_count(), 4);
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_1.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_2_payload_1.intent_hash())
                 .len(),
             1
         );
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             3
         );
         mp.remove_transaction(
-            &intent_1_payload_2.intent_hash,
-            &intent_1_payload_2.payload_hash,
+            &intent_1_payload_2.intent_hash(),
+            &intent_1_payload_2.notarized_transaction_hash(),
         );
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             2
         );
         let removed_data = mp.remove_transaction(
-            &intent_2_payload_2.intent_hash,
-            &intent_2_payload_2.payload_hash,
+            &intent_2_payload_2.intent_hash(),
+            &intent_2_payload_2.notarized_transaction_hash(),
         );
         assert!(removed_data.is_none());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             1
         );
         let removed_data = mp.remove_transaction(
-            &intent_2_payload_1.intent_hash,
-            &intent_2_payload_1.payload_hash,
+            &intent_2_payload_1.intent_hash(),
+            &intent_2_payload_1.notarized_transaction_hash(),
         );
         assert!(removed_data.is_some());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             0
         );
         mp.add_transaction(intent_2_payload_1, MempoolAddSource::MempoolSync)
             .unwrap();
 
-        mp.remove_transactions(&intent_1_payload_2.intent_hash);
+        mp.remove_transactions(&intent_1_payload_2.intent_hash());
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash())
                 .len(),
             0
         );
@@ -436,11 +462,11 @@ mod tests {
         mp.add_transaction(intent_2_payload_2.clone(), MempoolAddSource::CoreApi)
             .unwrap();
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash())
                 .len(),
             2
         );
-        mp.remove_transactions(&intent_2_payload_2.intent_hash);
+        mp.remove_transactions(&intent_2_payload_2.intent_hash());
         assert_eq!(mp.get_count(), 0);
     }
 }

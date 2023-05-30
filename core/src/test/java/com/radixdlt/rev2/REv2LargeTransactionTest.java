@@ -89,7 +89,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.PreparedNotarizedTransaction;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Rule;

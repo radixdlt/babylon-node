@@ -66,7 +66,7 @@ package com.radixdlt.rev2;
 
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.transaction.PreparedNotarizedTransaction;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;

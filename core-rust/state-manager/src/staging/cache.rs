@@ -72,8 +72,8 @@ use crate::staging::{
     StateHashTreeDiff,
 };
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
-    LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
+    AccumulatorHash, EpochTransactionIdentifiers,
+    ReceiptTreeHash, TransactionTreeHash, CommitBasedIdentifiers,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 
@@ -82,7 +82,7 @@ use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
-use crate::transaction::TransactionLogic;
+use crate::transaction::{TransactionLogic, LegacyLedgerPayloadHash};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
@@ -117,12 +117,12 @@ impl ExecutionCache {
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_transaction_identifiers: &CommittedTransactionIdentifiers,
-        transaction_hash: &LedgerPayloadHash,
-        transaction: &T,
+        parent_transaction_identifiers: &CommitBasedIdentifiers,
+        legacy_payload_hash: &LegacyLedgerPayloadHash,
+        executable: T,
     ) -> &ProcessedTransactionReceipt {
         let parent_accumulator_hash = &parent_transaction_identifiers.accumulator_hash;
-        let transaction_accumulator_hash = parent_accumulator_hash.accumulate(transaction_hash);
+        let transaction_accumulator_hash = parent_accumulator_hash.accumulate(legacy_payload_hash);
         match self
             .accumulator_hash_to_key
             .get(&transaction_accumulator_hash)
@@ -132,14 +132,14 @@ impl ExecutionCache {
                 let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
-                let transaction_receipt = transaction.execute_on(&staged_store);
+                let transaction_receipt = executable.execute_on(&staged_store);
 
                 let processed = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
                         parent_transaction_identifiers,
-                        transaction_hash,
+                        legacy_payload_hash,
                     },
                     transaction_receipt,
                 );

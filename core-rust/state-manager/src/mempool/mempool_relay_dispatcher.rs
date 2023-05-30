@@ -65,13 +65,10 @@
 use jni::errors::Result;
 use jni::objects::{GlobalRef, JObject, JValue};
 use jni::{JNIEnv, JavaVM};
-use radix_engine_common::data::scrypto::scrypto_encode;
+use transaction::prelude::*;
 use std::ops::Deref;
 
 use node_common::java::*;
-use transaction::model::NotarizedTransaction;
-
-use crate::jni::mempool::JavaRawTransaction;
 
 /// A Java dispatcher for a "new transaction from Core API" event.
 pub struct MempoolRelayDispatcher {
@@ -103,19 +100,17 @@ impl MempoolRelayDispatcher {
     /// This is implemented using an event dispatch on the Java side, so this method should not
     /// block. Any Java exceptions will be returned as `Err` (i.e. their Java exception status will
     /// be cleared, as if this method was catching them).
-    pub fn trigger_relay(&self, transaction: NotarizedTransaction) -> Result<()> {
+    pub fn trigger_relay(&self, transaction: &RawNotarizedTransaction) -> Result<()> {
         let attachment = self.jvm.attach_current_thread()?;
         let env = attachment.deref();
         let j_state_manager = self.j_state_manager_ref.as_obj();
-        let serialized_transaction =
-            scrypto_encode(&JavaRawTransaction::from(transaction)).unwrap();
         let result = env.call_method(
             j_state_manager,
             MempoolRelayDispatcher::TRIGGER_METHOD_NAME,
             MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
             &[JValue::Object(JObject::from(jni_slice_to_jbytearray(
                 env,
-                &serialized_transaction,
+                &transaction.0,
             )))],
         );
         if result.is_err() && env.exception_check()? {

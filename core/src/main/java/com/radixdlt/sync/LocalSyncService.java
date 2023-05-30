@@ -474,7 +474,7 @@ public final class LocalSyncService {
     final var end = transactionsWithProofDto.getTail().getLedgerHeader().getAccumulatorState();
     final var hashes =
         transactionsWithProofDto.getTransactions().stream()
-            .map(RawLedgerTransaction::getPayloadHash)
+            .map(RawLedgerTransaction::getLegacyPayloadHash)
             .collect(ImmutableList.toImmutableList());
 
     if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {
