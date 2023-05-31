@@ -183,4 +183,63 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
         Decimal.from(UInt256.MAX_VALUE),
         resourceBalancesChunk.allocations().get(0).last().get(0).amount());
   }
+
+  @Test
+  public void test_conversion_with_160_bit_babylon_max_supply() {
+    final var maxSupply = BigInteger.TWO.pow(160);
+    final var addrBytes = new byte[27];
+    random.nextBytes(addrBytes);
+    addrBytes[0] = REAddr.REAddrType.HASHED_KEY.byteValue();
+    final var addr = REAddr.of(addrBytes);
+    final var resource =
+        new OlympiaStateIR.Resource(
+            addr, UInt256.from(18), true, Optional.empty(), "LARGE", "", "", "", "");
+    final var acc1 =
+        new OlympiaStateIR.Account(
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+    final var acc2 =
+        new OlympiaStateIR.Account(
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+    final var balances =
+        ImmutableList.of(
+            new OlympiaStateIR.AccountBalance(
+                0, 1, maxSupply.multiply(BigInteger.TWO)), // twice the max supply
+            new OlympiaStateIR.AccountBalance(
+                1, 1, maxSupply.divide(BigInteger.TWO))); // half the max supply
+    final var olympiaState =
+        new OlympiaStateIR(
+            ImmutableList.of(),
+            ImmutableList.of(createXrdResource(), resource),
+            ImmutableList.of(acc1, acc2),
+            balances,
+            ImmutableList.of(),
+            1L,
+            1L);
+
+    final var config =
+        new OlympiaToBabylonConverterConfig(
+            10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(maxSupply));
+    final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
+
+    final var resourcesChunk = converted.chunks().get(0);
+    final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
+
+    // Max supply is 1461501637330902918203684832716283019655932542976 (2^160)
+    // but we end up with one unit less due to rounding errors.
+    assertEquals(
+        Decimal.fromBigIntegerSubunits(
+            new BigInteger("1461501637330902918203684832716283019655932542975")),
+        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
+
+    // One account receives 4/5 of total supply (rounded down), and the other one 1/5
+    assertEquals(
+        Decimal.fromBigIntegerSubunits(
+            new BigInteger("1169201309864722334562947866173026415724746034380")),
+        resourceBalancesChunk.allocations().get(0).last().get(0).amount());
+
+    assertEquals(
+        Decimal.fromBigIntegerSubunits(
+            new BigInteger("292300327466180583640736966543256603931186508595")),
+        resourceBalancesChunk.allocations().get(0).last().get(1).amount());
+  }
 }
