@@ -20,7 +20,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  join_multiarch_image_gcr:
+  join_multiarch_image_private:
     permissions:
       id-token: write
       contents: read
@@ -28,8 +28,8 @@ jobs:
     name: Join Multiarch Image
     runs-on: ubuntu-latest
     needs:
-      - build_push_container_gcr
-      # - build_push_container_gcr_arm
+      - build_push_container_private
+      # - build_push_container_private_arm
     steps:
       - uses: actions/checkout@v2
         with:
@@ -67,7 +67,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            docker.io/radixdlt/babylon-node
+            docker.io/radixdlt/private-babylon-node
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -77,9 +77,9 @@ jobs:
             type=sha
       - name: Join multiarch images
         run: |
-          docker buildx imagetools create -t docker.io/radixdlt/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
-            docker.io/radixdlt/babylon-node:${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} 
-#           docker.io/radixdlt/babylon-node:${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
+          docker buildx imagetools create -t docker.io/radixdlt/private-babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
+            docker.io/radixdlt/private-babylon-node:${{ fromJSON(needs.build_push_container_private.outputs.json).labels['org.opencontainers.image.version'] }} 
+#           docker.io/radixdlt/private-babylon-node:${{ fromJSON(needs.build_push_container_private_arm.outputs.json).labels['org.opencontainers.image.version'] }}
 
   join_multiarch_image_dockerhub:
     permissions:
@@ -220,14 +220,14 @@ jobs:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
 
-  build_push_container_gcr:
-    name: (GCR) Docker AMD
+  build_push_container_private:
+    name: (PRIVATE) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
       image_registry: "docker.io"
       image_organization: "radixdlt"
-      image_name: "babylon-node"
+      image_name: "private-babylon-node"
       tags: |
         type=ref,event=branch
         type=ref,event=pr
@@ -245,14 +245,14 @@ jobs:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-  # build_push_container_gcr_arm:
-  #   name: (GCR) Docker ARM
+  # build_push_container_private_arm:
+  #   name: (PRIVATE) Docker ARM
   #   uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
   #   with:
   #     runs_on: babylon-node-arm
   #     image_registry: "docker.io"
   #     image_organization: "radixdlt"
-  #     image_name: "babylon-node"
+  #     image_name: "private-babylon-node"
   #     tags: |
   #       type=ref,event=branch
   #       type=ref,event=pr
