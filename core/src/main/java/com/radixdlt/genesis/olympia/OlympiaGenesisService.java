@@ -128,6 +128,7 @@ public final class OlympiaGenesisService {
             newSingleThreadScheduledExecutor(ThreadFactories.threads("OlympiaGenesisService")));
 
     final var completableFuture = new CompletableFuture<GenesisData>();
+
     this.executor.orElseThrow().execute(() -> poll(completableFuture, 0));
     return completableFuture;
   }
@@ -136,6 +137,12 @@ public final class OlympiaGenesisService {
     // Every 1000th request we'll ask for a test payload (in case of a not-ready response).
     // The first request does not include the test payload (check basic connectivity).
     final var includeTestPayload = counter % 1000 == 1;
+    if (counter == 0) {
+      log.info(
+        "Querying the Olympia node {} for genesis data{}",
+        olympiaGenesisConfig.nodeCoreApiUrl(),
+        includeTestPayload ? " (with test payload)" : "");
+    }
     final OlympiaEndStateResponse response;
     try {
       response = olympiaEndStateApiClient.getOlympiaEndState(includeTestPayload);
@@ -249,9 +256,9 @@ public final class OlympiaGenesisService {
                   but the end state hasn't yet been generated (will keep polling)...""",
               network.getLogicalName(),
               includeTestPayload
-                  ? " (rcvd test payload size "
-                      + notReadyResponse.testPayload().orElse("").length()
-                      + ")"
+                  ? " (received "
+                      + notReadyResponse.testPayload().orElse("").length() / (1024 * 1024)
+                      + " MiB test payload)"
                   : "");
         }
 
