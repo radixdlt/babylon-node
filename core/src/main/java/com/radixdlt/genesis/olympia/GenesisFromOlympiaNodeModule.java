@@ -91,7 +91,9 @@ public final class GenesisFromOlympiaNodeModule extends AbstractModule {
     bind(OlympiaEndStateApiClient.class).in(Scopes.SINGLETON);
     bind(OlympiaGenesisService.class).in(Scopes.SINGLETON);
 
-    install(new PreGenesisSystemApiModule("127.0.0.1", 3334));
+    install(new PreGenesisSystemApiModule(
+      properties.get("api.system.bind_address", "127.0.0.1"),
+      properties.get("api.system.port", 3334)));
   }
 
   @Provides
