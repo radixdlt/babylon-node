@@ -72,11 +72,11 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use crate::mempool::*;
+use node_common::java::*;
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::*;
-use crate::mempool::*;
-use node_common::java::*;
 
 use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 
@@ -95,8 +95,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
         &env,
         request_payload,
         |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager)
-                .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)?;
+            JNIStateManager::get_mempool_manager(&env, j_state_manager).add_if_committable(
+                MempoolAddSource::MempoolSync,
+                transaction,
+                false,
+            )?;
             Ok(())
         },
     )

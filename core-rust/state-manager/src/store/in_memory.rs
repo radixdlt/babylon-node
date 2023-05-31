@@ -74,15 +74,15 @@ use crate::{
 use crate::query::TransactionIdentifierLoader;
 use core::ops::Bound::{Included, Unbounded};
 use node_common::utils::IsAccountExt;
-use radix_engine_common::types::{GlobalAddress, Epoch};
+use radix_engine_common::types::{Epoch, GlobalAddress};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
     SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use transaction::model::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use transaction::model::*;
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -141,7 +141,12 @@ impl InMemoryStore {
             );
         }
 
-        if let TypedTransactionIdentifiers::User { intent_hash, notarized_transaction_hash, .. } = &identifiers.payload.typed {
+        if let TypedTransactionIdentifiers::User {
+            intent_hash,
+            notarized_transaction_hash,
+            ..
+        } = &identifiers.payload.typed
+        {
             let key_already_exists = self.transaction_intent_lookup.get(intent_hash);
             if let Some(existing_payload_hash) = key_already_exists {
                 panic!(
@@ -157,8 +162,10 @@ impl InMemoryStore {
             );
         }
 
-        self.ledger_payload_hash_lookup
-            .insert(identifiers.payload.ledger_payload_hash, identifiers.at_commit.state_version);
+        self.ledger_payload_hash_lookup.insert(
+            identifiers.payload.ledger_payload_hash,
+            identifiers.at_commit.state_version,
+        );
 
         self.transactions
             .insert(identifiers.at_commit.state_version, transaction);
@@ -217,7 +224,10 @@ impl TransactionIndex<&IntentHash> for InMemoryStore {
 }
 
 impl TransactionIndex<&NotarizedTransactionHash> for InMemoryStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &NotarizedTransactionHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &NotarizedTransactionHash,
+    ) -> Option<u64> {
         self.user_payload_hash_lookup.get(identifier).cloned()
     }
 }
@@ -265,7 +275,12 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
 
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        for CommittedTransactionBundle { raw, receipt, identifiers } in commit_bundle.transactions {
+        for CommittedTransactionBundle {
+            raw,
+            receipt,
+            identifiers,
+        } in commit_bundle.transactions
+        {
             self.insert_transaction(raw, receipt, identifiers);
         }
 
@@ -338,7 +353,8 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
                         .unwrap()
                         .clone(),
                 },
-                identifiers: self.store
+                identifiers: self
+                    .store
                     .transaction_identifiers
                     .get(&state_version)
                     .unwrap()

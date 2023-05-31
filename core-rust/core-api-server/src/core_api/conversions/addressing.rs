@@ -61,7 +61,9 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
     match entity_type {
         EntityType::GlobalPackage => models::EntityType::GlobalPackage,
         EntityType::GlobalFungibleResourceManager => models::EntityType::GlobalFungibleResource,
-        EntityType::GlobalNonFungibleResourceManager => models::EntityType::GlobalNonFungibleResource,
+        EntityType::GlobalNonFungibleResourceManager => {
+            models::EntityType::GlobalNonFungibleResource
+        }
         EntityType::GlobalConsensusManager => models::EntityType::GlobalConsensusManager,
         EntityType::GlobalValidator => models::EntityType::GlobalValidator,
         EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
@@ -247,17 +249,25 @@ pub fn to_api_substate_id(
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
             ConsensusManagerField::CurrentTimeRoundedToMinutes,
-        )) => (SubstateType::ConsensusManagerFieldCurrentTimeRoundedToMinutes, models::PartitionKind::Field),
+        )) => (
+            SubstateType::ConsensusManagerFieldCurrentTimeRoundedToMinutes,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
             ConsensusManagerField::CurrentTime,
-        )) => (SubstateType::ConsensusManagerFieldCurrentTime, models::PartitionKind::Field),
+        )) => (
+            SubstateType::ConsensusManagerFieldCurrentTime,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
             ValidatorField::Validator,
         )) => (
             SubstateType::ValidatorFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountField(AccountField::Account)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountField(
+            AccountField::Account,
+        )) => (
             SubstateType::AccountFieldState,
             models::PartitionKind::Field,
         ),
@@ -265,7 +275,9 @@ pub fn to_api_substate_id(
             SubstateType::AccountVaultIndexEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_)) => (
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_),
+        ) => (
             SubstateType::AccountDepositRuleIndexEntry,
             models::PartitionKind::KeyValue,
         ),

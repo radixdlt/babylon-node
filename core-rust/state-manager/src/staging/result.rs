@@ -68,9 +68,9 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::transaction::LegacyLedgerPayloadHash;
 use crate::{
-    AccumulatorHash, ChangeAction, DetailedTransactionOutcome,
-    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt,
-    NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash, CommitBasedIdentifiers,
+    AccumulatorHash, ChangeAction, CommitBasedIdentifiers, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
+    StateHash, SubstateChange, TransactionTreeHash,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,

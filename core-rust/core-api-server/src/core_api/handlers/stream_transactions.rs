@@ -144,10 +144,12 @@ pub fn to_api_ledger_transaction(
             payload_hex,
             notarized_transaction: Box::new(to_api_notarized_transaction(context, tx)?),
         },
-        LedgerTransaction::RoundUpdateV1(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
-            payload_hex,
-            validator_transaction: Box::new(to_api_validator_transaction(context, tx)?),
-        },
+        LedgerTransaction::RoundUpdateV1(tx) => {
+            models::LedgerTransaction::ValidatorLedgerTransaction {
+                payload_hex,
+                validator_transaction: Box::new(to_api_validator_transaction(context, tx)?),
+            }
+        }
         LedgerTransaction::Genesis(tx) => models::LedgerTransaction::SystemLedgerTransaction {
             payload_hex,
             system_transaction: Box::new(to_api_system_transaction(context, tx)?),

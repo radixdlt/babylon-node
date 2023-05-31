@@ -82,6 +82,8 @@ impl<H: IsMerklizableHash> Merklizable for H {
     }
 
     fn merge(left: &Self, right: &Self) -> Self {
-        Self::from(blake2b_256_hash([left.as_slice(), right.as_slice()].concat()))
+        Self::from(blake2b_256_hash(
+            [left.as_slice(), right.as_slice()].concat(),
+        ))
     }
 }

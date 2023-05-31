@@ -1,4 +1,4 @@
-use state_manager::{AccumulatorHash, transaction::*};
+use state_manager::{transaction::*, AccumulatorHash};
 use transaction::prelude::*;
 
 use crate::core_api::*;
@@ -32,7 +32,9 @@ pub fn extract_intent_hash(hash_str: String) -> Result<IntentHash, ExtractionErr
     )))
 }
 
-pub fn extract_notarized_transaction_hash(hash_str: String) -> Result<NotarizedTransactionHash, ExtractionError> {
+pub fn extract_notarized_transaction_hash(
+    hash_str: String,
+) -> Result<NotarizedTransactionHash, ExtractionError> {
     Ok(NotarizedTransactionHash::from_hash(Hash(
         from_hex(hash_str)?
             .try_into()

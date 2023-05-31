@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AccessRules;
+import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -41,7 +41,7 @@ public class BlueprintAccessRules {
   private String blueprintName;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private AccessRules accessRules = null;
+  private NodeAuthorityRules accessRules;
 
   public BlueprintAccessRules() { 
   }
@@ -72,7 +72,7 @@ public class BlueprintAccessRules {
   }
 
 
-  public BlueprintAccessRules accessRules(AccessRules accessRules) {
+  public BlueprintAccessRules accessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
     return this;
   }
@@ -86,14 +86,14 @@ public class BlueprintAccessRules {
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRules getAccessRules() {
+  public NodeAuthorityRules getAccessRules() {
     return accessRules;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(AccessRules accessRules) {
+  public void setAccessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
   }
 

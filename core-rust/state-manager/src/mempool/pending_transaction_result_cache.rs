@@ -1,7 +1,10 @@
 use radix_engine_common::types::Epoch;
 use transaction::{errors::TransactionValidationError, model::*};
 
-use crate::{MempoolAddRejection, transaction::{CheckMetadata, StaticValidation}};
+use crate::{
+    transaction::{CheckMetadata, StaticValidation},
+    MempoolAddRejection,
+};
 
 use lru::LruCache;
 use radix_engine::errors::RejectionError;
@@ -84,7 +87,7 @@ impl RejectionReason {
                 // The serialization is a property of the payload, not the intent
                 TransactionValidationError::EncodeError(_) => {
                     RejectionPermanence::PermanentForPayload
-                },
+                }
                 // The signature validity is a property of the payload, not the intent
                 TransactionValidationError::SignatureValidationError(_) => {
                     RejectionPermanence::PermanentForPayload
@@ -297,7 +300,10 @@ impl PendingTransactionRecord {
     /// Precondition:
     /// * If check = CheckMetadata::Cached, the latest attempt must be a rejection
     /// This precondition is met if the record/metadata come from a call using ForceRecalculation::IfCachedAsValid
-    pub fn should_accept_into_mempool(self, check: CheckMetadata) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
+    pub fn should_accept_into_mempool(
+        self,
+        check: CheckMetadata,
+    ) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -321,10 +327,8 @@ impl PendingTransactionRecord {
         match check {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
-            },
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => {
-                Ok(transaction)
-            },
+            }
+            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(transaction),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
@@ -428,10 +432,9 @@ impl PendingTransactionResultCache {
         let new = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
 
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
-        let removed = self.pending_transaction_records.push(
-            payload_hash,
-            new.clone(),
-        );
+        let removed = self
+            .pending_transaction_records
+            .push(payload_hash, new.clone());
 
         self.handled_added(intent_hash, payload_hash);
         if let Some((p, r)) = removed {
@@ -612,9 +615,24 @@ mod tests {
         };
 
         // Start by adding 3 payloads against first intent hash. These all fit in, but cache is full
-        cache.track_transaction_result(intent_hash_1, payload_hash_1, None, example_attempt_1.clone());
-        cache.track_transaction_result(intent_hash_1, payload_hash_2, Some(Epoch::of(0)), example_attempt_2.clone());
-        cache.track_transaction_result(intent_hash_1, payload_hash_3, None, example_attempt_1.clone());
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_1,
+            None,
+            example_attempt_1.clone(),
+        );
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_2,
+            Some(Epoch::of(0)),
+            example_attempt_2.clone(),
+        );
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_3,
+            None,
+            example_attempt_1.clone(),
+        );
         assert_eq!(
             cache
                 .peek_all_known_payloads_for_intent(&intent_hash_1)
@@ -623,7 +641,12 @@ mod tests {
         );
 
         // Now add another rejection - the first rejection (intent_1, payload_1, reason_1) should drop out
-        cache.track_transaction_result(intent_hash_2, payload_hash_4, None, example_attempt_1.clone());
+        cache.track_transaction_result(
+            intent_hash_2,
+            payload_hash_4,
+            None,
+            example_attempt_1.clone(),
+        );
         assert_eq!(
             cache
                 .peek_all_known_payloads_for_intent(&intent_hash_1)
@@ -664,7 +687,12 @@ mod tests {
         // Reading transaction status should jump payload 2 back to the top of the cache
         // So (intent_1, payload_3, reason_1) and (intent_2, payload_4, reason_1) should drop out instead
         cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
-        cache.track_transaction_result(intent_hash_3, payload_hash_5, None, example_attempt_1.clone());
+        cache.track_transaction_result(
+            intent_hash_3,
+            payload_hash_5,
+            None,
+            example_attempt_1.clone(),
+        );
         cache.track_transaction_result(intent_hash_3, payload_hash_6, None, example_attempt_1);
         assert_eq!(
             cache
@@ -779,7 +807,9 @@ mod tests {
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         // Even far in future, a permanent rejection is still there and never ready for recalculation
         assert!(record.is_some());
-        assert!(!record.unwrap().should_recalculate(Epoch::of(0), far_in_future));
+        assert!(!record
+            .unwrap()
+            .should_recalculate(Epoch::of(0), far_in_future));
 
         // Temporary Rejection
         cache.track_transaction_result(
@@ -791,25 +821,38 @@ mod tests {
         // A little in future, a temporary rejection is not ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
         assert!(record.is_some());
-        assert!(!record.unwrap().should_recalculate(Epoch::of(0), little_in_future));
+        assert!(!record
+            .unwrap()
+            .should_recalculate(Epoch::of(0), little_in_future));
 
         // Far in future, a temporary rejection is ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
         assert!(record.is_some());
-        assert!(record.unwrap().should_recalculate(Epoch::of(0), far_in_future));
+        assert!(record
+            .unwrap()
+            .should_recalculate(Epoch::of(0), far_in_future));
 
         // No rejection
-        cache.track_transaction_result(intent_hash_1, payload_hash_3, Some(Epoch::of(50)), attempt_with_no_rejection);
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_3,
+            Some(Epoch::of(50)),
+            attempt_with_no_rejection,
+        );
 
         // A little in future, a no-rejection result is not ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3);
         assert!(record.is_some());
-        assert!(!record.unwrap().should_recalculate(Epoch::of(0), little_in_future));
+        assert!(!record
+            .unwrap()
+            .should_recalculate(Epoch::of(0), little_in_future));
 
         // Far in future, a no-rejection result is ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3);
         assert!(record.is_some());
-        assert!(record.unwrap().should_recalculate(Epoch::of(0), far_in_future));
+        assert!(record
+            .unwrap()
+            .should_recalculate(Epoch::of(0), far_in_future));
 
         // Temporary Rejection with recalculation from epoch 10
         cache.track_transaction_result(

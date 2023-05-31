@@ -1,6 +1,6 @@
 use enum_dispatch::enum_dispatch;
 
-use crate::{CommittedTransactionIdentifiers, CommitBasedIdentifiers};
+use crate::{CommitBasedIdentifiers, CommittedTransactionIdentifiers};
 
 #[enum_dispatch]
 pub trait TransactionIdentifierLoader {

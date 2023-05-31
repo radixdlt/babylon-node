@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.AccessRules;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
@@ -46,6 +45,7 @@ import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
+import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
@@ -76,7 +76,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_ACCESS_RULES,
-  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_CHILD_BLUEPRINT_RULES
+  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -122,15 +122,15 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private AccessRules accessRules = null;
+  private NodeAuthorityRules accessRules;
 
-  public static final String JSON_PROPERTY_CHILD_BLUEPRINT_RULES = "child_blueprint_rules";
-  private List<BlueprintAccessRules> childBlueprintRules = new ArrayList<>();
+  public static final String JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES = "inner_blueprint_access_rules";
+  private List<BlueprintAccessRules> innerBlueprintAccessRules = new ArrayList<>();
 
   public AccessRulesModuleFieldAccessRulesSubstate() { 
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate accessRules(AccessRules accessRules) {
+  public AccessRulesModuleFieldAccessRulesSubstate accessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
     return this;
   }
@@ -144,46 +144,46 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRules getAccessRules() {
+  public NodeAuthorityRules getAccessRules() {
     return accessRules;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(AccessRules accessRules) {
+  public void setAccessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
   }
 
 
-  public AccessRulesModuleFieldAccessRulesSubstate childBlueprintRules(List<BlueprintAccessRules> childBlueprintRules) {
-    this.childBlueprintRules = childBlueprintRules;
+  public AccessRulesModuleFieldAccessRulesSubstate innerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
+    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
     return this;
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate addChildBlueprintRulesItem(BlueprintAccessRules childBlueprintRulesItem) {
-    this.childBlueprintRules.add(childBlueprintRulesItem);
+  public AccessRulesModuleFieldAccessRulesSubstate addInnerBlueprintAccessRulesItem(BlueprintAccessRules innerBlueprintAccessRulesItem) {
+    this.innerBlueprintAccessRules.add(innerBlueprintAccessRulesItem);
     return this;
   }
 
    /**
-   * Get childBlueprintRules
-   * @return childBlueprintRules
+   * Get innerBlueprintAccessRules
+   * @return innerBlueprintAccessRules
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHILD_BLUEPRINT_RULES)
+  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintAccessRules> getChildBlueprintRules() {
-    return childBlueprintRules;
+  public List<BlueprintAccessRules> getInnerBlueprintAccessRules() {
+    return innerBlueprintAccessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHILD_BLUEPRINT_RULES)
+  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChildBlueprintRules(List<BlueprintAccessRules> childBlueprintRules) {
-    this.childBlueprintRules = childBlueprintRules;
+  public void setInnerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
+    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
   }
 
 
@@ -200,13 +200,13 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
     }
     AccessRulesModuleFieldAccessRulesSubstate accessRulesModuleFieldAccessRulesSubstate = (AccessRulesModuleFieldAccessRulesSubstate) o;
     return Objects.equals(this.accessRules, accessRulesModuleFieldAccessRulesSubstate.accessRules) &&
-        Objects.equals(this.childBlueprintRules, accessRulesModuleFieldAccessRulesSubstate.childBlueprintRules) &&
+        Objects.equals(this.innerBlueprintAccessRules, accessRulesModuleFieldAccessRulesSubstate.innerBlueprintAccessRules) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accessRules, childBlueprintRules, super.hashCode());
+    return Objects.hash(accessRules, innerBlueprintAccessRules, super.hashCode());
   }
 
   @Override
@@ -215,7 +215,7 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
     sb.append("class AccessRulesModuleFieldAccessRulesSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    childBlueprintRules: ").append(toIndentedString(childBlueprintRules)).append("\n");
+    sb.append("    innerBlueprintAccessRules: ").append(toIndentedString(innerBlueprintAccessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

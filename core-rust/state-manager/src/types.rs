@@ -64,15 +64,13 @@
 
 use crate::accumulator_tree::IsMerklizableHash;
 use crate::transaction::*;
-use crate::{
-    LedgerTransactionOutcome, SubstateChange,
-};
+use crate::{LedgerTransactionOutcome, SubstateChange};
 use node_common::java::*;
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
-use transaction::prelude::*;
 use std::fmt;
 use std::ops::Range;
+use transaction::prelude::*;
 
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 

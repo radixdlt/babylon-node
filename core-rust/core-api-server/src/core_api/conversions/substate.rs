@@ -4,8 +4,10 @@ use radix_engine::blueprints::package::PackageCodeTypeSubstate;
 use radix_engine::system::node_modules::access_rules::*;
 use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine_interface::blueprints::account::{ResourceDepositRule, AccountDefaultDepositRule};
-use radix_engine_interface::blueprints::consensus_manager::{ConsensusManagerConfig, EpochChangeCondition};
+use radix_engine_interface::blueprints::account::{AccountDefaultDepositRule, ResourceDepositRule};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerConfig, EpochChangeCondition,
+};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::*;
 
@@ -130,7 +132,9 @@ pub fn to_api_substate(
             TypedConsensusManagerFieldValue::CurrentTime(substate),
         )) => to_api_current_time_substate(substate)?,
         TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(entry),
+            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
+                entry,
+            ),
         ) => to_api_registered_validator_set_substate(context, entry)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
             TypedValidatorFieldValue::Validator(validator_substate),
@@ -141,9 +145,9 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountVaultIndex(
             account_vault_entry,
         )) => to_api_account_vault_entry(context, typed_substate_key, account_vault_entry)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(
-            substate,
-        )) => to_api_account_deposit_rule_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(substate),
+        ) => to_api_account_deposit_rule_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccessController(
             TypedAccessControllerFieldValue::AccessController(access_controller_substate),
         )) => to_api_access_controller_substate(context, access_controller_substate)?,
@@ -185,7 +189,10 @@ pub fn to_api_account_vault_entry(
     };
     Ok(models::Substate::AccountVaultIndexEntrySubstate {
         resource_address: to_api_resource_address(context, resource_address)?,
-        vault: vault.as_ref().map(|v| to_api_entity_address(context, v.as_node_id())).transpose()?,
+        vault: vault
+            .as_ref()
+            .map(|v| to_api_entity_address(context, v.as_node_id()))
+            .transpose()?,
     })
 }
 
@@ -272,14 +279,18 @@ pub fn to_api_current_proposal_statistic_substate(
     let CurrentProposalStatisticSubstate {
         validator_statistics,
     } = substate;
-    Ok(models::Substate::ConsensusManagerFieldCurrentProposalStatisticSubstate {
-        completed: validator_statistics.iter()
-            .map(|s| to_api_ten_trillion_capped_u64(s.made, "completed_proposals"))
-            .collect::<Result<_, _>>()?,
-        missed: validator_statistics.iter()
-            .map(|s| to_api_ten_trillion_capped_u64(s.missed, "missed_proposals"))
-            .collect::<Result<_, _>>()?,
-    })
+    Ok(
+        models::Substate::ConsensusManagerFieldCurrentProposalStatisticSubstate {
+            completed: validator_statistics
+                .iter()
+                .map(|s| to_api_ten_trillion_capped_u64(s.made, "completed_proposals"))
+                .collect::<Result<_, _>>()?,
+            missed: validator_statistics
+                .iter()
+                .map(|s| to_api_ten_trillion_capped_u64(s.missed, "missed_proposals"))
+                .collect::<Result<_, _>>()?,
+        },
+    )
 }
 
 pub fn to_api_metadata_value_substate(
@@ -324,7 +335,7 @@ pub fn to_api_method_access_rules_substate(
     Ok(
         models::Substate::AccessRulesModuleFieldAccessRulesSubstate {
             access_rules: Box::new(to_api_node_authority_rules(context, access_rules)?),
-            child_blueprint_rules: inner_blueprint_access_rules
+            inner_blueprint_access_rules: inner_blueprint_access_rules
                 .iter()
                 .map(|(blueprint_name, blueprint_rules_config)| {
                     Ok(models::BlueprintAccessRules {
@@ -466,10 +477,7 @@ pub fn to_api_node_authority_rules(
     context: &MappingContext,
     value: &NodeAuthorityRules,
 ) -> Result<models::NodeAuthorityRules, MappingError> {
-    let NodeAuthorityRules {
-        rules,
-        mutability,
-    } = value;
+    let NodeAuthorityRules { rules, mutability } = value;
     Ok(models::NodeAuthorityRules {
         rules: to_api_authority_rules(context, rules)?,
         mutability: to_api_authority_rules(context, mutability)?,
@@ -478,10 +486,9 @@ pub fn to_api_node_authority_rules(
 
 pub fn to_api_authority_rules(
     context: &MappingContext,
-    map: &BTreeMap<AuthorityKey, AccessRule>
+    map: &BTreeMap<AuthorityKey, AccessRule>,
 ) -> Result<Vec<models::AuthorityRule>, MappingError> {
-    map
-        .iter()
+    map.iter()
         .map(|(key, rule)| to_api_authority_rule(context, key, rule))
         .collect::<Result<_, _>>()
 }
@@ -497,15 +504,21 @@ pub fn to_api_authority_rule(
     })
 }
 
-pub fn to_api_authority_key(
-    key: &AuthorityKey
-) -> models::AuthorityKey {
+pub fn to_api_authority_key(key: &AuthorityKey) -> models::AuthorityKey {
     let (module, name) = match key {
         AuthorityKey::Owner => (models::authority_key::Module::Object, "Owner"),
-        AuthorityKey::Module(ObjectModuleId::Main, name) => (models::authority_key::Module::Main, name.as_str()),
-        AuthorityKey::Module(ObjectModuleId::Metadata, name) => (models::authority_key::Module::Metadata, name.as_str()),
-        AuthorityKey::Module(ObjectModuleId::Royalty, name) => (models::authority_key::Module::Royalty, name.as_str()),
-        AuthorityKey::Module(ObjectModuleId::AccessRules, name) => (models::authority_key::Module::AccessRules, name.as_str()),
+        AuthorityKey::Module(ObjectModuleId::Main, name) => {
+            (models::authority_key::Module::Main, name.as_str())
+        }
+        AuthorityKey::Module(ObjectModuleId::Metadata, name) => {
+            (models::authority_key::Module::Metadata, name.as_str())
+        }
+        AuthorityKey::Module(ObjectModuleId::Royalty, name) => {
+            (models::authority_key::Module::Royalty, name.as_str())
+        }
+        AuthorityKey::Module(ObjectModuleId::AccessRules, name) => {
+            (models::authority_key::Module::AccessRules, name.as_str())
+        }
     };
     models::AuthorityKey {
         module,
@@ -551,7 +564,9 @@ pub fn to_api_access_rule_node(
                 // This is actually unclear.
                 // This will be removed soon so won't spend too long trying to get this right.
                 AuthorityRule::Owner => AuthorityKey::Owner,
-                AuthorityRule::Custom(name) => AuthorityKey::Module(ObjectModuleId::Main, name.to_string()),
+                AuthorityRule::Custom(name) => {
+                    AuthorityKey::Module(ObjectModuleId::Main, name.to_string())
+                }
             })),
         },
     })
@@ -939,7 +954,9 @@ pub fn to_api_function_schema(
         export_name,
     } = function_schema;
     Ok(models::FunctionSchema {
-        receiver_info: receiver.as_ref().map(|receiver_info| Box::new(to_api_receiver_info(receiver_info))),
+        receiver_info: receiver
+            .as_ref()
+            .map(|receiver_info| Box::new(to_api_receiver_info(receiver_info))),
         input: Box::new(to_api_local_type_index(context, input)?),
         output: Box::new(to_api_local_type_index(context, output)?),
         export_name: export_name.to_string(),
@@ -949,7 +966,7 @@ pub fn to_api_function_schema(
 pub fn to_api_receiver_info(receiver_info: &ReceiverInfo) -> models::ReceiverInfo {
     let ReceiverInfo {
         receiver,
-        ref_types
+        ref_types,
     } = receiver_info;
     models::ReceiverInfo {
         receiver: match receiver {
@@ -960,7 +977,7 @@ pub fn to_api_receiver_info(receiver_info: &ReceiverInfo) -> models::ReceiverInf
             raw_bits: to_api_u32_as_i64(ref_types.bits()),
             normal: ref_types.intersects(RefTypes::NORMAL),
             direct_access: ref_types.intersects(RefTypes::DIRECT_ACCESS),
-        })
+        }),
     }
 }
 
@@ -1176,7 +1193,9 @@ pub fn to_api_validator_substate(
                 })
             })
             .collect::<Result<_, _>>()?,
-        already_unlocked_owner_stake_unit_amount: to_api_decimal(already_unlocked_owner_stake_unit_amount),
+        already_unlocked_owner_stake_unit_amount: to_api_decimal(
+            already_unlocked_owner_stake_unit_amount,
+        ),
     })
 }
 
@@ -1184,7 +1203,11 @@ pub fn to_api_consensus_manager_state_substate(
     context: &MappingContext,
     substate: &ConsensusManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let ConsensusManagerSubstate { epoch, round, epoch_start_milli } = substate;
+    let ConsensusManagerSubstate {
+        epoch,
+        round,
+        epoch_start_milli,
+    } = substate;
     Ok(models::Substate::ConsensusManagerFieldStateSubstate {
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
@@ -1196,24 +1219,37 @@ pub fn to_api_consensus_manager_config_substate(
     substate: &ConsensusManagerConfigSubstate,
 ) -> Result<models::Substate, MappingError> {
     let ConsensusManagerConfigSubstate {
-        config: ConsensusManagerConfig {
-            max_validators,
-            epoch_change_condition,
-            num_unstake_epochs,
-            total_emission_xrd_per_epoch,
-            min_validator_reliability,
-            num_owner_stake_units_unlock_epochs,
-            num_fee_increase_delay_epochs,
-        },
+        config:
+            ConsensusManagerConfig {
+                max_validators,
+                epoch_change_condition,
+                num_unstake_epochs,
+                total_emission_xrd_per_epoch,
+                min_validator_reliability,
+                num_owner_stake_units_unlock_epochs,
+                num_fee_increase_delay_epochs,
+            },
     } = substate;
     Ok(models::Substate::ConsensusManagerFieldConfigSubstate {
-        max_validators: to_api_ten_trillion_capped_u64(u64::from(*max_validators), "max_validators")?,
+        max_validators: to_api_ten_trillion_capped_u64(
+            u64::from(*max_validators),
+            "max_validators",
+        )?,
         epoch_change_condition: Box::new(to_api_epoch_change_condition(epoch_change_condition)?),
-        num_unstake_epochs: to_api_ten_trillion_capped_u64(*num_unstake_epochs, "num_unstake_epochs")?,
+        num_unstake_epochs: to_api_ten_trillion_capped_u64(
+            *num_unstake_epochs,
+            "num_unstake_epochs",
+        )?,
         total_emission_xrd_per_epoch: to_api_decimal(total_emission_xrd_per_epoch),
         min_validator_reliability: to_api_decimal(min_validator_reliability),
-        num_owner_stake_units_unlock_epochs: to_api_ten_trillion_capped_u64(*num_owner_stake_units_unlock_epochs, "num_owner_stake_units_unlock_epochs")?,
-        num_fee_increase_delay_epochs: to_api_ten_trillion_capped_u64(*num_fee_increase_delay_epochs, "num_fee_increase_delay_epochs")?,
+        num_owner_stake_units_unlock_epochs: to_api_ten_trillion_capped_u64(
+            *num_owner_stake_units_unlock_epochs,
+            "num_owner_stake_units_unlock_epochs",
+        )?,
+        num_fee_increase_delay_epochs: to_api_ten_trillion_capped_u64(
+            *num_fee_increase_delay_epochs,
+            "num_fee_increase_delay_epochs",
+        )?,
     })
 }
 
@@ -1228,7 +1264,10 @@ pub fn to_api_epoch_change_condition(
     Ok(models::EpochChangeCondition {
         min_round_count: to_api_ten_trillion_capped_u64(*min_round_count, "min_round_count")?,
         max_round_count: to_api_ten_trillion_capped_u64(*max_round_count, "max_round_count")?,
-        target_duration_millis: to_api_ten_trillion_capped_u64(*target_duration_millis, "target_duration_millis")?,
+        target_duration_millis: to_api_ten_trillion_capped_u64(
+            *target_duration_millis,
+            "target_duration_millis",
+        )?,
     })
 }
 
@@ -1236,14 +1275,10 @@ pub fn to_api_current_time_substate(
     substate: &ProposerMilliTimestampSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ProposerMilliTimestampSubstate {
-        epoch_milli,
-    } = substate;
+    let ProposerMilliTimestampSubstate { epoch_milli } = substate;
 
     Ok(models::Substate::ConsensusManagerCurrentTimeSubstate {
-        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
-            *epoch_milli,
-        )?),
+        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(*epoch_milli)?),
     })
 }
 
@@ -1251,15 +1286,15 @@ pub fn to_api_current_time_rounded_to_minutes_substate(
     substate: &ProposerMinuteTimestampSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ProposerMinuteTimestampSubstate {
-        epoch_minute,
-    } = substate;
+    let ProposerMinuteTimestampSubstate { epoch_minute } = substate;
 
-    Ok(models::Substate::ConsensusManagerCurrentTimeRoundedToMinutesSubstate {
-        proposer_timestamp_rounded_down_to_minute: Box::new(to_api_instant_from_safe_timestamp(
-            i64::from(*epoch_minute) * 60 * 1000,
-        )?),
-    })
+    Ok(
+        models::Substate::ConsensusManagerCurrentTimeRoundedToMinutesSubstate {
+            proposer_timestamp_rounded_down_to_minute: Box::new(
+                to_api_instant_from_safe_timestamp(i64::from(*epoch_minute) * 60 * 1000)?,
+            ),
+        },
+    )
 }
 
 pub fn to_api_fungible_vault_balance_substate(

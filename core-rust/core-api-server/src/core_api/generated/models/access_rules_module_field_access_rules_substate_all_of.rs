@@ -14,16 +14,16 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccessRulesModuleFieldAccessRulesSubstateAllOf {
     #[serde(rename = "access_rules")]
-    pub access_rules: crate::core_api::generated::models::AccessRules,
-    #[serde(rename = "child_blueprint_rules")]
-    pub child_blueprint_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
+    pub access_rules: Box<crate::core_api::generated::models::NodeAuthorityRules>,
+    #[serde(rename = "inner_blueprint_access_rules")]
+    pub inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
 }
 
 impl AccessRulesModuleFieldAccessRulesSubstateAllOf {
-    pub fn new(access_rules: crate::core_api::generated::models::AccessRules, child_blueprint_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>) -> AccessRulesModuleFieldAccessRulesSubstateAllOf {
+    pub fn new(access_rules: crate::core_api::generated::models::NodeAuthorityRules, inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>) -> AccessRulesModuleFieldAccessRulesSubstateAllOf {
         AccessRulesModuleFieldAccessRulesSubstateAllOf {
-            access_rules,
-            child_blueprint_rules,
+            access_rules: Box::new(access_rules),
+            inner_blueprint_access_rules,
         }
     }
 }

@@ -3,8 +3,8 @@ use radix_engine::{
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, RADIX_TOKEN},
 };
 use state_manager::{
-    transaction::LedgerTransaction, CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    SubstateChange,
+    transaction::LedgerTransaction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
+    LocalTransactionReceipt, SubstateChange,
 };
 use transaction::prelude::*;
 

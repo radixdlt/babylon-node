@@ -94,24 +94,32 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |request: PrepareIntentRequest| -> Result<PrepareIntentResponse, StringError> {
-        let manifest = compile(&request.manifest, &request.network_definition, request.blobs)?;
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |request: PrepareIntentRequest| -> Result<PrepareIntentResponse, StringError> {
+            let manifest = compile(
+                &request.manifest,
+                &request.network_definition,
+                request.blobs,
+            )?;
 
-        let (instructions, blobs) = manifest.for_intent();
-        let intent = IntentV1 {
-            header: request.header.into(),
-            instructions,
-            blobs,
-            attachments: AttachmentsV1 {},
-        };
+            let (instructions, blobs) = manifest.for_intent();
+            let intent = IntentV1 {
+                header: request.header.into(),
+                instructions,
+                blobs,
+                attachments: AttachmentsV1 {},
+            };
 
-        let prepared_intent = intent.prepare()?;
-        
-        Ok(PrepareIntentResponse {
-            intent_bytes: intent.to_payload_bytes()?,
-            intent_hash: prepared_intent.intent_hash(),
-        })
-    })
+            let prepared_intent = intent.prepare()?;
+
+            Ok(PrepareIntentResponse {
+                intent_bytes: intent.to_payload_bytes()?,
+                intent_hash: prepared_intent.intent_hash(),
+            })
+        },
+    )
 }
 
 // We use a separate model to ensure that any change to
@@ -160,22 +168,30 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, StringError> {
-        let signed_intent = SignedIntentV1 {
-            intent: IntentV1::from_payload_bytes(&request.intent_bytes)?,
-            intent_signatures: IntentSignaturesV1 {
-                signatures: request.signatures.into_iter().map(IntentSignatureV1).collect(),
-            },
-        };
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, StringError> {
+            let signed_intent = SignedIntentV1 {
+                intent: IntentV1::from_payload_bytes(&request.intent_bytes)?,
+                intent_signatures: IntentSignaturesV1 {
+                    signatures: request
+                        .signatures
+                        .into_iter()
+                        .map(IntentSignatureV1)
+                        .collect(),
+                },
+            };
 
-        let prepared_signed_intent = signed_intent.prepare()?;
+            let prepared_signed_intent = signed_intent.prepare()?;
 
-        Ok(PrepareSignedIntentResponse {
-            signed_intent_bytes: signed_intent.to_payload_bytes()?,
-            intent_hash: prepared_signed_intent.intent_hash(),
-            signed_intent_hash: prepared_signed_intent.signed_intent_hash()
-        })
-    })
+            Ok(PrepareSignedIntentResponse {
+                signed_intent_bytes: signed_intent.to_payload_bytes()?,
+                intent_hash: prepared_signed_intent.intent_hash(),
+                signed_intent_hash: prepared_signed_intent.signed_intent_hash(),
+            })
+        },
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -224,10 +240,14 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransac
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |payload: RawNotarizedTransaction| -> Result<RawLedgerTransaction, StringError> {
-        let notarized_transaction = NotarizedTransactionV1::from_raw(&payload)?;
-        Ok(LedgerTransaction::UserV1(Box::new(notarized_transaction)).to_raw()?)
-    })
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |payload: RawNotarizedTransaction| -> Result<RawLedgerTransaction, StringError> {
+            let notarized_transaction = NotarizedTransactionV1::from_raw(&payload)?;
+            Ok(LedgerTransaction::UserV1(Box::new(notarized_transaction)).to_raw()?)
+        },
+    )
 }
 
 #[no_mangle]
@@ -236,16 +256,20 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_transaction
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |payload: RawLedgerTransaction| -> Result<Option<RawNotarizedTransaction>, StringError> {
-        let transaction = LedgerTransaction::from_raw(&payload)?;
-        Ok(match transaction {
-            LedgerTransaction::UserV1(notarized_transaction) => {
-                Some(notarized_transaction.to_raw()?)
-            }
-            LedgerTransaction::RoundUpdateV1(..) => None,
-            LedgerTransaction::Genesis(..) => None,
-        })
-    })
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |payload: RawLedgerTransaction| -> Result<Option<RawNotarizedTransaction>, StringError> {
+            let transaction = LedgerTransaction::from_raw(&payload)?;
+            Ok(match transaction {
+                LedgerTransaction::UserV1(notarized_transaction) => {
+                    Some(notarized_transaction.to_raw()?)
+                }
+                LedgerTransaction::RoundUpdateV1(..) => None,
+                LedgerTransaction::Genesis(..) => None,
+            })
+        },
+    )
 }
 
 pub fn export_extern_functions() {}

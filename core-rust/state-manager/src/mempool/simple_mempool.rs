@@ -239,14 +239,19 @@ impl SimpleMempool {
             .collect()
     }
 
-    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<NotarizedTransactionHash> {
+    pub fn get_payload_hashes_for_intent(
+        &self,
+        intent_hash: &IntentHash,
+    ) -> Vec<NotarizedTransactionHash> {
         match self.intent_lookup.get(intent_hash) {
             Some(payload_hashes) => payload_hashes.iter().cloned().collect(),
             None => vec![],
         }
     }
 
-    pub fn all_hashes_iter(&self) -> impl Iterator<Item = (&IntentHash, &NotarizedTransactionHash)> {
+    pub fn all_hashes_iter(
+        &self,
+    ) -> impl Iterator<Item = (&IntentHash, &NotarizedTransactionHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, payload_hashes)| {
@@ -256,7 +261,10 @@ impl SimpleMempool {
             })
     }
 
-    pub fn get_payload(&self, payload_hash: &NotarizedTransactionHash) -> Option<&MempoolTransaction> {
+    pub fn get_payload(
+        &self,
+        payload_hash: &NotarizedTransactionHash,
+    ) -> Option<&MempoolTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
     }
 }
@@ -291,7 +299,10 @@ mod tests {
         })
     }
 
-    fn create_fake_notarized_transaction(nonce: u32, sigs_count: usize) -> PreparedNotarizedTransactionV1 {
+    fn create_fake_notarized_transaction(
+        nonce: u32,
+        sigs_count: usize,
+    ) -> PreparedNotarizedTransactionV1 {
         NotarizedTransactionV1 {
             signed_intent: SignedIntentV1 {
                 intent: IntentV1 {
@@ -306,17 +317,19 @@ mod tests {
                     },
                     instructions: InstructionsV1(vec![]),
                     blobs: BlobsV1 { blobs: vec![] },
-                    attachments: AttachmentsV1 { },
-                    
+                    attachments: AttachmentsV1 {},
                 },
-                intent_signatures: IntentSignaturesV1 { signatures: vec![0; sigs_count]
-                    .into_iter()
-                    .map(|_| create_fake_signature_with_public_key())
-                    .collect()
+                intent_signatures: IntentSignaturesV1 {
+                    signatures: vec![0; sigs_count]
+                        .into_iter()
+                        .map(|_| create_fake_signature_with_public_key())
+                        .collect(),
                 },
             },
             notary_signature: create_fake_signature(),
-        }.prepare().expect("Expected that it could be prepared")
+        }
+        .prepare()
+        .expect("Expected that it could be prepared")
     }
 
     fn create_fake_pending_transaction(nonce: u32, sigs_count: usize) -> Arc<MempoolTransaction> {

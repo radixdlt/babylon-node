@@ -2,8 +2,8 @@ use radix_engine::types::*;
 
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use transaction::{model::*, define_raw_transaction_payload};
 use sbor::FixedEnumVariant;
+use transaction::{define_raw_transaction_payload, model::*};
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct RoundUpdateTransactionV1 {
@@ -30,15 +30,26 @@ impl RoundUpdateTransactionV1 {
 
     pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
         let hash = HashAccumulator::new()
-            .update([TRANSACTION_HASHABLE_PAYLOAD_PREFIX, TransactionDiscriminator::V1RoundUpdate as u8])
-            .update(format!("RoundChange({},{})", self.epoch.number(), self.round.number()))
+            .update([
+                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                TransactionDiscriminator::V1RoundUpdate as u8,
+            ])
+            .update(format!(
+                "RoundChange({},{})",
+                self.epoch.number(),
+                self.round.number()
+            ))
             .finalize();
         let prepared_instructions = InstructionsV1(self.create_instructions()).prepare_partial()?;
         Ok(PreparedRoundUpdateTransactionV1 {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs: index_map_new(),
-            summary: Summary { effective_length: 0, total_bytes_hashed: 0, hash },
+            summary: Summary {
+                effective_length: 0,
+                total_bytes_hashed: 0,
+                hash,
+            },
         })
     }
 }
@@ -68,7 +79,9 @@ impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
     type Raw = RawRoundUpdateTransactionV1;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let decoded = decoder.decode::<<RoundUpdateTransactionV1 as TransactionPayload>::Versioned>()?.fields;
+        let decoded = decoder
+            .decode::<<RoundUpdateTransactionV1 as TransactionPayload>::Versioned>()?
+            .fields;
         decoded.prepare()
     }
 }

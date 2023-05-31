@@ -70,8 +70,7 @@ use std::path::PathBuf;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use crate::{
-    CommittedTransactionIdentifiers, ReceiptTreeHash,
-    TransactionTreeHash, CommitBasedIdentifiers,
+    CommitBasedIdentifiers, CommittedTransactionIdentifiers, ReceiptTreeHash, TransactionTreeHash,
 };
 use enum_dispatch::enum_dispatch;
 use radix_engine_store_interface::interface::{
@@ -203,7 +202,10 @@ impl TransactionIndex<&IntentHash> for StateManagerDatabase {
 }
 
 impl TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase {
-    fn get_txn_state_version_by_identifier(&self, identifier: &NotarizedTransactionHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &NotarizedTransactionHash,
+    ) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)

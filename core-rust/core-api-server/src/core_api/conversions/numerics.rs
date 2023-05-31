@@ -57,15 +57,16 @@ pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_ten_trillion_capped_u64(num: u64, descriptor: &'static str) -> Result<i64, MappingError> {
+pub fn to_api_ten_trillion_capped_u64(
+    num: u64,
+    descriptor: &'static str,
+) -> Result<i64, MappingError> {
     if num > TEN_TRILLION {
         return Err(MappingError::IntegerError {
             message: format!("{descriptor} larger than {TEN_TRILLION}"),
         });
     }
-    Ok(num
-        .try_into()
-        .expect("Too large somehow"))
+    Ok(num.try_into().expect("Too large somehow"))
 }
 
 pub fn to_api_decimal(value: &Decimal) -> String {

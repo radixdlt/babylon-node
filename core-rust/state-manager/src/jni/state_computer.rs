@@ -65,16 +65,18 @@
 use crate::transaction::RawLedgerTransaction;
 use crate::{
     AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
-    TimestampedValidatorSignature, RejectedTransaction,
+    RejectedTransaction, TimestampedValidatorSignature,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{ConsensusManagerConfig, EpochChangeCondition};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerConfig, EpochChangeCondition,
+};
 use radix_engine_queries::query::ResourceAccounter;
-use transaction::model::*;
 use std::ops::Deref;
+use transaction::model::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::query::StateManagerSubstateQueries;

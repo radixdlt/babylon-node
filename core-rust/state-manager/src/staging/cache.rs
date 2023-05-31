@@ -72,8 +72,8 @@ use crate::staging::{
     StateHashTreeDiff,
 };
 use crate::{
-    AccumulatorHash, EpochTransactionIdentifiers,
-    ReceiptTreeHash, TransactionTreeHash, CommitBasedIdentifiers,
+    AccumulatorHash, CommitBasedIdentifiers, EpochTransactionIdentifiers, ReceiptTreeHash,
+    TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 
@@ -82,7 +82,7 @@ use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
-use crate::transaction::{TransactionLogic, LegacyLedgerPayloadHash};
+use crate::transaction::{LegacyLedgerPayloadHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };

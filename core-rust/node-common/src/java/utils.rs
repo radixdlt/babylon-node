@@ -111,7 +111,7 @@ pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode
 }
 
 /// A type to allow easy transporting of error messages over the boundary, by returning a Result<X, StringError>
-/// 
+///
 /// Note - doesn't implement Debug itself, to avoid the blanket impl below from failing
 #[derive(Clone, PartialEq, Eq, Sbor)]
 #[sbor(transparent)]

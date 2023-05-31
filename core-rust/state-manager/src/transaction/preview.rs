@@ -197,9 +197,7 @@ mod tests {
                 &metric_registry,
             )));
 
-        state_manager
-            .read()
-            .execute_test_genesis();
+        state_manager.read().execute_test_genesis();
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,

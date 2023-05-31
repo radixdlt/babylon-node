@@ -2885,11 +2885,11 @@ components:
         - type: object
           required:
             - access_rules
-            - child_blueprint_rules
+            - inner_blueprint_access_rules
           properties:
             access_rules:
-              $ref: '#/components/schemas/AccessRules'
-            child_blueprint_rules:
+              $ref: '#/components/schemas/NodeAuthorityRules'
+            inner_blueprint_access_rules:
               type: array
               items:
                 $ref: '#/components/schemas/BlueprintAccessRules'
@@ -2902,7 +2902,7 @@ components:
         blueprint_name:
           type: string
         access_rules:
-          $ref: '#/components/schemas/AccessRules'
+          $ref: '#/components/schemas/NodeAuthorityRules'
     RoyaltyModuleFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

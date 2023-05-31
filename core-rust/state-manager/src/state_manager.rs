@@ -71,19 +71,21 @@ use crate::transaction::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
 
+use ::transaction::errors::TransactionValidationError;
 use radix_engine_common::dec;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::Epoch;
-use radix_engine_interface::blueprints::consensus_manager::{ConsensusManagerConfig, EpochChangeCondition};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerConfig, EpochChangeCondition,
+};
 use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
-use ::transaction::errors::TransactionValidationError;
 
 use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
 
-use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
 use ::transaction::model::{IntentHash, NotarizedTransactionHash};
 use ::transaction::prelude::*;
+use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
 
 use std::ops::Deref;
 use std::sync::Arc;
@@ -134,10 +136,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
         logging_config: LoggingConfig,
         metric_registry: &Registry,
     ) -> StateManager<S> {
-        let accumulator_hash = store
-            .read()
-            .get_top_commit_identifiers()
-            .accumulator_hash;
+        let accumulator_hash = store.read().get_top_commit_identifiers().accumulator_hash;
 
         StateManager {
             store,
@@ -183,7 +182,9 @@ pub struct GenesisTransactionResult {
 impl GenesisTransactionResult {
     pub fn to_commit_request(self, header_data: &mut GenesisHeaderData) -> CommitRequest {
         header_data.state_version += 1;
-        header_data.accumulator = header_data.accumulator.accumulate(&self.transaction_hashes.1);
+        header_data.accumulator = header_data
+            .accumulator
+            .accumulate(&self.transaction_hashes.1);
 
         let commit_request = CommitRequest {
             transaction_payloads: vec![self.raw],
@@ -231,14 +232,16 @@ where
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
-        let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction)).to_raw()
+        let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
+            .to_raw()
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
         let payload_hash = prepared.ledger_payload_hash();
         let legacy_hash = prepared.legacy_ledger_payload_hash();
 
-        let system_transaction = prepared.into_genesis()
+        let system_transaction = prepared
+            .into_genesis()
             .expect("Genesis was not a system transaction");
         let executable = system_transaction.get_executable(btreeset!());
 
@@ -248,10 +251,11 @@ where
             &epoch_identifiers,
             state_tracker.latest_transaction_identifiers(),
             &legacy_hash,
-            self
-                .execution_configurator
+            self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || format!("prepare genesis {}", payload_hash)),
+                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                    format!("prepare genesis {}", payload_hash)
+                }),
         );
 
         let commit = processed.expect_commit(format!("prepare genesis {}", payload_hash));
@@ -294,18 +298,25 @@ where
         // TODO - Remove when this check lives in the engine/executor.
         //========================================================================================
 
-        let prepared_proposed_results: Vec<_> = prepare_request.proposed_payloads
+        let prepared_proposed_results: Vec<_> = prepare_request
+            .proposed_payloads
             .iter()
-            .map(|raw| -> Result<(RawLedgerTransaction, PreparedLedgerTransaction), TransactionValidationError> {
-                let ledger_transaction = LedgerTransaction::from_raw_user(raw)
-                    .map_err(|err| TransactionValidationError::PrepareError(PrepareError::DecodeError(err)))?
-                    .to_raw()?;
-                let prepared = self.ledger_transaction_validator.prepare_from_raw(&ledger_transaction)?;
-                Ok((
-                    ledger_transaction,
-                    prepared
-                ))
-            })
+            .map(
+                |raw| -> Result<
+                    (RawLedgerTransaction, PreparedLedgerTransaction),
+                    TransactionValidationError,
+                > {
+                    let ledger_transaction = LedgerTransaction::from_raw_user(raw)
+                        .map_err(|err| {
+                            TransactionValidationError::PrepareError(PrepareError::DecodeError(err))
+                        })?
+                        .to_raw()?;
+                    let prepared = self
+                        .ledger_transaction_validator
+                        .prepare_from_raw(&ledger_transaction)?;
+                    Ok((ledger_transaction, prepared))
+                },
+            )
             .collect();
 
         let mut intent_hash_potential_conflicts =
@@ -313,9 +324,16 @@ where
 
         for proposed_result in prepared_proposed_results.iter() {
             if let Ok((_, prepared)) = proposed_result {
-                let intent_hash = prepared.as_user().expect("Proposed was created from user").intent_hash();
-                if read_store.get_txn_state_version_by_identifier(&intent_hash).is_some() {
-                    intent_hash_potential_conflicts.insert(intent_hash, IntentHashDuplicateWith::Committed);
+                let intent_hash = prepared
+                    .as_user()
+                    .expect("Proposed was created from user")
+                    .intent_hash();
+                if read_store
+                    .get_txn_state_version_by_identifier(&intent_hash)
+                    .is_some()
+                {
+                    intent_hash_potential_conflicts
+                        .insert(intent_hash, IntentHashDuplicateWith::Committed);
                 }
             }
         }
@@ -341,15 +359,14 @@ where
         for raw_ancestor in ancestor_transactions {
             // TODO - By passing through the accumulator / tree hash, avoid doing all this validation if the
             // transactions are already in the execution cache!
-            let validated =
-                self.ledger_transaction_validator.validate_user_or_round_update_from_raw(&raw_ancestor)
-                    .expect("Already prepared transactions should be valid");
+            let validated = self
+                .ledger_transaction_validator
+                .validate_user_or_round_update_from_raw(&raw_ancestor)
+                .expect("Already prepared transactions should be valid");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
-                intent_hash_potential_conflicts.insert(
-                    intent_hash,
-                    IntentHashDuplicateWith::Prepared,
-                );
+                intent_hash_potential_conflicts
+                    .insert(intent_hash, IntentHashDuplicateWith::Prepared);
             }
 
             let legacy_hash = validated.legacy_ledger_payload_hash();
@@ -362,12 +379,13 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_transaction_identifiers(),
                     &legacy_hash,
-                    self
-                        .execution_configurator
+                    self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || format!("already prepared {}", payload_hash)),
+                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                            format!("already prepared {}", payload_hash)
+                        }),
                 );
-    
+
                 let commit = processed.expect_commit(format!("already prepared {}", payload_hash));
                 // TODO: Do we need to check that next epoch request has been prepared?
                 state_tracker.update(&commit.hash_structures_diff);
@@ -405,7 +423,8 @@ where
             },
         };
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
-        let prepared = self.ledger_transaction_validator
+        let prepared = self
+            .ledger_transaction_validator
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
         let legacy_hash = prepared.legacy_ledger_payload_hash();
@@ -418,19 +437,26 @@ where
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
                 &legacy_hash,
-                self
-                    .execution_configurator
+                self.execution_configurator
                     .wrap(executable, ConfigType::Regular)
-                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || format!("round update {}", prepare_request.round.number())),
+                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                        format!("round update {}", prepare_request.round.number())
+                    }),
             );
-    
-            let round_update_commit = processed_round_update.expect_commit(format!("round update {}", prepare_request.round.number()));
-            round_update_commit.check_success(format!("round update {}", prepare_request.round.number()));
+
+            let round_update_commit = processed_round_update
+                .expect_commit(format!("round update {}", prepare_request.round.number()));
+            round_update_commit
+                .check_success(format!("round update {}", prepare_request.round.number()));
             state_tracker.update(&round_update_commit.hash_structures_diff);
             round_update_commit.next_epoch()
         };
 
-        committed.push(ledger_round_update.to_raw().expect("Expected round update to be encodable"));
+        committed.push(
+            ledger_round_update
+                .to_raw()
+                .expect("Expected round update to be encodable"),
+        );
 
         //========================================================================================
         // PART 4:
@@ -465,7 +491,12 @@ where
             let notarized_transaction_hash = prepared_user.notarized_transaction_hash();
             let ledger_hash = prepared.ledger_payload_hash();
             let legacy_hash = prepared.legacy_ledger_payload_hash();
-            let invalid_at_epoch = prepared_user.signed_intent.intent.header.inner.end_epoch_exclusive;
+            let invalid_at_epoch = prepared_user
+                .signed_intent
+                .intent
+                .header
+                .inner
+                .end_epoch_exclusive;
             if let Some(state) = intent_hash_potential_conflicts.get(&intent_hash) {
                 rejected_transactions.push(RejectedTransaction {
                     index: i as u32,
@@ -473,7 +504,7 @@ where
                     error: format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
                         &intent_hash, state
-                    )
+                    ),
                 });
                 pending_transaction_results.push(PendingTransactionResult {
                     intent_hash,
@@ -496,13 +527,15 @@ where
                     rejected_transactions.push(RejectedTransaction {
                         index: i as u32,
                         hashes: Some((intent_hash, notarized_transaction_hash, ledger_hash)),
-                        error: format!("{:?}", &error)
+                        error: format!("{:?}", &error),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::ValidationError(error.into_user_validation_error())),
+                        rejection_reason: Some(RejectionReason::ValidationError(
+                            error.into_user_validation_error(),
+                        )),
                     });
                     continue;
                 }
@@ -519,17 +552,18 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_transaction_identifiers(),
                     &legacy_hash,
-                    self
-                        .execution_configurator
+                    self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || format!("newly proposed {}", ledger_hash)),
+                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                            format!("newly proposed {}", ledger_hash)
+                        }),
                 );
-    
+
                 match processed.expect_commit_or_reject(format!("newly proposed {}", ledger_hash)) {
                     Ok(commit) => {
                         state_tracker.update(&commit.hash_structures_diff);
                         next_epoch = commit.next_epoch();
-    
+
                         intent_hash_potential_conflicts
                             .insert(intent_hash, IntentHashDuplicateWith::Proposed);
                         committed.push(raw);
@@ -545,7 +579,7 @@ where
                         rejected_transactions.push(RejectedTransaction {
                             index: i as u32,
                             hashes: Some((intent_hash, notarized_transaction_hash, ledger_hash)),
-                            error: format!("{:?}", &error)
+                            error: format!("{:?}", &error),
                         });
                         pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
@@ -689,7 +723,12 @@ where
             num_fee_increase_delay_epochs: 1,
         };
         let initial_timestamp_ms = 1;
-        self.execute_genesis(genesis_chunks, initial_epoch, initial_config, initial_timestamp_ms)
+        self.execute_genesis(
+            genesis_chunks,
+            initial_epoch,
+            initial_config,
+            initial_timestamp_ms,
+        )
     }
 
     pub fn execute_genesis(
@@ -714,7 +753,8 @@ where
             initial_timestamp_ms,
         );
 
-        let commit_request = self.prepare_genesis(system_bootstrap_transaction)
+        let commit_request = self
+            .prepare_genesis(system_bootstrap_transaction)
             .to_commit_request(&mut header_data);
 
         let system_bootstrap_receipt = self
@@ -734,7 +774,8 @@ where
             let genesis_data_ingestion_transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
 
-            let commit_request = self.prepare_genesis(genesis_data_ingestion_transaction)
+            let commit_request = self
+                .prepare_genesis(genesis_data_ingestion_transaction)
                 .to_commit_request(&mut header_data);
 
             let genesis_data_ingestion_commit_receipt = self
@@ -753,7 +794,8 @@ where
         // Wrap up
         let genesis_wrap_up_transaction = create_genesis_wrap_up_transaction();
 
-        let commit_request = self.prepare_genesis(genesis_wrap_up_transaction)
+        let commit_request = self
+            .prepare_genesis(genesis_wrap_up_transaction)
             .to_commit_request(&mut header_data);
 
         let final_ledger_proof = commit_request.proof.clone();
@@ -830,12 +872,9 @@ where
 
         let mut result_receipts = vec![];
         for (i, (raw, prepared)) in prepared_transactions.into_iter().enumerate() {
-
             let (validated, execution_type) = if genesis {
                 (
-                    self
-                        .ledger_transaction_validator
-                        .validate_genesis(prepared),
+                    self.ledger_transaction_validator.validate_genesis(prepared),
                     ConfigType::Genesis,
                 )
             } else {
@@ -856,30 +895,45 @@ where
             let legacy_hash = validated.legacy_ledger_payload_hash();
             let executable = validated.get_executable();
 
-            let (next_epoch, state_hash_tree_diff, transaction_tree_slice, receipt_tree_slice, local_receipt, database_updates) =
-            {
+            let (
+                next_epoch,
+                state_hash_tree_diff,
+                transaction_tree_slice,
+                receipt_tree_slice,
+                local_receipt,
+                database_updates,
+            ) = {
                 let mut lock_execution_cache = self.execution_cache.lock();
                 let processed = lock_execution_cache.execute_transaction(
                     write_store.deref(),
                     &epoch_identifiers,
                     state_tracker.latest_transaction_identifiers(),
                     &legacy_hash,
-                    self
-                        .execution_configurator
+                    self.execution_configurator
                         .wrap(executable, execution_type)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || format!("committing {}", payload_hash)),
+                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                            format!("committing {}", payload_hash)
+                        }),
                 );
                 let commit = processed.expect_commit(format!("committing {}", payload_hash));
-    
+
                 let hash_structures_diff = &commit.hash_structures_diff;
                 state_tracker.update(hash_structures_diff);
                 let next_epoch = commit.next_epoch();
                 let state_hash_tree_diff = hash_structures_diff.state_hash_tree_diff.clone();
-                let transaction_tree_slice = hash_structures_diff.transaction_tree_diff.slice.clone();
+                let transaction_tree_slice =
+                    hash_structures_diff.transaction_tree_diff.slice.clone();
                 let receipt_tree_slice = hash_structures_diff.receipt_tree_diff.slice.clone();
                 let local_receipt = commit.local_receipt.clone();
                 let database_updates = commit.database_updates.clone();
-                (next_epoch, state_hash_tree_diff, transaction_tree_slice, receipt_tree_slice, local_receipt, database_updates)
+                (
+                    next_epoch,
+                    state_hash_tree_diff,
+                    transaction_tree_slice,
+                    receipt_tree_slice,
+                    local_receipt,
+                    database_updates,
+                )
             };
 
             Self::check_epoch_proof_match(
@@ -906,8 +960,8 @@ where
                 receipt: local_receipt,
                 identifiers: CommittedTransactionIdentifiers {
                     payload: validated.create_identifiers(),
-                    at_commit: commit_based_identifiers
-                }
+                    at_commit: commit_based_identifiers,
+                },
             });
         }
 
@@ -923,7 +977,9 @@ where
 
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
-        self.execution_cache.lock().progress_root(&final_transaction_identifiers.accumulator_hash);
+        self.execution_cache
+            .lock()
+            .progress_root(&final_transaction_identifiers.accumulator_hash);
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
@@ -951,11 +1007,13 @@ where
 
         self.mempool_manager.remove_committed(&intent_hashes);
 
-        self.pending_transaction_result_cache.write().track_committed_transactions(
-            SystemTime::now(),
-            commit_request_start_state_version,
-            intent_hashes,
-        );
+        self.pending_transaction_result_cache
+            .write()
+            .track_committed_transactions(
+                SystemTime::now(),
+                commit_request_start_state_version,
+                intent_hashes,
+            );
 
         Ok(result_receipts)
     }

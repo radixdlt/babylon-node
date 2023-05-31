@@ -21,9 +21,9 @@ pub enum Substate {
     #[serde(rename="AccessRulesModuleFieldAccessRules")]
     AccessRulesModuleFieldAccessRulesSubstate {
         #[serde(rename = "access_rules")]
-        access_rules: crate::core_api::generated::models::AccessRules,
-        #[serde(rename = "child_blueprint_rules")]
-        child_blueprint_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
+        access_rules: Box<crate::core_api::generated::models::NodeAuthorityRules>,
+        #[serde(rename = "inner_blueprint_access_rules")]
+        inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
     },
     #[serde(rename="AccountDepositRuleIndexEntry")]
     AccountDepositRuleIndexEntrySubstate {

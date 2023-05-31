@@ -91,7 +91,7 @@ use tracing::{error, info};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::transaction::{LedgerPayloadHash, TypedTransactionIdentifiers, RawLedgerTransaction};
+use crate::transaction::{LedgerPayloadHash, RawLedgerTransaction, TypedTransactionIdentifiers};
 
 use super::traits::extensions::*;
 
@@ -246,12 +246,21 @@ impl RocksDBStore {
             );
         }
 
-        let CommittedTransactionBundle { raw, receipt, identifiers } = transaction_bundle;
+        let CommittedTransactionBundle {
+            raw,
+            receipt,
+            identifiers,
+        } = transaction_bundle;
         let state_version = identifiers.at_commit.state_version;
         let ledger_payload_hash = identifiers.payload.ledger_payload_hash;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let TypedTransactionIdentifiers::User { intent_hash, notarized_transaction_hash, .. } = &identifiers.payload.typed {
+        if let TypedTransactionIdentifiers::User {
+            intent_hash,
+            notarized_transaction_hash,
+            ..
+        } = &identifiers.payload.typed
+        {
             /* For user transactions we only need to check for duplicate intent hashes to know
             that user payload hash and ledger payload hash are also unique. */
 
@@ -412,7 +421,9 @@ impl CommitStore for RocksDBStore {
 
         for txn_bundle in commit_bundle.transactions {
             let payload_identifiers = &txn_bundle.identifiers.payload;
-            if let TypedTransactionIdentifiers::User { intent_hash, .. } = &payload_identifiers.typed {
+            if let TypedTransactionIdentifiers::User { intent_hash, .. } =
+                &payload_identifiers.typed
+            {
                 processed_intent_hashes.insert(*intent_hash);
                 user_transactions_count += 1;
             }
@@ -586,10 +597,13 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 };
                 let identifiers = scrypto_decode(identifiers_kv.1.as_ref()).unwrap();
 
-
                 self.state_version += 1;
 
-                Some(CommittedTransactionBundle { raw: txn, receipt: complete_receipt, identifiers })
+                Some(CommittedTransactionBundle {
+                    raw: txn,
+                    receipt: complete_receipt,
+                    identifiers,
+                })
             }
         }
     }
@@ -687,7 +701,10 @@ impl TransactionIndex<&IntentHash> for RocksDBStore {
 }
 
 impl TransactionIndex<&NotarizedTransactionHash> for RocksDBStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &NotarizedTransactionHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &NotarizedTransactionHash,
+    ) -> Option<u64> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnUserPayloadHash),
@@ -848,7 +865,10 @@ impl QueryableProofStore for RocksDBStore {
 
     fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
         self.db
-            .get_cf(self.cf_handle(&LedgerProofByEpoch), epoch.number().to_be_bytes())
+            .get_cf(
+                self.cf_handle(&LedgerProofByEpoch),
+                epoch.number().to_be_bytes(),
+            )
             .unwrap()
             .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
     }

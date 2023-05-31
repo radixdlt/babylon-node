@@ -65,8 +65,8 @@
 use jni::errors::Result;
 use jni::objects::{GlobalRef, JObject, JValue};
 use jni::{JNIEnv, JavaVM};
-use transaction::prelude::*;
 use std::ops::Deref;
+use transaction::prelude::*;
 
 use node_common::java::*;
 

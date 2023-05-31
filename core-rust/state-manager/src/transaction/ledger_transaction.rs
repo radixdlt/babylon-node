@@ -3,10 +3,13 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
 use sbor::*;
 
-use transaction::prelude::*;
 use transaction::define_raw_transaction_payload;
+use transaction::prelude::*;
 
-use super::{RoundUpdateTransactionV1, PreparedRoundUpdateTransactionV1, RoundUpdateTransactionHash, HasRoundUpdateTransactionHash};
+use super::{
+    HasRoundUpdateTransactionHash, PreparedRoundUpdateTransactionV1, RoundUpdateTransactionHash,
+    RoundUpdateTransactionV1,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PayloadIdentifiers {
@@ -26,7 +29,7 @@ pub enum TypedTransactionIdentifiers {
     },
     RoundUpdateV1 {
         round_update_hash: RoundUpdateTransactionHash,
-    }
+    },
 }
 
 impl TypedTransactionIdentifiers {
@@ -35,7 +38,7 @@ impl TypedTransactionIdentifiers {
             TypedTransactionIdentifiers::User {
                 intent_hash,
                 signed_intent_hash,
-                notarized_transaction_hash
+                notarized_transaction_hash,
             } => Some((intent_hash, signed_intent_hash, notarized_transaction_hash)),
             _ => None,
         }
@@ -58,7 +61,10 @@ impl LedgerTransaction {
     }
 
     pub fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&FixedEnumVariant::<{ TransactionDiscriminator::V1Ledger as u8 }, (&LedgerTransaction,)>::new((self,)))
+        manifest_encode(&FixedEnumVariant::<
+            { TransactionDiscriminator::V1Ledger as u8 },
+            (&LedgerTransaction,),
+        >::new((self,)))
     }
 
     pub fn from_raw(raw: &RawLedgerTransaction) -> Result<Self, DecodeError> {
@@ -66,17 +72,21 @@ impl LedgerTransaction {
     }
 
     pub fn from_raw_user(raw: &RawNotarizedTransaction) -> Result<Self, DecodeError> {
-        Ok(LedgerTransaction::UserV1(Box::new(NotarizedTransactionV1::from_raw(raw)?)))
+        Ok(LedgerTransaction::UserV1(Box::new(
+            NotarizedTransactionV1::from_raw(raw)?,
+        )))
     }
 
     pub fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(manifest_decode::<FixedEnumVariant::<{ TransactionDiscriminator::V1Ledger as u8 }, (LedgerTransaction,)>>(payload_bytes)?.into_fields().0)
+        Ok(manifest_decode::<
+            FixedEnumVariant<{ TransactionDiscriminator::V1Ledger as u8 }, (LedgerTransaction,)>,
+        >(payload_bytes)?
+        .into_fields()
+        .0)
     }
 
     pub fn prepare(&self) -> Result<PreparedLedgerTransaction, PrepareError> {
-        PreparedLedgerTransaction::prepare_from_payload(
-            &self.to_payload_bytes()?,
-        )
+        PreparedLedgerTransaction::prepare_from_payload(&self.to_payload_bytes()?)
     }
 }
 
@@ -112,16 +122,20 @@ impl PreparedLedgerTransaction {
         PayloadIdentifiers {
             ledger_payload_hash: self.ledger_payload_hash(),
             typed: match &self.inner {
-                PreparedLedgerTransactionInner::Genesis(t) => TypedTransactionIdentifiers::Genesis {
-                    system_transaction_hash: t.system_transaction_hash()
-                },
+                PreparedLedgerTransactionInner::Genesis(t) => {
+                    TypedTransactionIdentifiers::Genesis {
+                        system_transaction_hash: t.system_transaction_hash(),
+                    }
+                }
                 PreparedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.intent_hash(),
                     signed_intent_hash: t.signed_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
-                PreparedLedgerTransactionInner::RoundUpdateV1(t) => TypedTransactionIdentifiers::RoundUpdateV1 {
-                    round_update_hash: t.round_update_transaction_hash(),
+                PreparedLedgerTransactionInner::RoundUpdateV1(t) => {
+                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                        round_update_hash: t.round_update_transaction_hash(),
+                    }
                 }
             },
         }
@@ -159,32 +173,47 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
         let prepared_inner = match discriminator {
             0 => {
                 if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize { expected: 1, actual: length }))
+                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
+                        expected: 1,
+                        actual: length,
+                    }));
                 }
                 let prepared = PreparedSystemTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::Genesis(Box::new(prepared))
-            },
+            }
             1 => {
                 if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize { expected: 1, actual: length }))
+                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
+                        expected: 1,
+                        actual: length,
+                    }));
                 }
                 let prepared = PreparedNotarizedTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::UserV1(Box::new(prepared))
-            },
+            }
             2 => {
                 if length != 1 {
-                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize { expected: 1, actual: length }))
+                    return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
+                        expected: 1,
+                        actual: length,
+                    }));
                 }
-                let prepared = PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
+                let prepared =
+                    PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
-            },
+            }
             _ => {
-                return Err(PrepareError::DecodeError(DecodeError::UnknownDiscriminator(discriminator)));
+                return Err(PrepareError::DecodeError(
+                    DecodeError::UnknownDiscriminator(discriminator),
+                ));
             }
         };
 
         let ledger_payload_hash = HashAccumulator::new()
-            .update([TRANSACTION_HASHABLE_PAYLOAD_PREFIX, TransactionDiscriminator::V1Ledger as u8])
+            .update([
+                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                TransactionDiscriminator::V1Ledger as u8,
+            ])
             .update([discriminator])
             .update(prepared_inner.get_summary().hash.as_slice())
             .finalize();
@@ -197,13 +226,13 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
 
         decoder.track_stack_depth_decrease()?;
         let end_offset = decoder.get_offset();
-        
+
         Ok(Self {
             inner: prepared_inner,
             summary,
             // TODO - remove this when we change the legacy payload hash behaviour for ledger sync
             // Note - we assume that the payload started at 0 and ends at end_offset
-            legacy_ledger_payload_hash: hash(decoder.get_slice(0, end_offset)).into()
+            legacy_ledger_payload_hash: hash(decoder.get_slice(0, end_offset)).into(),
         })
     }
 }
@@ -233,7 +262,9 @@ impl ValidatedLedgerTransaction {
 
     pub fn get_executable(&self) -> Executable<'_> {
         match &self.inner {
-            ValidatedLedgerTransactionInner::Genesis(t) => t.get_executable(btreeset!(AuthAddresses::system_role())),
+            ValidatedLedgerTransactionInner::Genesis(t) => {
+                t.get_executable(btreeset!(AuthAddresses::system_role()))
+            }
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
         }
@@ -243,17 +274,21 @@ impl ValidatedLedgerTransaction {
         PayloadIdentifiers {
             ledger_payload_hash: self.ledger_payload_hash(),
             typed: match &self.inner {
-                ValidatedLedgerTransactionInner::Genesis(t) => TypedTransactionIdentifiers::Genesis {
-                    system_transaction_hash: t.system_transaction_hash(),
-                },
+                ValidatedLedgerTransactionInner::Genesis(t) => {
+                    TypedTransactionIdentifiers::Genesis {
+                        system_transaction_hash: t.system_transaction_hash(),
+                    }
+                }
                 ValidatedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.intent_hash(),
                     signed_intent_hash: t.signed_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
-                ValidatedLedgerTransactionInner::RoundUpdateV1(t) => TypedTransactionIdentifiers::RoundUpdateV1 {
-                    round_update_hash: t.round_update_transaction_hash(),
-                },
+                ValidatedLedgerTransactionInner::RoundUpdateV1(t) => {
+                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                        round_update_hash: t.round_update_transaction_hash(),
+                    }
+                }
             },
         }
     }

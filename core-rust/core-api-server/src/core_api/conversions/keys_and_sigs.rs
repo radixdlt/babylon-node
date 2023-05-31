@@ -59,10 +59,12 @@ pub fn to_api_signature_with_public_key(
 #[allow(dead_code)]
 pub fn extract_api_signature(signature: models::Signature) -> Result<SignatureV1, ExtractionError> {
     Ok(match signature {
-        models::Signature::EcdsaSecp256k1Signature { signature_hex } => SignatureV1::EcdsaSecp256k1(
-            EcdsaSecp256k1Signature::try_from(from_hex(signature_hex)?.as_ref())
-                .map_err(|_| ExtractionError::InvalidSignature)?,
-        ),
+        models::Signature::EcdsaSecp256k1Signature { signature_hex } => {
+            SignatureV1::EcdsaSecp256k1(
+                EcdsaSecp256k1Signature::try_from(from_hex(signature_hex)?.as_ref())
+                    .map_err(|_| ExtractionError::InvalidSignature)?,
+            )
+        }
         models::Signature::EddsaEd25519Signature { signature_hex } => SignatureV1::EddsaEd25519(
             EddsaEd25519Signature::try_from(from_hex(signature_hex)?.as_ref())
                 .map_err(|_| ExtractionError::InvalidSignature)?,

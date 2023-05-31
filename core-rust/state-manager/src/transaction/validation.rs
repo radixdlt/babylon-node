@@ -1,8 +1,8 @@
 use parking_lot::RwLock;
-use transaction::errors::TransactionValidationError;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use transaction::errors::TransactionValidationError;
 
 use radix_engine::transaction::{AbortReason, TransactionReceipt, TransactionResult};
 
@@ -13,14 +13,17 @@ use crate::staging::ReadableStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ConfigType, ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AtState, PendingTransactionRecord,
-    PendingTransactionResultCache, RejectionReason, TransactionAttempt,
+    AtState, PendingTransactionRecord, PendingTransactionResultCache, RejectionReason,
+    TransactionAttempt,
 };
 
 use transaction::prelude::*;
 use transaction::validation::*;
 
-use super::{RawLedgerTransaction, ValidatedLedgerTransaction, PreparedLedgerTransaction, PreparedLedgerTransactionInner, ValidatedLedgerTransactionInner, LedgerTransaction};
+use super::{
+    LedgerTransaction, PreparedLedgerTransaction, PreparedLedgerTransactionInner,
+    RawLedgerTransaction, ValidatedLedgerTransaction, ValidatedLedgerTransactionInner,
+};
 
 pub struct LedgerTransactionValidator {
     pub validation_config: ValidationConfig,
@@ -35,7 +38,7 @@ impl LedgerTransactionValidator {
             validation_config,
             // Add a few extra bytes for the enum disciminator at the start(!)
             ledger_payload_limit: validation_config.max_notarized_payload_size + 10,
-            user_transaction_validator: NotarizedTransactionValidator::new(validation_config)
+            user_transaction_validator: NotarizedTransactionValidator::new(validation_config),
         }
     }
 
@@ -61,7 +64,9 @@ impl LedgerTransactionValidator {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        Ok(PreparedLedgerTransaction::prepare_from_payload(raw_payload_bytes)?)
+        Ok(PreparedLedgerTransaction::prepare_from_payload(
+            raw_payload_bytes,
+        )?)
     }
 
     pub fn validate_user_or_round_update_from_model(
@@ -93,19 +98,26 @@ impl LedgerTransactionValidator {
         let validated_inner = match prepared.inner {
             PreparedLedgerTransactionInner::Genesis(_) => {
                 return Err(LedgerTransactionValidationError::GenesisTransactionProvided);
-            },
+            }
             PreparedLedgerTransactionInner::UserV1(prepared) => {
                 let validated = self.user_transaction_validator.validate(*prepared)?;
                 ValidatedLedgerTransactionInner::UserV1(Box::new(validated))
-            },
+            }
             PreparedLedgerTransactionInner::RoundUpdateV1(prepared) => {
                 ValidatedLedgerTransactionInner::RoundUpdateV1(prepared)
-            },
+            }
         };
-        Ok(ValidatedLedgerTransaction { inner: validated_inner, summary: prepared.summary, legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash })
+        Ok(ValidatedLedgerTransaction {
+            inner: validated_inner,
+            summary: prepared.summary,
+            legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash,
+        })
     }
 
-    pub fn validate_genesis(&self, prepared: PreparedLedgerTransaction) -> ValidatedLedgerTransaction {
+    pub fn validate_genesis(
+        &self,
+        prepared: PreparedLedgerTransaction,
+    ) -> ValidatedLedgerTransaction {
         let PreparedLedgerTransactionInner::Genesis(t) = prepared.inner else {
             panic!("Genesis transaction was not a system transaction")
         };
@@ -128,7 +140,9 @@ impl LedgerTransactionValidationError {
     pub fn into_user_validation_error(self) -> TransactionValidationError {
         match self {
             LedgerTransactionValidationError::ValidationError(x) => x,
-            LedgerTransactionValidationError::GenesisTransactionProvided => panic!("into_user_validation_error called on a genesis transaction payload"),
+            LedgerTransactionValidationError::GenesisTransactionProvided => {
+                panic!("into_user_validation_error called on a genesis transaction payload")
+            }
         }
     }
 }
@@ -164,15 +178,24 @@ impl<S> CommitabilityValidator<S> {
         Self {
             store,
             execution_configurator,
-            user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(network.id)),
+            user_transaction_validator: NotarizedTransactionValidator::new(
+                ValidationConfig::default(network.id),
+            ),
         }
     }
 
-    pub fn prepare_from_raw(&self, transaction: &RawNotarizedTransaction) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
-        self.user_transaction_validator.prepare_from_raw(transaction)
+    pub fn prepare_from_raw(
+        &self,
+        transaction: &RawNotarizedTransaction,
+    ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
+        self.user_transaction_validator
+            .prepare_from_raw(transaction)
     }
 
-    pub fn validate(&self, transaction: PreparedNotarizedTransactionV1) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
+    pub fn validate(
+        &self,
+        transaction: PreparedNotarizedTransactionV1,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
         self.user_transaction_validator.validate(transaction)
     }
 }
@@ -191,28 +214,31 @@ where
         let read_store = self.store.read();
         let executed_at_state_version = read_store.max_state_version();
 
-        let existing = read_store.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
+        let existing =
+            read_store.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
         if existing.is_some() {
             return TransactionAttempt {
                 rejection: Some(RejectionReason::IntentHashCommitted),
-                against_state: AtState::Committed { state_version: executed_at_state_version },
+                against_state: AtState::Committed {
+                    state_version: executed_at_state_version,
+                },
                 timestamp,
             };
         }
 
-        let receipt = match self.test_execute_transaction_up_to_fee_loan(
-            read_store.deref(),
-            transaction,
-        ) {
-            Ok(receipt) => receipt,
-            Err(rejection_reason) => {
-                return TransactionAttempt {
-                    rejection: Some(rejection_reason),
-                    against_state: AtState::Committed { state_version: executed_at_state_version },
-                    timestamp,
-                };
-            },
-        };
+        let receipt =
+            match self.test_execute_transaction_up_to_fee_loan(read_store.deref(), transaction) {
+                Ok(receipt) => receipt,
+                Err(rejection_reason) => {
+                    return TransactionAttempt {
+                        rejection: Some(rejection_reason),
+                        against_state: AtState::Committed {
+                            state_version: executed_at_state_version,
+                        },
+                        timestamp,
+                    };
+                }
+            };
 
         let result = match receipt.result {
             TransactionResult::Reject(reject_result) => Err(RejectionReason::FromExecution(
@@ -229,7 +255,9 @@ where
 
         TransactionAttempt {
             rejection: result.err(),
-            against_state: AtState::Committed { state_version: executed_at_state_version },
+            against_state: AtState::Committed {
+                state_version: executed_at_state_version,
+            },
             timestamp,
         }
     }
@@ -242,10 +270,12 @@ where
         let transaction_logic = self
             .execution_configurator
             .wrap(transaction.get_executable(), ConfigType::Pending)
-            .warn_after(UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD, || format!(
-                "pending intent hash {}, up to fee loan",
-                transaction.prepared.intent_hash()
-            ));
+            .warn_after(UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD, || {
+                format!(
+                    "pending intent hash {}, up to fee loan",
+                    transaction.prepared.intent_hash()
+                )
+            });
         Ok(transaction_logic.execute_on(root_store))
     }
 }
@@ -270,25 +300,39 @@ impl<S> CachedCommitabilityValidator<S> {
         }
     }
 
-    pub fn prepare_from_raw(&self, transaction: &RawNotarizedTransaction) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
+    pub fn prepare_from_raw(
+        &self,
+        transaction: &RawNotarizedTransaction,
+    ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
         self.commitability_validator.prepare_from_raw(transaction)
     }
 
-    fn read_record(&self, prepared: &PreparedNotarizedTransactionV1) -> Option<PendingTransactionRecord> {
+    fn read_record(
+        &self,
+        prepared: &PreparedNotarizedTransactionV1,
+    ) -> Option<PendingTransactionRecord> {
         // Even though we only want to read the cache here, the LRU structs require a write lock
-        self.pending_transaction_result_cache.write().get_pending_transaction_record(
-            &prepared.intent_hash(),
-            &prepared.notarized_transaction_hash(),
-        )
+        self.pending_transaction_result_cache
+            .write()
+            .get_pending_transaction_record(
+                &prepared.intent_hash(),
+                &prepared.notarized_transaction_hash(),
+            )
     }
 
-    fn write_attempt(&self, metadata: TransactionMetadata, attempt: TransactionAttempt) -> PendingTransactionRecord {
-        self.pending_transaction_result_cache.write().track_transaction_result(
-            metadata.intent_hash,
-            metadata.notarized_transaction_hash,
-            Some(metadata.invalid_from_epoch),
-            attempt,
-        )
+    fn write_attempt(
+        &self,
+        metadata: TransactionMetadata,
+        attempt: TransactionAttempt,
+    ) -> PendingTransactionRecord {
+        self.pending_transaction_result_cache
+            .write()
+            .track_transaction_result(
+                metadata.intent_hash,
+                metadata.notarized_transaction_hash,
+                Some(metadata.invalid_from_epoch),
+                attempt,
+            )
     }
 }
 
@@ -303,14 +347,19 @@ impl TransactionMetadata {
         Self {
             intent_hash: prepared.intent_hash(),
             notarized_transaction_hash: prepared.notarized_transaction_hash(),
-            invalid_from_epoch: prepared.signed_intent.intent.header.inner.end_epoch_exclusive,
+            invalid_from_epoch: prepared
+                .signed_intent
+                .intent
+                .header
+                .inner
+                .end_epoch_exclusive,
         }
     }
 }
 
 enum ShouldRecalculate {
     Yes,
-    No(PendingTransactionRecord)
+    No(PendingTransactionRecord),
 }
 
 pub enum CheckMetadata {
@@ -342,7 +391,7 @@ pub enum StaticValidation {
 pub enum ForceRecalculation {
     Yes,
     IfCachedAsValid,
-    No
+    No,
 }
 
 impl<S> CachedCommitabilityValidator<S>
@@ -366,7 +415,9 @@ where
     ) -> (PendingTransactionRecord, CheckMetadata) {
         let current_time = SystemTime::now();
 
-        if let ShouldRecalculate::No(record) = self.should_recalculate(&prepared, current_time, force_recalculate) {
+        if let ShouldRecalculate::No(record) =
+            self.should_recalculate(&prepared, current_time, force_recalculate)
+        {
             return (record, CheckMetadata::Cached);
         }
 
@@ -375,9 +426,14 @@ where
         match self.commitability_validator.validate(prepared) {
             Ok(validated) => {
                 // Transaction was valid - let's also attempt to execute it
-                let attempt = self.commitability_validator.check_for_rejection(&validated, current_time);
-                (self.write_attempt(metadata, attempt), CheckMetadata::Fresh(StaticValidation::Valid(Box::new(validated))))
-            },
+                let attempt = self
+                    .commitability_validator
+                    .check_for_rejection(&validated, current_time);
+                (
+                    self.write_attempt(metadata, attempt),
+                    CheckMetadata::Fresh(StaticValidation::Valid(Box::new(validated))),
+                )
+            }
             Err(validation_error) => {
                 // The transaction is statically invalid
                 let attempt = TransactionAttempt {
@@ -385,8 +441,11 @@ where
                     against_state: AtState::Static,
                     timestamp: current_time,
                 };
-                (self.write_attempt(metadata, attempt), CheckMetadata::Fresh(StaticValidation::Invalid))
-            },
+                (
+                    self.write_attempt(metadata, attempt),
+                    CheckMetadata::Fresh(StaticValidation::Invalid),
+                )
+            }
         }
     }
 
@@ -406,27 +465,41 @@ where
     ) -> (PendingTransactionRecord, PrevalidatedCheckMetadata) {
         let current_time = SystemTime::now();
 
-        if let ShouldRecalculate::No(record) = self.should_recalculate(&validated.prepared, current_time, force_recalculate) {
+        if let ShouldRecalculate::No(record) =
+            self.should_recalculate(&validated.prepared, current_time, force_recalculate)
+        {
             return (record, PrevalidatedCheckMetadata::Cached);
         }
 
         let metadata = TransactionMetadata::read_from(&validated.prepared);
-        
-        let attempt = self.commitability_validator.check_for_rejection(validated, current_time);
-        (self.write_attempt(metadata, attempt), PrevalidatedCheckMetadata::Fresh)
+
+        let attempt = self
+            .commitability_validator
+            .check_for_rejection(validated, current_time);
+        (
+            self.write_attempt(metadata, attempt),
+            PrevalidatedCheckMetadata::Fresh,
+        )
     }
 
-    fn should_recalculate(&self, prepared: &PreparedNotarizedTransactionV1, current_time: SystemTime, force_recalculate: ForceRecalculation) -> ShouldRecalculate {
+    fn should_recalculate(
+        &self,
+        prepared: &PreparedNotarizedTransactionV1,
+        current_time: SystemTime,
+        force_recalculate: ForceRecalculation,
+    ) -> ShouldRecalculate {
         if force_recalculate == ForceRecalculation::Yes {
             return ShouldRecalculate::Yes;
         }
-    
+
         let current_epoch = self.store.read().get_epoch();
         let record_option = self.read_record(prepared);
 
         if let Some(record) = record_option {
             if !record.should_recalculate(current_epoch, current_time) {
-                if force_recalculate == ForceRecalculation::IfCachedAsValid && record.latest_attempt.rejection.is_none() {
+                if force_recalculate == ForceRecalculation::IfCachedAsValid
+                    && record.latest_attempt.rejection.is_none()
+                {
                     return ShouldRecalculate::Yes;
                 }
                 return ShouldRecalculate::No(record);
