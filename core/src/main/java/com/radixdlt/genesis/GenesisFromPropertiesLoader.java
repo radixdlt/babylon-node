@@ -65,12 +65,12 @@
 package com.radixdlt.genesis;
 
 import com.google.common.base.Strings;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.IOUtils;
+import com.google.common.hash.HashCode;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -83,30 +83,47 @@ import org.apache.logging.log4j.Logger;
 public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
   private static final Logger log = LogManager.getLogger();
 
-  public Optional<GenesisData> loadGenesisDataFromProperties() {
+  public Optional<RawGenesisData> loadGenesisDataFromProperties() {
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
       log.info("Loading genesis from file: {}", genesisFileProp);
-      return Optional.of(decodeFromBase64(readFileToString(genesisFileProp)));
+      return Optional.of(readGenesisBytesFromFile(genesisFileProp));
     } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_data"))) {
       log.info("Loading genesis from genesis_data property");
-      return Optional.of(decodeFromBase64(properties.get("network.genesis_data")));
+      try {
+        return Optional.of(fromCompressedBase64String(properties.get("network.genesis_data")));
+      } catch (IOException e) {
+        throw new RuntimeException(
+            "Couldn't decode the genesis data from the network.genesis_data property", e);
+      }
     } else {
       return Optional.empty();
     }
   }
 
-  private GenesisData decodeFromBase64(String base64) {
-    final var bytes = Base64.getDecoder().decode(base64);
-    return StateManagerSbor.decode(bytes, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+  private static RawGenesisData fromCompressedBase64(byte[] compressedGenesisBytesBase64)
+      throws IOException {
+    final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
+    return fromCompressedBytes(compressedGenesisBytes);
   }
 
-  private String readFileToString(String genesisFile) {
-    try (var genesisJsonString = new FileInputStream(genesisFile)) {
-      return IOUtils.toString(genesisJsonString);
+  private static RawGenesisData fromCompressedBase64String(String compressedGenesisBytesBase64)
+      throws IOException {
+    final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
+    return fromCompressedBytes(compressedGenesisBytes);
+  }
+
+  private static RawGenesisData fromCompressedBytes(byte[] compressedBytes) throws IOException {
+    final var uncompressedGenesisBytes = Compress.uncompress(compressedBytes);
+    return new RawGenesisData(HashCode.fromBytes(uncompressedGenesisBytes));
+  }
+
+  private static RawGenesisData readGenesisBytesFromFile(String genesisFile) {
+    try {
+      final var compressedGenesisBytesBase64 = Files.readAllBytes(Path.of(genesisFile));
+      return fromCompressedBase64(compressedGenesisBytesBase64);
     } catch (IOException e) {
-      throw new RuntimeException(
-          String.format("Failed to read the genesis data from %s", genesisFile), e);
+      throw new RuntimeException("Couldn't read the genesis data from file " + genesisFile, e);
     }
   }
 }

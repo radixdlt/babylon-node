@@ -64,11 +64,26 @@
 
 package com.radixdlt.bootstrap;
 
-import com.radixdlt.genesis.GenesisData;
+import com.google.common.hash.HashCode;
+import com.radixdlt.genesis.GenesisProvider;
+import com.radixdlt.genesis.RawGenesisData;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import java.util.Optional;
 
-public interface GenesisStore {
-  void saveGenesisData(GenesisData genesisData);
+public interface GenesisStore extends GenesisProvider {
+  void saveGenesisData(RawGenesisDataWithHash genesisDataWithHash);
 
-  Optional<GenesisData> readGenesisData();
+  Optional<HashCode> readGenesisDataHash();
+
+  Optional<RawGenesisData> readGenesisData();
+
+  @Override
+  default RawGenesisData genesisData() {
+    return readGenesisData().orElseThrow();
+  }
+
+  @Override
+  default HashCode genesisDataHash() {
+    return readGenesisDataHash().orElseThrow();
+  }
 }

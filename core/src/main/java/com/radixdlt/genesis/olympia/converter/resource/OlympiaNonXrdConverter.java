@@ -68,6 +68,8 @@ import static com.radixdlt.genesis.olympia.converter.GenesisDataChunkUtils.creat
 import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisDataChunk;
 import com.radixdlt.genesis.GenesisResource;
 import com.radixdlt.genesis.GenesisResourceAllocation;
@@ -79,15 +81,18 @@ import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class OlympiaNonXrdConverter {
+  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
+
   static Tuple2<
           ImmutableList<GenesisDataChunk.Resources>,
           ImmutableList<GenesisDataChunk.ResourceBalances>>
@@ -185,7 +190,8 @@ public final class OlympiaNonXrdConverter {
           // reset the counter and the accounts index for the next chunk
           resourceBalancesInCurrentChunkBuilder.add(
               tuple(
-                  Address.globalFungible(padToResourceAddress(resource.addr().getBytes())),
+                  Address.globalFungible(
+                      olympiaToBabylonResourceAddressBytes(resource.addr().getBytes())),
                   currentAllocations.build()));
           currentAllocations = ImmutableList.builder();
 
@@ -207,7 +213,8 @@ public final class OlympiaNonXrdConverter {
       if (!lastAllocationsForCurrentResource.isEmpty()) {
         resourceBalancesInCurrentChunkBuilder.add(
             tuple(
-                Address.globalFungible(padToResourceAddress(resource.addr().getBytes())),
+                Address.globalFungible(
+                    olympiaToBabylonResourceAddressBytes(resource.addr().getBytes())),
                 lastAllocationsForCurrentResource));
         // Note that we don't reset any chunk-scoped builders/counters
         // No need to reset currentAllocations here, we'll create a fresh instance
@@ -286,24 +293,33 @@ public final class OlympiaNonXrdConverter {
       List<OlympiaStateIR.Account> accounts,
       Decimal initialSupply,
       OlympiaStateIR.Resource resource) {
-    final var metadata =
-        ImmutableList.of(
+    final var metadataBuilder = ImmutableList.<Tuple2<String, String>>builder();
+    metadataBuilder.addAll(
+        List.of(
             tuple("symbol", resource.symbol()),
             tuple("name", resource.name()),
-            tuple("description", resource.description()),
-            tuple("info_url", resource.url()),
-            tuple("icon_url", resource.iconUrl()));
+            tuple("description", resource.description())));
+    if (!resource.url().isBlank()) {
+      metadataBuilder.add(tuple("info_url", resource.url()));
+    }
+    if (!resource.iconUrl().isBlank()) {
+      metadataBuilder.add(tuple("icon_url", resource.iconUrl()));
+    }
+
     final var owner =
         resource
             .ownerAccountIndex()
             .map(
                 idx -> Address.virtualAccountAddress(accounts.get(idx).publicKeyBytes().asBytes()));
 
-    final var addrBytes = padToResourceAddress(resource.addr().getBytes());
-    return new GenesisResource(addrBytes, initialSupply, metadata, Option.from(owner));
+    final var addrBytes = olympiaToBabylonResourceAddressBytes(resource.addr().getBytes());
+    return new GenesisResource(
+        addrBytes, initialSupply, metadataBuilder.build(), Option.from(owner));
   }
 
-  private static byte[] padToResourceAddress(byte[] input) {
-    return Bytes.leftPadWithZeros(input, ResourceAddress.BYTE_LENGTH - 1);
+  private static byte[] olympiaToBabylonResourceAddressBytes(byte[] input) {
+    final var hash = HASHER.hashBytes(input);
+    return Arrays.copyOfRange(
+        hash.asBytes(), 0, ResourceAddress.BYTE_LENGTH - ResourceAddress.ENTITY_ID_LEN);
   }
 }

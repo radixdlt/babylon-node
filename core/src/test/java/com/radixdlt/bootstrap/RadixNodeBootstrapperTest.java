@@ -70,11 +70,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.serialization.TestSetupUtils;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -85,16 +88,23 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.cli.ParseException;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RadixNodeBootstrapperTest {
+  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
 
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
+
   @Test
-  public void test_genesis_hash_verification_from_properties() throws ParseException {
+  public void test_genesis_hash_verification_from_properties() throws ParseException, IOException {
     final var network = Network.LOCALNET;
     final var genesisStore = new GenesisFileStore(new File(tmpFolder.getRoot(), "genesis.bin"));
 
@@ -173,7 +183,8 @@ public final class RadixNodeBootstrapperTest {
     final var genesisData = GenesisData.testingDefaultEmpty();
     final var genesisDataBytes =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    final var genesisDataBase64 = Base64.getEncoder().encodeToString(genesisDataBytes);
+    final var compressedGenesisDataBytes = Compress.compress(genesisDataBytes);
+    final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisDataBytes);
     try (var writer = new BufferedWriter(new FileWriter(genesisFile))) {
       writer.write(genesisDataBase64);
     }
@@ -202,7 +213,8 @@ public final class RadixNodeBootstrapperTest {
     assertTrue(network.fixedGenesis().isEmpty());
 
     final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
-    genesisFileStore.saveGenesisData(GenesisData.testingDefaultEmpty());
+    genesisFileStore.saveGenesisData(
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty(), HASHER));
 
     // Explicitly no genesis configured, but there's one in the genesis store
     final var properties =
@@ -240,10 +252,10 @@ public final class RadixNodeBootstrapperTest {
                         Address.virtualAccountAddress(key.getPublicKey()))))));
   }
 
-  private String encodeToString(GenesisData genesisData) {
-    return Base64.getEncoder()
-        .encodeToString(
-            StateManagerSbor.encode(
-                genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+  private String encodeToString(GenesisData genesisData) throws IOException {
+    final var encoded =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    final var compressed = Compress.compress(encoded);
+    return Base64.getEncoder().encodeToString(compressed);
   }
 }

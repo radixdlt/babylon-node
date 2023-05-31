@@ -676,7 +676,10 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed {:?}", genesis_data_ingestion_commit_receipt);
+                    panic!(
+                        "Genesis data ingestion txn didn't succeed {:?}",
+                        genesis_data_ingestion_commit_receipt
+                    );
                 }
             }
         }

@@ -64,12 +64,16 @@
 
 package com.radixdlt.networks;
 
+import com.google.common.hash.HashCode;
 import java.util.Arrays;
 
 public sealed interface FixedNetworkGenesis {
-  record Resource(String resourcePath) implements FixedNetworkGenesis {}
 
-  record Constant(byte[] genesisData) implements FixedNetworkGenesis {
+  HashCode genesisDataHash();
+
+  record Resource(HashCode genesisDataHash, String resourcePath) implements FixedNetworkGenesis {}
+
+  record Constant(HashCode genesisDataHash, byte[] genesisData) implements FixedNetworkGenesis {
     @Override
     public boolean equals(Object other) {
       return other instanceof Constant otherConstant
@@ -82,11 +86,11 @@ public sealed interface FixedNetworkGenesis {
     }
   }
 
-  static FixedNetworkGenesis resource(String resourcePath) {
-    return new Resource(resourcePath);
+  static FixedNetworkGenesis resource(HashCode genesisDataHash, String resourcePath) {
+    return new Resource(genesisDataHash, resourcePath);
   }
 
-  static FixedNetworkGenesis constant(byte[] genesisData) {
-    return new Constant(genesisData);
+  static FixedNetworkGenesis constant(HashCode genesisDataHash, byte[] genesisData) {
+    return new Constant(genesisDataHash, genesisData);
   }
 }

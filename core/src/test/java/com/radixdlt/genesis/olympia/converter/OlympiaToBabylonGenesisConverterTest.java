@@ -71,8 +71,10 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisDataChunk;
@@ -92,7 +94,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UniqueListBuilder;
@@ -107,6 +109,8 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public final class OlympiaToBabylonGenesisConverterTest {
+  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
+
   static {
     Security.insertProviderAt(new BouncyCastleProvider(), 1);
   }
@@ -532,8 +536,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
     stateSummary.resources.forEach(
         summaryResource -> {
           final var babylonAddrBytes =
-              Bytes.leftPadWithZeros(
-                  summaryResource.resourceAddrBytes.asBytes(), ResourceAddress.BYTE_LENGTH - 1);
+              olympiaToBabylonResourceAddressBytes(summaryResource.resourceAddrBytes.asBytes());
           final var babylonResource =
               babylonResourcesByAddr.get(HashCode.fromBytes(babylonAddrBytes));
           assertEquals(
@@ -575,8 +578,13 @@ public final class OlympiaToBabylonGenesisConverterTest {
   }
 
   private static ResourceAddress toGlobalFungibleAddr(byte[] olympiaAddressBytes) {
-    return Address.globalFungible(
-        Bytes.leftPadWithZeros(olympiaAddressBytes, ResourceAddress.BYTE_LENGTH - 1));
+    return Address.globalFungible(olympiaToBabylonResourceAddressBytes(olympiaAddressBytes));
+  }
+
+  private static byte[] olympiaToBabylonResourceAddressBytes(byte[] input) {
+    final var hash = HASHER.hashBytes(input);
+    return Arrays.copyOfRange(
+        hash.asBytes(), 0, ResourceAddress.BYTE_LENGTH - ResourceAddress.ENTITY_ID_LEN);
   }
 
   private record OlympiaStateSummary(

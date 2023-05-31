@@ -76,7 +76,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -118,12 +118,13 @@ public final class RadixNodeModule extends AbstractModule {
   private final RuntimeProperties properties;
   private final Network network;
 
-  private final GenesisData genesisData;
+  private final GenesisProvider genesisProvider;
 
-  public RadixNodeModule(RuntimeProperties properties, Network network, GenesisData genesisData) {
+  public RadixNodeModule(
+      RuntimeProperties properties, Network network, GenesisProvider genesisProvider) {
     this.properties = properties;
     this.network = network;
-    this.genesisData = genesisData;
+    this.genesisProvider = genesisProvider;
   }
 
   @Override
@@ -221,7 +222,7 @@ public final class RadixNodeModule extends AbstractModule {
     var databaseFlags =
         new DatabaseFlags(enableLocalTransactionExecutionIndex, enableAccountChangeIndex);
 
-    install(new REv2LedgerInitializerModule(genesisData));
+    install(new REv2LedgerInitializerModule(genesisProvider));
 
     install(
         REv2StateManagerModule.create(

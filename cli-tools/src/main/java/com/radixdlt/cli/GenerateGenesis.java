@@ -75,10 +75,7 @@ import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
-import com.radixdlt.utils.UniqueListBuilder;
+import com.radixdlt.utils.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
@@ -173,13 +170,15 @@ public final class GenerateGenesis {
     final var genesisData = createGenesisData(network, validators);
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
+    final var compressedGenesisData = Compress.compress(encodedGenesisData);
+    final var compressedGenesisDataBase64 =
+        Base64.getEncoder().encodeToString(compressedGenesisData);
 
     if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_DATA=%s%n", genesisDataBase64);
+      System.out.format("export RADIXDLT_GENESIS_DATA=%s%n", compressedGenesisDataBase64);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.base64"))) {
-        writer.write(genesisDataBase64);
+        writer.write(compressedGenesisDataBase64);
       }
     }
   }

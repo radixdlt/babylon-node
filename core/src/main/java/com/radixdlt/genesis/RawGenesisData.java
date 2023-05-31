@@ -62,81 +62,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.genesis;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.hash.HashCode;
 
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
-import java.security.Security;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-public class InterfaceSerializationTest {
-  private final Serialization serialization =
-      Serialization.create(
-          ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
-
-  @BeforeClass
-  public static void beforeClass() {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-  }
-
-  @Test
-  public void one_subclass_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientTransaction = TestClientTransaction.create("metadata");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void sibling_class_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientTransaction = TestDifferentClientTransaction.create("datameta");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void deeper_inherited_class_can_be_serialized_and_deserialized_via_interface()
-      throws Exception {
-    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test(expected = DeserializeException.class)
-  public void deeper_inherited_class_with_null_can_be_serialized_and_deserialized_via_interface()
-      throws Exception {
-    final var clientTransaction = new TestExtendedClientTransaction("meta");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void embedded_interface_can_be_serialized_and_deserialized() throws Exception {
-    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
-    final var container = TestEmbeddedInterfaceTransaction.create(clientTransaction);
-
-    final var json = serialization.toDson(container, Output.ALL);
-    final var obj = serialization.fromDson(json, TestEmbeddedInterfaceTransaction.class);
-
-    assertEquals(obj, container);
-    assertEquals(obj.ledgerTransaction(), clientTransaction);
-  }
-}
+public record RawGenesisData(HashCode genesisDataBytes) {}

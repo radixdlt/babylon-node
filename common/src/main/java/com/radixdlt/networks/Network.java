@@ -64,9 +64,11 @@
 
 package com.radixdlt.networks;
 
+import com.google.common.hash.HashCode;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.bouncycastle.util.encoders.Hex;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public enum Network {
@@ -122,7 +124,10 @@ public enum Network {
       243 /* 0xF2 */,
       "genesis_test",
       "genesis_test",
-      FixedNetworkGenesis.resource("genesis/test_genesis.bin"));
+      FixedNetworkGenesis.resource(
+          HashCode.fromBytes(
+              Hex.decode("0cc352df99de990ec40bb8ff89c320384b4022aeb1f8b3482194eb56045635b4")),
+          "genesis/test_genesis.bin"));
 
   private final int intId;
   private final byte byteId;

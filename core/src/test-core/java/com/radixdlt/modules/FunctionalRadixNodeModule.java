@@ -75,6 +75,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
@@ -83,6 +84,7 @@ import com.radixdlt.mempool.MempoolReevaluationModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -402,7 +404,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
-            install(new REv2LedgerInitializerModule(rev2Config.genesis()));
+            final var genesisProvider =
+                RawGenesisDataWithHash.fromGenesisData(
+                    rev2Config.genesis(), new Blake2b256Hasher(DefaultSerialization.getInstance()));
+            install(new REv2LedgerInitializerModule(genesisProvider));
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
 

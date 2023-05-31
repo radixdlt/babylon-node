@@ -64,17 +64,15 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public record REv2LedgerInitializer(
     Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
 
-  public void initialize(GenesisData genesisData) {
+  public void initialize(GenesisProvider genesisProvider) {
     // If the database was already initialized, we verify that the
     // previous genesis matches the current configuration
     // to protect from node misconfiguration
@@ -85,24 +83,22 @@ public record REv2LedgerInitializer(
             firstEpochProof -> {
               // Opaque value of the first epoch proof is the hash of GenesisData
               final var existingGenesisHash = firstEpochProof.getOpaque();
-              final var currentGenesisHash =
-                  hasher.hashBytes(
-                      StateManagerSbor.encode(
-                          genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+              final var currentGenesisHash = genesisProvider.genesisDataHash();
               if (!currentGenesisHash.equals(existingGenesisHash)) {
                 throw new IllegalStateException(
                     String.format(
                         """
-                  Configured genesis data (of hash %s) doesn't match the genesis data that has previously \
-                  been used to initialize the database (%s). \
-                  Make sure your configuration is correct (check `network.id` and/or \
-                   `network.genesis_data` and/or `network.genesis_file`).""",
+                              Current genesis data (of hash %s) doesn't match the genesis data that has previously \
+                              been used to initialize the database (%s). \
+                              Make sure your configuration is correct (check `network.id` and/or \
+                               `network.genesis_data` and/or `network.genesis_file`).""",
                         currentGenesisHash, existingGenesisHash));
               }
             },
             () -> {
               // It's a fresh database, so execute the genesis
-              rustStateComputer.executeGenesis(genesisData);
+              rustStateComputer.executeGenesis(
+                  genesisProvider.genesisData().genesisDataBytes().asBytes());
             });
   }
 }

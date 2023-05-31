@@ -67,12 +67,14 @@ package com.radixdlt.rev2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -85,6 +87,7 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -104,8 +107,10 @@ public class REv2StateComputerTest {
             new DatabaseFlags(false, false),
             Option.none()),
         new REv2LedgerInitializerModule(
-            GenesisBuilder.createGenesisWithNumValidators(
-                1, Decimal.of(1), UInt64.fromNonNegativeLong(10))),
+            RawGenesisDataWithHash.fromGenesisData(
+                GenesisBuilder.createGenesisWithNumValidators(
+                    1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                new Blake2b256Hasher(DefaultSerialization.getInstance()))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override

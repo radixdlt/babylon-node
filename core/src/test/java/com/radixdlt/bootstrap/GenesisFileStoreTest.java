@@ -62,81 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.bootstrap;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
-import java.security.Security;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.RawGenesisData;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
+import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.serialization.TestSetupUtils;
+import java.io.IOException;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class InterfaceSerializationTest {
-  private final Serialization serialization =
-      Serialization.create(
-          ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+public final class GenesisFileStoreTest {
+  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
 
   @BeforeClass
   public static void beforeClass() {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
+    TestSetupUtils.installBouncyCastleProvider();
   }
 
   @Test
-  public void one_subclass_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientTransaction = TestClientTransaction.create("metadata");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void sibling_class_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientTransaction = TestDifferentClientTransaction.create("datameta");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void deeper_inherited_class_can_be_serialized_and_deserialized_via_interface()
-      throws Exception {
-    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test(expected = DeserializeException.class)
-  public void deeper_inherited_class_with_null_can_be_serialized_and_deserialized_via_interface()
-      throws Exception {
-    final var clientTransaction = new TestExtendedClientTransaction("meta");
-
-    final var json = serialization.toDson(clientTransaction, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
-
-    assertEquals(obj, clientTransaction);
-  }
-
-  @Test
-  public void embedded_interface_can_be_serialized_and_deserialized() throws Exception {
-    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
-    final var container = TestEmbeddedInterfaceTransaction.create(clientTransaction);
-
-    final var json = serialization.toDson(container, Output.ALL);
-    final var obj = serialization.fromDson(json, TestEmbeddedInterfaceTransaction.class);
-
-    assertEquals(obj, container);
-    assertEquals(obj.ledgerTransaction(), clientTransaction);
+  public void genesisFileStoreTest() throws IOException {
+    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
+    final var genesisData = GenesisData.testingDefaultEmpty();
+    final var encodedGenesisData =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    final var rawGenesisData = new RawGenesisData(HashCode.fromBytes(encodedGenesisData));
+    final var genesisDataHash =
+        new Blake2b256Hasher(DefaultSerialization.getInstance()).hashBytes(encodedGenesisData);
+    genesisFileStore.saveGenesisData(new RawGenesisDataWithHash(rawGenesisData, genesisDataHash));
+    assertEquals(rawGenesisData, genesisFileStore.genesisData());
+    assertEquals(genesisDataHash, genesisFileStore.genesisDataHash());
   }
 }

@@ -64,16 +64,19 @@
 
 package com.radixdlt.bootstrap;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.google.common.hash.HashCode;
+import com.radixdlt.genesis.RawGenesisData;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import org.xerial.snappy.Snappy;
 
 public final class GenesisFileStore implements GenesisStore {
+  private static final int HASH_LENGTH = 32;
 
   private final File file;
 
@@ -82,9 +85,7 @@ public final class GenesisFileStore implements GenesisStore {
   }
 
   @Override
-  public void saveGenesisData(GenesisData genesisData) {
-    final var encoded =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+  public void saveGenesisData(RawGenesisDataWithHash genesisDataWithHash) {
     if (!file.exists()) {
       try {
         final var unused = file.getParentFile().mkdirs();
@@ -96,26 +97,47 @@ public final class GenesisFileStore implements GenesisStore {
       }
     }
     try (FileOutputStream outputStream = new FileOutputStream(this.file)) {
-      outputStream.write(encoded);
+      outputStream.write(genesisDataWithHash.genesisDataHash().asBytes());
+      final var compressed =
+          Snappy.compress(genesisDataWithHash.genesisData().genesisDataBytes().asBytes());
+      outputStream.write(compressed);
     } catch (IOException e) {
       throw new RuntimeException("Couldn't write to the genesis file", e);
     }
   }
 
   @Override
-  public Optional<GenesisData> readGenesisData() {
+  public Optional<HashCode> readGenesisDataHash() {
+    if (!file.exists()) {
+      return Optional.empty();
+    }
+    try (final var fis = new FileInputStream(file)) {
+      final var hashBytes = new byte[HASH_LENGTH];
+      final var numBytesRead = fis.read(hashBytes);
+      if (numBytesRead != HASH_LENGTH) {
+        return Optional.empty();
+      }
+      return Optional.of(HashCode.fromBytes(hashBytes));
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't read the genesis file", e);
+    }
+  }
+
+  @Override
+  public Optional<RawGenesisData> readGenesisData() {
     if (!file.exists()) {
       return Optional.empty();
     }
     try {
-      final var bytes = Files.readAllBytes(file.toPath());
-      if (bytes.length == 0) {
+      final var hashAndData = Files.readAllBytes(file.toPath());
+      if (hashAndData.length == 0) {
         return Optional.empty();
       }
-      final var genesisData =
-          StateManagerSbor.decode(
-              bytes, StateManagerSbor.resolveCodec(new TypeToken<GenesisData>() {}));
-      return Optional.of(genesisData);
+      final var compressedData = new byte[hashAndData.length - HASH_LENGTH];
+      System.arraycopy(
+          hashAndData, HASH_LENGTH, compressedData, 0, hashAndData.length - HASH_LENGTH);
+      final var uncompressedData = Snappy.uncompress(compressedData);
+      return Optional.of(new RawGenesisData(HashCode.fromBytes(uncompressedData)));
     } catch (IOException e) {
       throw new RuntimeException("Couldn't read the genesis file", e);
     }

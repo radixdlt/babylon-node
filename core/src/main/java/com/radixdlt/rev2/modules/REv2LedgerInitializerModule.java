@@ -68,22 +68,22 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.rev2.REv2LedgerInitializer;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public final class REv2LedgerInitializerModule extends AbstractModule {
-  private final GenesisData genesisData;
+  private final GenesisProvider genesisProvider;
 
-  public REv2LedgerInitializerModule(GenesisData genesisData) {
-    this.genesisData = genesisData;
+  public REv2LedgerInitializerModule(GenesisProvider genesisProvider) {
+    this.genesisProvider = genesisProvider;
   }
 
   @Provides
   @Singleton
   REv2LedgerInitializerToken initializeLedger(REv2LedgerInitializer ledgerInitializer) {
-    ledgerInitializer.initialize(genesisData);
+    ledgerInitializer.initialize(genesisProvider);
     return new REv2LedgerInitializerToken();
   }
 

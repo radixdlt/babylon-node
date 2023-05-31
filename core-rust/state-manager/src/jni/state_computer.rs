@@ -101,9 +101,11 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |genesis_data: JavaGenesisData| -> JavaLedgerProof {
+        |raw_genesis_data: Vec<u8>| -> JavaLedgerProof {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            let genesis_data_hash = hash(scrypto_encode(&genesis_data).unwrap());
+            let genesis_data_hash = hash(&raw_genesis_data);
+            let genesis_data: JavaGenesisData =
+                scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
             let result = state_manager.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
