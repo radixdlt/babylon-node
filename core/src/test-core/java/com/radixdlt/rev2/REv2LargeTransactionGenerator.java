@@ -85,6 +85,6 @@ public final class REv2LargeTransactionGenerator
         .manifest(Manifest.valid())
         .blobs(List.of(new byte[size]))
         .prepare()
-        .toRaw();
+        .raw();
   }
 }

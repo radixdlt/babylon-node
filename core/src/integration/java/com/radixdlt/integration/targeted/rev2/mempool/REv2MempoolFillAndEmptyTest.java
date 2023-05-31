@@ -86,7 +86,8 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,12 +124,13 @@ public final class REv2MempoolFillAndEmptyTest {
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private void fillAndEmptyMempool(DeterministicTest test) {
     final var transactionGenerator = new REV2TransactionGenerator();
 
     var rateLimiter = RateLimiter.create(0.5);
     var mempoolReader =
-        test.getInstance(0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+        test.getInstance(0, Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 

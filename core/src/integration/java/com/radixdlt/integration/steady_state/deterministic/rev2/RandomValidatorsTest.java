@@ -189,7 +189,7 @@ public final class RandomValidatorsTest {
                     .manifest(
                         Manifest.createValidator(validatorKeyPair.getPublicKey(), ownerAccount))
                     .prepare()
-                    .toRaw();
+                    .raw();
             creatingValidators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
@@ -217,7 +217,7 @@ public final class RandomValidatorsTest {
                       .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
                       .signatories(List.of(ownerAccountKeyPair))
                       .prepare()
-                      .toRaw();
+                      .raw();
             }
             case 1 -> {
               txn =
@@ -225,7 +225,7 @@ public final class RandomValidatorsTest {
                       .manifest(Manifest.unregisterValidator(validatorAddress, ownerAccount))
                       .signatories(List.of(ownerAccountKeyPair))
                       .prepare()
-                      .toRaw();
+                      .raw();
             }
             case 2 -> {
               txn =
@@ -234,7 +234,7 @@ public final class RandomValidatorsTest {
                           Manifest.stakeValidator(stakingAccount, validatorAddress, ownerAccount))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
-                      .toRaw();
+                      .raw();
             }
             case 3 -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
@@ -246,7 +246,7 @@ public final class RandomValidatorsTest {
                               stakingAccount, validatorAddress, validatorInfo.lpTokenAddress()))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
-                      .toRaw();
+                      .raw();
             }
             default -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
@@ -258,7 +258,7 @@ public final class RandomValidatorsTest {
                               stakingAccount, validatorAddress, validatorInfo.unstakeResource()))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
-                      .toRaw();
+                      .raw();
             }
           }
           mempoolDispatcher.dispatch(MempoolAdd.create(txn));

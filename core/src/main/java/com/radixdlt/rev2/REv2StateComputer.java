@@ -209,20 +209,22 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 maxNumTransactionsPerProposal, maxPayloadSize, previousTransactionHashes)
             : List.<PreparedNotarizedTransaction>of();
 
-    final var resultTotalTxnPayloadSize =
-        result.stream().map(tx -> tx.raw().length).reduce(0, Integer::sum);
+    final var proposedRawTransactions = result.stream().map(PreparedNotarizedTransaction::raw).toList();
+
+    final var proposedTotalNotarizedTxnPayloadSize =
+          proposedRawTransactions.stream().map(tx -> tx.payload().length).reduce(0, Integer::sum);
 
     final var totalUncommittedTxnBytesIncludingThisProposal =
-        resultTotalTxnPayloadSize + rawPreviousExecutedTransactionsTotalSize;
+        proposedTotalNotarizedTxnPayloadSize + rawPreviousExecutedTransactionsSize;
 
     metrics.bft().leaderNumTransactionsIncludedInProposal().observe(result.size());
-    metrics.bft().leaderTransactionBytesIncludedInProposal().observe(resultTotalTxnPayloadSize);
+    metrics.bft().leaderTransactionBytesIncludedInProposal().observe(proposedTotalNotarizedTxnPayloadSize);
     metrics
         .bft()
         .leaderTransactionBytesIncludedInProposalAndPreviousVertices()
         .observe(totalUncommittedTxnBytesIncludingThisProposal);
 
-    return result;
+    return proposedRawTransactions;
   }
 
   @Override
@@ -268,8 +270,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var rejectedTransactionsCount = result.rejected().size();
 
     // TODO - Some time post Babylon mainnet launch we can consider adding a metric to monitor
-    // number of rejected
-    // transactions per-proposer
+    // number of rejected transactions by proposer
 
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
     var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());

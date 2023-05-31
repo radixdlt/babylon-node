@@ -75,9 +75,8 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.transactions.PreparedIntent;
-import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.transactions.PreparedSignedIntent;
+import com.radixdlt.transactions.*;
+
 import java.util.List;
 
 public final class TransactionPreparer {
@@ -125,23 +124,23 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareNotarizedTransaction)
               .build(new TypeToken<>() {});
 
-  public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
+  public static RawLedgerTransaction rawNotarizedTransactionToRawLedgerTransaction(RawNotarizedTransaction notarized) {
     return userTransactionToLedger
-        .call(userTransactionBytes)
+        .call(notarized)
         .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<byte[], Result<byte[], String>> userTransactionToLedger =
+  private static final Natives.Call1<RawNotarizedTransaction, Result<RawLedgerTransaction, String>> userTransactionToLedger =
       Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
 
-  public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
-      byte[] transactionBytes) {
+  public static Option<RawNotarizedTransaction> convertTransactionBytesToNotarizedTransactionBytes(
+          RawLedgerTransaction ledgerTransaction) {
     return transactionBytesToNotarizedTransactionBytesFn
-        .call(transactionBytes)
+        .call(ledgerTransaction)
         .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<byte[], Result<Option<byte[]>, String>>
+  private static final Natives.Call1<RawLedgerTransaction, Result<Option<RawNotarizedTransaction>, String>>
       transactionBytesToNotarizedTransactionBytesFn =
           Natives.builder(TransactionPreparer::transactionBytesToNotarizedTransactionBytes)
               .build(new TypeToken<>() {});

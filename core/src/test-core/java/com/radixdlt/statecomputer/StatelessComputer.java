@@ -75,10 +75,7 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -132,26 +129,22 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawNotarizedTransaction, Exception>();
 
+    var invalidTransactionCount = 0;
     for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
       if (success) {
-        successfulTransactions.add(
-            new StatelessComputerExecutedTransaction(
-                transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
+        successfulTransactions.add(new MockExecuted(transaction));
       } else {
-        invalidTransactions.put(
-            transaction.INCORRECTInterpretDirectlyAsRawNotarizedTransaction(),
-            new StatelessTransactionException());
+        invalidTransactionCount++;
       }
     }
 
     successCount += successfulTransactions.size();
-    invalidCount += invalidTransactions.size();
+    invalidCount += invalidTransactionCount;
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions, invalidTransactions, LedgerHashes.zero());
+        successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {

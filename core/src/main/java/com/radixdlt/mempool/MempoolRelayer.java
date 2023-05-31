@@ -134,7 +134,7 @@ public final class MempoolRelayer {
           this.mempoolRelayReader.getTransactionsToRelay(
               MAX_RELAY_MSG_NUM_TXNS, MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
       final var rawTransactions =
-          transactions.stream().map(PreparedNotarizedTransaction::toRaw).toList();
+          transactions.stream().map(PreparedNotarizedTransaction::raw).toList();
       if (!transactions.isEmpty()) {
         relayTransactions(rawTransactions, ImmutableList.of());
       }

@@ -84,7 +84,7 @@ public class ResourceStateTest extends DeterministicCoreApiTestBase {
               .stateResourcePost(
                   new StateResourceRequest()
                       .resourceAddress(
-                          addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS))
+                          addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS))
                       .network(networkLogicalName));
       assertEquals(ResourceType.FUNGIBLE, response.getManager().getResourceType());
     }

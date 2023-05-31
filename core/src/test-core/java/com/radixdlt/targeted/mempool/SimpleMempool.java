@@ -68,12 +68,13 @@ import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 
 /** Simple mempool which performs no validation and removes on commit. */
 public final class SimpleMempool
-    implements Mempool<RawNotarizedTransaction, RawNotarizedTransaction> {
+    implements Mempool<RawNotarizedTransaction, RawNotarizedTransaction, RawNotarizedTransaction> {
   private final Set<RawNotarizedTransaction> data = new HashSet<>();
   private final Random random;
   private final int maxSize;
@@ -98,7 +99,6 @@ public final class SimpleMempool
     }
   }
 
-  @Override
   public void handleTransactionsCommitted(List<RawNotarizedTransaction> transactions) {
     transactions.forEach(this.data::remove);
   }
@@ -110,13 +110,13 @@ public final class SimpleMempool
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> preparedTransactions) {
+      int maxCount, int maxPayloadSizeBytes, Set<RawNotarizedTransaction> transactionsToExclude) {
     List<RawNotarizedTransaction> transactions = Lists.newArrayList();
     var candidates = new ArrayList<>(this.data);
     Collections.shuffle(candidates, random);
     int payloadSize = 0;
     for (var candidate : candidates) {
-      if (preparedTransactions.contains(candidate)) {
+      if (transactionsToExclude.contains(candidate)) {
         continue;
       }
       int newPayloadSize = payloadSize + candidate.getPayload().length;

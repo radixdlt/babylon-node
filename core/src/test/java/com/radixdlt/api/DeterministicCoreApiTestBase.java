@@ -99,6 +99,7 @@ import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
@@ -305,5 +306,5 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicCoreApiTestBase() {}
 
-  public record CommittedResult(HashCode intentHash, long stateVersion) {}
+  public record CommittedResult(IntentHash intentHash, long stateVersion) {}
 }

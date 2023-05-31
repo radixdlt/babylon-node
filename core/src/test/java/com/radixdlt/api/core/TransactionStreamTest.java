@@ -89,7 +89,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       assertThat(response.getDuplicate()).isFalse();
 
-      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 100);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
 
       var newTransactions =
           getStreamApi()

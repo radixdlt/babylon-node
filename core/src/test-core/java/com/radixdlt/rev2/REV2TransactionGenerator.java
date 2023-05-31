@@ -85,6 +85,6 @@ public final class REV2TransactionGenerator
     return TransactionBuilder.forNetwork(networkDefinition)
         .manifest(Manifest.newRandomAccount())
         .prepare()
-        .toRaw();
+        .raw();
   }
 }

@@ -64,21 +64,24 @@
 
 package com.radixdlt.api.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
+import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
+import com.radixdlt.api.core.generated.models.LtsStreamAccountTransactionOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionOutcomesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statemanager.DatabaseFlags;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.transactions.IntentHash;
+import org.junit.Test;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
@@ -230,6 +233,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
         stateVersion, entityAddress, ScryptoConstants.XRD_RESOURCE_ADDRESS, Option.none());
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void assertNonFeeBalanceChange(
       long stateVersion,
       String entityAddress,
@@ -274,7 +278,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   }
 
   private void validateAccountTransactions(
-      ComponentAddress accountAddress, List<HashCode> intentHashes) throws Exception {
+      ComponentAddress accountAddress, List<IntentHash> intentHashes) throws Exception {
     var accountOutcomesResponse =
         getLtsApi()
             .ltsStreamAccountTransactionOutcomesPost(
@@ -293,7 +297,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var transactionIdentifiers = outcome.getUserTransactionIdentifiers();
       assertThat(transactionIdentifiers).isNotNull();
       assertThat(transactionIdentifiers.getIntentHash())
-          .isEqualTo(Bytes.toHexString(intentHashes.get(i).asBytes()));
+          .isEqualTo(intentHashes.get(i).hex());
     }
   }
 }

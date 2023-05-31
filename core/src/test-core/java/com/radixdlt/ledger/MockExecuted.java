@@ -64,19 +64,30 @@
 
 package com.radixdlt.ledger;
 
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public class MockExecuted implements ExecutedTransaction {
 
   private final RawLedgerTransaction transaction;
 
-  public MockExecuted(RawLedgerTransaction transaction) {
-    this.transaction = transaction;
+  public MockExecuted(RawNotarizedTransaction transaction) {
+    // We (incorrectly and unsafely) claim that the transaction payload is the same.
+    // But in tests where this is used, the transaction isn't even valid anyway, and
+    // this doesn't matter
+    this.transaction = RawLedgerTransaction.create(transaction.getPayload());
   }
 
   @Override
   public RawLedgerTransaction transaction() {
     return transaction;
+  }
+
+  @Override
+  public Option<NotarizedTransactionHash> notarizedTransactionHash() {
+    return Option.none();
   }
 }

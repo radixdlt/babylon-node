@@ -87,6 +87,8 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
@@ -145,7 +147,7 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Arrange
       var rawRejectableTransaction =
-          TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare().toRaw();
+          TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
@@ -153,13 +155,13 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Act: Submit valid transaction to mempool
       mempoolDispatcher.dispatch(
-          MempoolAdd.create(TransactionBuilder.forTests().prepare().toRaw()));
+          MempoolAdd.create(TransactionBuilder.forTests().prepare().raw()));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
       var mempoolReader =
           test.getInstance(
-              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+              0, Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
       assertTransactionNotCommitted(test.getNodeInjectors(), rawRejectableTransaction);
@@ -190,7 +192,7 @@ public class REv2RejectedTransactionMempoolTest {
           TransactionBuilder.forTests()
               .manifest(Manifest.newAccountAllowAllOwner())
               .prepare()
-              .toRaw();
+              .raw();
       executeTransaction(test, accountTxn);
       var transactionDetails =
           NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), accountTxn);
@@ -201,7 +203,7 @@ public class REv2RejectedTransactionMempoolTest {
           TransactionBuilder.forTests()
               .manifest(Manifest.depositFromFaucet(accountAddress))
               .prepare()
-              .toRaw();
+              .raw();
       executeTransaction(test, depositTxn);
 
       // dispatch 2 competing transactions (depositing from the above account)
@@ -212,13 +214,13 @@ public class REv2RejectedTransactionMempoolTest {
           TransactionBuilder.forTests()
               .manifest(Manifest.drainAccount(accountAddress))
               .prepare()
-              .toRaw();
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
           TransactionBuilder.forTests()
               .manifest(Manifest.drainAccount(accountAddress))
               .prepare()
-              .toRaw();
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
@@ -230,7 +232,7 @@ public class REv2RejectedTransactionMempoolTest {
       // Assert
       var mempoolReader =
           test.getInstance(
-              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+              0, Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(0);
       // Check that only one of the two transactions was committed
       // TODO: this used to check for committed (success|failure) - why?

@@ -76,6 +76,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -86,6 +87,8 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transaction.TransactionPreparer;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
@@ -97,8 +100,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class StateComputerLedgerTest {
+  private Mempool<RawNotarizedTransaction, PreparedNotarizedTransaction, NotarizedTransactionHash> mempool;
 
-  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool;
   private StateComputer stateComputer;
   private StateComputerLedger sut;
   private LedgerProof currentLedgerHeader;
@@ -113,11 +116,24 @@ public class StateComputerLedgerTest {
 
   // Doesn't matter what kind of transaction it is, but needs to be a valid tx payload
   // to be able to convert it from NotarizedTransaction to LedgerTransaction.
-  private final RawNotarizedTransaction nextTransaction =
-      TransactionBuilder.forNetwork(NetworkDefinition.LOCAL_SIMULATOR).prepare().toRaw();
+  private final PreparedNotarizedTransaction nextTransaction =
+      TransactionBuilder.forNetwork(NetworkDefinition.LOCAL_SIMULATOR).prepare();
+
+  private final RawNotarizedTransaction rawNextTransaction = nextTransaction.raw();
+  private final RawLedgerTransaction nextLedgerTransaction =
+          TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(rawNextTransaction);
   private final Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
-  private final ExecutedTransaction successfulNextTransaction =
-      nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;
+  private final ExecutedTransaction successfulNextTransaction = new ExecutedTransaction() {
+    @Override
+    public RawLedgerTransaction transaction() {
+      return nextLedgerTransaction;
+    }
+
+    @Override
+    public Option<NotarizedTransactionHash> notarizedTransactionHash() {
+      return Option.some(nextTransaction.notarizedTransactionHash());
+    }
+  };
 
   private final long genesisEpoch = 3L;
   private final long genesisStateVersion = 123L;
@@ -192,7 +208,7 @@ public class StateComputerLedgerTest {
     // Arrange
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), any(), any()))
-        .thenReturn(new StateComputerResult(ImmutableList.of(), Map.of(), LedgerHashes.zero()));
+        .thenReturn(new StateComputerResult(ImmutableList.of(), 0, LedgerHashes.zero()));
     var proposedVertex =
         Vertex.create(initialEpochQC, Round.of(1), List.of(), BFTValidatorId.random(), 0L)
             .withId(hasher);
@@ -217,10 +233,10 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), Map.of(), LedgerHashes.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
     var proposedVertex =
         Vertex.create(
-                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+                initialEpochQC, Round.of(1), List.of(rawNextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
 
     // Act
@@ -243,12 +259,12 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), Map.of(), LedgerHashes.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
 
     // Act
     var proposedVertex =
         Vertex.create(
-                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+                initialEpochQC, Round.of(1), List.of(rawNextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
     Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
@@ -260,10 +276,10 @@ public class StateComputerLedgerTest {
                 x ->
                     accumulatorVerifier.verifyAndGetExtension(
                         ledgerHeader.getAccumulatorState(),
-                        List.of(nextTransaction),
-                        RawNotarizedTransaction::getPayloadHash,
+                        List.of(nextLedgerTransaction),
+                        t -> t.getLegacyPayloadHash().inner(),
                         x.getLedgerHeader().getAccumulatorState())))
-        .contains(List.of(nextTransaction));
+        .contains(List.of(nextLedgerTransaction));
   }
 
   @Test
@@ -274,12 +290,12 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), Map.of(), ledgerHashes));
+                ImmutableList.of(successfulNextTransaction), 0, ledgerHashes));
 
     // Act
     var proposedVertex =
         Vertex.create(
-                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+                initialEpochQC, Round.of(1), List.of(rawNextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
     ExecutedVertex nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex).get();
 
@@ -294,7 +310,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), Map.of(), LedgerHashes.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
     final AccumulatorState accumulatorState =
         new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
     final LedgerHeader ledgerHeader =
@@ -304,10 +320,7 @@ public class StateComputerLedgerTest {
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
     var verified =
         CommittedTransactionsWithProof.create(
-            List.of(
-                RawLedgerTransaction.create(
-                    TransactionPreparer.userTransactionToLedgerBytes(
-                        nextTransaction.getPayload()))),
+            List.of(nextLedgerTransaction),
             header);
 
     // Act
@@ -315,7 +328,6 @@ public class StateComputerLedgerTest {
 
     // Assert
     verify(stateComputer, never()).commit(any(), any());
-    verify(mempool, never()).handleTransactionsCommitted(any());
   }
 
   @Test
@@ -337,14 +349,14 @@ public class StateComputerLedgerTest {
 
     final var proposedVertex =
         Vertex.create(
-                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+                initialEpochQC, Round.of(1), List.of(rawNextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
 
     // Explicitly expecting an empty "previous" list in the stateComputer call
     when(stateComputer.prepare(any(), eq(List.of()), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), Map.of(), LedgerHashes.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
 
     assertTrue(sut.prepare(previous, proposedVertex).isPresent());
   }

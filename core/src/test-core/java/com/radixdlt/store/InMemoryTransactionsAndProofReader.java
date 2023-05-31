@@ -134,9 +134,9 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
                 .verifyAndGetExtension(
                     start.getLedgerHeader().getAccumulatorState(),
                     entry.getValue().getTransactions(),
-                    RawLedgerTransaction::getLegacyPayloadHash,
+                    t -> t.getLegacyPayloadHash().inner(),
                     entry.getValue().getProof().getAccumulatorState())
-                .orElseThrow(() -> new RuntimeException());
+                .orElseThrow(RuntimeException::new);
 
         return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
       }

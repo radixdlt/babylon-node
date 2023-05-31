@@ -160,7 +160,7 @@ public final class REv2RejectedTransactionTest {
               .manifest(Manifest.validButReject())
               .fromEpoch(1)
               .prepare()
-              .toRaw();
+              .raw();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

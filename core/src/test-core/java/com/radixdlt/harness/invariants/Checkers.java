@@ -94,8 +94,7 @@ public final class Checkers {
 
   public static void assertTransactionNotCommitted(
       List<Injector> nodeInjectors, RawNotarizedTransaction transaction) {
-    final var rawTransactionBytes =
-        TransactionPreparer.userTransactionToLedgerBytes(transaction.getPayload());
+    final var rawTransactionBytes = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(transaction).getPayload();
     assertTransactionsCommitted(
         nodeInjectors, t -> assertThat(t.transactionBytes()).isNotEqualTo(rawTransactionBytes));
   }

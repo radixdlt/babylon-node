@@ -122,6 +122,6 @@ public final class REv2SimpleFuzzerTransactionGenerator
         .notary(notaryAndExplicitSignatory)
         .signatories(List.of(notaryAndExplicitSignatory))
         .prepare()
-        .toRaw();
+        .raw();
   }
 }

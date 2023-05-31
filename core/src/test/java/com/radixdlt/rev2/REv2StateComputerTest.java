@@ -146,7 +146,7 @@ public class REv2StateComputerTest {
     var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
-    var validTransaction = TransactionBuilder.forTests().prepare().toRaw();
+    var validTransaction = TransactionBuilder.forTests().prepare().raw();
 
     // Act
     var roundDetails =
@@ -156,7 +156,7 @@ public class REv2StateComputerTest {
             genesisResult.accumulatorHash(), List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getRejectedTransactionCount()).isEmpty();
+    assertThat(result.getRejectedTransactionCount()).isZero();
   }
 
   @Test
@@ -184,6 +184,6 @@ public class REv2StateComputerTest {
             genesisResult.accumulatorHash(), List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getRejectedTransactionCount()).hasSize(1);
+    assertThat(result.getRejectedTransactionCount()).isEqualTo(1);
   }
 }

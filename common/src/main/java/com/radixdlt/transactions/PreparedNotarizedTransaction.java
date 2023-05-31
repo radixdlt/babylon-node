@@ -118,20 +118,4 @@ public record PreparedNotarizedTransaction(
   public String hexPayloadBytes() {
     return this.raw.hex();
   }
-
-  public byte[] payloadBytes() {
-    return this.raw().payload();
-  }
-
-  public RawNotarizedTransaction toRaw() {
-    return raw;
-  }
-
-  /*
-   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
-   * TODO - this should ideally be removed
-   */
-  public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
-    return RawLedgerTransaction.create(payloadBytes());
-  }
 }

@@ -132,51 +132,54 @@ public final class IncreasingValidatorsTest {
 
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      var transactions =
+      var validatorDefinitions =
           PrivateKeys.numeric(2)
               .map(
                   k -> {
                     var ownerAccount = Address.virtualAccountAddress(k.getPublicKey());
-                    var createValidatorTransaction =
+                    var rawTransaction =
                         TransactionBuilder.forTests()
                             .manifest(Manifest.createValidator(k.getPublicKey(), ownerAccount))
                             .prepare()
-                            .toRaw();
-                    return tuple(createValidatorTransaction, k, ownerAccount);
+                            .raw();
+                    return tuple(rawTransaction, k, ownerAccount);
                   })
               .limit(NUM_VALIDATORS - 1)
               .toList();
 
       // Create Validators
-      for (var txn : transactions) {
+      for (var definition : validatorDefinitions) {
+        var createValidatorRawTxn = definition.first();
         test.runForCount(100);
-        mempoolDispatcher.dispatch(MempoolAdd.create(txn.first()));
+        mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorRawTxn));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
 
       // Register Validators
-      for (int i = 0; i < transactions.size(); i++) {
-        var txn = transactions.get(i);
+      for (int i = 0; i < validatorDefinitions.size(); i++) {
+        var definition = validatorDefinitions.get(i);
+        var createValidatorRawTxn = definition.first();
+        var key = definition.second();
+        var ownerAccount = definition.third();
         test.runForCount(1000);
         test.runUntilState(
-            nodeAt(0, NodePredicate.committedUserTransaction(txn.first(), true, true)));
+            nodeAt(0, NodePredicate.committedUserTransaction(createValidatorRawTxn, true, true)));
         var transactionDetails =
-            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), txn.first());
+            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), createValidatorRawTxn);
         var validatorAddress = transactionDetails.newComponentAddresses().get(0);
         test.restartNodeWithConfig(
             i + 1,
-            PhysicalNodeConfig.create(
-                PrivateKeys.ofNumeric(i + 2).getPublicKey(), validatorAddress));
+            PhysicalNodeConfig.create(key.getPublicKey(), validatorAddress));
         var registerValidatorTxn =
             TransactionBuilder.forTests()
-                .manifest(Manifest.registerValidator(validatorAddress, txn.third()))
+                .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
                 .prepare()
-                .toRaw();
+                .raw();
         var stakeValidatorTxn =
             TransactionBuilder.forTests()
-                .manifest(Manifest.stakeValidator(validatorAddress, txn.third()))
+                .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
                 .prepare()
-                .toRaw();
+                .raw();
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
         mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
       }

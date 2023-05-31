@@ -137,7 +137,7 @@ public final class REParser {
     }
 
     public HashCode transactionPayloadHash() {
-      return transaction.getLegacyPayloadHash();
+      return transaction.getLegacyPayloadHash().inner();
     }
 
     public int upSubstateCount() {

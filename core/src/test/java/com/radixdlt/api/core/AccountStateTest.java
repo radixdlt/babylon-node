@@ -92,9 +92,9 @@ public final class AccountStateTest extends DeterministicCoreApiTestBase {
 
       // Submit an account creation transaction and await its commit
       test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
-          .dispatch(MempoolAdd.create(transaction.toRaw()));
+          .dispatch(MempoolAdd.create(transaction.raw()));
       test.runUntilState(
-          allCommittedTransactionSuccess(transaction.toRaw()),
+          allCommittedTransactionSuccess(transaction.raw()),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
       final var receipt =

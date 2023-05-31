@@ -161,7 +161,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
       if (accumulator != null) {
         accumulatorState = request.getLedgerHeader().getAccumulatorState();
         for (var txn : transactions) {
-          accumulatorState = accumulator.accumulate(accumulatorState, txn.getLegacyPayloadHash());
+          accumulatorState = accumulator.accumulate(accumulatorState, txn.getLegacyPayloadHash().inner());
         }
       } else {
         accumulatorState = base.getProof().getAccumulatorState();

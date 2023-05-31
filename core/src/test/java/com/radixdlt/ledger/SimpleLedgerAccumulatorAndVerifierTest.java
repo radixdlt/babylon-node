@@ -128,10 +128,10 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
     var txn = RawLedgerTransaction.create(new byte[] {0});
     AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
     AccumulatorState nextState =
-        accumulatorAndVerifier.accumulate(headState, txn.getLegacyPayloadHash());
+        accumulatorAndVerifier.accumulate(headState, txn.getLegacyPayloadHash().inner());
     assertThat(
             accumulatorAndVerifier.verifyAndGetExtension(
-                headState, ImmutableList.of(txn), t -> t.getLegacyPayloadHash(), nextState))
+                headState, ImmutableList.of(txn), t -> t.getLegacyPayloadHash().inner(), nextState))
         .hasValue(ImmutableList.of(txn));
   }
 }

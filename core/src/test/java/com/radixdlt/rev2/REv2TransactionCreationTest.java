@@ -140,11 +140,9 @@ public class REv2TransactionCreationTest {
 
   private static void logTransaction(String description, PreparedNotarizedTransaction transaction) {
     log.info(description + ":");
-    log.info("Intent Hash: " + Bytes.toHexString(transaction.intentHash().asBytes()));
-    log.info(
-        "User Payload Hash: "
-            + Bytes.toHexString(transaction.notarizedTransactionHash().asBytes()));
-    log.info("Notarized Payload: " + Bytes.toHexString(transaction.notarizedTransactionBytes()));
+    log.info("Intent Hash: " + transaction.intentHash().hex());
+    log.info("User Payload Hash: " + transaction.notarizedTransactionHash().hex());
+    log.info("Notarized Payload: " + transaction.raw().hex());
     log.info("=============================");
   }
 

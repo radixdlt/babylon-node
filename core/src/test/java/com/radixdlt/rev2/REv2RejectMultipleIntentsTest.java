@@ -118,7 +118,7 @@ public final class REv2RejectMultipleIntentsTest {
   }
 
   private static RawNotarizedTransaction createValidTransactionWithSigs(int nonce, int sigsCount) {
-    return TransactionBuilder.forTests().nonce(nonce).signatories(sigsCount).prepare().toRaw();
+    return TransactionBuilder.forTests().nonce(nonce).signatories(sigsCount).prepare().raw();
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {

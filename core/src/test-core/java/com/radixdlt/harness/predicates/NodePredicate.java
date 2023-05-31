@@ -85,9 +85,7 @@ public class NodePredicate {
 
   public static Predicate<Injector> committedFailedUserTransaction(
       RawNotarizedTransaction userTransaction) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {
@@ -108,9 +106,7 @@ public class NodePredicate {
 
   public static Predicate<Injector> committedUserTransaction(
       RawNotarizedTransaction userTransaction, boolean requireSuccess, boolean assertSuccess) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {

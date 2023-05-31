@@ -137,7 +137,7 @@ public class VertexStoreTest {
               VertexWithHash vertexWithHash = invocation.getArgument(1);
               return Optional.of(
                   new ExecutedVertex(
-                      vertexWithHash, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
+                      vertexWithHash, MOCKED_HEADER, ImmutableList.of(), 1L));
             })
         .when(ledger)
         .prepare(any(), any());

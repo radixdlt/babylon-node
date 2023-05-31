@@ -114,7 +114,7 @@ public final class RustMempoolTest {
       assertEquals(0, rustMempool.getCount());
 
       // Add a transaction.
-      rustMempool.addTransaction(transaction1.toRaw());
+      rustMempool.addTransaction(transaction1.raw());
 
       assertEquals(1, rustMempool.getCount());
 
@@ -122,18 +122,18 @@ public final class RustMempoolTest {
           MempoolDuplicateException.class,
           () -> {
             // Duplicate transaction - this should fail
-            rustMempool.addTransaction(transaction1.toRaw());
+            rustMempool.addTransaction(transaction1.raw());
           });
       assertEquals(1, rustMempool.getCount());
 
       // This transaction is new, and the mempool has size 2 - this should be fine, and
       // the mempool will now be full
-      rustMempool.addTransaction(transaction2.toRaw());
+      rustMempool.addTransaction(transaction2.raw());
       assertEquals(2, rustMempool.getCount());
 
       try {
         // Mempool is full - adding a new transaction should fail
-        rustMempool.addTransaction(transaction3.toRaw());
+        rustMempool.addTransaction(transaction3.raw());
         // Because we want to assert properties of the exception, we have to use this weird
         // try/catch approach, instead of assertThrows
         Assert.fail();
@@ -149,7 +149,7 @@ public final class RustMempoolTest {
           MempoolDuplicateException.class,
           () -> {
             // Duplicate transaction - this should fail
-            rustMempool.addTransaction(transaction1.toRaw());
+            rustMempool.addTransaction(transaction1.raw());
           });
       assertEquals(2, rustMempool.getCount());
     }
@@ -175,9 +175,9 @@ public final class RustMempoolTest {
       final var transaction3 = constructValidTransaction(0, 2);
 
       // Add Transactions
-      rustMempool.addTransaction(transaction1.toRaw());
-      rustMempool.addTransaction(transaction2.toRaw());
-      rustMempool.addTransaction(transaction3.toRaw());
+      rustMempool.addTransaction(transaction1.raw());
+      rustMempool.addTransaction(transaction2.raw());
+      rustMempool.addTransaction(transaction3.raw());
       assertEquals(3, rustMempool.getCount());
 
       // Simple Test. Get transactions, and check that are returned.
@@ -263,10 +263,10 @@ public final class RustMempoolTest {
                   transaction3.notarizedTransactionHash()));
       assertEquals(List.of(), returnedList);
 
-      final var txnPayloadSize = transaction1.getPayload().length;
+      final var txnPayloadSize = transaction1.raw().payload().length;
       // The assertions below assume txns are of equal size; making sure that it holds
-      assertEquals(txnPayloadSize, transaction2.getPayload().length);
-      assertEquals(txnPayloadSize, transaction3.getPayload().length);
+      assertEquals(txnPayloadSize, transaction2.raw().payload().length);
+      assertEquals(txnPayloadSize, transaction3.raw().payload().length);
 
       returnedList = rustMempool.getTransactionsForProposal(3, txnPayloadSize, Set.of());
       assertEquals(1, returnedList.size());
@@ -307,19 +307,19 @@ public final class RustMempoolTest {
       final var transaction2 = constructValidTransaction(0, 1);
       final var transaction3 = constructValidTransaction(0, 2);
 
-      rustMempool.addTransaction(transaction1.toRaw());
-      rustMempool.addTransaction(transaction2.toRaw());
-      rustMempool.addTransaction(transaction3.toRaw());
+      rustMempool.addTransaction(transaction1.raw());
+      rustMempool.addTransaction(transaction2.raw());
+      rustMempool.addTransaction(transaction3.raw());
       assertEquals(3, rustMempool.getCount());
 
       var returnedList = rustMempool.getTransactionsToRelay(3, Integer.MAX_VALUE);
       assertEquals(3, returnedList.size());
       assertTrue(List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
 
-      final var txnPayloadSize = transaction1.getPayload().length;
+      final var txnPayloadSize = transaction1.raw().payload().length;
       // The assertions below assume txns are of equal size; making sure that it holds
-      assertEquals(txnPayloadSize, transaction2.getPayload().length);
-      assertEquals(txnPayloadSize, transaction3.getPayload().length);
+      assertEquals(txnPayloadSize, transaction2.raw().payload().length);
+      assertEquals(txnPayloadSize, transaction3.raw().payload().length);
 
       returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize);
       assertEquals(1, returnedList.size());

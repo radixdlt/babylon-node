@@ -215,7 +215,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
-              EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
               Serialization serialization,
               ProposerElection initialProposerElection,
               Metrics metrics) {
@@ -228,7 +227,6 @@ public final class REv2StateManagerModule extends AbstractModule {
                 hasher,
                 ledgerUpdateEventDispatcher,
                 mempoolAddSuccessEventDispatcher,
-                byzantineEventEventDispatcher,
                 serialization,
                 initialProposerElection,
                 metrics);

@@ -125,9 +125,9 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(
           proposedTransactions.stream()
-              .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
+              .map(MockExecuted::new)
               .collect(Collectors.toList()),
-          ImmutableMap.of(),
+          0,
           NextEpoch.create(
               roundDetails.epoch() + 1,
               validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),

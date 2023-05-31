@@ -69,6 +69,8 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -145,7 +147,7 @@ public final class NodesPredicate {
     return allNodesMatch(
         i -> {
           var reader =
-              i.getInstance(Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+              i.getInstance(Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
           return reader.getCount() == count;
         });
   }

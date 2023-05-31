@@ -70,6 +70,8 @@ import static org.assertj.core.api.Assertions.*;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
 public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
@@ -106,10 +108,10 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .payloadHash(transaction.hexNotarizedTransactionHash()));
 
-      assertThat(mempoolTransaction.getNotarizedTransaction().getHash())
-          .isEqualTo(transaction.hexNotarizedTransactionHash());
+      assertThat(RawNotarizedTransaction.create(Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
+          .isEqualTo(transaction.raw());
 
-      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
 
       assertThat(
               getMempoolApi()

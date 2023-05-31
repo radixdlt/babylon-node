@@ -134,7 +134,7 @@ public class REv2MempoolToCommittedTest {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var transaction = TransactionBuilder.forTests().prepare().toRaw();
+      var transaction = TransactionBuilder.forTests().prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(transaction));

@@ -108,11 +108,8 @@ public class MockedLedgerModule extends AbstractModule {
                 vertexWithHash,
                 ledgerHeader,
                 vertex.getTransactions().stream()
-                    .<ExecutedTransaction>map(
-                        tx ->
-                            new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
+                    .<ExecutedTransaction>map(MockExecuted::new)
                     .toList(),
-                Map.of(),
                 timeSupplier.currentTime()));
       }
     };

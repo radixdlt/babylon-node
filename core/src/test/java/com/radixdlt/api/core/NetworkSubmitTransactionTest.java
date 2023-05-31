@@ -102,7 +102,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
-      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
 
       // Check the status response again
       var statusResponse2 =
@@ -198,7 +198,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(response2.getDuplicate()).isFalse();
 
       // And get committed...
-      test.runUntilState(allCommittedTransactionSuccess(transaction.toRaw()), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
 
       // Check the status response again to check it's been marked as committed
       var statusResponse2 =

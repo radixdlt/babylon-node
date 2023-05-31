@@ -99,18 +99,14 @@ public final class NodesReader {
 
   public static ExecutedTransaction getCommittedUserTransaction(
       List<Injector> nodes, RawNotarizedTransaction userTransaction) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return getCommittedLedgerTransaction(nodes, committedTransaction);
   }
 
   public static Optional<ExecutedTransaction> tryGetCommittedUserTransaction(
       Injector node, RawNotarizedTransaction userTransaction) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return NodeReader.getCommittedLedgerTransaction(node, committedTransaction);
   }
@@ -134,18 +130,14 @@ public final class NodesReader {
 
   public static TransactionDetails getCommittedTransactionDetails(
       List<Injector> nodes, RawNotarizedTransaction userTransaction) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return getCommittedLedgerTransactionDetails(nodes, committedTransaction);
   }
 
   public static Optional<TransactionDetails> tryGetCommittedTransactionDetails(
       Injector node, RawNotarizedTransaction userTransaction) {
-    var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionPreparer.userTransactionToLedgerBytes(userTransaction.getPayload()));
+    var committedTransaction = TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return NodeReader.getCommittedLedgerTransactionDetails(node, committedTransaction);
   }

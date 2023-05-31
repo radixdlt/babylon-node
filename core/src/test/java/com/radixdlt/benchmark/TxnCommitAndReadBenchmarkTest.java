@@ -148,7 +148,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
       totalTxnsRead += resp.getTransactions().size();
 
       final var maxReceivedStateVersion =
-          resp.getTransactions().get(resp.getTransactions().size() - 1).getStateVersion();
+          resp.getTransactions().get(resp.getTransactions().size() - 1).getResultantStateIdentifiers().getStateVersion();
       stateVersion = maxReceivedStateVersion + 1;
     }
 
@@ -193,10 +193,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     final var notary = ECKeyPair.fromPrivateKey(prvBytes);
     for (int i = 0; i < numTransactions; i++) {
       final var transaction = TransactionBuilder.forTests().nonce(i).notary(notary).prepare();
-      res.add(
-          RawLedgerTransaction.create(
-              TransactionPreparer.userTransactionToLedgerBytes(
-                  transaction.notarizedTransactionBytes())));
+      res.add(TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(transaction.raw()));
     }
     return res;
   }

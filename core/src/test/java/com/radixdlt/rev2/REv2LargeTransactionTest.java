@@ -139,7 +139,7 @@ public final class REv2LargeTransactionTest {
       test.startAllNodes();
       var validatorIndex = 0;
       var fullNodeIndex = 1;
-      var largeTransaction = createLargeValidTransaction().toRaw();
+      var largeTransaction = createLargeValidTransaction().raw();
 
       // Act: Submit transaction to fullnode mempool
       var mempoolDispatcher =

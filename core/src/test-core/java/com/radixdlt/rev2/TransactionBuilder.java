@@ -182,11 +182,11 @@ public class TransactionBuilder {
         TransactionPreparer.prepareIntent(networkDefinition, header, this.manifest, this.blobs);
     var intentSignatures =
         this.signatories.stream()
-            .map(ecKeyPair -> ecKeyPair.sign(intent.intentHash()).toSignatureWithPublicKey())
+            .map(ecKeyPair -> ecKeyPair.sign(intent.intentHash().inner()).toSignatureWithPublicKey())
             .toList();
     var signedIntent =
         TransactionPreparer.prepareSignedIntent(intent.intentBytes(), intentSignatures);
-    var notarySignature = this.notary.sign(signedIntent.signedIntentHash()).toSignature();
+    var notarySignature = this.notary.sign(signedIntent.signedIntentHash().inner()).toSignature();
     return TransactionPreparer.prepareNotarizedTransaction(
         signedIntent.signedIntentBytes(), notarySignature);
   }

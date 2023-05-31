@@ -87,14 +87,18 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address().or((ComponentAddress) null), validator.key()),
+        BFTValidatorId.create(validator.address(), validator.key()),
         validator.stake().toUInt256());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
     BFTValidatorId id = validator.getValidatorId();
+    var validatorAddress = id.getValidatorAddress();
+    if (validatorAddress.isEmpty()) {
+      throw new IllegalStateException("Active validator must have a validator address");
+    }
     return new ActiveValidatorInfo(
-        Option.from(id.getValidatorAddress()), id.getKey(), Decimal.from(validator.getPower()));
+            validatorAddress.get(), id.getKey(), Decimal.from(validator.getPower()));
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {

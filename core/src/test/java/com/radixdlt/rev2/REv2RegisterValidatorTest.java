@@ -138,7 +138,7 @@ public final class REv2RegisterValidatorTest {
           TransactionBuilder.forTests()
               .manifest(Manifest.createValidator(TEST_KEY.getPublicKey(), ownerAccount))
               .prepare()
-              .toRaw();
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
           allCommittedTransactionSuccess(createValidatorTransaction),
@@ -155,16 +155,16 @@ public final class REv2RegisterValidatorTest {
       // Act: Submit transaction to mempool and run consensus
       var stakeValidatorTransaction =
           TransactionBuilder.forTests()
-              .manifest(Manifest.stakeValidator(validatorAddress, ownerAccount))
+              .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
               .prepare()
-              .toRaw();
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
 
       var registerValidatorTransaction =
           TransactionBuilder.forTests()
               .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
               .prepare()
-              .toRaw();
+              .raw();
       ;
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
