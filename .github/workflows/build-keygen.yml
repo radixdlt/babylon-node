@@ -33,7 +33,7 @@ jobs:
   dockerhub-keygen-docker:
     if: github.event_name == 'workflow_dispatch'
     name: Dispatch - Dockerhub
-    needs: gcr-keygen-docker
+    needs: private-keygen-docker
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       environment: release
