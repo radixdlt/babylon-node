@@ -45,6 +45,9 @@ pub enum MappingError {
     MismatchedSubstateId {
         message: String,
     },
+    MismatchedSubstateKeyType {
+        message: String,
+    },
     IntegerError {
         message: String,
     },

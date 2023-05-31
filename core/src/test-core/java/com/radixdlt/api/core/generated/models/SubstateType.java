@@ -66,19 +66,27 @@ public enum SubstateType {
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
-  EPOCHMANAGERFIELDCONFIG("EpochManagerFieldConfig"),
+  CONSENSUSMANAGERFIELDCONFIG("ConsensusManagerFieldConfig"),
   
-  EPOCHMANAGERFIELDSTATE("EpochManagerFieldState"),
+  CONSENSUSMANAGERFIELDSTATE("ConsensusManagerFieldState"),
   
-  EPOCHMANAGERFIELDCURRENTVALIDATORSET("EpochManagerFieldCurrentValidatorSet"),
+  CONSENSUSMANAGERFIELDCURRENTVALIDATORSET("ConsensusManagerFieldCurrentValidatorSet"),
   
-  EPOCHMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("EpochManagerRegisteredValidatorsByStakeIndexEntry"),
+  CONSENSUSMANAGERFIELDCURRENTPROPOSALSTATISTIC("ConsensusManagerFieldCurrentProposalStatistic"),
   
-  CLOCKFIELDSTATE("ClockFieldState"),
+  CONSENSUSMANAGERFIELDCURRENTTIMEROUNDEDTOMINUTES("ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
+  
+  CONSENSUSMANAGERFIELDCURRENTTIME("ConsensusManagerFieldCurrentTime"),
+  
+  CONSENSUSMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   
   VALIDATORFIELDSTATE("ValidatorFieldState"),
   
+  ACCOUNTFIELDSTATE("AccountFieldState"),
+  
   ACCOUNTVAULTINDEXENTRY("AccountVaultIndexEntry"),
+  
+  ACCOUNTDEPOSITRULEINDEXENTRY("AccountDepositRuleIndexEntry"),
   
   ACCESSCONTROLLERFIELDSTATE("AccessControllerFieldState"),
   

@@ -41,7 +41,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessRulesModuleFieldAccessRulesSubstateAllOf {
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private AccessRules accessRules;
+  private AccessRules accessRules = null;
 
   public static final String JSON_PROPERTY_CHILD_BLUEPRINT_RULES = "child_blueprint_rules";
   private List<BlueprintAccessRules> childBlueprintRules = new ArrayList<>();

@@ -9,7 +9,7 @@ pub(crate) async fn handle_mempool_transaction(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let payload_hash = extract_payload_hash(request.payload_hash)
+    let payload_hash = extract_notarized_transaction_hash(request.payload_hash)
         .map_err(|err| err.into_response_error("payload_hash"))?;
 
     let mempool = state.mempool.read();

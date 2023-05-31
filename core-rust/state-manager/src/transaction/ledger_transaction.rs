@@ -29,6 +29,19 @@ pub enum TypedTransactionIdentifiers {
     }
 }
 
+impl TypedTransactionIdentifiers {
+    pub fn user(&self) -> Option<(&IntentHash, &SignedIntentHash, &NotarizedTransactionHash)> {
+        match self {
+            TypedTransactionIdentifiers::User {
+                intent_hash,
+                signed_intent_hash,
+                notarized_transaction_hash
+            } => Some((intent_hash, signed_intent_hash, notarized_transaction_hash)),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub enum LedgerTransaction {
     Genesis(Box<SystemTransactionV1>),

@@ -13,14 +13,19 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountVaultIndexEntrySubstateAllOf {
-    #[serde(rename = "data_struct")]
-    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "vault", skip_serializing_if = "Option::is_none")]
+    pub vault: Option<String>,
 }
 
 impl AccountVaultIndexEntrySubstateAllOf {
-    pub fn new(data_struct: crate::core_api::generated::models::DataStruct) -> AccountVaultIndexEntrySubstateAllOf {
+    pub fn new(resource_address: String) -> AccountVaultIndexEntrySubstateAllOf {
         AccountVaultIndexEntrySubstateAllOf {
-            data_struct: Box::new(data_struct),
+            resource_address,
+            vault: None,
         }
     }
 }

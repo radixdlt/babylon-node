@@ -23,6 +23,11 @@ pub enum AccessRuleNode {
         #[serde(rename = "access_rules")]
         access_rules: Vec<crate::core_api::generated::models::AccessRuleNode>,
     },
+    #[serde(rename="Authority")]
+    AuthorityRuleNode {
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::AuthorityKey>,
+    },
     #[serde(rename="ProofRule")]
     ProofAccessRuleNode {
         #[serde(rename = "proof_rule")]

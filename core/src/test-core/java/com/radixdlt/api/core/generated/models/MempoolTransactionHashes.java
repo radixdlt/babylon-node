@@ -51,11 +51,11 @@ public class MempoolTransactionHashes {
   }
 
    /**
-   * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is &#x60;Blake2b-256(compiled_intent)&#x60;
+   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
    * @return intentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`")
+  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
   @JsonProperty(JSON_PROPERTY_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -77,11 +77,11 @@ public class MempoolTransactionHashes {
   }
 
    /**
-   * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is &#x60;Blake2b-256(compiled_notarized_transaction)&#x60;
+   * The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
    * @return payloadHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`")
+  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. ")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

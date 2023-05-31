@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +31,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccountVaultIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_RESOURCE_ADDRESS,
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_VAULT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountVaultIndexEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
+  private String resourceAddress;
+
+  public static final String JSON_PROPERTY_VAULT = "vault";
+  private String vault;
 
   public AccountVaultIndexEntrySubstateAllOf() { 
   }
 
-  public AccountVaultIndexEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public AccountVaultIndexEntrySubstateAllOf resourceAddress(String resourceAddress) {
+    this.resourceAddress = resourceAddress;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * The Bech32m-encoded human readable version of the resource address
+   * @return resourceAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public String getResourceAddress() {
+    return resourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setResourceAddress(String resourceAddress) {
+    this.resourceAddress = resourceAddress;
+  }
+
+
+  public AccountVaultIndexEntrySubstateAllOf vault(String vault) {
+    this.vault = vault;
+    return this;
+  }
+
+   /**
+   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * @return vault
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @JsonProperty(JSON_PROPERTY_VAULT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getVault() {
+    return vault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VAULT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setVault(String vault) {
+    this.vault = vault;
   }
 
 
@@ -80,19 +109,21 @@ public class AccountVaultIndexEntrySubstateAllOf {
       return false;
     }
     AccountVaultIndexEntrySubstateAllOf accountVaultIndexEntrySubstateAllOf = (AccountVaultIndexEntrySubstateAllOf) o;
-    return Objects.equals(this.dataStruct, accountVaultIndexEntrySubstateAllOf.dataStruct);
+    return Objects.equals(this.resourceAddress, accountVaultIndexEntrySubstateAllOf.resourceAddress) &&
+        Objects.equals(this.vault, accountVaultIndexEntrySubstateAllOf.vault);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct);
+    return Objects.hash(resourceAddress, vault);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountVaultIndexEntrySubstateAllOf {\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
+    sb.append("    vault: ").append(toIndentedString(vault)).append("\n");
     sb.append("}");
     return sb.toString();
   }

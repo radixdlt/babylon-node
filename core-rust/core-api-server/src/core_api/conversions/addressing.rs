@@ -60,11 +60,10 @@ pub fn to_api_entity_reference(
 pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
     match entity_type {
         EntityType::GlobalPackage => models::EntityType::GlobalPackage,
-        EntityType::GlobalFungibleResource => models::EntityType::GlobalFungibleResource,
-        EntityType::GlobalNonFungibleResource => models::EntityType::GlobalNonFungibleResource,
-        EntityType::GlobalEpochManager => models::EntityType::GlobalEpochManager,
+        EntityType::GlobalFungibleResourceManager => models::EntityType::GlobalFungibleResource,
+        EntityType::GlobalNonFungibleResourceManager => models::EntityType::GlobalNonFungibleResource,
+        EntityType::GlobalConsensusManager => models::EntityType::GlobalConsensusManager,
         EntityType::GlobalValidator => models::EntityType::GlobalValidator,
-        EntityType::GlobalClock => models::EntityType::GlobalClock,
         EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
         EntityType::GlobalAccount => models::EntityType::GlobalAccount,
         EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
@@ -216,41 +215,58 @@ pub fn to_api_substate_id(
             SubstateType::NonFungibleVaultContentsIndexEntry,
             models::PartitionKind::Index,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
-            EpochManagerField::Config,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::Config,
         )) => (
-            SubstateType::EpochManagerFieldConfig,
+            SubstateType::ConsensusManagerFieldConfig,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
-            EpochManagerField::EpochManager,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::ConsensusManager,
         )) => (
-            SubstateType::EpochManagerFieldState,
+            SubstateType::ConsensusManagerFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::EpochManagerField(
-            EpochManagerField::CurrentValidatorSet,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::CurrentProposalStatistic,
         )) => (
-            SubstateType::EpochManagerFieldCurrentValidatorSet,
+            SubstateType::ConsensusManagerFieldCurrentProposalStatistic,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::CurrentValidatorSet,
+        )) => (
+            SubstateType::ConsensusManagerFieldCurrentValidatorSet,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(_),
+            TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_),
         ) => (
-            SubstateType::EpochManagerRegisteredValidatorsByStakeIndexEntry,
+            SubstateType::ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
             models::PartitionKind::SortedIndex,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ClockField(
-            ClockField::CurrentTimeRoundedToMinutes,
-        )) => (SubstateType::ClockFieldState, models::PartitionKind::Field),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::CurrentTimeRoundedToMinutes,
+        )) => (SubstateType::ConsensusManagerFieldCurrentTimeRoundedToMinutes, models::PartitionKind::Field),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(
+            ConsensusManagerField::CurrentTime,
+        )) => (SubstateType::ConsensusManagerFieldCurrentTime, models::PartitionKind::Field),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
             ValidatorField::Validator,
         )) => (
             SubstateType::ValidatorFieldState,
             models::PartitionKind::Field,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountField(AccountField::Account)) => (
+            SubstateType::AccountFieldState,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(_)) => (
             SubstateType::AccountVaultIndexEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_)) => (
+            SubstateType::AccountDepositRuleIndexEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessControllerField(

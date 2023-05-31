@@ -21,46 +21,92 @@ pub enum Substate {
     #[serde(rename="AccessRulesModuleFieldAccessRules")]
     AccessRulesModuleFieldAccessRulesSubstate {
         #[serde(rename = "access_rules")]
-        access_rules: Box<crate::core_api::generated::models::AccessRules>,
+        access_rules: crate::core_api::generated::models::AccessRules,
         #[serde(rename = "child_blueprint_rules")]
         child_blueprint_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
     },
+    #[serde(rename="AccountDepositRuleIndexEntry")]
+    AccountDepositRuleIndexEntrySubstate {
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "resource_address")]
+        resource_address: String,
+        #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
+        deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
+    },
+    #[serde(rename="AccountFieldState")]
+    AccountFieldStateSubstate {
+        #[serde(rename = "default_deposit_rule")]
+        default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule,
+    },
     #[serde(rename="AccountVaultIndexEntry")]
     AccountVaultIndexEntrySubstate {
-        #[serde(rename = "data_struct")]
-        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "resource_address")]
+        resource_address: String,
+        /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+        #[serde(rename = "vault", skip_serializing_if = "Option::is_none")]
+        vault: Option<String>,
     },
-    #[serde(rename="ClockFieldState")]
-    ClockFieldStateSubstate {
-        #[serde(rename = "timestamp_rounded_down_to_minute")]
-        timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
-    },
-    #[serde(rename="EpochManagerFieldConfig")]
-    EpochManagerFieldConfigSubstate {
+    #[serde(rename="ConsensusManagerFieldConfig")]
+    ConsensusManagerFieldConfigSubstate {
+        /// An integer between `0` and `10^10`, specifying the maximum number of validators in the active validator set. 
         #[serde(rename = "max_validators")]
         max_validators: i64,
-        /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
-        #[serde(rename = "rounds_per_epoch")]
-        rounds_per_epoch: i64,
+        #[serde(rename = "epoch_change_condition")]
+        epoch_change_condition: Box<crate::core_api::generated::models::EpochChangeCondition>,
+        /// An integer between `0` and `10^10`, specifying the minimum number of epochs before an unstaker can withdraw their XRD. 
         #[serde(rename = "num_unstake_epochs")]
         num_unstake_epochs: i64,
+        /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "total_emission_xrd_per_epoch")]
+        total_emission_xrd_per_epoch: String,
+        /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "min_validator_reliability")]
+        min_validator_reliability: String,
+        /// An integer between `0` and `10^10`, specifying the minimum number of epochs before an owner can take their stake units after attempting to withdraw them. 
+        #[serde(rename = "num_owner_stake_units_unlock_epochs")]
+        num_owner_stake_units_unlock_epochs: i64,
+        /// An integer between `0` and `10^10`, specifying the minimum number of epochs before a fee increase takes effect. 
+        #[serde(rename = "num_fee_increase_delay_epochs")]
+        num_fee_increase_delay_epochs: i64,
     },
-    #[serde(rename="EpochManagerFieldCurrentValidatorSet")]
-    EpochManagerFieldCurrentValidatorSetSubstate {
+    #[serde(rename="ConsensusManagerFieldCurrentProposalStatistic")]
+    ConsensusManagerFieldCurrentProposalStatisticSubstate {
+        /// The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
+        #[serde(rename = "completed")]
+        completed: Vec<i64>,
+        /// The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
+        #[serde(rename = "missed")]
+        missed: Vec<i64>,
+    },
+    #[serde(rename="ConsensusManagerFieldCurrentTime")]
+    ConsensusManagerCurrentTimeSubstate {
+        #[serde(rename = "proposer_timestamp")]
+        proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
+    },
+    #[serde(rename="ConsensusManagerFieldCurrentTimeRoundedToMinutes")]
+    ConsensusManagerCurrentTimeRoundedToMinutesSubstate {
+        #[serde(rename = "proposer_timestamp_rounded_down_to_minute")]
+        proposer_timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
+    },
+    #[serde(rename="ConsensusManagerFieldCurrentValidatorSet")]
+    ConsensusManagerFieldCurrentValidatorSetSubstate {
         #[serde(rename = "validator_set")]
         validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
     },
-    #[serde(rename="EpochManagerFieldState")]
-    EpochManagerFieldStateSubstate {
+    #[serde(rename="ConsensusManagerFieldState")]
+    ConsensusManagerFieldStateSubstate {
         /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,
         /// An integer between `0` and `10^10`, marking the current round in an epoch
         #[serde(rename = "round")]
         round: i64,
+        #[serde(rename = "epoch_start")]
+        epoch_start: Box<crate::core_api::generated::models::Instant>,
     },
-    #[serde(rename="EpochManagerRegisteredValidatorsByStakeIndexEntry")]
-    EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate {
+    #[serde(rename="ConsensusManagerRegisteredValidatorsByStakeIndexEntry")]
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
         #[serde(rename = "active_validator")]
         active_validator: Box<crate::core_api::generated::models::ActiveValidator>,
     },
@@ -188,22 +234,36 @@ pub enum Substate {
     },
     #[serde(rename="ValidatorFieldState")]
     ValidatorFieldStateSubstate {
+        #[serde(rename = "sorted_key", skip_serializing_if = "Option::is_none")]
+        sorted_key: Option<Box<crate::core_api::generated::models::SubstateKey>>,
         #[serde(rename = "public_key")]
         public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
         #[serde(rename = "is_registered")]
         is_registered: bool,
-        #[serde(rename = "stake_vault")]
-        stake_vault: Box<crate::core_api::generated::models::EntityReference>,
-        #[serde(rename = "unstake_vault")]
-        unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "validator_fee_factor")]
+        validator_fee_factor: String,
+        #[serde(rename = "validator_fee_change_request", skip_serializing_if = "Option::is_none")]
+        validator_fee_change_request: Option<Box<crate::core_api::generated::models::ValidatorFeeChangeRequest>>,
         /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "liquid_stake_unit_resource_address")]
-        liquid_stake_unit_resource_address: String,
+        #[serde(rename = "stake_unit_resource_address")]
+        stake_unit_resource_address: String,
+        #[serde(rename = "stake_xrd_vault")]
+        stake_xrd_vault: Box<crate::core_api::generated::models::EntityReference>,
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "unstake_claim_token_resource_address")]
         unstake_claim_token_resource_address: String,
-        #[serde(rename = "sorted_key", skip_serializing_if = "Option::is_none")]
-        sorted_key: Option<Box<crate::core_api::generated::models::SubstateKey>>,
+        #[serde(rename = "pending_xrd_withdraw_vault")]
+        pending_xrd_withdraw_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "locked_owner_stake_unit_vault")]
+        locked_owner_stake_unit_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "pending_owner_stake_unit_unlock_vault")]
+        pending_owner_stake_unit_unlock_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "pending_owner_stake_unit_withdrawals")]
+        pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>,
+        /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "already_unlocked_owner_stake_unit_amount")]
+        already_unlocked_owner_stake_unit_amount: String,
     },
 }
 

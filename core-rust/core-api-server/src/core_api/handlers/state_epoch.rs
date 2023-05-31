@@ -26,7 +26,7 @@ pub(crate) async fn handle_state_epoch(
 
     Ok(models::StateEpochResponse {
         epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,
-        epoch_manager: Some(to_api_epoch_manager_substate(
+        epoch_manager: Some(to_api_consensus_manager_state_substate(
             &mapping_context,
             &epoch_manager_substate,
         )?),

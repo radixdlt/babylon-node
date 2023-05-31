@@ -88,7 +88,7 @@ pub(crate) async fn handle_lts_transaction_status(
         };
 
         let committed_payload = models::LtsTransactionPayloadDetails {
-            payload_hash: to_api_payload_hash(&payload_hash),
+            payload_hash: to_api_notarized_transaction_hash(&payload_hash),
             status: payload_status,
             error_message,
         };
@@ -115,7 +115,7 @@ pub(crate) async fn handle_lts_transaction_status(
         let mempool_payloads = mempool_payloads_hashes
             .iter()
             .map(|payload_hash| models::LtsTransactionPayloadDetails {
-                payload_hash: to_api_payload_hash(payload_hash),
+                payload_hash: to_api_notarized_transaction_hash(payload_hash),
                 status: models::LtsTransactionPayloadStatus::InMempool,
                 error_message: None,
             })
@@ -192,7 +192,7 @@ fn map_rejected_payloads_due_to_known_commit(
                 .most_applicable_status()
                 .unwrap_or(&RejectionReason::IntentHashCommitted);
             models::LtsTransactionPayloadDetails {
-                payload_hash: to_api_payload_hash(&payload_hash),
+                payload_hash: to_api_notarized_transaction_hash(&payload_hash),
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(rejection_reason_to_use.to_string()),
             }
@@ -208,7 +208,7 @@ fn map_pending_payloads_not_in_mempool(
         .map(|(payload_hash, transaction_record)| {
             match transaction_record.most_applicable_status() {
                 Some(reason) => models::LtsTransactionPayloadDetails {
-                    payload_hash: to_api_payload_hash(&payload_hash),
+                    payload_hash: to_api_notarized_transaction_hash(&payload_hash),
                     status: if reason.is_permanent_for_payload() {
                         models::LtsTransactionPayloadStatus::PermanentlyRejected
                     } else {
@@ -217,7 +217,7 @@ fn map_pending_payloads_not_in_mempool(
                     error_message: Some(reason.to_string()),
                 },
                 None => models::LtsTransactionPayloadDetails {
-                    payload_hash: to_api_payload_hash(&payload_hash),
+                    payload_hash: to_api_notarized_transaction_hash(&payload_hash),
                     status: models::LtsTransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },

@@ -203,7 +203,7 @@ fn to_api_parsed_notarized_transaction(
         identifiers: Box::new(ParsedNotarizedTransactionAllOfIdentifiers {
             intent_hash: to_api_intent_hash(&parsed.transaction.intent_hash()),
             signatures_hash: to_api_signed_intent_hash(&parsed.transaction.signatures_hash()),
-            payload_hash: to_api_payload_hash(&parsed.transaction.user_payload_hash()),
+            payload_hash: to_api_notarized_transaction_hash(&parsed.transaction.user_payload_hash()),
             ledger_hash: to_api_ledger_hash(&parsed.transaction.ledger_payload_hash()),
         }),
         validation_error,
@@ -293,7 +293,7 @@ fn to_api_parsed_ledger_transaction(
         identifiers: Box::new(models::ParsedLedgerTransactionAllOfIdentifiers {
             intent_hash: notarized.map(|tx| to_api_intent_hash(&tx.intent_hash())),
             signatures_hash: notarized.map(|tx| to_api_signed_intent_hash(&tx.signatures_hash())),
-            payload_hash: notarized.map(|tx| to_api_payload_hash(&tx.user_payload_hash())),
+            payload_hash: notarized.map(|tx| to_api_notarized_transaction_hash(&tx.user_payload_hash())),
             ledger_hash: to_api_ledger_hash(&parsed.ledger_payload_hash()),
         }),
     })

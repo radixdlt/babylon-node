@@ -98,11 +98,11 @@ public class TransactionPayloadStatus {
   }
 
    /**
-   * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is &#x60;Blake2b-256(compiled_notarized_transaction)&#x60;
+   * The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
    * @return payloadHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`")
+  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. ")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

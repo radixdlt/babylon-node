@@ -41,7 +41,7 @@ public class BlueprintAccessRules {
   private String blueprintName;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private AccessRules accessRules;
+  private AccessRules accessRules = null;
 
   public BlueprintAccessRules() { 
   }

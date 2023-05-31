@@ -29,11 +29,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum LedgerTransactionType {
   
+  GENESIS("Genesis"),
+  
   USER("User"),
   
-  VALIDATOR("Validator"),
-  
-  SYSTEM("System");
+  ROUNDUPDATE("RoundUpdate");
 
   private String value;
 

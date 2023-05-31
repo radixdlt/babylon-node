@@ -7,10 +7,16 @@ openapi: 3.1.0
 # => If an i8, use type: integer, format: int32, minimum: -128, maximum: 127 (also, why are you using an i8!?)
 # => If a u32:
 #    => If there's a domain-imposed requirement that fits it within an i32 (2,147,483,647 = 2^31 - 1), with bound B use
-#       type: integer, format: int32, minimum: 0, maximum: B
+#         type: integer
+#         format: int32
+#         minimum: 0
+#         maximum: B
 #       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
 #    => If not, to be compatible with OAS, we need to put it into an int64:
-#       type: integer, format: int64, minimum: 0, maximum: 4294967295 = 2^32 - 1
+#         type: integer
+#         format: int64
+#         minimum: 0
+#         maximum: 4294967295
 # => If an i32, use type: integer, format: int32
 # => If a u64:
 #    => The maximum safe integer in Javascript is (+-)2^53 – 1 = 9,007,199,254,740,991 ~ 9 * 10^15
@@ -23,7 +29,10 @@ openapi: 3.1.0
 #    => The maximum safe integer in Javascript is (+-)2^53 – 1 = 9,007,199,254,740,991 ~ 9 * 10^15
 #       To be pragmatic, any numbers outside this range we will choose to represent as strings.
 #    => So if it's possible for us to assert that: -(2^53 - 1) <= B1 <= value <= B2 <= 2^53 - 1, then use:
-#       type: integer, format: int64, minimum: B1, maximum: B2
+#         type: integer
+#         format: int64
+#         minimum: B1
+#         maximum: B2
 #       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
 #    => If not, use a string instead
 # => If something over i64/u64, use type: string
@@ -1144,7 +1153,14 @@ components:
         typed:
           description: Whether to return the typed substate information (default true)
           type: boolean
-
+###########################################################
+# GENERAL / SHARED MODELS - General / Numeric / Utilities #
+###########################################################
+    Decimal:
+      type: string
+      description: |
+        A string-encoded fixed-precision decimal to 18 decimal places.
+        A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 ##########################################
 # GENERAL / SHARED MODELS - Transactions #
 ##########################################
@@ -1191,7 +1207,7 @@ components:
         - notary_signature
       properties:
         hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
@@ -1207,7 +1223,7 @@ components:
         - intent_signatures
       properties:
         hash:
-          $ref: "#/components/schemas/SignaturesHash"
+          $ref: "#/components/schemas/SignedIntentHash"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -1326,35 +1342,45 @@ components:
       type: object
       required:
         - intent_hash
-        - signatures_hash
+        - signed_intent_hash
         - payload_hash
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
-        signatures_hash:
-          $ref: "#/components/schemas/SignaturesHash"
+        signed_intent_hash:
+          $ref: "#/components/schemas/SignedIntentHash"
         payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
     IntentHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
-    SignaturesHash:
+      description: |
+        The hex-encoded intent hash for a user transaction, also known as the transaction id.
+        This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+        This hash gets signed by any signatories on the transaction, to create the signed intent.
+    SignedIntentHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`
-    PayloadHash:
+      description: |
+        The hex-encoded signed intent hash for a user transaction.
+        This hash identifies the transaction intent, plus additional signatures.
+        This hash is signed by the notary, to create the submittable NotarizedTransaction.
+    NotarizedTransactionHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
-    LedgerHash:
+      description: |
+        The hex-encoded notarized transaction hash for a user transaction.
+        This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
+    LedgerPayloadHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `Blake2b-256(ledger_transaction_bytes)`
+      description: |
+        The hex-encoded ledger payload transaction hash.
+        This is a wrapper for both user transactions, and system transactions such as genesis and round changes.
     ErrorResponseType:
       type: string
       enum:
@@ -1536,7 +1562,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActiveValidator'
-          description: Active validator set for the new epoch, ordered by their `address` (lexicographically ascending).
+          description: Active validator set for the new epoch, ordered by stake descending.
     CreatedOrUpdatedSubstate:
       type: object
       required:
@@ -1947,113 +1973,46 @@ components:
 ##########################################
 # GENERAL / SHARED MODELS - Access Rules #
 ##########################################
-    AccessRules:
+    NodeAuthorityRules:
       type: object
       required:
-        - method_auth
-        - grouped_auth
-        - default_auth
-        - method_auth_mutability
-        - grouped_auth_mutability
-        - default_auth_mutability
+        - rules
+        - mutability
       properties:
-        method_auth:
+        rules:
           type: array
           items:
-            $ref: '#/components/schemas/MethodAuthEntry'
-        grouped_auth:
+            $ref: '#/components/schemas/AuthorityRule'
+        mutability:
           type: array
           items:
-            $ref: '#/components/schemas/GroupedAuthEntry'
-        default_auth:
+            $ref: '#/components/schemas/AuthorityRule'
+    AuthorityRule:
+      type: object
+      required:
+        - key
+        - rule
+      properties:
+        key:
+          $ref: '#/components/schemas/AuthorityKey'
+        rule:
           $ref: '#/components/schemas/AccessRule'
-        method_auth_mutability:
-          type: array
-          items:
-            $ref: '#/components/schemas/MethodAuthMutabilityEntry'
-        grouped_auth_mutability:
-          type: array
-          items:
-            $ref: '#/components/schemas/GroupedAuthEntry'
-        default_auth_mutability:
-          $ref: '#/components/schemas/AccessRule'
-    MethodAuthEntry:
-      type: object
-      required:
-        - method
-        - access_rule_reference
-      properties:
-        method:
-          $ref: '#/components/schemas/LocalMethodReference'
-        access_rule_reference:
-          $ref: '#/components/schemas/AccessRuleReference'
-    MethodAuthMutabilityEntry:
-      type: object
-      required:
-        - method
-        - access_rule_reference
-      properties:
-        method:
-          $ref: '#/components/schemas/LocalMethodReference'
-        access_rule_reference:
-          $ref: '#/components/schemas/AccessRuleReference'
-    LocalMethodReference:
+    AuthorityKey:
       type: object
       required:
         - module
         - name
       properties:
         module:
-          $ref: '#/components/schemas/ObjectModuleId'
+          type: string
+          enum:
+            - Object
+            - Main
+            - Metadata
+            - Royalty
+            - AccessRules
         name:
-          description: The name of the method
           type: string
-    AccessRuleReferenceType:
-      type: string
-      enum:
-        - Group
-        - Rule
-    AccessRuleReference:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/AccessRuleReferenceType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match AccessRuleReferenceType options above
-          Group: '#/components/schemas/GroupAccessRuleReference'
-          Rule: '#/components/schemas/RuleAccessRuleReference'
-    GroupAccessRuleReference:
-      allOf:
-        - $ref: '#/components/schemas/AccessRuleReference'
-        - type: object
-          required:
-            - group_name
-          properties:
-            group_name:
-              type: string
-    RuleAccessRuleReference:
-      allOf:
-        - $ref: '#/components/schemas/AccessRuleReference'
-        - type: object
-          required:
-            - access_rule
-          properties:
-            access_rule:
-              $ref: '#/components/schemas/AccessRule'
-    GroupedAuthEntry:
-      type: object
-      required:
-        - group_name
-        - access_rule
-      properties:
-        group_name:
-          type: string
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
     AccessRuleType:
       type: string
       enum:
@@ -2097,6 +2056,7 @@ components:
         - ProofRule
         - AnyOf
         - AllOf
+        - Authority
     AccessRuleNode:
       type: object
       required:
@@ -2111,6 +2071,7 @@ components:
           ProofRule: '#/components/schemas/ProofAccessRuleNode'
           AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
           AllOf: '#/components/schemas/AllOfAccessRuleNode'
+          Authority: '#/components/schemas/AuthorityRuleNode'
     ProofAccessRuleNode:
       allOf:
         - $ref: '#/components/schemas/AccessRuleNode'
@@ -2142,6 +2103,15 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AccessRuleNode'
+    AuthorityRuleNode:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleNode'
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: '#/components/schemas/AuthorityKey'
     ProofRuleType:
       type: string
       enum:
@@ -2683,17 +2653,12 @@ components:
     FunctionSchema:
       type: object
       required:
-        - receiver
         - input
         - output
         - export_name
       properties:
-        receiver:
-          format: string
-          enum:
-            - Function
-            - ComponentReadOnly
-            - ComponentMutable
+        receiver_info:
+          $ref: '#/components/schemas/ReceiverInfo'
         input:
           $ref: '#/components/schemas/LocalTypeIndex'
           description: |
@@ -2704,6 +2669,35 @@ components:
             The type index of the function output in the context of the blueprint's SBOR schema.
         export_name:
           type: string
+    ReceiverInfo:
+      type: object
+      required:
+        - receiver
+        - reference_type
+      properties:
+        receiver:
+          type: string
+          enum:
+            - SelfRef
+            - SelfRefMut
+        reference_type:
+          $ref: '#/components/schemas/ReferenceType'
+    ReferenceType:
+      type: object
+      required:
+        - raw_bits
+        - normal
+        - direct_access
+      properties:
+        raw_bits:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+        normal:
+          type: boolean
+        direct_access:
+          type: boolean
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -2711,9 +2705,8 @@ components:
       type: string
       enum:
         - GlobalPackage
-        - GlobalEpochManager
+        - GlobalConsensusManager
         - GlobalValidator
-        - GlobalClock
         - GlobalGenericComponent
         - GlobalAccount
         - GlobalIdentity
@@ -2768,13 +2761,17 @@ components:
           FungibleVaultFieldBalance: '#/components/schemas/FungibleVaultFieldBalanceSubstate'
           NonFungibleVaultFieldBalance: '#/components/schemas/NonFungibleVaultFieldBalanceSubstate'
           NonFungibleVaultContentsIndexEntry: '#/components/schemas/NonFungibleVaultContentsIndexEntrySubstate'
-          EpochManagerFieldConfig: '#/components/schemas/EpochManagerFieldConfigSubstate'
-          EpochManagerFieldState: '#/components/schemas/EpochManagerFieldStateSubstate'
-          EpochManagerFieldCurrentValidatorSet: '#/components/schemas/EpochManagerFieldCurrentValidatorSetSubstate'
-          EpochManagerRegisteredValidatorsByStakeIndexEntry: '#/components/schemas/EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate'
-          ClockFieldState: '#/components/schemas/ClockFieldStateSubstate'
+          ConsensusManagerFieldConfig: '#/components/schemas/ConsensusManagerFieldConfigSubstate'
+          ConsensusManagerFieldState: '#/components/schemas/ConsensusManagerFieldStateSubstate'
+          ConsensusManagerFieldCurrentValidatorSet: '#/components/schemas/ConsensusManagerFieldCurrentValidatorSetSubstate'
+          ConsensusManagerFieldCurrentProposalStatistic: '#/components/schemas/ConsensusManagerFieldCurrentProposalStatisticSubstate'
+          ConsensusManagerFieldCurrentTimeRoundedToMinutes: '#/components/schemas/ConsensusManagerCurrentTimeRoundedToMinutesSubstate'
+          ConsensusManagerFieldCurrentTime: '#/components/schemas/ConsensusManagerCurrentTimeSubstate'
+          ConsensusManagerRegisteredValidatorsByStakeIndexEntry: '#/components/schemas/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate'
           ValidatorFieldState: '#/components/schemas/ValidatorFieldStateSubstate'
+          AccountFieldState: '#/components/schemas/AccountFieldStateSubstate'
           AccountVaultIndexEntry: '#/components/schemas/AccountVaultIndexEntrySubstate'
+          AccountDepositRuleIndexEntry: '#/components/schemas/AccountDepositRuleIndexEntrySubstate'
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
@@ -2800,13 +2797,17 @@ components:
         - FungibleVaultFieldBalance
         - NonFungibleVaultFieldBalance
         - NonFungibleVaultContentsIndexEntry
-        - EpochManagerFieldConfig
-        - EpochManagerFieldState
-        - EpochManagerFieldCurrentValidatorSet
-        - EpochManagerRegisteredValidatorsByStakeIndexEntry
-        - ClockFieldState
+        - ConsensusManagerFieldConfig
+        - ConsensusManagerFieldState
+        - ConsensusManagerFieldCurrentValidatorSet
+        - ConsensusManagerFieldCurrentProposalStatistic
+        - ConsensusManagerFieldCurrentTimeRoundedToMinutes
+        - ConsensusManagerFieldCurrentTime
+        - ConsensusManagerRegisteredValidatorsByStakeIndexEntry
         - ValidatorFieldState
+        - AccountFieldState
         - AccountVaultIndexEntry
+        - AccountDepositRuleIndexEntry
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
@@ -3117,36 +3118,93 @@ components:
             non_fungible_local_id:
               description: The NonFungibleLocalId in the vault.
               $ref: '#/components/schemas/NonFungibleLocalId'
-    EpochManagerFieldConfigSubstate:
+    ConsensusManagerFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - max_validators
-            - rounds_per_epoch
+            - epoch_change_condition
             - num_unstake_epochs
+            - total_emission_xrd_per_epoch
+            - min_validator_reliability
+            - num_owner_stake_units_unlock_epochs
+            - num_fee_increase_delay_epochs
           properties:
             max_validators:
               type: integer
               format: int64
               minimum: 0
-            rounds_per_epoch:
-              type: integer
-              format: int64
-              minimum: 0
               maximum: 10000000000
-              description: An integer between `0` and `10^10`, specifying the number of rounds per epoch
+              description: |
+                An integer between `0` and `10^10`, specifying the maximum number of validators
+                in the active validator set.
+            epoch_change_condition:
+              $ref: '#/components/schemas/EpochChangeCondition'
             num_unstake_epochs:
               type: integer
               format: int64
               minimum: 0
               maximum: 10000000000
-    EpochManagerFieldStateSubstate:
+              description: |
+                An integer between `0` and `10^10`, specifying the minimum number of epochs
+                before an unstaker can withdraw their XRD.
+            total_emission_xrd_per_epoch:
+              $ref: '#/components/schemas/Decimal'
+            min_validator_reliability:
+              description: |
+                A proportion (between 0 and 1) which a validator needs to exceed to get emissions in an epoch.
+              $ref: '#/components/schemas/Decimal'
+            num_owner_stake_units_unlock_epochs:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, specifying the minimum number of epochs
+                before an owner can take their stake units after attempting to withdraw them.
+            num_fee_increase_delay_epochs:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, specifying the minimum number of epochs
+                before a fee increase takes effect.
+    EpochChangeCondition:
+      type: object
+      required:
+        - min_round_count
+        - max_round_count
+        - target_duration_millis
+      properties:
+        min_round_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, specifying the minimum number of rounds per epoch
+        max_round_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, specifying the maximum number of rounds per epoch
+        target_duration_millis:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, specifying the target number of milliseconds per epoch,
+            assuming the round number is within the min and max range.
+    ConsensusManagerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - epoch
+            - epoch_start
             - round
           properties:
             epoch:
@@ -3161,7 +3219,33 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current round in an epoch
-    EpochManagerFieldCurrentValidatorSetSubstate:
+            epoch_start:
+              $ref: '#/components/schemas/Instant'
+    ConsensusManagerFieldCurrentProposalStatisticSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - completed
+            - missed
+          properties:
+            completed:
+              type: array
+              description: The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
+              items:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 10000000000
+            missed:
+              type: array
+              description: The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
+              items:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 10000000000
+    ConsensusManagerFieldCurrentValidatorSetSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3172,7 +3256,7 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/ActiveValidator'
-    EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate:
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3181,16 +3265,30 @@ components:
           properties:
             active_validator:
               $ref: "#/components/schemas/ActiveValidator"
-    ClockFieldStateSubstate:
+    ConsensusManagerCurrentTimeRoundedToMinutesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - timestamp_rounded_down_to_minute
+            - proposer_timestamp_rounded_down_to_minute
           properties:
-            timestamp_rounded_down_to_minute:
+            proposer_timestamp_rounded_down_to_minute:
               $ref: '#/components/schemas/Instant'
-              description: The latest round proposer's timestamp (rounded down to the current minute).
+              description: |
+                The latest round proposer's timestamp (rounded down to the current minute).
+                An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
+    ConsensusManagerCurrentTimeSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - proposer_timestamp
+          properties:
+            proposer_timestamp:
+              $ref: '#/components/schemas/Instant'
+              description: |
+                The latest round proposer's timestamp.
+                An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
     ValidatorFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3198,35 +3296,123 @@ components:
           required:
             - public_key
             - is_registered
-            - stake_vault
-            - unstake_vault
-            - liquid_stake_unit_resource_address
+            - validator_fee_factor
+            - stake_unit_resource_address
+            - stake_xrd_vault
             - unstake_claim_token_resource_address
-            - is_registered
+            - pending_xrd_withdraw_vault
+            - locked_owner_stake_unit_vault
+            - pending_owner_stake_unit_unlock_vault
+            - pending_owner_stake_unit_withdrawals
+            - already_unlocked_owner_stake_unit_amount
           properties:
+            sorted_key:
+              $ref: '#/components/schemas/SubstateKey'
             public_key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             is_registered:
               type: boolean
-            stake_vault:
-              $ref: '#/components/schemas/EntityReference'
-            unstake_vault:
-              $ref: '#/components/schemas/EntityReference'
-            liquid_stake_unit_resource_address:
+            validator_fee_factor:
+              description: The proportion of the emission that the validator owner keeps.
+              $ref: '#/components/schemas/Decimal'
+            validator_fee_change_request:
+              $ref: '#/components/schemas/ValidatorFeeChangeRequest'
+            stake_unit_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
+            stake_xrd_vault:
+              $ref: '#/components/schemas/EntityReference'
             unstake_claim_token_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-            sorted_key:
-              $ref: '#/components/schemas/SubstateKey'
+            pending_xrd_withdraw_vault:
+              $ref: '#/components/schemas/EntityReference'
+            locked_owner_stake_unit_vault:
+              $ref: '#/components/schemas/EntityReference'
+            pending_owner_stake_unit_unlock_vault:
+              $ref: '#/components/schemas/EntityReference'
+            pending_owner_stake_unit_withdrawals:
+              type: array
+              items:
+                $ref: '#/components/schemas/PendingOwnerStakeWithdrawal'
+            already_unlocked_owner_stake_unit_amount:
+              $ref: '#/components/schemas/Decimal'
+    ValidatorFeeChangeRequest:
+      type: object
+      required:
+        - epoch_effective
+        - new_fee_factor
+      properties:
+        epoch_effective:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch at which the fee change becomes effective.
+        new_fee_factor:
+          $ref: '#/components/schemas/Decimal'
+    PendingOwnerStakeWithdrawal:
+      type: object
+      required:
+        - epoch_unlocked
+        - stake_unit_amount
+      properties:
+        epoch_unlocked:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch when the stake units are unlocked for withdrawal.
+        stake_unit_amount:
+          $ref: '#/components/schemas/Decimal'
+    AccountFieldStateSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - default_deposit_rule
+          properties:
+            default_deposit_rule:
+              $ref: '#/components/schemas/DefaultDepositRule'
+    DefaultDepositRule:
+      type: string
+      description: |
+        This setting has the following interpretations:
+        - Allow: Allows the deposit of all resources - the deny list is honored in this state.
+        - Reject: Disallows the deposit of all resources - the allow list is honored in this state.
+        - AllowExisting: Only deposits of existing resources is accepted - both allow and deny lists are honored in this mode.
+      enum:
+        - Accept
+        - Reject
+        - AllowExisting
     AccountVaultIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - data_struct
+            - resource_address
           properties:
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            vault:
+              $ref: '#/components/schemas/EntityAddress'
+    AccountDepositRuleIndexEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            deposit_rule:
+              $ref: '#/components/schemas/DepositRule'
+    DepositRule:
+      type: string
+      enum:
+        - Neither
+        - Allowed
+        - Disallowed
     AccessControllerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3338,7 +3524,7 @@ components:
         - status
       properties:
         payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
         status:
           $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
@@ -4004,7 +4190,7 @@ components:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
         payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
 #################################
 # REQUEST: /mempool/transaction #
 #################################
@@ -4017,7 +4203,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
     MempoolTransactionResponse:
       type: object
       required:
@@ -4120,18 +4306,18 @@ components:
               type: object
               required:
                 - intent_hash
-                - signatures_hash
+                - signed_intent_hash
                 - payload_hash
                 - ledger_hash
               properties:
                 intent_hash:
                   $ref: "#/components/schemas/IntentHash"
-                signatures_hash:
-                  $ref: "#/components/schemas/SignaturesHash"
+                signed_intent_hash:
+                  $ref: "#/components/schemas/SignedIntentHash"
                 payload_hash:
-                  $ref: "#/components/schemas/PayloadHash"
+                  $ref: "#/components/schemas/NotarizedTransactionHash"
                 ledger_hash:
-                  $ref: "#/components/schemas/LedgerHash"
+                  $ref: "#/components/schemas/LedgerPayloadHash"
             validation_error:
               type: object
               description: |
@@ -4165,12 +4351,12 @@ components:
               type: object
               required:
                 - intent_hash
-                - signatures_hash
+                - signed_intent_hash
               properties:
                 intent_hash:
                   $ref: "#/components/schemas/IntentHash"
-                signatures_hash:
-                  $ref: "#/components/schemas/SignaturesHash"
+                signed_intent_hash:
+                  $ref: "#/components/schemas/SignedIntentHash"
     ParsedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -4210,12 +4396,12 @@ components:
               properties:
                 intent_hash:
                   $ref: "#/components/schemas/IntentHash"
-                signatures_hash:
-                  $ref: "#/components/schemas/SignaturesHash"
+                signed_intent_hash:
+                  $ref: "#/components/schemas/SignedIntentHash"
                 payload_hash:
-                  $ref: "#/components/schemas/PayloadHash"
+                  $ref: "#/components/schemas/NotarizedTransactionHash"
                 ledger_hash:
-                  $ref: "#/components/schemas/LedgerHash"
+                  $ref: "#/components/schemas/LedgerPayloadHash"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -4374,7 +4560,7 @@ components:
         - status
       properties:
         payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
+          $ref: "#/components/schemas/NotarizedTransactionHash"
         status:
           type: string
           description: |
@@ -4699,9 +4885,9 @@ components:
       type: string
       description: The type of the ledger transaction
       enum:
+        - Genesis
         - User
-        - Validator
-        - System
+        - RoundUpdate
     LedgerTransaction:
       type: object
       required:
@@ -4716,9 +4902,18 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match LedgerTransactionType
+          Genesis: '#/components/schemas/GenesisLedgerTransaction'
           User: '#/components/schemas/UserLedgerTransaction'
-          Validator: '#/components/schemas/ValidatorLedgerTransaction'
-          System: '#/components/schemas/SystemLedgerTransaction'
+          RoundUpdate: '#/components/schemas/RoundUpdateLedgerTransaction'
+    GenesisLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransaction"
+        - type: object
+          required:
+            - system_transaction
+          properties:
+            system_transaction:
+              $ref: "#/components/schemas/SystemTransaction"
     UserLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"
@@ -4728,70 +4923,42 @@ components:
           properties:
             notarized_transaction:
               $ref: "#/components/schemas/NotarizedTransaction"
-    ValidatorLedgerTransaction:
+    RoundUpdateLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
-            - validator_transaction
+            - round_update_transaction
           properties:
-            validator_transaction:
-              $ref: "#/components/schemas/ValidatorTransaction"
-    SystemLedgerTransaction:
-      allOf:
-        - $ref: "#/components/schemas/LedgerTransaction"
-        - type: object
-          required:
-            - system_transaction
-          properties:
-            system_transaction:
-              $ref: "#/components/schemas/SystemTransaction"
-    ValidatorTransactionType:
-      type: string
-      description: The type of the validator transaction
-      enum:
-        - RoundUpdate
-    ValidatorTransaction:
+            round_update_transaction:
+              $ref: "#/components/schemas/RoundUpdateTransaction"
+    RoundUpdateTransaction:
       type: object
       required:
-        - type
+        - proposer_timestamp
+        - epoch
+        - round_in_epoch
+        - leader_proposal_history
       properties:
-        type:
-          $ref: "#/components/schemas/ValidatorTransactionType"
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match ValidatorTransactionType
-          RoundUpdate: '#/components/schemas/RoundUpdateValidatorTransaction'
-    RoundUpdateValidatorTransaction:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorTransaction"
-        - type: object
-          required:
-            - proposer_timestamp
-            - consensus_epoch
-            - round_in_epoch
-            - leader_proposal_history
-          properties:
-            proposer_timestamp:
-              $ref: '#/components/schemas/Instant'
-              description: The round proposer's timestamp.
-            consensus_epoch:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, marking the consensus epoch.
-            round_in_epoch:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: An integer between `0` and `10^10`, marking the consensus round in the epoch
-            leader_proposal_history:
-              $ref: '#/components/schemas/LeaderProposalHistory'
-              description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
+        proposer_timestamp:
+          $ref: '#/components/schemas/Instant'
+          description: The round proposer's timestamp.
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch.
+        round_in_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the consensus round in the epoch
+        leader_proposal_history:
+          $ref: '#/components/schemas/LeaderProposalHistory'
+          description: A recent history (i.e. since the previous `RoundUpdateValidatorTransaction`) of consensus round leaders' reliability. Used for validator emissions calculation.
     LeaderProposalHistory:
       type: object
       required:
@@ -4820,7 +4987,7 @@ components:
           format: int32
           minimum: 0
           maximum: 255
-          description: An index of a validator within a specific active validator set ordered by their `address` (lexicographically ascending). Please note this is the same ordering as used by other parts of the API which list active validators.
+          description: An index of a validator within a specific active validator set (ordered by stake descending). This is the same ordering as used by other parts of the API which list active validators.
     SystemTransaction:
       type: object
       properties:

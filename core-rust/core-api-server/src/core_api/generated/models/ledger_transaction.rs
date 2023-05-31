@@ -13,13 +13,21 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum LedgerTransaction {
-    #[serde(rename="System")]
-    SystemLedgerTransaction {
+    #[serde(rename="Genesis")]
+    GenesisLedgerTransaction {
         /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
         #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
         payload_hex: Option<String>,
         #[serde(rename = "system_transaction")]
         system_transaction: Box<crate::core_api::generated::models::SystemTransaction>,
+    },
+    #[serde(rename="RoundUpdate")]
+    RoundUpdateLedgerTransaction {
+        /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
+        #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+        payload_hex: Option<String>,
+        #[serde(rename = "round_update_transaction")]
+        round_update_transaction: Box<crate::core_api::generated::models::RoundUpdateTransaction>,
     },
     #[serde(rename="User")]
     UserLedgerTransaction {
@@ -28,14 +36,6 @@ pub enum LedgerTransaction {
         payload_hex: Option<String>,
         #[serde(rename = "notarized_transaction")]
         notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
-    },
-    #[serde(rename="Validator")]
-    ValidatorLedgerTransaction {
-        /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-        #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
-        payload_hex: Option<String>,
-        #[serde(rename = "validator_transaction")]
-        validator_transaction: Box<crate::core_api::generated::models::ValidatorTransaction>,
     },
 }
 

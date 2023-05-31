@@ -27,12 +27,16 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.ClockFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldConfigSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldCurrentValidatorSetSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeRoundedToMinutesSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -78,18 +82,26 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldStateSubstate"),
   @JsonSubTypes.Type(value = AccessRulesModuleFieldAccessRulesSubstate.class, name = "AccessRulesModuleFieldAccessRules"),
   @JsonSubTypes.Type(value = AccessRulesModuleFieldAccessRulesSubstate.class, name = "AccessRulesModuleFieldAccessRulesSubstate"),
+  @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntry"),
+  @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntrySubstate"),
+  @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
+  @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldStateSubstate"),
   @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntry"),
   @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntrySubstate"),
-  @JsonSubTypes.Type(value = ClockFieldStateSubstate.class, name = "ClockFieldState"),
-  @JsonSubTypes.Type(value = ClockFieldStateSubstate.class, name = "ClockFieldStateSubstate"),
-  @JsonSubTypes.Type(value = EpochManagerFieldConfigSubstate.class, name = "EpochManagerFieldConfig"),
-  @JsonSubTypes.Type(value = EpochManagerFieldConfigSubstate.class, name = "EpochManagerFieldConfigSubstate"),
-  @JsonSubTypes.Type(value = EpochManagerFieldCurrentValidatorSetSubstate.class, name = "EpochManagerFieldCurrentValidatorSet"),
-  @JsonSubTypes.Type(value = EpochManagerFieldCurrentValidatorSetSubstate.class, name = "EpochManagerFieldCurrentValidatorSetSubstate"),
-  @JsonSubTypes.Type(value = EpochManagerFieldStateSubstate.class, name = "EpochManagerFieldState"),
-  @JsonSubTypes.Type(value = EpochManagerFieldStateSubstate.class, name = "EpochManagerFieldStateSubstate"),
-  @JsonSubTypes.Type(value = EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "EpochManagerRegisteredValidatorsByStakeIndexEntry"),
-  @JsonSubTypes.Type(value = EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerCurrentTimeRoundedToMinutesSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeSubstate.class, name = "ConsensusManagerCurrentTimeSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfigSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatistic"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatisticSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeSubstate.class, name = "ConsensusManagerFieldCurrentTime"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentValidatorSetSubstate.class, name = "ConsensusManagerFieldCurrentValidatorSet"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentValidatorSetSubstate.class, name = "ConsensusManagerFieldCurrentValidatorSetSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldStateSubstate.class, name = "ConsensusManagerFieldState"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldStateSubstate.class, name = "ConsensusManagerFieldStateSubstate"),
+  @JsonSubTypes.Type(value = ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
+  @JsonSubTypes.Type(value = ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldDivisibilitySubstate.class, name = "FungibleResourceManagerFieldDivisibility"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldDivisibilitySubstate.class, name = "FungibleResourceManagerFieldDivisibilitySubstate"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldTotalSupplySubstate.class, name = "FungibleResourceManagerFieldTotalSupply"),
@@ -214,18 +226,26 @@ static {
   mappings.put("AccessControllerFieldStateSubstate", AccessControllerFieldStateSubstate.class);
   mappings.put("AccessRulesModuleFieldAccessRules", AccessRulesModuleFieldAccessRulesSubstate.class);
   mappings.put("AccessRulesModuleFieldAccessRulesSubstate", AccessRulesModuleFieldAccessRulesSubstate.class);
+  mappings.put("AccountDepositRuleIndexEntry", AccountDepositRuleIndexEntrySubstate.class);
+  mappings.put("AccountDepositRuleIndexEntrySubstate", AccountDepositRuleIndexEntrySubstate.class);
+  mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
+  mappings.put("AccountFieldStateSubstate", AccountFieldStateSubstate.class);
   mappings.put("AccountVaultIndexEntry", AccountVaultIndexEntrySubstate.class);
   mappings.put("AccountVaultIndexEntrySubstate", AccountVaultIndexEntrySubstate.class);
-  mappings.put("ClockFieldState", ClockFieldStateSubstate.class);
-  mappings.put("ClockFieldStateSubstate", ClockFieldStateSubstate.class);
-  mappings.put("EpochManagerFieldConfig", EpochManagerFieldConfigSubstate.class);
-  mappings.put("EpochManagerFieldConfigSubstate", EpochManagerFieldConfigSubstate.class);
-  mappings.put("EpochManagerFieldCurrentValidatorSet", EpochManagerFieldCurrentValidatorSetSubstate.class);
-  mappings.put("EpochManagerFieldCurrentValidatorSetSubstate", EpochManagerFieldCurrentValidatorSetSubstate.class);
-  mappings.put("EpochManagerFieldState", EpochManagerFieldStateSubstate.class);
-  mappings.put("EpochManagerFieldStateSubstate", EpochManagerFieldStateSubstate.class);
-  mappings.put("EpochManagerRegisteredValidatorsByStakeIndexEntry", EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
-  mappings.put("EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate", EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
+  mappings.put("ConsensusManagerCurrentTimeRoundedToMinutesSubstate", ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class);
+  mappings.put("ConsensusManagerCurrentTimeSubstate", ConsensusManagerCurrentTimeSubstate.class);
+  mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
+  mappings.put("ConsensusManagerFieldConfigSubstate", ConsensusManagerFieldConfigSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentProposalStatistic", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentProposalStatisticSubstate", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTime", ConsensusManagerCurrentTimeSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTimeRoundedToMinutes", ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentValidatorSet", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentValidatorSetSubstate", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
+  mappings.put("ConsensusManagerFieldState", ConsensusManagerFieldStateSubstate.class);
+  mappings.put("ConsensusManagerFieldStateSubstate", ConsensusManagerFieldStateSubstate.class);
+  mappings.put("ConsensusManagerRegisteredValidatorsByStakeIndexEntry", ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
+  mappings.put("ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate", ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
   mappings.put("FungibleResourceManagerFieldDivisibility", FungibleResourceManagerFieldDivisibilitySubstate.class);
   mappings.put("FungibleResourceManagerFieldDivisibilitySubstate", FungibleResourceManagerFieldDivisibilitySubstate.class);
   mappings.put("FungibleResourceManagerFieldTotalSupply", FungibleResourceManagerFieldTotalSupplySubstate.class);

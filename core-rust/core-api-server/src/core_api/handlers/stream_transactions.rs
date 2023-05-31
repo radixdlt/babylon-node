@@ -173,7 +173,7 @@ pub fn to_api_notarized_transaction(
     let payload_hash = UserPayloadHash::for_transaction(tx);
 
     Ok(models::NotarizedTransaction {
-        hash: to_api_payload_hash(&payload_hash),
+        hash: to_api_notarized_transaction_hash(&payload_hash),
         payload_hex,
         signed_intent: Box::new(to_api_signed_intent(context, &tx.signed_intent)?),
         notary_signature: Some(to_api_signature(&tx.notary_signature)),
