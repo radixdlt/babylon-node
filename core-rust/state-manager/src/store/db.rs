@@ -64,7 +64,7 @@
 
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
-use crate::transaction::LedgerPayloadHash;
+use crate::transaction::LedgerTransactionHash;
 use std::path::PathBuf;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
@@ -217,8 +217,11 @@ impl TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase {
     }
 }
 
-impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
-    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &LedgerTransactionHash,
+    ) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)

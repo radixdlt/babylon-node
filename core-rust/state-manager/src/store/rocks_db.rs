@@ -91,7 +91,9 @@ use tracing::{error, info};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::transaction::{LedgerPayloadHash, RawLedgerTransaction, TypedTransactionIdentifiers};
+use crate::transaction::{
+    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
+};
 
 use super::traits::extensions::*;
 
@@ -341,6 +343,14 @@ impl RocksDBStore {
 
     fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
         self.db.cf_handle(&cf.to_string()).unwrap()
+    }
+
+    fn get_first<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily) -> Option<T> {
+        self.db
+            .iterator_cf(self.cf_handle(cf), IteratorMode::Start)
+            .map(|res| res.unwrap())
+            .next()
+            .map(|(_, value)| scrypto_decode(value.as_ref()).unwrap())
     }
 
     fn get_last<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily) -> Option<T> {
@@ -715,8 +725,11 @@ impl TransactionIndex<&NotarizedTransactionHash> for RocksDBStore {
     }
 }
 
-impl TransactionIndex<&LedgerPayloadHash> for RocksDBStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+impl TransactionIndex<&LedgerTransactionHash> for RocksDBStore {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &LedgerTransactionHash,
+    ) -> Option<u64> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
@@ -871,6 +884,14 @@ impl QueryableProofStore for RocksDBStore {
             )
             .unwrap()
             .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
+    }
+
+    fn get_first_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByStateVersion)
+    }
+
+    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByEpoch)
     }
 
     fn get_last_proof(&self) -> Option<LedgerProof> {

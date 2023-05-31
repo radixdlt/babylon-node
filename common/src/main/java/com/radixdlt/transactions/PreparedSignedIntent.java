@@ -64,14 +64,12 @@
 
 package com.radixdlt.transactions;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
 public record PreparedSignedIntent(
-    byte[] signedIntentBytes, HashCode intentHash, HashCode signedIntentHash) {
+    byte[] signedIntentBytes, IntentHash intentHash, SignedIntentHash signedIntentHash) {
   public PreparedSignedIntent {
     Objects.requireNonNull(signedIntentBytes);
     Objects.requireNonNull(intentHash);
@@ -85,11 +83,11 @@ public record PreparedSignedIntent(
   }
 
   public String hexIntentHash() {
-    return Bytes.toHexString(this.intentHash.asBytes());
+    return this.intentHash.hex();
   }
 
   public String hexSignedIntentHash() {
-    return Bytes.toHexString(this.intentHash.asBytes());
+    return this.signedIntentHash.hex();
   }
 
   @Override

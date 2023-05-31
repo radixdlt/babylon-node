@@ -32,7 +32,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   CommittedStateIdentifier.JSON_PROPERTY_STATE_VERSION,
-  CommittedStateIdentifier.JSON_PROPERTY_ACCUMULATOR_HASH
+  CommittedStateIdentifier.JSON_PROPERTY_ACCUMULATOR_HASH,
+  CommittedStateIdentifier.JSON_PROPERTY_STATE_TREE_HASH,
+  CommittedStateIdentifier.JSON_PROPERTY_TRANSACTION_TREE_HASH,
+  CommittedStateIdentifier.JSON_PROPERTY_RECEIPT_TREE_HASH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommittedStateIdentifier {
@@ -41,6 +44,15 @@ public class CommittedStateIdentifier {
 
   public static final String JSON_PROPERTY_ACCUMULATOR_HASH = "accumulator_hash";
   private String accumulatorHash;
+
+  public static final String JSON_PROPERTY_STATE_TREE_HASH = "state_tree_hash";
+  private String stateTreeHash;
+
+  public static final String JSON_PROPERTY_TRANSACTION_TREE_HASH = "transaction_tree_hash";
+  private String transactionTreeHash;
+
+  public static final String JSON_PROPERTY_RECEIPT_TREE_HASH = "receipt_tree_hash";
+  private String receiptTreeHash;
 
   public CommittedStateIdentifier() { 
   }
@@ -99,6 +111,84 @@ public class CommittedStateIdentifier {
   }
 
 
+  public CommittedStateIdentifier stateTreeHash(String stateTreeHash) {
+    this.stateTreeHash = stateTreeHash;
+    return this;
+  }
+
+   /**
+   * The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. 
+   * @return stateTreeHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. ")
+  @JsonProperty(JSON_PROPERTY_STATE_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getStateTreeHash() {
+    return stateTreeHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateTreeHash(String stateTreeHash) {
+    this.stateTreeHash = stateTreeHash;
+  }
+
+
+  public CommittedStateIdentifier transactionTreeHash(String transactionTreeHash) {
+    this.transactionTreeHash = transactionTreeHash;
+    return this;
+  }
+
+   /**
+   * The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. 
+   * @return transactionTreeHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. ")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getTransactionTreeHash() {
+    return transactionTreeHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTransactionTreeHash(String transactionTreeHash) {
+    this.transactionTreeHash = transactionTreeHash;
+  }
+
+
+  public CommittedStateIdentifier receiptTreeHash(String receiptTreeHash) {
+    this.receiptTreeHash = receiptTreeHash;
+    return this;
+  }
+
+   /**
+   * The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. 
+   * @return receiptTreeHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. ")
+  @JsonProperty(JSON_PROPERTY_RECEIPT_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getReceiptTreeHash() {
+    return receiptTreeHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECEIPT_TREE_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setReceiptTreeHash(String receiptTreeHash) {
+    this.receiptTreeHash = receiptTreeHash;
+  }
+
+
   /**
    * Return true if this CommittedStateIdentifier object is equal to o.
    */
@@ -112,12 +202,15 @@ public class CommittedStateIdentifier {
     }
     CommittedStateIdentifier committedStateIdentifier = (CommittedStateIdentifier) o;
     return Objects.equals(this.stateVersion, committedStateIdentifier.stateVersion) &&
-        Objects.equals(this.accumulatorHash, committedStateIdentifier.accumulatorHash);
+        Objects.equals(this.accumulatorHash, committedStateIdentifier.accumulatorHash) &&
+        Objects.equals(this.stateTreeHash, committedStateIdentifier.stateTreeHash) &&
+        Objects.equals(this.transactionTreeHash, committedStateIdentifier.transactionTreeHash) &&
+        Objects.equals(this.receiptTreeHash, committedStateIdentifier.receiptTreeHash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash);
+    return Objects.hash(stateVersion, accumulatorHash, stateTreeHash, transactionTreeHash, receiptTreeHash);
   }
 
   @Override
@@ -126,6 +219,9 @@ public class CommittedStateIdentifier {
     sb.append("class CommittedStateIdentifier {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
+    sb.append("    stateTreeHash: ").append(toIndentedString(stateTreeHash)).append("\n");
+    sb.append("    transactionTreeHash: ").append(toIndentedString(transactionTreeHash)).append("\n");
+    sb.append("    receiptTreeHash: ").append(toIndentedString(receiptTreeHash)).append("\n");
     sb.append("}");
     return sb.toString();
   }

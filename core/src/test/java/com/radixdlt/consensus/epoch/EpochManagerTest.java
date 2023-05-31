@@ -116,7 +116,6 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -158,7 +157,7 @@ public class EpochManagerTest {
             List<ExecutedVertex> previousVertices,
             List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {
-          return new StateComputerResult(List.of(), Map.of(), LedgerHashes.zero());
+          return new StateComputerResult(List.of(), 0, LedgerHashes.zero());
         }
 
         @Override

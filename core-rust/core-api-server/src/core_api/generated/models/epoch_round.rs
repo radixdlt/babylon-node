@@ -12,32 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CommittedStateIdentifier {
-    /// An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
-    #[serde(rename = "accumulator_hash")]
-    pub accumulator_hash: String,
-    /// The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. 
-    #[serde(rename = "state_tree_hash")]
-    pub state_tree_hash: String,
-    /// The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. 
-    #[serde(rename = "transaction_tree_hash")]
-    pub transaction_tree_hash: String,
-    /// The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. 
-    #[serde(rename = "receipt_tree_hash")]
-    pub receipt_tree_hash: String,
+pub struct EpochRound {
+    /// An integer between `0` and `10^10`, marking the epoch. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. 
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
+    /// An integer between `0` and `10^10`, marking the current round in an epoch
+    #[serde(rename = "round")]
+    pub round: i64,
 }
 
-impl CommittedStateIdentifier {
-    pub fn new(state_version: i64, accumulator_hash: String, state_tree_hash: String, transaction_tree_hash: String, receipt_tree_hash: String) -> CommittedStateIdentifier {
-        CommittedStateIdentifier {
-            state_version,
-            accumulator_hash,
-            state_tree_hash,
-            transaction_tree_hash,
-            receipt_tree_hash,
+impl EpochRound {
+    pub fn new(epoch: i64, round: i64) -> EpochRound {
+        EpochRound {
+            epoch,
+            round,
         }
     }
 }

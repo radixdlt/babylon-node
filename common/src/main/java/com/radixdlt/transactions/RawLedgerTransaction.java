@@ -66,7 +66,6 @@ package com.radixdlt.transactions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -89,7 +88,7 @@ public final class RawLedgerTransaction {
   }
 
   private final byte[] payload;
-  private final HashCode legacyPayloadHash;
+  private final LegacyLedgerPayloadHash legacyPayloadHash;
 
   private RawLedgerTransaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
@@ -101,8 +100,12 @@ public final class RawLedgerTransaction {
     return new RawLedgerTransaction(payload);
   }
 
-  public HashCode getLegacyPayloadHash() {
+  public LegacyLedgerPayloadHash getLegacyPayloadHash() {
     return legacyPayloadHash;
+  }
+
+  public int payloadLength() {
+    return payload.length;
   }
 
   @JsonValue

@@ -68,6 +68,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -91,6 +92,10 @@ public record RawNotarizedTransaction(byte[] payload) {
   @JsonCreator
   public static RawNotarizedTransaction create(byte[] payload) {
     return new RawNotarizedTransaction(payload);
+  }
+
+  public String hex() {
+    return Bytes.toHexString(payload);
   }
 
   @JsonValue

@@ -329,7 +329,7 @@ fn to_api_parsed_ledger_transaction(
             payload_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_notarized_transaction_hash(hashes.notarized_transaction_hash)),
-            ledger_hash: to_api_ledger_hash(&prepared.ledger_payload_hash()),
+            ledger_hash: to_api_ledger_hash(&prepared.ledger_transaction_hash()),
         }),
     })
 }

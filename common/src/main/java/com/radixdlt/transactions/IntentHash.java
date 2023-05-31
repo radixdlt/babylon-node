@@ -62,20 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.transactions;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.NotarizedTransactionHash;
-import com.radixdlt.utils.UInt32;
-import java.util.Set;
+import com.radixdlt.utils.Bytes;
+import java.util.Objects;
 
-/** A request for listing a batch of transactions for proposal. */
-public record ProposalTransactionsRequest(
-    UInt32 maxCount, UInt32 maxPayloadSizeBytes, Set<NotarizedTransactionHash> hashesToExclude) {
+public record IntentHash(HashCode inner) {
+  public IntentHash {
+    Objects.requireNonNull(inner);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ProposalTransactionsRequest.class,
-        codecs -> StructCodec.fromRecordComponents(ProposalTransactionsRequest.class, codecs));
+        IntentHash.class,
+        codecs ->
+            StructCodec.transparent(IntentHash::new, codecs.of(HashCode.class), IntentHash::inner));
+  }
+
+  public String hex() {
+    return Bytes.toHexString(this.inner.asBytes());
+  }
+
+  @Override
+  public String toString() {
+    return this.hex();
   }
 }

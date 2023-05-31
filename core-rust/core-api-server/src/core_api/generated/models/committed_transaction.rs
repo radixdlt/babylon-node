@@ -13,12 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransaction {
-    /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
-    #[serde(rename = "accumulator_hash")]
-    pub accumulator_hash: String,
+    #[serde(rename = "resultant_state_identifiers")]
+    pub resultant_state_identifiers: Box<crate::core_api::generated::models::CommittedStateIdentifier>,
     #[serde(rename = "ledger_transaction")]
     pub ledger_transaction: Option<crate::core_api::generated::models::LedgerTransaction>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "receipt")]
@@ -26,10 +22,9 @@ pub struct CommittedTransaction {
 }
 
 impl CommittedTransaction {
-    pub fn new(state_version: i64, accumulator_hash: String, ledger_transaction: crate::core_api::generated::models::LedgerTransaction, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
+    pub fn new(resultant_state_identifiers: crate::core_api::generated::models::CommittedStateIdentifier, ledger_transaction: crate::core_api::generated::models::LedgerTransaction, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
         CommittedTransaction {
-            state_version,
-            accumulator_hash,
+            resultant_state_identifiers: Box::new(resultant_state_identifiers),
             ledger_transaction: Option::Some(ledger_transaction),
             receipt: Box::new(receipt),
         }

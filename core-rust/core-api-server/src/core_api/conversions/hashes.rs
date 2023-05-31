@@ -1,4 +1,6 @@
-use state_manager::{transaction::*, AccumulatorHash};
+use state_manager::{
+    transaction::*, AccumulatorHash, ReceiptTreeHash, StateHash, TransactionTreeHash,
+};
 use transaction::prelude::*;
 
 use crate::core_api::*;
@@ -16,12 +18,24 @@ pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash
     to_hex(payload_hash)
 }
 
-pub fn to_api_ledger_hash(ledger_hash: &LedgerPayloadHash) -> String {
+pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
 }
 
 pub fn to_api_accumulator_hash(accumulator_hash: &AccumulatorHash) -> String {
     to_hex(accumulator_hash)
+}
+
+pub fn to_api_state_tree_hash(state_tree_hash: &StateHash) -> String {
+    to_hex(state_tree_hash)
+}
+
+pub fn to_api_transaction_tree_hash(transaction_tree_hash: &TransactionTreeHash) -> String {
+    to_hex(transaction_tree_hash)
+}
+
+pub fn to_api_receipt_tree_hash(receipt_tree_hash: &ReceiptTreeHash) -> String {
+    to_hex(receipt_tree_hash)
 }
 
 pub fn extract_intent_hash(hash_str: String) -> Result<IntentHash, ExtractionError> {

@@ -64,8 +64,8 @@
 
 use crate::transaction::RawLedgerTransaction;
 use crate::{
-    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
-    RejectedTransaction, TimestampedValidatorSignature,
+    AccumulatorHash, AccumulatorState, CommittableTransaction, LedgerHashes, LedgerHeader,
+    LedgerProof, PreviousVertex, RejectedTransaction, TimestampedValidatorSignature,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -320,7 +320,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareResult {
-    pub committed: Vec<RawLedgerTransaction>,
+    pub committed: Vec<CommittableTransaction>,
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,

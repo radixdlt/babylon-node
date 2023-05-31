@@ -170,6 +170,8 @@ pub mod entity_type;
 pub use self::entity_type::EntityType;
 pub mod epoch_change_condition;
 pub use self::epoch_change_condition::EpochChangeCondition;
+pub mod epoch_round;
+pub use self::epoch_round::EpochRound;
 pub mod error_response;
 pub use self::error_response::ErrorResponse;
 pub mod error_response_type;

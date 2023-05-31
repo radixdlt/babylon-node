@@ -65,7 +65,6 @@
 use crate::accumulator_tree::IsMerklizableHash;
 use crate::transaction::*;
 use crate::{LedgerTransactionOutcome, SubstateChange};
-use node_common::java::*;
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
 use std::fmt;
@@ -147,11 +146,21 @@ define_wrapped_hash! {
 
 impl IsMerklizableHash for ReceiptTreeHash {}
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Categorize, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Sbor)]
 pub struct LedgerHashes {
     pub state_root: StateHash,
     pub transaction_root: TransactionTreeHash,
     pub receipt_root: ReceiptTreeHash,
+}
+
+impl LedgerHashes {
+    pub fn pre_genesis() -> Self {
+        Self {
+            state_root: StateHash(Hash([0; Hash::LENGTH])),
+            transaction_root: TransactionTreeHash(Hash([0; Hash::LENGTH])),
+            receipt_root: ReceiptTreeHash(Hash([0; Hash::LENGTH])),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -202,16 +211,27 @@ pub struct PreviousVertex {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
-    pub committed: Vec<RawLedgerTransaction>,
+    pub committed: Vec<CommittableTransaction>,
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct CommittableTransaction {
+    /// Not included for the Round Change transaction which is inserted and doesn't come from the proposal
+    pub index: Option<u32>,
+    pub raw: RawLedgerTransaction,
+    pub intent_hash: Option<IntentHash>,
+    pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
+    pub ledger_hash: LedgerTransactionHash,
+    pub legacy_hash: LegacyLedgerPayloadHash,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RejectedTransaction {
     pub index: u32,
-    pub hashes: Option<(IntentHash, NotarizedTransactionHash, LedgerPayloadHash)>,
+    pub hashes: Option<(IntentHash, NotarizedTransactionHash, LedgerTransactionHash)>,
     pub error: String,
 }
 
@@ -268,10 +288,11 @@ pub struct EpochTransactionIdentifiers {
 
 impl EpochTransactionIdentifiers {
     pub fn pre_genesis() -> Self {
+        let ledger_hashes = LedgerHashes::pre_genesis();
         Self {
             state_version: 0,
-            transaction_hash: TransactionTreeHash(Hash([0; Hash::LENGTH])),
-            receipt_hash: ReceiptTreeHash(Hash([0; Hash::LENGTH])),
+            transaction_hash: ledger_hashes.transaction_root,
+            receipt_hash: ledger_hashes.receipt_root,
         }
     }
 

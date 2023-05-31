@@ -1270,26 +1270,6 @@ components:
       format: int32
       minimum: 0
       maximum: 255
-    CommittedStateIdentifier:
-      type: object
-      # This should expand to include the state hash
-      required:
-        - state_version
-        - accumulator_hash
-      properties:
-        state_version:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 100000000000000
-          description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
-        accumulator_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
     TransactionIdentifiers:
       type: object
       required:
@@ -4098,19 +4078,98 @@ components:
       type: object
       required:
         - pre_genesis_state_identifier
-        - current_state_identifier
+        - current_protocol_version
       properties:
         pre_genesis_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
-          description: The ledger state identifier before the genesis transaction
+          description: |
+            The ledger state identifier of a fresh ledger before any genesis transactions.
+        genesis_epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+          description: |
+            The epoch details for the genesis epoch and round.
+            The genesis epoch will be the last Olympia epoch + 1, and have a "fake" round-number 1 (because there is no round for the genesis transaction).
+            In the Gateway, this can be used for the epoch and round number before the first RoundUpdate transaction.
+            It is not present until genesis has been run.
         post_genesis_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
-          description: The ledger state identifier after the genesis transaction. May not be present if genesis has not yet been run.
+          description: |
+            The ledger state after the genesis transactions have been executed.
+            It is not present until genesis has been run.
         current_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
-            The current state identifier at the top of the node's copy of the ledger.
-            This is also the resultant state identifier of the node's last committed transaction.
+            The current state identifier at the top of the node's copy of the ledger (ie as of the latest committed transaction).
+            It is not present until genesis has been run.
+        current_epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+          description: |
+            The current epoch and round of the ledger.
+            It is not present until genesis has been run.
+        current_protocol_version:
+          type: string
+          description: |
+            A descriptor for the current protocol version that the node is running.
+    EpochRound:
+      type: object
+      required:
+        - epoch
+        - round
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch.
+            Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
+        round:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
+    CommittedStateIdentifier:
+      type: object
+      required:
+        - state_version
+        - accumulator_hash
+        - state_tree_hash
+        - transaction_tree_hash
+        - receipt_tree_hash
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
+        accumulator_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
+            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+        state_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
+        transaction_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
+        receipt_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
 ##########################
 # REQUEST: /mempool/list #
 ##########################
@@ -4800,24 +4859,12 @@ components:
     CommittedTransaction:
       type: object
       required:
-        - state_version
-        - accumulator_hash
+        - resultant_state_identifiers
         - ledger_transaction
         - receipt
       properties:
-        state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
-        accumulator_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+        resultant_state_identifiers:
+          $ref: "#/components/schemas/CommittedStateIdentifier"
         ledger_transaction:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:

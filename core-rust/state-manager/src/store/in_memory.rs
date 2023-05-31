@@ -65,7 +65,9 @@
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::store::traits::extensions::*;
 use crate::store::traits::*;
-use crate::transaction::{LedgerPayloadHash, RawLedgerTransaction, TypedTransactionIdentifiers};
+use crate::transaction::{
+    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
+};
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
@@ -93,7 +95,7 @@ pub struct InMemoryStore {
     local_transaction_executions: BTreeMap<u64, LocalTransactionExecution>,
     transaction_intent_lookup: HashMap<IntentHash, u64>,
     user_payload_hash_lookup: HashMap<NotarizedTransactionHash, u64>,
-    ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
+    ledger_payload_hash_lookup: HashMap<LedgerTransactionHash, u64>,
     proofs: BTreeMap<u64, LedgerProof>,
     epoch_proofs: BTreeMap<Epoch, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
@@ -232,8 +234,11 @@ impl TransactionIndex<&NotarizedTransactionHash> for InMemoryStore {
     }
 }
 
-impl TransactionIndex<&LedgerPayloadHash> for InMemoryStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+impl TransactionIndex<&LedgerTransactionHash> for InMemoryStore {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &LedgerTransactionHash,
+    ) -> Option<u64> {
         self.ledger_payload_hash_lookup.get(identifier).cloned()
     }
 }
@@ -462,6 +467,14 @@ impl QueryableProofStore for InMemoryStore {
 
     fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
         self.epoch_proofs.get(&epoch).cloned()
+    }
+
+    fn get_first_proof(&self) -> Option<LedgerProof> {
+        self.proofs.values().next().cloned()
+    }
+
+    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+        self.epoch_proofs.values().next().cloned()
     }
 
     fn get_last_proof(&self) -> Option<LedgerProof> {

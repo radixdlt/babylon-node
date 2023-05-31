@@ -11,6 +11,8 @@ use std::collections::HashMap;
 use transaction::manifest;
 use transaction::prelude::*;
 
+use super::to_api_committed_state_identifiers;
+
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_transactions(
     state: State<CoreApiState>,
@@ -117,8 +119,10 @@ pub fn to_api_committed_transaction(
     let receipt = to_api_receipt(context, receipt)?;
 
     Ok(models::CommittedTransaction {
-        state_version: to_api_state_version(identifiers.at_commit.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&identifiers.at_commit.accumulator_hash),
+        resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
+            &identifiers.at_commit,
+            &identifiers.resultant_ledger,
+        )?),
         ledger_transaction: Some(to_api_ledger_transaction(
             context,
             &raw_ledger_transaction,

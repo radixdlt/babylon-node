@@ -13,7 +13,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PayloadIdentifiers {
-    pub ledger_payload_hash: LedgerPayloadHash,
+    pub ledger_payload_hash: LedgerTransactionHash,
     pub typed: TypedTransactionIdentifiers,
 }
 
@@ -131,7 +131,7 @@ impl PreparedLedgerTransaction {
 
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_payload_hash(),
+            ledger_payload_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 PreparedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {
@@ -167,7 +167,7 @@ pub enum PreparedLedgerTransactionInner {
 }
 
 impl PreparedLedgerTransactionInner {
-    pub fn get_ledger_hash(&self) -> LedgerPayloadHash {
+    pub fn get_ledger_hash(&self) -> LedgerTransactionHash {
         let hash = HashAccumulator::new()
             .update([
                 TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
@@ -176,7 +176,7 @@ impl PreparedLedgerTransactionInner {
             .update([self.get_discriminator()])
             .update(self.get_summary().hash.as_slice())
             .finalize();
-        LedgerPayloadHash::from_hash(hash)
+        LedgerTransactionHash::from_hash(hash)
     }
 }
 
@@ -289,7 +289,7 @@ impl ValidatedLedgerTransaction {
 
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
-            ledger_payload_hash: self.ledger_payload_hash(),
+            ledger_payload_hash: self.ledger_transaction_hash(),
             typed: match &self.inner {
                 ValidatedLedgerTransactionInner::Genesis(t) => {
                     TypedTransactionIdentifiers::Genesis {
@@ -311,9 +311,9 @@ impl ValidatedLedgerTransaction {
     }
 }
 
-impl HasLedgerPayloadHash for ValidatedLedgerTransaction {
-    fn ledger_payload_hash(&self) -> LedgerPayloadHash {
-        LedgerPayloadHash::from_hash(self.summary.hash)
+impl HasLedgerTransactionHash for ValidatedLedgerTransaction {
+    fn ledger_transaction_hash(&self) -> LedgerTransactionHash {
+        LedgerTransactionHash::from_hash(self.summary.hash)
     }
 }
 
@@ -323,9 +323,12 @@ impl HasLegacyLedgerPayloadHash for ValidatedLedgerTransaction {
     }
 }
 
-// A hash of the whole payload, for use by the accumulator
-// TODO: Remove
-define_wrapped_hash!(LegacyLedgerPayloadHash);
+// TODO: Remove for mainnet launch as part of the work to replace the accumulator hash with
+// the receipt tree hash
+define_wrapped_hash!(
+    /// A hash of the whole payload, for use by the accumulator
+    LegacyLedgerPayloadHash
+);
 
 pub trait HasLegacyLedgerPayloadHash {
     fn legacy_ledger_payload_hash(&self) -> LegacyLedgerPayloadHash;
@@ -337,15 +340,15 @@ impl HasLegacyLedgerPayloadHash for PreparedLedgerTransaction {
     }
 }
 
-define_wrapped_hash!(LedgerPayloadHash);
+define_wrapped_hash!(LedgerTransactionHash);
 
-pub trait HasLedgerPayloadHash {
-    fn ledger_payload_hash(&self) -> LedgerPayloadHash;
+pub trait HasLedgerTransactionHash {
+    fn ledger_transaction_hash(&self) -> LedgerTransactionHash;
 }
 
-impl HasLedgerPayloadHash for PreparedLedgerTransaction {
-    fn ledger_payload_hash(&self) -> LedgerPayloadHash {
-        LedgerPayloadHash::from_hash(self.summary.hash)
+impl HasLedgerTransactionHash for PreparedLedgerTransaction {
+    fn ledger_transaction_hash(&self) -> LedgerTransactionHash {
+        LedgerTransactionHash::from_hash(self.summary.hash)
     }
 }
 

@@ -62,20 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statecomputer.commit;
 
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.*;
 import com.radixdlt.utils.UInt32;
-import java.util.Set;
 
-/** A request for listing a batch of transactions for proposal. */
-public record ProposalTransactionsRequest(
-    UInt32 maxCount, UInt32 maxPayloadSizeBytes, Set<NotarizedTransactionHash> hashesToExclude) {
+public record CommittableTransaction(
+    Option<UInt32> index,
+    RawLedgerTransaction raw,
+    Option<IntentHash> intentHash,
+    Option<NotarizedTransactionHash> notarizedTransactionHash,
+    LedgerTransactionHash ledgerTransactionHash,
+    LegacyLedgerPayloadHash legacyLedgerPayloadHash) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ProposalTransactionsRequest.class,
-        codecs -> StructCodec.fromRecordComponents(ProposalTransactionsRequest.class, codecs));
+        CommittableTransaction.class,
+        codecs -> StructCodec.fromRecordComponents(CommittableTransaction.class, codecs));
   }
 }

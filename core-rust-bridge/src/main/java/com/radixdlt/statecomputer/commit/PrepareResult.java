@@ -70,7 +70,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
 public record PrepareResult(
-    List<byte[]> committed,
+    List<CommittableTransaction> committed,
     List<RejectedTransaction> rejected,
     Option<NextEpoch> nextEpoch,
     LedgerHashes ledgerHashes) {

@@ -156,7 +156,7 @@ public class REv2StateComputerTest {
             genesisResult.accumulatorHash(), List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getFailedTransactions()).isEmpty();
+    assertThat(result.getRejectedTransactionCount()).isEmpty();
   }
 
   @Test
@@ -184,6 +184,6 @@ public class REv2StateComputerTest {
             genesisResult.accumulatorHash(), List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getFailedTransactions()).hasSize(1);
+    assertThat(result.getRejectedTransactionCount()).hasSize(1);
   }
 }

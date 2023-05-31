@@ -64,7 +64,6 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
@@ -73,6 +72,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
@@ -80,7 +80,7 @@ import java.util.List;
 import java.util.Set;
 
 public class RustMempool
-    implements MempoolReader<PreparedNotarizedTransaction, HashCode>,
+    implements MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>,
         MempoolInserter<RawNotarizedTransaction>,
         MempoolReevaluator {
 
@@ -133,7 +133,7 @@ public class RustMempool
 
   @Override
   public List<PreparedNotarizedTransaction> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, Set<HashCode> notarizedTransactionHashesToExclude) {
+      int maxCount, int maxPayloadSizeBytes, Set<NotarizedTransactionHash> hashesToExclude) {
     if (maxCount <= 0) {
       throw new IllegalArgumentException(
           "State Manager Mempool: maxCount must be > 0: " + maxCount);
@@ -148,7 +148,7 @@ public class RustMempool
         new ProposalTransactionsRequest(
             UInt32.fromNonNegativeInt(maxCount),
             UInt32.fromNonNegativeInt(maxPayloadSizeBytes),
-            notarizedTransactionHashesToExclude));
+            hashesToExclude));
   }
 
   @Override

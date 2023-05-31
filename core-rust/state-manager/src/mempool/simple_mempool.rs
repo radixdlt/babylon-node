@@ -84,7 +84,6 @@ pub struct MempoolData {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MempoolTransaction {
-    // TODO - consider making this an Arc for performance if we're cloning MempoolTransaction a lot
     pub validated: Box<ValidatedNotarizedTransactionV1>,
     pub raw: RawNotarizedTransaction,
 }

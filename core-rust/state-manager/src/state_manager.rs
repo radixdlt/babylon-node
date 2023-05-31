@@ -174,7 +174,7 @@ pub struct GenesisHeaderData {
 #[derive(Debug)]
 pub struct GenesisTransactionResult {
     raw: RawLedgerTransaction,
-    transaction_hashes: (LedgerPayloadHash, LegacyLedgerPayloadHash),
+    transaction_hashes: (LedgerTransactionHash, LegacyLedgerPayloadHash),
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
 }
@@ -237,7 +237,7 @@ where
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let payload_hash = prepared.ledger_payload_hash();
+        let payload_hash = prepared.ledger_transaction_hash();
         let legacy_hash = prepared.legacy_ledger_payload_hash();
 
         let system_transaction = prepared
@@ -368,7 +368,7 @@ where
             }
 
             let legacy_hash = validated.legacy_ledger_payload_hash();
-            let payload_hash = validated.ledger_payload_hash();
+            let payload_hash = validated.ledger_transaction_hash();
             let executable = validated.get_executable();
             {
                 let mut execution_cache = self.execution_cache.lock();
@@ -395,66 +395,76 @@ where
         // We start off the preparation by adding and executing the round change transaction
         //========================================================================================
 
-        let mut committed = Vec::new();
-
-        // Round Update
-        // TODO: Unify this with the proposed payloads execution
-        let validator_index_by_address = Self::to_validator_set_index(epoch_header);
-        let round_update = RoundUpdateTransactionV1 {
-            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-            epoch: prepare_request.epoch,
-            round: prepare_request.round,
-            leader_proposal_history: LeaderProposalHistory {
-                gap_round_leaders: prepare_request
-                    .gap_round_leader_addresses
-                    .iter()
-                    .map(|leader_address| {
-                        *validator_index_by_address
-                            .get(leader_address)
-                            .expect("gap round leader must belong to the validator set")
-                    })
-                    .collect::<Vec<_>>(),
-                current_leader: *validator_index_by_address
-                    .get(&prepare_request.proposer_address)
-                    .expect("proposer must belong to the validator set"),
-                is_fallback: prepare_request.is_fallback,
-            },
-        };
-        let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
-        let prepared = self
-            .ledger_transaction_validator
-            .validate_user_or_round_update_from_model(&ledger_round_update)
-            .expect("expected to be able to prepare the round update transaction");
-        let legacy_hash = prepared.legacy_ledger_payload_hash();
-        let executable = prepared.get_executable();
+        let mut committable_transactions = Vec::new();
 
         let mut next_epoch = {
-            let mut lock_execution_cache = self.execution_cache.lock();
-            let processed_round_update = lock_execution_cache.execute_transaction(
-                read_store.deref(),
-                &epoch_identifiers,
-                state_tracker.latest_transaction_identifiers(),
-                &legacy_hash,
-                self.execution_configurator
-                    .wrap(executable, ConfigType::Regular)
-                    .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                        format!("round update {}", prepare_request.round.number())
-                    }),
-            );
+            // We create a separate scope to ensure any variables don't leak to later in the method.
+            // TODO: Unify this with the proposed payloads execution
+            let validator_index_by_address = Self::to_validator_set_index(epoch_header);
+            let round_update = RoundUpdateTransactionV1 {
+                proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+                epoch: prepare_request.epoch,
+                round: prepare_request.round,
+                leader_proposal_history: LeaderProposalHistory {
+                    gap_round_leaders: prepare_request
+                        .gap_round_leader_addresses
+                        .iter()
+                        .map(|leader_address| {
+                            *validator_index_by_address
+                                .get(leader_address)
+                                .expect("gap round leader must belong to the validator set")
+                        })
+                        .collect::<Vec<_>>(),
+                    current_leader: *validator_index_by_address
+                        .get(&prepare_request.proposer_address)
+                        .expect("proposer must belong to the validator set"),
+                    is_fallback: prepare_request.is_fallback,
+                },
+            };
+            let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
+            let prepared = self
+                .ledger_transaction_validator
+                .validate_user_or_round_update_from_model(&ledger_round_update)
+                .expect("expected to be able to prepare the round update transaction");
+            let ledger_hash = prepared.ledger_transaction_hash();
+            let legacy_hash = prepared.legacy_ledger_payload_hash();
+            let executable = prepared.get_executable();
 
-            let round_update_commit = processed_round_update
-                .expect_commit(format!("round update {}", prepare_request.round.number()));
-            round_update_commit
-                .check_success(format!("round update {}", prepare_request.round.number()));
-            state_tracker.update(&round_update_commit.hash_structures_diff);
-            round_update_commit.next_epoch()
+            let next_epoch = {
+                let mut lock_execution_cache = self.execution_cache.lock();
+                let processed_round_update = lock_execution_cache.execute_transaction(
+                    read_store.deref(),
+                    &epoch_identifiers,
+                    state_tracker.latest_transaction_identifiers(),
+                    &legacy_hash,
+                    self.execution_configurator
+                        .wrap(executable, ConfigType::Regular)
+                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
+                            format!("round update {}", prepare_request.round.number())
+                        }),
+                );
+
+                let round_update_commit = processed_round_update
+                    .expect_commit(format!("round update {}", prepare_request.round.number()));
+                round_update_commit
+                    .check_success(format!("round update {}", prepare_request.round.number()));
+                state_tracker.update(&round_update_commit.hash_structures_diff);
+                round_update_commit.next_epoch()
+            };
+
+            committable_transactions.push(CommittableTransaction {
+                index: None,
+                raw: ledger_round_update
+                    .to_raw()
+                    .expect("Expected round update to be encodable"),
+                intent_hash: None,
+                notarized_transaction_hash: None,
+                ledger_hash,
+                legacy_hash,
+            });
+
+            next_epoch
         };
-
-        committed.push(
-            ledger_round_update
-                .to_raw()
-                .expect("Expected round update to be encodable"),
-        );
 
         //========================================================================================
         // PART 4:
@@ -487,7 +497,7 @@ where
 
             let intent_hash = prepared_user.intent_hash();
             let notarized_transaction_hash = prepared_user.notarized_transaction_hash();
-            let ledger_hash = prepared.ledger_payload_hash();
+            let ledger_hash = prepared.ledger_transaction_hash();
             let legacy_hash = prepared.legacy_ledger_payload_hash();
             let invalid_at_epoch = prepared_user
                 .signed_intent
@@ -564,7 +574,14 @@ where
 
                         intent_hash_potential_conflicts
                             .insert(intent_hash, IntentHashDuplicateWith::Proposed);
-                        committed.push(raw);
+                        committable_transactions.push(CommittableTransaction {
+                            index: Some(i as u32),
+                            raw,
+                            intent_hash: Some(intent_hash),
+                            notarized_transaction_hash: Some(notarized_transaction_hash),
+                            ledger_hash,
+                            legacy_hash,
+                        });
                         pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
                             notarized_transaction_hash,
@@ -627,7 +644,7 @@ where
         drop(write_pending_transaction_result_cache);
 
         PrepareResult {
-            committed,
+            committed: committable_transactions,
             rejected: rejected_transactions,
             next_epoch,
             ledger_hashes: *state_tracker.latest_ledger_hashes(),
@@ -889,7 +906,7 @@ where
                 )
             };
 
-            let payload_hash = validated.ledger_payload_hash();
+            let payload_hash = validated.ledger_transaction_hash();
             let legacy_hash = validated.legacy_ledger_payload_hash();
             let executable = validated.get_executable();
 
@@ -959,6 +976,7 @@ where
                 identifiers: CommittedTransactionIdentifiers {
                     payload: validated.create_identifiers(),
                     at_commit: commit_based_identifiers,
+                    resultant_ledger: *state_tracker.latest_ledger_hashes(),
                 },
             });
         }

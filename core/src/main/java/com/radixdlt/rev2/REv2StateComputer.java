@@ -67,7 +67,6 @@ package com.radixdlt.rev2;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -93,8 +92,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.commit.PreviousVertex;
-import com.radixdlt.transaction.TransactionPreparer;
-import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -118,13 +116,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final int maxProposalTotalTxnsPayloadSize;
   // Maximum number of transaction payload bytes to include in a proposal and its previous vertices
   // chain.
-  // Effectively limits the size of a commit batch (i.e. the size of transactions under a single
-  // proof).
-  private final int maxUncommittedUserTransactionsTotalPayloadSize;
+  // Intended to limit the size of a commit batch (i.e. the size of transactions under a single
+  // commit proof).
+  // Note - we can still keep committing round changes, so this is not a guarantee. But should be
+  // reasonably
+  // effective as a limit.
+  private final int maxUncommittedTotalPayloadSize;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
-  private final EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher;
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
@@ -139,7 +139,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
-      EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
       Serialization serialization,
       ProposerElection initialProposerElection,
       Metrics metrics) {
@@ -147,12 +146,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.mempool = mempool;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxUncommittedUserTransactionsTotalPayloadSize =
-        maxUncommittedUserTransactionsTotalPayloadSize;
+    this.maxUncommittedTotalPayloadSize = maxUncommittedUserTransactionsTotalPayloadSize;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
-    this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
     this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
@@ -185,22 +182,19 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> previousExecutedTransactions) {
-    final var rawPreviousExecutedTransactions =
-        previousExecutedTransactions.stream()
-            .flatMap(
-                executedTx ->
-                    TransactionPreparer.convertTransactionBytesToNotarizedTransactionBytes(
-                            executedTx.transaction().getPayload())
-                        .stream()
-                        .map(RawNotarizedTransaction::create))
-            .toList();
 
-    final var rawPreviousExecutedTransactionsTotalSize =
-        rawPreviousExecutedTransactions.stream()
-            .map(tx -> tx.getPayload().length)
+    final var previousTransactionHashes =
+        previousExecutedTransactions.stream()
+            .flatMap(t -> t.notarizedTransactionHash().stream())
+            .collect(Collectors.toSet());
+
+    final var rawPreviousExecutedTransactionsSize =
+        previousExecutedTransactions.stream()
+            .map(tx -> tx.transaction().payloadLength())
             .reduce(0, Integer::sum);
+
     final var remainingSizeInUncommittedVertices =
-        maxUncommittedUserTransactionsTotalPayloadSize - rawPreviousExecutedTransactionsTotalSize;
+        maxUncommittedTotalPayloadSize - rawPreviousExecutedTransactionsSize;
 
     final var maxPayloadSize =
         Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
@@ -212,11 +206,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     final var result =
         maxPayloadSize > 0 && maxNumTransactionsPerProposal > 0
             ? mempool.getTransactionsForProposal(
-                maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions)
-            : List.<RawNotarizedTransaction>of();
+                maxNumTransactionsPerProposal, maxPayloadSize, previousTransactionHashes)
+            : List.<PreparedNotarizedTransaction>of();
 
     final var resultTotalTxnPayloadSize =
-        result.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);
+        result.stream().map(tx -> tx.raw().length).reduce(0, Integer::sum);
 
     final var totalUncommittedTxnBytesIncludingThisProposal =
         resultTotalTxnPayloadSize + rawPreviousExecutedTransactionsTotalSize;
@@ -268,27 +262,19 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =
         result.committed().stream()
-            .map(RawLedgerTransaction::create)
             .map(REv2ExecutedTransaction::new)
             .map(StateComputerLedger.ExecutedTransaction.class::cast)
             .collect(Collectors.toList());
-    var rejectedTransactions =
-        result.rejected().stream()
-            .collect(
-                Collectors.toMap(
-                    r -> RawNotarizedTransaction.create(r.first()),
-                    r -> (Exception) new InvalidREv2Transaction(r.last())));
+    var rejectedTransactionsCount = result.rejected().size();
 
-    rejectedTransactions.forEach(
-        (rejected, exception) ->
-            consensusByzantineEventEventDispatcher.dispatch(
-                new ConsensusByzantineEvent.InvalidProposedTransaction(
-                    roundDetails, rejected, exception)));
+    // TODO - Some time post Babylon mainnet launch we can consider adding a metric to monitor
+    // number of rejected
+    // transactions per-proposer
 
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
     var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions, nextEpoch, ledgerHashes);
+        committableTransactions, rejectedTransactionsCount, nextEpoch, ledgerHashes);
   }
 
   @Override

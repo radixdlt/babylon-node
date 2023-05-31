@@ -90,6 +90,8 @@ import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.io.File;
 
@@ -292,7 +294,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         });
 
     if (mempoolConfig.isPresent()) {
-      bind(new Key<MempoolReader<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(new Key<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {})
+          .to(RustMempool.class);
       bind(new Key<MempoolInserter<RawNotarizedTransaction>>() {}).to(RustMempool.class);
       bind(MempoolReevaluator.class).to(RustMempool.class);
     }

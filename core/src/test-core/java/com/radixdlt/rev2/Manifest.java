@@ -69,10 +69,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Functions;
 
-/**
- * Used for creating various manifests - designed to work well with the
- * TransactionBuilder
- */
+/** Used for creating various manifests - designed to work well with the TransactionBuilder */
 public class Manifest {
   public record Parameters(NetworkDefinition network) {
     public String faucetLockFeeLine() {

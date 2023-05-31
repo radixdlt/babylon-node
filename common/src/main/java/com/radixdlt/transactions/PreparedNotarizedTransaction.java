@@ -64,19 +64,17 @@
 
 package com.radixdlt.transactions;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
 public record PreparedNotarizedTransaction(
-    byte[] notarizedTransactionBytes,
-    HashCode intentHash,
-    HashCode signedIntentHash,
-    HashCode notarizedTransactionHash) {
+    RawNotarizedTransaction raw,
+    IntentHash intentHash,
+    SignedIntentHash signedIntentHash,
+    NotarizedTransactionHash notarizedTransactionHash) {
   public PreparedNotarizedTransaction {
-    Objects.requireNonNull(notarizedTransactionBytes);
+    Objects.requireNonNull(raw);
     Objects.requireNonNull(intentHash);
     Objects.requireNonNull(signedIntentHash);
     Objects.requireNonNull(notarizedTransactionHash);
@@ -109,24 +107,24 @@ public record PreparedNotarizedTransaction(
         this.getClass().getSimpleName(), this.hexNotarizedTransactionHash());
   }
 
-  public byte[] getPayload() {
-    return notarizedTransactionBytes;
-  }
-
   public String hexIntentHash() {
-    return Bytes.toHexString(this.intentHash.asBytes());
+    return this.intentHash.hex();
   }
 
   public String hexNotarizedTransactionHash() {
-    return Bytes.toHexString(this.intentHash.asBytes());
+    return this.notarizedTransactionHash.hex();
   }
 
   public String hexPayloadBytes() {
-    return Bytes.toHexString(this.notarizedTransactionBytes);
+    return this.raw.hex();
+  }
+
+  public byte[] payloadBytes() {
+    return this.raw().payload();
   }
 
   public RawNotarizedTransaction toRaw() {
-    return RawNotarizedTransaction.create(this.notarizedTransactionBytes);
+    return raw;
   }
 
   /*
@@ -134,6 +132,6 @@ public record PreparedNotarizedTransaction(
    * TODO - this should ideally be removed
    */
   public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
-    return RawLedgerTransaction.create(getPayload());
+    return RawLedgerTransaction.create(payloadBytes());
   }
 }
