@@ -79,7 +79,7 @@ jobs:
         run: |
           docker buildx imagetools create -t docker.io/radixdlt/private-babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
             docker.io/radixdlt/private-babylon-node:${{ fromJSON(needs.build_push_container_private.outputs.json).labels['org.opencontainers.image.version'] }} 
-            docker.io/radixdlt/private-babylon-node:${{ fromJSON(needs.build_push_container_private_arm.outputs.json).labels['org.opencontainers.image.version'] }}
+            # docker.io/radixdlt/private-babylon-node:${{ fromJSON(needs.build_push_container_private_arm.outputs.json).labels['org.opencontainers.image.version'] }}
 
   join_multiarch_image_dockerhub:
     permissions:
