@@ -12,22 +12,30 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateEpochResponse {
-    /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
-    #[serde(rename = "epoch_manager")]
-    pub epoch_manager: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct StateConsensusManagerResponse {
+    #[serde(rename = "config")]
+    pub config: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "state")]
+    pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "current_proposal_statistic")]
+    pub current_proposal_statistic: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "current_validator_set")]
     pub current_validator_set: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "current_time")]
+    pub current_time: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "current_time_rounded_to_minutes")]
+    pub current_time_rounded_to_minutes: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl StateEpochResponse {
-    pub fn new(epoch: i64, epoch_manager: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate) -> StateEpochResponse {
-        StateEpochResponse {
-            epoch,
-            epoch_manager: Option::Some(epoch_manager),
+impl StateConsensusManagerResponse {
+    pub fn new(config: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, current_proposal_statistic: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate, current_time: crate::core_api::generated::models::Substate, current_time_rounded_to_minutes: crate::core_api::generated::models::Substate) -> StateConsensusManagerResponse {
+        StateConsensusManagerResponse {
+            config: Option::Some(config),
+            state: Option::Some(state),
+            current_proposal_statistic: Option::Some(current_proposal_statistic),
             current_validator_set: Option::Some(current_validator_set),
+            current_time: Option::Some(current_time),
+            current_time_rounded_to_minutes: Option::Some(current_time_rounded_to_minutes),
         }
     }
 }

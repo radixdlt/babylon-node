@@ -164,7 +164,7 @@ pub fn to_api_substate(
 }
 
 pub fn to_api_account_state_substate(
-    context: &MappingContext,
+    _context: &MappingContext,
     substate: &AccountSubstate,
 ) -> Result<models::Substate, MappingError> {
     let AccountSubstate {
@@ -185,7 +185,7 @@ pub fn to_api_account_vault_entry(
     vault: &Option<Own>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(resource_address)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: format!("Account Vault Key") });
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Account Vault Key".to_string() });
     };
     Ok(models::Substate::AccountVaultIndexEntrySubstate {
         resource_address: to_api_resource_address(context, resource_address)?,
@@ -202,7 +202,7 @@ pub fn to_api_account_deposit_rule_entry(
     substate: &Option<ResourceDepositRule>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(resource_address)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: format!("Account Deposit Rule Key") });
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
     };
     Ok(models::Substate::AccountDepositRuleIndexEntrySubstate {
         resource_address: to_api_resource_address(context, resource_address)?,
@@ -273,7 +273,7 @@ pub fn to_api_current_validator_set_substate(
 }
 
 pub fn to_api_current_proposal_statistic_substate(
-    context: &MappingContext,
+    _context: &MappingContext,
     substate: &CurrentProposalStatisticSubstate,
 ) -> Result<models::Substate, MappingError> {
     let CurrentProposalStatisticSubstate {
@@ -1185,7 +1185,7 @@ pub fn to_api_validator_substate(
             pending_owner_stake_unit_unlock_vault_id.as_node_id(),
         )?),
         pending_owner_stake_unit_withdrawals: pending_owner_stake_unit_withdrawals
-            .into_iter()
+            .iter()
             .map(|(epoch, amount)| -> Result<_, _> {
                 Ok(models::PendingOwnerStakeWithdrawal {
                     epoch_unlocked: to_api_epoch(context, *epoch)?,

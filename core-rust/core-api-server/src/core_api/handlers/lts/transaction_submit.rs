@@ -3,6 +3,7 @@ use crate::core_api::*;
 use hyper::StatusCode;
 use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
+use transaction::prelude::RawNotarizedTransaction;
 
 #[tracing::instrument(level = "debug", skip(state))]
 pub(crate) async fn handle_lts_transaction_submit(
@@ -15,16 +16,20 @@ pub(crate) async fn handle_lts_transaction_submit(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
 
-    let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
-        .map_err(|err| err.into_response_error("notarized_transaction"))?;
+    let transaction_bytes = from_hex(&request.notarized_transaction_hex)
+        .map_err(|err| err.into_response_error("notarized_transaction_hex"))?;
 
-    let result = state
-        .mempool_manager
-        .add_and_trigger_relay(MempoolAddSource::CoreApi, notarized_transaction);
+    let force_recalculate = request.force_recalculate.unwrap_or(false);
+
+    let result = state.mempool_manager.add_and_trigger_relay(
+        MempoolAddSource::CoreApi,
+        RawNotarizedTransaction(transaction_bytes),
+        force_recalculate,
+    );
 
     match result {
         Ok(_) => Ok(models::LtsTransactionSubmitResponse::new(false)),
-        Err(MempoolAddError::Duplicate) => Ok(models::LtsTransactionSubmitResponse::new(true)),
+        Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Full { max_size, .. }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Mempool is full",
@@ -64,10 +69,10 @@ pub(crate) async fn handle_lts_transaction_submit(
                 invalid_from_epoch: if rejection.is_permanent_for_payload() {
                     None
                 } else {
-                    Some(to_api_epoch(
-                        &mapping_context,
-                        rejection.invalid_from_epoch,
-                    )?)
+                    rejection
+                        .invalid_from_epoch
+                        .map(|epoch| to_api_epoch(&mapping_context, epoch))
+                        .transpose()?
                 },
             },
         )),

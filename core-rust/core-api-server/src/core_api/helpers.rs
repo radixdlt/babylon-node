@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 
 use radix_engine_interface::api::CollectionIndex;
-use radix_engine_queries::typed_substate_layout::AccountVaultIndexEntry;
 use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
 use std::io::Write;
@@ -79,20 +78,6 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
         .at_offset(PartitionOffset(1 + collection_index))
         .unwrap();
     database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_account_vault_substate(
-    database: &StateManagerDatabase,
-    node_id: &NodeId,
-    substate_key: &SubstateKey,
-) -> Option<AccountVaultIndexEntry> {
-    // Note - there is no tuple at present, so the account vault collection is at OBJECT_BASE_PARTITION
-    database.get_mapped::<SpreadPrefixKeyMapper, AccountVaultIndexEntry>(
-        node_id,
-        OBJECT_BASE_PARTITION,
-        substate_key,
-    )
 }
 
 #[tracing::instrument(skip_all)]

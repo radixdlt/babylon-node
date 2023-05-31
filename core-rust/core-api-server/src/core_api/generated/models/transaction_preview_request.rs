@@ -31,17 +31,14 @@ pub struct TransactionPreviewRequest {
     #[serde(rename = "notary_public_key", skip_serializing_if = "Option::is_none")]
     pub notary_public_key: Option<Box<crate::core_api::generated::models::PublicKey>>,
     /// Whether the notary should count as a signatory (optional, default false)
-    #[serde(rename = "notary_as_signatory", skip_serializing_if = "Option::is_none")]
-    pub notary_as_signatory: Option<bool>,
-    /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
-    #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: i64,
+    #[serde(rename = "notary_is_signatory", skip_serializing_if = "Option::is_none")]
+    pub notary_is_signatory: Option<bool>,
     /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
-    /// A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
+    /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
     #[serde(rename = "nonce")]
-    pub nonce: String,
+    pub nonce: i64,
     /// A list of public keys to be used as transaction signers
     #[serde(rename = "signer_public_keys")]
     pub signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>,
@@ -50,7 +47,7 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, cost_unit_limit: i64, tip_percentage: i32, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,
@@ -58,8 +55,7 @@ impl TransactionPreviewRequest {
             start_epoch_inclusive,
             end_epoch_exclusive,
             notary_public_key: None,
-            notary_as_signatory: None,
-            cost_unit_limit,
+            notary_is_signatory: None,
             tip_percentage,
             nonce,
             signer_public_keys,

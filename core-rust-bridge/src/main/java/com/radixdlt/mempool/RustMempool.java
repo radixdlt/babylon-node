@@ -120,7 +120,9 @@ public class RustMempool
             fullStatus.currentSize().toNonNegativeLong().unwrap(),
             fullStatus.maxSize().toNonNegativeLong().unwrap());
         case MempoolError.Duplicate e -> throw new MempoolDuplicateException(
-            String.format("Mempool already has transaction with notarized hash %s", e.notarizedTransactionHash()));
+            String.format(
+                "Mempool already has transaction with notarized hash %s",
+                e.notarizedTransactionHash()));
         case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
             e.errorDescription());
         case MempoolError.Rejected rejected -> throw new MempoolRejectedException(

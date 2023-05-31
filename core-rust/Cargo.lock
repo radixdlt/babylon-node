@@ -1058,7 +1058,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1391,7 +1391,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "bitflags",
  "colored",
@@ -1418,7 +1418,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "bech32",
  "blake2",
@@ -1440,12 +1440,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -1474,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-queries"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "hex",
  "itertools",
@@ -1490,7 +1490,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-store-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "hex",
  "itertools",
@@ -1503,7 +1503,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "hex",
  "itertools",
@@ -1517,7 +1517,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "fixedstr",
 ]
@@ -1638,7 +1638,7 @@ checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
 [[package]]
 name = "resources-tracker-macro"
 version = "0.1.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1709,7 +1709,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1723,7 +1723,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1732,7 +1732,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1759,7 +1759,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto-schema"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "bitflags",
  "radix-engine-common",
@@ -2233,7 +2233,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2282,7 +2282,7 @@ checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
 [[package]]
 name = "utils"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-d988ac200#d988ac200ac6db9e19722b31acbe01a517c62831"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=birch-dc22cb802#dc22cb8021aa824e8d0da53fead1eafc8d81442f"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

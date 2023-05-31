@@ -78,7 +78,6 @@ import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.PreparedIntent;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.PreparedSignedIntent;
-
 import java.util.List;
 
 public final class TransactionPreparer {
@@ -97,47 +96,55 @@ public final class TransactionPreparer {
   private static final Natives.Call1<
           Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
           Result<PreparedIntent, String>>
-          prepareIntentFunc =
+      prepareIntentFunc =
           Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
 
   public static PreparedSignedIntent prepareSignedIntent(
       byte[] intent, List<SignatureWithPublicKey> signatures) {
 
-    return prepareSignedIntentBytesFunc.call(tuple(intent, signatures))
-            .unwrap(TransactionPreparationException::new);
+    return prepareSignedIntentBytesFunc
+        .call(tuple(intent, signatures))
+        .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
-          prepareSignedIntentBytesFunc =
+  private static final Natives.Call1<
+          Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
+      prepareSignedIntentBytesFunc =
           Natives.builder(TransactionPreparer::prepareSignedIntent).build(new TypeToken<>() {});
 
-  public static PreparedNotarizedTransaction prepareNotarizedTransaction(byte[] signedIntent, Signature signature) {
-    return prepareNotarizedTransactionFunc.call(tuple(signedIntent, signature))
-            .unwrap(TransactionPreparationException::new);
+  public static PreparedNotarizedTransaction prepareNotarizedTransaction(
+      byte[] signedIntent, Signature signature) {
+    return prepareNotarizedTransactionFunc
+        .call(tuple(signedIntent, signature))
+        .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<Tuple.Tuple2<byte[], Signature>, Result<PreparedNotarizedTransaction, String>>
-          prepareNotarizedTransactionFunc =
-          Natives.builder(TransactionPreparer::prepareNotarizedTransaction).build(new TypeToken<>() {});
+  private static final Natives.Call1<
+          Tuple.Tuple2<byte[], Signature>, Result<PreparedNotarizedTransaction, String>>
+      prepareNotarizedTransactionFunc =
+          Natives.builder(TransactionPreparer::prepareNotarizedTransaction)
+              .build(new TypeToken<>() {});
 
   public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
-    return userTransactionToLedger.call(userTransactionBytes)
-            .unwrap(TransactionPreparationException::new);
+    return userTransactionToLedger
+        .call(userTransactionBytes)
+        .unwrap(TransactionPreparationException::new);
   }
 
   private static final Natives.Call1<byte[], Result<byte[], String>> userTransactionToLedger =
-          Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
+      Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
 
   public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
-          byte[] transactionBytes) {
-    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes)
-            .unwrap(TransactionPreparationException::new);
+      byte[] transactionBytes) {
+    return transactionBytesToNotarizedTransactionBytesFn
+        .call(transactionBytes)
+        .unwrap(TransactionPreparationException::new);
   }
 
   private static final Natives.Call1<byte[], Result<Option<byte[]>, String>>
-          transactionBytesToNotarizedTransactionBytesFn =
+      transactionBytesToNotarizedTransactionBytesFn =
           Natives.builder(TransactionPreparer::transactionBytesToNotarizedTransactionBytes)
-                  .build(new TypeToken<>() {});
+              .build(new TypeToken<>() {});
 
   private static native byte[] prepareIntent(byte[] requestPayload);
 

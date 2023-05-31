@@ -22,54 +22,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TransactionManifest;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ParsedTransactionManifestAllOf
+ * StateConsensusManagerRequest
  */
 @JsonPropertyOrder({
-  ParsedTransactionManifestAllOf.JSON_PROPERTY_MANIFEST
+  StateConsensusManagerRequest.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ParsedTransactionManifestAllOf {
-  public static final String JSON_PROPERTY_MANIFEST = "manifest";
-  private TransactionManifest manifest;
+public class StateConsensusManagerRequest {
+  public static final String JSON_PROPERTY_NETWORK = "network";
+  private String network;
 
-  public ParsedTransactionManifestAllOf() { 
+  public StateConsensusManagerRequest() { 
   }
 
-  public ParsedTransactionManifestAllOf manifest(TransactionManifest manifest) {
-    this.manifest = manifest;
+  public StateConsensusManagerRequest network(String network) {
+    this.network = network;
     return this;
   }
 
    /**
-   * Get manifest
-   * @return manifest
+   * The logical name of the network
+   * @return network
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_MANIFEST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
+  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionManifest getManifest() {
-    return manifest;
+  public String getNetwork() {
+    return network;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MANIFEST)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setManifest(TransactionManifest manifest) {
-    this.manifest = manifest;
+  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNetwork(String network) {
+    this.network = network;
   }
 
 
   /**
-   * Return true if this ParsedTransactionManifest_allOf object is equal to o.
+   * Return true if this StateConsensusManagerRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +78,20 @@ public class ParsedTransactionManifestAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ParsedTransactionManifestAllOf parsedTransactionManifestAllOf = (ParsedTransactionManifestAllOf) o;
-    return Objects.equals(this.manifest, parsedTransactionManifestAllOf.manifest);
+    StateConsensusManagerRequest stateConsensusManagerRequest = (StateConsensusManagerRequest) o;
+    return Objects.equals(this.network, stateConsensusManagerRequest.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manifest);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ParsedTransactionManifestAllOf {\n");
-    sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
+    sb.append("class StateConsensusManagerRequest {\n");
+    sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("}");
     return sb.toString();
   }

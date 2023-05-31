@@ -2,13 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
 
-use state_manager::{
-    DetailedTransactionOutcome, HasUserPayloadHash, RejectionReason, UserPayloadHash,
-};
+use state_manager::{DetailedTransactionOutcome, RejectionReason};
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
+use transaction::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_transaction_status(
@@ -33,7 +32,7 @@ pub(crate) async fn handle_lts_transaction_status(
         return Err(client_error(
             "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
             To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
-            Please note the resync will take awhile.",
+            Please note the resync will take a while.",
         ));
     }
 
@@ -42,8 +41,8 @@ pub(crate) async fn handle_lts_transaction_status(
 
     let invalid_from_epoch = known_pending_payloads
         .iter()
-        .next()
-        .map(|p| p.1.intent_invalid_from_epoch);
+        .filter_map(|p| p.1.intent_invalid_from_epoch)
+        .next();
 
     let intent_is_permanently_rejected = invalid_from_epoch.map_or(false, |invalid_from_epoch| {
         current_epoch >= invalid_from_epoch
@@ -54,9 +53,11 @@ pub(crate) async fn handle_lts_transaction_status(
     });
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let txn = database
-            .get_committed_transaction(txn_state_version)
-            .expect("Txn is missing");
+        let identifiers = database
+            .get_committed_transaction_identifiers(txn_state_version)
+            .expect("Txn identifiers are missing")
+            .payload
+            .typed;
 
         let local_detailed_outcome = database
             .get_committed_local_transaction_execution(txn_state_version)
@@ -64,13 +65,12 @@ pub(crate) async fn handle_lts_transaction_status(
             .outcome;
         drop(database);
 
-        let payload_hash = txn
+        let user_identifiers = identifiers
             .user()
-            .expect("Only user transactions should be able to be looked up by intent hash")
-            .user_payload_hash();
+            .expect("Only user transactions should be able to be looked up by intent hash");
 
         // Remove the committed payload from the rejection list if it's present
-        known_pending_payloads.remove(&payload_hash);
+        known_pending_payloads.remove(user_identifiers.notarized_transaction_hash);
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
@@ -88,7 +88,9 @@ pub(crate) async fn handle_lts_transaction_status(
         };
 
         let committed_payload = models::LtsTransactionPayloadDetails {
-            payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+            payload_hash: to_api_notarized_transaction_hash(
+                user_identifiers.notarized_transaction_hash,
+            ),
             status: payload_status,
             error_message,
         };
@@ -183,7 +185,7 @@ pub(crate) async fn handle_lts_transaction_status(
 }
 
 fn map_rejected_payloads_due_to_known_commit(
-    known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
+    known_rejected_payloads: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
 ) -> Vec<models::LtsTransactionPayloadDetails> {
     known_rejected_payloads
         .into_iter()
@@ -201,7 +203,7 @@ fn map_rejected_payloads_due_to_known_commit(
 }
 
 fn map_pending_payloads_not_in_mempool(
-    known_payloads_not_in_mempool: HashMap<UserPayloadHash, PendingTransactionRecord>,
+    known_payloads_not_in_mempool: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
 ) -> Vec<models::LtsTransactionPayloadDetails> {
     known_payloads_not_in_mempool
         .into_iter()

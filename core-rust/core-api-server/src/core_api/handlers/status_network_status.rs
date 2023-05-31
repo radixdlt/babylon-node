@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::QueryableTransactionStore;
-use state_manager::CommittedTransactionIdentifiers;
+use state_manager::CommitBasedIdentifiers;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -15,21 +15,21 @@ pub(crate) async fn handle_status_network_status(
         post_genesis_state_identifier: database
             .get_committed_transaction_identifiers(1)
             .map(|identifiers| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_committed_state_identifier(identifiers)?))
+                Ok(Box::new(to_api_state_identifiers(identifiers.at_commit)?))
             })
             .transpose()?,
-        current_state_identifier: Box::new(to_api_committed_state_identifier(
-            database.get_top_transaction_identifiers(),
+        current_state_identifier: Box::new(to_api_state_identifiers(
+            database.get_top_commit_identifiers(),
         )?),
-        pre_genesis_state_identifier: Box::new(to_api_committed_state_identifier(
-            CommittedTransactionIdentifiers::pre_genesis(),
+        pre_genesis_state_identifier: Box::new(to_api_state_identifiers(
+            CommitBasedIdentifiers::pre_genesis(),
         )?),
     })
     .map(Json)
 }
 
-pub fn to_api_committed_state_identifier(
-    identifiers: CommittedTransactionIdentifiers,
+pub fn to_api_state_identifiers(
+    identifiers: CommitBasedIdentifiers,
 ) -> Result<models::CommittedStateIdentifier, MappingError> {
     Ok(models::CommittedStateIdentifier {
         state_version: to_api_state_version(identifiers.state_version)?,

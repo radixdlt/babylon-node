@@ -3,8 +3,8 @@ use radix_engine::{
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, RADIX_TOKEN},
 };
 use state_manager::{
-    transaction::LedgerTransaction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
-    LocalTransactionReceipt, SubstateChange,
+    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
+    SubstateChange,
 };
 use transaction::prelude::*;
 
@@ -13,7 +13,6 @@ use crate::core_api::*;
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
     context: &MappingContext,
-    transaction: LedgerTransaction,
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {
@@ -31,9 +30,9 @@ pub fn to_api_lts_committed_transaction_outcome(
         accumulator_hash: to_api_accumulator_hash(&identifiers.at_commit.accumulator_hash),
         user_transaction_identifiers: identifiers.payload.typed.user().map(|hashes| {
             Box::new(models::TransactionIdentifiers {
-                intent_hash: to_api_intent_hash(&hashes.0),
-                signed_intent_hash: to_api_signed_intent_hash(&hashes.1),
-                payload_hash: to_api_notarized_transaction_hash(&hashes.2),
+                intent_hash: to_api_intent_hash(hashes.intent_hash),
+                signed_intent_hash: to_api_signed_intent_hash(hashes.signed_intent_hash),
+                payload_hash: to_api_notarized_transaction_hash(hashes.notarized_transaction_hash),
             })
         }),
         status,

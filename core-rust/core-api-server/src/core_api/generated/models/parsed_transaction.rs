@@ -43,11 +43,6 @@ pub enum ParsedTransaction {
         #[serde(rename = "identifiers")]
         identifiers: Box<crate::core_api::generated::models::ParsedTransactionIntentAllOfIdentifiers>,
     },
-    #[serde(rename="TransactionManifest")]
-    ParsedTransactionManifest {
-        #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
-        manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
-    },
 }
 
 

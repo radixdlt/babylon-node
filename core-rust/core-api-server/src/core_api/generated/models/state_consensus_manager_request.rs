@@ -12,15 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StateClockResponse {
-    #[serde(rename = "current_minute")]
-    pub current_minute: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct StateConsensusManagerRequest {
+    /// The logical name of the network
+    #[serde(rename = "network")]
+    pub network: String,
 }
 
-impl StateClockResponse {
-    pub fn new(current_minute: crate::core_api::generated::models::Substate) -> StateClockResponse {
-        StateClockResponse {
-            current_minute: Option::Some(current_minute),
+impl StateConsensusManagerRequest {
+    pub fn new(network: String) -> StateConsensusManagerRequest {
+        StateConsensusManagerRequest {
+            network,
         }
     }
 }

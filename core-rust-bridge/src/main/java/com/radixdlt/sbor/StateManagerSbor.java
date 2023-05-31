@@ -184,8 +184,6 @@ public final class StateManagerSbor {
         HashCode.class,
         codecs ->
             StructCodec.transparent(
-                HashCode::fromBytes,
-                codecs.of(byte[].class),
-                HashCode::asBytes));
+                HashCode::fromBytes, codecs.of(byte[].class), HashCode::asBytes));
   }
 }

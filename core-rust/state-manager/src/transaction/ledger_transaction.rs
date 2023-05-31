@@ -32,14 +32,25 @@ pub enum TypedTransactionIdentifiers {
     },
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserTransactionIdentifiers<'a> {
+    pub intent_hash: &'a IntentHash,
+    pub signed_intent_hash: &'a SignedIntentHash,
+    pub notarized_transaction_hash: &'a NotarizedTransactionHash,
+}
+
 impl TypedTransactionIdentifiers {
-    pub fn user(&self) -> Option<(&IntentHash, &SignedIntentHash, &NotarizedTransactionHash)> {
+    pub fn user(&self) -> Option<UserTransactionIdentifiers> {
         match self {
             TypedTransactionIdentifiers::User {
                 intent_hash,
                 signed_intent_hash,
                 notarized_transaction_hash,
-            } => Some((intent_hash, signed_intent_hash, notarized_transaction_hash)),
+            } => Some(UserTransactionIdentifiers {
+                intent_hash,
+                signed_intent_hash,
+                notarized_transaction_hash,
+            }),
             _ => None,
         }
     }
@@ -148,10 +159,25 @@ impl HasSummary for PreparedLedgerTransaction {
     }
 }
 
+#[derive(BasicCategorize)]
 pub enum PreparedLedgerTransactionInner {
     Genesis(Box<PreparedSystemTransactionV1>),
     UserV1(Box<PreparedNotarizedTransactionV1>),
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
+}
+
+impl PreparedLedgerTransactionInner {
+    pub fn get_ledger_hash(&self) -> LedgerPayloadHash {
+        let hash = HashAccumulator::new()
+            .update([
+                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                TransactionDiscriminator::V1Ledger as u8,
+            ])
+            .update([self.get_discriminator()])
+            .update(self.get_summary().hash.as_slice())
+            .finalize();
+        LedgerPayloadHash::from_hash(hash)
+    }
 }
 
 impl HasSummary for PreparedLedgerTransactionInner {
@@ -209,19 +235,10 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
             }
         };
 
-        let ledger_payload_hash = HashAccumulator::new()
-            .update([
-                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1Ledger as u8,
-            ])
-            .update([discriminator])
-            .update(prepared_inner.get_summary().hash.as_slice())
-            .finalize();
-
         let summary = Summary {
             effective_length: prepared_inner.get_summary().effective_length,
             total_bytes_hashed: prepared_inner.get_summary().total_bytes_hashed,
-            hash: ledger_payload_hash,
+            hash: prepared_inner.get_ledger_hash().0,
         };
 
         decoder.track_stack_depth_decrease()?;

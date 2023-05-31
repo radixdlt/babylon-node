@@ -65,18 +65,13 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 
-import java.util.List;
-
 public record RejectedTransaction(
-        UInt32 index,
-        Tuple.Tuple3<HashCode, HashCode, HashCode> hashes,
-        String error) {
+    UInt32 index, Tuple.Tuple3<HashCode, HashCode, HashCode> hashes, String error) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         RejectedTransaction.class,

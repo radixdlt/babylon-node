@@ -169,8 +169,10 @@ where
         // Stream Sub-API
         .route("/stream/transactions", post(handle_stream_transactions))
         // State Sub-API
-        .route("/state/epoch", post(handle_state_epoch))
-        .route("/state/clock", post(handle_state_clock))
+        .route(
+            "/state/consensus-manager",
+            post(handle_state_consensus_manager),
+        )
         .route("/state/account", post(handle_state_account))
         .route("/state/component", post(handle_state_component))
         .route("/state/validator", post(handle_state_validator))

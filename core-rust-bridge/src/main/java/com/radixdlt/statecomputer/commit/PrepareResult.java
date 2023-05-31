@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;

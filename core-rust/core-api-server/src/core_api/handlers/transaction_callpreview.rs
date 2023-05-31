@@ -9,14 +9,13 @@ use radix_engine::{
     types::Decimal,
 };
 
-use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::constants::FAUCET;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::{
     blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
 };
 use state_manager::PreviewRequest;
-use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
+use transaction::prelude::*;
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
@@ -57,7 +56,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            Instruction::CallFunction {
+            InstructionV1::CallFunction {
                 blueprint_name,
                 function_name,
                 package_address,
@@ -72,8 +71,8 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            Instruction::CallMethod {
-                component_address,
+            InstructionV1::CallMethod {
+                address: component_address.into(),
                 method_name,
                 args: args_from_bytes_vec!(args),
             }
@@ -83,21 +82,20 @@ pub(crate) async fn handle_transaction_callpreview(
     let result = state
         .transaction_previewer
         .preview(PreviewRequest {
-            manifest: TransactionManifest {
+            manifest: TransactionManifestV1 {
                 instructions: vec![
-                    Instruction::CallMethod {
-                        component_address: FAUCET,
+                    InstructionV1::CallMethod {
+                        address: FAUCET.into(),
                         method_name: "lock_fee".to_string(),
                         args: manifest_args!(Decimal::from(100u32)),
                     },
                     requested_call,
                 ],
-                blobs: vec![],
+                blobs: btreemap!(),
             },
             explicit_epoch_range: None,
             notary_public_key: None,
             notary_is_signatory: true,
-            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             tip_percentage: 0,
             nonce: 490,
             signer_public_keys: vec![],

@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 
-use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::system::node_modules::access_rules::*;
 use state_manager::query::dump_component_state;
 use std::ops::Deref;

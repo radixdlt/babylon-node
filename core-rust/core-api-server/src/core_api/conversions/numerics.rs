@@ -85,6 +85,7 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
 
+#[allow(dead_code)]
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
 }
@@ -157,6 +158,7 @@ pub fn extract_api_epoch(epoch: i64) -> Result<u64, ExtractionError> {
     Ok(epoch)
 }
 
+#[allow(dead_code)]
 pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()

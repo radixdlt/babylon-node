@@ -322,19 +322,17 @@ where
         let mut intent_hash_potential_conflicts =
             HashMap::<IntentHash, IntentHashDuplicateWith>::new();
 
-        for proposed_result in prepared_proposed_results.iter() {
-            if let Ok((_, prepared)) = proposed_result {
-                let intent_hash = prepared
-                    .as_user()
-                    .expect("Proposed was created from user")
-                    .intent_hash();
-                if read_store
-                    .get_txn_state_version_by_identifier(&intent_hash)
-                    .is_some()
-                {
-                    intent_hash_potential_conflicts
-                        .insert(intent_hash, IntentHashDuplicateWith::Committed);
-                }
+        for (_, prepared) in prepared_proposed_results.iter().flatten() {
+            let intent_hash = prepared
+                .as_user()
+                .expect("Proposed was created from user")
+                .intent_hash();
+            if read_store
+                .get_txn_state_version_by_identifier(&intent_hash)
+                .is_some()
+            {
+                intent_hash_potential_conflicts
+                    .insert(intent_hash, IntentHashDuplicateWith::Committed);
             }
         }
 

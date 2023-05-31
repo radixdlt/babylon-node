@@ -769,11 +769,11 @@ paths:
 #################
 # State Sub-API #
 #################
-  "/state/epoch":
+  "/state/consensus-manager":
     post:
-      summary: Get Epoch Details
+      summary: Get Consensus Manager Details
       description: |
-        Reads the epoch manager's substate/s from the top of the current ledger.
+        Reads the consensus manager's substate/s from the top of the current ledger.
       tags:
         - State
       requestBody:
@@ -781,46 +781,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StateEpochRequest"
+              $ref: "#/components/schemas/StateConsensusManagerRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StateEpochResponse"
-        '400':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
-  "/state/clock":
-    post:
-      summary: Get Clock Details
-      description: |
-        Reads the clock's substate/s from the top of the current ledger.
-      tags:
-        - State
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StateClockRequest"
-      responses:
-        '200':
-          description: Current state response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StateClockResponse"
+                $ref: "#/components/schemas/StateConsensusManagerResponse"
         '400':
           description: Client error
           content:
@@ -1235,33 +1203,31 @@ components:
       required:
         - hash
         - header
-        - manifest
-        - blobs_hex
       properties:
         hash:
           $ref: "#/components/schemas/IntentHash"
         header:
           $ref: "#/components/schemas/TransactionHeader"
-        manifest:
-          $ref: "#/components/schemas/TransactionManifest"
+        instructions:
+          type: string
+          description: The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+        blobs_hex:
+          type: object
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+          additionalProperties:
+            type: string
+            description: The hex-encoded blob content
     TransactionHeader:
       type: object
       required:
-        - version
         - network_id
         - start_epoch_inclusive
         - end_epoch_exclusive
         - nonce
         - notary_public_key
-        - notary_as_signatory
-        - cost_unit_limit
+        - notary_is_signatory
         - tip_percentage
       properties:
-        version:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 255
         network_id:
           $ref: "#/components/schemas/NetworkIdentifierByte"
         start_epoch_inclusive:
@@ -1281,37 +1247,23 @@ components:
             An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected.
             In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
         nonce:
-          type: string
-          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
-        notary_public_key:
-          $ref: "#/components/schemas/PublicKey"
-        notary_as_signatory:
-          type: boolean
-          description: Specifies whether the notary's signature should be included in transaction signers list
-        cost_unit_limit:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
+          description: |
+            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+        notary_public_key:
+          $ref: "#/components/schemas/PublicKey"
+        notary_is_signatory:
+          type: boolean
+          description: Specifies whether the notary public key should be included in the transaction signers list
         tip_percentage:
           type: integer
           format: int32
           minimum: 0
           maximum: 255
           description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-    TransactionManifest:
-      type: object
-      properties:
-        instructions:
-          type: string
-          description: The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
-        blobs_hex:
-          type: object
-          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
-          additionalProperties:
-            type: string
-            description: The hex-encoded blob content
     NetworkIdentifierByte:
       description: The logical id of the network
       type: integer
@@ -3569,6 +3521,9 @@ components:
         notarized_transaction_hex:
           description: A hex-encoded, compiled notarized transaction.
           type: string
+        force_recalculate:
+          description: If true, the transaction validity is freshly recalculated without using any caches (defaults false)
+          type: boolean
     LtsTransactionSubmitResponse:
       type: object
       required:
@@ -4045,8 +4000,7 @@ components:
             - resource_package
             - account_package
             - identity_package
-            - epoch_manager_package
-            - clock_package
+            - consensus_manager_package
             - access_controller_package
             - transaction_processor_package
             - metadata_module_package
@@ -4054,8 +4008,7 @@ components:
             - access_rules_package
             - genesis_helper_package
             - faucet_package
-            - epoch_manager
-            - clock
+            - consensus_manager
             - genesis_helper
             - faucet
           properties:
@@ -4087,9 +4040,7 @@ components:
               type: string
             identity_package:
               type: string
-            epoch_manager_package:
-              type: string
-            clock_package:
+            consensus_manager_package:
               type: string
             access_controller_package:
               type: string
@@ -4105,9 +4056,7 @@ components:
               type: string
             faucet_package:
               type: string
-            epoch_manager:
-              type: string
-            clock:
+            consensus_manager:
               type: string
             genesis_helper:
               type: string
@@ -4207,10 +4156,11 @@ components:
     MempoolTransactionResponse:
       type: object
       required:
-        - notarized_transaction
+        - payload_hex
       properties:
-        notarized_transaction:
-          $ref: "#/components/schemas/NotarizedTransaction"
+        payload_hex:
+          type: string
+          description: The hex-encoded full notarized transaction payload.
 ###############################
 # REQUEST: /transaction/parse #
 ###############################
@@ -4226,7 +4176,7 @@ components:
           type: string
           description: |
             A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction,
-            a signed transaction intent an unsigned transaction intent, or a transaction manifest.
+            a signed transaction intent an unsigned transaction intent, or a ledger payload.
         parse_mode:
           type: string
           enum:
@@ -4234,11 +4184,10 @@ components:
             - Notarized
             - Signed
             - Unsigned
-            - Manifest
             - Ledger
           description: |
             The type of transaction payload that should be assumed. If omitted, "Any" is used - where the payload is
-            attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger.
+            attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger.
         validation_mode:
           type: string
           enum:
@@ -4275,7 +4224,6 @@ components:
         - NotarizedTransaction
         - SignedTransactionIntent
         - TransactionIntent
-        - TransactionManifest
         - LedgerTransaction
     ParsedTransaction:
       type: object
@@ -4291,7 +4239,6 @@ components:
           NotarizedTransaction: '#/components/schemas/ParsedNotarizedTransaction'
           SignedTransactionIntent: '#/components/schemas/ParsedSignedTransactionIntent'
           TransactionIntent: '#/components/schemas/ParsedTransactionIntent'
-          TransactionManifest: '#/components/schemas/ParsedTransactionManifest'
           LedgerTransaction: '#/components/schemas/ParsedLedgerTransaction'
     ParsedNotarizedTransaction:
       allOf:
@@ -4373,13 +4320,6 @@ components:
               properties:
                 intent_hash:
                   $ref: "#/components/schemas/IntentHash"
-    ParsedTransactionManifest:
-      allOf:
-        - $ref: "#/components/schemas/ParsedTransaction"
-        - type: object
-          properties:
-            manifest:
-              $ref: "#/components/schemas/TransactionManifest"
     ParsedLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -4416,6 +4356,9 @@ components:
         notarized_transaction_hex:
           description: A hex-encoded, compiled notarized transaction.
           type: string
+        force_recalculate:
+          description: If true, the transaction validity is freshly recalculated without using any caches (defaults false)
+          type: boolean
     TransactionSubmitResponse:
       type: object
       required:
@@ -4726,15 +4669,9 @@ components:
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
           description: The notary public key to use (optional)
-        notary_as_signatory:
+        notary_is_signatory:
           type: boolean
           description: Whether the notary should count as a signatory (optional, default false)
-        cost_unit_limit:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
         tip_percentage:
           type: integer
           format: int32
@@ -4742,8 +4679,12 @@ components:
           maximum: 255
           description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
-          type: string
-          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
         signer_public_keys:
           type: array
           items:
@@ -4994,49 +4935,37 @@ components:
         payload_hex:
           type: string
           description: The hex-encoded system transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
-#########################
-# REQUEST: /state/epoch #
-#########################
-    StateEpochRequest:
+#####################################
+# REQUEST: /state/consensus-manager #
+#####################################
+    StateConsensusManagerRequest:
       type: object
       required:
         - network
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-    StateEpochResponse:
+    StateConsensusManagerResponse:
       type: object
       required:
-        - epoch
-        - epoch_manager
+        - config
+        - state
+        - current_proposal_statistic
         - current_validator_set
+        - current_time
+        - current_time_rounded_to_minutes
       properties:
-        epoch:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the current epoch
-        epoch_manager:
+        config:
+          $ref: "#/components/schemas/Substate"
+        state:
+          $ref: "#/components/schemas/Substate"
+        current_proposal_statistic:
           $ref: "#/components/schemas/Substate"
         current_validator_set:
           $ref: "#/components/schemas/Substate"
-#########################
-# REQUEST: /state/clock #
-#########################
-    StateClockRequest:
-      type: object
-      required:
-        - network
-      properties:
-        network:
-          $ref: "#/components/schemas/NetworkIdentifier"
-    StateClockResponse:
-      type: object
-      required:
-        - current_minute
-      properties:
-        current_minute:
+        current_time:
+          $ref: "#/components/schemas/Substate"
+        current_time_rounded_to_minutes:
           $ref: "#/components/schemas/Substate"
 ###########################
 # REQUEST: /state/account #
@@ -5057,11 +4986,14 @@ components:
       required:
         - info
         - access_rules
+        - state
         - vaults
       properties:
         info:
           $ref: "#/components/schemas/Substate"
         access_rules:
+          $ref: "#/components/schemas/Substate"
+        state:
           $ref: "#/components/schemas/Substate"
         vaults:
           type: array

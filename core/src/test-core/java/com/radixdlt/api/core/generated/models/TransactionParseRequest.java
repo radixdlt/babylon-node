@@ -48,7 +48,7 @@ public class TransactionParseRequest {
   private String payloadHex;
 
   /**
-   * The type of transaction payload that should be assumed. If omitted, \&quot;Any\&quot; is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+   * The type of transaction payload that should be assumed. If omitted, \&quot;Any\&quot; is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger. 
    */
   public enum ParseModeEnum {
     ANY("Any"),
@@ -58,8 +58,6 @@ public class TransactionParseRequest {
     SIGNED("Signed"),
     
     UNSIGNED("Unsigned"),
-    
-    MANIFEST("Manifest"),
     
     LEDGER("Ledger");
 
@@ -209,11 +207,11 @@ public class TransactionParseRequest {
   }
 
    /**
-   * A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a transaction manifest. 
+   * A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a ledger payload. 
    * @return payloadHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a transaction manifest. ")
+  @ApiModelProperty(required = true, value = "A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a ledger payload. ")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -235,11 +233,11 @@ public class TransactionParseRequest {
   }
 
    /**
-   * The type of transaction payload that should be assumed. If omitted, \&quot;Any\&quot; is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+   * The type of transaction payload that should be assumed. If omitted, \&quot;Any\&quot; is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger. 
    * @return parseMode
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. ")
+  @ApiModelProperty(value = "The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger. ")
   @JsonProperty(JSON_PROPERTY_PARSE_MODE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

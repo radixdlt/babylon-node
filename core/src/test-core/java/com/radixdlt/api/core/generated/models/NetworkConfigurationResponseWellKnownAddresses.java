@@ -46,8 +46,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_RESOURCE_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCOUNT_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_IDENTITY_PACKAGE,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EPOCH_MANAGER_PACKAGE,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CLOCK_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CONSENSUS_MANAGER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_TRANSACTION_PROCESSOR_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_METADATA_MODULE_PACKAGE,
@@ -55,8 +54,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCESS_RULES_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET_PACKAGE,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EPOCH_MANAGER,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CLOCK,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CONSENSUS_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET
 })
@@ -104,11 +102,8 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   public static final String JSON_PROPERTY_IDENTITY_PACKAGE = "identity_package";
   private String identityPackage;
 
-  public static final String JSON_PROPERTY_EPOCH_MANAGER_PACKAGE = "epoch_manager_package";
-  private String epochManagerPackage;
-
-  public static final String JSON_PROPERTY_CLOCK_PACKAGE = "clock_package";
-  private String clockPackage;
+  public static final String JSON_PROPERTY_CONSENSUS_MANAGER_PACKAGE = "consensus_manager_package";
+  private String consensusManagerPackage;
 
   public static final String JSON_PROPERTY_ACCESS_CONTROLLER_PACKAGE = "access_controller_package";
   private String accessControllerPackage;
@@ -131,11 +126,8 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   public static final String JSON_PROPERTY_FAUCET_PACKAGE = "faucet_package";
   private String faucetPackage;
 
-  public static final String JSON_PROPERTY_EPOCH_MANAGER = "epoch_manager";
-  private String epochManager;
-
-  public static final String JSON_PROPERTY_CLOCK = "clock";
-  private String clock;
+  public static final String JSON_PROPERTY_CONSENSUS_MANAGER = "consensus_manager";
+  private String consensusManager;
 
   public static final String JSON_PROPERTY_GENESIS_HELPER = "genesis_helper";
   private String genesisHelper;
@@ -510,55 +502,29 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
-  public NetworkConfigurationResponseWellKnownAddresses epochManagerPackage(String epochManagerPackage) {
-    this.epochManagerPackage = epochManagerPackage;
+  public NetworkConfigurationResponseWellKnownAddresses consensusManagerPackage(String consensusManagerPackage) {
+    this.consensusManagerPackage = consensusManagerPackage;
     return this;
   }
 
    /**
-   * Get epochManagerPackage
-   * @return epochManagerPackage
+   * Get consensusManagerPackage
+   * @return consensusManagerPackage
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_PACKAGE)
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_MANAGER_PACKAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEpochManagerPackage() {
-    return epochManagerPackage;
+  public String getConsensusManagerPackage() {
+    return consensusManagerPackage;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_PACKAGE)
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_MANAGER_PACKAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochManagerPackage(String epochManagerPackage) {
-    this.epochManagerPackage = epochManagerPackage;
-  }
-
-
-  public NetworkConfigurationResponseWellKnownAddresses clockPackage(String clockPackage) {
-    this.clockPackage = clockPackage;
-    return this;
-  }
-
-   /**
-   * Get clockPackage
-   * @return clockPackage
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CLOCK_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getClockPackage() {
-    return clockPackage;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CLOCK_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setClockPackage(String clockPackage) {
-    this.clockPackage = clockPackage;
+  public void setConsensusManagerPackage(String consensusManagerPackage) {
+    this.consensusManagerPackage = consensusManagerPackage;
   }
 
 
@@ -744,55 +710,29 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
-  public NetworkConfigurationResponseWellKnownAddresses epochManager(String epochManager) {
-    this.epochManager = epochManager;
+  public NetworkConfigurationResponseWellKnownAddresses consensusManager(String consensusManager) {
+    this.consensusManager = consensusManager;
     return this;
   }
 
    /**
-   * Get epochManager
-   * @return epochManager
+   * Get consensusManager
+   * @return consensusManager
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER)
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEpochManager() {
-    return epochManager;
+  public String getConsensusManager() {
+    return consensusManager;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER)
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_MANAGER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochManager(String epochManager) {
-    this.epochManager = epochManager;
-  }
-
-
-  public NetworkConfigurationResponseWellKnownAddresses clock(String clock) {
-    this.clock = clock;
-    return this;
-  }
-
-   /**
-   * Get clock
-   * @return clock
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CLOCK)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getClock() {
-    return clock;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CLOCK)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setClock(String clock) {
-    this.clock = clock;
+  public void setConsensusManager(String consensusManager) {
+    this.consensusManager = consensusManager;
   }
 
 
@@ -874,8 +814,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
         Objects.equals(this.resourcePackage, networkConfigurationResponseWellKnownAddresses.resourcePackage) &&
         Objects.equals(this.accountPackage, networkConfigurationResponseWellKnownAddresses.accountPackage) &&
         Objects.equals(this.identityPackage, networkConfigurationResponseWellKnownAddresses.identityPackage) &&
-        Objects.equals(this.epochManagerPackage, networkConfigurationResponseWellKnownAddresses.epochManagerPackage) &&
-        Objects.equals(this.clockPackage, networkConfigurationResponseWellKnownAddresses.clockPackage) &&
+        Objects.equals(this.consensusManagerPackage, networkConfigurationResponseWellKnownAddresses.consensusManagerPackage) &&
         Objects.equals(this.accessControllerPackage, networkConfigurationResponseWellKnownAddresses.accessControllerPackage) &&
         Objects.equals(this.transactionProcessorPackage, networkConfigurationResponseWellKnownAddresses.transactionProcessorPackage) &&
         Objects.equals(this.metadataModulePackage, networkConfigurationResponseWellKnownAddresses.metadataModulePackage) &&
@@ -883,15 +822,14 @@ public class NetworkConfigurationResponseWellKnownAddresses {
         Objects.equals(this.accessRulesPackage, networkConfigurationResponseWellKnownAddresses.accessRulesPackage) &&
         Objects.equals(this.genesisHelperPackage, networkConfigurationResponseWellKnownAddresses.genesisHelperPackage) &&
         Objects.equals(this.faucetPackage, networkConfigurationResponseWellKnownAddresses.faucetPackage) &&
-        Objects.equals(this.epochManager, networkConfigurationResponseWellKnownAddresses.epochManager) &&
-        Objects.equals(this.clock, networkConfigurationResponseWellKnownAddresses.clock) &&
+        Objects.equals(this.consensusManager, networkConfigurationResponseWellKnownAddresses.consensusManager) &&
         Objects.equals(this.genesisHelper, networkConfigurationResponseWellKnownAddresses.genesisHelper) &&
         Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, epochManagerPackage, clockPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, accessRulesPackage, genesisHelperPackage, faucetPackage, epochManager, clock, genesisHelper, faucet);
+    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, accessRulesPackage, genesisHelperPackage, faucetPackage, consensusManager, genesisHelper, faucet);
   }
 
   @Override
@@ -912,8 +850,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    resourcePackage: ").append(toIndentedString(resourcePackage)).append("\n");
     sb.append("    accountPackage: ").append(toIndentedString(accountPackage)).append("\n");
     sb.append("    identityPackage: ").append(toIndentedString(identityPackage)).append("\n");
-    sb.append("    epochManagerPackage: ").append(toIndentedString(epochManagerPackage)).append("\n");
-    sb.append("    clockPackage: ").append(toIndentedString(clockPackage)).append("\n");
+    sb.append("    consensusManagerPackage: ").append(toIndentedString(consensusManagerPackage)).append("\n");
     sb.append("    accessControllerPackage: ").append(toIndentedString(accessControllerPackage)).append("\n");
     sb.append("    transactionProcessorPackage: ").append(toIndentedString(transactionProcessorPackage)).append("\n");
     sb.append("    metadataModulePackage: ").append(toIndentedString(metadataModulePackage)).append("\n");
@@ -921,8 +858,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    accessRulesPackage: ").append(toIndentedString(accessRulesPackage)).append("\n");
     sb.append("    genesisHelperPackage: ").append(toIndentedString(genesisHelperPackage)).append("\n");
     sb.append("    faucetPackage: ").append(toIndentedString(faucetPackage)).append("\n");
-    sb.append("    epochManager: ").append(toIndentedString(epochManager)).append("\n");
-    sb.append("    clock: ").append(toIndentedString(clock)).append("\n");
+    sb.append("    consensusManager: ").append(toIndentedString(consensusManager)).append("\n");
     sb.append("    genesisHelper: ").append(toIndentedString(genesisHelper)).append("\n");
     sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");
     sb.append("}");
