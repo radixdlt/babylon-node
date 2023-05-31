@@ -47,7 +47,7 @@ jobs:
           parse_json: true
       - name: Set current date
         id: date
-        run: echo "date::$(date +'%b %d, %H:%M')" >> $GITHUB_OUTPUT
+        run: echo "date=$(date +'%b %d, %H:%M')" >> $GITHUB_OUTPUT
       - name: Set git tags
         id: gittag
         run: echo "gittag=$(git describe --tags --dirty)" >> $GITHUB_OUTPUT
