@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 public record RoundDetails(
     long epoch,
     long roundNumber,
+    boolean isFallback,
     long previousQcRoundNumber,
     BFTValidatorId roundProposer,
     long consensusParentRoundTimestampMs,
@@ -80,6 +81,7 @@ public record RoundDetails(
     return new RoundDetails(
         vertex.getParentHeader().getLedgerHeader().getEpoch(),
         vertex.getRound().number(),
+        vertex.isFallback(),
         vertex.getParentHeader().getRound().number(),
         vertex.getProposer(),
         vertex.getQCToParent().getWeightedTimestampOfSignatures(),

@@ -60,7 +60,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let transaction_identifiers = read_store.get_top_transaction_identifiers();
         let epoch_identifiers = read_store
             .get_last_epoch_proof()
-            .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
+            .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
 
         let validator = NotarizedTransactionValidator::new(self.validation_config);

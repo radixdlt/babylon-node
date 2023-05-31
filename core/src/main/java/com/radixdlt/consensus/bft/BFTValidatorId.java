@@ -146,6 +146,16 @@ public final class BFTValidatorId {
     return Optional.ofNullable(validatorAddress);
   }
 
+  public ComponentAddress getActiveValidatorAddress() {
+    return this.getValidatorAddress()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    String.format(
+                        "validator (%s) from active validator set must have an address",
+                        this.key)));
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(key, validatorAddress);

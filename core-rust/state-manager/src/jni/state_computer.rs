@@ -272,13 +272,16 @@ impl From<JavaCommitRequest> for CommitRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
     pub parent_accumulator_hash: JavaHashCode,
     pub previous_vertices: Vec<JavaPreviousVertex>,
     pub proposed: Vec<JavaRawTransaction>,
-    pub consensus_epoch: u64,
-    pub round_number: u64,
+    pub is_fallback: bool,
+    pub epoch: u64,
+    pub round: u64,
+    pub gap_round_leader_addresses: Vec<ComponentAddress>,
+    pub proposer_address: ComponentAddress,
     pub proposer_timestamp_ms: i64,
 }
 
@@ -296,8 +299,11 @@ impl From<JavaPrepareRequest> for PrepareRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
-            consensus_epoch: prepare_request.consensus_epoch,
-            round_number: prepare_request.round_number,
+            is_fallback: prepare_request.is_fallback,
+            epoch: prepare_request.epoch,
+            round: prepare_request.round,
+            gap_round_leader_addresses: prepare_request.gap_round_leader_addresses,
+            proposer_address: prepare_request.proposer_address,
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
         }
     }

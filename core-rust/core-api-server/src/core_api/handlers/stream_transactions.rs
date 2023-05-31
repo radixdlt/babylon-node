@@ -9,6 +9,7 @@ use state_manager::{
     UserPayloadHash,
 };
 
+use radix_engine_interface::blueprints::epoch_manager::ValidatorIndex;
 use radix_engine_interface::data::manifest::manifest_encode;
 use std::collections::HashMap;
 use transaction::manifest;
@@ -267,16 +268,34 @@ pub fn to_api_validator_transaction(
     Ok(match validator_transaction {
         ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms,
-            consensus_epoch,
-            round_in_epoch,
+            epoch,
+            round,
+            leader_proposal_history,
         } => models::ValidatorTransaction::RoundUpdateValidatorTransaction {
             proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
                 *proposer_timestamp_ms,
             )?),
-            consensus_epoch: to_api_epoch(context, *consensus_epoch)?,
-            round_in_epoch: to_api_round(*round_in_epoch)?,
+            consensus_epoch: to_api_epoch(context, *epoch)?,
+            round_in_epoch: to_api_round(*round)?,
+            leader_proposal_history: Box::new(models::LeaderProposalHistory {
+                gap_round_leaders: leader_proposal_history
+                    .gap_round_leaders
+                    .iter()
+                    .map(|leader| to_api_active_validator_index(*leader))
+                    .collect(),
+                current_leader: Box::new(to_api_active_validator_index(
+                    leader_proposal_history.current_leader,
+                )),
+                is_fallback: leader_proposal_history.is_fallback,
+            }),
         },
     })
+}
+
+fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveValidatorIndex {
+    models::ActiveValidatorIndex {
+        index: index as i32,
+    }
 }
 
 pub fn to_api_system_transaction(
