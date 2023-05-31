@@ -99,7 +99,7 @@ use radix_engine_common::crypto::Hash;
 use radix_engine_interface::constants::GENESIS_HELPER;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -541,6 +541,8 @@ where
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
     ) -> LedgerProof {
+        let start_instant = Instant::now();
+
         let read_db = self.store.read();
         if read_db.get_first_epoch_proof().is_some() {
             panic!("Can't execute genesis: database already initialized")
@@ -674,7 +676,7 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed");
+                    panic!("Genesis data ingestion txn didn't succeed {:?}", genesis_data_ingestion_commit_receipt);
                 }
             }
         }
@@ -740,6 +742,12 @@ where
                 panic!("Genesis wrap up txn didn't succeed");
             }
         }
+
+        info!(
+            "{} genesis transactions successfully executed in {} seconds",
+            num_genesis_txns,
+            start_instant.elapsed().as_secs()
+        );
 
         genesis_wrap_up_ledger_proof
     }
