@@ -79,10 +79,10 @@ public record RoundDetails(
   public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     return new RoundDetails(
-        vertex.getParentHeader().getLedgerHeader().getEpoch(),
+        vertex.parentLedgerHeader().getEpoch(),
         vertex.getRound().number(),
         vertex.isFallback(),
-        vertex.getParentHeader().getRound().number(),
+        vertex.parentBFTHeader().getRound().number(),
         vertex.getProposer(),
         vertex.getQCToParent().getWeightedTimestampOfSignatures(),
         vertex.proposerTimestamp());

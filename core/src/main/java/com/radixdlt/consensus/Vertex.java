@@ -249,36 +249,32 @@ public final class Vertex {
     return isFallback;
   }
 
-  public BFTHeader getParentHeader() {
-    return getQCToParent().getProposedHeader();
-  }
-
   public HashCode getParentVertexId() {
     return getQCToParent().getProposedHeader().getVertexId();
   }
 
   public long getEpoch() {
-    var epoch = getParentHeader().getLedgerHeader().getEpoch();
+    var epoch = parentLedgerHeader().getEpoch();
     // If vertex is genesis, the parent will point to the previous epoch so must add 1
     return round.isGenesis() ? epoch + 1 : epoch;
   }
 
-  public BFTHeader getGrandParentHeader() {
+  public BFTHeader grandparentBFTHeader() {
     return getQCToParent().getParentHeader();
   }
 
   public boolean touchesGenesis() {
     return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
+        || this.parentBFTHeader().getRound().isGenesis()
+        || this.grandparentBFTHeader().getRound().isGenesis();
   }
 
   public boolean hasDirectParent() {
-    return getRound().equals(this.getParentHeader().getRound().next());
+    return getRound().equals(this.parentBFTHeader().getRound().next());
   }
 
   public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
+    return this.parentBFTHeader().getRound().equals(this.grandparentBFTHeader().getRound().next());
   }
 
   @JsonProperty("round")

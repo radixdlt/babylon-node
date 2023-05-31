@@ -165,7 +165,7 @@ public class SafetyRulesTest {
     when(vertex.getRound()).thenReturn(Round.of(3));
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(0));
-    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.parentBFTHeader()).thenReturn(parent);
     when(vertexWithHash.vertex()).thenReturn(vertex);
 
     assertThat(
@@ -186,10 +186,10 @@ public class SafetyRulesTest {
     when(vertex.getRound()).thenReturn(Round.of(1));
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(0));
-    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.parentBFTHeader()).thenReturn(parent);
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
-    when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertex.grandparentBFTHeader()).thenReturn(grandParent);
     when(vertexWithHash.vertex()).thenReturn(vertex);
     BFTHeader header = mock(BFTHeader.class);
     Optional<Vote> voteMaybe =
@@ -213,11 +213,11 @@ public class SafetyRulesTest {
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(1));
-    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.parentBFTHeader()).thenReturn(parent);
     when(vertex.getRound()).thenReturn(Round.of(2));
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
-    when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertex.grandparentBFTHeader()).thenReturn(grandParent);
     when(vertexWithHash.vertex()).thenReturn(vertex);
     Optional<Vote> voteMaybe =
         safetyRules.createVote(vertexWithHash, mock(BFTHeader.class), 1L, mock(HighQC.class));
@@ -239,10 +239,10 @@ public class SafetyRulesTest {
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader grandparentHeader = mock(BFTHeader.class);
     when(grandparentHeader.getRound()).thenReturn(mock(Round.class));
-    when(vertex.getGrandParentHeader()).thenReturn(grandparentHeader);
+    when(vertex.grandparentBFTHeader()).thenReturn(grandparentHeader);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(2));
-    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.parentBFTHeader()).thenReturn(parent);
     when(vertex.getRound()).thenReturn(Round.of(3));
     when(vertexWithHash.vertex()).thenReturn(vertex);
 
@@ -267,11 +267,11 @@ public class SafetyRulesTest {
     when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(2));
-    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.parentBFTHeader()).thenReturn(parent);
     when(vertex.getRound()).thenReturn(Round.of(4));
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
-    when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertex.grandparentBFTHeader()).thenReturn(grandParent);
     when(vertexWithHash.vertex()).thenReturn(vertex);
 
     Optional<Vote> voteMaybe =

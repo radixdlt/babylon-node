@@ -117,7 +117,6 @@ public class LocalSyncServiceTest {
   private Comparator<AccumulatorState> accComparator;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
   private RemoteSyncResponseSignaturesVerifier signaturesVerifier;
-  private LedgerAccumulatorVerifier accumulatorVerifier;
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler;
   private InvalidSyncResponseHandler invalidSyncResponseHandler;
 
@@ -134,7 +133,6 @@ public class LocalSyncServiceTest {
     this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
     this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
     this.signaturesVerifier = mock(RemoteSyncResponseSignaturesVerifier.class);
-    this.accumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
     this.verifiedSyncResponseHandler = mock(VerifiedSyncResponseHandler.class);
     this.invalidSyncResponseHandler = mock(InvalidSyncResponseHandler.class);
   }
@@ -153,7 +151,6 @@ public class LocalSyncServiceTest {
             accComparator,
             validatorSetVerifier,
             signaturesVerifier,
-            accumulatorVerifier,
             verifiedSyncResponseHandler,
             invalidSyncResponseHandler,
             syncState);
@@ -651,9 +648,6 @@ public class LocalSyncServiceTest {
 
     when(validatorSetVerifier.verifyValidatorSet(syncResponse)).thenReturn(true);
     when(signaturesVerifier.verifyResponseSignatures(syncResponse)).thenReturn(true);
-    when(accumulatorVerifier.verify(
-            eq(respHeadAccumulatorState), any(), eq(respTailAccumulatorState)))
-        .thenReturn(true);
 
     return syncResponse;
   }

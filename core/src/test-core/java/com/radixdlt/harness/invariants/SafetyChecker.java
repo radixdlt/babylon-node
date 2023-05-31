@@ -115,7 +115,7 @@ public final class SafetyChecker {
       NodeId node, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final EpochRound epochRound =
-        EpochRound.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getRound());
+        EpochRound.of(vertex.parentLedgerHeader().getEpoch(), vertex.getRound());
 
     final VertexWithHash currentVertexAtRound = committedVertices.get(epochRound);
     if (currentVertexAtRound != null) {
@@ -125,14 +125,14 @@ public final class SafetyChecker {
     } else {
       EpochRound parentEpochRound =
           EpochRound.of(
-              vertex.getParentHeader().getLedgerHeader().getEpoch(),
-              vertex.getParentHeader().getRound());
+              vertex.parentBFTHeader().getLedgerHeader().getEpoch(),
+              vertex.parentBFTHeader().getRound());
       VertexWithHash parent = committedVertices.get(parentEpochRound);
       if (parent == null) {
         Entry<EpochRound, VertexWithHash> higherCommitted =
             committedVertices.higherEntry(parentEpochRound);
         if (higherCommitted != null) {
-          BFTHeader higherParentHeader = higherCommitted.getValue().vertex().getParentHeader();
+          BFTHeader higherParentHeader = higherCommitted.getValue().vertex().parentBFTHeader();
           EpochRound higherCommittedParentEpochRound =
               EpochRound.of(
                   higherParentHeader.getLedgerHeader().getEpoch(), higherParentHeader.getRound());

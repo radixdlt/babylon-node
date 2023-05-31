@@ -66,7 +66,6 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.SerializeMessageObject;
 
@@ -76,8 +75,7 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
   }
 
   private static SyncRequestMessage get() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     return new SyncRequestMessage(
-        LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0).toDto());
+        LedgerProof.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0).toDto());
   }
 }

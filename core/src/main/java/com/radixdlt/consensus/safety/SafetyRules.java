@@ -134,7 +134,7 @@ public final class SafetyRules {
 
   private boolean checkLocked(VertexWithHash proposedVertexWithHash, Builder nextStateBuilder) {
     final var proposedVertex = proposedVertexWithHash.vertex();
-    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
+    if (proposedVertex.parentBFTHeader().getRound().lt(this.state.getLockedRound())) {
       logger.warn(
           "Safety warning: Cannot vote for vertex {} as it does not respect locked round {}",
           proposedVertex,
@@ -143,9 +143,9 @@ public final class SafetyRules {
     }
 
     // pre-commit phase on consecutive qc's proposed vertex
-    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedRound())
+    if (proposedVertex.grandparentBFTHeader().getRound().compareTo(this.state.getLockedRound())
         > 0) {
-      nextStateBuilder.lockedRound(proposedVertex.getGrandParentHeader().getRound());
+      nextStateBuilder.lockedRound(proposedVertex.grandparentBFTHeader().getRound());
     }
     return true;
   }
@@ -177,7 +177,7 @@ public final class SafetyRules {
   private static VoteData constructVoteData(
       VertexWithHash proposedVertexWithHash, BFTHeader proposedHeader) {
     final var proposedVertex = proposedVertexWithHash.vertex();
-    final BFTHeader parent = proposedVertex.getParentHeader();
+    final BFTHeader parent = proposedVertex.parentBFTHeader();
 
     // Add a vertex to commit if creating a quorum for the proposed vertex would
     // create three consecutive qcs.
@@ -187,7 +187,7 @@ public final class SafetyRules {
         || !proposedVertex.parentHasDirectParent()) {
       toCommit = null;
     } else {
-      toCommit = proposedVertex.getGrandParentHeader();
+      toCommit = proposedVertex.grandparentBFTHeader();
     }
 
     return new VoteData(proposedHeader, parent, toCommit);

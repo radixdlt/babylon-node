@@ -65,8 +65,8 @@
 use crate::jni::mempool::JavaRawTransaction;
 
 use crate::{
-    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
-    ReceiptTreeHash, StateHash, TimestampedValidatorSignature, TransactionTreeHash,
+    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, ReceiptTreeHash,
+    StateHash, TimestampedValidatorSignature, TransactionTreeHash,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -268,9 +268,10 @@ impl From<JavaCommitRequest> for CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
-    pub parent_accumulator_hash: JavaHashCode,
-    pub previous_vertices: Vec<JavaPreviousVertex>,
-    pub proposed: Vec<JavaRawTransaction>,
+    pub committed_accumulator_state: JavaAccumulatorState,
+    pub prepared_uncommitted_transactions: Vec<JavaRawTransaction>,
+    pub prepared_uncommitted_accumulator_state: JavaAccumulatorState,
+    pub proposed_transactions: Vec<JavaRawTransaction>,
     pub is_fallback: bool,
     pub epoch: u64,
     pub round: u64,
@@ -282,14 +283,17 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
-            parent_accumulator: prepare_request.parent_accumulator_hash.into(),
-            prepared_vertices: prepare_request
-                .previous_vertices
+            committed_accumulator_state: prepare_request.committed_accumulator_state.into(),
+            prepared_uncommitted_payloads: prepare_request
+                .prepared_uncommitted_transactions
                 .into_iter()
-                .map(|t| t.into())
+                .map(|t| t.payload)
                 .collect(),
+            prepared_uncommitted_accumulator_state: prepare_request
+                .prepared_uncommitted_accumulator_state
+                .into(),
             proposed_payloads: prepare_request
-                .proposed
+                .proposed_transactions
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
@@ -299,25 +303,6 @@ impl From<JavaPrepareRequest> for PrepareRequest {
             gap_round_leader_addresses: prepare_request.gap_round_leader_addresses,
             proposer_address: prepare_request.proposer_address,
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-        }
-    }
-}
-
-#[derive(Debug, Decode, Encode, Categorize)]
-pub struct JavaPreviousVertex {
-    pub transactions: Vec<JavaRawTransaction>,
-    pub resultant_accumulator_hash: JavaHashCode,
-}
-
-impl From<JavaPreviousVertex> for PreviousVertex {
-    fn from(previous_vertex: JavaPreviousVertex) -> Self {
-        PreviousVertex {
-            transaction_payloads: previous_vertex
-                .transactions
-                .into_iter()
-                .map(|v| v.payload)
-                .collect(),
-            resultant_accumulator: previous_vertex.resultant_accumulator_hash.into(),
         }
     }
 }
@@ -357,15 +342,17 @@ pub struct JavaPrepareResult {
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: JavaLedgerHashes,
+    pub accumulator_state: JavaAccumulatorState,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
-    fn from(prepare_results: PrepareResult) -> Self {
+    fn from(prepare_result: PrepareResult) -> Self {
         JavaPrepareResult {
-            committed: prepare_results.committed,
-            rejected: prepare_results.rejected,
-            next_epoch: prepare_results.next_epoch,
-            ledger_hashes: prepare_results.ledger_hashes.into(),
+            committed: prepare_result.committed_payloads,
+            rejected: prepare_result.rejected_payloads,
+            next_epoch: prepare_result.next_epoch,
+            ledger_hashes: prepare_result.ledger_hashes.into(),
+            accumulator_state: prepare_result.accumulator_state.into(),
         }
     }
 }

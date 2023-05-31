@@ -111,7 +111,6 @@ public class REv2StateComputerTest {
           @Override
           protected void configure() {
             bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
-            bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
             bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
             bind(new TypeLiteral<MempoolRelayDispatcher<RawNotarizedTransaction>>() {})
@@ -152,9 +151,15 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
+    var committedAccumulatorState =
+        REv2ToConsensus.accumulatorState(genesisResult.accumulatorState());
     var result =
         stateComputer.prepare(
-            genesisResult.accumulatorHash(), List.of(), List.of(validTransaction), roundDetails);
+            committedAccumulatorState,
+            List.of(),
+            committedAccumulatorState,
+            List.of(validTransaction),
+            roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).isEmpty();
@@ -180,9 +185,15 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
+    var committedAccumulatorState =
+        REv2ToConsensus.accumulatorState(genesisResult.accumulatorState());
     var result =
         stateComputer.prepare(
-            genesisResult.accumulatorHash(), List.of(), List.of(invalidTransaction), roundDetails);
+            committedAccumulatorState,
+            List.of(),
+            committedAccumulatorState,
+            List.of(invalidTransaction),
+            roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).hasSize(1);

@@ -70,7 +70,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.SerializeMessageObject;
 import com.radixdlt.utils.LedgerHeaderMock;
 import com.radixdlt.utils.ZeroHasher;
@@ -83,7 +82,6 @@ public class GetVerticesErrorResponseMessageSerializeTest
   }
 
   private static GetVerticesErrorResponseMessage get() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     VertexWithHash vertexWithHash =
         Vertex.createInitialEpochVertex(ledgerHeader).withId(ZeroHasher.INSTANCE);

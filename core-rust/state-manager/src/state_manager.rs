@@ -65,7 +65,7 @@
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 
 use crate::query::*;
-use crate::staging::{ExecutionCache, HashStructuresDiff, ReadableStore};
+use crate::staging::{ExecutionCache, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::{
     ConfigType, ExecutionConfigurator, LedgerTransaction, LedgerTransactionValidator,
@@ -82,7 +82,7 @@ use prometheus::Registry;
 
 use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -162,13 +162,6 @@ pub enum StateManagerRejectReason {
     TransactionValidationError(TransactionValidationError),
 }
 
-#[derive(Debug)]
-enum AlreadyPreparedTransaction {
-    Proposed,
-    Prepared,
-    Committed,
-}
-
 impl<S> StateManager<S>
 where
     S: ReadableStore,
@@ -208,9 +201,12 @@ where
         );
 
         let commit = processed.expect_commit("prepare genesis");
-        state_tracker.update(&commit.hash_structures_diff);
+        state_tracker.update(commit);
 
-        (*state_tracker.latest_ledger_hashes(), commit.next_epoch())
+        (
+            *state_tracker.latest_ledger_hashes(),
+            state_tracker.next_epoch().cloned(),
+        )
     }
 
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
@@ -222,34 +218,17 @@ where
             .ledger_header;
         let epoch_identifiers = EpochTransactionIdentifiers::from(&epoch_header);
 
-        debug_assert_eq!(
-            base_transaction_identifiers.accumulator_hash,
-            prepare_request.parent_accumulator
-        );
+        if prepare_request.committed_accumulator_state
+            != AccumulatorState::new(&base_transaction_identifiers)
+        {
+            panic!(
+                "state {:?} from request does not match the current ledger state {:?}",
+                prepare_request.committed_accumulator_state, base_transaction_identifiers
+            );
+        }
 
-        // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
-        // in order to exclude them. This check will eventually live in the engine/executor.
-        let mut already_committed_or_prepared_intent_hashes =
-            HashMap::<IntentHash, AlreadyPreparedTransaction>::new();
-
-        let already_committed_proposed_intent_hashes = prepare_request
-            .proposed_payloads
-            .iter()
-            .filter_map(|proposed_payload| {
-                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-                    proposed_payload,
-                )
-                .ok()
-                .map(|validated_transaction| validated_transaction.intent_hash())
-                .and_then(|intent_hash| {
-                    read_store
-                        .get_txn_state_version_by_identifier(&intent_hash)
-                        .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
-                })
-            });
-
-        already_committed_or_prepared_intent_hashes
-            .extend(already_committed_proposed_intent_hashes);
+        let mut duplicate_intent_hash_detector =
+            DuplicateIntentHashDetector::new(read_store.deref());
 
         let pending_transaction_base_state = AtState::PendingPreparingVertices {
             base_committed_state_version: base_transaction_identifiers.state_version,
@@ -257,23 +236,15 @@ where
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
-        let already_prepared_payloads = prepare_request
-            .prepared_vertices
-            .iter()
-            .flat_map(|v| &v.transaction_payloads)
-            .collect::<Vec<_>>();
-
-        for prepared in already_prepared_payloads {
+        for prepared in &prepare_request.prepared_uncommitted_payloads {
             let parsed_transaction =
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(prepared)
                     .expect("Already prepared transactions should be decodeable");
 
             let executable = match &parsed_transaction {
                 LedgerTransaction::User(notarized_transaction) => {
-                    already_committed_or_prepared_intent_hashes.insert(
-                        notarized_transaction.intent_hash(),
-                        AlreadyPreparedTransaction::Prepared,
-                    );
+                    duplicate_intent_hash_detector
+                        .record_prepared(notarized_transaction.intent_hash());
                     self.ledger_transaction_validator
                         .validate_and_create_executable(&parsed_transaction)
                 }
@@ -301,9 +272,26 @@ where
             );
 
             let commit = processed.expect_commit(logged_description);
-            // TODO: Do we need to check that next epoch request has been prepared?
-            state_tracker.update(&commit.hash_structures_diff);
+            state_tracker.update(commit);
             drop(lock_execution_cache);
+
+            if let Some(next_epoch) = state_tracker.next_epoch() {
+                panic!(
+                    "Already prepared transaction {:?} should not contain next epoch {:?}",
+                    state_tracker.latest_transaction_identifiers(),
+                    next_epoch
+                );
+            }
+        }
+
+        if prepare_request.prepared_uncommitted_accumulator_state
+            != AccumulatorState::new(state_tracker.latest_transaction_identifiers())
+        {
+            panic!(
+                "State {:?} after prepared transactions does not match the state {:?} from request",
+                state_tracker.latest_transaction_identifiers(),
+                prepare_request.prepared_uncommitted_accumulator_state,
+            );
         }
 
         let mut committed = Vec::new();
@@ -331,8 +319,7 @@ where
 
         let round_update_commit = processed_round_update.expect_commit(&logged_description);
         round_update_commit.check_success(logged_description);
-        state_tracker.update(&round_update_commit.hash_structures_diff);
-        let mut next_epoch = round_update_commit.next_epoch();
+        state_tracker.update(round_update_commit);
         drop(lock_execution_cache);
 
         committed.push(round_update_payload);
@@ -343,7 +330,7 @@ where
 
         for proposed_payload in prepare_request.proposed_payloads {
             // Don't process any additional transactions if next epoch has occurred
-            if next_epoch.is_some() {
+            if state_tracker.next_epoch.is_some() {
                 break;
             }
 
@@ -362,12 +349,13 @@ where
             let intent_hash = parsed.intent_hash();
             let user_payload_hash = parsed.user_payload_hash();
             let invalid_at_epoch = parsed.signed_intent.intent.header.end_epoch_exclusive;
-            if let Some(state) = already_committed_or_prepared_intent_hashes.get(&intent_hash) {
+
+            if let Err(source) = duplicate_intent_hash_detector.check_proposed(&intent_hash) {
                 rejected_payloads.push((
                     proposed_payload,
                     format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
-                        &intent_hash, state
+                        &intent_hash, source
                     ),
                 ));
                 pending_transaction_results.push(PendingTransactionResult {
@@ -414,12 +402,10 @@ where
 
             match processed.expect_commit_or_reject(logged_description) {
                 Ok(commit) => {
-                    state_tracker.update(&commit.hash_structures_diff);
-                    next_epoch = commit.next_epoch();
+                    state_tracker.update(commit);
                     drop(lock_execution_cache);
 
-                    already_committed_or_prepared_intent_hashes
-                        .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
+                    duplicate_intent_hash_detector.record_proposed(intent_hash);
                     committed.push(payload);
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
@@ -480,10 +466,13 @@ where
         drop(write_pending_transaction_result_cache);
 
         PrepareResult {
-            committed,
-            rejected: rejected_payloads,
-            next_epoch,
+            committed_payloads: committed,
+            rejected_payloads,
+            next_epoch: state_tracker.next_epoch().cloned(),
             ledger_hashes: *state_tracker.latest_ledger_hashes(),
+            accumulator_state: AccumulatorState::new(
+                state_tracker.latest_transaction_identifiers(),
+            ),
         }
     }
 
@@ -541,6 +530,7 @@ where
 struct StateTracker {
     transaction_identifiers: CommittedTransactionIdentifiers,
     ledger_hashes: Option<LedgerHashes>,
+    next_epoch: Option<NextEpoch>,
 }
 
 impl StateTracker {
@@ -548,6 +538,7 @@ impl StateTracker {
         Self {
             transaction_identifiers: base_transaction_identifiers,
             ledger_hashes: None,
+            next_epoch: None,
         }
     }
 
@@ -555,15 +546,21 @@ impl StateTracker {
         &self.transaction_identifiers
     }
 
-    pub fn update(&mut self, hash_structures_diff: &HashStructuresDiff) {
+    pub fn update(&mut self, result: &ProcessedCommitResult) {
+        let hash_structures_diff = &result.hash_structures_diff;
         self.transaction_identifiers.state_version += 1;
         self.transaction_identifiers.accumulator_hash =
             hash_structures_diff.transaction_accumulator_hash;
         self.ledger_hashes = Some(hash_structures_diff.ledger_hashes);
+        self.next_epoch = result.next_epoch();
     }
 
     pub fn latest_ledger_hashes(&self) -> &LedgerHashes {
         self.ledger_hashes.as_ref().expect("no update yet")
+    }
+
+    pub fn next_epoch(&self) -> Option<&NextEpoch> {
+        self.next_epoch.as_ref()
     }
 }
 
@@ -846,9 +843,8 @@ where
             );
             let commit = processed.expect_commit(logged_description);
 
+            state_tracker.update(commit);
             let hash_structures_diff = &commit.hash_structures_diff;
-            state_tracker.update(hash_structures_diff);
-            let next_epoch = commit.next_epoch();
             let state_hash_tree_diff = hash_structures_diff.state_hash_tree_diff.clone();
             let transaction_tree_slice = hash_structures_diff.transaction_tree_diff.slice.clone();
             let receipt_tree_slice = hash_structures_diff.receipt_tree_diff.slice.clone();
@@ -858,7 +854,7 @@ where
 
             Self::check_epoch_proof_match(
                 commit_ledger_header,
-                next_epoch,
+                state_tracker.next_epoch(),
                 i == (commit_transactions_len - 1),
             )?;
 
@@ -939,14 +935,14 @@ where
 
     fn check_epoch_proof_match(
         commit_ledger_header: &LedgerHeader,
-        opt_transaction_next_epoch: Option<NextEpoch>,
+        opt_transaction_next_epoch: Option<&NextEpoch>,
         is_last_transaction_in_request: bool,
     ) -> Result<(), CommitError> {
         if is_last_transaction_in_request {
             match &commit_ledger_header.next_epoch {
                 Some(proof_next_epoch) => {
                     if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
-                        if transaction_next_epoch != *proof_next_epoch {
+                        if transaction_next_epoch != proof_next_epoch {
                             error!(
                                 "computed next epoch differs from the one in proof ({:?} != {:?})",
                                 transaction_next_epoch, proof_next_epoch
@@ -1004,4 +1000,55 @@ struct PendingTransactionResult {
     pub user_payload_hash: UserPayloadHash,
     pub invalid_at_epoch: u64,
     pub rejection_reason: Option<RejectionReason>,
+}
+
+struct DuplicateIntentHashDetector<'s, S> {
+    store: &'s S,
+    recorded_intent_hashes: NonIterMap<IntentHash, DuplicateIntentHashSource>,
+}
+
+impl<'s, S: for<'a> TransactionIndex<&'a IntentHash>> DuplicateIntentHashDetector<'s, S> {
+    pub fn new(store: &'s S) -> Self {
+        Self {
+            store,
+            recorded_intent_hashes: NonIterMap::new(),
+        }
+    }
+
+    pub fn record_prepared(&mut self, intent_hash: IntentHash) {
+        self.recorded_intent_hashes
+            .insert(intent_hash, DuplicateIntentHashSource::Prepared);
+    }
+
+    pub fn check_proposed(
+        &mut self,
+        intent_hash: &IntentHash,
+    ) -> Result<(), DuplicateIntentHashSource> {
+        if let Some(duplicate_source) = self.recorded_intent_hashes.get(intent_hash) {
+            return Err(duplicate_source.clone());
+        }
+        if self
+            .store
+            .get_txn_state_version_by_identifier(intent_hash)
+            .is_some()
+        {
+            // we insert to our map only as an optimization (avoiding repeated DB reads)
+            self.recorded_intent_hashes
+                .insert(*intent_hash, DuplicateIntentHashSource::Committed);
+            return Err(DuplicateIntentHashSource::Committed);
+        }
+        Ok(())
+    }
+
+    pub fn record_proposed(&mut self, intent_hash: IntentHash) {
+        self.recorded_intent_hashes
+            .insert(intent_hash, DuplicateIntentHashSource::Proposed);
+    }
+}
+
+#[derive(Clone, Debug)]
+enum DuplicateIntentHashSource {
+    Proposed,
+    Prepared,
+    Committed,
 }

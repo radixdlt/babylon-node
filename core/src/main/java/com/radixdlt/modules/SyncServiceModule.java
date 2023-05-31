@@ -155,17 +155,9 @@ public class SyncServiceModule extends AbstractModule {
           syncedCommittedTransactionsWithProofDispatcher) {
     return resp -> {
       var txnsAndProof = resp.getTransactionsWithProofDto();
-      // TODO: Stateful ledger header verification:
-      // TODO: -verify rootHash matches
-      var nextHeader =
-          new LedgerProof(
-              txnsAndProof.getTail().getOpaque(),
-              txnsAndProof.getTail().getLedgerHeader(),
-              txnsAndProof.getTail().getSignatures());
-
+      var nextHeader = LedgerProof.fromDto(txnsAndProof.getTail());
       var verified =
           CommittedTransactionsWithProof.create(txnsAndProof.getTransactions(), nextHeader);
-
       syncedCommittedTransactionsWithProofDispatcher.dispatch(verified);
     };
   }

@@ -74,7 +74,8 @@ public record PrepareResult(
     List<byte[]> committed,
     List<Tuple.Tuple2<byte[], String>> rejected,
     Option<NextEpoch> nextEpoch,
-    LedgerHashes ledgerHashes) {
+    LedgerHashes ledgerHashes,
+    AccumulatorState accumulatorState) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,

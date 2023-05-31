@@ -63,8 +63,8 @@
  */
 
 use crate::{
-    accumulator_tree::IsHash, transaction::LedgerTransaction, LedgerTransactionOutcome,
-    SubstateChange,
+    accumulator_tree::IsHash, transaction::LedgerTransaction, CommittedTransactionIdentifiers,
+    LedgerTransactionOutcome, SubstateChange,
 };
 use node_common::java::*;
 use radix_engine::types::*;
@@ -753,8 +753,9 @@ pub struct CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub parent_accumulator: AccumulatorHash,
-    pub prepared_vertices: Vec<PreviousVertex>,
+    pub committed_accumulator_state: AccumulatorState,
+    pub prepared_uncommitted_payloads: Vec<Vec<u8>>,
+    pub prepared_uncommitted_accumulator_state: AccumulatorState,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub is_fallback: bool,
     pub epoch: u64,
@@ -765,17 +766,12 @@ pub struct PrepareRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PreviousVertex {
-    pub transaction_payloads: Vec<Vec<u8>>,
-    pub resultant_accumulator: AccumulatorHash,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
-    pub committed: Vec<Vec<u8>>,
-    pub rejected: Vec<(Vec<u8>, String)>,
+    pub committed_payloads: Vec<Vec<u8>>,
+    pub rejected_payloads: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
+    pub accumulator_state: AccumulatorState,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -817,10 +813,19 @@ pub struct LedgerHeader {
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccumulatorState {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
+}
+
+impl AccumulatorState {
+    pub fn new(identifiers: &CommittedTransactionIdentifiers) -> Self {
+        Self {
+            state_version: identifiers.state_version,
+            accumulator_hash: identifiers.accumulator_hash,
+        }
+    }
 }
 
 pub struct EpochTransactionIdentifiers {

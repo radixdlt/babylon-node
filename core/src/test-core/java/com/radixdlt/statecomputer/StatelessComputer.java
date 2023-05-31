@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -73,12 +72,10 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -127,8 +124,9 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      HashCode parentAccumulator,
-      List<ExecutedVertex> previousVertices,
+      AccumulatorState committedAccumulatorState,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      AccumulatorState preparedUncommittedAccumulatorState,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
@@ -151,7 +149,12 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactions.size();
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions, invalidTransactions, LedgerHashes.zero());
+        successfulTransactions,
+        invalidTransactions,
+        LedgerHashes.zero(),
+        new AccumulatorState(
+            preparedUncommittedAccumulatorState.getStateVersion() + successfulTransactions.size(),
+            HashUtils.zero256()));
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {

@@ -71,7 +71,6 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -86,7 +85,6 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -154,11 +152,13 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
-            HashCode parentAccumulator,
-            List<ExecutedVertex> previousVertices,
+            AccumulatorState committedAccumulatorState,
+            List<ExecutedVertex> preparedUncommittedVertices,
+            AccumulatorState preparedUncommittedAccumulatorHash,
             List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {
-          return new StateComputerResult(List.of(), Map.of(), LedgerHashes.zero());
+          return new StateComputerResult(
+              List.of(), Map.of(), LedgerHashes.zero(), AccumulatorState.zero());
         }
 
         @Override
@@ -269,29 +269,30 @@ public class EpochManagerTest {
       @Provides
       @LastProof
       LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
-        var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        return LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
+        return LedgerProof.genesis(
+            AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
       }
 
       @Provides
       @LastEpochProof
       LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-        var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        return LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
+        return LedgerProof.genesis(
+            AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
       }
 
       @Provides
       BFTConfiguration bftConfiguration(
           @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
-        var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
             Vertex.createInitialEpochVertex(
-                    LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0))
+                    LedgerHeader.genesis(
+                        AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0))
                 .withId(hasher);
         var qc =
             QuorumCertificate.createInitialEpochQC(
                 vertex,
-                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0));
+                LedgerHeader.genesis(
+                    AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0));
         var proposerElection = new WeightedRotatingLeaders(validatorSet);
         return new BFTConfiguration(
             proposerElection,
@@ -318,9 +319,8 @@ public class EpochManagerTest {
     epochManager.start();
     BFTValidatorSet nextValidatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)));
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header =
-        LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), nextValidatorSet, 0, 0);
+        LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), nextValidatorSet, 0, 0);
     VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(

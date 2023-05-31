@@ -98,8 +98,7 @@ public class MockedLedgerModule extends AbstractModule {
         final var proposerTimestamp = vertex.proposerTimestamp();
         final LedgerHeader ledgerHeader =
             vertex
-                .getParentHeader()
-                .getLedgerHeader()
+                .parentLedgerHeader()
                 .updateRoundAndTimestamps(
                     vertex.getRound(), consensusParentRoundTimestamp, proposerTimestamp);
 
