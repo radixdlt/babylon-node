@@ -70,6 +70,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
@@ -87,7 +88,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -102,17 +102,17 @@ public final class SanityTest {
   public static Collection<Object[]> parameters() {
     return List.of(
         new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(100)},
+          {false, 100000},
+          {true, 100},
         });
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public SanityTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public SanityTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -136,7 +136,10 @@ public final class SanityTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            10, Decimal.of(1), roundsPerEpoch),
+                            10,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),

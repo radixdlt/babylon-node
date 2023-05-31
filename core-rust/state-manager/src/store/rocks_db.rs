@@ -73,7 +73,6 @@ use crate::{
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
-use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
@@ -655,8 +654,8 @@ impl QueryableTransactionStore for RocksDBStore {
                 self.cf_handle(&TxnIdentifiersByStateVersion),
                 state_version.to_be_bytes(),
             )
-            .expect("DB error loading transaction")
-            .map(|v| manifest_decode(&v).expect("Failed to decode identifiers"))
+            .expect("DB error loading identifiers")
+            .map(|v| scrypto_decode(&v).expect("Failed to decode identifiers"))
     }
 
     fn get_committed_ledger_transaction_receipt(
@@ -749,7 +748,7 @@ impl TransactionIdentifierLoader for RocksDBStore {
             )
             .map(|res| res.unwrap())
             .next()
-            .map(|(_, value)| manifest_decode(&value).expect("Failed to decode identifiers"))
+            .map(|(_, value)| scrypto_decode(&value).expect("Failed to decode identifiers"))
     }
 }
 

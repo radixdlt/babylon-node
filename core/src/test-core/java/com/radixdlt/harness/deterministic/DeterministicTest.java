@@ -122,6 +122,8 @@ public final class DeterministicTest implements AutoCloseable {
     this.stateMonitor = stateMonitor;
   }
 
+  public void suppressUnusedWarning() {}
+
   @Override
   public void close() {
     this.nodes.close();

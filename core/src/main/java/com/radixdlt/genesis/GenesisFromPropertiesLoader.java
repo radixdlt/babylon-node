@@ -75,7 +75,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -169,7 +168,11 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network 
     xrdBalances.forEach((k, v) -> log.info("{}: {}", k, v));
 
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, UInt64.fromNonNegativeLong(100));
+        validators,
+        stakeAmount,
+        stakingAccount,
+        xrdBalances,
+        GenesisConsensusManagerConfig.Builder.productionDefaults());
   }
 
   private String loadRawGenesisFromFile(String genesisFile) {

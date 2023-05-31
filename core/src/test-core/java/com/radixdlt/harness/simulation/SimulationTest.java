@@ -104,6 +104,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
@@ -306,7 +307,7 @@ public final class SimulationTest {
     }
 
     public Builder addMempoolSubmissionsSteadyState(
-        Class<? extends TransactionGenerator> txnGeneratorClass) {
+        Class<? extends TransactionGenerator<RawNotarizedTransaction>> txnGeneratorClass) {
       NodeSelector nodeSelector =
           this.functionalNodeModule.supportsEpochs()
               ? new EpochsNodeSelector()
@@ -324,7 +325,7 @@ public final class SimulationTest {
             @Provides
             @Singleton
             LocalMempoolPeriodicSubmitter mempoolSubmittor(
-                TransactionGenerator transactionGenerator) {
+                TransactionGenerator<RawNotarizedTransaction> transactionGenerator) {
               return new LocalMempoolPeriodicSubmitter(transactionGenerator, nodeSelector);
             }
           });

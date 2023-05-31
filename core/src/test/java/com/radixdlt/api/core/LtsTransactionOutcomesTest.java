@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
 import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
@@ -75,18 +77,16 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.IntentHash;
-import org.junit.Test;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
 
       var faucetAddressStr = ScryptoConstants.FAUCET_ADDRESS.encode(networkDefinition);
 
@@ -296,8 +296,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       }
       var transactionIdentifiers = outcome.getUserTransactionIdentifiers();
       assertThat(transactionIdentifiers).isNotNull();
-      assertThat(transactionIdentifiers.getIntentHash())
-          .isEqualTo(intentHashes.get(i).hex());
+      assertThat(transactionIdentifiers.getIntentHash()).isEqualTo(intentHashes.get(i).hex());
     }
   }
 }

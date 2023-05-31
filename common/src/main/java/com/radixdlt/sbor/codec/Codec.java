@@ -103,8 +103,8 @@ public interface Codec<T> extends UntypedCodec<T> {
       Functions.Func1<TInner, TOuter> unwrap) {
     return Codec.of(
         codec1.getTypeId(),
-        (encoder, value) -> codec1.encodeWithTypeId(encoder, wrap.apply(value)),
-        decoder -> unwrap.apply(codec1.decodeWithTypeId(decoder)));
+        (encoder, value) -> codec1.encodeWithoutTypeId(encoder, wrap.apply(value)),
+        decoder -> unwrap.apply(codec1.decodeWithoutTypeId(decoder)));
   }
 
   @FunctionalInterface

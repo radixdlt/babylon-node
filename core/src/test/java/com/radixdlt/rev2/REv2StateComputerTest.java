@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
@@ -88,7 +89,6 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -142,7 +142,7 @@ public class REv2StateComputerTest {
             Decimal.of(1),
             Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
             Map.of(),
-            UInt64.fromNonNegativeLong(10));
+            GenesisConsensusManagerConfig.Builder.testDefaults());
     var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);
@@ -170,7 +170,7 @@ public class REv2StateComputerTest {
             Decimal.of(1),
             Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
             Map.of(),
-            UInt64.fromNonNegativeLong(10));
+            GenesisConsensusManagerConfig.Builder.testDefaults());
     var genesisResult =
         new LedgerInitializer(injector.getInstance(RustStateComputer.class))
             .prepareAndCommit(genesis);

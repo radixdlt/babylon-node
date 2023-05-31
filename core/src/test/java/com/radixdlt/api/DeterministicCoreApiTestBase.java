@@ -68,7 +68,6 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -84,6 +83,7 @@ import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
@@ -101,7 +101,6 @@ import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
-import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -161,7 +160,10 @@ public abstract class DeterministicCoreApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             GenesisBuilder.createGenesisWithNumValidators(
-                                1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
+                                1,
+                                Decimal.of(1),
+                                GenesisConsensusManagerConfig.Builder.testDefaults()
+                                    .epochExactRoundCount(roundsPerEpoch)),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.mempool(

@@ -102,7 +102,7 @@ public class RadixNodeModuleTest {
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     Guice.createInjector(
             new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+                properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
         .injectMembers(this);
   }
 
@@ -119,7 +119,7 @@ public class RadixNodeModuleTest {
             () ->
                 Guice.createInjector(
                         new RadixNodeModule(
-                            properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+                            properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -138,7 +138,7 @@ public class RadixNodeModuleTest {
 
     Guice.createInjector(
             new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testing_default_empty())))
+                properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
         .injectMembers(this);
   }
 

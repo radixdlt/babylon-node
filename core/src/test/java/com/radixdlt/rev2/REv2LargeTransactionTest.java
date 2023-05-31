@@ -73,6 +73,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -90,7 +91,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -115,7 +115,9 @@ public final class REv2LargeTransactionTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
                             10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),

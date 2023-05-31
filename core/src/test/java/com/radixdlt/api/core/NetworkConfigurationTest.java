@@ -73,7 +73,9 @@ public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
   @SuppressWarnings("try")
   public void test_network_configuration() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
       final var response = getStatusApi().statusNetworkConfigurationPost();
 
       assertThat(response.getNetwork())

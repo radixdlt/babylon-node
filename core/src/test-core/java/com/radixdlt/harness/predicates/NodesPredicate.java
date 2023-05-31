@@ -147,7 +147,11 @@ public final class NodesPredicate {
     return allNodesMatch(
         i -> {
           var reader =
-              i.getInstance(Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
+              i.getInstance(
+                  Key.get(
+                      new TypeLiteral<
+                          MempoolReader<
+                              PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
           return reader.getCount() == count;
         });
   }

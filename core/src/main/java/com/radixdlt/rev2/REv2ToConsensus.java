@@ -87,8 +87,7 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()),
-        validator.stake().toUInt256());
+        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt256());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {
@@ -98,7 +97,7 @@ public final class REv2ToConsensus {
       throw new IllegalStateException("Active validator must have a validator address");
     }
     return new ActiveValidatorInfo(
-            validatorAddress.get(), id.getKey(), Decimal.from(validator.getPower()));
+        validatorAddress.get(), id.getKey(), Decimal.from(validator.getPower()));
   }
 
   public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {
@@ -119,7 +118,7 @@ public final class REv2ToConsensus {
             .map(REv2ToConsensus::validator)
             .collect(ImmutableSet.toImmutableSet());
     return new com.radixdlt.statecomputer.commit.NextEpoch(
-        validators, UInt64.fromNonNegativeLong(nextEpoch.getEpoch()));
+        UInt64.fromNonNegativeLong(nextEpoch.getEpoch()), validators);
   }
 
   public static LedgerHashes ledgerHashes(

@@ -431,7 +431,6 @@ public interface StructCodec<T> extends Codec<T> {
     return fromRecordComponents(TypeToken.of(recordClass), codecs);
   }
 
-  @SuppressWarnings("unchecked")
   static <R extends Record> StructCodec<R> fromRecordComponents(
       TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
     return of(RecordUntypedCodecs.create(recordType, codecs));

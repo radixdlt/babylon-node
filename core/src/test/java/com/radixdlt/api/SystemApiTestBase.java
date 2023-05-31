@@ -78,6 +78,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -95,7 +96,6 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.io.Sender;
 import io.undertow.server.HttpHandler;
@@ -130,8 +130,7 @@ public abstract class SystemApiTestBase {
                             GenesisBuilder.createGenesisWithSingleValidator(
                                 TEST_KEY.getPublicKey(),
                                 Decimal.of(1),
-                                UInt64.fromNonNegativeLong(10),
-                                UInt64.fromNonNegativeLong(1)),
+                                GenesisConsensusManagerConfig.Builder.testDefaults()),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),
                             StateComputerConfig.REV2ProposerConfig.mempool(

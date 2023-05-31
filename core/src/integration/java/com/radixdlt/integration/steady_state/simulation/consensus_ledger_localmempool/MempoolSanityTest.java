@@ -107,7 +107,10 @@ public class MempoolSanityTest {
                   @Override
                   protected void configure() {
                     bind(new TypeLiteral<
-                            Mempool<RawNotarizedTransaction, PreparedNotarizedTransaction, NotarizedTransactionHash>>() {})
+                            Mempool<
+                                RawNotarizedTransaction,
+                                PreparedNotarizedTransaction,
+                                NotarizedTransactionHash>>() {})
                         .toInstance(Mempools.empty());
                   }
                 })

@@ -71,6 +71,6 @@ public final class OlympiaStateToBabylonGenesisMapper {
 
   public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
     // TODO(genesis): coming in a separate PR
-    return GenesisData.testing_default_empty();
+    return GenesisData.testingDefaultEmpty();
   }
 }

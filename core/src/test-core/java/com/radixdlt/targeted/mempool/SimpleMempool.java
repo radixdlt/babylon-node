@@ -68,7 +68,6 @@ import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 

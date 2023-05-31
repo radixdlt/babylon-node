@@ -74,7 +74,8 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
     extends DeterministicCoreApiTestBase {
   @Test
   public void test_misc_state_endpoints() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
       // We test all these together because they can bootstrap each other to easily find real
       // addresses from genesis!
@@ -89,13 +90,17 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       // endpoints don't panic
 
       final var stateConsensusManagerResponse =
-          getStateApi().stateConsensusManagerPost(new StateConsensusManagerRequest().network(networkLogicalName));
+          getStateApi()
+              .stateConsensusManagerPost(
+                  new StateConsensusManagerRequest().network(networkLogicalName));
 
-      final var stateSubstate = (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
+      final var stateSubstate =
+          (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
       assertThat(stateSubstate.getEpoch()).isGreaterThanOrEqualTo(0);
 
       final var validatorAddress =
-          ((ConsensusManagerFieldCurrentValidatorSetSubstate) stateConsensusManagerResponse.getCurrentValidatorSet())
+          ((ConsensusManagerFieldCurrentValidatorSetSubstate)
+                  stateConsensusManagerResponse.getCurrentValidatorSet())
               .getValidatorSet()
               .get(0)
               .getAddress();
@@ -112,7 +117,12 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
           (AccessRulesModuleFieldAccessRulesSubstate) validatorResponse.getAccessRules();
       //noinspection OptionalGetWithoutIsPresent
       final var ownerAccessRule =
-          (ProtectedAccessRule) accessRulesSubstate.getAccessRules().getRules().stream().filter(r -> r.getKey().getName().equals("Owner")).findFirst().get().getRule();
+          (ProtectedAccessRule)
+              accessRulesSubstate.getAccessRules().getRules().stream()
+                  .filter(r -> r.getKey().getName().equals("Owner"))
+                  .findFirst()
+                  .get()
+                  .getRule();
       final var proofRuleNode = (ProofAccessRuleNode) ownerAccessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
       final var requirement = (NonFungibleRequirement) requireProofRule.getRequirement();

@@ -80,30 +80,28 @@ public final class GenesisBuilder {
   public static GenesisData createGenesisWithSingleValidator(
       ECDSASecp256k1PublicKey validator,
       Decimal initialStake,
-      UInt64 roundsPerEpoch,
-      UInt64 numUnstakeEpochs) {
+      GenesisConsensusManagerConfig.Builder builder) {
     final var validatorsAndStakesChunks =
         prepareValidatorsAndStakesChunks(
             ImmutableList.of(Tuple.Tuple2.of(validator, initialStake)));
     return new GenesisData(
-        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        numUnstakeEpochs);
+        UInt64.fromNonNegativeLong(1),
+        0,
+        builder.build(),
+        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()));
   }
 
   public static GenesisData createGenesisWithNumValidators(
-      int numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
+      int numValidators, Decimal initialStake, GenesisConsensusManagerConfig.Builder builder) {
     return createGenesisWithNumValidatorsAndXrdBalances(
-        numValidators, initialStake, Map.of(), roundsPerEpoch);
+        numValidators, initialStake, Map.of(), builder);
   }
 
   public static GenesisData createGenesisWithNumValidatorsAndXrdBalances(
       int numValidators,
       Decimal initialStake,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
-      UInt64 roundsPerEpoch) {
+      GenesisConsensusManagerConfig.Builder configBuilder) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
     if (!xrdBalances.isEmpty()) {
@@ -121,11 +119,7 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        chunksBuilder.build(),
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        UInt64.fromNonNegativeLong(10));
+        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -133,7 +127,7 @@ public final class GenesisBuilder {
       Decimal initialStake,
       ComponentAddress stakerAddress,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
-      UInt64 roundsPerEpoch) {
+      GenesisConsensusManagerConfig.Builder configBuilder) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
     if (!xrdBalances.isEmpty()) {
@@ -151,11 +145,7 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        chunksBuilder.build(),
-        UInt64.fromNonNegativeLong(0),
-        UInt32.fromNonNegativeInt(100),
-        roundsPerEpoch,
-        UInt64.fromNonNegativeLong(10));
+        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

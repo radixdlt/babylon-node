@@ -148,7 +148,10 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
       totalTxnsRead += resp.getTransactions().size();
 
       final var maxReceivedStateVersion =
-          resp.getTransactions().get(resp.getTransactions().size() - 1).getResultantStateIdentifiers().getStateVersion();
+          resp.getTransactions()
+              .get(resp.getTransactions().size() - 1)
+              .getResultantStateIdentifiers()
+              .getStateVersion();
       stateVersion = maxReceivedStateVersion + 1;
     }
 

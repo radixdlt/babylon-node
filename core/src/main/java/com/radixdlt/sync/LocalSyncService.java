@@ -88,7 +88,6 @@ import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import java.util.Collections;
 import java.util.Comparator;

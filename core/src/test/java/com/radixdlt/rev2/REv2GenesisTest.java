@@ -72,6 +72,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
@@ -84,7 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.utils.UInt64;
 import java.util.Map;
 import org.junit.Test;
 
@@ -148,7 +148,7 @@ public final class REv2GenesisTest {
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            UInt64.fromNonNegativeLong(10)),
+                            GenesisConsensusManagerConfig.Builder.testDefaults()),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, 0, MempoolRelayConfig.of())))));

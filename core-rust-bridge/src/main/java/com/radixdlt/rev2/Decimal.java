@@ -109,8 +109,17 @@ public class Decimal implements Comparable<Decimal> {
     return new Decimal(underlying);
   }
 
+  public static Decimal fraction(long numerator, long denominator) {
+    return Decimal.of(numerator).divide(denominator);
+  }
+
   public Decimal subtract(Decimal other) {
     var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
+  public Decimal divide(long divisor) {
+    var newUnderlying = this.underlyingValue.divide(UInt256.from(divisor));
     return new Decimal(newUnderlying);
   }
 

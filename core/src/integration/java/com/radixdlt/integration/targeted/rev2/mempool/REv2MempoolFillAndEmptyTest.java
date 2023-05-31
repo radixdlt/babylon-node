@@ -71,6 +71,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.integration.Slow;
@@ -88,7 +89,6 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.Assertions;
@@ -117,7 +117,9 @@ public final class REv2MempoolFillAndEmptyTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
@@ -130,7 +132,11 @@ public final class REv2MempoolFillAndEmptyTest {
 
     var rateLimiter = RateLimiter.create(0.5);
     var mempoolReader =
-        test.getInstance(0, Key.get(new TypeLiteral<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
+        test.getInstance(
+            0,
+            Key.get(
+                new TypeLiteral<
+                    MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 

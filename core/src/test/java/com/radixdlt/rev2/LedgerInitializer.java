@@ -83,9 +83,7 @@ public final class LedgerInitializer {
               .skip(validatorIndex)
               .findFirst()
               .orElseThrow(() -> new IllegalStateException("some validator expected"));
-      return BFTValidatorId.create(
-          validator.address(),
-          validator.key());
+      return BFTValidatorId.create(validator.address(), validator.key());
     }
   }
 

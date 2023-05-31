@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -86,7 +87,6 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt64;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -104,10 +104,10 @@ public final class MultiNodeRebootTest {
   public static Collection<Object[]> numNodes() {
     return List.of(
         new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000), 4, 500},
-          {false, UInt64.fromNonNegativeLong(100000), 10, 200},
-          {true, UInt64.fromNonNegativeLong(100), 4, 500},
-          {true, UInt64.fromNonNegativeLong(100), 10, 200}
+          {false, 100000, 4, 500},
+          {false, 100000, 10, 200},
+          {true, 100, 4, 500},
+          {true, 100, 10, 200}
         });
   }
 
@@ -178,12 +178,12 @@ public final class MultiNodeRebootTest {
 
   private final Random random = new Random(12345);
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
   private final int numValidators;
   private final int numTestRounds;
 
   public MultiNodeRebootTest(
-      boolean epochs, UInt64 roundsPerEpoch, int numValidators, int numTestRounds) {
+      boolean epochs, long roundsPerEpoch, int numValidators, int numTestRounds) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
     this.numValidators = numValidators;
@@ -212,7 +212,10 @@ public final class MultiNodeRebootTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     GenesisBuilder.createGenesisWithNumValidators(
-                        numValidators, Decimal.of(1), this.roundsPerEpoch),
+                        numValidators,
+                        Decimal.of(1),
+                        GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                            this.roundsPerEpoch)),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),

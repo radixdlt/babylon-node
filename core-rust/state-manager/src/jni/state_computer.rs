@@ -97,8 +97,8 @@ use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKey
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaGenesisData {
     pub initial_epoch: Epoch,
-    pub initial_config: JavaConsensusManagerConfig,
     pub initial_timestamp_ms: i64,
+    pub initial_config: JavaConsensusManagerConfig,
     pub chunks: Vec<GenesisDataChunk>,
 }
 

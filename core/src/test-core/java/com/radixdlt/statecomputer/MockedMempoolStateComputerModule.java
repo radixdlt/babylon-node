@@ -82,12 +82,8 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.targeted.mempool.SimpleMempool;
-import com.radixdlt.transactions.NotarizedTransactionHash;
-import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -164,13 +160,13 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       public void commit(
           CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(
-          txnsAndProof.getTransactions().stream()
-              .map(ledgerTransaction -> {
-                // This undoes the (incorrect) re-mapping in MockExecuted
-                return RawNotarizedTransaction.create(ledgerTransaction.getPayload());
-              })
-              .toList()
-        );
+            txnsAndProof.getTransactions().stream()
+                .map(
+                    ledgerTransaction -> {
+                      // This undoes the (incorrect) re-mapping in MockExecuted
+                      return RawNotarizedTransaction.create(ledgerTransaction.getPayload());
+                    })
+                .toList());
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);
       }

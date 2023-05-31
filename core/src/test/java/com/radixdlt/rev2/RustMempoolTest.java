@@ -89,7 +89,7 @@ public final class RustMempoolTest {
   private static void initStateComputer(StateManager stateManager) {
     new LedgerInitializer(
             new RustStateComputer(new MetricsInitializer().initialize(), stateManager))
-        .prepareAndCommit(GenesisData.testing_default_empty());
+        .prepareAndCommit(GenesisData.testingDefaultEmpty());
   }
 
   @Test

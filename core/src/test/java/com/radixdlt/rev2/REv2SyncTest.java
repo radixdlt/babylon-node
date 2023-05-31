@@ -70,6 +70,7 @@ import static com.radixdlt.harness.predicates.NodePredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
@@ -83,7 +84,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -98,16 +98,13 @@ public class REv2SyncTest {
 
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000)}, {true, UInt64.fromNonNegativeLong(10)}
-        });
+    return List.of(new Object[][] {{false, 100000}, {true, 10}});
   }
 
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public REv2SyncTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public REv2SyncTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -126,7 +123,10 @@ public class REv2SyncTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), roundsPerEpoch),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(200, 10, 2000))));

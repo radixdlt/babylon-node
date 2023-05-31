@@ -190,10 +190,8 @@ impl HasSummary for PreparedLedgerTransactionInner {
     }
 }
 
-impl TransactionPayloadPreparable for PreparedLedgerTransaction {
-    type Raw = RawLedgerTransaction;
-
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
+    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
         let (discriminator, length) = decoder.read_enum_header()?;
         let prepared_inner = match discriminator {
@@ -234,16 +232,27 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
                 ));
             }
         };
+        decoder.track_stack_depth_decrease()?;
+
+        Ok(prepared_inner)
+    }
+}
+
+impl TransactionPayloadPreparable for PreparedLedgerTransaction {
+    type Raw = RawLedgerTransaction;
+
+    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        decoder.track_stack_depth_increase()?;
+        decoder.read_expected_enum_variant_header(TransactionDiscriminator::V1Ledger as u8, 1)?;
+        let prepared_inner = PreparedLedgerTransactionInner::prepare_as_full_body_child(decoder)?;
+        decoder.track_stack_depth_decrease()?;
 
         let summary = Summary {
             effective_length: prepared_inner.get_summary().effective_length,
             total_bytes_hashed: prepared_inner.get_summary().total_bytes_hashed,
             hash: prepared_inner.get_ledger_hash().0,
         };
-
-        decoder.track_stack_depth_decrease()?;
         let end_offset = decoder.get_offset();
-
         Ok(Self {
             inner: prepared_inner,
             summary,

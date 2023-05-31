@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.ran
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -83,7 +84,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -108,9 +108,9 @@ public final class MultiNodeRecoveryTest {
   public static Collection<Object[]> parameters() {
     return List.of(
         new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(10)},
-          {true, UInt64.fromNonNegativeLong(100)},
+          {false, 100000},
+          {true, 10},
+          {true, 100},
         });
   }
 
@@ -120,9 +120,9 @@ public final class MultiNodeRecoveryTest {
   private final Random random = new Random(12345);
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public MultiNodeRecoveryTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public MultiNodeRecoveryTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -142,7 +142,10 @@ public final class MultiNodeRecoveryTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            NUM_VALIDATORS, Decimal.of(1), this.roundsPerEpoch),
+                            NUM_VALIDATORS,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));

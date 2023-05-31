@@ -66,7 +66,6 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;

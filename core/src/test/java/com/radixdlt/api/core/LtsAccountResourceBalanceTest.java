@@ -80,6 +80,7 @@ public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTes
   @Test
   public void test_lts_account_xrd_balance() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
 
       var accountKeyPair = ECKeyPair.generateNew();
       var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());

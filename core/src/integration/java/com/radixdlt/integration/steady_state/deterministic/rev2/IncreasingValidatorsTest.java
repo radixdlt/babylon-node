@@ -75,6 +75,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -92,7 +93,6 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -118,7 +118,9 @@ public final class IncreasingValidatorsTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             2, 2 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
@@ -165,11 +167,11 @@ public final class IncreasingValidatorsTest {
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(createValidatorRawTxn, true, true)));
         var transactionDetails =
-            NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), createValidatorRawTxn);
+            NodesReader.getCommittedTransactionDetails(
+                test.getNodeInjectors(), createValidatorRawTxn);
         var validatorAddress = transactionDetails.newComponentAddresses().get(0);
         test.restartNodeWithConfig(
-            i + 1,
-            PhysicalNodeConfig.create(key.getPublicKey(), validatorAddress));
+            i + 1, PhysicalNodeConfig.create(key.getPublicKey(), validatorAddress));
         var registerValidatorTxn =
             TransactionBuilder.forTests()
                 .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))

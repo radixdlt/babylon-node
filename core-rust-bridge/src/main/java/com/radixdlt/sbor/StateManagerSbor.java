@@ -68,12 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.GenesisDataChunk;
-import com.radixdlt.genesis.GenesisResource;
-import com.radixdlt.genesis.GenesisResourceAllocation;
-import com.radixdlt.genesis.GenesisStakeAllocation;
-import com.radixdlt.genesis.GenesisValidator;
+import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.ProposalTransactionsRequest;
@@ -124,6 +119,14 @@ public final class StateManagerSbor {
     StateManagerConfig.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
+    PreparedIntent.registerCodec(codecMap);
+    PreparedSignedIntent.registerCodec(codecMap);
+    PreparedNotarizedTransaction.registerCodec(codecMap);
+    IntentHash.registerCodec(codecMap);
+    SignedIntentHash.registerCodec(codecMap);
+    NotarizedTransactionHash.registerCodec(codecMap);
+    LedgerTransactionHash.registerCodec(codecMap);
+    LegacyLedgerPayloadHash.registerCodec(codecMap);
     TransactionStatus.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);
@@ -153,6 +156,8 @@ public final class StateManagerSbor {
     PreviousVertex.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
+    CommittableTransaction.registerCodec(codecMap);
+    RejectedTransaction.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);
     ActiveValidatorInfo.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
@@ -163,14 +168,12 @@ public final class StateManagerSbor {
     CoreApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);
     GenesisData.registerCodec(codecMap);
+    GenesisConsensusManagerConfig.registerCodec(codecMap);
     GenesisDataChunk.registerCodec(codecMap);
     GenesisResource.registerCodec(codecMap);
     GenesisResourceAllocation.registerCodec(codecMap);
     GenesisValidator.registerCodec(codecMap);
     GenesisStakeAllocation.registerCodec(codecMap);
-    PreparedIntent.registerCodec(codecMap);
-    PreparedSignedIntent.registerCodec(codecMap);
-    PreparedNotarizedTransaction.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

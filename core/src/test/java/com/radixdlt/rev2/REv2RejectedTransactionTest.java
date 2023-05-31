@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -86,7 +87,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -101,15 +101,13 @@ public final class REv2RejectedTransactionTest {
 
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
-        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+    return List.of(new Object[] {false, 100000}, new Object[] {true, 100});
   }
 
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public REv2RejectedTransactionTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public REv2RejectedTransactionTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -129,7 +127,10 @@ public final class REv2RejectedTransactionTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), roundsPerEpoch),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }

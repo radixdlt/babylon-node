@@ -80,7 +80,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**

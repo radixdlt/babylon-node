@@ -209,16 +209,20 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 maxNumTransactionsPerProposal, maxPayloadSize, previousTransactionHashes)
             : List.<PreparedNotarizedTransaction>of();
 
-    final var proposedRawTransactions = result.stream().map(PreparedNotarizedTransaction::raw).toList();
+    final var proposedRawTransactions =
+        result.stream().map(PreparedNotarizedTransaction::raw).toList();
 
     final var proposedTotalNotarizedTxnPayloadSize =
-          proposedRawTransactions.stream().map(tx -> tx.payload().length).reduce(0, Integer::sum);
+        proposedRawTransactions.stream().map(tx -> tx.payload().length).reduce(0, Integer::sum);
 
     final var totalUncommittedTxnBytesIncludingThisProposal =
         proposedTotalNotarizedTxnPayloadSize + rawPreviousExecutedTransactionsSize;
 
     metrics.bft().leaderNumTransactionsIncludedInProposal().observe(result.size());
-    metrics.bft().leaderTransactionBytesIncludedInProposal().observe(proposedTotalNotarizedTxnPayloadSize);
+    metrics
+        .bft()
+        .leaderTransactionBytesIncludedInProposal()
+        .observe(proposedTotalNotarizedTxnPayloadSize);
     metrics
         .bft()
         .leaderTransactionBytesIncludedInProposalAndPreviousVertices()

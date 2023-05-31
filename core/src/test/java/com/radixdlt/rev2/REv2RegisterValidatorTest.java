@@ -77,6 +77,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -92,7 +93,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -119,7 +119,9 @@ public final class REv2RegisterValidatorTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 2, MempoolRelayConfig.of())))));

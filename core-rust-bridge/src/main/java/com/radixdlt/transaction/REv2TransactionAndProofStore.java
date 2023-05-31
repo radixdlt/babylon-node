@@ -104,6 +104,11 @@ public final class REv2TransactionAndProofStore {
         Natives.builder(stateManager, REv2TransactionAndProofStore::getLastProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
+    this.getFirstEpochProofFunc =
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getFirstEpochProof)
+            .measure(
+                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getFirstEpochProof")))
+            .build(new TypeToken<>() {});
     this.getEpochProofFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
@@ -134,6 +139,10 @@ public final class REv2TransactionAndProofStore {
     return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
+  public Optional<LedgerProof> getFirstEpochProof() {
+    return this.getFirstEpochProofFunc.call(Tuple.tuple()).toOptional();
+  }
+
   public Optional<LedgerProof> getEpochProof(long epoch) {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
@@ -156,6 +165,10 @@ public final class REv2TransactionAndProofStore {
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getFirstEpochProofFunc;
+
+  private static native byte[] getFirstEpochProof(StateManager stateManager, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 

@@ -77,6 +77,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction

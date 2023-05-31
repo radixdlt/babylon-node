@@ -78,6 +78,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_mempool_queries() throws Exception {
     try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().prepare();
 
@@ -108,7 +109,9 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .payloadHash(transaction.hexNotarizedTransactionHash()));
 
-      assertThat(RawNotarizedTransaction.create(Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
+      assertThat(
+              RawNotarizedTransaction.create(
+                  Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
           .isEqualTo(transaction.raw());
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
