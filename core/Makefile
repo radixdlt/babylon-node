@@ -6,7 +6,7 @@ all:
     $(eval GIT_COMMIT=$(shell git log -1 --format=%h ))
     TAG ?= $(GIT_BRANCH)-$(GIT_COMMIT)
     CORE_REPO ?= $(REGISTRY)/private-babylon-node
-    DOCKERHUB_CACHE_REPO ?= $(REGISTRY)private-babylon-node-cache
+    DOCKERHUB_CACHE_REPO ?= $(REGISTRY)/private-babylon-node-cache
 
 .PHONY: gcloud-authenticate
 gcloud-authenticate:
