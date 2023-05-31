@@ -73,8 +73,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-/*
-Note - this builder is stateful, not immutable
+/**
+ * The TransactionBuilder is designed to create transactions for tests.
+ * By default, it will create a minimal valid transaction, but this can be re-configured
+ * using the builder pattern.
+ * Note - this builder is stateful, not immutable
 */
 public class TransactionBuilder {
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);

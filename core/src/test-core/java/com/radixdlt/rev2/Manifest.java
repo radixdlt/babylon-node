@@ -69,9 +69,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Functions;
 
-/*
-Note - this builder is stateful, not immutable
-*/
+/**
+ * Used for creating various manifests - designed to work well with the
+ * TransactionBuilder
+ */
 public class Manifest {
   public record Parameters(NetworkDefinition network) {
     public String faucetLockFeeLine() {
