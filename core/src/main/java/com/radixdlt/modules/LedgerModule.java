@@ -77,9 +77,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
 import java.util.Comparator;
 
@@ -91,8 +88,6 @@ public class LedgerModule extends AbstractModule {
     bind(new TypeLiteral<Comparator<LedgerProof>>() {})
         .to(OrderByEpochAndVersionComparator.class)
         .in(Scopes.SINGLETON);
-    bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-    bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
     bind(StateComputerLedger.class).in(Scopes.SINGLETON);
   }
 

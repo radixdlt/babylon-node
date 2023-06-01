@@ -286,10 +286,14 @@ where
             .ledger_header;
         let epoch_identifiers = EpochTransactionIdentifiers::from(&epoch_header);
 
-        debug_assert_eq!(
-            base_transaction_identifiers.accumulator_hash,
-            prepare_request.parent_accumulator
-        );
+        if prepare_request.committed_accumulator_state
+            != AccumulatorState::new(&base_transaction_identifiers)
+        {
+            panic!(
+                "state {:?} from request does not match the current ledger state {:?}",
+                prepare_request.committed_accumulator_state, base_transaction_identifiers
+            );
+        }
 
         //========================================================================================
         // PART 1:
@@ -300,7 +304,7 @@ where
         //========================================================================================
 
         let prepared_proposed_results: Vec<_> = prepare_request
-            .proposed_payloads
+            .proposed_transactions
             .iter()
             .map(
                 |raw| -> Result<
@@ -349,13 +353,7 @@ where
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
-        let ancestor_transactions: Vec<_> = prepare_request
-            .prepared_vertices
-            .into_iter()
-            .flat_map(|v| v.transaction_payloads)
-            .collect();
-
-        for raw_ancestor in ancestor_transactions {
+        for raw_ancestor in prepare_request.prepared_uncommitted_transactions {
             // TODO - By passing through the accumulator / tree hash, avoid doing all this validation if the
             // transactions are already in the execution cache!
             let validated = self
@@ -387,9 +385,27 @@ where
                 );
 
                 let commit = processed.expect_commit(format!("already prepared {}", payload_hash));
-                // TODO: Do we need to check that next epoch request has been prepared?
+
+                if let Some(next_epoch) = commit.next_epoch() {
+                    panic!(
+                        "Already prepared transaction {:?} should not contain next epoch {:?}",
+                        state_tracker.latest_transaction_identifiers(),
+                        next_epoch
+                    );
+                }
+
                 state_tracker.update(&commit.hash_structures_diff);
             }
+        }
+
+        if prepare_request.prepared_uncommitted_accumulator_state
+            != AccumulatorState::new(state_tracker.latest_transaction_identifiers())
+        {
+            panic!(
+                "State {:?} after prepared transactions does not match the state {:?} from request",
+                state_tracker.latest_transaction_identifiers(),
+                prepare_request.prepared_uncommitted_accumulator_state,
+            );
         }
 
         //========================================================================================
@@ -660,6 +676,9 @@ where
             rejected: rejected_transactions,
             next_epoch,
             ledger_hashes: *state_tracker.latest_ledger_hashes(),
+            accumulator_state: AccumulatorState::new(
+                state_tracker.latest_transaction_identifiers(),
+            ),
         }
     }
 

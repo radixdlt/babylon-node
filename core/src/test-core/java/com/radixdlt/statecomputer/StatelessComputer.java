@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -73,6 +72,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
@@ -123,8 +123,9 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      HashCode parentAccumulator,
-      List<ExecutedVertex> previousVertices,
+      AccumulatorState committedAccumulatorState,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      AccumulatorState preparedUncommittedAccumulatorState,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
@@ -143,7 +144,12 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactionCount;
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
+        successfulTransactions,
+        invalidTransactionCount,
+        LedgerHashes.zero(),
+        new AccumulatorState(
+            preparedUncommittedAccumulatorState.getStateVersion() + successfulTransactions.size(),
+            HashUtils.zero256()));
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {

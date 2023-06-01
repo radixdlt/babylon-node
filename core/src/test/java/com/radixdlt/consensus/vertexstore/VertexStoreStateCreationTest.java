@@ -82,13 +82,7 @@ public class VertexStoreStateCreationTest {
   private HashCode genesisHash;
   private Hasher hasher;
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(
-          0,
-          Round.genesis(),
-          new AccumulatorState(0, HashUtils.zero256()),
-          LedgerHashes.zero(),
-          0,
-          0);
+      LedgerHeader.create(0, Round.genesis(), AccumulatorState.zero(), LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setup() {

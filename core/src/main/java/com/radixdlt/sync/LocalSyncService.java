@@ -74,7 +74,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -131,7 +131,6 @@ public final class LocalSyncService {
   private final Comparator<AccumulatorState> accComparator;
   private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
   private final RemoteSyncResponseSignaturesVerifier signaturesVerifier;
-  private final LedgerAccumulatorVerifier accumulatorVerifier;
   private final VerifiedSyncResponseHandler verifiedSyncResponseHandler;
   private final InvalidSyncResponseHandler invalidSyncResponseHandler;
 
@@ -153,7 +152,6 @@ public final class LocalSyncService {
       Comparator<AccumulatorState> accComparator,
       RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
       RemoteSyncResponseSignaturesVerifier signaturesVerifier,
-      LedgerAccumulatorVerifier accumulatorVerifier,
       VerifiedSyncResponseHandler verifiedSyncResponseHandler,
       InvalidSyncResponseHandler invalidSyncResponseHandler,
       SyncState initialState) {
@@ -170,7 +168,6 @@ public final class LocalSyncService {
     this.accComparator = Objects.requireNonNull(accComparator);
     this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
     this.signaturesVerifier = Objects.requireNonNull(signaturesVerifier);
-    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
     this.verifiedSyncResponseHandler = Objects.requireNonNull(verifiedSyncResponseHandler);
     this.invalidSyncResponseHandler = Objects.requireNonNull(invalidSyncResponseHandler);
 
@@ -454,28 +451,41 @@ public final class LocalSyncService {
       log.warn("LocalSync: Received empty sync response from {}", sender);
       // didn't receive any transactions, remove from candidate peers and processSync
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
-    } else if (!this.verifySyncResponse(syncResponse)) {
-      log.warn("LocalSync: Received invalid sync response {} from {}", syncResponse, sender);
-      // validation failed, remove from candidate peers and processSync
+    }
+
+    if (!this.verifySyncResponse(syncResponse)) {
+      log.warn(
+          "LocalSync: Received consensus-mismatched sync response {} from {}",
+          syncResponse,
+          sender);
+      // consensus-level validation failed, remove from candidate peers and processSync
       invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
-    } else {
-      this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-          SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
-      this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
-      return currentState.clearPendingRequest();
     }
+
+    try {
+      this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
+    } catch (ByzantineQuorumException exception) {
+      // TODO: at some point in future, we may want to distinguish between different causes of this
+      // exception (i.e. would need to be passed from the Engine).
+      // E.g. a mismatched accumulator hash is an indication of a dishonest sender, but a mismatched
+      // state hash may be a problem with a local database. Right now we always punish the sender.
+      log.warn(
+          "LocalSync: Received ledger-mismatched ({}) sync response {} from {}",
+          exception.getMessage(),
+          syncResponse,
+          sender);
+      // ledger-level validation failed, remove from candidate peers and processSync
+      invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
+      return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+    }
+
+    this.syncLedgerUpdateTimeoutDispatcher.dispatch(
+        SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
+    return currentState.clearPendingRequest();
   }
 
   private boolean verifySyncResponse(SyncResponse syncResponse) {
-    final var transactionsWithProofDto = syncResponse.getTransactionsWithProofDto();
-    final var start = transactionsWithProofDto.getHead().getLedgerHeader().getAccumulatorState();
-    final var end = transactionsWithProofDto.getTail().getLedgerHeader().getAccumulatorState();
-    final var hashes =
-        transactionsWithProofDto.getTransactions().stream()
-            .map(t -> t.getLegacyPayloadHash().inner())
-            .collect(ImmutableList.toImmutableList());
-
     if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {
       log.warn("Invalid validator set");
       return false;
@@ -483,11 +493,6 @@ public final class LocalSyncService {
 
     if (!this.signaturesVerifier.verifyResponseSignatures(syncResponse)) {
       log.warn("Invalid signatures");
-      return false;
-    }
-
-    if (!this.accumulatorVerifier.verify(start, hashes, end)) {
-      log.warn("Invalid accumulator");
       return false;
     }
 

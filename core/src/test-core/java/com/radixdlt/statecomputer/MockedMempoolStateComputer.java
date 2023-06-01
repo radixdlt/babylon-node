@@ -62,78 +62,82 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.*;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import javax.annotation.concurrent.ThreadSafe;
+import java.util.Set;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Hash chain accumulator and verifier */
-@ThreadSafe
-public class SimpleLedgerAccumulatorAndVerifier
-    implements LedgerAccumulator, LedgerAccumulatorVerifier {
-  private final Hasher hasher;
+public final class MockedMempoolStateComputer implements StateComputer {
+
+  private static final Logger log = LogManager.getLogger();
+
+  private final SimpleMempool mempool;
+  private final MockedStateComputer stateComputer;
 
   @Inject
-  public SimpleLedgerAccumulatorAndVerifier(Hasher hasher) {
-    this.hasher = hasher;
+  public MockedMempoolStateComputer(
+      SimpleMempool mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.mempool = mempool;
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
+
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
+    mempoolAdd
+        .transactions()
+        .forEach(
+            txn -> {
+              try {
+                this.mempool.addTransaction(txn);
+              } catch (MempoolRejectedException e) {
+                log.error(e);
+              }
+            });
   }
 
   @Override
-  public AccumulatorState accumulate(AccumulatorState parent, HashCode hash) {
-    byte[] concat = new byte[32 * 2];
-    System.arraycopy(parent.getAccumulatorHash().asBytes(), 0, concat, 0, 32);
-    System.arraycopy(hash.asBytes(), 0, concat, 32, 32);
-    HashCode nextAccumulatorHash = hasher.hashBytes(concat);
-    return new AccumulatorState(parent.getStateVersion() + 1, nextAccumulatorHash);
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return this.mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, Set.of());
   }
 
   @Override
-  public boolean verify(
-      AccumulatorState start, ImmutableList<HashCode> transactions, AccumulatorState end) {
-    AccumulatorState accumulatorState = start;
-    for (HashCode hash : transactions) {
-      accumulatorState = this.accumulate(accumulatorState, hash);
-    }
-    return Objects.equals(accumulatorState, end);
+  public StateComputerResult prepare(
+      AccumulatorState committedAccumulatorState,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      AccumulatorState preparedUncommittedAccumulatorState,
+      List<RawNotarizedTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    return this.stateComputer.prepare(
+        committedAccumulatorState,
+        preparedUncommittedVertices,
+        preparedUncommittedAccumulatorState,
+        proposedTransactions,
+        roundDetails);
   }
 
   @Override
-  public <T> Optional<List<T>> verifyAndGetExtension(
-      AccumulatorState current,
-      List<T> transactions,
-      Function<T, HashCode> hashCodeMapper,
-      AccumulatorState tail) {
-    if (tail.getStateVersion() < current.getStateVersion()) {
-      throw new IllegalArgumentException(
-          String.format("Tail %s is has lower state version than current %s", tail, current));
-    }
-
-    final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
-    if (current.getStateVersion() + 1 < firstVersion) {
-      // Missing versions
-      return Optional.empty();
-    }
-
-    if (transactions.isEmpty()) {
-      return Objects.equals(current, tail) ? Optional.of(ImmutableList.of()) : Optional.empty();
-    }
-
-    final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-    final List<T> extension = transactions.subList(startIndex, transactions.size());
-    final ImmutableList<HashCode> hashes =
-        extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
-    if (!verify(current, hashes, tail)) {
-      // Does not extend
-      return Optional.empty();
-    }
-
-    return Optional.of(extension);
+  public void commit(
+      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
+    this.stateComputer.commit(committedTransactionsWithProof, vertexStore);
+    this.mempool.handleTransactionsCommitted(
+        committedTransactionsWithProof.getTransactions().stream()
+            .map(t -> RawNotarizedTransaction.create(t.getPayload()))
+            .toList());
   }
 }

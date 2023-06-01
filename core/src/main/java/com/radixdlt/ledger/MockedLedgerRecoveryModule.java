@@ -68,7 +68,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
 
@@ -78,8 +77,7 @@ public class MockedLedgerRecoveryModule extends AbstractModule {
   @Provides
   @LastEpochProof
   public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
+    return LedgerProof.genesis(AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
   }
 
   @Provides

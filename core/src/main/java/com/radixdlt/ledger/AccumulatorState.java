@@ -67,6 +67,7 @@ package com.radixdlt.ledger;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -100,6 +101,10 @@ public final class AccumulatorState {
 
     this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
     this.stateVersion = stateVersion;
+  }
+
+  public static AccumulatorState zero() {
+    return new AccumulatorState(0, HashUtils.zero256());
   }
 
   public long getStateVersion() {
