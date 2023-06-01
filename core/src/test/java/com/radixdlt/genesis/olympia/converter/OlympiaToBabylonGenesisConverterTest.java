@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.genesis.olympia.converter.OlympiaToBabylonGenesisConverterTestUtils.createXrdResource;
 import static com.radixdlt.lang.Tuple.tuple;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -396,7 +397,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
       List<GenesisDataChunk.Validators> validatorsChunks,
       List<GenesisDataChunk.Stakes> stakesChunks) {
 
-    verifyExpectedChunksCount(
+    verifyExpectedChunksCountAndNumElementsPerChunk(
         stateSummary.validators.size(), CONVERTER_CONFIG.maxValidatorsPerChunk(), validatorsChunks);
 
     final var allValidators =
@@ -408,7 +409,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
     final var olympiaTotalStakes =
         stateSummary.validators.stream().mapToInt(v -> v.stakes.size()).sum();
-    verifyExpectedChunksCount(
+    verifyExpectedChunksCountAndNumElementsPerChunk(
         olympiaTotalStakes, CONVERTER_CONFIG.maxStakesPerChunk(), stakesChunks);
 
     final var babylonTotalStakesAllocations =
@@ -463,7 +464,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
   private void checkXrdBalances(
       OlympiaStateSummary stateSummary, List<GenesisDataChunk.XrdBalances> xrdBalances) {
-    verifyExpectedChunksCount(
+    verifyExpectedChunksCountAndNumElementsPerChunk(
         stateSummary.xrdBalances().size(), CONVERTER_CONFIG.maxXrdBalancesPerChunk(), xrdBalances);
 
     final var babylonTotalXrdBalances = xrdBalances.stream().mapToInt(s -> s.value().size()).sum();
@@ -487,12 +488,12 @@ public final class OlympiaToBabylonGenesisConverterTest {
       List<GenesisDataChunk.Resources> resources,
       List<GenesisDataChunk.ResourceBalances> resourceBalances) {
 
-    verifyExpectedChunksCount(
+    verifyExpectedChunksCountAndNumElementsPerChunk(
         stateSummary.resources().size(), CONVERTER_CONFIG.maxResourcesPerChunk(), resources);
 
     final var numOlympiaResourceBalances =
         stateSummary.resources.stream().mapToInt(r -> r.balances.size()).sum();
-    verifyExpectedChunksCount(
+    verifyExpectedChunksCountAndNumElementsPerChunk(
         numOlympiaResourceBalances,
         CONVERTER_CONFIG.maxNonXrdResourceBalancesPerChunk(),
         resourceBalances);
@@ -572,9 +573,37 @@ public final class OlympiaToBabylonGenesisConverterTest {
     }
   }
 
-  private <T> void verifyExpectedChunksCount(int numElements, int maxElements, List<T> chunks) {
-    final var expected = (int) Math.ceil((double) numElements / maxElements);
+  private <T extends GenesisDataChunk> void verifyExpectedChunksCountAndNumElementsPerChunk(
+      int totalNumElements, int maxElementsPerChunk, List<T> chunks) {
+    final var expected = (int) Math.ceil((double) totalNumElements / maxElementsPerChunk);
     assertEquals(expected, chunks.size());
+    int totalNumElementsInChunks = 0;
+    for (var i = 0; i < chunks.size(); i++) {
+      final var chunk = chunks.get(i);
+      final int numElementsInChunk =
+          switch (chunk) {
+            case GenesisDataChunk.Validators validators -> validators.value().size();
+            case GenesisDataChunk.Stakes stakes -> stakes.allocations().stream()
+                .mapToInt(a -> a.last().size())
+                .sum();
+            case GenesisDataChunk.Resources resources -> resources.value().size();
+            case GenesisDataChunk.ResourceBalances resourceBalances -> resourceBalances
+                .allocations()
+                .stream()
+                .mapToInt(a -> a.last().size())
+                .sum();
+            case GenesisDataChunk.XrdBalances xrdBalances -> xrdBalances.value().size();
+          };
+      if (i == chunks.size() - 1) {
+        // last chunk can have less elements
+        assertTrue(numElementsInChunk <= maxElementsPerChunk);
+      } else {
+        // all other chunks have max elements
+        assertEquals(maxElementsPerChunk, numElementsInChunk);
+      }
+      totalNumElementsInChunks += numElementsInChunk;
+    }
+    assertEquals(totalNumElements, totalNumElementsInChunks);
   }
 
   private static ResourceAddress toGlobalFungibleAddr(byte[] olympiaAddressBytes) {

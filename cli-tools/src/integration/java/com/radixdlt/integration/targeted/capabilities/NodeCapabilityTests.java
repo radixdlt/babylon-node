@@ -309,7 +309,8 @@ public class NodeCapabilityTests {
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    final var genesisDataBase64 = Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
+    final var genesisDataBase64 =
+        Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
     return nodeBuilder()
         .p2pServer(port)
         .ledgerSync()
