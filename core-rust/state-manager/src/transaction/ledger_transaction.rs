@@ -58,10 +58,17 @@ impl TypedTransactionIdentifiers {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub enum LedgerTransaction {
+    #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
     Genesis(Box<SystemTransactionV1>),
+    #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<NotarizedTransactionV1>),
+    #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<RoundUpdateTransactionV1>),
 }
+
+const GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 0;
+const USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 1;
+const ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 2;
 
 define_raw_transaction_payload!(RawLedgerTransaction);
 
@@ -161,22 +168,17 @@ impl HasSummary for PreparedLedgerTransaction {
 
 #[derive(BasicCategorize)]
 pub enum PreparedLedgerTransactionInner {
+    #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
     Genesis(Box<PreparedSystemTransactionV1>),
+    #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<PreparedNotarizedTransactionV1>),
+    #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
 }
 
 impl PreparedLedgerTransactionInner {
     pub fn get_ledger_hash(&self) -> LedgerTransactionHash {
-        let hash = HashAccumulator::new()
-            .update([
-                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1Ledger as u8,
-            ])
-            .update([self.get_discriminator()])
-            .update(self.get_summary().hash.as_slice())
-            .finalize();
-        LedgerTransactionHash::from_hash(hash)
+        LedgerTransactionHash::for_kind(self.get_discriminator(), &self.get_summary().hash)
     }
 }
 
@@ -195,7 +197,7 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
         decoder.track_stack_depth_increase()?;
         let (discriminator, length) = decoder.read_enum_header()?;
         let prepared_inner = match discriminator {
-            0 => {
+            GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 if length != 1 {
                     return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
                         expected: 1,
@@ -205,7 +207,7 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
                 let prepared = PreparedSystemTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::Genesis(Box::new(prepared))
             }
-            1 => {
+            USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 if length != 1 {
                     return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
                         expected: 1,
@@ -215,7 +217,7 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
                 let prepared = PreparedNotarizedTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::UserV1(Box::new(prepared))
             }
-            2 => {
+            ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 if length != 1 {
                     return Err(PrepareError::DecodeError(DecodeError::UnexpectedSize {
                         expected: 1,
@@ -271,9 +273,13 @@ pub struct ValidatedLedgerTransaction {
 
 /// Note - we don't allow System transactions here, because they are Genesis or Protocol Updates,
 /// which are executed / inserted by the node, and not explicitly provided / validated from ledger sync
+#[derive(BasicCategorize)]
 pub enum ValidatedLedgerTransactionInner {
+    #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
     Genesis(Box<PreparedSystemTransactionV1>),
+    #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     UserV1(Box<ValidatedNotarizedTransactionV1>),
+    #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
 }
 
@@ -351,6 +357,33 @@ impl HasLegacyLedgerPayloadHash for PreparedLedgerTransaction {
 
 define_wrapped_hash!(LedgerTransactionHash);
 
+impl LedgerTransactionHash {
+    pub fn for_genesis(hash: &SystemTransactionHash) -> Self {
+        Self::for_kind(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+    }
+
+    pub fn for_user_v1(hash: &NotarizedTransactionHash) -> Self {
+        Self::for_kind(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+    }
+
+    pub fn for_round_update_v1(hash: &RoundUpdateTransactionHash) -> Self {
+        Self::for_kind(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+    }
+
+    fn for_kind(discriminator: u8, inner: &Hash) -> Self {
+        Self(
+            HashAccumulator::new()
+                .update([
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Ledger as u8,
+                    discriminator,
+                ])
+                .update(inner.as_slice())
+                .finalize(),
+        )
+    }
+}
+
 pub trait HasLedgerTransactionHash {
     fn ledger_transaction_hash(&self) -> LedgerTransactionHash;
 }
@@ -363,10 +396,60 @@ impl HasLedgerTransactionHash for PreparedLedgerTransaction {
 
 #[cfg(test)]
 mod tests {
-    use std::unimplemented;
+    use super::*;
+
+    use transaction::validation::*;
 
     #[test]
     pub fn v1_ledger_transaction_structure() {
-        unimplemented!()
+        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+
+        let notarized = TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: 21,
+                start_epoch_inclusive: Epoch::of(0),
+                end_epoch_exclusive: Epoch::of(100),
+                nonce: 0,
+                notary_public_key: notary_private_key.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .sign(&sig_1_private_key)
+            .sign(&sig_2_private_key)
+            .notarize(&notary_private_key)
+            .build();
+
+        let prepared_notarized = notarized.prepare().expect("Notarized can be prepared");
+
+        let ledger = LedgerTransaction::UserV1(Box::new(notarized));
+        let ledger_transaction_bytes = ledger.to_payload_bytes().expect("Can be encoded");
+        LedgerTransaction::from_payload_bytes(&ledger_transaction_bytes).expect("Can be decoded");
+        let prepared_ledger_transaction =
+            PreparedLedgerTransaction::prepare_from_payload(&ledger_transaction_bytes)
+                .expect("Can be prepared");
+
+        let expected_intent_hash = LedgerTransactionHash::from_hash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Ledger as u8,
+                    USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
+                ]
+                .as_slice(),
+                prepared_notarized.notarized_transaction_hash().0.as_slice(),
+            ]
+            .concat(),
+        ));
+        assert_eq!(
+            prepared_ledger_transaction.ledger_transaction_hash(),
+            expected_intent_hash
+        );
+        assert_eq!(
+            LedgerTransactionHash::for_user_v1(&prepared_notarized.notarized_transaction_hash()),
+            expected_intent_hash
+        );
     }
 }
