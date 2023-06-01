@@ -66,6 +66,7 @@ package com.radixdlt.transactions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.Bytes;
@@ -117,11 +118,10 @@ public record RawNotarizedTransaction(byte[] payload) {
     return Arrays.equals(this.payload, other.payload);
   }
 
-  /*
-   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
-   * TODO - this should ideally be removed
-   */
-  public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
-    return RawLedgerTransaction.create(getPayload());
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{rawContentHash=%s}",
+        this.getClass().getSimpleName(), HashUtils.blake2b256(this.payload));
   }
 }

@@ -240,9 +240,8 @@ public class REv2RejectedTransactionMempoolTest {
                       MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(0);
       // Check that only one of the two transactions was committed
-      // TODO: this used to check for committed (success|failure) - why?
-      assertOneTransactionCommittedOutOf(
-          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2), true);
+      assertExactlyOneTransactionSuccessfullyCommitted(
+          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2));
     }
   }
 }

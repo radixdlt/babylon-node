@@ -130,14 +130,7 @@ public final class RawLedgerTransaction {
   @Override
   public String toString() {
     return String.format(
-        "%s{payloadHash=%s}", this.getClass().getSimpleName(), this.legacyPayloadHash);
-  }
-
-  /*
-   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
-   * TODO - this should ideally be removed
-   */
-  public RawNotarizedTransaction INCORRECTInterpretDirectlyAsRawNotarizedTransaction() {
-    return RawNotarizedTransaction.create(getPayload());
+        "%s{rawContentHash=%s}",
+        this.getClass().getSimpleName(), HashUtils.blake2b256(this.payload));
   }
 }

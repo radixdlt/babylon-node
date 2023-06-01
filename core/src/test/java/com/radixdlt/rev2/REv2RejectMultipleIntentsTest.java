@@ -198,9 +198,9 @@ public final class REv2RejectMultipleIntentsTest {
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
       // Verify that only one transaction of some intent was committed
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent1Transactions, false);
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent2Transactions, false);
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent3Transactions, false);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent1Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent2Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent3Transactions);
     }
   }
 }

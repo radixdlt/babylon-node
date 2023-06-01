@@ -117,18 +117,31 @@ public final class Checkers {
         });
   }
 
+  public static void assertExactlyOneTransactionSuccessfullyCommitted(
+      List<Injector> nodeInjectors, List<RawNotarizedTransaction> transactions) {
+    nodeInjectors.forEach(
+        injector -> {
+          var numSuccessfullyCommitted =
+              transactions.stream()
+                  .filter(
+                      transaction ->
+                          NodePredicate.committedUserTransaction(transaction, true, false)
+                              .test(injector))
+                  .count();
+          assertThat(numSuccessfullyCommitted).isEqualTo(1);
+        });
+  }
+
+  /** Doesn't care if they were successful or not. */
   public static void assertOneTransactionCommittedOutOf(
-      List<Injector> nodeInjectors,
-      List<RawNotarizedTransaction> transactions,
-      boolean allowMoreCommittedIfFailed) {
+      List<Injector> nodeInjectors, List<RawNotarizedTransaction> transactions) {
     nodeInjectors.forEach(
         injector -> {
           var numCommitted =
               transactions.stream()
                   .filter(
                       transaction ->
-                          NodePredicate.committedUserTransaction(
-                                  transaction, allowMoreCommittedIfFailed, false)
+                          NodePredicate.committedUserTransaction(transaction, false, false)
                               .test(injector))
                   .count();
           assertThat(numCommitted).isEqualTo(1);

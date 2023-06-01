@@ -104,6 +104,17 @@ public class NodePredicate {
     };
   }
 
+  /**
+   * @param userTransaction - The transaction to lookup
+   * @param requireSuccess - Whether the transaction needed to be committed successfully to pass the
+   *     predicate
+   * @param assertSuccess - Whether a commit of this transaction must be successful (an exception is
+   *     thrown if not)
+   * @return the predicate
+   */
+  // TODO - could consider speeding this up by looking at transaction payload hashes instead, and/or
+  // moving this to rust
+  // Although this test is better as an end-to-end style perhaps
   public static Predicate<Injector> committedUserTransaction(
       RawNotarizedTransaction userTransaction, boolean requireSuccess, boolean assertSuccess) {
     var committedTransaction =
