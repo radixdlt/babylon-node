@@ -64,58 +64,67 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static com.radixdlt.rev2.REv2TestTransactions.*;
-import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.ScryptoConstants;
 import com.radixdlt.utils.Bytes;
+import java.util.List;
 import org.junit.Test;
 
-import java.util.List;
-
 public class SubmitMintBurnTest extends DeterministicCoreApiTestBase {
-    @Test
-    public void test_core_api_can_mint_and_burn() throws Exception {
-        try (var test = buildRunningServerTest()) {
-            var faucetAddress = ScryptoConstants.FAUCET_ADDRESS;
+  @Test
+  public void test_core_api_can_mint_and_burn_does_not_panic() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      var faucetAddress = ScryptoConstants.FAUCET_ADDRESS;
 
-            var accountKeyPair = ECKeyPair.generateNew();
-            var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
+      var accountKeyPair = ECKeyPair.generateNew();
+      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
 
-            var newAccountTx = submitAndWaitForSuccess(
-                    test,
-                    constructDepositFromFaucetManifest(networkDefinition, faucetAddress, accountAddress),
-                    List.of());
+      var newAccountTx =
+          submitAndWaitForSuccess(
+              test,
+              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, accountAddress),
+              List.of());
 
-            var nonFungibleResourceTx = submitAndWaitForSuccess(
-                    test,
-                    constructCreateNonFungibleResourceManifest(networkDefinition, accountAddress),
-                    List.of(accountKeyPair)
-            );
+      var nonFungibleResourceTx =
+          submitAndWaitForSuccess(
+              test,
+              constructCreateNonFungibleResourceManifest(networkDefinition, accountAddress),
+              List.of(accountKeyPair));
 
-            var nonFungibleResourceReceipt = getTransactionApi().transactionReceiptPost(new TransactionReceiptRequest().network(networkLogicalName).intentHash(Bytes.toHexString(nonFungibleResourceTx.intentHash().asBytes())));
-            var resourceAddress = addressing.decodeResourceAddress(nonFungibleResourceReceipt.getCommitted().getReceipt().getStateUpdates().getNewGlobalEntities().get(0).getEntityAddress());
+      var nonFungibleResourceReceipt =
+          getTransactionApi()
+              .transactionReceiptPost(
+                  new TransactionReceiptRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Bytes.toHexString(nonFungibleResourceTx.intentHash().asBytes())));
+      var resourceAddress =
+          addressing.decodeResourceAddress(
+              nonFungibleResourceReceipt
+                  .getCommitted()
+                  .getReceipt()
+                  .getStateUpdates()
+                  .getNewGlobalEntities()
+                  .get(0)
+                  .getEntityAddress());
 
-            var nonFungibleDoubleMintDoubleBurnTx = submitAndWaitForSuccess(
-                test,
-                constructDoubleMintDoubleBurnManifest(networkDefinition, accountAddress, resourceAddress),
-                List.of(accountKeyPair)
-            );
+      var nonFungibleDoubleMintDoubleBurnTx =
+          submitAndWaitForSuccess(
+              test,
+              constructDoubleMintDoubleBurnManifest(
+                  networkDefinition, accountAddress, resourceAddress),
+              List.of(accountKeyPair));
 
-            var nonFungibleDoubleMintSingleBurnTx = submitAndWaitForSuccess(
-                test,
-                constructDoubleMintSingleBurnManifest(networkDefinition, accountAddress, resourceAddress),
-                List.of(accountKeyPair)
-            );
-
-            var receipt = getTransactionApi().transactionReceiptPost(new TransactionReceiptRequest().network(networkLogicalName).intentHash(Bytes.toHexString(nonFungibleDoubleMintDoubleBurnTx.intentHash().asBytes()))).getCommitted().getReceipt();
-            System.out.println(receipt);
-        }
+      var nonFungibleDoubleMintSingleBurnTx =
+          submitAndWaitForSuccess(
+              test,
+              constructDoubleMintSingleBurnManifest(
+                  networkDefinition, accountAddress, resourceAddress),
+              List.of(accountKeyPair));
     }
+  }
 }
