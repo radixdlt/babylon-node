@@ -83,7 +83,7 @@ public class REv2TransactionCreationTest {
     // testing the Core API
     var network = NetworkDefinition.from(Network.LOCALNET);
     var fromEpoch = 1; // Needs to be >= 1
-    var baseNonce = new Random().nextInt();
+    var baseNonce = new Random().nextInt(0, Integer.MAX_VALUE);
 
     // Used to create different intents
     var nonce1 = baseNonce + 1;

@@ -184,7 +184,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
       assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
       assertThat(rejectedDetails.getErrorMessage())
-          .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 0 }");
+          .isEqualTo(
+              "TransactionEpochNotYetValid { valid_from: Epoch(2), current_epoch: Epoch(1) }");
 
       // Now we run consensus up to epoch 2
       test.runUntilState(allAtOrOverEpoch(2), 10000);

@@ -99,10 +99,14 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network 
           Network.ENKINET,
           Network.HAMMUNET,
           Network.MARDUNET,
+          Network.DUMUNET,
           Network.NERGALNET,
           Network.NEBUNET,
           Network.KISHARNET,
           Network.ANSHARNET);
+
+  private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
+      Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
@@ -167,12 +171,18 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network 
     log.info("Genesis XRD balances: {}", xrdBalances.isEmpty() ? "(empty)" : "");
     xrdBalances.forEach((k, v) -> log.info("{}: {}", k, v));
 
+    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
+
+    final var mustUseProductionEmissions =
+        NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
+    if (!mustUseProductionEmissions && !usePowerfulStakingAccount) {
+      consensusConfig =
+          consensusConfig.totalEmissionXrdPerEpoch(
+              GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
+    }
+
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators,
-        stakeAmount,
-        stakingAccount,
-        xrdBalances,
-        GenesisConsensusManagerConfig.Builder.productionDefaults());
+        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
   }
 
   private String loadRawGenesisFromFile(String genesisFile) {

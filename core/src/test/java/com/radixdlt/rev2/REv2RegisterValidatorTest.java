@@ -93,6 +93,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -135,7 +136,8 @@ public final class REv2RegisterValidatorTest {
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-      var ownerAccount = Address.virtualAccountAddress(TEST_KEY.getPublicKey());
+      var ownerKey = TEST_KEY;
+      var ownerAccount = Address.virtualAccountAddress(ownerKey.getPublicKey());
       var createValidatorTransaction =
           TransactionBuilder.forTests()
               .manifest(Manifest.createValidator(TEST_KEY.getPublicKey(), ownerAccount))
@@ -158,6 +160,7 @@ public final class REv2RegisterValidatorTest {
       var stakeValidatorTransaction =
           TransactionBuilder.forTests()
               .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
+              .signatories(List.of(ownerKey))
               .prepare()
               .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
@@ -165,9 +168,10 @@ public final class REv2RegisterValidatorTest {
       var registerValidatorTransaction =
           TransactionBuilder.forTests()
               .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
+              .signatories(List.of(ownerKey))
               .prepare()
               .raw();
-      ;
+
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
       // Sanity check that they both get committed

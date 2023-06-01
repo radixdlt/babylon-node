@@ -93,6 +93,7 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -175,11 +176,13 @@ public final class IncreasingValidatorsTest {
         var registerValidatorTxn =
             TransactionBuilder.forTests()
                 .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
+                .signatories(List.of(key))
                 .prepare()
                 .raw();
         var stakeValidatorTxn =
             TransactionBuilder.forTests()
                 .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
+                .signatories(List.of(key))
                 .prepare()
                 .raw();
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
