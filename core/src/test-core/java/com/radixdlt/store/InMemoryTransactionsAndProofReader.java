@@ -146,6 +146,13 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   }
 
   @Override
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    synchronized (lock) {
+      return Optional.ofNullable(store.epochProofs.firstEntry()).map(Entry::getValue);
+    }
+  }
+
+  @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
     synchronized (lock) {
       return Optional.ofNullable(store.epochProofs.get(epoch));

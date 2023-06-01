@@ -274,6 +274,11 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
   }
 
   @Override
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    return correctReader.getPostGenesisEpochProof();
+  }
+
+  @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
     return correctReader.getEpochProof(epoch);
   }

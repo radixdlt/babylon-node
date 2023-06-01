@@ -67,7 +67,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let transaction_logic = self
             .execution_configurator
             .wrap(validated.get_executable(), ConfigType::Preview)
-            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, || "preview".to_string());
+            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
         let receipt = transaction_logic.execute_on(read_store.deref());
 
         // Fake a LedgerPayloadHash for the purposes of mapping the receipt as it doesn't matter for preview

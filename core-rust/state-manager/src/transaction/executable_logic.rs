@@ -91,15 +91,15 @@ pub struct ConfiguredExecutable<'a> {
 impl<'a> ConfiguredExecutable<'a> {
     /// Wraps this instance in a time-measuring decorator (which will log a `warn!` after the given
     /// runtime threshold).
-    pub fn warn_after<'b>(
+    pub fn warn_after(
         self,
         threshold: Duration,
-        logged_description: impl FnOnce() -> String + 'b,
-    ) -> TimeWarningTransactionLogic<'b, Self> {
+        logged_description: impl Into<String>,
+    ) -> TimeWarningTransactionLogic<Self> {
         TimeWarningTransactionLogic {
             underlying: self,
             threshold,
-            logged_description: Box::new(logged_description),
+            logged_description: logged_description.into(),
         }
     }
 }
@@ -117,13 +117,13 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
 }
 
 /// A time-measuring decorator for a `TransactionLogic`.
-pub struct TimeWarningTransactionLogic<'a, U> {
+pub struct TimeWarningTransactionLogic<U> {
     underlying: U,
     threshold: Duration,
-    logged_description: Box<dyn FnOnce() -> String + 'a>, // for error-surfacing only
+    logged_description: String, // for error-surfacing only
 }
 
-impl<'a, U, S> TransactionLogic<S> for TimeWarningTransactionLogic<'a, U>
+impl<U, S> TransactionLogic<S> for TimeWarningTransactionLogic<U>
 where
     S: SubstateDatabase,
     U: TransactionLogic<S>,
@@ -137,7 +137,7 @@ where
                 "Transaction execution took {}ms, above warning threshold of {}ms ({})",
                 elapsed.as_millis(),
                 self.threshold.as_millis(),
-                (self.logged_description)()
+                self.logged_description,
             );
         }
         result

@@ -253,9 +253,10 @@ where
             &legacy_hash,
             self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                    format!("prepare genesis {}", payload_hash)
-                }),
+                .warn_after(
+                    TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    format!("prepare genesis {}", payload_hash),
+                ),
         );
 
         let commit = processed.expect_commit(format!("prepare genesis {}", payload_hash));
@@ -379,9 +380,10 @@ where
                     &legacy_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                            format!("already prepared {}", payload_hash)
-                        }),
+                        .warn_after(
+                            TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                            format!("already prepared {}", payload_hash),
+                        ),
                 );
 
                 let commit = processed.expect_commit(format!("already prepared {}", payload_hash));
@@ -439,9 +441,10 @@ where
                     &legacy_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                            format!("round update {}", prepare_request.round.number())
-                        }),
+                        .warn_after(
+                            TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                            format!("round update {}", prepare_request.round.number()),
+                        ),
                 );
 
                 let round_update_commit = processed_round_update
@@ -562,9 +565,10 @@ where
                     &legacy_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                            format!("newly proposed {}", ledger_hash)
-                        }),
+                        .warn_after(
+                            TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                            format!("newly proposed {}", ledger_hash),
+                        ),
                 );
 
                 match processed.expect_commit_or_reject(format!("newly proposed {}", ledger_hash)) {
@@ -926,9 +930,10 @@ where
                     &legacy_hash,
                     self.execution_configurator
                         .wrap(executable, execution_type)
-                        .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, || {
-                            format!("committing {}", payload_hash)
-                        }),
+                        .warn_after(
+                            TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                            format!("committing {}", payload_hash),
+                        ),
                 );
                 let commit = processed.expect_commit(format!("committing {}", payload_hash));
 

@@ -270,12 +270,13 @@ where
         let transaction_logic = self
             .execution_configurator
             .wrap(transaction.get_executable(), ConfigType::Pending)
-            .warn_after(UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD, || {
+            .warn_after(
+                UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
                 format!(
                     "pending intent hash {}, up to fee loan",
                     transaction.prepared.intent_hash()
-                )
-            });
+                ),
+            );
         Ok(transaction_logic.execute_on(root_store))
     }
 }
