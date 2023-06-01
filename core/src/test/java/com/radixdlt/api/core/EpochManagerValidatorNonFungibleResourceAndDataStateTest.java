@@ -74,7 +74,8 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
     extends DeterministicCoreApiTestBase {
   @Test
   public void test_misc_state_endpoints() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
       // We test all these together because they can bootstrap each other to easily find real
       // addresses from genesis!
@@ -88,13 +89,18 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       // Basically - this is just a smoke test to check all these (relatively complex) state
       // endpoints don't panic
 
-      final var epochResponse =
-          getStateApi().stateEpochPost(new StateEpochRequest().network(networkLogicalName));
+      final var stateConsensusManagerResponse =
+          getStateApi()
+              .stateConsensusManagerPost(
+                  new StateConsensusManagerRequest().network(networkLogicalName));
 
-      assertThat(epochResponse.getEpoch()).isGreaterThanOrEqualTo(0);
+      final var stateSubstate =
+          (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
+      assertThat(stateSubstate.getEpoch()).isGreaterThanOrEqualTo(0);
 
       final var validatorAddress =
-          ((EpochManagerFieldCurrentValidatorSetSubstate) epochResponse.getCurrentValidatorSet())
+          ((ConsensusManagerFieldCurrentValidatorSetSubstate)
+                  stateConsensusManagerResponse.getCurrentValidatorSet())
               .getValidatorSet()
               .get(0)
               .getAddress();
@@ -109,9 +115,15 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       // We extract the "Owner Badge"
       final var accessRulesSubstate =
           (AccessRulesModuleFieldAccessRulesSubstate) validatorResponse.getAccessRules();
-      final var accessRule =
-          (ProtectedAccessRule) accessRulesSubstate.getAccessRules().getDefaultAuth();
-      final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();
+      //noinspection OptionalGetWithoutIsPresent
+      final var ownerAccessRule =
+          (ProtectedAccessRule)
+              accessRulesSubstate.getAccessRules().getRules().stream()
+                  .filter(r -> r.getKey().getName().equals("Owner"))
+                  .findFirst()
+                  .get()
+                  .getRule();
+      final var proofRuleNode = (ProofAccessRuleNode) ownerAccessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
       final var requirement = (NonFungibleRequirement) requireProofRule.getRequirement();
       final var nonFungibleResourceAddress = requirement.getNonFungible().getResourceAddress();
@@ -140,6 +152,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var dataSubstate =
           (NonFungibleResourceManagerDataEntrySubstate) nonFungibleDataResponse.getNonFungible();
+      assert dataSubstate.getDataStruct() != null;
       // Unit tuple
       assertThat(dataSubstate.getDataStruct().getStructData().getHex()).isEqualTo("5c2100");
     }

@@ -65,11 +65,9 @@
 package com.radixdlt.api;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.rev2.REv2TestTransactions.buildTransactionWithDefaultNotary;
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -85,21 +83,24 @@ import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.lang.Functions;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
-import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -159,7 +160,10 @@ public abstract class DeterministicCoreApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             GenesisBuilder.createGenesisWithNumValidators(
-                                1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
+                                1,
+                                Decimal.of(1),
+                                GenesisConsensusManagerConfig.Builder.testDefaults()
+                                    .epochExactRoundCount(roundsPerEpoch)),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.mempool(
@@ -244,25 +248,28 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   public CommittedResult submitAndWaitForSuccess(
-      DeterministicTest test, String manifest, List<ECKeyPair> signatories) throws Exception {
+      DeterministicTest test,
+      Functions.Func1<Manifest.Parameters, String> manifest,
+      List<ECKeyPair> signatories)
+      throws Exception {
     var metadata =
         getLtsApi()
             .ltsTransactionConstructionPost(
                 new LtsTransactionConstructionRequest().network(networkLogicalName));
 
-    var transactionBuilder =
-        buildTransactionWithDefaultNotary(
-            networkDefinition, manifest, metadata.getCurrentEpoch(), 0, signatories);
-
-    var intentHash = transactionBuilder.hashedIntent();
-    var payload = transactionBuilder.constructRawTransaction().getPayload();
+    var transaction =
+        TransactionBuilder.forNetwork(networkDefinition)
+            .manifest(manifest)
+            .fromEpoch(metadata.getCurrentEpoch())
+            .signatories(signatories)
+            .prepare();
 
     var submitResponse =
         getLtsApi()
             .ltsTransactionSubmitPost(
                 new LtsTransactionSubmitRequest()
                     .network(networkLogicalName)
-                    .notarizedTransactionHex(Bytes.toHexString(payload)));
+                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
 
     assertThat(submitResponse.getDuplicate()).isFalse();
 
@@ -276,7 +283,7 @@ public abstract class DeterministicCoreApiTestBase {
               .ltsTransactionStatusPost(
                   new LtsTransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(Bytes.toHexString(intentHash.asBytes())));
+                      .intentHash(transaction.hexIntentHash()));
       switch (statusResponse.getIntentStatus()) {
         case COMMITTEDSUCCESS -> {
           var stateVersion = statusResponse.getCommittedStateVersion();
@@ -284,7 +291,8 @@ public abstract class DeterministicCoreApiTestBase {
             throw new RuntimeException(
                 "Transaction got committed as success without state version on response");
           }
-          return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+          return new LtsTransactionOutcomesTest.CommittedResult(
+              transaction.intentHash(), stateVersion);
         }
         case COMMITTEDFAILURE -> throw new RuntimeException("Transaction got committed as failure");
         case PERMANENTREJECTION -> throw new RuntimeException(
@@ -300,5 +308,5 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected DeterministicCoreApiTestBase() {}
 
-  public record CommittedResult(HashCode intentHash, long stateVersion) {}
+  public record CommittedResult(IntentHash intentHash, long stateVersion) {}
 }

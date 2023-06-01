@@ -32,7 +32,8 @@ pub(crate) async fn handle_state_resource(
     let database = state.database.read();
 
     let resource_node_id = resource_address.as_node_id();
-    let is_fungible = resource_node_id.entity_type() == Some(EntityType::GlobalFungibleResource);
+    let is_fungible =
+        resource_node_id.entity_type() == Some(EntityType::GlobalFungibleResourceManager);
     let manager = if is_fungible {
         ManagerByType::Fungible(
             read_mandatory_main_field_substate(

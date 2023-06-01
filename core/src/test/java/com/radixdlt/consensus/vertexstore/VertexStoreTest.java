@@ -77,7 +77,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -136,8 +135,7 @@ public class VertexStoreTest {
             invocation -> {
               VertexWithHash vertexWithHash = invocation.getArgument(1);
               return Optional.of(
-                  new ExecutedVertex(
-                      vertexWithHash, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
+                  new ExecutedVertex(vertexWithHash, MOCKED_HEADER, ImmutableList.of(), 1L));
             })
         .when(ledger)
         .prepare(any(), any());

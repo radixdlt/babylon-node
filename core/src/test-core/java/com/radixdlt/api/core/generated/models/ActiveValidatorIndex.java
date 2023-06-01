@@ -47,13 +47,13 @@ public class ActiveValidatorIndex {
   }
 
    /**
-   * An index of a validator within a specific active validator set ordered by their &#x60;ComponentAddress&#x60;. Please note that some other endpoints of this API list an active validator set ordered by their stake descending, which is different and needs reordering to correctly interpret this validator index.
+   * An index of a validator within a specific active validator set (ordered by stake descending). This is the same ordering as used by other parts of the API which list active validators.
    * minimum: 0
    * maximum: 255
    * @return index
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An index of a validator within a specific active validator set ordered by their `ComponentAddress`. Please note that some other endpoints of this API list an active validator set ordered by their stake descending, which is different and needs reordering to correctly interpret this validator index.")
+  @ApiModelProperty(required = true, value = "An index of a validator within a specific active validator set (ordered by stake descending). This is the same ordering as used by other parts of the API which list active validators.")
   @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

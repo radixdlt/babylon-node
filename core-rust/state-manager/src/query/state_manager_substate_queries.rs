@@ -1,22 +1,22 @@
-use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::track::db_key_mapper::*;
 use radix_engine::types::*;
 
+use radix_engine_queries::typed_substate_layout::ConsensusManagerSubstate;
 use radix_engine_store_interface::interface::SubstateDatabase;
 
 pub trait StateManagerSubstateQueries {
-    fn get_epoch(&self) -> u64;
+    fn get_epoch(&self) -> Epoch;
 }
 
 impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
-    fn get_epoch(&self) -> u64 {
-        let epoch_manager_substate: EpochManagerSubstate = self
-            .get_mapped::<SpreadPrefixKeyMapper, EpochManagerSubstate>(
-                EPOCH_MANAGER.as_node_id(),
+    fn get_epoch(&self) -> Epoch {
+        let substate = self
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
                 OBJECT_BASE_PARTITION,
-                &EpochManagerField::EpochManager.into(),
+                &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
-        epoch_manager_substate.epoch
+        substate.epoch
     }
 }

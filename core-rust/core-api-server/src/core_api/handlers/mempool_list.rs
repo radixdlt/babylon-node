@@ -13,7 +13,7 @@ pub(crate) async fn handle_mempool_list(
             .map(
                 |(intent_hash, payload_hash)| models::MempoolTransactionHashes {
                     intent_hash: to_api_intent_hash(intent_hash),
-                    payload_hash: to_api_payload_hash(payload_hash),
+                    payload_hash: to_api_notarized_transaction_hash(payload_hash),
                 },
             )
             .collect(),

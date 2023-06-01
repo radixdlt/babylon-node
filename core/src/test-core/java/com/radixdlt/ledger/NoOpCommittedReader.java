@@ -75,6 +75,11 @@ public final class NoOpCommittedReader implements TransactionsAndProofReader {
   }
 
   @Override
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    return Optional.empty();
+  }
+
+  @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
     return Optional.empty();
   }

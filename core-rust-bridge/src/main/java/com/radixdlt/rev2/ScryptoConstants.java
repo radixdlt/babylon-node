@@ -74,13 +74,15 @@ public final class ScryptoConstants {
     System.loadLibrary("corerust");
   }
 
+  public static final Decimal FREE_AMOUNT_FROM_FAUCET = Decimal.of(10000);
+
   public static final ResourceAddress XRD_RESOURCE_ADDRESS =
       Natives.builder(ScryptoConstants::getXrdResourceAddress)
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ResourceAddress>>() {})
           .call(Tuple.Tuple0.of());
 
-  public static final ComponentAddress EPOCH_MANAGER_COMPONENT_ADDRESS =
-      Natives.builder(ScryptoConstants::getEpochManagerComponentAddress)
+  public static final ComponentAddress CONSENSUS_MANAGER_COMPONENT_ADDRESS =
+      Natives.builder(ScryptoConstants::getConsensusManagerComponentAddress)
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
@@ -98,7 +100,7 @@ public final class ScryptoConstants {
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
 
-  private static native byte[] getEpochManagerComponentAddress(byte[] unused);
+  private static native byte[] getConsensusManagerComponentAddress(byte[] unused);
 
   private static native byte[] getValidatorOwnerTokenResourceAddress(byte[] unused);
 }

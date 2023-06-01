@@ -41,8 +41,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionPreviewRequest.JSON_PROPERTY_START_EPOCH_INCLUSIVE,
   TransactionPreviewRequest.JSON_PROPERTY_END_EPOCH_EXCLUSIVE,
   TransactionPreviewRequest.JSON_PROPERTY_NOTARY_PUBLIC_KEY,
-  TransactionPreviewRequest.JSON_PROPERTY_NOTARY_AS_SIGNATORY,
-  TransactionPreviewRequest.JSON_PROPERTY_COST_UNIT_LIMIT,
+  TransactionPreviewRequest.JSON_PROPERTY_NOTARY_IS_SIGNATORY,
   TransactionPreviewRequest.JSON_PROPERTY_TIP_PERCENTAGE,
   TransactionPreviewRequest.JSON_PROPERTY_NONCE,
   TransactionPreviewRequest.JSON_PROPERTY_SIGNER_PUBLIC_KEYS,
@@ -68,17 +67,14 @@ public class TransactionPreviewRequest {
   public static final String JSON_PROPERTY_NOTARY_PUBLIC_KEY = "notary_public_key";
   private PublicKey notaryPublicKey;
 
-  public static final String JSON_PROPERTY_NOTARY_AS_SIGNATORY = "notary_as_signatory";
-  private Boolean notaryAsSignatory;
-
-  public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
-  private Long costUnitLimit;
+  public static final String JSON_PROPERTY_NOTARY_IS_SIGNATORY = "notary_is_signatory";
+  private Boolean notaryIsSignatory;
 
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private Integer tipPercentage;
 
   public static final String JSON_PROPERTY_NONCE = "nonce";
-  private String nonce;
+  private Long nonce;
 
   public static final String JSON_PROPERTY_SIGNER_PUBLIC_KEYS = "signer_public_keys";
   private List<PublicKey> signerPublicKeys = new ArrayList<>();
@@ -257,57 +253,29 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest notaryAsSignatory(Boolean notaryAsSignatory) {
-    this.notaryAsSignatory = notaryAsSignatory;
+  public TransactionPreviewRequest notaryIsSignatory(Boolean notaryIsSignatory) {
+    this.notaryIsSignatory = notaryIsSignatory;
     return this;
   }
 
    /**
    * Whether the notary should count as a signatory (optional, default false)
-   * @return notaryAsSignatory
+   * @return notaryIsSignatory
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "Whether the notary should count as a signatory (optional, default false)")
-  @JsonProperty(JSON_PROPERTY_NOTARY_AS_SIGNATORY)
+  @JsonProperty(JSON_PROPERTY_NOTARY_IS_SIGNATORY)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getNotaryAsSignatory() {
-    return notaryAsSignatory;
+  public Boolean getNotaryIsSignatory() {
+    return notaryIsSignatory;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NOTARY_AS_SIGNATORY)
+  @JsonProperty(JSON_PROPERTY_NOTARY_IS_SIGNATORY)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setNotaryAsSignatory(Boolean notaryAsSignatory) {
-    this.notaryAsSignatory = notaryAsSignatory;
-  }
-
-
-  public TransactionPreviewRequest costUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, giving the maximum number of cost units available for transaction execution
-   * minimum: 0
-   * maximum: 4294967295
-   * @return costUnitLimit
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCostUnitLimit() {
-    return costUnitLimit;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
+  public void setNotaryIsSignatory(Boolean notaryIsSignatory) {
+    this.notaryIsSignatory = notaryIsSignatory;
   }
 
 
@@ -339,28 +307,30 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest nonce(String nonce) {
+  public TransactionPreviewRequest nonce(Long nonce) {
     this.nonce = nonce;
     return this;
   }
 
    /**
-   * A decimal-string-encoded integer between &#x60;0&#x60; and &#x60;2^64 - 1&#x60;, used to ensure the transaction intent is unique.
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
+   * minimum: 0
+   * maximum: 4294967295
    * @return nonce
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). ")
   @JsonProperty(JSON_PROPERTY_NONCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonce() {
+  public Long getNonce() {
     return nonce;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NONCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonce(String nonce) {
+  public void setNonce(Long nonce) {
     this.nonce = nonce;
   }
 
@@ -440,8 +410,7 @@ public class TransactionPreviewRequest {
         Objects.equals(this.startEpochInclusive, transactionPreviewRequest.startEpochInclusive) &&
         Objects.equals(this.endEpochExclusive, transactionPreviewRequest.endEpochExclusive) &&
         Objects.equals(this.notaryPublicKey, transactionPreviewRequest.notaryPublicKey) &&
-        Objects.equals(this.notaryAsSignatory, transactionPreviewRequest.notaryAsSignatory) &&
-        Objects.equals(this.costUnitLimit, transactionPreviewRequest.costUnitLimit) &&
+        Objects.equals(this.notaryIsSignatory, transactionPreviewRequest.notaryIsSignatory) &&
         Objects.equals(this.tipPercentage, transactionPreviewRequest.tipPercentage) &&
         Objects.equals(this.nonce, transactionPreviewRequest.nonce) &&
         Objects.equals(this.signerPublicKeys, transactionPreviewRequest.signerPublicKeys) &&
@@ -450,7 +419,7 @@ public class TransactionPreviewRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryAsSignatory, costUnitLimit, tipPercentage, nonce, signerPublicKeys, flags);
+    return Objects.hash(network, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, flags);
   }
 
   @Override
@@ -463,8 +432,7 @@ public class TransactionPreviewRequest {
     sb.append("    startEpochInclusive: ").append(toIndentedString(startEpochInclusive)).append("\n");
     sb.append("    endEpochExclusive: ").append(toIndentedString(endEpochExclusive)).append("\n");
     sb.append("    notaryPublicKey: ").append(toIndentedString(notaryPublicKey)).append("\n");
-    sb.append("    notaryAsSignatory: ").append(toIndentedString(notaryAsSignatory)).append("\n");
-    sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
+    sb.append("    notaryIsSignatory: ").append(toIndentedString(notaryIsSignatory)).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("    nonce: ").append(toIndentedString(nonce)).append("\n");
     sb.append("    signerPublicKeys: ").append(toIndentedString(signerPublicKeys)).append("\n");

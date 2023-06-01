@@ -45,8 +45,18 @@ pub enum MappingError {
     MismatchedSubstateId {
         message: String,
     },
+    MismatchedSubstateKeyType {
+        message: String,
+    },
+    MismatchedTransactionIdentifiers {
+        message: String,
+    },
     IntegerError {
         message: String,
+    },
+    CouldNotDecodeTransaction {
+        state_version: u64,
+        error: DecodeError,
     },
 }
 

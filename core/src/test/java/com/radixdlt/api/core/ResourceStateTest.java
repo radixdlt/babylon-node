@@ -75,16 +75,15 @@ import org.junit.Test;
 
 public class ResourceStateTest extends DeterministicCoreApiTestBase {
   @Test
-  @SuppressWarnings("try")
   public void test_core_api_state_resource_response_for_xrd() throws Exception {
     try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
       final var addressing = Addressing.ofNetwork(networkDefinition);
       final var response =
           getStateApi()
               .stateResourcePost(
                   new StateResourceRequest()
-                      .resourceAddress(
-                          addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS))
+                      .resourceAddress(addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS))
                       .network(networkLogicalName));
       assertEquals(ResourceType.FUNGIBLE, response.getManager().getResourceType());
     }

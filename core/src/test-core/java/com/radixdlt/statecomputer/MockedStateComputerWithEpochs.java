@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerHashes;
@@ -124,10 +123,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(
-          proposedTransactions.stream()
-              .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
-              .collect(Collectors.toList()),
-          ImmutableMap.of(),
+          proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+          0,
           NextEpoch.create(
               roundDetails.epoch() + 1,
               validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),

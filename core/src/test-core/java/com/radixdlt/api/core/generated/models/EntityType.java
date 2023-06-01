@@ -30,11 +30,9 @@ public enum EntityType {
   
   GLOBALPACKAGE("GlobalPackage"),
   
-  GLOBALEPOCHMANAGER("GlobalEpochManager"),
+  GLOBALCONSENSUSMANAGER("GlobalConsensusManager"),
   
   GLOBALVALIDATOR("GlobalValidator"),
-  
-  GLOBALCLOCK("GlobalClock"),
   
   GLOBALGENERICCOMPONENT("GlobalGenericComponent"),
   

@@ -94,6 +94,7 @@ import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.transactions.LegacyLedgerPayloadHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -642,7 +643,7 @@ public class LocalSyncServiceTest {
     when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
     final var response = mock(CommittedTransactionsWithProofDto.class);
     final var txn = mock(RawLedgerTransaction.class);
-    when(txn.getPayloadHash()).thenReturn(HashUtils.zero256());
+    when(txn.getLegacyPayloadHash()).thenReturn(new LegacyLedgerPayloadHash(HashUtils.zero256()));
     when(response.getTransactions()).thenReturn(ImmutableList.of(txn));
     when(response.getHead()).thenReturn(respHead);
     when(response.getTail()).thenReturn(respTail);

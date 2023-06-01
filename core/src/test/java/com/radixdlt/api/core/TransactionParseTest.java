@@ -69,18 +69,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.TransactionParseRequest;
-import com.radixdlt.rev2.REv2TestTransactions;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.TransactionBuilder;
 import org.junit.Test;
 
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
-  @SuppressWarnings("try")
   public void test_parse_rejected_transaction() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
-      var rawTransaction =
-          REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
+      var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
 
       // Submit transaction
       var response =
@@ -89,7 +88,7 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
                   new TransactionParseRequest()
                       .network(networkLogicalName)
                       .validationMode(TransactionParseRequest.ValidationModeEnum.FULL)
-                      .payloadHex(Bytes.toHexString(rawTransaction.getPayload())));
+                      .payloadHex(transaction.hexPayloadBytes()));
 
       var parsed = response.getParsed();
 

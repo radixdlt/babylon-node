@@ -73,53 +73,29 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.rev2.REv2TestTransactions;
-import com.radixdlt.rev2.TransactionHeader;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt32;
-import java.util.List;
-import org.bouncycastle.util.encoders.Hex;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.TransactionBuilder;
 import org.junit.Test;
 
 public final class AccountStateTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_retrieve_account_state() throws Exception {
     try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
       // Prepare an account creation transaction
-      final var notary = ECKeyPair.generateNew();
-      final var header =
-          TransactionHeader.defaults(
-              networkDefinition,
-              0,
-              10,
-              1,
-              notary.getPublicKey().toPublicKey(),
-              UInt32.fromNonNegativeInt(10000000),
-              true);
-
-      final var manifest =
-          REv2TestTransactions.constructNewAccountManifest(networkDefinition, test.faucetAddress());
-      final var intent =
-          TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
-      final var intentHash = HashUtils.blake2b256(intent);
-      final var signedIntentBytes = TransactionBuilder.createSignedIntentBytes(intent, List.of());
-      final var signedIntentHash = HashUtils.blake2b256(signedIntentBytes).asBytes();
-      final var notarySignature = notary.sign(signedIntentHash).toSignature();
-      final var notarizedTxBytes =
-          TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);
-      final var rawNotarizedTx = RawNotarizedTransaction.create(notarizedTxBytes);
+      var transaction =
+          TransactionBuilder.forNetwork(networkDefinition)
+              .manifest(Manifest.newAccountAllowAllOwner())
+              .prepare();
 
       // Submit an account creation transaction and await its commit
       test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
-          .dispatch(MempoolAdd.create(rawNotarizedTx));
+          .dispatch(MempoolAdd.create(transaction.raw()));
       test.runUntilState(
-          allCommittedTransactionSuccess(rawNotarizedTx),
+          allCommittedTransactionSuccess(transaction.raw()),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
       final var receipt =
@@ -127,7 +103,7 @@ public final class AccountStateTest extends DeterministicCoreApiTestBase {
               .transactionReceiptPost(
                   new TransactionReceiptRequest()
                       .network(networkLogicalName)
-                      .intentHash(Hex.toHexString(intentHash.asBytes())));
+                      .intentHash(transaction.hexIntentHash()));
 
       final var newAccountAddress =
           receipt

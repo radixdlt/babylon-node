@@ -65,14 +65,14 @@
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+use sbor::Sbor;
 
 use crate::java::structure::{StructFromJava, StructToJava};
 
-use crate::java::result::{JavaError, JavaResult};
+use crate::java::result::JavaResult;
 
 pub fn jni_jbytearray_to_vector(env: &JNIEnv, jbytearray: jbyteArray) -> JavaResult<Vec<u8>> {
-    env.convert_byte_array(jbytearray)
-        .map_err(|jerr| JavaError::JNI(jerr.to_string()))
+    Ok(env.convert_byte_array(jbytearray)?)
 }
 
 pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
@@ -104,7 +104,19 @@ pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode
 ) -> jbyteArray {
     let result = jni_jbytearray_to_vector(env, encoded_request)
         .and_then(|bytes| Args::from_java(&bytes))
-        .map(method)
-        .and_then(|result| result);
+        .and_then(method);
     jni_slice_to_jbytearray(env, &result.to_java().unwrap())
+}
+
+/// A type to allow easy transporting of error messages over the boundary, by returning a Result<X, StringError>
+///
+/// Note - doesn't implement Debug itself, to avoid the blanket impl below from failing
+#[derive(Clone, PartialEq, Eq, Sbor)]
+#[sbor(transparent)]
+pub struct StringError(String);
+
+impl<T: std::fmt::Debug> From<T> for StringError {
+    fn from(value: T) -> Self {
+        Self(format!("{value:?}"))
+    }
 }

@@ -1,6 +1,5 @@
 use super::addressing::*;
 use crate::core_api::*;
-use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 
 use radix_engine::system::system_modules::costing::*;
@@ -156,7 +155,7 @@ pub fn to_api_receipt(
     let next_epoch = receipt
         .local_execution
         .next_epoch
-        .map(|next_epoch| to_api_next_epoch(context, next_epoch))
+        .map(|epoch_change_event| to_api_next_epoch(context, epoch_change_event))
         .transpose()?
         .map(Box::new);
 
@@ -205,6 +204,7 @@ pub fn to_api_created_or_updated_substate(
         Some(Box::new(to_api_substate(
             context,
             substate_key,
+            typed_substate_key,
             typed_substate_value,
         )?))
     } else {
@@ -242,12 +242,16 @@ pub fn to_api_deleted_substate(
 #[tracing::instrument(skip_all)]
 pub fn to_api_next_epoch(
     context: &MappingContext,
-    next_epoch: (BTreeMap<ComponentAddress, Validator>, u64),
+    epoch_change_event: EpochChangeEvent,
 ) -> Result<models::NextEpoch, MappingError> {
+    let EpochChangeEvent {
+        epoch,
+        validator_set,
+    } = epoch_change_event;
     let next_epoch = models::NextEpoch {
-        epoch: to_api_epoch(context, next_epoch.1)?,
-        validators: next_epoch
-            .0
+        epoch: to_api_epoch(context, epoch)?,
+        validators: validator_set
+            .validators_by_stake_desc
             .into_iter()
             .map(|(address, validator)| to_api_active_validator(context, &address, &validator))
             .collect::<Result<_, _>>()?,

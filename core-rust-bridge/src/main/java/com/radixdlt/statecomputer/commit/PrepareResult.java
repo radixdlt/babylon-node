@@ -65,14 +65,13 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
 public record PrepareResult(
-    List<byte[]> committed,
-    List<Tuple.Tuple2<byte[], String>> rejected,
+    List<CommittableTransaction> committed,
+    List<RejectedTransaction> rejected,
     Option<NextEpoch> nextEpoch,
     LedgerHashes ledgerHashes) {
   public static void registerCodec(CodecMap codecMap) {

@@ -66,67 +66,12 @@ package com.radixdlt.exceptions;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.HashMap;
-import java.util.Map;
 
 /** This is designed to represent system / runtime errors in the rust side. */
-public class StateManagerRuntimeError {
+public record StateManagerRuntimeError(String message) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerRuntimeError.class,
-        codecs ->
-            StructCodec.with(
-                StateManagerRuntimeError::new,
-                codecs.of(short.class),
-                codecs.of(String.class),
-                (e, encoder) -> encoder.encode(e.errorCode, e.message)));
-  }
-
-  public enum ErrorCode {
-    JNI_ERROR(0),
-    SBOR_ERROR(1),
-    INTERFACE_CASTS_ERROR(2);
-
-    private final short codeNum;
-
-    ErrorCode(int codeNum) {
-      this.codeNum = (short) codeNum;
-    }
-
-    public short codeNum() {
-      return codeNum;
-    }
-  }
-
-  public static Map<Short, ErrorCode> createCodeMap() {
-    var map = new HashMap<Short, ErrorCode>(ErrorCode.values().length);
-
-    for (var errorCode : ErrorCode.values()) {
-      map.put(errorCode.codeNum, errorCode);
-    }
-
-    return map;
-  }
-
-  private static final Map<Short, ErrorCode> codeMap = createCodeMap();
-
-  private final short errorCode;
-  private final String message;
-
-  public StateManagerRuntimeError(short errorCode, String message) {
-    this.errorCode = errorCode;
-    this.message = message;
-  }
-
-  private short getRawErrorCode() {
-    return this.errorCode;
-  }
-
-  public ErrorCode getErrorCode() {
-    return StateManagerRuntimeError.codeMap.get(this.errorCode);
-  }
-
-  public String message() {
-    return message;
+        codecs -> StructCodec.fromRecordComponents(StateManagerRuntimeError.class, codecs));
   }
 }

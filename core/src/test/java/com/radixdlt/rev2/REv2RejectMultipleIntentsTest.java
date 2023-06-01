@@ -73,9 +73,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -88,17 +88,12 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class REv2RejectMultipleIntentsTest {
-  private static final ECKeyPair NOTARY = PrivateKeys.ofNumeric(1);
-  private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -117,20 +112,15 @@ public final class REv2RejectMultipleIntentsTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
-  private static byte[] createValidIntentBytes(ComponentAddress faucet, long nonce) {
-    return REv2TestTransactions.constructValidIntentBytes(
-        NETWORK_DEFINITION, faucet, 0, nonce, NOTARY.getPublicKey().toPublicKey());
-  }
-
-  private static RawNotarizedTransaction createValidTransactionWithSigs(
-      byte[] intentBytes, int sigsCount) {
-    var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(PrivateKeys::ofNumeric).toList();
-    return REv2TestTransactions.constructRawTransaction(intentBytes, NOTARY, keys);
+  private static RawNotarizedTransaction createValidTransactionWithSigs(int nonce, int sigsCount) {
+    return TransactionBuilder.forTests().nonce(nonce).signatories(sigsCount).prepare().raw();
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {
@@ -156,26 +146,25 @@ public final class REv2RejectMultipleIntentsTest {
     try (var test = createTest(proposalGenerator)) {
       // Prepare - let's start the test
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
 
-      var fixedIntent1 = createValidIntentBytes(faucet, 1);
-      var fixedIntent2 = createValidIntentBytes(faucet, 2);
-      var fixedIntent3 = createValidIntentBytes(faucet, 3);
+      var intent1Nonce = 5;
+      var intent2Nonce = 6;
+      var intent3Nonce = 7;
 
       // Signatures aren't deterministic so create signed transactions up front
       var fixedIntent1Transactions =
           List.of(
-              createValidTransactionWithSigs(fixedIntent1, 0),
-              createValidTransactionWithSigs(fixedIntent1, 1),
-              createValidTransactionWithSigs(fixedIntent1, 2),
-              createValidTransactionWithSigs(fixedIntent1, 3),
-              createValidTransactionWithSigs(fixedIntent1, 4),
-              createValidTransactionWithSigs(fixedIntent1, 5));
+              createValidTransactionWithSigs(intent1Nonce, 0),
+              createValidTransactionWithSigs(intent1Nonce, 1),
+              createValidTransactionWithSigs(intent1Nonce, 2),
+              createValidTransactionWithSigs(intent1Nonce, 3),
+              createValidTransactionWithSigs(intent1Nonce, 4),
+              createValidTransactionWithSigs(intent1Nonce, 5));
       var fixedIntent2Transactions =
           List.of(
-              createValidTransactionWithSigs(fixedIntent2, 0),
-              createValidTransactionWithSigs(fixedIntent2, 3));
-      var fixedIntent3Transactions = List.of(createValidTransactionWithSigs(fixedIntent3, 0));
+              createValidTransactionWithSigs(intent2Nonce, 0),
+              createValidTransactionWithSigs(intent2Nonce, 3));
+      var fixedIntent3Transactions = List.of(createValidTransactionWithSigs(intent3Nonce, 0));
 
       // Different payloads all with fixed intent 1 - only one of these should be committed
       var transactionsForFirstProposal = fixedIntent1Transactions.stream().limit(4).toList();
@@ -209,9 +198,9 @@ public final class REv2RejectMultipleIntentsTest {
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
       // Verify that only one transaction of some intent was committed
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent1Transactions, false);
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent2Transactions, false);
-      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent3Transactions, false);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent1Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent2Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent3Transactions);
     }
   }
 }

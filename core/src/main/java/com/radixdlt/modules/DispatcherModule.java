@@ -276,8 +276,7 @@ public class DispatcherModule extends AbstractModule {
               @Self NodeId selfNodeId) {
             return transaction ->
                 mempoolAddSuccessEventDispatcher.dispatch(
-                    MempoolAddSuccess.create(
-                        RawNotarizedTransaction.create(transaction.getPayload()), selfNodeId));
+                    MempoolAddSuccess.create(transaction, selfNodeId));
           }
         });
   }

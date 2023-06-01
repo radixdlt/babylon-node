@@ -17,7 +17,7 @@ use transaction::model::*;
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
 pub trait TransactionLogic<S> {
-    fn execute_on(&self, store: &S) -> TransactionReceipt;
+    fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
 /// A well-known type of execution.
@@ -91,10 +91,10 @@ pub struct ConfiguredExecutable<'a> {
 impl<'a> ConfiguredExecutable<'a> {
     /// Wraps this instance in a time-measuring decorator (which will log a `warn!` after the given
     /// runtime threshold).
-    pub fn warn_after<S: Into<String>>(
+    pub fn warn_after(
         self,
         threshold: Duration,
-        logged_description: S,
+        logged_description: impl Into<String>,
     ) -> TimeWarningTransactionLogic<Self> {
         TimeWarningTransactionLogic {
             underlying: self,
@@ -105,7 +105,7 @@ impl<'a> ConfiguredExecutable<'a> {
 }
 
 impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
-    fn execute_on(&self, store: &S) -> TransactionReceipt {
+    fn execute_on(self, store: &S) -> TransactionReceipt {
         execute_transaction(
             store,
             self.scrypto_interpreter,
@@ -128,7 +128,7 @@ where
     S: SubstateDatabase,
     U: TransactionLogic<S>,
 {
-    fn execute_on(&self, store: &S) -> TransactionReceipt {
+    fn execute_on(self, store: &S) -> TransactionReceipt {
         let start = Instant::now();
         let result = self.underlying.execute_on(store);
         let elapsed = start.elapsed();
@@ -137,7 +137,7 @@ where
                 "Transaction execution took {}ms, above warning threshold of {}ms ({})",
                 elapsed.as_millis(),
                 self.threshold.as_millis(),
-                self.logged_description
+                self.logged_description,
             );
         }
         result

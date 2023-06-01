@@ -42,10 +42,8 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
     pub account_package: String,
     #[serde(rename = "identity_package")]
     pub identity_package: String,
-    #[serde(rename = "epoch_manager_package")]
-    pub epoch_manager_package: String,
-    #[serde(rename = "clock_package")]
-    pub clock_package: String,
+    #[serde(rename = "consensus_manager_package")]
+    pub consensus_manager_package: String,
     #[serde(rename = "access_controller_package")]
     pub access_controller_package: String,
     #[serde(rename = "transaction_processor_package")]
@@ -60,10 +58,8 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
     pub genesis_helper_package: String,
     #[serde(rename = "faucet_package")]
     pub faucet_package: String,
-    #[serde(rename = "epoch_manager")]
-    pub epoch_manager: String,
-    #[serde(rename = "clock")]
-    pub clock: String,
+    #[serde(rename = "consensus_manager")]
+    pub consensus_manager: String,
     #[serde(rename = "genesis_helper")]
     pub genesis_helper: String,
     #[serde(rename = "faucet")]
@@ -72,7 +68,7 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
 
 impl NetworkConfigurationResponseWellKnownAddresses {
     /// Key addresses for this network.
-    pub fn new(xrd: String, secp256k1_signature_virtual_badge: String, ed25519_signature_virtual_badge: String, package_of_direct_caller_virtual_badge: String, global_caller_virtual_badge: String, system_transaction_badge: String, package_owner_badge: String, validator_owner_badge: String, account_owner_badge: String, identity_owner_badge: String, package_package: String, resource_package: String, account_package: String, identity_package: String, epoch_manager_package: String, clock_package: String, access_controller_package: String, transaction_processor_package: String, metadata_module_package: String, royalty_module_package: String, access_rules_package: String, genesis_helper_package: String, faucet_package: String, epoch_manager: String, clock: String, genesis_helper: String, faucet: String) -> NetworkConfigurationResponseWellKnownAddresses {
+    pub fn new(xrd: String, secp256k1_signature_virtual_badge: String, ed25519_signature_virtual_badge: String, package_of_direct_caller_virtual_badge: String, global_caller_virtual_badge: String, system_transaction_badge: String, package_owner_badge: String, validator_owner_badge: String, account_owner_badge: String, identity_owner_badge: String, package_package: String, resource_package: String, account_package: String, identity_package: String, consensus_manager_package: String, access_controller_package: String, transaction_processor_package: String, metadata_module_package: String, royalty_module_package: String, access_rules_package: String, genesis_helper_package: String, faucet_package: String, consensus_manager: String, genesis_helper: String, faucet: String) -> NetworkConfigurationResponseWellKnownAddresses {
         NetworkConfigurationResponseWellKnownAddresses {
             xrd,
             secp256k1_signature_virtual_badge,
@@ -88,8 +84,7 @@ impl NetworkConfigurationResponseWellKnownAddresses {
             resource_package,
             account_package,
             identity_package,
-            epoch_manager_package,
-            clock_package,
+            consensus_manager_package,
             access_controller_package,
             transaction_processor_package,
             metadata_module_package,
@@ -97,8 +92,7 @@ impl NetworkConfigurationResponseWellKnownAddresses {
             access_rules_package,
             genesis_helper_package,
             faucet_package,
-            epoch_manager,
-            clock,
+            consensus_manager,
             genesis_helper,
             faucet,
         }

@@ -14,12 +14,10 @@
 pub enum EntityType {
     #[serde(rename = "GlobalPackage")]
     GlobalPackage,
-    #[serde(rename = "GlobalEpochManager")]
-    GlobalEpochManager,
+    #[serde(rename = "GlobalConsensusManager")]
+    GlobalConsensusManager,
     #[serde(rename = "GlobalValidator")]
     GlobalValidator,
-    #[serde(rename = "GlobalClock")]
-    GlobalClock,
     #[serde(rename = "GlobalGenericComponent")]
     GlobalGenericComponent,
     #[serde(rename = "GlobalAccount")]
@@ -57,9 +55,8 @@ impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
             Self::GlobalPackage => String::from("GlobalPackage"),
-            Self::GlobalEpochManager => String::from("GlobalEpochManager"),
+            Self::GlobalConsensusManager => String::from("GlobalConsensusManager"),
             Self::GlobalValidator => String::from("GlobalValidator"),
-            Self::GlobalClock => String::from("GlobalClock"),
             Self::GlobalGenericComponent => String::from("GlobalGenericComponent"),
             Self::GlobalAccount => String::from("GlobalAccount"),
             Self::GlobalIdentity => String::from("GlobalIdentity"),

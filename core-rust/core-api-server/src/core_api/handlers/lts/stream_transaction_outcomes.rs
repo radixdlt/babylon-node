@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use state_manager::store::traits::{
-    ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
+    CommittedTransactionBundle, ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
 };
 
 #[tracing::instrument(skip(state))]
@@ -37,7 +37,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
         return Err(client_error(
             "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
             To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
-            Please note the resync will take awhile.",
+            Please note the resync will take a while.",
         ));
     }
 
@@ -52,16 +52,17 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for (ledger_transaction, receipt, identifiers) in database
+    for bundle in database
         .get_committed_transaction_bundle_iter(from_state_version)
         .take(limit)
     {
-        let committed_transaction = to_api_lts_committed_transaction_outcome(
-            &mapping_context,
-            ledger_transaction,
+        let CommittedTransactionBundle {
             receipt,
             identifiers,
-        )?;
+            ..
+        } = bundle;
+        let committed_transaction =
+            to_api_lts_committed_transaction_outcome(&mapping_context, receipt, identifiers)?;
 
         let committed_transaction_size = committed_transaction.get_json_size();
         current_total_size += committed_transaction_size;

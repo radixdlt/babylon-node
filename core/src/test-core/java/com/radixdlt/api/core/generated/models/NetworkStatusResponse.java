@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CommittedStateIdentifier;
+import com.radixdlt.api.core.generated.models.EpochRound;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,19 +34,31 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   NetworkStatusResponse.JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER,
+  NetworkStatusResponse.JSON_PROPERTY_GENESIS_EPOCH_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_POST_GENESIS_STATE_IDENTIFIER,
-  NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_IDENTIFIER
+  NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_IDENTIFIER,
+  NetworkStatusResponse.JSON_PROPERTY_CURRENT_EPOCH_ROUND,
+  NetworkStatusResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NetworkStatusResponse {
   public static final String JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER = "pre_genesis_state_identifier";
   private CommittedStateIdentifier preGenesisStateIdentifier;
 
+  public static final String JSON_PROPERTY_GENESIS_EPOCH_ROUND = "genesis_epoch_round";
+  private EpochRound genesisEpochRound;
+
   public static final String JSON_PROPERTY_POST_GENESIS_STATE_IDENTIFIER = "post_genesis_state_identifier";
   private CommittedStateIdentifier postGenesisStateIdentifier;
 
   public static final String JSON_PROPERTY_CURRENT_STATE_IDENTIFIER = "current_state_identifier";
   private CommittedStateIdentifier currentStateIdentifier;
+
+  public static final String JSON_PROPERTY_CURRENT_EPOCH_ROUND = "current_epoch_round";
+  private EpochRound currentEpochRound;
+
+  public static final String JSON_PROPERTY_CURRENT_PROTOCOL_VERSION = "current_protocol_version";
+  private String currentProtocolVersion;
 
   public NetworkStatusResponse() { 
   }
@@ -73,6 +86,32 @@ public class NetworkStatusResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPreGenesisStateIdentifier(CommittedStateIdentifier preGenesisStateIdentifier) {
     this.preGenesisStateIdentifier = preGenesisStateIdentifier;
+  }
+
+
+  public NetworkStatusResponse genesisEpochRound(EpochRound genesisEpochRound) {
+    this.genesisEpochRound = genesisEpochRound;
+    return this;
+  }
+
+   /**
+   * Get genesisEpochRound
+   * @return genesisEpochRound
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_GENESIS_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public EpochRound getGenesisEpochRound() {
+    return genesisEpochRound;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GENESIS_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setGenesisEpochRound(EpochRound genesisEpochRound) {
+    this.genesisEpochRound = genesisEpochRound;
   }
 
 
@@ -111,10 +150,10 @@ public class NetworkStatusResponse {
    * Get currentStateIdentifier
    * @return currentStateIdentifier
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_CURRENT_STATE_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public CommittedStateIdentifier getCurrentStateIdentifier() {
     return currentStateIdentifier;
@@ -122,9 +161,61 @@ public class NetworkStatusResponse {
 
 
   @JsonProperty(JSON_PROPERTY_CURRENT_STATE_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCurrentStateIdentifier(CommittedStateIdentifier currentStateIdentifier) {
     this.currentStateIdentifier = currentStateIdentifier;
+  }
+
+
+  public NetworkStatusResponse currentEpochRound(EpochRound currentEpochRound) {
+    this.currentEpochRound = currentEpochRound;
+    return this;
+  }
+
+   /**
+   * Get currentEpochRound
+   * @return currentEpochRound
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_CURRENT_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public EpochRound getCurrentEpochRound() {
+    return currentEpochRound;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CURRENT_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setCurrentEpochRound(EpochRound currentEpochRound) {
+    this.currentEpochRound = currentEpochRound;
+  }
+
+
+  public NetworkStatusResponse currentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
+    return this;
+  }
+
+   /**
+   * A descriptor for the current protocol version that the node is running. 
+   * @return currentProtocolVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A descriptor for the current protocol version that the node is running. ")
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getCurrentProtocolVersion() {
+    return currentProtocolVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CURRENT_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCurrentProtocolVersion(String currentProtocolVersion) {
+    this.currentProtocolVersion = currentProtocolVersion;
   }
 
 
@@ -141,13 +232,16 @@ public class NetworkStatusResponse {
     }
     NetworkStatusResponse networkStatusResponse = (NetworkStatusResponse) o;
     return Objects.equals(this.preGenesisStateIdentifier, networkStatusResponse.preGenesisStateIdentifier) &&
+        Objects.equals(this.genesisEpochRound, networkStatusResponse.genesisEpochRound) &&
         Objects.equals(this.postGenesisStateIdentifier, networkStatusResponse.postGenesisStateIdentifier) &&
-        Objects.equals(this.currentStateIdentifier, networkStatusResponse.currentStateIdentifier);
+        Objects.equals(this.currentStateIdentifier, networkStatusResponse.currentStateIdentifier) &&
+        Objects.equals(this.currentEpochRound, networkStatusResponse.currentEpochRound) &&
+        Objects.equals(this.currentProtocolVersion, networkStatusResponse.currentProtocolVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(preGenesisStateIdentifier, postGenesisStateIdentifier, currentStateIdentifier);
+    return Objects.hash(preGenesisStateIdentifier, genesisEpochRound, postGenesisStateIdentifier, currentStateIdentifier, currentEpochRound, currentProtocolVersion);
   }
 
   @Override
@@ -155,8 +249,11 @@ public class NetworkStatusResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class NetworkStatusResponse {\n");
     sb.append("    preGenesisStateIdentifier: ").append(toIndentedString(preGenesisStateIdentifier)).append("\n");
+    sb.append("    genesisEpochRound: ").append(toIndentedString(genesisEpochRound)).append("\n");
     sb.append("    postGenesisStateIdentifier: ").append(toIndentedString(postGenesisStateIdentifier)).append("\n");
     sb.append("    currentStateIdentifier: ").append(toIndentedString(currentStateIdentifier)).append("\n");
+    sb.append("    currentEpochRound: ").append(toIndentedString(currentEpochRound)).append("\n");
+    sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
     sb.append("}");
     return sb.toString();
   }

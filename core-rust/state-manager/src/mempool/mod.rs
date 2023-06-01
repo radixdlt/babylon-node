@@ -62,7 +62,9 @@
  * permissions under this License.
  */
 
+use radix_engine_common::types::Epoch;
 use sbor::*;
+use transaction::{errors::TransactionValidationError, prelude::NotarizedTransactionHash};
 
 use std::string::ToString;
 
@@ -90,7 +92,7 @@ impl MetricLabel for MempoolAddSource {
 #[derive(Debug)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
-    Duplicate,
+    Duplicate(NotarizedTransactionHash),
     Rejected(MempoolAddRejection),
 }
 
@@ -101,14 +103,26 @@ pub struct MempoolAddRejection {
     pub retry_from: RetryFrom,
     pub was_cached: bool,
     /// The epoch when the payload will definitely be permanently rejected
-    pub invalid_from_epoch: u64,
+    /// This isn't always provided if the rejection is permanent
+    pub invalid_from_epoch: Option<Epoch>,
 }
 
 impl MempoolAddRejection {
+    pub fn for_static_rejection(validation_error: TransactionValidationError) -> Self {
+        Self {
+            reason: RejectionReason::ValidationError(validation_error),
+            against_state: AtState::Static,
+            retry_from: RetryFrom::Never,
+            was_cached: false,
+            invalid_from_epoch: None,
+        }
+    }
+
     pub fn is_permanent_for_payload(&self) -> bool {
         match self.against_state {
             AtState::Committed { .. } => self.reason.is_permanent_for_payload(),
             AtState::PendingPreparingVertices { .. } => false,
+            AtState::Static => self.reason.is_permanent_for_payload(),
         }
     }
 
@@ -116,6 +130,7 @@ impl MempoolAddRejection {
         match self.against_state {
             AtState::Committed { .. } => self.reason.is_permanent_for_intent(),
             AtState::PendingPreparingVertices { .. } => false,
+            AtState::Static => self.reason.is_permanent_for_payload(),
         }
     }
 
@@ -123,6 +138,7 @@ impl MempoolAddRejection {
         match self.against_state {
             AtState::Committed { .. } => self.reason.is_rejected_because_intent_already_committed(),
             AtState::PendingPreparingVertices { .. } => false,
+            AtState::Static => false,
         }
     }
 }
@@ -138,7 +154,7 @@ impl MetricLabel for MempoolAddError {
                 RejectionReason::IntentHashCommitted => "IntentHashCommitted",
             },
             MempoolAddError::Full { .. } => "MempoolFull",
-            MempoolAddError::Duplicate => "Duplicate",
+            MempoolAddError::Duplicate(_) => "Duplicate",
         }
     }
 }
@@ -150,7 +166,7 @@ impl ToString for MempoolAddError {
                 current_size,
                 max_size,
             } => format!("Mempool Full [{current_size} - {max_size}]"),
-            MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
+            MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }

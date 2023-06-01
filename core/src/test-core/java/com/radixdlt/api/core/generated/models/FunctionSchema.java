@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.ReceiverInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,52 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FunctionSchema
  */
 @JsonPropertyOrder({
-  FunctionSchema.JSON_PROPERTY_RECEIVER,
+  FunctionSchema.JSON_PROPERTY_RECEIVER_INFO,
   FunctionSchema.JSON_PROPERTY_INPUT,
   FunctionSchema.JSON_PROPERTY_OUTPUT,
   FunctionSchema.JSON_PROPERTY_EXPORT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FunctionSchema {
-  /**
-   * Gets or Sets receiver
-   */
-  public enum ReceiverEnum {
-    FUNCTION("Function"),
-    
-    COMPONENTREADONLY("ComponentReadOnly"),
-    
-    COMPONENTMUTABLE("ComponentMutable");
-
-    private String value;
-
-    ReceiverEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static ReceiverEnum fromValue(String value) {
-      for (ReceiverEnum b : ReceiverEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_RECEIVER = "receiver";
-  private ReceiverEnum receiver;
+  public static final String JSON_PROPERTY_RECEIVER_INFO = "receiver_info";
+  private ReceiverInfo receiverInfo;
 
   public static final String JSON_PROPERTY_INPUT = "input";
   private LocalTypeIndex input;
@@ -91,29 +55,29 @@ public class FunctionSchema {
   public FunctionSchema() { 
   }
 
-  public FunctionSchema receiver(ReceiverEnum receiver) {
-    this.receiver = receiver;
+  public FunctionSchema receiverInfo(ReceiverInfo receiverInfo) {
+    this.receiverInfo = receiverInfo;
     return this;
   }
 
    /**
-   * Get receiver
-   * @return receiver
+   * Get receiverInfo
+   * @return receiverInfo
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RECEIVER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_RECEIVER_INFO)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ReceiverEnum getReceiver() {
-    return receiver;
+  public ReceiverInfo getReceiverInfo() {
+    return receiverInfo;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RECEIVER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setReceiver(ReceiverEnum receiver) {
-    this.receiver = receiver;
+  @JsonProperty(JSON_PROPERTY_RECEIVER_INFO)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setReceiverInfo(ReceiverInfo receiverInfo) {
+    this.receiverInfo = receiverInfo;
   }
 
 
@@ -207,7 +171,7 @@ public class FunctionSchema {
       return false;
     }
     FunctionSchema functionSchema = (FunctionSchema) o;
-    return Objects.equals(this.receiver, functionSchema.receiver) &&
+    return Objects.equals(this.receiverInfo, functionSchema.receiverInfo) &&
         Objects.equals(this.input, functionSchema.input) &&
         Objects.equals(this.output, functionSchema.output) &&
         Objects.equals(this.exportName, functionSchema.exportName);
@@ -215,14 +179,14 @@ public class FunctionSchema {
 
   @Override
   public int hashCode() {
-    return Objects.hash(receiver, input, output, exportName);
+    return Objects.hash(receiverInfo, input, output, exportName);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FunctionSchema {\n");
-    sb.append("    receiver: ").append(toIndentedString(receiver)).append("\n");
+    sb.append("    receiverInfo: ").append(toIndentedString(receiverInfo)).append("\n");
     sb.append("    input: ").append(toIndentedString(input)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");
     sb.append("    exportName: ").append(toIndentedString(exportName)).append("\n");

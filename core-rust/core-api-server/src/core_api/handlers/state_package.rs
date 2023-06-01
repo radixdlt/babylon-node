@@ -1,5 +1,4 @@
 use crate::core_api::*;
-use radix_engine::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
@@ -30,12 +29,12 @@ pub(crate) async fn handle_state_package(
         &PackageField::Royalty.into(),
     )?;
 
-    let method_access_rules_substate: MethodAccessRulesSubstate =
-        read_mandatory_main_field_substate(
-            database.deref(),
-            package_address.as_node_id(),
-            &AccessRulesField::AccessRules.into(),
-        )?;
+    let method_access_rules_substate = read_mandatory_substate(
+        database.deref(),
+        package_address.as_node_id(),
+        ACCESS_RULES_FIELD_PARTITION,
+        &AccessRulesField::AccessRules.into(),
+    )?;
 
     Ok(models::StatePackageResponse {
         info: Some(to_api_package_info_substate(

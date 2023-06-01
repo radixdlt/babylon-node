@@ -68,7 +68,7 @@ public class StateManagerRuntimeException extends RuntimeException {
   private final StateManagerRuntimeError error;
 
   public StateManagerRuntimeException(StateManagerRuntimeError error) {
-    super(error.getErrorCode() + ": " + error.message());
+    super(error.message());
     this.error = error;
   }
 

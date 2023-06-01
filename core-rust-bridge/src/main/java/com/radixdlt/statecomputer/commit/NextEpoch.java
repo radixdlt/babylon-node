@@ -69,7 +69,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 import java.util.Set;
 
-public record NextEpoch(Set<ActiveValidatorInfo> validators, UInt64 epoch) {
+public record NextEpoch(UInt64 epoch, Set<ActiveValidatorInfo> validators) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         NextEpoch.class, codecs -> StructCodec.fromRecordComponents(NextEpoch.class, codecs));

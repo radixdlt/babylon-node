@@ -13,8 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FunctionSchema {
-    #[serde(rename = "receiver")]
-    pub receiver: Receiver,
+    #[serde(rename = "receiver_info", skip_serializing_if = "Option::is_none")]
+    pub receiver_info: Option<Box<crate::core_api::generated::models::ReceiverInfo>>,
     #[serde(rename = "input")]
     pub input: Box<crate::core_api::generated::models::LocalTypeIndex>,
     #[serde(rename = "output")]
@@ -24,9 +24,9 @@ pub struct FunctionSchema {
 }
 
 impl FunctionSchema {
-    pub fn new(receiver: Receiver, input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export_name: String) -> FunctionSchema {
+    pub fn new(input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export_name: String) -> FunctionSchema {
         FunctionSchema {
-            receiver,
+            receiver_info: None,
             input: Box::new(input),
             output: Box::new(output),
             export_name,
@@ -34,20 +34,4 @@ impl FunctionSchema {
     }
 }
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Receiver {
-    #[serde(rename = "Function")]
-    Function,
-    #[serde(rename = "ComponentReadOnly")]
-    ComponentReadOnly,
-    #[serde(rename = "ComponentMutable")]
-    ComponentMutable,
-}
-
-impl Default for Receiver {
-    fn default() -> Receiver {
-        Self::Function
-    }
-}
 

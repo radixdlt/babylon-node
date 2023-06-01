@@ -87,11 +87,11 @@ public class NextEpoch {
   }
 
    /**
-   * Validators are sorted by descending stake amount
+   * Active validator set for the new epoch, ordered by stake descending.
    * @return validators
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Validators are sorted by descending stake amount")
+  @ApiModelProperty(required = true, value = "Active validator set for the new epoch, ordered by stake descending.")
   @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

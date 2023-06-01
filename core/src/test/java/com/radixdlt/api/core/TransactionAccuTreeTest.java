@@ -133,6 +133,8 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
 
   private CapturedEpoch captureEpoch(int epochNumber) {
     try (var test = buildRunningServerTest(EPOCH_TRANSACTION_LENGTH)) {
+      test.suppressUnusedWarning();
+
       // Run the setup until 2 epoch proofs are captured
       var reader = test.getInstance(0, REv2TransactionAndProofStore.class);
       test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(epochNumber)), 1000);

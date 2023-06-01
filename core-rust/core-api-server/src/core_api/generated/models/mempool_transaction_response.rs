@@ -13,14 +13,15 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct MempoolTransactionResponse {
-    #[serde(rename = "notarized_transaction")]
-    pub notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
+    /// The hex-encoded full notarized transaction payload.
+    #[serde(rename = "payload_hex")]
+    pub payload_hex: String,
 }
 
 impl MempoolTransactionResponse {
-    pub fn new(notarized_transaction: crate::core_api::generated::models::NotarizedTransaction) -> MempoolTransactionResponse {
+    pub fn new(payload_hex: String) -> MempoolTransactionResponse {
         MempoolTransactionResponse {
-            notarized_transaction: Box::new(notarized_transaction),
+            payload_hex,
         }
     }
 }

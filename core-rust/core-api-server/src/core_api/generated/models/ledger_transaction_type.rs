@@ -13,28 +13,28 @@
 /// The type of the ledger transaction
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum LedgerTransactionType {
+    #[serde(rename = "Genesis")]
+    Genesis,
     #[serde(rename = "User")]
     User,
-    #[serde(rename = "Validator")]
-    Validator,
-    #[serde(rename = "System")]
-    System,
+    #[serde(rename = "RoundUpdate")]
+    RoundUpdate,
 
 }
 
 impl ToString for LedgerTransactionType {
     fn to_string(&self) -> String {
         match self {
+            Self::Genesis => String::from("Genesis"),
             Self::User => String::from("User"),
-            Self::Validator => String::from("Validator"),
-            Self::System => String::from("System"),
+            Self::RoundUpdate => String::from("RoundUpdate"),
         }
     }
 }
 
 impl Default for LedgerTransactionType {
     fn default() -> LedgerTransactionType {
-        Self::User
+        Self::Genesis
     }
 }
 

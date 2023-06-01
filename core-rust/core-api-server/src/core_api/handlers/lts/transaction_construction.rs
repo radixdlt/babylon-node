@@ -1,7 +1,6 @@
 use crate::core_api::*;
-use radix_engine::blueprints::clock::ClockSubstate;
-use radix_engine::blueprints::epoch_manager::EpochManagerSubstate;
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -14,23 +13,22 @@ pub(crate) async fn handle_lts_transaction_construction(
 
     let database = state.database.read();
 
-    let epoch_manager_substate: EpochManagerSubstate = read_mandatory_main_field_substate(
+    let consensus_manager_substate: ConsensusManagerSubstate = read_mandatory_main_field_substate(
         database.deref(),
-        EPOCH_MANAGER.as_node_id(),
-        &EpochManagerField::EpochManager.into(),
+        CONSENSUS_MANAGER.as_node_id(),
+        &ConsensusManagerField::ConsensusManager.into(),
     )?;
 
-    let clock_substate: ClockSubstate = read_mandatory_main_field_substate(
+    let timestamp_substate: ProposerMilliTimestampSubstate = read_mandatory_main_field_substate(
         database.deref(),
-        CLOCK.as_node_id(),
-        // TODO - change this to a better resolution of time when we have it
-        &ClockField::CurrentTimeRoundedToMinutes.into(),
+        CONSENSUS_MANAGER.as_node_id(),
+        &ConsensusManagerField::CurrentTime.into(),
     )?;
 
     Ok(models::LtsTransactionConstructionResponse {
-        current_epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,
+        current_epoch: to_api_epoch(&mapping_context, consensus_manager_substate.epoch)?,
         ledger_clock: Box::new(to_api_instant_from_safe_timestamp(
-            clock_substate.current_time_rounded_to_minutes_ms,
+            timestamp_substate.epoch_milli,
         )?),
     })
     .map(Json)

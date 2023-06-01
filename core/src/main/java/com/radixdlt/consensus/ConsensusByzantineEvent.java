@@ -66,9 +66,7 @@ package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public sealed interface ConsensusByzantineEvent {
 
@@ -84,14 +82,6 @@ public sealed interface ConsensusByzantineEvent {
       implements ConsensusByzantineEvent {
     public BFTValidatorId getAuthor() {
       return author;
-    }
-  }
-
-  record InvalidProposedTransaction(
-      RoundDetails roundDetails, RawNotarizedTransaction notarizedTransaction, Exception e)
-      implements ConsensusByzantineEvent {
-    public BFTValidatorId getAuthor() {
-      return roundDetails.roundProposer();
     }
   }
 }

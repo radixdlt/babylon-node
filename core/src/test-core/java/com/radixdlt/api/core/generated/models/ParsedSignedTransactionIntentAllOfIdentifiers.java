@@ -32,15 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ParsedSignedTransactionIntentAllOfIdentifiers.JSON_PROPERTY_INTENT_HASH,
-  ParsedSignedTransactionIntentAllOfIdentifiers.JSON_PROPERTY_SIGNATURES_HASH
+  ParsedSignedTransactionIntentAllOfIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ParsedSignedTransactionIntentAllOfIdentifiers {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
 
-  public static final String JSON_PROPERTY_SIGNATURES_HASH = "signatures_hash";
-  private String signaturesHash;
+  public static final String JSON_PROPERTY_SIGNED_INTENT_HASH = "signed_intent_hash";
+  private String signedIntentHash;
 
   public ParsedSignedTransactionIntentAllOfIdentifiers() { 
   }
@@ -51,11 +51,11 @@ public class ParsedSignedTransactionIntentAllOfIdentifiers {
   }
 
    /**
-   * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is &#x60;Blake2b-256(compiled_intent)&#x60;
+   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
    * @return intentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`")
+  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
   @JsonProperty(JSON_PROPERTY_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -71,29 +71,29 @@ public class ParsedSignedTransactionIntentAllOfIdentifiers {
   }
 
 
-  public ParsedSignedTransactionIntentAllOfIdentifiers signaturesHash(String signaturesHash) {
-    this.signaturesHash = signaturesHash;
+  public ParsedSignedTransactionIntentAllOfIdentifiers signedIntentHash(String signedIntentHash) {
+    this.signedIntentHash = signedIntentHash;
     return this;
   }
 
    /**
-   * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is &#x60;Blake2b-256(compiled_signed_transaction)&#x60;
-   * @return signaturesHash
+   * The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
+   * @return signedIntentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`")
-  @JsonProperty(JSON_PROPERTY_SIGNATURES_HASH)
+  @ApiModelProperty(required = true, value = "The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. ")
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSignaturesHash() {
-    return signaturesHash;
+  public String getSignedIntentHash() {
+    return signedIntentHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SIGNATURES_HASH)
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSignaturesHash(String signaturesHash) {
-    this.signaturesHash = signaturesHash;
+  public void setSignedIntentHash(String signedIntentHash) {
+    this.signedIntentHash = signedIntentHash;
   }
 
 
@@ -110,12 +110,12 @@ public class ParsedSignedTransactionIntentAllOfIdentifiers {
     }
     ParsedSignedTransactionIntentAllOfIdentifiers parsedSignedTransactionIntentAllOfIdentifiers = (ParsedSignedTransactionIntentAllOfIdentifiers) o;
     return Objects.equals(this.intentHash, parsedSignedTransactionIntentAllOfIdentifiers.intentHash) &&
-        Objects.equals(this.signaturesHash, parsedSignedTransactionIntentAllOfIdentifiers.signaturesHash);
+        Objects.equals(this.signedIntentHash, parsedSignedTransactionIntentAllOfIdentifiers.signedIntentHash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, signaturesHash);
+    return Objects.hash(intentHash, signedIntentHash);
   }
 
   @Override
@@ -123,7 +123,7 @@ public class ParsedSignedTransactionIntentAllOfIdentifiers {
     StringBuilder sb = new StringBuilder();
     sb.append("class ParsedSignedTransactionIntentAllOfIdentifiers {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
-    sb.append("    signaturesHash: ").append(toIndentedString(signaturesHash)).append("\n");
+    sb.append("    signedIntentHash: ").append(toIndentedString(signedIntentHash)).append("\n");
     sb.append("}");
     return sb.toString();
   }

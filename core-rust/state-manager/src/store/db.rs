@@ -64,20 +64,19 @@
 
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
+use crate::transaction::LedgerTransactionHash;
 use std::path::PathBuf;
-
-use crate::types::UserPayloadHash;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use crate::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, ReceiptTreeHash,
-    TransactionTreeHash,
+    CommitBasedIdentifiers, CommittedTransactionIdentifiers, ReceiptTreeHash, TransactionTreeHash,
 };
 use enum_dispatch::enum_dispatch;
 use radix_engine_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
+use transaction::model::*;
 
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 use sbor::{Categorize, Decode, Encode};
@@ -202,8 +201,11 @@ impl TransactionIndex<&IntentHash> for StateManagerDatabase {
     }
 }
 
-impl TransactionIndex<&UserPayloadHash> for StateManagerDatabase {
-    fn get_txn_state_version_by_identifier(&self, identifier: &UserPayloadHash) -> Option<u64> {
+impl TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &NotarizedTransactionHash,
+    ) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
@@ -215,8 +217,11 @@ impl TransactionIndex<&UserPayloadHash> for StateManagerDatabase {
     }
 }
 
-impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
-    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &LedgerTransactionHash,
+    ) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)

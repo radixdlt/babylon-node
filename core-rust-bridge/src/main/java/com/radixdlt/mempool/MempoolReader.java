@@ -65,13 +65,14 @@
 package com.radixdlt.mempool;
 
 import java.util.List;
+import java.util.Set;
 
-public interface MempoolReader<RawTx> {
+public interface MempoolReader<PreparedUserTx, UserTxHash> {
 
-  List<RawTx> getTransactionsToRelay(int maxNumTxns, int maxTotalTxnsPayloadSize);
+  List<PreparedUserTx> getTransactionsToRelay(int maxNumTxns, int maxTotalTxnsPayloadSize);
 
-  List<RawTx> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, List<RawTx> transactionsToExclude);
+  List<PreparedUserTx> getTransactionsForProposal(
+      int maxCount, int maxPayloadSizeBytes, Set<UserTxHash> transactionsToExclude);
 
   int getCount();
 }

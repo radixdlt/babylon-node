@@ -115,7 +115,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   public void process_cached_sync_event_with_tc_test() {
     try (var test = createTest()) {
       test.startAllNodes();
-      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
+      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE), 10000);
 
       // just to check if the node indeed needed to sync
       final var counters = test.getInstance(TEST_NODE, Metrics.class);

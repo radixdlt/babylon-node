@@ -80,11 +80,11 @@ public final class REV2TransactionGenerator
     this.networkDefinition = networkDefinition;
   }
 
-  private int currentTransactionNonce = 1;
-
   @Override
   public RawNotarizedTransaction nextTransaction() {
-    return REv2TestTransactions.constructDepositFromFaucetTransaction(
-        networkDefinition, ScryptoConstants.FAUCET_ADDRESS, 0, currentTransactionNonce++);
+    return TransactionBuilder.forNetwork(networkDefinition)
+        .manifest(Manifest.newRandomAccount())
+        .prepare()
+        .raw();
   }
 }

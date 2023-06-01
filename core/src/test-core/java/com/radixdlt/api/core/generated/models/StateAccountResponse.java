@@ -37,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateAccountResponse.JSON_PROPERTY_INFO,
   StateAccountResponse.JSON_PROPERTY_ACCESS_RULES,
+  StateAccountResponse.JSON_PROPERTY_STATE,
   StateAccountResponse.JSON_PROPERTY_VAULTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -46,6 +47,9 @@ public class StateAccountResponse {
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
+
+  public static final String JSON_PROPERTY_STATE = "state";
+  private Substate state;
 
   public static final String JSON_PROPERTY_VAULTS = "vaults";
   private List<VaultBalance> vaults = new ArrayList<>();
@@ -105,6 +109,32 @@ public class StateAccountResponse {
   }
 
 
+  public StateAccountResponse state(Substate state) {
+    this.state = state;
+    return this;
+  }
+
+   /**
+   * Get state
+   * @return state
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getState() {
+    return state;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setState(Substate state) {
+    this.state = state;
+  }
+
+
   public StateAccountResponse vaults(List<VaultBalance> vaults) {
     this.vaults = vaults;
     return this;
@@ -150,12 +180,13 @@ public class StateAccountResponse {
     StateAccountResponse stateAccountResponse = (StateAccountResponse) o;
     return Objects.equals(this.info, stateAccountResponse.info) &&
         Objects.equals(this.accessRules, stateAccountResponse.accessRules) &&
+        Objects.equals(this.state, stateAccountResponse.state) &&
         Objects.equals(this.vaults, stateAccountResponse.vaults);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, accessRules, vaults);
+    return Objects.hash(info, accessRules, state, vaults);
   }
 
   @Override
@@ -164,6 +195,7 @@ public class StateAccountResponse {
     sb.append("class StateAccountResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
     sb.append("}");
     return sb.toString();

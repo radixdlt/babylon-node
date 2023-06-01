@@ -64,13 +64,13 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.rev2.REv2TestTransactions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
 import com.radixdlt.statemanager.DatabaseFlags;
 import java.util.List;
@@ -80,17 +80,13 @@ public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTes
   @Test
   public void test_lts_account_xrd_balance() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
 
-      var faucetAddress = ScryptoConstants.FAUCET_ADDRESS;
       var accountKeyPair = ECKeyPair.generateNew();
       var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
-      var accountAddressStr = addressing.encodeAccountAddress(accountAddress);
+      var accountAddressStr = addressing.encode(accountAddress);
 
-      var faucetClaim =
-          submitAndWaitForSuccess(
-              test,
-              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, accountAddress),
-              List.of());
+      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       final var result =
           getLtsApi()
@@ -98,10 +94,10 @@ public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTes
                   new LtsStateAccountFungibleResourceBalanceRequest()
                       .network(networkLogicalName)
                       .accountAddress(accountAddressStr)
-                      .resourceAddress(
-                          addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
+                      .resourceAddress(addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
 
-      assertThat(result.getFungibleResourceBalance().getAmount()).isEqualTo("10000");
+      assertThat(result.getFungibleResourceBalance().getAmount())
+          .isEqualTo(ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.toString());
     }
   }
 }

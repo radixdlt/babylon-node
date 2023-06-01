@@ -34,7 +34,6 @@ import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOfVal
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
-import com.radixdlt.api.core.generated.models.ParsedTransactionManifest;
 import com.radixdlt.api.core.generated.models.ParsedTransactionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -61,7 +60,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ParsedNotarizedTransaction.class, name = "NotarizedTransaction"),
   @JsonSubTypes.Type(value = ParsedSignedTransactionIntent.class, name = "SignedTransactionIntent"),
   @JsonSubTypes.Type(value = ParsedTransactionIntent.class, name = "TransactionIntent"),
-  @JsonSubTypes.Type(value = ParsedTransactionManifest.class, name = "TransactionManifest"),
 })
 
 public class ParsedNotarizedTransaction extends ParsedTransaction {
@@ -208,7 +206,6 @@ static {
   mappings.put("NotarizedTransaction", ParsedNotarizedTransaction.class);
   mappings.put("SignedTransactionIntent", ParsedSignedTransactionIntent.class);
   mappings.put("TransactionIntent", ParsedTransactionIntent.class);
-  mappings.put("TransactionManifest", ParsedTransactionManifest.class);
   mappings.put("ParsedNotarizedTransaction", ParsedNotarizedTransaction.class);
   JSON.registerDiscriminator(ParsedNotarizedTransaction.class, "type", mappings);
 }

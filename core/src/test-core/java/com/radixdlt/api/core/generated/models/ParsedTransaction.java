@@ -29,7 +29,6 @@ import com.radixdlt.api.core.generated.models.ParsedLedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
-import com.radixdlt.api.core.generated.models.ParsedTransactionManifest;
 import com.radixdlt.api.core.generated.models.ParsedTransactionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -56,10 +55,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ParsedNotarizedTransaction.class, name = "ParsedNotarizedTransaction"),
   @JsonSubTypes.Type(value = ParsedSignedTransactionIntent.class, name = "ParsedSignedTransactionIntent"),
   @JsonSubTypes.Type(value = ParsedTransactionIntent.class, name = "ParsedTransactionIntent"),
-  @JsonSubTypes.Type(value = ParsedTransactionManifest.class, name = "ParsedTransactionManifest"),
   @JsonSubTypes.Type(value = ParsedSignedTransactionIntent.class, name = "SignedTransactionIntent"),
   @JsonSubTypes.Type(value = ParsedTransactionIntent.class, name = "TransactionIntent"),
-  @JsonSubTypes.Type(value = ParsedTransactionManifest.class, name = "TransactionManifest"),
 })
 
 public class ParsedTransaction {
@@ -144,10 +141,8 @@ static {
   mappings.put("ParsedNotarizedTransaction", ParsedNotarizedTransaction.class);
   mappings.put("ParsedSignedTransactionIntent", ParsedSignedTransactionIntent.class);
   mappings.put("ParsedTransactionIntent", ParsedTransactionIntent.class);
-  mappings.put("ParsedTransactionManifest", ParsedTransactionManifest.class);
   mappings.put("SignedTransactionIntent", ParsedSignedTransactionIntent.class);
   mappings.put("TransactionIntent", ParsedTransactionIntent.class);
-  mappings.put("TransactionManifest", ParsedTransactionManifest.class);
   mappings.put("ParsedTransaction", ParsedTransaction.class);
   JSON.registerDiscriminator(ParsedTransaction.class, "type", mappings);
 }

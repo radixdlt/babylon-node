@@ -26,22 +26,26 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.AccessRules;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.BlueprintAccessRules;
-import com.radixdlt.api.core.generated.models.ClockFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldConfigSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldCurrentValidatorSetSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeRoundedToMinutesSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
+import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
@@ -72,7 +76,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_ACCESS_RULES,
-  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_CHILD_BLUEPRINT_RULES
+  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -83,12 +87,16 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldState"),
   @JsonSubTypes.Type(value = AccessRulesModuleFieldAccessRulesSubstate.class, name = "AccessRulesModuleFieldAccessRules"),
+  @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntry"),
+  @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
   @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntry"),
-  @JsonSubTypes.Type(value = ClockFieldStateSubstate.class, name = "ClockFieldState"),
-  @JsonSubTypes.Type(value = EpochManagerFieldConfigSubstate.class, name = "EpochManagerFieldConfig"),
-  @JsonSubTypes.Type(value = EpochManagerFieldCurrentValidatorSetSubstate.class, name = "EpochManagerFieldCurrentValidatorSet"),
-  @JsonSubTypes.Type(value = EpochManagerFieldStateSubstate.class, name = "EpochManagerFieldState"),
-  @JsonSubTypes.Type(value = EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "EpochManagerRegisteredValidatorsByStakeIndexEntry"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatistic"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeSubstate.class, name = "ConsensusManagerFieldCurrentTime"),
+  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentValidatorSetSubstate.class, name = "ConsensusManagerFieldCurrentValidatorSet"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldStateSubstate.class, name = "ConsensusManagerFieldState"),
+  @JsonSubTypes.Type(value = ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldDivisibilitySubstate.class, name = "FungibleResourceManagerFieldDivisibility"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldTotalSupplySubstate.class, name = "FungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = FungibleVaultFieldBalanceSubstate.class, name = "FungibleVaultFieldBalance"),
@@ -114,15 +122,15 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private AccessRules accessRules;
+  private NodeAuthorityRules accessRules;
 
-  public static final String JSON_PROPERTY_CHILD_BLUEPRINT_RULES = "child_blueprint_rules";
-  private List<BlueprintAccessRules> childBlueprintRules = new ArrayList<>();
+  public static final String JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES = "inner_blueprint_access_rules";
+  private List<BlueprintAccessRules> innerBlueprintAccessRules = new ArrayList<>();
 
   public AccessRulesModuleFieldAccessRulesSubstate() { 
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate accessRules(AccessRules accessRules) {
+  public AccessRulesModuleFieldAccessRulesSubstate accessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
     return this;
   }
@@ -136,46 +144,46 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRules getAccessRules() {
+  public NodeAuthorityRules getAccessRules() {
     return accessRules;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(AccessRules accessRules) {
+  public void setAccessRules(NodeAuthorityRules accessRules) {
     this.accessRules = accessRules;
   }
 
 
-  public AccessRulesModuleFieldAccessRulesSubstate childBlueprintRules(List<BlueprintAccessRules> childBlueprintRules) {
-    this.childBlueprintRules = childBlueprintRules;
+  public AccessRulesModuleFieldAccessRulesSubstate innerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
+    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
     return this;
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate addChildBlueprintRulesItem(BlueprintAccessRules childBlueprintRulesItem) {
-    this.childBlueprintRules.add(childBlueprintRulesItem);
+  public AccessRulesModuleFieldAccessRulesSubstate addInnerBlueprintAccessRulesItem(BlueprintAccessRules innerBlueprintAccessRulesItem) {
+    this.innerBlueprintAccessRules.add(innerBlueprintAccessRulesItem);
     return this;
   }
 
    /**
-   * Get childBlueprintRules
-   * @return childBlueprintRules
+   * Get innerBlueprintAccessRules
+   * @return innerBlueprintAccessRules
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHILD_BLUEPRINT_RULES)
+  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintAccessRules> getChildBlueprintRules() {
-    return childBlueprintRules;
+  public List<BlueprintAccessRules> getInnerBlueprintAccessRules() {
+    return innerBlueprintAccessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHILD_BLUEPRINT_RULES)
+  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChildBlueprintRules(List<BlueprintAccessRules> childBlueprintRules) {
-    this.childBlueprintRules = childBlueprintRules;
+  public void setInnerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
+    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
   }
 
 
@@ -192,13 +200,13 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
     }
     AccessRulesModuleFieldAccessRulesSubstate accessRulesModuleFieldAccessRulesSubstate = (AccessRulesModuleFieldAccessRulesSubstate) o;
     return Objects.equals(this.accessRules, accessRulesModuleFieldAccessRulesSubstate.accessRules) &&
-        Objects.equals(this.childBlueprintRules, accessRulesModuleFieldAccessRulesSubstate.childBlueprintRules) &&
+        Objects.equals(this.innerBlueprintAccessRules, accessRulesModuleFieldAccessRulesSubstate.innerBlueprintAccessRules) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accessRules, childBlueprintRules, super.hashCode());
+    return Objects.hash(accessRules, innerBlueprintAccessRules, super.hashCode());
   }
 
   @Override
@@ -207,7 +215,7 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
     sb.append("class AccessRulesModuleFieldAccessRulesSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    childBlueprintRules: ").append(toIndentedString(childBlueprintRules)).append("\n");
+    sb.append("    innerBlueprintAccessRules: ").append(toIndentedString(innerBlueprintAccessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -228,12 +236,16 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessControllerFieldState", AccessControllerFieldStateSubstate.class);
   mappings.put("AccessRulesModuleFieldAccessRules", AccessRulesModuleFieldAccessRulesSubstate.class);
+  mappings.put("AccountDepositRuleIndexEntry", AccountDepositRuleIndexEntrySubstate.class);
+  mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
   mappings.put("AccountVaultIndexEntry", AccountVaultIndexEntrySubstate.class);
-  mappings.put("ClockFieldState", ClockFieldStateSubstate.class);
-  mappings.put("EpochManagerFieldConfig", EpochManagerFieldConfigSubstate.class);
-  mappings.put("EpochManagerFieldCurrentValidatorSet", EpochManagerFieldCurrentValidatorSetSubstate.class);
-  mappings.put("EpochManagerFieldState", EpochManagerFieldStateSubstate.class);
-  mappings.put("EpochManagerRegisteredValidatorsByStakeIndexEntry", EpochManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
+  mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentProposalStatistic", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTime", ConsensusManagerCurrentTimeSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTimeRoundedToMinutes", ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentValidatorSet", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
+  mappings.put("ConsensusManagerFieldState", ConsensusManagerFieldStateSubstate.class);
+  mappings.put("ConsensusManagerRegisteredValidatorsByStakeIndexEntry", ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
   mappings.put("FungibleResourceManagerFieldDivisibility", FungibleResourceManagerFieldDivisibilitySubstate.class);
   mappings.put("FungibleResourceManagerFieldTotalSupply", FungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("FungibleVaultFieldBalance", FungibleVaultFieldBalanceSubstate.class);

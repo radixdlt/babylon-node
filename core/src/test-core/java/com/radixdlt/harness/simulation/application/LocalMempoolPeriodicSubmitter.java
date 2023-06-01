@@ -93,7 +93,8 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     this.nodeSelector = nodeSelector;
   }
 
-  private void act(RunningNetwork network, RawNotarizedTransaction transaction, NodeId node) {
+  private void addTransactionToMempool(
+      RunningNetwork network, RawNotarizedTransaction transaction, NodeId node) {
     network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
@@ -108,10 +109,12 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     }
 
     transactionsDisposable =
-        Observable.interval(1, 10, TimeUnit.SECONDS)
+        Observable.interval(1, 3, TimeUnit.SECONDS)
             .map(i -> transactionGenerator.nextTransaction())
-            .flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
-            .doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
+            .flatMapSingle(
+                transaction ->
+                    nodeSelector.nextNode(network).map(node -> Pair.of(transaction, node)))
+            .doOnNext(p -> this.addTransactionToMempool(network, p.getFirst(), p.getSecond()))
             .subscribe(transactionsSubject::onNext);
   }
 

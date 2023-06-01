@@ -72,17 +72,13 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record TransactionHeader(
-    byte version,
     byte networkId,
     UInt64 startEpochInclusive,
     UInt64 endEpochExclusive,
-    UInt64 nonce,
+    UInt32 nonce,
     PublicKey notaryPublicKey,
-    boolean notaryAsSignatory,
-    UInt32 costUnitLimit,
+    boolean notaryIsSignatory,
     UInt16 tipPercentage) {
-
-  public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(100_000_000);
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -93,8 +89,8 @@ public record TransactionHeader(
   public static TransactionHeader defaults(
       NetworkDefinition networkDefinition,
       long baseEpoch,
-      long numEpochsValidFor,
-      long nonce,
+      int numEpochsValidFor,
+      int nonce,
       PublicKey notary,
       Boolean notaryIsSignatory) {
     if (numEpochsValidFor > 100) {
@@ -102,40 +98,12 @@ public record TransactionHeader(
           "Transaction can't be valid for that many epochs: " + numEpochsValidFor);
     }
     return new TransactionHeader(
-        (byte) 1, // Version
         networkDefinition.id(),
         UInt64.fromNonNegativeLong(baseEpoch), // From Epoch (inclusive)
         UInt64.fromNonNegativeLong(baseEpoch + numEpochsValidFor), // To Epoch (exclusive)
-        UInt64.fromNonNegativeLong(nonce), // Nonce
+        UInt32.fromNonNegativeInt(nonce), // Nonce
         notary,
         notaryIsSignatory,
-        MAX_COST_UNIT_LIMIT, // Max Cost Units
-        UInt16.fromNonNegativeShort((short) 0) // Tip percentage
-        );
-  }
-
-  public static TransactionHeader defaults(
-      NetworkDefinition networkDefinition,
-      long baseEpoch,
-      long numEpochsValidFor,
-      long nonce,
-      PublicKey notary,
-      UInt32 costUnitLimit,
-      Boolean notaryIsSignatory) {
-    if (numEpochsValidFor > 100) {
-      throw new RuntimeException(
-          "Transaction can't be valid for that many epochs: " + numEpochsValidFor);
-    }
-    var costUnitLimitToUse = UInt32.Min(MAX_COST_UNIT_LIMIT, costUnitLimit);
-    return new TransactionHeader(
-        (byte) 1, // Version
-        networkDefinition.id(),
-        UInt64.fromNonNegativeLong(baseEpoch), // From Epoch (inclusive)
-        UInt64.fromNonNegativeLong(baseEpoch + numEpochsValidFor), // To Epoch (exclusive)
-        UInt64.fromNonNegativeLong(nonce), // Nonce
-        notary,
-        notaryIsSignatory,
-        costUnitLimitToUse,
         UInt16.fromNonNegativeShort((short) 0) // Tip percentage
         );
   }

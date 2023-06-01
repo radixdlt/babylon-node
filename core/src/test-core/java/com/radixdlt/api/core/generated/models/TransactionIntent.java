@@ -23,9 +23,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionHeader;
-import com.radixdlt.api.core.generated.models.TransactionManifest;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -35,7 +37,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   TransactionIntent.JSON_PROPERTY_HASH,
   TransactionIntent.JSON_PROPERTY_HEADER,
-  TransactionIntent.JSON_PROPERTY_MANIFEST
+  TransactionIntent.JSON_PROPERTY_INSTRUCTIONS,
+  TransactionIntent.JSON_PROPERTY_BLOBS_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionIntent {
@@ -45,8 +48,11 @@ public class TransactionIntent {
   public static final String JSON_PROPERTY_HEADER = "header";
   private TransactionHeader header;
 
-  public static final String JSON_PROPERTY_MANIFEST = "manifest";
-  private TransactionManifest manifest;
+  public static final String JSON_PROPERTY_INSTRUCTIONS = "instructions";
+  private String instructions;
+
+  public static final String JSON_PROPERTY_BLOBS_HEX = "blobs_hex";
+  private Map<String, String> blobsHex = null;
 
   public TransactionIntent() { 
   }
@@ -57,11 +63,11 @@ public class TransactionIntent {
   }
 
    /**
-   * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is &#x60;Blake2b-256(compiled_intent)&#x60;
+   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
    * @return hash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`")
+  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
   @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -103,29 +109,63 @@ public class TransactionIntent {
   }
 
 
-  public TransactionIntent manifest(TransactionManifest manifest) {
-    this.manifest = manifest;
+  public TransactionIntent instructions(String instructions) {
+    this.instructions = instructions;
     return this;
   }
 
    /**
-   * Get manifest
-   * @return manifest
+   * The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+   * @return instructions
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MANIFEST)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.")
+  @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public TransactionManifest getManifest() {
-    return manifest;
+  public String getInstructions() {
+    return instructions;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MANIFEST)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setManifest(TransactionManifest manifest) {
-    this.manifest = manifest;
+  @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setInstructions(String instructions) {
+    this.instructions = instructions;
+  }
+
+
+  public TransactionIntent blobsHex(Map<String, String> blobsHex) {
+    this.blobsHex = blobsHex;
+    return this;
+  }
+
+  public TransactionIntent putBlobsHexItem(String key, String blobsHexItem) {
+    if (this.blobsHex == null) {
+      this.blobsHex = new HashMap<>();
+    }
+    this.blobsHex.put(key, blobsHexItem);
+    return this;
+  }
+
+   /**
+   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+   * @return blobsHex
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.")
+  @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Map<String, String> getBlobsHex() {
+    return blobsHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setBlobsHex(Map<String, String> blobsHex) {
+    this.blobsHex = blobsHex;
   }
 
 
@@ -143,12 +183,13 @@ public class TransactionIntent {
     TransactionIntent transactionIntent = (TransactionIntent) o;
     return Objects.equals(this.hash, transactionIntent.hash) &&
         Objects.equals(this.header, transactionIntent.header) &&
-        Objects.equals(this.manifest, transactionIntent.manifest);
+        Objects.equals(this.instructions, transactionIntent.instructions) &&
+        Objects.equals(this.blobsHex, transactionIntent.blobsHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, header, manifest);
+    return Objects.hash(hash, header, instructions, blobsHex);
   }
 
   @Override
@@ -157,7 +198,8 @@ public class TransactionIntent {
     sb.append("class TransactionIntent {\n");
     sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
     sb.append("    header: ").append(toIndentedString(header)).append("\n");
-    sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
+    sb.append("    instructions: ").append(toIndentedString(instructions)).append("\n");
+    sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

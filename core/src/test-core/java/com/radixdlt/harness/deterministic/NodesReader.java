@@ -68,8 +68,8 @@ import com.google.inject.Injector;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transaction.TransactionDetails;
+import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -100,8 +100,7 @@ public final class NodesReader {
   public static ExecutedTransaction getCommittedUserTransaction(
       List<Injector> nodes, RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return getCommittedLedgerTransaction(nodes, committedTransaction);
   }
@@ -109,8 +108,7 @@ public final class NodesReader {
   public static Optional<ExecutedTransaction> tryGetCommittedUserTransaction(
       Injector node, RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return NodeReader.getCommittedLedgerTransaction(node, committedTransaction);
   }
@@ -135,8 +133,7 @@ public final class NodesReader {
   public static TransactionDetails getCommittedTransactionDetails(
       List<Injector> nodes, RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return getCommittedLedgerTransactionDetails(nodes, committedTransaction);
   }
@@ -144,8 +141,7 @@ public final class NodesReader {
   public static Optional<TransactionDetails> tryGetCommittedTransactionDetails(
       Injector node, RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
 
     return NodeReader.getCommittedLedgerTransactionDetails(node, committedTransaction);
   }

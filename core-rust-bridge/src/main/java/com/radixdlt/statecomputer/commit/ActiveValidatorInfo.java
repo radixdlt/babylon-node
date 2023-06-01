@@ -65,14 +65,13 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
 public record ActiveValidatorInfo(
-    Option<ComponentAddress> address, ECDSASecp256k1PublicKey key, Decimal stake) {
+    ComponentAddress address, ECDSASecp256k1PublicKey key, Decimal stake) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

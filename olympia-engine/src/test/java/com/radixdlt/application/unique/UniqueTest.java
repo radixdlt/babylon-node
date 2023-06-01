@@ -140,7 +140,8 @@ public class UniqueTest {
         TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
+            .virtualDown(
+                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
             .end();
     var sig = keyPair.sign(builder.hashToSign());
     var txn = builder.sig(sig).build();

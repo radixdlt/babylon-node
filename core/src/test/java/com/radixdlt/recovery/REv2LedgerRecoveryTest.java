@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -83,7 +84,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.utils.UInt64;
 import java.util.*;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -127,7 +127,9 @@ public final class REv2LedgerRecoveryTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));

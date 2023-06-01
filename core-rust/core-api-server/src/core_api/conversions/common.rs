@@ -1,8 +1,6 @@
 use radix_engine::types::*;
 
 use sbor::representations::*;
-use state_manager::transaction::UserTransactionValidator;
-use transaction::model::NotarizedTransaction;
 use utils::*;
 
 use crate::core_api::*;
@@ -67,15 +65,4 @@ pub fn to_api_sbor_data_from_bytes(
             }
         },
     })
-}
-
-pub fn extract_unvalidated_transaction(
-    payload: &str,
-) -> Result<NotarizedTransaction, ExtractionError> {
-    let transaction_bytes = from_hex(payload)?;
-    let notarized_transaction =
-        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-            &transaction_bytes,
-        )?;
-    Ok(notarized_transaction)
 }

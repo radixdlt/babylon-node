@@ -25,10 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.GenesisLedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransactionType;
-import com.radixdlt.api.core.generated.models.SystemLedgerTransaction;
+import com.radixdlt.api.core.generated.models.RoundUpdateLedgerTransaction;
 import com.radixdlt.api.core.generated.models.UserLedgerTransaction;
-import com.radixdlt.api.core.generated.models.ValidatorLedgerTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -49,12 +49,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = SystemLedgerTransaction.class, name = "System"),
-  @JsonSubTypes.Type(value = SystemLedgerTransaction.class, name = "SystemLedgerTransaction"),
+  @JsonSubTypes.Type(value = GenesisLedgerTransaction.class, name = "Genesis"),
+  @JsonSubTypes.Type(value = GenesisLedgerTransaction.class, name = "GenesisLedgerTransaction"),
+  @JsonSubTypes.Type(value = RoundUpdateLedgerTransaction.class, name = "RoundUpdate"),
+  @JsonSubTypes.Type(value = RoundUpdateLedgerTransaction.class, name = "RoundUpdateLedgerTransaction"),
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "User"),
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "UserLedgerTransaction"),
-  @JsonSubTypes.Type(value = ValidatorLedgerTransaction.class, name = "Validator"),
-  @JsonSubTypes.Type(value = ValidatorLedgerTransaction.class, name = "ValidatorLedgerTransaction"),
 })
 
 public class LedgerTransaction {
@@ -164,12 +164,12 @@ public class LedgerTransaction {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("System", SystemLedgerTransaction.class);
-  mappings.put("SystemLedgerTransaction", SystemLedgerTransaction.class);
+  mappings.put("Genesis", GenesisLedgerTransaction.class);
+  mappings.put("GenesisLedgerTransaction", GenesisLedgerTransaction.class);
+  mappings.put("RoundUpdate", RoundUpdateLedgerTransaction.class);
+  mappings.put("RoundUpdateLedgerTransaction", RoundUpdateLedgerTransaction.class);
   mappings.put("User", UserLedgerTransaction.class);
   mappings.put("UserLedgerTransaction", UserLedgerTransaction.class);
-  mappings.put("Validator", ValidatorLedgerTransaction.class);
-  mappings.put("ValidatorLedgerTransaction", ValidatorLedgerTransaction.class);
   mappings.put("LedgerTransaction", LedgerTransaction.class);
   JSON.registerDiscriminator(LedgerTransaction.class, "type", mappings);
 }

@@ -116,6 +116,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   }
 
   @Override
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    return this.transactionStore.getFirstEpochProof().map(REv2ToConsensus::ledgerProof);
+  }
+
+  @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
     return this.transactionStore.getEpochProof(epoch).map(REv2ToConsensus::ledgerProof);
   }
