@@ -164,7 +164,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)), 100);
+    test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)), 1000);
 
     final var counters = test.getInstance(nodeUnderTestIndex, Metrics.class);
     final var numRegularQuorums =

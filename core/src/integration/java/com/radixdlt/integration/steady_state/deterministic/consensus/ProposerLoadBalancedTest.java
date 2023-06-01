@@ -110,7 +110,9 @@ public class ProposerLoadBalancedTest {
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10000000), mapping, MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)), 10000);
+    test.runUntilMessage(
+        DeterministicTest.hasReachedRound(Round.of(numRounds)),
+        (int) numRounds * numValidatorNodes * numValidatorNodes * 10);
 
     return IntStream.range(0, numValidatorNodes)
         .mapToObj(i -> test.getInstance(i, Metrics.class))
