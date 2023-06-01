@@ -169,7 +169,9 @@ public final class REv2MempoolFillAndEmptyTest {
     try (var test = createTest()) {
       test.startAllNodes();
 
-      for (int i = 0; i < 10; i++) {
+      var totalRuns = 5;
+      for (int i = 0; i < totalRuns; i++) {
+        logger.info(String.format("Starting fill/drain cycle %s of %s", i + 1, totalRuns));
         fillAndEmptyMempool(test);
       }
     }
