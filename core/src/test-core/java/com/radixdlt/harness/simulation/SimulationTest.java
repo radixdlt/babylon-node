@@ -319,7 +319,8 @@ public final class SimulationTest {
               var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
               multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
               bind(txnGeneratorClass).in(Scopes.SINGLETON);
-              bind(TransactionGenerator.class).to(txnGeneratorClass);
+              bind(new TypeLiteral<TransactionGenerator<RawNotarizedTransaction>>() {})
+                  .to(txnGeneratorClass);
             }
 
             @Provides
