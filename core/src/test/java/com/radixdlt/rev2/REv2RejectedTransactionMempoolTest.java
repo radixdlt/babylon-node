@@ -186,7 +186,6 @@ public class REv2RejectedTransactionMempoolTest {
   public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
 
       // Arrange: Two conflicting transactions in mempool
 

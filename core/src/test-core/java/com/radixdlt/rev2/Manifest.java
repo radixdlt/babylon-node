@@ -79,9 +79,9 @@ public class Manifest {
     public String lockFeeLine(ComponentAddress address) {
       return String.format(
           """
-                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-            """,
-          address);
+              CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+          """,
+          encode(address));
     }
 
     public String encode(ComponentAddress address) {
@@ -125,17 +125,10 @@ public class Manifest {
             """
             %s
             CREATE_ACCOUNT_ADVANCED
-                Tuple(                                    # Access Rules Config Struct
-                    Map<Tuple, Enum>(),                   # Direct Method auth Field
-                    Map<Tuple, Enum>(),                   # Method auth Field
-                    Map<String, Enum>(),                  # Grouped Auth Field
-                    Enum<"AccessRuleEntry::AccessRule">(  # Default Auth Field
-                        Enum<"AccessRule::AllowAll">()
-                    ),
-                    Map<Tuple, Enum>(),                   # Method Auth Mutability Field
-                    Map<String, Enum>(),                  # Group Auth Mutability Field
-                    Enum<"AccessRuleEntry::AccessRule">(  # Default Auth Mutability Field
-                        Enum<"AccessRule::DenyAll">()
+                Map<Enum, Tuple>(                         # Authority Rules
+                    Enum<AuthorityKey::Owner>() => Tuple(
+                        Enum<AccessRule::AllowAll>(),     # Access
+                        Enum<AccessRule::AllowAll>(),     # Mutability
                     )
                 );
             """,

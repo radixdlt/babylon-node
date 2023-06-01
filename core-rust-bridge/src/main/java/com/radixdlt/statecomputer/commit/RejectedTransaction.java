@@ -64,14 +64,20 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.LedgerTransactionHash;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.utils.UInt32;
 
 public record RejectedTransaction(
-    UInt32 index, Tuple.Tuple3<HashCode, HashCode, HashCode> hashes, String error) {
+    UInt32 index,
+    Option<IntentHash> intentHash,
+    Option<NotarizedTransactionHash> notarizedTransactionHash,
+    Option<LedgerTransactionHash> ledgerTransactionHash,
+    String error) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         RejectedTransaction.class,

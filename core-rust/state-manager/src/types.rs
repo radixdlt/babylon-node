@@ -231,7 +231,10 @@ pub struct CommittableTransaction {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RejectedTransaction {
     pub index: u32,
-    pub hashes: Option<(IntentHash, NotarizedTransactionHash, LedgerTransactionHash)>,
+    // Note - these are None if the transaction can't even be prepared to determine the hashes
+    pub intent_hash: Option<IntentHash>,
+    pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
+    pub ledger_hash: Option<LedgerTransactionHash>,
     pub error: String,
 }
 

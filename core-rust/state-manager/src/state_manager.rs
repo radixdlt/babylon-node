@@ -489,7 +489,9 @@ where
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
                         index: i as u32,
-                        hashes: None,
+                        intent_hash: None,
+                        notarized_transaction_hash: None,
+                        ledger_hash: None,
                         error: format!("{error:?}"),
                     });
                     continue;
@@ -511,7 +513,9 @@ where
             if let Some(state) = intent_hash_potential_conflicts.get(&intent_hash) {
                 rejected_transactions.push(RejectedTransaction {
                     index: i as u32,
-                    hashes: Some((intent_hash, notarized_transaction_hash, ledger_hash)),
+                    intent_hash: Some(intent_hash),
+                    notarized_transaction_hash: Some(notarized_transaction_hash),
+                    ledger_hash: Some(ledger_hash),
                     error: format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
                         &intent_hash, state
@@ -537,7 +541,9 @@ where
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
                         index: i as u32,
-                        hashes: Some((intent_hash, notarized_transaction_hash, ledger_hash)),
+                        intent_hash: Some(intent_hash),
+                        notarized_transaction_hash: Some(notarized_transaction_hash),
+                        ledger_hash: Some(ledger_hash),
                         error: format!("{:?}", &error),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
@@ -597,7 +603,9 @@ where
                         let error = reject.error.clone();
                         rejected_transactions.push(RejectedTransaction {
                             index: i as u32,
-                            hashes: Some((intent_hash, notarized_transaction_hash, ledger_hash)),
+                            intent_hash: Some(intent_hash),
+                            notarized_transaction_hash: Some(notarized_transaction_hash),
+                            ledger_hash: Some(ledger_hash),
                             error: format!("{:?}", &error),
                         });
                         pending_transaction_results.push(PendingTransactionResult {
