@@ -64,7 +64,7 @@
 
 use crate::accumulator_tree::IsMerklizableHash;
 use crate::transaction::*;
-use crate::{CommitBasedIdentifiers, LedgerTransactionOutcome, SubstateChange};
+use crate::{LedgerTransactionOutcome, SubstateChange};
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
 use std::fmt;
@@ -273,17 +273,17 @@ pub struct LedgerHeader {
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct AccumulatorState {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
 }
 
 impl AccumulatorState {
-    pub fn new(identifiers: &CommitBasedIdentifiers) -> Self {
+    pub fn pre_genesis() -> Self {
         Self {
-            state_version: identifiers.state_version,
-            accumulator_hash: identifiers.accumulator_hash,
+            state_version: 0,
+            accumulator_hash: AccumulatorHash::pre_genesis(),
         }
     }
 }

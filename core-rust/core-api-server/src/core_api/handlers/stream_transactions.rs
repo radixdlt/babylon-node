@@ -76,7 +76,7 @@ pub(crate) async fn handle_stream_transactions(
         } = bundle;
         let model = LedgerTransaction::from_raw(&raw).map_err(|error| {
             MappingError::CouldNotDecodeTransaction {
-                state_version: identifiers.at_commit.state_version,
+                state_version: identifiers.resultant_accumulator_state.state_version,
                 error,
             }
         })?;
@@ -120,8 +120,8 @@ pub fn to_api_committed_transaction(
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
-            &identifiers.at_commit,
-            &identifiers.resultant_ledger,
+            &identifiers.resultant_accumulator_state,
+            &identifiers.resultant_ledger_hashes,
         )?),
         ledger_transaction: Some(to_api_ledger_transaction(
             context,

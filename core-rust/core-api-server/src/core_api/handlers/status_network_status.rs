@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{CommitBasedIdentifiers, LedgerHashes, LedgerProof};
+use state_manager::{AccumulatorState, LedgerHashes, LedgerProof};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -15,7 +15,7 @@ pub(crate) async fn handle_status_network_status(
     let database = state.database.read();
     Ok(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
-            &CommitBasedIdentifiers::pre_genesis(),
+            &AccumulatorState::pre_genesis(),
             &LedgerHashes::pre_genesis(),
         )?),
         genesis_epoch_round: database
@@ -32,8 +32,8 @@ pub(crate) async fn handle_status_network_status(
             })
             .map(|identifiers| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_committed_state_identifiers(
-                    &identifiers.at_commit,
-                    &identifiers.resultant_ledger,
+                    &identifiers.resultant_accumulator_state,
+                    &identifiers.resultant_ledger_hashes,
                 )?))
             })
             .transpose()?,
@@ -41,8 +41,8 @@ pub(crate) async fn handle_status_network_status(
             .get_top_transaction_identifiers()
             .map(|ids| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_committed_state_identifiers(
-                    &ids.at_commit,
-                    &ids.resultant_ledger,
+                    &ids.resultant_accumulator_state,
+                    &ids.resultant_ledger_hashes,
                 )?))
             })
             .transpose()?,
@@ -68,12 +68,12 @@ pub fn to_api_epoch_round(
 }
 
 pub fn to_api_committed_state_identifiers(
-    commit_based_identifiers: &CommitBasedIdentifiers,
+    accumulator_state: &AccumulatorState,
     ledger_hashes: &LedgerHashes,
 ) -> Result<models::CommittedStateIdentifier, MappingError> {
     Ok(models::CommittedStateIdentifier {
-        state_version: to_api_state_version(commit_based_identifiers.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&commit_based_identifiers.accumulator_hash),
+        state_version: to_api_state_version(accumulator_state.state_version)?,
+        accumulator_hash: to_api_accumulator_hash(&accumulator_state.accumulator_hash),
         state_tree_hash: to_api_state_tree_hash(&ledger_hashes.state_root),
         transaction_tree_hash: to_api_transaction_tree_hash(&ledger_hashes.transaction_root),
         receipt_tree_hash: to_api_receipt_tree_hash(&ledger_hashes.receipt_root),

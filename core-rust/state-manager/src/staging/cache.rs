@@ -72,7 +72,7 @@ use crate::staging::{
     StateHashTreeDiff,
 };
 use crate::{
-    AccumulatorHash, CommitBasedIdentifiers, EpochTransactionIdentifiers, ReceiptTreeHash,
+    AccumulatorHash, AccumulatorState, EpochTransactionIdentifiers, ReceiptTreeHash,
     TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
@@ -117,11 +117,11 @@ impl ExecutionCache {
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_transaction_identifiers: &CommitBasedIdentifiers,
+        parent_accumulator_state: &AccumulatorState,
         legacy_payload_hash: &LegacyLedgerPayloadHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
-        let parent_accumulator_hash = &parent_transaction_identifiers.accumulator_hash;
+        let parent_accumulator_hash = &parent_accumulator_state.accumulator_hash;
         let transaction_accumulator_hash = parent_accumulator_hash.accumulate(legacy_payload_hash);
         match self
             .accumulator_hash_to_key
@@ -138,7 +138,7 @@ impl ExecutionCache {
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
-                        parent_transaction_identifiers,
+                        parent_accumulator_state,
                         legacy_payload_hash,
                     },
                     transaction_receipt,

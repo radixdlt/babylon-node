@@ -54,8 +54,8 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 
-        let transaction_identifiers = read_store.get_top_commit_identifiers();
-        let epoch_identifiers = read_store
+        let parent_accumulator_state = read_store.get_top_accumulator_state();
+        let epoch_transaction_identifiers = read_store
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
@@ -76,8 +76,8 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let processed_receipt = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
             HashUpdateContext {
                 store: read_store.deref(),
-                epoch_transaction_identifiers: &epoch_identifiers,
-                parent_transaction_identifiers: &transaction_identifiers,
+                epoch_transaction_identifiers: &epoch_transaction_identifiers,
+                parent_accumulator_state: &parent_accumulator_state,
                 legacy_payload_hash: &fake_ledger_hash,
             },
             receipt.clone(),

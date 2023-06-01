@@ -70,7 +70,7 @@ use std::path::PathBuf;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use crate::{
-    CommitBasedIdentifiers, CommittedTransactionIdentifiers, ReceiptTreeHash, TransactionTreeHash,
+    AccumulatorState, CommittedTransactionIdentifiers, ReceiptTreeHash, TransactionTreeHash,
 };
 use enum_dispatch::enum_dispatch;
 use radix_engine_store_interface::interface::{

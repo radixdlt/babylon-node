@@ -43,7 +43,7 @@ pub(crate) async fn handle_transaction_receipt(
 
         let model = LedgerTransaction::from_raw(&raw).map_err(|error| {
             MappingError::CouldNotDecodeTransaction {
-                state_version: identifiers.at_commit.state_version,
+                state_version: identifiers.resultant_accumulator_state.state_version,
                 error,
             }
         })?;

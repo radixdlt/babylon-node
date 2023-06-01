@@ -15,28 +15,13 @@ use sbor::rust::collections::IndexMap;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::transaction::PayloadIdentifiers;
-use crate::{AccumulatorHash, ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash};
+use crate::{AccumulatorState, ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash};
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiers {
     pub payload: PayloadIdentifiers,
-    pub at_commit: CommitBasedIdentifiers,
-    pub resultant_ledger: LedgerHashes,
-}
-
-#[derive(Debug, Clone, Sbor)]
-pub struct CommitBasedIdentifiers {
-    pub state_version: u64,
-    pub accumulator_hash: AccumulatorHash,
-}
-
-impl CommitBasedIdentifiers {
-    pub fn pre_genesis() -> Self {
-        Self {
-            state_version: 0,
-            accumulator_hash: AccumulatorHash::pre_genesis(),
-        }
-    }
+    pub resultant_accumulator_state: AccumulatorState,
+    pub resultant_ledger_hashes: LedgerHashes,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
