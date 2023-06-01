@@ -130,6 +130,63 @@ public final class REv2TestTransactions {
         Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
   }
 
+  public static String constructCreateNonFungibleResourceManifest(
+          NetworkDefinition networkDefinition,
+          ComponentAddress account
+  ) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var accountAddress = addressing.encodeAccountAddress(account);
+    return String.format(
+      """
+        CALL_METHOD Address("%s") "lock_fee" Decimal("10");
+        CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8), Array<String>()) Map<String,String>("name", "name", "description", "description") Map<Enum,Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Mint"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Burn"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));
+      """,
+      accountAddress
+    );
+  }
+
+  public static String constructDoubleMintSingleBurnManifest(
+      NetworkDefinition networkDefinition,
+      ComponentAddress account,
+      ResourceAddress resource
+  ) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var accountAddress = addressing.encodeAccountAddress(account);
+    final var resourceAddress = addressing.encodeResourceAddress(resource);
+    return String.format(
+      """
+        CALL_METHOD Address("%s") "lock_fee" Decimal("10");
+        MINT_NON_FUNGIBLE Address("%s") Tuple(Map<NonFungibleLocalId,Tuple>(NonFungibleLocalId("#3#"), Tuple(Tuple()), NonFungibleLocalId("#4#"), Tuple(Tuple())));
+        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+        CALL_METHOD Address("%s") "withdraw_non_fungibles" Address("%s") Array<NonFungibleLocalId>(NonFungibleLocalId("#3#"));
+        TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#3#")) Address("%s") Bucket("burn");
+        BURN_RESOURCE Bucket("burn");
+      """,
+      accountAddress, resourceAddress, accountAddress, accountAddress, resourceAddress, resourceAddress
+    );
+  }
+
+  public static String constructDoubleMintDoubleBurnManifest(
+          NetworkDefinition networkDefinition,
+          ComponentAddress account,
+          ResourceAddress resource
+  ) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var accountAddress = addressing.encodeAccountAddress(account);
+    final var resourceAddress = addressing.encodeResourceAddress(resource);
+    return String.format(
+            """
+              CALL_METHOD Address("%s") "lock_fee" Decimal("10");
+              MINT_NON_FUNGIBLE Address("%s") Tuple(Map<NonFungibleLocalId,Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple()), NonFungibleLocalId("#2#"), Tuple(Tuple())));
+              CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+              CALL_METHOD Address("%s") "withdraw_non_fungibles" Address("%s") Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"));
+              TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#")) Address("%s") Bucket("burn");
+              BURN_RESOURCE Bucket("burn");
+            """,
+            accountAddress, resourceAddress, accountAddress, accountAddress, resourceAddress, resourceAddress
+    );
+  }
+
   public static String constructNewAccountManifest(
       NetworkDefinition networkDefinition, ComponentAddress faucet) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
