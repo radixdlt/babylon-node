@@ -121,8 +121,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               resourceAddress, accountAddress, List.of(1), List.of(1)),
           List.of(accountKeyPair));
 
-      // We mint the id "1" again, this should be allowed, because it previously never existed
-      // outside a transaction
+      // We can mint the id "1" again
       submitAndWaitForSuccess(
           test,
           Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -132,9 +131,8 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
-  @Ignore // TODO - Babylon RCnet-V2 - unignore once fix is merged
   public void
-      cannot_mint_non_fungible_id_which_previously_existed_outside_of_a_transaction_and_then_got_burned()
+      can_mint_non_fungible_id_which_previously_existed_outside_of_a_transaction_and_then_got_burned()
           throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
@@ -157,8 +155,8 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               resourceAddress, accountAddress, List.of(), List.of(1)),
           List.of(accountKeyPair));
 
-      // We mint the id "1" again, this should be a failure
-      submitAndWaitForCommittedFailure(
+      // We can mint the id "1" again
+      submitAndWaitForSuccess(
           test,
           Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
               resourceAddress, accountAddress, List.of(1), List.of()),
