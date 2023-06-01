@@ -77,6 +77,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.shell.RadixShell;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.UInt64;
 import io.prometheus.client.Counter;
 import java.time.Duration;
@@ -308,7 +309,7 @@ public class NodeCapabilityTests {
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
+    final var genesisDataBase64 = Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
     return nodeBuilder()
         .p2pServer(port)
         .ledgerSync()

@@ -66,6 +66,7 @@ package com.radixdlt.networks;
 
 import com.google.common.hash.HashCode;
 import java.util.Arrays;
+import java.util.Objects;
 
 public sealed interface FixedNetworkGenesis {
 
@@ -77,12 +78,13 @@ public sealed interface FixedNetworkGenesis {
     @Override
     public boolean equals(Object other) {
       return other instanceof Constant otherConstant
+          && genesisDataHash.equals(otherConstant.genesisDataHash)
           && Arrays.equals(genesisData, otherConstant.genesisData);
     }
 
     @Override
     public int hashCode() {
-      return Arrays.hashCode(genesisData);
+      return Objects.hash(genesisDataHash, Arrays.hashCode(genesisData));
     }
   }
 
