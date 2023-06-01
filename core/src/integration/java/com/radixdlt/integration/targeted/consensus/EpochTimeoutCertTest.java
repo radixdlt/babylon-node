@@ -131,7 +131,7 @@ public final class EpochTimeoutCertTest {
     try (var test = createTest()) {
       test.startAllNodes();
       // Run until end of first epoch
-      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true);
+      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true, 1000);
       // Run for a while more and verify that no byzantine issues occur
       test.runForCount(100000);
     }

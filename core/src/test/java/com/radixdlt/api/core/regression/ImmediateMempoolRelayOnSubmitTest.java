@@ -62,59 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.api.core.regression;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.mempool.MempoolRelayDispatcher;
-import com.radixdlt.sbor.StateManagerSbor;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.function.Predicate;
+import org.junit.Test;
 
-public final class StateManager implements AutoCloseable {
+public class ImmediateMempoolRelayOnSubmitTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_immediate_relay_event_on_core_api_submit() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
-  static {
-    System.loadLibrary("corerust");
+      var validTransaction = TransactionBuilder.forNetwork(networkDefinition).prepare();
+
+      // This errors if the submission wasn't successful
+      var submitResponse =
+          getLtsApi()
+              .ltsTransactionSubmitPost(
+                  new LtsTransactionSubmitRequest()
+                      .network(networkLogicalName)
+                      .notarizedTransactionHex(validTransaction.hexPayloadBytes()));
+
+      assertThat(submitResponse.getDuplicate()).isFalse();
+
+      test.runUntilMessage(syncMessageForTransaction(validTransaction.raw()), 20);
+    }
   }
 
-  /**
-   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the StateManager "owning" the rust state manager memory. On each call into Rust,
-   * we map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses
-   * that to access all state and make calls.
-   */
-  @SuppressWarnings("unused")
-  private final long rustStateManagerPointer = 0;
-
-  private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
-
-  public StateManager(
-      MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
-      StateManagerConfig config) {
-    this.mempoolRelayDispatcher = mempoolRelayDispatcher;
-    final var encodedConfig =
-        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
+  public static Predicate<Timed<ControlledMessage>> syncMessageForTransaction(
+      RawNotarizedTransaction transaction) {
+    return m -> {
+      if (m.value().message() instanceof MempoolAddSuccess message) {
+        return message.getTxn().equals(transaction);
+      }
+      return false;
+    };
   }
-
-  @Override
-  public void close() {
-    shutdown();
-  }
-
-  public void shutdown() {
-    cleanup(this);
-  }
-
-  /**
-   * Delegates the dispatch of an "immediately relay new transaction from Core API" event. This
-   * method is called from Rust via JNI.
-   */
-  @SuppressWarnings("unused")
-  public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
-    this.mempoolRelayDispatcher.dispatchRelay(
-        RawNotarizedTransaction.create(notarizedTransactionPayload));
-  }
-
-  private static native void init(StateManager stateManager, byte[] config);
-
-  private static native void cleanup(StateManager stateManager);
 }
