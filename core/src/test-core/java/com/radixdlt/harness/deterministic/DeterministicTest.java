@@ -364,24 +364,26 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public DeterministicTest runUntilMessage(
-      Predicate<Timed<ControlledMessage>> stopPredicate, boolean inclusive) {
-    while (true) {
+      Predicate<Timed<ControlledMessage>> stopPredicate, boolean inclusive, int count) {
+    for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       if (stopPredicate.test(nextMsg)) {
         if (inclusive) {
           handleMessage(nextMsg);
         }
-        break;
+        return this;
       }
 
       handleMessage(nextMsg);
     }
 
-    return this;
+    throw new IllegalStateException(
+        String.format("Run for %s messages, but didn't find message matching predicate", count));
   }
 
-  public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
-    return runUntilMessage(stopPredicate, false);
+  public DeterministicTest runUntilMessage(
+      Predicate<Timed<ControlledMessage>> stopPredicate, int count) {
+    return runUntilMessage(stopPredicate, false, count);
   }
 
   public DeterministicTest runForCount(int count) {

@@ -122,7 +122,7 @@ public class SyncToTimeoutQcTest {
                             new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));
+    test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0), 10000);
 
     for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {
       final var counters = test.getInstance(nodeIndex, Metrics.class);
