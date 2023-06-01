@@ -86,6 +86,11 @@ public sealed interface FixedNetworkGenesis {
     public int hashCode() {
       return Objects.hash(genesisDataHash, Arrays.hashCode(genesisData));
     }
+
+    @Override
+    public String toString() {
+      return String.format("FixedNetworkGenesis.Constant{hash=%s}", genesisDataHash);
+    }
   }
 
   static FixedNetworkGenesis resource(HashCode genesisDataHash, String resourcePath) {
