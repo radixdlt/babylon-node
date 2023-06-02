@@ -143,6 +143,7 @@ public final class RadixNodeBootstrapperTest {
     // This transaction matches the genesis of GENESIS_TEST network
     final var genesisData1 =
         encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
+
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
     final var nodeHandle1 =
@@ -190,7 +191,8 @@ public final class RadixNodeBootstrapperTest {
 
     final var properties =
         RuntimeProperties.defaultWithOverrides(
-            Map.of("network.genesis_file", genesisFile.getAbsolutePath()));
+            Map.of(
+                "network.genesis_file", genesisFile.getAbsolutePath(), "network.genesis_data", ""));
     final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
     final var nodeHandle =
         new RadixNodeBootstrapper(

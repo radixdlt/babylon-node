@@ -154,6 +154,9 @@ public final class OlympiaEndStateApiClient {
   }
 
   private static OkHttpClient createOkHttpClient() {
+    // We're safe to just skip SSL verification here.
+    // The genesis response from Olympia includes node signature,
+    // which we use to verify the contents.
     final SSLContext sslContext;
     try {
       sslContext = SSLContext.getInstance("SSL");
