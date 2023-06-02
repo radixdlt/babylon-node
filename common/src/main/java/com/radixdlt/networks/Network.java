@@ -81,11 +81,11 @@ public enum Network {
   STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_"),
 
   // Temporary networks that match Olympia - for genesis testing mostly
-  OLYMPIA_RELEASENET(3, "olympia_releasenet", "tdx_3_"),
-  OLYMPIA_RCNET(4, "olympia_rcnet", "tdx_4_"),
-  OLYMPIA_MILESTONENET(5, "olympia_milestonenet", "tdx_5_"),
-  OLYMPIA_DEVOPSNET(6, "olympia_devopsnet", "tdx_6_"),
-  OLYMPIA_SANDPITNET(7, "olympia_sandpitnet", "tdx_7_"),
+  OLYMPIA_RELEASENET(3, "releasenet", "tdx_3_"),
+  OLYMPIA_RCNET(4, "rcnet", "tdx_4_"),
+  OLYMPIA_MILESTONENET(5, "milestonenet", "tdx_5_"),
+  OLYMPIA_DEVOPSNET(6, "devopsnet", "tdx_6_"),
+  OLYMPIA_SANDPITNET(7, "sandpitnet", "tdx_7_"),
 
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
