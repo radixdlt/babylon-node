@@ -12,15 +12,15 @@ on:
       - 'cli-tools/src/**'
 
 jobs:
-  gcr-keygen-docker:
+  private-keygen-docker:
     if: github.event_name == 'workflow_dispatch'
     name: Dispatch - GCR
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
-      image_registry: "eu.gcr.io"
-      image_organization: "dev-container-repo"
-      image_name: "keygen"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-keygen"
       tag: ${{ inputs.image_tag }}
       context: "."
       dockerfile: "./Dockerfile"
@@ -33,7 +33,7 @@ jobs:
   dockerhub-keygen-docker:
     if: github.event_name == 'workflow_dispatch'
     name: Dispatch - Dockerhub
-    needs: gcr-keygen-docker
+    needs: private-keygen-docker
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       environment: release
@@ -52,15 +52,15 @@ jobs:
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
-  gcr-keygen-docker-test:
+  private-keygen-docker-test:
     if: github.event_name == 'pull_request'
     name: PR
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
-      image_registry: "eu.gcr.io"
-      image_organization: "dev-container-repo"
-      image_name: "keygen"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-keygen"
       tags: |
         type=ref,event=branch
         type=ref,event=pr
