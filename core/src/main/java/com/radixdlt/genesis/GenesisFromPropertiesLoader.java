@@ -64,7 +64,8 @@
 
 package com.radixdlt.genesis;
 
-import com.google.common.base.Strings;
+import static java.util.function.Predicate.not;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -84,14 +85,20 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
   private static final Logger log = LogManager.getLogger();
 
   public Optional<RawGenesisData> loadGenesisDataFromProperties() {
-    final var genesisFileProp = properties.get("network.genesis_file");
-    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
-      log.info("Loading genesis from file: {}", genesisFileProp);
-      return Optional.of(readGenesisBytesFromFile(genesisFileProp));
-    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_data"))) {
+    final var genesisFileProp =
+        Optional.ofNullable(properties.get("network.genesis_file")).filter(not(String::isBlank));
+    final var genesisDataProp =
+        Optional.ofNullable(properties.get("network.genesis_data")).filter(not(String::isBlank));
+    if (genesisFileProp.isPresent() && genesisDataProp.isPresent()) {
+      throw new RuntimeException(
+          "Both network.genesis_file and network.genesis_data were configured (choose one).");
+    } else if (genesisFileProp.isPresent()) {
+      log.info("Loading genesis from file: {}", genesisFileProp.orElseThrow());
+      return Optional.of(readGenesisBytesFromFile(genesisFileProp.orElseThrow()));
+    } else if (genesisDataProp.isPresent()) {
       log.info("Loading genesis from genesis_data property");
       try {
-        return Optional.of(fromCompressedBase64String(properties.get("network.genesis_data")));
+        return Optional.of(fromCompressedBase64String(genesisDataProp.orElseThrow()));
       } catch (IOException e) {
         throw new RuntimeException(
             "Couldn't decode the genesis data from the network.genesis_data property", e);

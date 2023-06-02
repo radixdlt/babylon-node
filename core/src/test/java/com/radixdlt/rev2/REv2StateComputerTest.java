@@ -95,6 +95,7 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Comparator;
 import java.util.List;
@@ -156,10 +157,7 @@ public class REv2StateComputerTest {
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var unused = injector.getInstance(REv2LedgerInitializerToken.class);
     var genesisEpochProof =
-        injector
-            .getInstance(REv2TransactionsAndProofReader.class)
-            .getPostGenesisREv2EpochProof()
-            .orElseThrow();
+        injector.getInstance(REv2TransactionAndProofStore.class).getFirstEpochProof().orElseThrow();
     var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
     var validTransaction = TransactionBuilder.forTests().prepare().raw();
 
@@ -187,10 +185,7 @@ public class REv2StateComputerTest {
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var unused = injector.getInstance(REv2LedgerInitializerToken.class);
     var genesisEpochProof =
-        injector
-            .getInstance(REv2TransactionsAndProofReader.class)
-            .getPostGenesisREv2EpochProof()
-            .orElseThrow();
+        injector.getInstance(REv2TransactionAndProofStore.class).getFirstEpochProof().orElseThrow();
     var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 

@@ -1,7 +1,7 @@
 /*
  * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
- * folder except in compliance with the License. You may obtain a copy of the License at:
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
  * The Licensor hereby grants permission for the Canonical version of the Work to be

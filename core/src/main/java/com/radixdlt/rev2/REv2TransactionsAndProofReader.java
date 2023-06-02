@@ -129,8 +129,4 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   public Optional<LedgerProof> getLastProof() {
     return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
   }
-
-  public Optional<com.radixdlt.statecomputer.commit.LedgerProof> getPostGenesisREv2EpochProof() {
-    return this.transactionStore.getFirstEpochProof();
-  }
 }
