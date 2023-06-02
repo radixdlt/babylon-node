@@ -82,11 +82,10 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.targeted.mempool.SimpleMempool;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -104,21 +103,21 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(new TypeLiteral<Mempool<?, ?>>() {})
-        .to(new TypeLiteral<Mempool<RawNotarizedTransaction, RawNotarizedTransaction>>() {})
+    bind(new TypeLiteral<Mempool<?, ?, ?>>() {})
+        .to(new TypeLiteral<SimpleMempool>() {})
         .in(Scopes.SINGLETON);
   }
 
   @Provides
   @Singleton
-  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool(Random random) {
+  private SimpleMempool mempool(Random random) {
     return new SimpleMempool(mempoolMaxSize, random);
   }
 
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool,
+      SimpleMempool mempool,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Metrics metrics) {
     return new StateComputerLedger.StateComputer() {
@@ -139,7 +138,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public List<RawNotarizedTransaction> getTransactionsForProposal(
           List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        return mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, List.of());
+        return mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, Set.of());
       }
 
       @Override
@@ -151,9 +150,9 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
         return new StateComputerLedger.StateComputerResult(
             proposedTransactions.stream()
                 // This is a workaround for the mocking to keep things lightweight
-                .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
+                .map(MockExecuted::new)
                 .collect(Collectors.toList()),
-            Map.of(),
+            0,
             LedgerHashes.zero());
       }
 
@@ -162,8 +161,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
           CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(
             txnsAndProof.getTransactions().stream()
-                // This is a workaround for the mocking to keep things lightweight
-                .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
+                .map(
+                    ledgerTransaction -> {
+                      // This undoes the (incorrect) re-mapping in MockExecuted
+                      return RawNotarizedTransaction.create(ledgerTransaction.getPayload());
+                    })
                 .toList());
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);

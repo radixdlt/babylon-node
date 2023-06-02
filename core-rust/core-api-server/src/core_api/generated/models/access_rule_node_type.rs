@@ -18,6 +18,8 @@ pub enum AccessRuleNodeType {
     AnyOf,
     #[serde(rename = "AllOf")]
     AllOf,
+    #[serde(rename = "Authority")]
+    Authority,
 
 }
 
@@ -27,6 +29,7 @@ impl ToString for AccessRuleNodeType {
             Self::ProofRule => String::from("ProofRule"),
             Self::AnyOf => String::from("AnyOf"),
             Self::AllOf => String::from("AllOf"),
+            Self::Authority => String::from("Authority"),
         }
     }
 }

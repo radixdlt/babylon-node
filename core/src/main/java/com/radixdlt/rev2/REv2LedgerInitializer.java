@@ -78,7 +78,7 @@ public record REv2LedgerInitializer(
     // to protect from node misconfiguration
     // (i.e. configuring genesis A, but node really using prev genesis B).
     reader
-        .getFirstEpochProof()
+        .getPostGenesisEpochProof()
         .ifPresentOrElse(
             firstEpochProof -> {
               // Opaque value of the first epoch proof is the hash of GenesisData

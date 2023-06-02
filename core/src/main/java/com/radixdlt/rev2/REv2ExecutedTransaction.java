@@ -64,18 +64,26 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.statecomputer.commit.CommittableTransaction;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
 
 public class REv2ExecutedTransaction implements StateComputerLedger.ExecutedTransaction {
-  private final RawLedgerTransaction transaction;
+  private final CommittableTransaction committable;
 
-  public REv2ExecutedTransaction(RawLedgerTransaction transaction) {
-    this.transaction = transaction;
+  public REv2ExecutedTransaction(CommittableTransaction committable) {
+    this.committable = committable;
   }
 
   @Override
   public RawLedgerTransaction transaction() {
-    return transaction;
+    return committable.raw();
+  }
+
+  @Override
+  public Option<NotarizedTransactionHash> notarizedTransactionHash() {
+    return committable.notarizedTransactionHash();
   }
 }

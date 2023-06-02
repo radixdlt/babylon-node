@@ -64,6 +64,7 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.utils.UInt64;
@@ -78,7 +79,7 @@ public sealed interface MempoolError {
 
   record Full(UInt64 currentSize, UInt64 maxSize) implements MempoolError {}
 
-  record Duplicate() implements MempoolError {}
+  record Duplicate(HashCode notarizedTransactionHash) implements MempoolError {}
 
   record TransactionValidationError(String errorDescription) implements MempoolError {}
 

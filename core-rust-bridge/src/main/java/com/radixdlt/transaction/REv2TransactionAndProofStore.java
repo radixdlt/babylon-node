@@ -140,7 +140,7 @@ public final class REv2TransactionAndProofStore {
   }
 
   public Optional<LedgerProof> getFirstEpochProof() {
-    return this.getFirstEpochProofFunc.call(Tuple.Tuple0.of()).toOptional();
+    return this.getFirstEpochProofFunc.call(Tuple.tuple()).toOptional();
   }
 
   public Optional<LedgerProof> getEpochProof(long epoch) {

@@ -117,7 +117,17 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
       return lastStoredProof;
     }
     var lastEpoch = lastStoredProof.getEpoch();
-    return transactionsAndProofReader.getEpochProof(lastEpoch).orElseThrow();
+    return transactionsAndProofReader
+        .getEpochProof(lastEpoch)
+        .orElseThrow(
+            () ->
+                new RuntimeException(
+                    String.format(
+                        "Fatal error during startup: there was no epoch proof saved for epoch %s. A"
+                            + " possible cause of this that the node crashed whilst running"
+                            + " genesis. If this is the case, please wipe your ledger folder and"
+                            + " start again.",
+                        lastEpoch)));
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(

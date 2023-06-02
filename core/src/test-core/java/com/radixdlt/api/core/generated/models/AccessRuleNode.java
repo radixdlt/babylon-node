@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRuleNodeType;
 import com.radixdlt.api.core.generated.models.AllOfAccessRuleNode;
 import com.radixdlt.api.core.generated.models.AnyOfAccessRuleNode;
+import com.radixdlt.api.core.generated.models.AuthorityRuleNode;
 import com.radixdlt.api.core.generated.models.ProofAccessRuleNode;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -52,6 +53,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AllOfAccessRuleNode.class, name = "AllOfAccessRuleNode"),
   @JsonSubTypes.Type(value = AnyOfAccessRuleNode.class, name = "AnyOf"),
   @JsonSubTypes.Type(value = AnyOfAccessRuleNode.class, name = "AnyOfAccessRuleNode"),
+  @JsonSubTypes.Type(value = AuthorityRuleNode.class, name = "Authority"),
+  @JsonSubTypes.Type(value = AuthorityRuleNode.class, name = "AuthorityRuleNode"),
   @JsonSubTypes.Type(value = ProofAccessRuleNode.class, name = "ProofAccessRuleNode"),
   @JsonSubTypes.Type(value = ProofAccessRuleNode.class, name = "ProofRule"),
 })
@@ -136,6 +139,8 @@ static {
   mappings.put("AllOfAccessRuleNode", AllOfAccessRuleNode.class);
   mappings.put("AnyOf", AnyOfAccessRuleNode.class);
   mappings.put("AnyOfAccessRuleNode", AnyOfAccessRuleNode.class);
+  mappings.put("Authority", AuthorityRuleNode.class);
+  mappings.put("AuthorityRuleNode", AuthorityRuleNode.class);
   mappings.put("ProofAccessRuleNode", ProofAccessRuleNode.class);
   mappings.put("ProofRule", ProofAccessRuleNode.class);
   mappings.put("AccessRuleNode", AccessRuleNode.class);

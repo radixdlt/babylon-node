@@ -25,13 +25,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.GenesisLedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.LedgerTransactionType;
 import com.radixdlt.api.core.generated.models.NotarizedTransaction;
-import com.radixdlt.api.core.generated.models.SystemLedgerTransaction;
+import com.radixdlt.api.core.generated.models.RoundUpdateLedgerTransaction;
 import com.radixdlt.api.core.generated.models.UserLedgerTransaction;
 import com.radixdlt.api.core.generated.models.UserLedgerTransactionAllOf;
-import com.radixdlt.api.core.generated.models.ValidatorLedgerTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -51,9 +51,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = SystemLedgerTransaction.class, name = "System"),
+  @JsonSubTypes.Type(value = GenesisLedgerTransaction.class, name = "Genesis"),
+  @JsonSubTypes.Type(value = RoundUpdateLedgerTransaction.class, name = "RoundUpdate"),
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "User"),
-  @JsonSubTypes.Type(value = ValidatorLedgerTransaction.class, name = "Validator"),
 })
 
 public class UserLedgerTransaction extends LedgerTransaction {
@@ -134,9 +134,9 @@ public class UserLedgerTransaction extends LedgerTransaction {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("System", SystemLedgerTransaction.class);
+  mappings.put("Genesis", GenesisLedgerTransaction.class);
+  mappings.put("RoundUpdate", RoundUpdateLedgerTransaction.class);
   mappings.put("User", UserLedgerTransaction.class);
-  mappings.put("Validator", ValidatorLedgerTransaction.class);
   mappings.put("UserLedgerTransaction", UserLedgerTransaction.class);
   JSON.registerDiscriminator(UserLedgerTransaction.class, "type", mappings);
 }

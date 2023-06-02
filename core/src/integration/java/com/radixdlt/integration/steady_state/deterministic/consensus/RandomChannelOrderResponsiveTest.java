@@ -89,7 +89,7 @@ import org.junit.Test;
 
 public class RandomChannelOrderResponsiveTest {
 
-  private void run(int numValidatorNodes, long roundsToRun) {
+  private void run(int numValidatorNodes, int roundsToRun) {
     assertEquals(0, roundsToRun % numValidatorNodes);
 
     final Random random = new Random(12345);
@@ -110,7 +110,9 @@ public class RandomChannelOrderResponsiveTest {
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
+    test.runUntilMessage(
+        DeterministicTest.hasReachedRound(Round.of(roundsToRun)),
+        roundsToRun * numValidatorNodes * numValidatorNodes * 10);
 
     List<Long> proposalsMade =
         IntStream.range(0, numValidatorNodes)
@@ -132,12 +134,12 @@ public class RandomChannelOrderResponsiveTest {
   @Test
   public void
       when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
+    run(4, 4 * 25000);
   }
 
   @Test
   public void
       when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
+    run(100, 100 * 5);
   }
 }

@@ -55,10 +55,9 @@ pub(crate) async fn handle_status_network_configuration(
             resource_package: bech32_encoder.encode(RESOURCE_PACKAGE.as_ref()).unwrap(),
             account_package: bech32_encoder.encode(ACCOUNT_PACKAGE.as_ref()).unwrap(),
             identity_package: bech32_encoder.encode(IDENTITY_PACKAGE.as_ref()).unwrap(),
-            epoch_manager_package: bech32_encoder
-                .encode(EPOCH_MANAGER_PACKAGE.as_ref())
+            consensus_manager_package: bech32_encoder
+                .encode(CONSENSUS_MANAGER_PACKAGE.as_ref())
                 .unwrap(),
-            clock_package: bech32_encoder.encode(CLOCK_PACKAGE.as_ref()).unwrap(),
             access_controller_package: bech32_encoder
                 .encode(ACCESS_CONTROLLER_PACKAGE.as_ref())
                 .unwrap(),
@@ -78,8 +77,7 @@ pub(crate) async fn handle_status_network_configuration(
                 .encode(GENESIS_HELPER_PACKAGE.as_ref())
                 .unwrap(),
             faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
-            epoch_manager: bech32_encoder.encode(EPOCH_MANAGER.as_ref()).unwrap(),
-            clock: bech32_encoder.encode(CLOCK.as_ref()).unwrap(),
+            consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),
         }),
@@ -87,13 +85,12 @@ pub(crate) async fn handle_status_network_configuration(
     .map(Json)
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 19] = [
+const ALL_ENTITY_TYPES: [EntityType; 18] = [
     // Package
     EntityType::GlobalPackage,
     // System
-    EntityType::GlobalEpochManager,
+    EntityType::GlobalConsensusManager,
     EntityType::GlobalValidator,
-    EntityType::GlobalClock,
     // Standard global
     EntityType::GlobalGenericComponent,
     EntityType::GlobalAccount,
@@ -106,10 +103,10 @@ const ALL_ENTITY_TYPES: [EntityType; 19] = [
     EntityType::GlobalVirtualEd25519Account,
     EntityType::GlobalVirtualEd25519Identity,
     // Fungible-related
-    EntityType::GlobalFungibleResource,
+    EntityType::GlobalFungibleResourceManager,
     EntityType::InternalFungibleVault,
     // Non-fungible related
-    EntityType::GlobalNonFungibleResource,
+    EntityType::GlobalNonFungibleResourceManager,
     EntityType::InternalNonFungibleVault,
     // Internal misc
     EntityType::InternalGenericComponent,

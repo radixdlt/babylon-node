@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CommittedStateIdentifier;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.TransactionReceipt;
 import io.swagger.annotations.ApiModel;
@@ -33,18 +34,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * CommittedTransaction
  */
 @JsonPropertyOrder({
-  CommittedTransaction.JSON_PROPERTY_STATE_VERSION,
-  CommittedTransaction.JSON_PROPERTY_ACCUMULATOR_HASH,
+  CommittedTransaction.JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS,
   CommittedTransaction.JSON_PROPERTY_LEDGER_TRANSACTION,
   CommittedTransaction.JSON_PROPERTY_RECEIPT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommittedTransaction {
-  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
-  private Long stateVersion;
-
-  public static final String JSON_PROPERTY_ACCUMULATOR_HASH = "accumulator_hash";
-  private String accumulatorHash;
+  public static final String JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS = "resultant_state_identifiers";
+  private CommittedStateIdentifier resultantStateIdentifiers;
 
   public static final String JSON_PROPERTY_LEDGER_TRANSACTION = "ledger_transaction";
   private LedgerTransaction ledgerTransaction;
@@ -55,57 +52,29 @@ public class CommittedTransaction {
   public CommittedTransaction() { 
   }
 
-  public CommittedTransaction stateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
+  public CommittedTransaction resultantStateIdentifiers(CommittedStateIdentifier resultantStateIdentifiers) {
+    this.resultantStateIdentifiers = resultantStateIdentifiers;
     return this;
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the resultant state version after the transaction has been committed
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return stateVersion
+   * Get resultantStateIdentifiers
+   * @return resultantStateIdentifiers
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed")
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getStateVersion() {
-    return stateVersion;
+  public CommittedStateIdentifier getResultantStateIdentifiers() {
+    return resultantStateIdentifiers;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_RESULTANT_STATE_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
-  }
-
-
-  public CommittedTransaction accumulatorHash(String accumulatorHash) {
-    this.accumulatorHash = accumulatorHash;
-    return this;
-  }
-
-   /**
-   * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is &#x60;ACC_{N+1} &#x3D; Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))&#x60;, starting with &#x60;ACC_0 &#x3D; 000..000&#x60; the pre-genesis accumulator. 
-   * @return accumulatorHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. ")
-  @JsonProperty(JSON_PROPERTY_ACCUMULATOR_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getAccumulatorHash() {
-    return accumulatorHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCUMULATOR_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccumulatorHash(String accumulatorHash) {
-    this.accumulatorHash = accumulatorHash;
+  public void setResultantStateIdentifiers(CommittedStateIdentifier resultantStateIdentifiers) {
+    this.resultantStateIdentifiers = resultantStateIdentifiers;
   }
 
 
@@ -173,23 +142,21 @@ public class CommittedTransaction {
       return false;
     }
     CommittedTransaction committedTransaction = (CommittedTransaction) o;
-    return Objects.equals(this.stateVersion, committedTransaction.stateVersion) &&
-        Objects.equals(this.accumulatorHash, committedTransaction.accumulatorHash) &&
+    return Objects.equals(this.resultantStateIdentifiers, committedTransaction.resultantStateIdentifiers) &&
         Objects.equals(this.ledgerTransaction, committedTransaction.ledgerTransaction) &&
         Objects.equals(this.receipt, committedTransaction.receipt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash, ledgerTransaction, receipt);
+    return Objects.hash(resultantStateIdentifiers, ledgerTransaction, receipt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CommittedTransaction {\n");
-    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
-    sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
+    sb.append("    resultantStateIdentifiers: ").append(toIndentedString(resultantStateIdentifiers)).append("\n");
     sb.append("    ledgerTransaction: ").append(toIndentedString(ledgerTransaction)).append("\n");
     sb.append("    receipt: ").append(toIndentedString(receipt)).append("\n");
     sb.append("}");

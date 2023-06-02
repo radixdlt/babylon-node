@@ -1,4 +1,5 @@
-use radix_engine::types::Decimal;
+use radix_engine_common::math::*;
+use radix_engine_interface::prelude::*;
 
 use crate::core_api::models;
 
@@ -14,10 +15,11 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
+const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_epoch(mapping_context: &MappingContext, epoch: u64) -> Result<i64, MappingError> {
-    if epoch > MAX_API_EPOCH {
+pub fn to_api_epoch(mapping_context: &MappingContext, epoch: Epoch) -> Result<i64, MappingError> {
+    if epoch.number() > MAX_API_EPOCH {
         if mapping_context.uncommitted_data {
             // If we're mapping uncommitted data, then it's possible that the epoch is purposefully invalid.
             // So saturate to MAX_API_EPOCH in this case.
@@ -29,17 +31,17 @@ pub fn to_api_epoch(mapping_context: &MappingContext, epoch: u64) -> Result<i64,
             message: "Epoch larger than max api epoch".to_owned(),
         });
     }
-    Ok(epoch.try_into().expect("Epoch too large somehow"))
+    Ok(epoch.number().try_into().expect("Epoch too large somehow"))
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_round(round: u64) -> Result<i64, MappingError> {
-    if round > MAX_API_ROUND {
+pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
+    if round.number() > MAX_API_ROUND {
         return Err(MappingError::IntegerError {
             message: "Round larger than max api round".to_owned(),
         });
     }
-    Ok(round.try_into().expect("Round too large somehow"))
+    Ok(round.number().try_into().expect("Round too large somehow"))
 }
 
 #[tracing::instrument(skip_all)]
@@ -52,6 +54,19 @@ pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
     Ok(state_version
         .try_into()
         .expect("State version too large somehow"))
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_ten_trillion_capped_u64(
+    num: u64,
+    descriptor: &'static str,
+) -> Result<i64, MappingError> {
+    if num > TEN_TRILLION {
+        return Err(MappingError::IntegerError {
+            message: format!("{descriptor} larger than {TEN_TRILLION}"),
+        });
+    }
+    Ok(num.try_into().expect("Too large somehow"))
 }
 
 pub fn to_api_decimal(value: &Decimal) -> String {
@@ -70,6 +85,7 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
 
+#[allow(dead_code)]
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
 }
@@ -142,6 +158,7 @@ pub fn extract_api_epoch(epoch: i64) -> Result<u64, ExtractionError> {
     Ok(epoch)
 }
 
+#[allow(dead_code)]
 pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()

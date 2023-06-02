@@ -98,6 +98,11 @@ public interface StructCodec<T> extends Codec<T> {
     return new StructCodecImpl<>(UntypedCodec.emptyWithoutLength(creator));
   }
 
+  static <T, T1> Codec<T> transparent(
+      Functions.Func1<T1, T> creator, Codec<T1> codec1, Functions.Func1<T, T1> destroyer) {
+    return Codec.wrap(destroyer, codec1, creator);
+  }
+
   // VARIANT 1 FOR CREATION: "with"
   // This finishes with a separator to allow access to all the relevant fields
   // EG (r, encoder) -> encoder.encode(r.first, r.second, r.third, r.fourth)
@@ -426,7 +431,6 @@ public interface StructCodec<T> extends Codec<T> {
     return fromRecordComponents(TypeToken.of(recordClass), codecs);
   }
 
-  @SuppressWarnings("unchecked")
   static <R extends Record> StructCodec<R> fromRecordComponents(
       TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
     return of(RecordUntypedCodecs.create(recordType, codecs));

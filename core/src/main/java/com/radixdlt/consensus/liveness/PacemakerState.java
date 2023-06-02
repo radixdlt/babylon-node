@@ -161,7 +161,7 @@ public class PacemakerState implements PacemakerReducer {
                 leaderOfTheCompletedRound.getKey().toHex(),
                 leaderOfTheCompletedRound
                     .getValidatorAddress()
-                    .map(addressing::encodeValidatorAddress)
+                    .map(addressing::encode)
                     .orElse("none"),
                 highQcSource,
                 certificateType))

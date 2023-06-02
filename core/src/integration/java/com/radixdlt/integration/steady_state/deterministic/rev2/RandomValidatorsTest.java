@@ -73,11 +73,13 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -90,8 +92,8 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
@@ -102,7 +104,9 @@ public final class RandomValidatorsTest {
   private static final int NUM_GENESIS_VALIDATORS = TOTAL_NUM_VALIDATORS / 2;
   private static final GenesisData GENESIS =
       GenesisBuilder.createGenesisWithNumValidators(
-          NUM_GENESIS_VALIDATORS, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
+          NUM_GENESIS_VALIDATORS,
+          Decimal.of(1000),
+          GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -173,17 +177,21 @@ public final class RandomValidatorsTest {
                 Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
         var randomValidatorIndex = random.nextInt(0, TOTAL_NUM_VALIDATORS);
-        var componentAddress = validators.get(randomValidatorIndex);
-        if (componentAddress == null) {
+        var validatorKeyPair = PrivateKeys.ofNumeric(randomValidatorIndex + 1);
+        var ownerAccountKeyPair = PrivateKeys.ofNumeric(randomValidatorIndex + 10000 + 1);
+        var ownerAccount = Address.virtualAccountAddress(ownerAccountKeyPair.getPublicKey());
+        var validatorAddress = validators.get(randomValidatorIndex);
+        var stakingAccountKeyPair = PrivateKeys.ofNumeric(1);
+        var stakingAccount = Address.virtualAccountAddress(stakingAccountKeyPair.getPublicKey());
+        if (validatorAddress == null) {
           var inflightTransaction = creatingValidators.get(randomValidatorIndex);
           if (inflightTransaction == null) {
             var txn =
-                REv2TestTransactions.constructCreateValidatorTransaction(
-                    NetworkDefinition.INT_TEST_NET,
-                    faucet,
-                    0,
-                    random.nextInt(1000000),
-                    PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                TransactionBuilder.forTests()
+                    .manifest(
+                        Manifest.createValidator(validatorKeyPair.getPublicKey(), ownerAccount))
+                    .prepare()
+                    .raw();
             creatingValidators.put(randomValidatorIndex, txn);
             mempoolDispatcher.dispatch(MempoolAdd.create(txn));
           } else {
@@ -192,13 +200,13 @@ public final class RandomValidatorsTest {
                     test.getNodeInjectors().get(randomValidatorIndex), inflightTransaction);
             maybeTransactionsDetails.ifPresent(
                 transactionDetails -> {
-                  var validatorAddress = transactionDetails.newComponentAddresses().get(0);
+                  var newValidatorAddress = transactionDetails.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidatorIndex,
                       PhysicalNodeConfig.create(
                           PrivateKeys.ofNumeric(randomValidatorIndex + 1).getPublicKey(),
-                          validatorAddress));
-                  validators.put(randomValidatorIndex, validatorAddress);
+                          newValidatorAddress));
+                  validators.put(randomValidatorIndex, newValidatorAddress);
                   creatingValidators.remove(randomValidatorIndex);
                 });
           }
@@ -207,59 +215,52 @@ public final class RandomValidatorsTest {
           switch (random.nextInt(0, 5)) {
             case 0 -> {
               txn =
-                  REv2TestTransactions.constructRegisterValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      faucet,
-                      0,
-                      random.nextInt(1000000),
-                      componentAddress,
-                      PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                  TransactionBuilder.forTests()
+                      .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
+                      .signatories(List.of(ownerAccountKeyPair))
+                      .prepare()
+                      .raw();
             }
             case 1 -> {
               txn =
-                  REv2TestTransactions.constructUnregisterValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      faucet,
-                      0,
-                      random.nextInt(1000000),
-                      componentAddress,
-                      PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                  TransactionBuilder.forTests()
+                      .manifest(Manifest.unregisterValidator(validatorAddress, ownerAccount))
+                      .signatories(List.of(ownerAccountKeyPair))
+                      .prepare()
+                      .raw();
             }
             case 2 -> {
               txn =
-                  REv2TestTransactions.constructStakeValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      faucet,
-                      0,
-                      random.nextInt(1000000),
-                      componentAddress,
-                      PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                  TransactionBuilder.forTests()
+                      .manifest(
+                          Manifest.stakeValidator(stakingAccount, validatorAddress, ownerAccount))
+                      .signatories(List.of(stakingAccountKeyPair))
+                      .prepare()
+                      .raw();
             }
             case 3 -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
-              var validatorInfo = stateReader.getValidatorInfo(componentAddress);
+              var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
-                  REv2TestTransactions.constructUnstakeValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      faucet,
-                      0,
-                      random.nextInt(1000000),
-                      validatorInfo.lpTokenAddress(),
-                      componentAddress,
-                      PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                  TransactionBuilder.forTests()
+                      .manifest(
+                          Manifest.unstakeValidator(
+                              stakingAccount, validatorAddress, validatorInfo.lpTokenAddress()))
+                      .signatories(List.of(stakingAccountKeyPair))
+                      .prepare()
+                      .raw();
             }
             default -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
-              var validatorInfo = stateReader.getValidatorInfo(componentAddress);
+              var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
-                  REv2TestTransactions.constructClaimXrdTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      faucet,
-                      0,
-                      random.nextInt(1000000),
-                      componentAddress,
-                      validatorInfo.unstakeResource(),
-                      PrivateKeys.ofNumeric(randomValidatorIndex + 1));
+                  TransactionBuilder.forTests()
+                      .manifest(
+                          Manifest.claimXrdFromUnstakeReceipt(
+                              stakingAccount, validatorAddress, validatorInfo.unstakeResource()))
+                      .signatories(List.of(stakingAccountKeyPair))
+                      .prepare()
+                      .raw();
             }
           }
           mempoolDispatcher.dispatch(MempoolAdd.create(txn));

@@ -66,7 +66,6 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
@@ -90,6 +89,8 @@ import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.io.File;
 
@@ -213,7 +214,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
-              EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
               Serialization serialization,
               ProposerElection initialProposerElection,
               Metrics metrics) {
@@ -226,7 +226,6 @@ public final class REv2StateManagerModule extends AbstractModule {
                 hasher,
                 ledgerUpdateEventDispatcher,
                 mempoolAddSuccessEventDispatcher,
-                byzantineEventEventDispatcher,
                 serialization,
                 initialProposerElection,
                 metrics);
@@ -292,7 +291,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         });
 
     if (mempoolConfig.isPresent()) {
-      bind(new Key<MempoolReader<RawNotarizedTransaction>>() {}).to(RustMempool.class);
+      bind(new Key<MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {})
+          .to(RustMempool.class);
       bind(new Key<MempoolInserter<RawNotarizedTransaction>>() {}).to(RustMempool.class);
       bind(MempoolReevaluator.class).to(RustMempool.class);
     }

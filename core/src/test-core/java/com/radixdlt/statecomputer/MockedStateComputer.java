@@ -86,7 +86,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -116,10 +115,8 @@ public final class MockedStateComputer implements StateComputer {
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
-        proposedTransactions.stream()
-            .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
-            .collect(Collectors.toList()),
-        Map.of(),
+        proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+        0,
         LedgerHashes.zero());
   }
 

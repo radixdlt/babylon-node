@@ -1,6 +1,7 @@
 use state_manager::{
-    AccumulatorHash, IntentHash, LedgerPayloadHash, SignaturesHash, UserPayloadHash,
+    transaction::*, AccumulatorHash, ReceiptTreeHash, StateHash, TransactionTreeHash,
 };
+use transaction::prelude::*;
 
 use crate::core_api::*;
 
@@ -9,15 +10,15 @@ pub fn to_api_intent_hash(intent_hash: &IntentHash) -> String {
     to_hex(intent_hash)
 }
 
-pub fn to_api_signed_intent_hash(signatures_hash: &SignaturesHash) -> String {
+pub fn to_api_signed_intent_hash(signatures_hash: &SignedIntentHash) -> String {
     to_hex(signatures_hash)
 }
 
-pub fn to_api_payload_hash(payload_hash: &UserPayloadHash) -> String {
+pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash) -> String {
     to_hex(payload_hash)
 }
 
-pub fn to_api_ledger_hash(ledger_hash: &LedgerPayloadHash) -> String {
+pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
 }
 
@@ -25,21 +26,32 @@ pub fn to_api_accumulator_hash(accumulator_hash: &AccumulatorHash) -> String {
     to_hex(accumulator_hash)
 }
 
-pub fn extract_intent_hash(intent_hash_str: String) -> Result<IntentHash, ExtractionError> {
-    let intent_hash_bytes = from_hex(intent_hash_str)?;
-    Ok(IntentHash::from_raw_bytes(
-        intent_hash_bytes
-            .try_into()
-            .map_err(|_| ExtractionError::InvalidHash)?,
-    ))
+pub fn to_api_state_tree_hash(state_tree_hash: &StateHash) -> String {
+    to_hex(state_tree_hash)
 }
 
-#[allow(dead_code)]
-pub fn extract_payload_hash(intent_hash_str: String) -> Result<UserPayloadHash, ExtractionError> {
-    let intent_hash_bytes = from_hex(intent_hash_str)?;
-    Ok(UserPayloadHash::from_raw_bytes(
-        intent_hash_bytes
+pub fn to_api_transaction_tree_hash(transaction_tree_hash: &TransactionTreeHash) -> String {
+    to_hex(transaction_tree_hash)
+}
+
+pub fn to_api_receipt_tree_hash(receipt_tree_hash: &ReceiptTreeHash) -> String {
+    to_hex(receipt_tree_hash)
+}
+
+pub fn extract_intent_hash(hash_str: String) -> Result<IntentHash, ExtractionError> {
+    Ok(IntentHash::from_hash(Hash(
+        from_hex(hash_str)?
             .try_into()
             .map_err(|_| ExtractionError::InvalidHash)?,
-    ))
+    )))
+}
+
+pub fn extract_notarized_transaction_hash(
+    hash_str: String,
+) -> Result<NotarizedTransactionHash, ExtractionError> {
+    Ok(NotarizedTransactionHash::from_hash(Hash(
+        from_hex(hash_str)?
+            .try_into()
+            .map_err(|_| ExtractionError::InvalidHash)?,
+    )))
 }

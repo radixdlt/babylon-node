@@ -116,7 +116,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   }
 
   @Override
-  public Optional<LedgerProof> getFirstEpochProof() {
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
     return this.transactionStore.getFirstEpochProof().map(REv2ToConsensus::ledgerProof);
   }
 
@@ -130,7 +130,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
     return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
   }
 
-  public Optional<com.radixdlt.statecomputer.commit.LedgerProof> getFirstEpochProofREv2() {
+  public Optional<com.radixdlt.statecomputer.commit.LedgerProof> getPostGenesisREv2EpochProof() {
     return this.transactionStore.getFirstEpochProof();
   }
 }

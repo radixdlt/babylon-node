@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.genesis.*;
 import com.radixdlt.genesis.olympia.converter.resource.OlympiaResourcesConverter;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
-import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.stream.Stream;
 
@@ -99,10 +98,8 @@ public final class OlympiaStateToBabylonGenesisConverter {
 
     return new GenesisData(
         UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
-        UInt32.fromNonNegativeInt(10),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
         olympiaStateIR.lastConsensusTimestamp(),
+        GenesisConsensusManagerConfig.Builder.productionDefaults().build(),
         Stream.of(
                 validatorsChunks.stream(),
                 stakesChunks.stream(),

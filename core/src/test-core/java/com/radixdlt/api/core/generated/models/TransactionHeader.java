@@ -32,21 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionHeader
  */
 @JsonPropertyOrder({
-  TransactionHeader.JSON_PROPERTY_VERSION,
   TransactionHeader.JSON_PROPERTY_NETWORK_ID,
   TransactionHeader.JSON_PROPERTY_START_EPOCH_INCLUSIVE,
   TransactionHeader.JSON_PROPERTY_END_EPOCH_EXCLUSIVE,
   TransactionHeader.JSON_PROPERTY_NONCE,
   TransactionHeader.JSON_PROPERTY_NOTARY_PUBLIC_KEY,
-  TransactionHeader.JSON_PROPERTY_NOTARY_AS_SIGNATORY,
-  TransactionHeader.JSON_PROPERTY_COST_UNIT_LIMIT,
+  TransactionHeader.JSON_PROPERTY_NOTARY_IS_SIGNATORY,
   TransactionHeader.JSON_PROPERTY_TIP_PERCENTAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionHeader {
-  public static final String JSON_PROPERTY_VERSION = "version";
-  private Integer version;
-
   public static final String JSON_PROPERTY_NETWORK_ID = "network_id";
   private Integer networkId;
 
@@ -57,50 +52,19 @@ public class TransactionHeader {
   private Long endEpochExclusive;
 
   public static final String JSON_PROPERTY_NONCE = "nonce";
-  private String nonce;
+  private Long nonce;
 
   public static final String JSON_PROPERTY_NOTARY_PUBLIC_KEY = "notary_public_key";
   private PublicKey notaryPublicKey;
 
-  public static final String JSON_PROPERTY_NOTARY_AS_SIGNATORY = "notary_as_signatory";
-  private Boolean notaryAsSignatory;
-
-  public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
-  private Long costUnitLimit;
+  public static final String JSON_PROPERTY_NOTARY_IS_SIGNATORY = "notary_is_signatory";
+  private Boolean notaryIsSignatory;
 
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private Integer tipPercentage;
 
   public TransactionHeader() { 
   }
-
-  public TransactionHeader version(Integer version) {
-    this.version = version;
-    return this;
-  }
-
-   /**
-   * Get version
-   * minimum: 0
-   * maximum: 255
-   * @return version
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getVersion() {
-    return version;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVersion(Integer version) {
-    this.version = version;
-  }
-
 
   public TransactionHeader networkId(Integer networkId) {
     this.networkId = networkId;
@@ -186,28 +150,30 @@ public class TransactionHeader {
   }
 
 
-  public TransactionHeader nonce(String nonce) {
+  public TransactionHeader nonce(Long nonce) {
     this.nonce = nonce;
     return this;
   }
 
    /**
-   * A decimal-string-encoded integer between &#x60;0&#x60; and &#x60;2^64 - 1&#x60;, chosen to be unique to allow replay of transaction intents
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
+   * minimum: 0
+   * maximum: 4294967295
    * @return nonce
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). ")
   @JsonProperty(JSON_PROPERTY_NONCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonce() {
+  public Long getNonce() {
     return nonce;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NONCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonce(String nonce) {
+  public void setNonce(Long nonce) {
     this.nonce = nonce;
   }
 
@@ -238,57 +204,29 @@ public class TransactionHeader {
   }
 
 
-  public TransactionHeader notaryAsSignatory(Boolean notaryAsSignatory) {
-    this.notaryAsSignatory = notaryAsSignatory;
+  public TransactionHeader notaryIsSignatory(Boolean notaryIsSignatory) {
+    this.notaryIsSignatory = notaryIsSignatory;
     return this;
   }
 
    /**
-   * Specifies whether the notary&#39;s signature should be included in transaction signers list
-   * @return notaryAsSignatory
+   * Specifies whether the notary public key should be included in the transaction signers list
+   * @return notaryIsSignatory
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Specifies whether the notary's signature should be included in transaction signers list")
-  @JsonProperty(JSON_PROPERTY_NOTARY_AS_SIGNATORY)
+  @ApiModelProperty(required = true, value = "Specifies whether the notary public key should be included in the transaction signers list")
+  @JsonProperty(JSON_PROPERTY_NOTARY_IS_SIGNATORY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getNotaryAsSignatory() {
-    return notaryAsSignatory;
+  public Boolean getNotaryIsSignatory() {
+    return notaryIsSignatory;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NOTARY_AS_SIGNATORY)
+  @JsonProperty(JSON_PROPERTY_NOTARY_IS_SIGNATORY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNotaryAsSignatory(Boolean notaryAsSignatory) {
-    this.notaryAsSignatory = notaryAsSignatory;
-  }
-
-
-  public TransactionHeader costUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, giving the maximum number of cost units available for transaction execution.
-   * minimum: 0
-   * maximum: 4294967295
-   * @return costUnitLimit
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCostUnitLimit() {
-    return costUnitLimit;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
+  public void setNotaryIsSignatory(Boolean notaryIsSignatory) {
+    this.notaryIsSignatory = notaryIsSignatory;
   }
 
 
@@ -332,34 +270,30 @@ public class TransactionHeader {
       return false;
     }
     TransactionHeader transactionHeader = (TransactionHeader) o;
-    return Objects.equals(this.version, transactionHeader.version) &&
-        Objects.equals(this.networkId, transactionHeader.networkId) &&
+    return Objects.equals(this.networkId, transactionHeader.networkId) &&
         Objects.equals(this.startEpochInclusive, transactionHeader.startEpochInclusive) &&
         Objects.equals(this.endEpochExclusive, transactionHeader.endEpochExclusive) &&
         Objects.equals(this.nonce, transactionHeader.nonce) &&
         Objects.equals(this.notaryPublicKey, transactionHeader.notaryPublicKey) &&
-        Objects.equals(this.notaryAsSignatory, transactionHeader.notaryAsSignatory) &&
-        Objects.equals(this.costUnitLimit, transactionHeader.costUnitLimit) &&
+        Objects.equals(this.notaryIsSignatory, transactionHeader.notaryIsSignatory) &&
         Objects.equals(this.tipPercentage, transactionHeader.tipPercentage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, networkId, startEpochInclusive, endEpochExclusive, nonce, notaryPublicKey, notaryAsSignatory, costUnitLimit, tipPercentage);
+    return Objects.hash(networkId, startEpochInclusive, endEpochExclusive, nonce, notaryPublicKey, notaryIsSignatory, tipPercentage);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionHeader {\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    networkId: ").append(toIndentedString(networkId)).append("\n");
     sb.append("    startEpochInclusive: ").append(toIndentedString(startEpochInclusive)).append("\n");
     sb.append("    endEpochExclusive: ").append(toIndentedString(endEpochExclusive)).append("\n");
     sb.append("    nonce: ").append(toIndentedString(nonce)).append("\n");
     sb.append("    notaryPublicKey: ").append(toIndentedString(notaryPublicKey)).append("\n");
-    sb.append("    notaryAsSignatory: ").append(toIndentedString(notaryAsSignatory)).append("\n");
-    sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
+    sb.append("    notaryIsSignatory: ").append(toIndentedString(notaryIsSignatory)).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("}");
     return sb.toString();

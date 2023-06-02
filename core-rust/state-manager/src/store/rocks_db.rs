@@ -62,20 +62,17 @@
  * permissions under this License.
  */
 
-use crate::types::UserPayloadHash;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem::size_of;
 
 use crate::store::traits::*;
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
     LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
-use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
@@ -84,15 +81,18 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBIteratorWithThreadMode, Direction, IteratorMode,
     Options, WriteBatch, DB,
 };
+use transaction::model::*;
 
 use radix_engine_store_interface::interface::*;
 
 use std::path::PathBuf;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::transaction::LedgerTransaction;
+use crate::transaction::{
+    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
+};
 
 use super::traits::extensions::*;
 
@@ -100,7 +100,7 @@ use super::traits::extensions::*;
 enum RocksDBColumnFamily {
     /// Committed transactions
     TxnByStateVersion,
-    TxnAccumulatorHashByStateVersion,
+    TxnIdentifiersByStateVersion,
     /// Receipts of committed transactions
     LedgerReceiptByStateVersion,
     LocalTransactionExecutionByStateVersion,
@@ -133,7 +133,7 @@ use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
     TxnByStateVersion,
-    TxnAccumulatorHashByStateVersion,
+    TxnIdentifiersByStateVersion,
     LedgerReceiptByStateVersion,
     LocalTransactionExecutionByStateVersion,
     StateVersionByTxnIntentHash,
@@ -155,7 +155,7 @@ impl fmt::Display for RocksDBColumnFamily {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
             TxnByStateVersion => "txn_by_state_version",
-            TxnAccumulatorHashByStateVersion => "txn_accumulator_hash_by_state_version",
+            TxnIdentifiersByStateVersion => "txn_identifiers_by_state_version",
             LedgerReceiptByStateVersion => "ledger_receipt_by_state_version",
             LocalTransactionExecutionByStateVersion => {
                 "local_transaction_execution_by_state_version"
@@ -247,15 +247,23 @@ impl RocksDBStore {
             );
         }
 
-        let (transaction, receipt, identifiers) = transaction_bundle;
-        let state_version = identifiers.state_version;
-        let ledger_payload_hash = transaction.ledger_payload_hash();
+        let CommittedTransactionBundle {
+            raw,
+            receipt,
+            identifiers,
+        } = transaction_bundle;
+        let state_version = identifiers.at_commit.state_version;
+        let ledger_payload_hash = identifiers.payload.ledger_payload_hash;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let LedgerTransaction::User(notarized_transaction) = &transaction {
+        if let TypedTransactionIdentifiers::User {
+            intent_hash,
+            notarized_transaction_hash,
+            ..
+        } = &identifiers.payload.typed
+        {
             /* For user transactions we only need to check for duplicate intent hashes to know
             that user payload hash and ledger payload hash are also unique. */
-            let intent_hash = notarized_transaction.intent_hash();
 
             let maybe_existing_intent_hash = self
                 .db
@@ -263,7 +271,6 @@ impl RocksDBStore {
                 .unwrap();
 
             if let Some(state_version) = maybe_existing_intent_hash {
-                warn!("Duplicate transaction intent hash {:?}", transaction);
                 panic!(
                     "Attempted to save intent hash {:?} which already exists at state version {:?}",
                     intent_hash,
@@ -279,7 +286,7 @@ impl RocksDBStore {
 
             batch.put_cf(
                 self.cf_handle(&StateVersionByTxnUserPayloadHash),
-                notarized_transaction.user_payload_hash(),
+                notarized_transaction_hash,
                 state_version.to_be_bytes(),
             );
         } else {
@@ -292,7 +299,6 @@ impl RocksDBStore {
                 .unwrap();
 
             if let Some(state_version) = maybe_existing_ledger_payload_hash {
-                warn!("Duplicate transaction {:?}", transaction);
                 panic!(
                     "Attempted to save ledger payload hash {:?} which already exists at state version {:?}",
                     ledger_payload_hash,
@@ -310,13 +316,13 @@ impl RocksDBStore {
         batch.put_cf(
             self.cf_handle(&TxnByStateVersion),
             state_version.to_be_bytes(),
-            transaction.create_payload().unwrap(),
+            &raw.0,
         );
 
         batch.put_cf(
-            self.cf_handle(&TxnAccumulatorHashByStateVersion),
+            self.cf_handle(&TxnIdentifiersByStateVersion),
             state_version.to_be_bytes(),
-            identifiers.accumulator_hash.into_bytes(),
+            scrypto_encode(&identifiers).unwrap(),
         );
 
         batch.put_cf(
@@ -336,6 +342,14 @@ impl RocksDBStore {
 
     fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
         self.db.cf_handle(&cf.to_string()).unwrap()
+    }
+
+    fn get_first<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily) -> Option<T> {
+        self.db
+            .iterator_cf(self.cf_handle(cf), IteratorMode::Start)
+            .map(|res| res.unwrap())
+            .next()
+            .map(|(_, value)| scrypto_decode(value.as_ref()).unwrap())
     }
 
     fn get_last<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily) -> Option<T> {
@@ -415,11 +429,14 @@ impl CommitStore for RocksDBStore {
         let mut processed_payload_hashes = HashSet::new();
 
         for txn_bundle in commit_bundle.transactions {
-            if let LedgerTransaction::User(notarized_transaction) = &txn_bundle.0 {
-                processed_intent_hashes.insert(notarized_transaction.intent_hash());
+            let payload_identifiers = &txn_bundle.identifiers.payload;
+            if let TypedTransactionIdentifiers::User { intent_hash, .. } =
+                &payload_identifiers.typed
+            {
+                processed_intent_hashes.insert(*intent_hash);
                 user_transactions_count += 1;
             }
-            processed_payload_hashes.insert(txn_bundle.0.ledger_payload_hash());
+            processed_payload_hashes.insert(payload_identifiers.ledger_payload_hash);
             self.add_transaction_to_write_batch(&mut batch, txn_bundle);
         }
 
@@ -446,7 +463,7 @@ impl CommitStore for RocksDBStore {
         if let Some(next_epoch) = commit_bundle.proof.ledger_header.next_epoch {
             batch.put_cf(
                 self.cf_handle(&LedgerProofByEpoch),
-                next_epoch.epoch.to_be_bytes(),
+                next_epoch.epoch.number().to_be_bytes(),
                 &encoded_proof,
             );
         }
@@ -513,7 +530,7 @@ pub struct RocksDBCommittedTransactionBundleIterator<'a> {
     txns_iter: DBIteratorWithThreadMode<'a, DB>,
     ledger_receipts_iter: DBIteratorWithThreadMode<'a, DB>,
     local_executions_iter: DBIteratorWithThreadMode<'a, DB>,
-    accumulator_hashes_iter: DBIteratorWithThreadMode<'a, DB>,
+    identifiers_iter: DBIteratorWithThreadMode<'a, DB>,
 }
 
 impl<'a> RocksDBCommittedTransactionBundleIterator<'a> {
@@ -533,8 +550,8 @@ impl<'a> RocksDBCommittedTransactionBundleIterator<'a> {
                 store.cf_handle(&LocalTransactionExecutionByStateVersion),
                 IteratorMode::From(&start_state_version_bytes, Direction::Forward),
             ),
-            accumulator_hashes_iter: store.db.iterator_cf(
-                store.cf_handle(&TxnAccumulatorHashByStateVersion),
+            identifiers_iter: store.db.iterator_cf(
+                store.cf_handle(&TxnIdentifiersByStateVersion),
                 IteratorMode::From(&start_state_version_bytes, Direction::Forward),
             ),
         }
@@ -560,8 +577,8 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                     .next()
                     .expect("Missing local transaction execution")
                     .unwrap();
-                let accumulator_hash_kv = self
-                    .accumulator_hashes_iter
+                let identifiers_kv = self
+                    .identifiers_iter
                     .next()
                     .expect("Missing txn accumulator hash")
                     .unwrap();
@@ -570,7 +587,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                     ("transaction version", txn_kv.0),
                     ("ledger receipt version", ledger_receipt_kv.0),
                     ("local execution version", local_execution_kv.0),
-                    ("accumulator hash version", accumulator_hash_kv.0),
+                    ("identifiers version", identifiers_kv.0),
                 ] {
                     let other_row_version =
                         u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
@@ -580,24 +597,22 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                     }
                 }
 
-                let txn = manifest_decode(txn_kv.1.as_ref()).unwrap();
+                let txn = RawLedgerTransaction(txn_kv.1.to_vec());
                 let ledger_receipt = scrypto_decode(ledger_receipt_kv.1.as_ref()).unwrap();
                 let local_execution = scrypto_decode(local_execution_kv.1.as_ref()).unwrap();
                 let complete_receipt = LocalTransactionReceipt {
                     on_ledger: ledger_receipt,
                     local_execution,
                 };
-
-                let identifiers = CommittedTransactionIdentifiers {
-                    state_version: self.state_version,
-                    accumulator_hash: AccumulatorHash::from_raw_bytes(
-                        (*accumulator_hash_kv.1).try_into().unwrap(),
-                    ),
-                };
+                let identifiers = scrypto_decode(identifiers_kv.1.as_ref()).unwrap();
 
                 self.state_version += 1;
 
-                Some((txn, complete_receipt, identifiers))
+                Some(CommittedTransactionBundle {
+                    raw: txn,
+                    receipt: complete_receipt,
+                    identifiers,
+                })
             }
         }
     }
@@ -620,14 +635,14 @@ impl IterableTransactionStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
+    fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction> {
         self.db
             .get_cf(
                 self.cf_handle(&TxnByStateVersion),
                 state_version.to_be_bytes(),
             )
             .expect("DB error loading transaction")
-            .map(|v| manifest_decode(&v).expect("Failed to decode a committed transaction"))
+            .map(RawLedgerTransaction)
     }
 
     fn get_committed_transaction_identifiers(
@@ -636,17 +651,11 @@ impl QueryableTransactionStore for RocksDBStore {
     ) -> Option<CommittedTransactionIdentifiers> {
         self.db
             .get_cf(
-                self.cf_handle(&TxnAccumulatorHashByStateVersion),
+                self.cf_handle(&TxnIdentifiersByStateVersion),
                 state_version.to_be_bytes(),
             )
-            .expect("DB error loading transaction")
-            .map(|v| CommittedTransactionIdentifiers {
-                state_version,
-                accumulator_hash: AccumulatorHash::from_raw_bytes(
-                    v.try_into()
-                        .expect("Failed to decode a committed transaction accumulator hash"),
-                ),
-            })
+            .expect("DB error loading identifiers")
+            .map(|v| scrypto_decode(&v).expect("Failed to decode identifiers"))
     }
 
     fn get_committed_ledger_transaction_receipt(
@@ -700,8 +709,11 @@ impl TransactionIndex<&IntentHash> for RocksDBStore {
     }
 }
 
-impl TransactionIndex<&UserPayloadHash> for RocksDBStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &UserPayloadHash) -> Option<u64> {
+impl TransactionIndex<&NotarizedTransactionHash> for RocksDBStore {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &NotarizedTransactionHash,
+    ) -> Option<u64> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnUserPayloadHash),
@@ -712,8 +724,11 @@ impl TransactionIndex<&UserPayloadHash> for RocksDBStore {
     }
 }
 
-impl TransactionIndex<&LedgerPayloadHash> for RocksDBStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+impl TransactionIndex<&LedgerTransactionHash> for RocksDBStore {
+    fn get_txn_state_version_by_identifier(
+        &self,
+        identifier: &LedgerTransactionHash,
+    ) -> Option<u64> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
@@ -725,19 +740,15 @@ impl TransactionIndex<&LedgerPayloadHash> for RocksDBStore {
 }
 
 impl TransactionIdentifierLoader for RocksDBStore {
-    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
+    fn get_top_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
         self.db
             .iterator_cf(
-                self.cf_handle(&TxnAccumulatorHashByStateVersion),
+                self.cf_handle(&TxnIdentifiersByStateVersion),
                 IteratorMode::End,
             )
             .map(|res| res.unwrap())
             .next()
-            .map(|(key, value)| CommittedTransactionIdentifiers {
-                state_version: u64::from_be_bytes((*key).try_into().unwrap()),
-                accumulator_hash: AccumulatorHash::from_raw_bytes((*value).try_into().unwrap()),
-            })
-            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis)
+            .map(|(_, value)| scrypto_decode(&value).expect("Failed to decode identifiers"))
     }
 }
 
@@ -756,7 +767,7 @@ impl QueryableProofStore for RocksDBStore {
         start_state_version_inclusive: u64,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
+    ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
         let mut payload_size_so_far = 0;
         let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
@@ -815,7 +826,7 @@ impl QueryableProofStore for RocksDBStore {
 
                                 payload_size_including_next_proof_txns +=
                                     next_txn_payload.len() as u32;
-                                next_proof_txns.push(next_txn_payload);
+                                next_proof_txns.push(RawLedgerTransaction(next_txn_payload));
 
                                 if next_txn_state_version == next_proof_state_version {
                                     // We've reached the last txn under next_proof
@@ -864,21 +875,22 @@ impl QueryableProofStore for RocksDBStore {
         latest_usable_proof.map(|proof| (txns, proof))
     }
 
-    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
         self.db
-            .iterator_cf(self.cf_handle(&LedgerProofByEpoch), IteratorMode::Start)
-            .next()
-            .map(|kv_result| {
-                let (_, bytes) = kv_result.unwrap();
-                scrypto_decode(bytes.as_ref()).unwrap()
-            })
-    }
-
-    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
-        self.db
-            .get_cf(self.cf_handle(&LedgerProofByEpoch), epoch.to_be_bytes())
+            .get_cf(
+                self.cf_handle(&LedgerProofByEpoch),
+                epoch.number().to_be_bytes(),
+            )
             .unwrap()
             .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
+    }
+
+    fn get_first_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByStateVersion)
+    }
+
+    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByEpoch)
     }
 
     fn get_last_proof(&self) -> Option<LedgerProof> {
@@ -1010,12 +1022,12 @@ impl RocksDBStore {
         batch: &mut WriteBatch,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
-        let state_version = transaction_bundle.2.state_version;
+        let state_version = transaction_bundle.identifiers.at_commit.state_version;
 
         self.batch_update_account_change_index_from_receipt(
             batch,
             state_version,
-            &transaction_bundle.1,
+            &transaction_bundle.receipt,
         );
 
         batch.put_cf(

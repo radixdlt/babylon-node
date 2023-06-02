@@ -66,14 +66,12 @@ package com.radixdlt.rev2;
 
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 /** Generates valid REv2 1 MB transactions */
 public final class REv2LargeTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
-  private int currentKey = 1;
 
   public REv2LargeTransactionGenerator(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
@@ -81,18 +79,12 @@ public final class REv2LargeTransactionGenerator
 
   @Override
   public RawNotarizedTransaction nextTransaction() {
-    final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-
     // Somewhere from 100kib to 1MiB
     var size = (int) (Math.random() * 924 * 1024) + 100 * 1024;
-    var intentBytes =
-        REv2TestTransactions.constructLargeValidTransactionIntent(
-            networkDefinition,
-            ScryptoConstants.FAUCET_ADDRESS,
-            0,
-            1,
-            notary.getPublicKey().toPublicKey(),
-            size);
-    return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of());
+    return TransactionBuilder.forNetwork(networkDefinition)
+        .manifest(Manifest.valid())
+        .blobs(List.of(new byte[size]))
+        .prepare()
+        .raw();
   }
 }

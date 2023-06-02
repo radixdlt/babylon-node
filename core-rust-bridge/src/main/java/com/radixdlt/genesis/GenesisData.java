@@ -67,15 +67,12 @@ package com.radixdlt.genesis;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record GenesisData(
     UInt64 initialEpoch,
-    UInt32 maxValidators,
-    UInt64 roundsPerEpoch,
-    UInt64 numUnstakeEpochs,
     long initialTimestampMs,
+    GenesisConsensusManagerConfig consensusManagerConfig,
     ImmutableList<GenesisDataChunk> chunks) {
 
   public static void registerCodec(CodecMap codecMap) {
@@ -86,10 +83,8 @@ public record GenesisData(
   public static GenesisData testingDefaultEmpty() {
     return new GenesisData(
         UInt64.fromNonNegativeLong(1L),
-        UInt32.fromNonNegativeInt(100),
-        UInt64.fromNonNegativeLong(100),
-        UInt64.fromNonNegativeLong(10),
-        1L,
+        0,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of());
   }
 }

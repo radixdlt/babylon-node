@@ -25,7 +25,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
             .map_err(|err| err.into_response_error("resource_address"))?;
 
     let is_fungible = fungible_resource_address.as_node_id().entity_type()
-        == Some(EntityType::GlobalFungibleResource);
+        == Some(EntityType::GlobalFungibleResourceManager);
     if !is_fungible {
         return Err(client_error(
             "The provided resource address is not a fungible resource.",
@@ -78,12 +78,13 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     let balance = {
         let encoded_key = scrypto_encode(&fungible_resource_address).expect("Impossible Case!");
-
-        match read_optional_account_vault_substate(
+        let substate = read_optional_collection_substate::<AccountVaultIndexEntry>(
             database.deref(),
             account_address.as_node_id(),
+            ACCOUNT_VAULT_INDEX,
             &SubstateKey::Map(encoded_key),
-        ) {
+        );
+        match substate {
             Some(Some(owned_vault)) => {
                 read_mandatory_main_field_substate::<FungibleVaultBalanceSubstate>(
                     database.deref(),

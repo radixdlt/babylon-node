@@ -78,7 +78,6 @@ import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.BufferedWriter;
@@ -237,10 +236,8 @@ public final class RadixNodeBootstrapperTest {
   private GenesisData genesisWithSingleValidator(ECKeyPair key) {
     return new GenesisData(
         UInt64.fromNonNegativeLong(1),
-        UInt32.fromNonNegativeInt(1),
-        UInt64.fromNonNegativeLong(1),
-        UInt64.fromNonNegativeLong(1),
-        1,
+        1L,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of(
             new GenesisDataChunk.Validators(
                 ImmutableList.of(

@@ -66,20 +66,23 @@ use radix_engine_interface::*;
 use sbor::{DecodeError, EncodeError};
 
 #[derive(Debug, ScryptoSbor)]
-pub enum JavaError {
-    JNI(String),
-    SBOR(String),
-}
+pub struct JavaError(pub String);
 
 impl From<DecodeError> for JavaError {
     fn from(err: DecodeError) -> Self {
-        JavaError::SBOR(format!("SBOR decode failed: {err:?}"))
+        JavaError(format!("SBOR decode failed in Rust: {err:?}"))
     }
 }
 
 impl From<EncodeError> for JavaError {
     fn from(err: EncodeError) -> Self {
-        JavaError::SBOR(format!("SBOR decode failed: {err:?}"))
+        JavaError(format!("SBOR encode failed in Rust: {err:?}"))
+    }
+}
+
+impl From<jni::errors::Error> for JavaError {
+    fn from(err: jni::errors::Error) -> Self {
+        JavaError(format!("JNI error converting jbyteArray to Vec: {}", err))
     }
 }
 

@@ -109,9 +109,9 @@ public final class StateManager implements AutoCloseable {
    * method is called from Rust via JNI.
    */
   @SuppressWarnings("unused")
-  public void triggerMempoolRelay(byte[] transaction) {
+  public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
     this.mempoolRelayDispatcher.dispatchRelay(
-        StateManagerSbor.decode(transaction, StateManagerSbor.resolveCodec(new TypeToken<>() {})));
+        RawNotarizedTransaction.create(notarizedTransactionPayload));
   }
 
   private static native void init(StateManager stateManager, byte[] config);

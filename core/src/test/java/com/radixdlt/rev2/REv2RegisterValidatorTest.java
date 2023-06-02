@@ -77,9 +77,11 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -91,7 +93,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -118,7 +120,9 @@ public final class REv2RegisterValidatorTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 2, MempoolRelayConfig.of())))));
@@ -131,9 +135,14 @@ public final class REv2RegisterValidatorTest {
       test.startAllNodes();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
+      var ownerKey = TEST_KEY;
+      var ownerAccount = Address.virtualAccountAddress(ownerKey.getPublicKey());
       var createValidatorTransaction =
-          REv2TestTransactions.constructCreateValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, test.faucetAddress(), 0L, 1, TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.createValidator(TEST_KEY.getPublicKey(), ownerAccount))
+              .prepare()
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
       test.runUntilState(
           allCommittedTransactionSuccess(createValidatorTransaction),
@@ -149,23 +158,20 @@ public final class REv2RegisterValidatorTest {
 
       // Act: Submit transaction to mempool and run consensus
       var stakeValidatorTransaction =
-          REv2TestTransactions.constructStakeValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
+              .signatories(List.of(ownerKey))
+              .prepare()
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
 
       var registerValidatorTransaction =
-          REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              test.faucetAddress(),
-              0L,
-              1,
-              validatorAddress,
-              TEST_KEY);
+          TransactionBuilder.forTests()
+              .manifest(Manifest.registerValidator(validatorAddress, ownerAccount))
+              .signatories(List.of(ownerKey))
+              .prepare()
+              .raw();
+
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
       // Sanity check that they both get committed

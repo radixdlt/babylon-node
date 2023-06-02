@@ -72,12 +72,15 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
+import java.util.Set;
 
 public class RustMempool
-    implements MempoolReader<RawNotarizedTransaction>,
+    implements MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>,
         MempoolInserter<RawNotarizedTransaction>,
         MempoolReevaluator {
 
@@ -116,8 +119,10 @@ public class RustMempool
         case MempoolError.Full fullStatus -> throw new MempoolFullException(
             fullStatus.currentSize().toNonNegativeLong().unwrap(),
             fullStatus.maxSize().toNonNegativeLong().unwrap());
-        case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
-            String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
+        case MempoolError.Duplicate e -> throw new MempoolDuplicateException(
+            String.format(
+                "Mempool already has transaction with notarized hash %s",
+                e.notarizedTransactionHash()));
         case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
             e.errorDescription());
         case MempoolError.Rejected rejected -> throw new MempoolRejectedException(
@@ -127,8 +132,8 @@ public class RustMempool
   }
 
   @Override
-  public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionsToExclude) {
+  public List<PreparedNotarizedTransaction> getTransactionsForProposal(
+      int maxCount, int maxPayloadSizeBytes, Set<NotarizedTransactionHash> hashesToExclude) {
     if (maxCount <= 0) {
       throw new IllegalArgumentException(
           "State Manager Mempool: maxCount must be > 0: " + maxCount);
@@ -139,18 +144,15 @@ public class RustMempool
           "State Manager Mempool: maxPayloadSizeBytes must be > 0: " + maxPayloadSizeBytes);
     }
 
-    final var transactionHashesToExclude =
-        transactionsToExclude.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
-
     return getTransactionsForProposalFunc.call(
         new ProposalTransactionsRequest(
             UInt32.fromNonNegativeInt(maxCount),
             UInt32.fromNonNegativeInt(maxPayloadSizeBytes),
-            transactionHashesToExclude));
+            hashesToExclude));
   }
 
   @Override
-  public List<RawNotarizedTransaction> getTransactionsToRelay(
+  public List<PreparedNotarizedTransaction> getTransactionsToRelay(
       int maxNumTxns, int maxTotalTxnsPayloadSize) {
     return getTransactionsToRelayFunc.call(
         Tuple.tuple(
@@ -175,12 +177,12 @@ public class RustMempool
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<ProposalTransactionsRequest, List<RawNotarizedTransaction>>
+  private final Natives.Call1<ProposalTransactionsRequest, List<PreparedNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
+  private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<PreparedNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private final Natives.Call1<UInt32, Tuple.Tuple0> reevaluateTransactionCommitabilityFunc;

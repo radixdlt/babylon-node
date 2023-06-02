@@ -67,19 +67,38 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.PackageFieldInfoSubstate;
+import com.radixdlt.api.core.generated.models.StatePackageRequest;
 import org.junit.Test;
 
 public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
   @SuppressWarnings("try")
   public void test_network_configuration() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
       final var response = getStatusApi().statusNetworkConfigurationPost();
 
       assertThat(response.getNetwork())
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.logical_name());
       assertThat(response.getNetworkHrpSuffix())
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.hrp_suffix());
+
+      // And check the package endpoint whilst we're here, using a well known address...
+      final var faucetPackageAddress = response.getWellKnownAddresses().getFaucetPackage();
+
+      final var packageResponse =
+          getStateApi()
+              .statePackagePost(
+                  new StatePackageRequest()
+                      .network(networkLogicalName)
+                      .packageAddress(faucetPackageAddress));
+
+      final var packageInfoSubstate = (PackageFieldInfoSubstate) packageResponse.getInfo();
+      final var blueprintSchemas = packageInfoSubstate.getPackageSchema().getBlueprintSchemas();
+      assertThat(blueprintSchemas).hasSize(1);
+      assertThat(blueprintSchemas).containsKey("Faucet");
     }
   }
 }

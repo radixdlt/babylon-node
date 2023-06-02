@@ -92,7 +92,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 
   private final Random random = new Random(123456);
 
-  private void run(int numValidatorNodes, long numRounds) {
+  private void run(int numValidatorNodes, int numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
@@ -108,17 +108,19 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
                         StateComputerConfig.mockedNoEpochs(
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(
+        DeterministicTest.hasReachedRound(Round.of(numRounds)),
+        numRounds * numValidatorNodes * numValidatorNodes * 10);
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       final Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
-      long numberOfIndirectParents = (long) metrics.bft().vertexStore().indirectParents().get();
-      long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums =
-          (long)
+      int numberOfIndirectParents = (int) metrics.bft().vertexStore().indirectParents().get();
+      int totalNumberOfTimeouts = (int) metrics.bft().pacemaker().timeoutsSent().get();
+      int totalNumberOfTimeoutQuorums =
+          (int)
               metrics.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(true)).get();
-      long totalNumberOfRegularQuorums =
-          (long)
+      int totalNumberOfRegularQuorums =
+          (int)
               metrics
                   .bft()
                   .quorumResolutions()

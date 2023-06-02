@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
+use radix_engine_interface::prelude::*;
 use tree_builder::Merklizable;
 
 pub mod slice_merger;
@@ -73,15 +73,17 @@ pub mod tree_builder;
 mod test;
 
 /// A marker trait for types which should be `Merklizable` in a traditional way (same as `Hash`).
-pub trait IsHash: From<Hash> + AsRef<[u8]> {}
-impl IsHash for Hash {}
+pub trait IsMerklizableHash: IsHash {}
+impl IsMerklizableHash for Hash {}
 
-impl<H: IsHash> Merklizable for H {
+impl<H: IsMerklizableHash> Merklizable for H {
     fn zero() -> Self {
         Self::from(Hash([0; Hash::LENGTH]))
     }
 
     fn merge(left: &Self, right: &Self) -> Self {
-        Self::from(blake2b_256_hash([left.as_ref(), right.as_ref()].concat()))
+        Self::from(blake2b_256_hash(
+            [left.as_slice(), right.as_slice()].concat(),
+        ))
     }
 }

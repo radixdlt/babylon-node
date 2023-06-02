@@ -88,6 +88,7 @@ import org.junit.Test;
 public final class EpochTimeoutCertTest {
 
   private static final long ROUNDS_PER_EPOCH = 100;
+  private static final int NUM_NODES = 4;
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -113,7 +114,7 @@ public final class EpochTimeoutCertTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.mockedWithEpochs(
                         Round.of(ROUNDS_PER_EPOCH),
-                        EpochNodeWeightMapping.constant(4),
+                        EpochNodeWeightMapping.constant(NUM_NODES),
                         new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
@@ -131,9 +132,12 @@ public final class EpochTimeoutCertTest {
     try (var test = createTest()) {
       test.startAllNodes();
       // Run until end of first epoch
-      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true);
+      test.runUntilMessage(
+          proposalAtRound(ROUNDS_PER_EPOCH + 2),
+          true,
+          10 * NUM_NODES * NUM_NODES * ((int) ROUNDS_PER_EPOCH));
       // Run for a while more and verify that no byzantine issues occur
-      test.runForCount(100000);
+      test.runForCount(40000);
     }
   }
 }

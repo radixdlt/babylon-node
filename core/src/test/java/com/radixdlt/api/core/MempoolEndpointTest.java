@@ -69,7 +69,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
@@ -77,11 +78,9 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_mempool_queries() throws Exception {
     try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
-      var transaction = REv2TestTransactions.constructValidTransaction(test.faucetAddress(), 0, 0);
-      var rawTransaction = transaction.constructRawTransaction();
-      var intentHash = transaction.hashedIntent().asBytes();
-      var payloadHash = rawTransaction.getPayloadHash();
+      var transaction = TransactionBuilder.forTests().prepare();
 
       // Submit transaction
       var response =
@@ -89,7 +88,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
 
       assertThat(response.getDuplicate()).isFalse();
 
@@ -100,20 +99,22 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                   .getContents())
           .contains(
               new MempoolTransactionHashes()
-                  .payloadHash(Bytes.toHexString(payloadHash.asBytes()))
-                  .intentHash(Bytes.toHexString(intentHash)));
+                  .payloadHash(transaction.hexNotarizedTransactionHash())
+                  .intentHash(transaction.hexIntentHash()));
 
       var mempoolTransaction =
           getMempoolApi()
               .mempoolTransactionPost(
                   new MempoolTransactionRequest()
                       .network(networkLogicalName)
-                      .payloadHash(Bytes.toHexString(payloadHash.asBytes())));
+                      .payloadHash(transaction.hexNotarizedTransactionHash()));
 
-      assertThat(mempoolTransaction.getNotarizedTransaction().getHash())
-          .isEqualTo(Bytes.toHexString(payloadHash.asBytes()));
+      assertThat(
+              RawNotarizedTransaction.create(
+                  Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
+          .isEqualTo(transaction.raw());
 
-      test.runUntilState(allCommittedTransactionSuccess(rawTransaction), 1000);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
 
       assertThat(
               getMempoolApi()
@@ -127,7 +128,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                   .mempoolTransactionPost(
                       new MempoolTransactionRequest()
                           .network(networkLogicalName)
-                          .payloadHash(Bytes.toHexString(payloadHash.asBytes()))));
+                          .payloadHash(transaction.hexNotarizedTransactionHash())));
 
       var errorResponse =
           assertErrorResponseOfType(
@@ -136,7 +137,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                       .mempoolTransactionPost(
                           new MempoolTransactionRequest()
                               .network(networkLogicalName)
-                              .payloadHash(Bytes.toHexString(payloadHash.asBytes()))),
+                              .payloadHash(transaction.hexNotarizedTransactionHash())),
               BasicErrorResponse.class);
 
       assertThat(errorResponse.getCode()).isEqualTo(404);

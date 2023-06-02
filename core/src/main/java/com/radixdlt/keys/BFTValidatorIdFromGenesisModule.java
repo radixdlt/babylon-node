@@ -83,7 +83,7 @@ public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
       REv2LedgerInitializerToken rev2LedgerInitializerToken,
       @Self ECDSASecp256k1PublicKey key,
       TransactionsAndProofReader transactionsAndProofReader) {
-    var genesisProof = transactionsAndProofReader.getFirstEpochProof().orElseThrow();
+    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
     var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
     var potentialBFTValidators =
         genesisValidatorSet.getValidators().stream()

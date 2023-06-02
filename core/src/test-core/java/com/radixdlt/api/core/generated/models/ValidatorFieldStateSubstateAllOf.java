@@ -24,9 +24,13 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.PendingOwnerStakeWithdrawal;
 import com.radixdlt.api.core.generated.models.SubstateKey;
+import com.radixdlt.api.core.generated.models.ValidatorFeeChangeRequest;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,39 +38,89 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ValidatorFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_SORTED_KEY,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_PUBLIC_KEY,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_IS_REGISTERED,
-  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
-  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_UNSTAKE_VAULT,
-  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_VALIDATOR_FEE_FACTOR,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_STAKE_XRD_VAULT,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS,
-  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_SORTED_KEY
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_WITHDRAWALS,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_ALREADY_UNLOCKED_OWNER_STAKE_UNIT_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ValidatorFieldStateSubstateAllOf {
+  public static final String JSON_PROPERTY_SORTED_KEY = "sorted_key";
+  private SubstateKey sortedKey;
+
   public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
   private EcdsaSecp256k1PublicKey publicKey;
 
   public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
   private Boolean isRegistered;
 
-  public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
-  private EntityReference stakeVault;
+  public static final String JSON_PROPERTY_VALIDATOR_FEE_FACTOR = "validator_fee_factor";
+  private String validatorFeeFactor;
 
-  public static final String JSON_PROPERTY_UNSTAKE_VAULT = "unstake_vault";
-  private EntityReference unstakeVault;
+  public static final String JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST = "validator_fee_change_request";
+  private ValidatorFeeChangeRequest validatorFeeChangeRequest;
 
-  public static final String JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS = "liquid_stake_unit_resource_address";
-  private String liquidStakeUnitResourceAddress;
+  public static final String JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS = "stake_unit_resource_address";
+  private String stakeUnitResourceAddress;
+
+  public static final String JSON_PROPERTY_STAKE_XRD_VAULT = "stake_xrd_vault";
+  private EntityReference stakeXrdVault;
 
   public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
   private String unstakeClaimTokenResourceAddress;
 
-  public static final String JSON_PROPERTY_SORTED_KEY = "sorted_key";
-  private SubstateKey sortedKey;
+  public static final String JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT = "pending_xrd_withdraw_vault";
+  private EntityReference pendingXrdWithdrawVault;
+
+  public static final String JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT = "locked_owner_stake_unit_vault";
+  private EntityReference lockedOwnerStakeUnitVault;
+
+  public static final String JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT = "pending_owner_stake_unit_unlock_vault";
+  private EntityReference pendingOwnerStakeUnitUnlockVault;
+
+  public static final String JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_WITHDRAWALS = "pending_owner_stake_unit_withdrawals";
+  private List<PendingOwnerStakeWithdrawal> pendingOwnerStakeUnitWithdrawals = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_ALREADY_UNLOCKED_OWNER_STAKE_UNIT_AMOUNT = "already_unlocked_owner_stake_unit_amount";
+  private String alreadyUnlockedOwnerStakeUnitAmount;
 
   public ValidatorFieldStateSubstateAllOf() { 
   }
+
+  public ValidatorFieldStateSubstateAllOf sortedKey(SubstateKey sortedKey) {
+    this.sortedKey = sortedKey;
+    return this;
+  }
+
+   /**
+   * Get sortedKey
+   * @return sortedKey
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SubstateKey getSortedKey() {
+    return sortedKey;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSortedKey(SubstateKey sortedKey) {
+    this.sortedKey = sortedKey;
+  }
+
 
   public ValidatorFieldStateSubstateAllOf publicKey(EcdsaSecp256k1PublicKey publicKey) {
     this.publicKey = publicKey;
@@ -120,81 +174,107 @@ public class ValidatorFieldStateSubstateAllOf {
   }
 
 
-  public ValidatorFieldStateSubstateAllOf stakeVault(EntityReference stakeVault) {
-    this.stakeVault = stakeVault;
+  public ValidatorFieldStateSubstateAllOf validatorFeeFactor(String validatorFeeFactor) {
+    this.validatorFeeFactor = validatorFeeFactor;
     return this;
   }
 
    /**
-   * Get stakeVault
-   * @return stakeVault
+   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return validatorFeeFactor
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_FEE_FACTOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getStakeVault() {
-    return stakeVault;
+  public String getValidatorFeeFactor() {
+    return validatorFeeFactor;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_FEE_FACTOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStakeVault(EntityReference stakeVault) {
-    this.stakeVault = stakeVault;
+  public void setValidatorFeeFactor(String validatorFeeFactor) {
+    this.validatorFeeFactor = validatorFeeFactor;
   }
 
 
-  public ValidatorFieldStateSubstateAllOf unstakeVault(EntityReference unstakeVault) {
-    this.unstakeVault = unstakeVault;
+  public ValidatorFieldStateSubstateAllOf validatorFeeChangeRequest(ValidatorFeeChangeRequest validatorFeeChangeRequest) {
+    this.validatorFeeChangeRequest = validatorFeeChangeRequest;
     return this;
   }
 
    /**
-   * Get unstakeVault
-   * @return unstakeVault
+   * Get validatorFeeChangeRequest
+   * @return validatorFeeChangeRequest
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public EntityReference getUnstakeVault() {
-    return unstakeVault;
+  public ValidatorFeeChangeRequest getValidatorFeeChangeRequest() {
+    return validatorFeeChangeRequest;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnstakeVault(EntityReference unstakeVault) {
-    this.unstakeVault = unstakeVault;
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setValidatorFeeChangeRequest(ValidatorFeeChangeRequest validatorFeeChangeRequest) {
+    this.validatorFeeChangeRequest = validatorFeeChangeRequest;
   }
 
 
-  public ValidatorFieldStateSubstateAllOf liquidStakeUnitResourceAddress(String liquidStakeUnitResourceAddress) {
-    this.liquidStakeUnitResourceAddress = liquidStakeUnitResourceAddress;
+  public ValidatorFieldStateSubstateAllOf stakeUnitResourceAddress(String stakeUnitResourceAddress) {
+    this.stakeUnitResourceAddress = stakeUnitResourceAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the resource address
-   * @return liquidStakeUnitResourceAddress
+   * @return stakeUnitResourceAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getLiquidStakeUnitResourceAddress() {
-    return liquidStakeUnitResourceAddress;
+  public String getStakeUnitResourceAddress() {
+    return stakeUnitResourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLiquidStakeUnitResourceAddress(String liquidStakeUnitResourceAddress) {
-    this.liquidStakeUnitResourceAddress = liquidStakeUnitResourceAddress;
+  public void setStakeUnitResourceAddress(String stakeUnitResourceAddress) {
+    this.stakeUnitResourceAddress = stakeUnitResourceAddress;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf stakeXrdVault(EntityReference stakeXrdVault) {
+    this.stakeXrdVault = stakeXrdVault;
+    return this;
+  }
+
+   /**
+   * Get stakeXrdVault
+   * @return stakeXrdVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKE_XRD_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getStakeXrdVault() {
+    return stakeXrdVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKE_XRD_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakeXrdVault(EntityReference stakeXrdVault) {
+    this.stakeXrdVault = stakeXrdVault;
   }
 
 
@@ -224,29 +304,138 @@ public class ValidatorFieldStateSubstateAllOf {
   }
 
 
-  public ValidatorFieldStateSubstateAllOf sortedKey(SubstateKey sortedKey) {
-    this.sortedKey = sortedKey;
+  public ValidatorFieldStateSubstateAllOf pendingXrdWithdrawVault(EntityReference pendingXrdWithdrawVault) {
+    this.pendingXrdWithdrawVault = pendingXrdWithdrawVault;
     return this;
   }
 
    /**
-   * Get sortedKey
-   * @return sortedKey
+   * Get pendingXrdWithdrawVault
+   * @return pendingXrdWithdrawVault
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateKey getSortedKey() {
-    return sortedKey;
+  public EntityReference getPendingXrdWithdrawVault() {
+    return pendingXrdWithdrawVault;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SORTED_KEY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSortedKey(SubstateKey sortedKey) {
-    this.sortedKey = sortedKey;
+  @JsonProperty(JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPendingXrdWithdrawVault(EntityReference pendingXrdWithdrawVault) {
+    this.pendingXrdWithdrawVault = pendingXrdWithdrawVault;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf lockedOwnerStakeUnitVault(EntityReference lockedOwnerStakeUnitVault) {
+    this.lockedOwnerStakeUnitVault = lockedOwnerStakeUnitVault;
+    return this;
+  }
+
+   /**
+   * Get lockedOwnerStakeUnitVault
+   * @return lockedOwnerStakeUnitVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getLockedOwnerStakeUnitVault() {
+    return lockedOwnerStakeUnitVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLockedOwnerStakeUnitVault(EntityReference lockedOwnerStakeUnitVault) {
+    this.lockedOwnerStakeUnitVault = lockedOwnerStakeUnitVault;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf pendingOwnerStakeUnitUnlockVault(EntityReference pendingOwnerStakeUnitUnlockVault) {
+    this.pendingOwnerStakeUnitUnlockVault = pendingOwnerStakeUnitUnlockVault;
+    return this;
+  }
+
+   /**
+   * Get pendingOwnerStakeUnitUnlockVault
+   * @return pendingOwnerStakeUnitUnlockVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getPendingOwnerStakeUnitUnlockVault() {
+    return pendingOwnerStakeUnitUnlockVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPendingOwnerStakeUnitUnlockVault(EntityReference pendingOwnerStakeUnitUnlockVault) {
+    this.pendingOwnerStakeUnitUnlockVault = pendingOwnerStakeUnitUnlockVault;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf pendingOwnerStakeUnitWithdrawals(List<PendingOwnerStakeWithdrawal> pendingOwnerStakeUnitWithdrawals) {
+    this.pendingOwnerStakeUnitWithdrawals = pendingOwnerStakeUnitWithdrawals;
+    return this;
+  }
+
+  public ValidatorFieldStateSubstateAllOf addPendingOwnerStakeUnitWithdrawalsItem(PendingOwnerStakeWithdrawal pendingOwnerStakeUnitWithdrawalsItem) {
+    this.pendingOwnerStakeUnitWithdrawals.add(pendingOwnerStakeUnitWithdrawalsItem);
+    return this;
+  }
+
+   /**
+   * Get pendingOwnerStakeUnitWithdrawals
+   * @return pendingOwnerStakeUnitWithdrawals
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_WITHDRAWALS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<PendingOwnerStakeWithdrawal> getPendingOwnerStakeUnitWithdrawals() {
+    return pendingOwnerStakeUnitWithdrawals;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_WITHDRAWALS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPendingOwnerStakeUnitWithdrawals(List<PendingOwnerStakeWithdrawal> pendingOwnerStakeUnitWithdrawals) {
+    this.pendingOwnerStakeUnitWithdrawals = pendingOwnerStakeUnitWithdrawals;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf alreadyUnlockedOwnerStakeUnitAmount(String alreadyUnlockedOwnerStakeUnitAmount) {
+    this.alreadyUnlockedOwnerStakeUnitAmount = alreadyUnlockedOwnerStakeUnitAmount;
+    return this;
+  }
+
+   /**
+   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return alreadyUnlockedOwnerStakeUnitAmount
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_ALREADY_UNLOCKED_OWNER_STAKE_UNIT_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAlreadyUnlockedOwnerStakeUnitAmount() {
+    return alreadyUnlockedOwnerStakeUnitAmount;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ALREADY_UNLOCKED_OWNER_STAKE_UNIT_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAlreadyUnlockedOwnerStakeUnitAmount(String alreadyUnlockedOwnerStakeUnitAmount) {
+    this.alreadyUnlockedOwnerStakeUnitAmount = alreadyUnlockedOwnerStakeUnitAmount;
   }
 
 
@@ -262,31 +451,43 @@ public class ValidatorFieldStateSubstateAllOf {
       return false;
     }
     ValidatorFieldStateSubstateAllOf validatorFieldStateSubstateAllOf = (ValidatorFieldStateSubstateAllOf) o;
-    return Objects.equals(this.publicKey, validatorFieldStateSubstateAllOf.publicKey) &&
+    return Objects.equals(this.sortedKey, validatorFieldStateSubstateAllOf.sortedKey) &&
+        Objects.equals(this.publicKey, validatorFieldStateSubstateAllOf.publicKey) &&
         Objects.equals(this.isRegistered, validatorFieldStateSubstateAllOf.isRegistered) &&
-        Objects.equals(this.stakeVault, validatorFieldStateSubstateAllOf.stakeVault) &&
-        Objects.equals(this.unstakeVault, validatorFieldStateSubstateAllOf.unstakeVault) &&
-        Objects.equals(this.liquidStakeUnitResourceAddress, validatorFieldStateSubstateAllOf.liquidStakeUnitResourceAddress) &&
+        Objects.equals(this.validatorFeeFactor, validatorFieldStateSubstateAllOf.validatorFeeFactor) &&
+        Objects.equals(this.validatorFeeChangeRequest, validatorFieldStateSubstateAllOf.validatorFeeChangeRequest) &&
+        Objects.equals(this.stakeUnitResourceAddress, validatorFieldStateSubstateAllOf.stakeUnitResourceAddress) &&
+        Objects.equals(this.stakeXrdVault, validatorFieldStateSubstateAllOf.stakeXrdVault) &&
         Objects.equals(this.unstakeClaimTokenResourceAddress, validatorFieldStateSubstateAllOf.unstakeClaimTokenResourceAddress) &&
-        Objects.equals(this.sortedKey, validatorFieldStateSubstateAllOf.sortedKey);
+        Objects.equals(this.pendingXrdWithdrawVault, validatorFieldStateSubstateAllOf.pendingXrdWithdrawVault) &&
+        Objects.equals(this.lockedOwnerStakeUnitVault, validatorFieldStateSubstateAllOf.lockedOwnerStakeUnitVault) &&
+        Objects.equals(this.pendingOwnerStakeUnitUnlockVault, validatorFieldStateSubstateAllOf.pendingOwnerStakeUnitUnlockVault) &&
+        Objects.equals(this.pendingOwnerStakeUnitWithdrawals, validatorFieldStateSubstateAllOf.pendingOwnerStakeUnitWithdrawals) &&
+        Objects.equals(this.alreadyUnlockedOwnerStakeUnitAmount, validatorFieldStateSubstateAllOf.alreadyUnlockedOwnerStakeUnitAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(publicKey, isRegistered, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, sortedKey);
+    return Objects.hash(sortedKey, publicKey, isRegistered, validatorFeeFactor, validatorFeeChangeRequest, stakeUnitResourceAddress, stakeXrdVault, unstakeClaimTokenResourceAddress, pendingXrdWithdrawVault, lockedOwnerStakeUnitVault, pendingOwnerStakeUnitUnlockVault, pendingOwnerStakeUnitWithdrawals, alreadyUnlockedOwnerStakeUnitAmount);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorFieldStateSubstateAllOf {\n");
+    sb.append("    sortedKey: ").append(toIndentedString(sortedKey)).append("\n");
     sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
-    sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
-    sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
-    sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");
+    sb.append("    validatorFeeFactor: ").append(toIndentedString(validatorFeeFactor)).append("\n");
+    sb.append("    validatorFeeChangeRequest: ").append(toIndentedString(validatorFeeChangeRequest)).append("\n");
+    sb.append("    stakeUnitResourceAddress: ").append(toIndentedString(stakeUnitResourceAddress)).append("\n");
+    sb.append("    stakeXrdVault: ").append(toIndentedString(stakeXrdVault)).append("\n");
     sb.append("    unstakeClaimTokenResourceAddress: ").append(toIndentedString(unstakeClaimTokenResourceAddress)).append("\n");
-    sb.append("    sortedKey: ").append(toIndentedString(sortedKey)).append("\n");
+    sb.append("    pendingXrdWithdrawVault: ").append(toIndentedString(pendingXrdWithdrawVault)).append("\n");
+    sb.append("    lockedOwnerStakeUnitVault: ").append(toIndentedString(lockedOwnerStakeUnitVault)).append("\n");
+    sb.append("    pendingOwnerStakeUnitUnlockVault: ").append(toIndentedString(pendingOwnerStakeUnitUnlockVault)).append("\n");
+    sb.append("    pendingOwnerStakeUnitWithdrawals: ").append(toIndentedString(pendingOwnerStakeUnitWithdrawals)).append("\n");
+    sb.append("    alreadyUnlockedOwnerStakeUnitAmount: ").append(toIndentedString(alreadyUnlockedOwnerStakeUnitAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

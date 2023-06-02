@@ -98,7 +98,7 @@ public class MovingWindowValidatorsTest {
             .map(index -> (int) (epoch - 1 + index) % totalValidatorCount);
   }
 
-  private void run(int numNodes, int windowSize, long maxEpoch, Round epochMaxRound) {
+  private void run(int numNodes, int windowSize, int maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numNodes))
@@ -119,7 +119,8 @@ public class MovingWindowValidatorsTest {
 
     bftTest.startAllNodes();
     bftTest.runUntilMessage(
-        DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
+        DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)),
+        maxEpoch * ((int) epochMaxRound.number()) * numNodes * numNodes * 10);
 
     LinkedList<Metrics> testCounters = metrics(bftTest);
     assertThat(testCounters)
@@ -162,25 +163,25 @@ public class MovingWindowValidatorsTest {
   @Test
   public void
       given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(4, 1, 100L, Round.of(100));
+    run(4, 1, 100, Round.of(100));
   }
 
   @Test
   public void
       given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(4, 3, 120L, Round.of(100));
+    run(4, 3, 120, Round.of(100));
   }
 
   @Test
   public void
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
-    run(50, 25, 100L, Round.of(100));
+    run(50, 25, 100, Round.of(100));
   }
 
   @Test
   public void
       given_correct_25_node_bft_with_100_total_nodes_with_changing_epochs_per_1_round__then_should_pass_bft_and_postconditions() {
-    run(100, 25, 100L, Round.of(100));
+    run(100, 25, 100, Round.of(1));
   }
 
   private static long maxProcessedFor(

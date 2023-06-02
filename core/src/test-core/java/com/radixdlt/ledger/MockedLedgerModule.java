@@ -76,7 +76,6 @@ import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class MockedLedgerModule extends AbstractModule {
@@ -108,11 +107,8 @@ public class MockedLedgerModule extends AbstractModule {
                 vertexWithHash,
                 ledgerHeader,
                 vertex.getTransactions().stream()
-                    .<ExecutedTransaction>map(
-                        tx ->
-                            new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
+                    .<ExecutedTransaction>map(MockExecuted::new)
                     .toList(),
-                Map.of(),
                 timeSupplier.currentTime()));
       }
     };

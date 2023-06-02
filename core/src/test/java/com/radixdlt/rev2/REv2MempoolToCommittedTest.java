@@ -72,6 +72,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
@@ -82,7 +83,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Test;
@@ -94,15 +94,13 @@ public class REv2MempoolToCommittedTest {
 
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
-        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+    return List.of(new Object[] {false, 100000}, new Object[] {true, 100});
   }
 
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public REv2MempoolToCommittedTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public REv2MempoolToCommittedTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -121,7 +119,10 @@ public class REv2MempoolToCommittedTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), this.roundsPerEpoch),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, 1, new MempoolRelayConfig(0, 100))),
@@ -134,8 +135,7 @@ public class REv2MempoolToCommittedTest {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var transaction =
-          REv2TestTransactions.constructValidRawTransaction(test.faucetAddress(), 0, 5);
+      var transaction = TransactionBuilder.forTests().prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(transaction));

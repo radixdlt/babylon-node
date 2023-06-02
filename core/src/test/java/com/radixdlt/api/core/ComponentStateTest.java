@@ -73,7 +73,8 @@ import org.junit.Test;
 public final class ComponentStateTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_retrieve_component_state() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
 
       final var wellKnownAddresses =
           getStatusApi().statusNetworkConfigurationPost().getWellKnownAddresses();

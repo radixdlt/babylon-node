@@ -47,7 +47,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         return Err(client_error(
             "This endpoint requires that the LocalTransactionExecutionIndex is enabled on the node. \
             To use this endpoint, you will need to enable the index in the config, wipe ledger and restart. \
-            Please note the resync will take awhile.",
+            Please note the resync will take a while.",
         ));
     }
 
@@ -76,9 +76,6 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     for state_version in state_versions.take(limit) {
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
             &mapping_context,
-            database
-                .get_committed_transaction(state_version)
-                .expect("Transaction store corrupted"),
             database
                 .get_committed_local_transaction_receipt(state_version)
                 .expect("Transaction receipt index corrupted"),

@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -86,6 +87,7 @@ public record ComponentAddress(byte[] value) {
   private static final int BYTE_LENGTH = 30;
 
   // See entity_type.rs
+
   public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 130;
   public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 192;
 
@@ -94,6 +96,10 @@ public record ComponentAddress(byte[] value) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);
+  }
+
+  public String encode(NetworkDefinition networkDefinition) {
+    return Bech32mCoder.encodeAddress(networkDefinition, this.value);
   }
 
   public String toHexString() {

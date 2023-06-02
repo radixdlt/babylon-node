@@ -64,18 +64,19 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.rev2.REv2TestTransactions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
+import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
+import com.radixdlt.api.core.generated.models.LtsStreamAccountTransactionOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionOutcomesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statemanager.DatabaseFlags;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.transactions.IntentHash;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -85,34 +86,28 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
     try (var test = buildRunningServerTest(new DatabaseFlags(true, true))) {
+      test.suppressUnusedWarning();
 
-      var faucetAddress = ScryptoConstants.FAUCET_ADDRESS;
-      var faucetAddressStr = addressing.encodeNormalComponentAddress(faucetAddress);
+      var faucetAddressStr = ScryptoConstants.FAUCET_ADDRESS.encode(networkDefinition);
+
       var account1KeyPair = ECKeyPair.generateNew();
       var account1Address = Address.virtualAccountAddress(account1KeyPair.getPublicKey());
-      var account1AddressStr = addressing.encodeAccountAddress(account1Address);
+      var account1AddressStr = account1Address.encode(networkDefinition);
 
       var account2KeyPair = ECKeyPair.generateNew();
       var account2Address = Address.virtualAccountAddress(account2KeyPair.getPublicKey());
-      var account2AddressStr = addressing.encodeAccountAddress(account2Address);
+      var account2AddressStr = account2Address.encode(networkDefinition);
 
       var account1FaucetClaim =
-          submitAndWaitForSuccess(
-              test,
-              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, account1Address),
-              List.of());
+          submitAndWaitForSuccess(test, Manifest.depositFromFaucet(account1Address), List.of());
       var account2FaucetClaim =
-          submitAndWaitForSuccess(
-              test,
-              constructDepositFromFaucetManifest(networkDefinition, faucetAddress, account2Address),
-              List.of());
+          submitAndWaitForSuccess(test, Manifest.depositFromFaucet(account2Address), List.of());
 
       var account1SelfXrdTransferAmount = 1L;
       var account1SelfXrdTransfer =
           submitAndWaitForSuccess(
               test,
-              constructTransferBetweenAccountsFeeFromSender(
-                  networkDefinition,
+              Manifest.transferBetweenAccountsFeeFromSender(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
                   Decimal.of(account1SelfXrdTransferAmount),
@@ -123,8 +118,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account1ToAccount2XrdTransferWithFeeFromAccount1 =
           submitAndWaitForSuccess(
               test,
-              constructTransferBetweenAccountsFeeFromSender(
-                  networkDefinition,
+              Manifest.transferBetweenAccountsFeeFromSender(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
                   Decimal.of(account1ToAccount2XrdTransferWithFeeFromAccount1Amount),
@@ -135,8 +129,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account1ToAccount2XrdTransferWithFeeFromAccount2 =
           submitAndWaitForSuccess(
               test,
-              constructTransferBetweenAccountsFeeFromReceiver(
-                  networkDefinition,
+              Manifest.transferBetweenAccountsFeeFromReceiver(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
                   Decimal.of(account1ToAccount2XrdTransferWithFeeFromAccount2Amount),
@@ -147,8 +140,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account1ToAccount2XrdTransferWithFeeFromFaucet =
           submitAndWaitForSuccess(
               test,
-              constructTransferBetweenAccountsFeeFromFaucet(
-                  networkDefinition,
+              Manifest.transferBetweenAccountsFeeFromFaucet(
                   account1Address,
                   ScryptoConstants.XRD_RESOURCE_ADDRESS,
                   Decimal.of(account1ToAccount2XrdTransferWithFeeFromFaucetAmount),
@@ -241,6 +233,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
         stateVersion, entityAddress, ScryptoConstants.XRD_RESOURCE_ADDRESS, Option.none());
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void assertNonFeeBalanceChange(
       long stateVersion,
       String entityAddress,
@@ -280,13 +273,12 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                 ltsEntityFungibleBalanceChanges.getNonFeeBalanceChanges().stream()
                     .filter(
                         item ->
-                            item.getResourceAddress()
-                                .equals(addressing.encodeResourceAddress(resourceAddress)))
+                            item.getResourceAddress().equals(addressing.encode(resourceAddress)))
                     .findFirst());
   }
 
   private void validateAccountTransactions(
-      ComponentAddress accountAddress, List<HashCode> intentHashes) throws Exception {
+      ComponentAddress accountAddress, List<IntentHash> intentHashes) throws Exception {
     var accountOutcomesResponse =
         getLtsApi()
             .ltsStreamAccountTransactionOutcomesPost(
@@ -294,7 +286,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                     .network(networkLogicalName)
                     .fromStateVersion(1L)
                     .limit(1000)
-                    .accountAddress(addressing.encodeAccountAddress(accountAddress)));
+                    .accountAddress(addressing.encode(accountAddress)));
     var outcomes = accountOutcomesResponse.getCommittedTransactionOutcomes();
     assertThat(outcomes.size()).isEqualTo(intentHashes.size());
     for (var i = 0; i < outcomes.size(); i++) {
@@ -304,8 +296,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       }
       var transactionIdentifiers = outcome.getUserTransactionIdentifiers();
       assertThat(transactionIdentifiers).isNotNull();
-      assertThat(transactionIdentifiers.getIntentHash())
-          .isEqualTo(Bytes.toHexString(intentHashes.get(i).asBytes()));
+      assertThat(transactionIdentifiers.getIntentHash()).isEqualTo(intentHashes.get(i).hex());
     }
   }
 }

@@ -16,7 +16,7 @@ pub struct NextEpoch {
     /// An integer between `0` and `10^10`, marking the new epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
-    /// Validators are sorted by descending stake amount
+    /// Active validator set for the new epoch, ordered by stake descending.
     #[serde(rename = "validators")]
     pub validators: Vec<crate::core_api::generated::models::ActiveValidator>,
 }

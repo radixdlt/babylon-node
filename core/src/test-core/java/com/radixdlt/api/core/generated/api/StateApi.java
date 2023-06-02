@@ -22,12 +22,10 @@ import com.radixdlt.api.core.generated.models.StateAccessControllerRequest;
 import com.radixdlt.api.core.generated.models.StateAccessControllerResponse;
 import com.radixdlt.api.core.generated.models.StateAccountRequest;
 import com.radixdlt.api.core.generated.models.StateAccountResponse;
-import com.radixdlt.api.core.generated.models.StateClockRequest;
-import com.radixdlt.api.core.generated.models.StateClockResponse;
 import com.radixdlt.api.core.generated.models.StateComponentRequest;
 import com.radixdlt.api.core.generated.models.StateComponentResponse;
-import com.radixdlt.api.core.generated.models.StateEpochRequest;
-import com.radixdlt.api.core.generated.models.StateEpochResponse;
+import com.radixdlt.api.core.generated.models.StateConsensusManagerRequest;
+import com.radixdlt.api.core.generated.models.StateConsensusManagerResponse;
 import com.radixdlt.api.core.generated.models.StateNonFungibleRequest;
 import com.radixdlt.api.core.generated.models.StateNonFungibleResponse;
 import com.radixdlt.api.core.generated.models.StatePackageRequest;
@@ -249,84 +247,6 @@ public class StateApi {
     return localVarRequestBuilder;
   }
   /**
-   * Get Clock Details
-   * Reads the clock&#39;s substate/s from the top of the current ledger. 
-   * @param stateClockRequest  (required)
-   * @return StateClockResponse
-   * @throws ApiException if fails to make API call
-   */
-  public StateClockResponse stateClockPost(StateClockRequest stateClockRequest) throws ApiException {
-    ApiResponse<StateClockResponse> localVarResponse = stateClockPostWithHttpInfo(stateClockRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get Clock Details
-   * Reads the clock&#39;s substate/s from the top of the current ledger. 
-   * @param stateClockRequest  (required)
-   * @return ApiResponse&lt;StateClockResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<StateClockResponse> stateClockPostWithHttpInfo(StateClockRequest stateClockRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = stateClockPostRequestBuilder(stateClockRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("stateClockPost", localVarResponse);
-        }
-        return new ApiResponse<StateClockResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<StateClockResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder stateClockPostRequestBuilder(StateClockRequest stateClockRequest) throws ApiException {
-    // verify the required parameter 'stateClockRequest' is set
-    if (stateClockRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'stateClockRequest' when calling stateClockPost");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/state/clock";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(stateClockRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-  /**
    * Get Component Details
    * Reads the component&#39;s substate/s from the top of the current ledger. Also recursively extracts vault balance totals from the component&#39;s entity subtree. 
    * @param stateComponentRequest  (required)
@@ -405,26 +325,26 @@ public class StateApi {
     return localVarRequestBuilder;
   }
   /**
-   * Get Epoch Details
-   * Reads the epoch manager&#39;s substate/s from the top of the current ledger. 
-   * @param stateEpochRequest  (required)
-   * @return StateEpochResponse
+   * Get Consensus Manager Details
+   * Reads the consensus manager&#39;s substate/s from the top of the current ledger. 
+   * @param stateConsensusManagerRequest  (required)
+   * @return StateConsensusManagerResponse
    * @throws ApiException if fails to make API call
    */
-  public StateEpochResponse stateEpochPost(StateEpochRequest stateEpochRequest) throws ApiException {
-    ApiResponse<StateEpochResponse> localVarResponse = stateEpochPostWithHttpInfo(stateEpochRequest);
+  public StateConsensusManagerResponse stateConsensusManagerPost(StateConsensusManagerRequest stateConsensusManagerRequest) throws ApiException {
+    ApiResponse<StateConsensusManagerResponse> localVarResponse = stateConsensusManagerPostWithHttpInfo(stateConsensusManagerRequest);
     return localVarResponse.getData();
   }
 
   /**
-   * Get Epoch Details
-   * Reads the epoch manager&#39;s substate/s from the top of the current ledger. 
-   * @param stateEpochRequest  (required)
-   * @return ApiResponse&lt;StateEpochResponse&gt;
+   * Get Consensus Manager Details
+   * Reads the consensus manager&#39;s substate/s from the top of the current ledger. 
+   * @param stateConsensusManagerRequest  (required)
+   * @return ApiResponse&lt;StateConsensusManagerResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<StateEpochResponse> stateEpochPostWithHttpInfo(StateEpochRequest stateEpochRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = stateEpochPostRequestBuilder(stateEpochRequest);
+  public ApiResponse<StateConsensusManagerResponse> stateConsensusManagerPostWithHttpInfo(StateConsensusManagerRequest stateConsensusManagerRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = stateConsensusManagerPostRequestBuilder(stateConsensusManagerRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -434,12 +354,12 @@ public class StateApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("stateEpochPost", localVarResponse);
+          throw getApiException("stateConsensusManagerPost", localVarResponse);
         }
-        return new ApiResponse<StateEpochResponse>(
+        return new ApiResponse<StateConsensusManagerResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<StateEpochResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<StateConsensusManagerResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -453,15 +373,15 @@ public class StateApi {
     }
   }
 
-  private HttpRequest.Builder stateEpochPostRequestBuilder(StateEpochRequest stateEpochRequest) throws ApiException {
-    // verify the required parameter 'stateEpochRequest' is set
-    if (stateEpochRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'stateEpochRequest' when calling stateEpochPost");
+  private HttpRequest.Builder stateConsensusManagerPostRequestBuilder(StateConsensusManagerRequest stateConsensusManagerRequest) throws ApiException {
+    // verify the required parameter 'stateConsensusManagerRequest' is set
+    if (stateConsensusManagerRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'stateConsensusManagerRequest' when calling stateConsensusManagerPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/state/epoch";
+    String localVarPath = "/state/consensus-manager";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -469,7 +389,7 @@ public class StateApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(stateEpochRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(stateConsensusManagerRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

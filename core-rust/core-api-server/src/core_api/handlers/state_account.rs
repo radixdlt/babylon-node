@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
@@ -23,7 +21,7 @@ pub(crate) async fn handle_state_account(
     }
 
     let database = state.database.read();
-    let type_info: TypeInfoSubstate = read_optional_substate(
+    let type_info = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
         TYPE_INFO_FIELD_PARTITION,
@@ -31,11 +29,17 @@ pub(crate) async fn handle_state_account(
     )
     .ok_or_else(|| not_found_error("Account not found".to_string()))?;
 
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+    let method_access_rules_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
         ACCESS_RULES_FIELD_PARTITION,
         &AccessRulesField::AccessRules.into(),
+    )?;
+
+    let state_substate = read_mandatory_main_field_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        &AccountField::Account.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), component_address);
@@ -51,6 +55,10 @@ pub(crate) async fn handle_state_account(
         access_rules: Some(to_api_method_access_rules_substate(
             &mapping_context,
             &method_access_rules_substate,
+        )?),
+        state: Some(to_api_account_state_substate(
+            &mapping_context,
+            &state_substate,
         )?),
         vaults,
     })

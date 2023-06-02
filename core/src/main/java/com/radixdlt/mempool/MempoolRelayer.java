@@ -71,6 +71,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collections;
 import java.util.List;
@@ -98,13 +100,14 @@ public final class MempoolRelayer {
 
   private final Metrics metrics;
 
-  private final MempoolReader<RawNotarizedTransaction> mempoolRelayReader;
+  private final MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>
+      mempoolRelayReader;
 
   private final int maxPeers;
 
   @Inject
   public MempoolRelayer(
-      MempoolReader<RawNotarizedTransaction> mempoolRelayReader,
+      MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash> mempoolRelayReader,
       RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
@@ -130,8 +133,10 @@ public final class MempoolRelayer {
       final var transactions =
           this.mempoolRelayReader.getTransactionsToRelay(
               MAX_RELAY_MSG_NUM_TXNS, MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
+      final var rawTransactions =
+          transactions.stream().map(PreparedNotarizedTransaction::raw).toList();
       if (!transactions.isEmpty()) {
-        relayTransactions(transactions, ImmutableList.of());
+        relayTransactions(rawTransactions, ImmutableList.of());
       }
     };
   }

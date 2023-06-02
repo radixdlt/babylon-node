@@ -76,6 +76,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -87,8 +88,9 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
@@ -101,17 +103,15 @@ import org.junit.runners.Parameterized;
 public class REv2RejectedTransactionMempoolTest {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
-        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+    return List.of(new Object[] {false, 100000}, new Object[] {true, 100});
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
+  private final long roundsPerEpoch;
 
-  public REv2RejectedTransactionMempoolTest(boolean epochs, UInt64 roundsPerEpoch) {
+  public REv2RejectedTransactionMempoolTest(boolean epochs, long roundsPerEpoch) {
     this.epochs = epochs;
     this.roundsPerEpoch = roundsPerEpoch;
   }
@@ -131,7 +131,10 @@ public class REv2RejectedTransactionMempoolTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), this.roundsPerEpoch),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
@@ -145,21 +148,23 @@ public class REv2RejectedTransactionMempoolTest {
 
       // Arrange
       var rawRejectableTransaction =
-          REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
+          TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare().raw();
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolDispatcher.dispatch(
-          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(faucet, 0, 0)));
+      mempoolDispatcher.dispatch(MempoolAdd.create(TransactionBuilder.forTests().prepare().raw()));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
       var mempoolReader =
           test.getInstance(
-              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+              0,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
       assertTransactionNotCommitted(test.getNodeInjectors(), rawRejectableTransaction);
@@ -181,21 +186,15 @@ public class REv2RejectedTransactionMempoolTest {
   public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
 
       // Arrange: Two conflicting transactions in mempool
 
       // create account
       var accountTxn =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructNewAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.newAccountAllowAllOwner())
+              .prepare()
+              .raw();
       executeTransaction(test, accountTxn);
       var transactionDetails =
           NodesReader.getCommittedTransactionDetails(test.getNodeInjectors(), accountTxn);
@@ -203,41 +202,27 @@ public class REv2RejectedTransactionMempoolTest {
 
       // deposit xrd into it
       var depositTxn =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructDepositFromFaucetManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.depositFromFaucet(accountAddress))
+              .prepare()
+              .raw();
       executeTransaction(test, depositTxn);
 
       // dispatch 2 competing transactions (depositing from the above account)
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
       var transferTxn1 =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              0,
-              REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.drainAccount(accountAddress))
+              .prepare()
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
-          REv2TestTransactions.constructRawTransaction(
-              NetworkDefinition.INT_TEST_NET,
-              0,
-              1,
-              REv2TestTransactions.constructDepositFromAccountManifest(
-                  NetworkDefinition.INT_TEST_NET, faucet, accountAddress),
-              REv2TestTransactions.DEFAULT_NOTARY,
-              false,
-              List.of());
+          TransactionBuilder.forTests()
+              .manifest(Manifest.drainAccount(accountAddress))
+              .prepare()
+              .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
@@ -249,12 +234,14 @@ public class REv2RejectedTransactionMempoolTest {
       // Assert
       var mempoolReader =
           test.getInstance(
-              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+              0,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(0);
       // Check that only one of the two transactions was committed
-      // TODO: this used to check for committed (success|failure) - why?
-      assertOneTransactionCommittedOutOf(
-          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2), true);
+      assertExactlyOneTransactionSuccessfullyCommitted(
+          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2));
     }
   }
 }

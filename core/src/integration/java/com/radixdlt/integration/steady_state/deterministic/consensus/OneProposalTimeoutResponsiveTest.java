@@ -86,7 +86,7 @@ import org.junit.Test;
 public class OneProposalTimeoutResponsiveTest {
   private final Random random = new Random(123456);
 
-  private void run(int numValidatorNodes, long numRounds, long dropPeriod) {
+  private void run(int numValidatorNodes, int numRounds, long dropPeriod) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
@@ -103,7 +103,9 @@ public class OneProposalTimeoutResponsiveTest {
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(
+        DeterministicTest.hasReachedRound(Round.of(numRounds)),
+        numRounds * numValidatorNodes * numValidatorNodes * 10);
 
     long maxIndirectParents =
         numValidatorNodes <= 3

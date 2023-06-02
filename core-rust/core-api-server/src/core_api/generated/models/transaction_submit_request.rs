@@ -19,6 +19,9 @@ pub struct TransactionSubmitRequest {
     /// A hex-encoded, compiled notarized transaction.
     #[serde(rename = "notarized_transaction_hex")]
     pub notarized_transaction_hex: String,
+    /// If true, the transaction validity is freshly recalculated without using any caches (defaults false)
+    #[serde(rename = "force_recalculate", skip_serializing_if = "Option::is_none")]
+    pub force_recalculate: Option<bool>,
 }
 
 impl TransactionSubmitRequest {
@@ -26,6 +29,7 @@ impl TransactionSubmitRequest {
         TransactionSubmitRequest {
             network,
             notarized_transaction_hex,
+            force_recalculate: None,
         }
     }
 }

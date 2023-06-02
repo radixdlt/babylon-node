@@ -73,7 +73,7 @@ import java.util.Optional;
 public interface TransactionsAndProofReader {
   CommittedTransactionsWithProof getTransactions(DtoLedgerProof start);
 
-  Optional<LedgerProof> getFirstEpochProof();
+  Optional<LedgerProof> getPostGenesisEpochProof();
 
   Optional<LedgerProof> getEpochProof(long epoch);
 

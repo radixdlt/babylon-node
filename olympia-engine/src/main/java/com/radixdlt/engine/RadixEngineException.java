@@ -82,7 +82,7 @@ public final class RadixEngineException extends Exception {
             + " batchSize="
             + batchSize
             + " txnId="
-            + transaction.getPayloadHash()
+            + transaction.getLegacyPayloadHash()
             + " txn_size="
             + transaction.getPayload().length
             + " txn="

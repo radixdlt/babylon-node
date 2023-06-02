@@ -73,8 +73,7 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.function.Predicate;
 
@@ -86,8 +85,7 @@ public class NodePredicate {
   public static Predicate<Injector> committedFailedUserTransaction(
       RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {
@@ -106,11 +104,21 @@ public class NodePredicate {
     };
   }
 
+  /**
+   * @param userTransaction - The transaction to lookup
+   * @param requireSuccess - Whether the transaction needed to be committed successfully to pass the
+   *     predicate
+   * @param assertSuccess - Whether a commit of this transaction must be successful (an exception is
+   *     thrown if not)
+   * @return the predicate
+   */
+  // TODO - could consider speeding this up by looking at transaction payload hashes instead, and/or
+  // moving this to rust
+  // Although this test is better as an end-to-end style perhaps
   public static Predicate<Injector> committedUserTransaction(
       RawNotarizedTransaction userTransaction, boolean requireSuccess, boolean assertSuccess) {
     var committedTransaction =
-        RawLedgerTransaction.create(
-            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
+        TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {

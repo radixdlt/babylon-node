@@ -143,8 +143,17 @@ public class Decimal implements Comparable<Decimal> {
     return new Decimal(underlying);
   }
 
+  public static Decimal fraction(long numerator, long denominator) {
+    return Decimal.of(numerator).divide(denominator);
+  }
+
   public Decimal subtract(Decimal other) {
     var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
+  public Decimal divide(long divisor) {
+    var newUnderlying = this.underlyingValue.divide(UInt256.from(divisor));
     return new Decimal(newUnderlying);
   }
 
@@ -154,7 +163,27 @@ public class Decimal implements Comparable<Decimal> {
 
   @Override
   public String toString() {
-    return new BigDecimal(underlyingValue.toBigInt(), SCALE).toString();
+    var str = new BigDecimal(underlyingValue.toBigInt(), SCALE).toString();
+    if (str.contains(".")) {
+      // The outputted string contains the full precision (18 decimals) - but the rust Decimal
+      // doesn't include these characters...
+      // EG 10000.000000000000000000 rather than 10000
+      // So, to enable toString to be comparable, we fix up the format to enable comparisons.
+      var trimTo = str.length();
+      for (var i = str.length() - 1; i >= 0; i--) {
+        var theChar = str.charAt(i);
+        if (theChar == '.') {
+          trimTo = i;
+          break;
+        } else if (theChar == '0') {
+          trimTo = i;
+        } else {
+          break;
+        }
+      }
+      return str.substring(0, trimTo);
+    }
+    return str;
   }
 
   @Override

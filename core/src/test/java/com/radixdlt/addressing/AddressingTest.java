@@ -80,7 +80,7 @@ public class AddressingTest {
   public void test_system_faucet_address_encoded_correctly() {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_ADDRESS))
+                .encode(ScryptoConstants.FAUCET_ADDRESS))
         .isEqualTo("component_test1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxdq0h8u");
   }
 

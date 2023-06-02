@@ -75,6 +75,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -95,7 +96,6 @@ import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +122,7 @@ public class REv2StateComputerTest {
                     Decimal.of(1),
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
-                    UInt64.fromNonNegativeLong(10)),
+                    GenesisConsensusManagerConfig.Builder.testDefaults()),
                 new Blake2b256Hasher(DefaultSerialization.getInstance()))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
@@ -158,11 +158,10 @@ public class REv2StateComputerTest {
     var genesisEpochProof =
         injector
             .getInstance(REv2TransactionsAndProofReader.class)
-            .getFirstEpochProofREv2()
+            .getPostGenesisREv2EpochProof()
             .orElseThrow();
     var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
-    var validTransaction =
-        REv2TestTransactions.constructValidRawTransaction(ScryptoConstants.FAUCET_ADDRESS, 0, 0);
+    var validTransaction = TransactionBuilder.forTests().prepare().raw();
 
     // Act
     var roundDetails =
@@ -178,7 +177,7 @@ public class REv2StateComputerTest {
         stateComputer.prepare(accumulatorHash, List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getFailedTransactions()).isEmpty();
+    assertThat(result.getRejectedTransactionCount()).isZero();
   }
 
   @Test
@@ -190,7 +189,7 @@ public class REv2StateComputerTest {
     var genesisEpochProof =
         injector
             .getInstance(REv2TransactionsAndProofReader.class)
-            .getFirstEpochProofREv2()
+            .getPostGenesisREv2EpochProof()
             .orElseThrow();
     var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
@@ -210,7 +209,7 @@ public class REv2StateComputerTest {
             accumulatorHash, List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getFailedTransactions()).hasSize(1);
+    assertThat(result.getRejectedTransactionCount()).isEqualTo(1);
   }
 
   private BFTValidatorId getValidatorFromEpochHeader(LedgerHeader epochHeader, int validatorIndex) {
@@ -220,10 +219,6 @@ public class REv2StateComputerTest {
             .skip(validatorIndex)
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("some validator expected"));
-    return BFTValidatorId.create(
-        validator
-            .address()
-            .unwrap(() -> new IllegalStateException("active validator must have address")),
-        validator.key());
+    return BFTValidatorId.create(validator.address(), validator.key());
   }
 }

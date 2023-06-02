@@ -35,8 +35,6 @@ public enum ParsedTransactionType {
   
   TRANSACTIONINTENT("TransactionIntent"),
   
-  TRANSACTIONMANIFEST("TransactionManifest"),
-  
   LEDGERTRANSACTION("LedgerTransaction");
 
   private String value;

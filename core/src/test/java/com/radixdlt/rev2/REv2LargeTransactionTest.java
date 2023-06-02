@@ -66,13 +66,14 @@ package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.*;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
 
-import com.google.inject.*;
-import com.radixdlt.crypto.ECKeyPair;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -89,18 +90,13 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class REv2LargeTransactionTest {
-
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -119,19 +115,21 @@ public final class REv2LargeTransactionTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GenesisBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Decimal.of(1),
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
                             10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 
-  private static RawNotarizedTransaction createLargeValidTransaction(ComponentAddress faucet) {
+  private static PreparedNotarizedTransaction createLargeValidTransaction() {
     final var blobsSize = 1024 * 1024 - 462 /* space for other intent/notarized txn fields */;
-    final var intentBytes =
-        REv2TestTransactions.constructLargeValidTransactionIntent(
-            NETWORK_DEFINITION, faucet, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
-    return REv2TestTransactions.constructRawTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
+    return TransactionBuilder.forTests()
+        .manifest(Manifest.valid())
+        .blobs(List.of(new byte[blobsSize]))
+        .prepare();
   }
 
   // Note - this test doesn't use the actual networking layer - see PeerChannelInitializer for
@@ -143,7 +141,7 @@ public final class REv2LargeTransactionTest {
       test.startAllNodes();
       var validatorIndex = 0;
       var fullNodeIndex = 1;
-      var largeTransaction = createLargeValidTransaction(test.faucetAddress());
+      var largeTransaction = createLargeValidTransaction().raw();
 
       // Act: Submit transaction to fullnode mempool
       var mempoolDispatcher =

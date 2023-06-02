@@ -13,8 +13,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionHeader {
-    #[serde(rename = "version")]
-    pub version: i32,
     /// The logical id of the network
     #[serde(rename = "network_id")]
     pub network_id: i32,
@@ -24,33 +22,28 @@ pub struct TransactionHeader {
     /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected. In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`. 
     #[serde(rename = "end_epoch_exclusive")]
     pub end_epoch_exclusive: i64,
-    /// A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
+    /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
     #[serde(rename = "nonce")]
-    pub nonce: String,
+    pub nonce: i64,
     #[serde(rename = "notary_public_key")]
     pub notary_public_key: Option<crate::core_api::generated::models::PublicKey>, // Using Option permits Default trait; Will always be Some in normal use
-    /// Specifies whether the notary's signature should be included in transaction signers list
-    #[serde(rename = "notary_as_signatory")]
-    pub notary_as_signatory: bool,
-    /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
-    #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: i64,
+    /// Specifies whether the notary public key should be included in the transaction signers list
+    #[serde(rename = "notary_is_signatory")]
+    pub notary_is_signatory: bool,
     /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
 }
 
 impl TransactionHeader {
-    pub fn new(version: i32, network_id: i32, start_epoch_inclusive: i64, end_epoch_exclusive: i64, nonce: String, notary_public_key: crate::core_api::generated::models::PublicKey, notary_as_signatory: bool, cost_unit_limit: i64, tip_percentage: i32) -> TransactionHeader {
+    pub fn new(network_id: i32, start_epoch_inclusive: i64, end_epoch_exclusive: i64, nonce: i64, notary_public_key: crate::core_api::generated::models::PublicKey, notary_is_signatory: bool, tip_percentage: i32) -> TransactionHeader {
         TransactionHeader {
-            version,
             network_id,
             start_epoch_inclusive,
             end_epoch_exclusive,
             nonce,
             notary_public_key: Option::Some(notary_public_key),
-            notary_as_signatory,
-            cost_unit_limit,
+            notary_is_signatory,
             tip_percentage,
         }
     }

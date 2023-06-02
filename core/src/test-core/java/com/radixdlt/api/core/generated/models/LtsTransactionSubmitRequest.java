@@ -32,7 +32,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   LtsTransactionSubmitRequest.JSON_PROPERTY_NETWORK,
-  LtsTransactionSubmitRequest.JSON_PROPERTY_NOTARIZED_TRANSACTION_HEX
+  LtsTransactionSubmitRequest.JSON_PROPERTY_NOTARIZED_TRANSACTION_HEX,
+  LtsTransactionSubmitRequest.JSON_PROPERTY_FORCE_RECALCULATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsTransactionSubmitRequest {
@@ -41,6 +42,9 @@ public class LtsTransactionSubmitRequest {
 
   public static final String JSON_PROPERTY_NOTARIZED_TRANSACTION_HEX = "notarized_transaction_hex";
   private String notarizedTransactionHex;
+
+  public static final String JSON_PROPERTY_FORCE_RECALCULATE = "force_recalculate";
+  private Boolean forceRecalculate;
 
   public LtsTransactionSubmitRequest() { 
   }
@@ -97,6 +101,32 @@ public class LtsTransactionSubmitRequest {
   }
 
 
+  public LtsTransactionSubmitRequest forceRecalculate(Boolean forceRecalculate) {
+    this.forceRecalculate = forceRecalculate;
+    return this;
+  }
+
+   /**
+   * If true, the transaction validity is freshly recalculated without using any caches (defaults false)
+   * @return forceRecalculate
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "If true, the transaction validity is freshly recalculated without using any caches (defaults false)")
+  @JsonProperty(JSON_PROPERTY_FORCE_RECALCULATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getForceRecalculate() {
+    return forceRecalculate;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FORCE_RECALCULATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setForceRecalculate(Boolean forceRecalculate) {
+    this.forceRecalculate = forceRecalculate;
+  }
+
+
   /**
    * Return true if this LtsTransactionSubmitRequest object is equal to o.
    */
@@ -110,12 +140,13 @@ public class LtsTransactionSubmitRequest {
     }
     LtsTransactionSubmitRequest ltsTransactionSubmitRequest = (LtsTransactionSubmitRequest) o;
     return Objects.equals(this.network, ltsTransactionSubmitRequest.network) &&
-        Objects.equals(this.notarizedTransactionHex, ltsTransactionSubmitRequest.notarizedTransactionHex);
+        Objects.equals(this.notarizedTransactionHex, ltsTransactionSubmitRequest.notarizedTransactionHex) &&
+        Objects.equals(this.forceRecalculate, ltsTransactionSubmitRequest.forceRecalculate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, notarizedTransactionHex);
+    return Objects.hash(network, notarizedTransactionHex, forceRecalculate);
   }
 
   @Override
@@ -124,6 +155,7 @@ public class LtsTransactionSubmitRequest {
     sb.append("class LtsTransactionSubmitRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    notarizedTransactionHex: ").append(toIndentedString(notarizedTransactionHex)).append("\n");
+    sb.append("    forceRecalculate: ").append(toIndentedString(forceRecalculate)).append("\n");
     sb.append("}");
     return sb.toString();
   }

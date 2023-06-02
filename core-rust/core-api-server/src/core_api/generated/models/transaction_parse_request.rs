@@ -16,10 +16,10 @@ pub struct TransactionParseRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a transaction manifest. 
+    /// A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a ledger payload. 
     #[serde(rename = "payload_hex")]
     pub payload_hex: String,
-    /// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+    /// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger. 
     #[serde(rename = "parse_mode", skip_serializing_if = "Option::is_none")]
     pub parse_mode: Option<ParseMode>,
     /// The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction. This is only relevant for Notarized payloads. If omitted, \"Static\" is used. 
@@ -45,7 +45,7 @@ impl TransactionParseRequest {
     }
 }
 
-/// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+/// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Ledger. 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ParseMode {
     #[serde(rename = "Any")]
@@ -56,8 +56,6 @@ pub enum ParseMode {
     Signed,
     #[serde(rename = "Unsigned")]
     Unsigned,
-    #[serde(rename = "Manifest")]
-    Manifest,
     #[serde(rename = "Ledger")]
     Ledger,
 }

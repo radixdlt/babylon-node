@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.NotarizedTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +31,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * MempoolTransactionResponse
  */
 @JsonPropertyOrder({
-  MempoolTransactionResponse.JSON_PROPERTY_NOTARIZED_TRANSACTION
+  MempoolTransactionResponse.JSON_PROPERTY_PAYLOAD_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MempoolTransactionResponse {
-  public static final String JSON_PROPERTY_NOTARIZED_TRANSACTION = "notarized_transaction";
-  private NotarizedTransaction notarizedTransaction;
+  public static final String JSON_PROPERTY_PAYLOAD_HEX = "payload_hex";
+  private String payloadHex;
 
   public MempoolTransactionResponse() { 
   }
 
-  public MempoolTransactionResponse notarizedTransaction(NotarizedTransaction notarizedTransaction) {
-    this.notarizedTransaction = notarizedTransaction;
+  public MempoolTransactionResponse payloadHex(String payloadHex) {
+    this.payloadHex = payloadHex;
     return this;
   }
 
    /**
-   * Get notarizedTransaction
-   * @return notarizedTransaction
+   * The hex-encoded full notarized transaction payload.
+   * @return payloadHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NOTARIZED_TRANSACTION)
+  @ApiModelProperty(required = true, value = "The hex-encoded full notarized transaction payload.")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NotarizedTransaction getNotarizedTransaction() {
-    return notarizedTransaction;
+  public String getPayloadHex() {
+    return payloadHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NOTARIZED_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNotarizedTransaction(NotarizedTransaction notarizedTransaction) {
-    this.notarizedTransaction = notarizedTransaction;
+  public void setPayloadHex(String payloadHex) {
+    this.payloadHex = payloadHex;
   }
 
 
@@ -80,19 +79,19 @@ public class MempoolTransactionResponse {
       return false;
     }
     MempoolTransactionResponse mempoolTransactionResponse = (MempoolTransactionResponse) o;
-    return Objects.equals(this.notarizedTransaction, mempoolTransactionResponse.notarizedTransaction);
+    return Objects.equals(this.payloadHex, mempoolTransactionResponse.payloadHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(notarizedTransaction);
+    return Objects.hash(payloadHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MempoolTransactionResponse {\n");
-    sb.append("    notarizedTransaction: ").append(toIndentedString(notarizedTransaction)).append("\n");
+    sb.append("    payloadHex: ").append(toIndentedString(payloadHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

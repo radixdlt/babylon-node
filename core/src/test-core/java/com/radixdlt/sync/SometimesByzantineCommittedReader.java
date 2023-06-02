@@ -161,7 +161,8 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
       if (accumulator != null) {
         accumulatorState = request.getLedgerHeader().getAccumulatorState();
         for (var txn : transactions) {
-          accumulatorState = accumulator.accumulate(accumulatorState, txn.getPayloadHash());
+          accumulatorState =
+              accumulator.accumulate(accumulatorState, txn.getLegacyPayloadHash().inner());
         }
       } else {
         accumulatorState = base.getProof().getAccumulatorState();
@@ -273,8 +274,8 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
   }
 
   @Override
-  public Optional<LedgerProof> getFirstEpochProof() {
-    return correctReader.getFirstEpochProof();
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    return correctReader.getPostGenesisEpochProof();
   }
 
   @Override

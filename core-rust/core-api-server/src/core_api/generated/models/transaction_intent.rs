@@ -13,21 +13,26 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionIntent {
-    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
+    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "hash")]
     pub hash: String,
     #[serde(rename = "header")]
     pub header: Box<crate::core_api::generated::models::TransactionHeader>,
-    #[serde(rename = "manifest")]
-    pub manifest: Box<crate::core_api::generated::models::TransactionManifest>,
+    /// The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "instructions", skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+    /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+    #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
+    pub blobs_hex: Option<::std::collections::HashMap<String, String>>,
 }
 
 impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader, manifest: crate::core_api::generated::models::TransactionManifest) -> TransactionIntent {
+    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader) -> TransactionIntent {
         TransactionIntent {
             hash,
             header: Box::new(header),
-            manifest: Box::new(manifest),
+            instructions: None,
+            blobs_hex: None,
         }
     }
 }

@@ -50,20 +50,28 @@ pub enum SubstateType {
     NonFungibleVaultFieldBalance,
     #[serde(rename = "NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntry,
-    #[serde(rename = "EpochManagerFieldConfig")]
-    EpochManagerFieldConfig,
-    #[serde(rename = "EpochManagerFieldState")]
-    EpochManagerFieldState,
-    #[serde(rename = "EpochManagerFieldCurrentValidatorSet")]
-    EpochManagerFieldCurrentValidatorSet,
-    #[serde(rename = "EpochManagerRegisteredValidatorsByStakeIndexEntry")]
-    EpochManagerRegisteredValidatorsByStakeIndexEntry,
-    #[serde(rename = "ClockFieldState")]
-    ClockFieldState,
+    #[serde(rename = "ConsensusManagerFieldConfig")]
+    ConsensusManagerFieldConfig,
+    #[serde(rename = "ConsensusManagerFieldState")]
+    ConsensusManagerFieldState,
+    #[serde(rename = "ConsensusManagerFieldCurrentValidatorSet")]
+    ConsensusManagerFieldCurrentValidatorSet,
+    #[serde(rename = "ConsensusManagerFieldCurrentProposalStatistic")]
+    ConsensusManagerFieldCurrentProposalStatistic,
+    #[serde(rename = "ConsensusManagerFieldCurrentTimeRoundedToMinutes")]
+    ConsensusManagerFieldCurrentTimeRoundedToMinutes,
+    #[serde(rename = "ConsensusManagerFieldCurrentTime")]
+    ConsensusManagerFieldCurrentTime,
+    #[serde(rename = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry")]
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
     #[serde(rename = "ValidatorFieldState")]
     ValidatorFieldState,
+    #[serde(rename = "AccountFieldState")]
+    AccountFieldState,
     #[serde(rename = "AccountVaultIndexEntry")]
     AccountVaultIndexEntry,
+    #[serde(rename = "AccountDepositRuleIndexEntry")]
+    AccountDepositRuleIndexEntry,
     #[serde(rename = "AccessControllerFieldState")]
     AccessControllerFieldState,
     #[serde(rename = "GenericScryptoComponentFieldState")]
@@ -95,13 +103,17 @@ impl ToString for SubstateType {
             Self::FungibleVaultFieldBalance => String::from("FungibleVaultFieldBalance"),
             Self::NonFungibleVaultFieldBalance => String::from("NonFungibleVaultFieldBalance"),
             Self::NonFungibleVaultContentsIndexEntry => String::from("NonFungibleVaultContentsIndexEntry"),
-            Self::EpochManagerFieldConfig => String::from("EpochManagerFieldConfig"),
-            Self::EpochManagerFieldState => String::from("EpochManagerFieldState"),
-            Self::EpochManagerFieldCurrentValidatorSet => String::from("EpochManagerFieldCurrentValidatorSet"),
-            Self::EpochManagerRegisteredValidatorsByStakeIndexEntry => String::from("EpochManagerRegisteredValidatorsByStakeIndexEntry"),
-            Self::ClockFieldState => String::from("ClockFieldState"),
+            Self::ConsensusManagerFieldConfig => String::from("ConsensusManagerFieldConfig"),
+            Self::ConsensusManagerFieldState => String::from("ConsensusManagerFieldState"),
+            Self::ConsensusManagerFieldCurrentValidatorSet => String::from("ConsensusManagerFieldCurrentValidatorSet"),
+            Self::ConsensusManagerFieldCurrentProposalStatistic => String::from("ConsensusManagerFieldCurrentProposalStatistic"),
+            Self::ConsensusManagerFieldCurrentTimeRoundedToMinutes => String::from("ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
+            Self::ConsensusManagerFieldCurrentTime => String::from("ConsensusManagerFieldCurrentTime"),
+            Self::ConsensusManagerRegisteredValidatorsByStakeIndexEntry => String::from("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
             Self::ValidatorFieldState => String::from("ValidatorFieldState"),
+            Self::AccountFieldState => String::from("AccountFieldState"),
             Self::AccountVaultIndexEntry => String::from("AccountVaultIndexEntry"),
+            Self::AccountDepositRuleIndexEntry => String::from("AccountDepositRuleIndexEntry"),
             Self::AccessControllerFieldState => String::from("AccessControllerFieldState"),
             Self::GenericScryptoComponentFieldState => String::from("GenericScryptoComponentFieldState"),
             Self::GenericKeyValueStoreEntry => String::from("GenericKeyValueStoreEntry"),

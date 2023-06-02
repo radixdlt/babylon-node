@@ -65,7 +65,6 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
@@ -75,10 +74,12 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.LastProof;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
@@ -89,30 +90,32 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public interface ExecutedTransaction {
     RawLedgerTransaction transaction();
+
+    Option<NotarizedTransactionHash> notarizedTransactionHash();
   }
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<RawNotarizedTransaction, Exception> failedTransactions;
+    private final int rejectedTransactionCount;
     private final NextEpoch nextEpoch;
     private final LedgerHashes ledgerHashes;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawNotarizedTransaction, Exception> failedTransactions,
+        int rejectedTransactionCount,
         NextEpoch nextEpoch,
         LedgerHashes ledgerHashes) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
-      this.failedTransactions = Objects.requireNonNull(failedTransactions);
+      this.rejectedTransactionCount = rejectedTransactionCount;
       this.nextEpoch = nextEpoch;
       this.ledgerHashes = ledgerHashes;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawNotarizedTransaction, Exception> failedTransactions,
+        int rejectedTransactionCount,
         LedgerHashes ledgerHashes) {
-      this(executedTransactions, failedTransactions, null, ledgerHashes);
+      this(executedTransactions, rejectedTransactionCount, null, ledgerHashes);
     }
 
     public Optional<NextEpoch> getNextEpoch() {
@@ -127,8 +130,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       return executedTransactions;
     }
 
-    public Map<RawNotarizedTransaction, Exception> getFailedTransactions() {
-      return failedTransactions;
+    public int getRejectedTransactionCount() {
+      return rejectedTransactionCount;
     }
   }
 
@@ -223,11 +226,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         // occurs for example.
         return Optional.of(
             new ExecutedVertex(
-                vertexWithHash,
-                parentHeader,
-                ImmutableList.of(),
-                ImmutableMap.of(),
-                this.timeSupplier.currentTime()));
+                vertexWithHash, parentHeader, ImmutableList.of(), this.timeSupplier.currentTime()));
       }
 
       // It's possible that this function is called with a list of vertices which starts with some
@@ -276,7 +275,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               againstAccumulatorState,
               verticesInExtension.stream()
                   .flatMap(
-                      v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
+                      v ->
+                          v.successfulTransactions()
+                              .map(t -> t.transaction().getLegacyPayloadHash().inner()))
                   .collect(ImmutableList.toImmutableList()),
               parentAccumulatorState);
 
@@ -295,7 +296,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
     for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
       accumulatorState =
-          this.accumulator.accumulate(accumulatorState, transaction.transaction().getPayloadHash());
+          this.accumulator.accumulate(
+              accumulatorState, transaction.transaction().getLegacyPayloadHash().inner());
     }
 
     final LedgerHeader ledgerHeader =
@@ -313,7 +315,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             vertexWithHash,
             ledgerHeader,
             result.getSuccessfullyExecutedTransactions(),
-            result.getFailedTransactions(),
             this.timeSupplier.currentTime()));
   }
 
@@ -374,7 +375,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           verifier.verifyAndGetExtension(
               againstLedgerHeader.getAccumulatorState(),
               committedTransactionsWithProof.getTransactions(),
-              RawLedgerTransaction::getPayloadHash,
+              t -> t.getLegacyPayloadHash().inner(),
               committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {

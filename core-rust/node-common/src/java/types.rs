@@ -71,6 +71,7 @@ impl JavaHashCode {
     pub fn from_bytes<const S: usize>(bytes: [u8; S]) -> Self {
         JavaHashCode(bytes.to_vec())
     }
+
     pub fn into_bytes<const S: usize>(self) -> [u8; S] {
         self.0.as_slice().try_into().unwrap()
     }

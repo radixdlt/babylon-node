@@ -19,13 +19,25 @@ pub struct CommittedStateIdentifier {
     /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
     #[serde(rename = "accumulator_hash")]
     pub accumulator_hash: String,
+    /// The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. 
+    #[serde(rename = "state_tree_hash")]
+    pub state_tree_hash: String,
+    /// The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. 
+    #[serde(rename = "transaction_tree_hash")]
+    pub transaction_tree_hash: String,
+    /// The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. 
+    #[serde(rename = "receipt_tree_hash")]
+    pub receipt_tree_hash: String,
 }
 
 impl CommittedStateIdentifier {
-    pub fn new(state_version: i64, accumulator_hash: String) -> CommittedStateIdentifier {
+    pub fn new(state_version: i64, accumulator_hash: String, state_tree_hash: String, transaction_tree_hash: String, receipt_tree_hash: String) -> CommittedStateIdentifier {
         CommittedStateIdentifier {
             state_version,
             accumulator_hash,
+            state_tree_hash,
+            transaction_tree_hash,
+            receipt_tree_hash,
         }
     }
 }

@@ -70,6 +70,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
@@ -94,11 +95,15 @@ public final class GenerateGenesis {
           Network.ENKINET,
           Network.HAMMUNET,
           Network.MARDUNET,
+          Network.DUMUNET,
           Network.NERGALNET,
           Network.NEBUNET,
           Network.KISHARNET,
-          Network.ANSHARNET,
-          Network.DUMUNET);
+          Network.ANSHARNET);
+
+  private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
+      Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
+
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
@@ -205,8 +210,18 @@ public final class GenerateGenesis {
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
+    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
+
+    final var mustUseProductionEmissions =
+        NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
+    if (!mustUseProductionEmissions && !usePowerfulStakingAccount) {
+      consensusConfig =
+          consensusConfig.totalEmissionXrdPerEpoch(
+              GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
+    }
+
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, UInt64.fromNonNegativeLong(100));
+        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
   }
 
   private static void usage(Options options) {
