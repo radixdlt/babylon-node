@@ -113,7 +113,12 @@ public class NetworkTest {
     var logicalNameExceptions =
         Map.of(
             "INTEGRATIONTESTNET", "inttestnet",
-            "LOCALSIMULATOR", "simulator");
+            "LOCALSIMULATOR", "simulator",
+            "OLYMPIA_RELEASENET", "releasenet",
+            "OLYMPIA_RCNET", "rcnet",
+            "OLYMPIA_MILESTONENET", "milestonenet",
+            "OLYMPIA_DEVOPSNET", "devopsnet",
+            "OLYMPIA_SANDPITNET", "sandpitnet");
 
     for (var network : Network.values()) {
       var networkEnumName = network.name();
