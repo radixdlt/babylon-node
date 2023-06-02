@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia;
+package com.radixdlt.genesis.olympia.client;
 
 import com.google.inject.Inject;
 import com.jcabi.http.request.JdkRequest;
+import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
 import com.radixdlt.networks.Network;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -153,7 +154,10 @@ public final class OlympiaEndStateApiClient {
 
   private JSONObject postForJson(URL url, JSONObject requestData) throws IOException {
     final var baseRequest =
-        new JdkRequest(url).header("Content-Type", "application/json").method(JdkRequest.POST);
+        new JdkRequest(url)
+            .through(NoSslVerificationWire.class)
+            .header("Content-Type", "application/json")
+            .method(JdkRequest.POST);
 
     final var requestWithOptionalAuth =
         this.basicAuthCredentialsBase64
