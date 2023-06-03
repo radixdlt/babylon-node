@@ -146,8 +146,7 @@ public class StateComputerLedgerTest {
     this.metrics = new MetricsInitializer().initialize();
     this.headerComparator = TypedMocks.rmock(Comparator.class);
 
-    this.ledgerHeader =
-        LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0);
+    this.ledgerHeader = LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
     this.initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
@@ -170,7 +169,7 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(
             genesisEpoch,
             Round.of(5),
-            new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
+            genesisStateVersion,
             LedgerHashes.zero(),
             12345,
             12345,
@@ -203,10 +202,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction),
-                0,
-                LedgerHashes.zero(),
-                AccumulatorState.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
     var proposedVertex =
         Vertex.create(
                 initialEpochQC,
@@ -225,8 +221,8 @@ public class StateComputerLedgerTest {
     assertThat(nextPrepared)
         .hasValueSatisfying(
             x ->
-                assertThat(x.getLedgerHeader().getAccumulatorState())
-                    .isEqualTo(ledgerHeader.getAccumulatorState()));
+                assertThat(x.getLedgerHeader().getStateVersion())
+                    .isEqualTo(ledgerHeader.getStateVersion()));
   }
 
   @Test
@@ -234,11 +230,9 @@ public class StateComputerLedgerTest {
     // Arrange
     LedgerHashes ledgerHashes =
         LedgerHashes.create(HashUtils.random256(), HashUtils.random256(), HashUtils.random256());
-    AccumulatorState accumulatorState = new AccumulatorState(1337L, HashUtils.random256());
     when(stateComputer.prepare(any(), any(), any(), any(), any()))
         .thenReturn(
-            new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), 0, ledgerHashes, accumulatorState));
+            new StateComputerResult(ImmutableList.of(successfulNextTransaction), 0, ledgerHashes));
 
     // Act
     var proposedVertex =
@@ -253,25 +247,19 @@ public class StateComputerLedgerTest {
 
     // Assert
     assertThat(nextPrepared.getLedgerHeader().getHashes()).isEqualTo(ledgerHashes);
-    assertThat(nextPrepared.getLedgerHeader().getAccumulatorState()).isEqualTo(accumulatorState);
   }
 
   @Test
   public void should_do_nothing_if_committing_lower_state_version() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    final AccumulatorState accumulatorState =
-        new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
     when(stateComputer.prepare(any(), any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction),
-                0,
-                LedgerHashes.zero(),
-                accumulatorState));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
     final LedgerHeader ledgerHeader =
         LedgerHeader.create(
-            genesisEpoch, Round.of(2), accumulatorState, LedgerHashes.zero(), 1234, 1234);
+            genesisEpoch, Round.of(2), genesisStateVersion - 1, LedgerHashes.zero(), 1234, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
     var verified = CommittedTransactionsWithProof.create(List.of(nextLedgerTransaction), header);
@@ -289,9 +277,8 @@ public class StateComputerLedgerTest {
     /* Prepare a mocked "previous" vertex, whose parent accumulator hash doesn't match
     ledger's accumulator hash. This previous vertex should then be considered "already committed"
     and removed from "verticesInExtension". */
-    final var prevAccumulator = new AccumulatorState(2, HashUtils.random256());
     final var prevLedgerHeader = mock(LedgerHeader.class);
-    when(prevLedgerHeader.getAccumulatorState()).thenReturn(prevAccumulator);
+    when(prevLedgerHeader.getStateVersion()).thenReturn(2L);
     final var prevBftHeader = mock(BFTHeader.class);
     when(prevBftHeader.getLedgerHeader()).thenReturn(prevLedgerHeader);
     final var previousVertex = mock(Vertex.class);
@@ -313,10 +300,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), eq(List.of()), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction),
-                0,
-                LedgerHashes.zero(),
-                AccumulatorState.zero()));
+                ImmutableList.of(successfulNextTransaction), 0, LedgerHashes.zero()));
 
     assertTrue(sut.prepare(previous, proposedVertex).isPresent());
   }

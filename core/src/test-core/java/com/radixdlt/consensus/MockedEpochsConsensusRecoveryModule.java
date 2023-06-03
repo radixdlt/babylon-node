@@ -64,7 +64,6 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
@@ -73,10 +72,8 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.utils.PrivateKeys;
@@ -85,7 +82,6 @@ import java.util.function.Function;
 /** Starting configuration for simulation/deterministic steady state tests. */
 public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
-  private final HashCode preGenesisAccumulatorHash;
   private final LedgerHashes preGenesisLedgerHashes;
   private final Round epochMaxRound;
   private final EpochNodeWeightMapping epochNodeWeightMapping;
@@ -93,11 +89,9 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   public MockedEpochsConsensusRecoveryModule(
       Round epochMaxRound,
       EpochNodeWeightMapping epochNodeWeightMapping,
-      HashCode preGenesisAccumulatorHash,
       LedgerHashes preGenesisLedgerHashes) {
     this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
-    this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
     this.preGenesisLedgerHashes = preGenesisLedgerHashes;
   }
 
@@ -105,7 +99,6 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
       Round epochMaxRound, EpochNodeWeightMapping epochNodeWeightMapping) {
     this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
-    this.preGenesisAccumulatorHash = HashUtils.zero256();
     this.preGenesisLedgerHashes = LedgerHashes.zero();
   }
 
@@ -146,17 +139,15 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   @Provides
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, this.preGenesisAccumulatorHash);
     VertexWithHash genesisVertex =
         Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(
-                    accumulatorState, this.preGenesisLedgerHashes, validatorSet, 0, 0))
+                LedgerHeader.genesis(0, this.preGenesisLedgerHashes, validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
-            proof.getAccumulatorState(),
+            proof.getStateVersion(),
             proof.getLedgerHashes(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());

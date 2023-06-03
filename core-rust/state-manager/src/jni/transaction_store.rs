@@ -62,11 +62,10 @@
  * permissions under this License.
  */
 
-use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
 use crate::transaction::RawLedgerTransaction;
-use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
+use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -103,7 +102,7 @@ struct TxnsAndProofRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProof {
     transactions: Vec<RawLedgerTransaction>,
-    proof: JavaLedgerProof,
+    proof: LedgerProof,
 }
 
 #[no_mangle]
@@ -191,7 +190,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
             );
             txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
                 transactions,
-                proof: JavaLedgerProof::from(proof),
+                proof,
             })
         },
     )
@@ -204,10 +203,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<JavaLedgerProof> {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNIStateManager::get_database(&env, j_state_manager);
-        let epoch_proof = database.read().get_first_epoch_proof();
-        epoch_proof.map(JavaLedgerProof::from)
+        let proof = database.read().get_first_epoch_proof();
+        proof
     })
 }
 
@@ -221,10 +220,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |epoch: Epoch| -> Option<JavaLedgerProof> {
+        |epoch: Epoch| -> Option<LedgerProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
-            let epoch_proof = database.read().get_epoch_proof(epoch);
-            epoch_proof.map(JavaLedgerProof::from)
+            let proof = database.read().get_epoch_proof(epoch);
+            proof
         },
     )
 }
@@ -239,10 +238,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |_no_args: ()| -> Option<JavaLedgerProof> {
+        |_no_args: ()| -> Option<LedgerProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
-            let last_proof = database.read().get_last_proof();
-            last_proof.map(JavaLedgerProof::from)
+            let proof = database.read().get_last_proof();
+            proof
         },
     )
 }

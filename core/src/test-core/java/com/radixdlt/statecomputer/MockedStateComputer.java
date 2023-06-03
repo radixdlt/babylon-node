@@ -73,7 +73,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
@@ -106,18 +105,15 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
         proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
         0,
-        LedgerHashes.zero(),
-        new AccumulatorState(
-            preparedUncommittedAccumulatorState.getStateVersion() + proposedTransactions.size(),
-            HashUtils.zero256()));
+        LedgerHashes.zero());
   }
 
   @Override
@@ -136,7 +132,7 @@ public final class MockedStateComputer implements StateComputer {
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
                           Round.genesis(),
-                          proof.getAccumulatorState(),
+                          proof.getStateVersion(),
                           proof.getLedgerHashes(),
                           proof.consensusParentRoundTimestamp(),
                           proof.proposerTimestamp());

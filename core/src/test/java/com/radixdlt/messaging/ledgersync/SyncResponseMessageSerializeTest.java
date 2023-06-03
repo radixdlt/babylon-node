@@ -67,7 +67,6 @@ package com.radixdlt.messaging.ledgersync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.serialization.SerializeMessageObject;
 
@@ -80,7 +79,7 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
     return new SyncResponseMessage(
         new CommittedTransactionsWithProofDto(
             ImmutableList.of(),
-            LedgerProof.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0).toDto(),
-            LedgerProof.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0).toDto()));
+            LedgerProof.genesis(0, LedgerHashes.zero(), null, 0, 0).toDto(),
+            LedgerProof.genesis(0, LedgerHashes.zero(), null, 0, 0).toDto()));
   }
 }

@@ -150,13 +150,12 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
-    var committedAccumulatorState =
-        REv2ToConsensus.accumulatorState(genesisResult.accumulatorState());
+    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(genesisResult.ledgerHashes());
     var result =
         stateComputer.prepare(
-            committedAccumulatorState,
+            committedLedgerHashes,
             List.of(),
-            committedAccumulatorState,
+            committedLedgerHashes,
             List.of(validTransaction),
             roundDetails);
 
@@ -184,13 +183,12 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
-    var committedAccumulatorState =
-        REv2ToConsensus.accumulatorState(genesisResult.accumulatorState());
+    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(genesisResult.ledgerHashes());
     var result =
         stateComputer.prepare(
-            committedAccumulatorState,
+            committedLedgerHashes,
             List.of(),
-            committedAccumulatorState,
+            committedLedgerHashes,
             List.of(invalidTransaction),
             roundDetails);
 

@@ -111,8 +111,8 @@ public class OneByzantineGenesisTest {
                     new MockedEpochsConsensusRecoveryModule(
                         Round.of(1000000),
                         EpochNodeWeightMapping.constant(3, 1),
-                        HashUtils.random256(),
-                        LedgerHashes.zero()))
+                        LedgerHashes.create(
+                            HashUtils.random256(), HashUtils.random256(), HashUtils.random256())))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 

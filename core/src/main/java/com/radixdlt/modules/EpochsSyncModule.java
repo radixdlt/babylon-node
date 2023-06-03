@@ -71,7 +71,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -86,7 +85,6 @@ import com.radixdlt.sync.epochs.LocalSyncServiceFactory;
 import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
-import java.util.Comparator;
 
 /** Epoch+Sync extension */
 public class EpochsSyncModule extends AbstractModule {
@@ -209,7 +207,6 @@ public class EpochsSyncModule extends AbstractModule {
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       PeersView peersView,
-      Comparator<AccumulatorState> accComparator,
       RemoteSyncResponseSignaturesVerifier signaturesVerifier,
       VerifiedSyncResponseHandler verifiedSyncResponseHandler,
       InvalidSyncResponseHandler invalidSyncResponseHandler) {
@@ -223,7 +220,6 @@ public class EpochsSyncModule extends AbstractModule {
             syncRelayConfig,
             metrics,
             peersView,
-            accComparator,
             remoteSyncResponseValidatorSetVerifier,
             signaturesVerifier,
             verifiedSyncResponseHandler,

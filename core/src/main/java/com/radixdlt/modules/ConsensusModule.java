@@ -242,7 +242,7 @@ public final class ConsensusModule extends AbstractModule {
         hasher,
         safetyRules,
         pacemakerReducer,
-        Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
+        Comparator.comparingLong(LedgerHeader::getStateVersion),
         requestSender,
         syncLedgerRequestSender,
         timeoutDispatcher,

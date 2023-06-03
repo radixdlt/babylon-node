@@ -169,8 +169,8 @@ pub mod transactions {
 
     use crate::store::traits::CommittedTransactionBundle;
     use crate::{
-        CommittedTransactionIdentifiers, LedgerTransactionReceipt, LocalTransactionExecution,
-        LocalTransactionReceipt,
+        CommittedTransactionIdentifiers, LedgerHashes, LedgerTransactionReceipt,
+        LocalTransactionExecution, LocalTransactionReceipt,
     };
 
     #[enum_dispatch]
@@ -204,6 +204,11 @@ pub mod transactions {
             &self,
             state_version: u64,
         ) -> Option<LocalTransactionReceipt>;
+
+        fn get_committed_ledger_hashes(&self, state_version: u64) -> Option<LedgerHashes> {
+            self.get_committed_transaction_identifiers(state_version)
+                .map(|ids| ids.resultant_ledger_hashes)
+        }
     }
 
     pub trait TransactionIndex<T>: QueryableTransactionStore {

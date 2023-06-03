@@ -66,6 +66,7 @@ package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -228,9 +229,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var preparedUncommittedTransactions =
@@ -249,9 +250,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .toList();
     var prepareRequest =
         new PrepareRequest(
-            REv2ToConsensus.accumulatorState(committedAccumulatorState),
+            REv2ToConsensus.ledgerHashes(committedLedgerHashes),
             preparedUncommittedTransactions,
-            REv2ToConsensus.accumulatorState(preparedUncommittedAccumulatorState),
+            REv2ToConsensus.ledgerHashes(preparedUncommittedLedgerHashes),
             proposedTransactions,
             roundDetails.isFallback(),
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
@@ -273,13 +274,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
     var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
-    var accumulatorState = REv2ToConsensus.accumulatorState(result.accumulatorState());
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions,
-        rejectedTransactionsCount,
-        nextEpoch,
-        ledgerHashes,
-        accumulatorState);
+        committableTransactions, rejectedTransactionsCount, nextEpoch, ledgerHashes);
   }
 
   @Override

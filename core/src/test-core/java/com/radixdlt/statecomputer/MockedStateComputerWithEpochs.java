@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -111,16 +112,16 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var result =
         stateComputer.prepare(
-            committedAccumulatorState,
+            committedLedgerHashes,
             preparedUncommittedVertices,
-            preparedUncommittedAccumulatorState,
+            preparedUncommittedLedgerHashes,
             proposedTransactions,
             roundDetails);
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
@@ -131,8 +132,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               NextEpoch.create(
                   roundDetails.epoch() + 1,
                   validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),
-              result.getLedgerHashes(),
-              result.getAccumulatorState());
+              result.getLedgerHashes());
     }
     return result;
   }

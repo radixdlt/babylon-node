@@ -425,7 +425,7 @@ public class EpochsConsensusModule extends AbstractModule {
             hasher,
             safetyRules,
             pacemakerState,
-            Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
+            Comparator.comparingLong(LedgerHeader::getStateVersion),
             verticesRequestRemoteEventDispatcher,
             syncLedgerRequestSender,
             timeoutDispatcher,
