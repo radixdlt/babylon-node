@@ -64,6 +64,7 @@
 
 package com.radixdlt.bootstrap;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -83,7 +84,9 @@ import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -158,64 +161,27 @@ public final class RadixNodeBootstrapper {
     // If there is one configured, we always need to read it to memory
     // and calculate its hash.
     final var configuredGenesis = genesisFromPropertiesLoader.loadGenesisDataFromProperties();
+    final var configuredGenesisHash = configuredGenesis.map(hasher::hash);
 
     // Genesis source #2: a fixed genesis associated with the given network
     // We only need its hash at this point.
     final var fixedNetworkGenesisHash =
         network.fixedGenesis().map(FixedNetworkGenesis::genesisDataHash);
 
-    // Whether to use an optional genesis source #3: a running Olympia node
-    final var useOlympiaFlagIsSet =
-        properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false);
+    // The genesis stored from previous runs
+    final var storedGenesisHash = genesisStore.readGenesisDataHash();
 
-    if (configuredGenesis.isPresent() && fixedNetworkGenesisHash.isPresent()) {
-      // The genesis has been configured in properties but there's also
-      // one associated with the current network.
-      // We need to make sure they're the same to protect from unintended misconfiguration.
-      final var configuredGenesisHash = hasher.hash(configuredGenesis.orElseThrow());
+    final var distinctGenesisHashes =
+        Stream.of(configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(ImmutableSet.toImmutableSet());
 
-      if (!configuredGenesisHash.equals(fixedNetworkGenesisHash.orElseThrow())) {
-        return new RadixNodeBootstrapperHandle.Failed(
-            new RuntimeException(
-                String.format(
-                    """
-              Network %s uses a fixed genesis data (of hash %s) that doesn't match \
-              the genesis that has been configured for this node (of hash %s). \
-              Make sure your configuration is correct (check `network.id` and/or \
-              `network.genesis_data` and/or `network.genesis_file`).""",
-                    network.getLogicalName(),
-                    fixedNetworkGenesisHash.orElseThrow(),
-                    configuredGenesisHash)));
-      } else {
-        return persistGenesisDataAndBootstrap(
-            new RawGenesisDataWithHash(configuredGenesis.orElseThrow(), configuredGenesisHash));
-      }
-    } else if (configuredGenesis.isPresent()) {
-      // We've got a genesis configured in properties, so let's use it
-      final var configuredGenesisHash = hasher.hash(configuredGenesis.orElseThrow());
-      return persistGenesisDataAndBootstrap(
-          new RawGenesisDataWithHash(configuredGenesis.orElseThrow(), configuredGenesisHash));
-    } else if (fixedNetworkGenesisHash.isPresent()) {
-      // There is a fixed genesis associated with the current network,
-      // so at this point we need to load it in full and proceed
-      final var fixedNetworkGenesis = network.fixedGenesis().orElseThrow();
-      final var rawGenesisData = FixedGenesisLoader.loadGenesisData(fixedNetworkGenesis);
-
-      return persistGenesisDataAndBootstrap(
-          new RawGenesisDataWithHash(rawGenesisData, fixedNetworkGenesisHash.orElseThrow()));
-    } else {
-      // There wasn't any genesis configured (neither in properties nor bound to the current
-      // network)
-      // We have two more options:
-      // - re-use the genesis from previous runs (if present)
-      // - use Olympia (if configured)
-
-      // We're not loading the whole genesis data into memory yet, just checking if it is present
-      // (so that it doesn't occupy memory in Guice module when no longer needed after execution).
-      if (genesisStore.readGenesisDataHash().isPresent()) {
-        return new RadixNodeBootstrapperHandle.Resolved(
-            new UnstartedRadixNode(properties, network, genesisStore));
-      } else if (useOlympiaFlagIsSet) {
+    if (distinctGenesisHashes.size() == 0) {
+      // No genesis was configured, use Olympia (if configured) or error
+      final var useOlympiaFlagIsSet =
+          properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false);
+      if (useOlympiaFlagIsSet) {
         final var olympiaBootstrapper = new OlympiaGenesisBootstrapper();
         olympiaBootstrapper.start();
         return new RadixNodeBootstrapperHandle.AsyncFromOlympia(olympiaBootstrapper);
@@ -224,38 +190,50 @@ public final class RadixNodeBootstrapper {
         return new RadixNodeBootstrapperHandle.Failed(
             new RuntimeException(
                 """
-                    Radix node couldn't be initialized. No genesis transaction has been configured. Make \
-                    sure that either `network.genesis_data` or `network.genesis_file` is set or that \
-                    you're using a well known network (`network.id`). If you're running an Olympia \
-                    node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
-                    documentation for more details."""));
+                  Radix node couldn't be initialized. No genesis transaction has been configured. Make \
+                  sure that either `network.genesis_data` or `network.genesis_file` is set or that \
+                  you're using a well known network (`network.id`). If you're running an Olympia \
+                  node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
+                  documentation for more details."""));
       }
-    }
-  }
+    } else if (distinctGenesisHashes.size() == 1) {
+      // All genesis sources agree, we can proceed
+      // Store the genesis, if needed
+      if (storedGenesisHash.isEmpty()) {
+        RawGenesisDataWithHash rawGenesisDataWithHash;
+        if (configuredGenesis.isPresent()) {
+          // If configured genesis is set it must have been already loaded to memory,
+          // so prioritise if over the fixed network genesis.
+          rawGenesisDataWithHash =
+              new RawGenesisDataWithHash(
+                  configuredGenesis.orElseThrow(), configuredGenesisHash.orElseThrow());
+        } else {
+          // No configured genesis, so load the fixed network genesis.
+          rawGenesisDataWithHash =
+              new RawGenesisDataWithHash(
+                  FixedGenesisLoader.loadGenesisData(network.fixedGenesis().orElseThrow()),
+                  fixedNetworkGenesisHash.orElseThrow());
+        }
+        genesisStore.saveGenesisData(rawGenesisDataWithHash);
+      }
 
-  private RadixNodeBootstrapperHandle persistGenesisDataAndBootstrap(
-      RawGenesisDataWithHash genesisDataWithHash) {
-    final var maybePrevGenesisHash = genesisStore.readGenesisDataHash();
-    if (maybePrevGenesisHash.isPresent()) {
-      final var prevGenesisHash = maybePrevGenesisHash.orElseThrow();
-      if (!prevGenesisHash.equals(genesisDataWithHash.genesisDataHash())) {
-        return new RadixNodeBootstrapperHandle.Failed(
-            new RuntimeException(
-                String.format(
-                    """
-              Database is in inconsistent state: the node has been configured to use \
-              a genesis of hash %s, but it previously run with a different genesis of hash %s. \
-              Make sure your configuration is correct (check `network.id` and/or \
-              `network.genesis_data` and/or `network.genesis_file`). Or wipe your ledger dir \
-              if the configuration is correct.""",
-                    genesisDataWithHash.genesisDataHash(), prevGenesisHash)));
-      }
+      // Start the node using the genesisStore as a (lazy) genesis source
+      return new RadixNodeBootstrapperHandle.Resolved(
+          new UnstartedRadixNode(properties, network, genesisStore));
     } else {
-      genesisStore.saveGenesisData(genesisDataWithHash);
+      // There was more than one genesis configured and the hashes don't match
+      return new RadixNodeBootstrapperHandle.Failed(
+          new RuntimeException(
+              String.format(
+                  """
+                    Inconsistent genesis configuration. The following genesis sources were read: \n
+                    - properties (network.genesis_data or network.genesis_file): %s \n
+                    - network genesis (based on network.id): %s \n
+                    - genesis stored from previous runs: %s \n
+                    Make sure your configuration is correct (check `network.id` and/or \
+            `       network.genesis_data` and/or `network.genesis_file`).""",
+                  configuredGenesis, fixedNetworkGenesisHash, storedGenesisHash)));
     }
-
-    return new RadixNodeBootstrapperHandle.Resolved(
-        new UnstartedRadixNode(properties, network, genesisStore));
   }
 
   /** A utility class encapsulating the Olympia-based genesis functionality */
