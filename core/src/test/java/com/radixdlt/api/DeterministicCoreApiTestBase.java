@@ -121,6 +121,8 @@ public abstract class DeterministicCoreApiTestBase {
     ensureOpenApiModelsAreReady();
   }
 
+  protected DeterministicCoreApiTestBase() {}
+
   protected DeterministicTest buildRunningServerTest() {
     return buildRunningServerTest(1000000, new DatabaseFlags(true, false));
   }
@@ -247,10 +249,18 @@ public abstract class DeterministicCoreApiTestBase {
     return new LtsApi(apiClient);
   }
 
-  public CommittedResult submitAndWaitForSuccess(
+  public enum TransactionOutcome {
+    CommittedSuccess,
+    CommittedFailure,
+    PermanentRejection,
+  }
+
+  public <T> T submitAndWait(
       DeterministicTest test,
       Functions.Func1<Manifest.Parameters, String> manifest,
-      List<ECKeyPair> signatories)
+      List<ECKeyPair> signatories,
+      Functions.Func3<IntentHash, TransactionOutcome, LtsTransactionStatusResponse, T>
+          outcomeMapper)
       throws Exception {
     var metadata =
         getLtsApi()
@@ -286,17 +296,17 @@ public abstract class DeterministicCoreApiTestBase {
                       .intentHash(transaction.hexIntentHash()));
       switch (statusResponse.getIntentStatus()) {
         case COMMITTEDSUCCESS -> {
-          var stateVersion = statusResponse.getCommittedStateVersion();
-          if (stateVersion == null) {
-            throw new RuntimeException(
-                "Transaction got committed as success without state version on response");
-          }
-          return new LtsTransactionOutcomesTest.CommittedResult(
-              transaction.intentHash(), stateVersion);
+          return outcomeMapper.apply(
+              transaction.intentHash(), TransactionOutcome.CommittedSuccess, statusResponse);
         }
-        case COMMITTEDFAILURE -> throw new RuntimeException("Transaction got committed as failure");
-        case PERMANENTREJECTION -> throw new RuntimeException(
-            "Transaction got permanently rejected");
+        case COMMITTEDFAILURE -> {
+          return outcomeMapper.apply(
+              transaction.intentHash(), TransactionOutcome.CommittedFailure, statusResponse);
+        }
+        case PERMANENTREJECTION -> {
+          return outcomeMapper.apply(
+              transaction.intentHash(), TransactionOutcome.PermanentRejection, statusResponse);
+        }
         default -> test.runForCount(messagesProcessedPerAttempt);
       }
     }
@@ -306,7 +316,67 @@ public abstract class DeterministicCoreApiTestBase {
             attempts * messagesProcessedPerAttempt, statusResponse.getIntentStatus()));
   }
 
-  protected DeterministicCoreApiTestBase() {}
+  public CommittedResult submitAndWaitForSuccess(
+      DeterministicTest test,
+      Functions.Func1<Manifest.Parameters, String> manifest,
+      List<ECKeyPair> signatories)
+      throws Exception {
+    return this.submitAndWait(
+        test,
+        manifest,
+        signatories,
+        (intentHash, outcome, response) -> {
+          switch (outcome) {
+            case CommittedSuccess -> {
+              var stateVersion = response.getCommittedStateVersion();
+              if (stateVersion == null) {
+                throw new RuntimeException(
+                    "Transaction got committed as success without state version on response");
+              }
+              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+            }
+            case CommittedFailure -> throw new RuntimeException(
+                String.format(
+                    "Transaction got committed as failure: %s",
+                    response.getKnownPayloads().get(0).getErrorMessage()));
+            case PermanentRejection -> throw new RuntimeException(
+                String.format(
+                    "Transaction got permanently rejected: %s",
+                    response.getKnownPayloads().get(0).getErrorMessage()));
+          }
+          throw new IllegalStateException("Shouldn't be able to get here");
+        });
+  }
+
+  public CommittedResult submitAndWaitForCommittedFailure(
+      DeterministicTest test,
+      Functions.Func1<Manifest.Parameters, String> manifest,
+      List<ECKeyPair> signatories)
+      throws Exception {
+    return this.submitAndWait(
+        test,
+        manifest,
+        signatories,
+        (intentHash, outcome, response) -> {
+          switch (outcome) {
+            case CommittedSuccess -> throw new RuntimeException(
+                "Transaction got committed as success, but was expecting committed failure");
+            case CommittedFailure -> {
+              var stateVersion = response.getCommittedStateVersion();
+              if (stateVersion == null) {
+                throw new RuntimeException(
+                    "Transaction got committed as failure without state version on response");
+              }
+              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+            }
+            case PermanentRejection -> throw new RuntimeException(
+                String.format(
+                    "Transaction got permanently rejected: %s",
+                    response.getKnownPayloads().get(0).getErrorMessage()));
+          }
+          throw new IllegalStateException("Shouldn't be able to get here");
+        });
+  }
 
   public record CommittedResult(IntentHash intentHash, long stateVersion) {}
 }
