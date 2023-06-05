@@ -71,6 +71,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.Metrics;
@@ -306,7 +307,7 @@ public class NodeCapabilityTests {
   private RadixShell.Node startNode(int port, boolean ledgerSyncEnabled) throws Exception {
     final var genesisData =
         GenesisBuilder.createGenesisWithNumValidators(
-            1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
+            1, Decimal.of(1), GenesisConsensusManagerConfig.Builder.testDefaults());
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     final var genesisDataBase64 =
