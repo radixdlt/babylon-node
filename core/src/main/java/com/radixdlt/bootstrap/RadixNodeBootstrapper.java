@@ -64,7 +64,6 @@
 
 package com.radixdlt.bootstrap;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -72,8 +71,8 @@ import com.google.inject.Injector;
 import com.radixdlt.UnstartedRadixNode;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.genesis.FixedGenesisLoader;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
-import com.radixdlt.genesis.RawGenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
 import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
@@ -82,8 +81,8 @@ import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.utils.BooleanUtils;
+import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,8 +172,7 @@ public final class RadixNodeBootstrapper {
       // The genesis has been configured in properties but there's also
       // one associated with the current network.
       // We need to make sure they're the same to protect from unintended misconfiguration.
-      final var configuredGenesisHash =
-          hasher.hashBytes(configuredGenesis.orElseThrow().genesisDataBytes());
+      final var configuredGenesisHash = hasher.hash(configuredGenesis.orElseThrow());
 
       if (!configuredGenesisHash.equals(fixedNetworkGenesisHash.orElseThrow())) {
         return new RadixNodeBootstrapperHandle.Failed(
@@ -194,15 +192,14 @@ public final class RadixNodeBootstrapper {
       }
     } else if (configuredGenesis.isPresent()) {
       // We've got a genesis configured in properties, so let's use it
-      final var configuredGenesisHash =
-          hasher.hashBytes(configuredGenesis.orElseThrow().genesisDataBytes());
+      final var configuredGenesisHash = hasher.hash(configuredGenesis.orElseThrow());
       return persistGenesisDataAndBootstrap(
           new RawGenesisDataWithHash(configuredGenesis.orElseThrow(), configuredGenesisHash));
     } else if (fixedNetworkGenesisHash.isPresent()) {
       // There is a fixed genesis associated with the current network,
       // so at this point we need to load it in full and proceed
       final var fixedNetworkGenesis = network.fixedGenesis().orElseThrow();
-      final var rawGenesisData = resolveFixedNetworkGenesis(fixedNetworkGenesis);
+      final var rawGenesisData = FixedGenesisLoader.loadGenesisData(fixedNetworkGenesis);
 
       return persistGenesisDataAndBootstrap(
           new RawGenesisDataWithHash(rawGenesisData, fixedNetworkGenesisHash.orElseThrow()));
@@ -261,26 +258,6 @@ public final class RadixNodeBootstrapper {
         new UnstartedRadixNode(properties, network, genesisStore));
   }
 
-  private static RawGenesisData resolveFixedNetworkGenesis(
-      FixedNetworkGenesis fixedNetworkGenesis) {
-    return switch (fixedNetworkGenesis) {
-      case FixedNetworkGenesis.Constant constantGenesis -> StateManagerSbor.decode(
-          constantGenesis.genesisData(), StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-      case FixedNetworkGenesis.Resource resourceGenesis -> {
-        try (var is =
-            RadixNodeBootstrapper.class
-                .getClassLoader()
-                .getResourceAsStream(resourceGenesis.resourcePath())) {
-          final var genesisBytes = is.readAllBytes();
-          yield StateManagerSbor.decode(
-              genesisBytes, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-        } catch (IOException e) {
-          throw new RuntimeException("Failed to load network genesis from resources", e);
-        }
-      }
-    };
-  }
-
   /** A utility class encapsulating the Olympia-based genesis functionality */
   private class OlympiaGenesisBootstrapper {
     private final Injector injector;
@@ -327,7 +304,7 @@ public final class RadixNodeBootstrapper {
               final var genesisDataHash = hasher.hashBytes(encodedGenesisData);
               genesisStore.saveGenesisData(
                   new RawGenesisDataWithHash(
-                      new RawGenesisData(HashCode.fromBytes(encodedGenesisData)), genesisDataHash));
+                      new WrappedByteArray(encodedGenesisData), genesisDataHash));
               radixNodeFuture.complete(new UnstartedRadixNode(properties, network, genesisStore));
             }
           });

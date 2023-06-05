@@ -73,7 +73,6 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 public class NetworkTest {
-
   @Test
   public void test_hrp_suffices_align_with_network_id() {
     for (var network : Network.values()) {

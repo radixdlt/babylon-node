@@ -85,7 +85,7 @@ public interface Hasher {
    */
   HashCode hashBytes(byte[] bytes);
 
-  default HashCode hashBytes(HashCode bytes) {
-    return hashBytes(bytes.asBytes());
+  default HashCode hash(Hashable hashable) {
+    return hashBytes(hashable.hashableBytes());
   }
 }

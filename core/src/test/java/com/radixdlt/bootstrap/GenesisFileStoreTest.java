@@ -66,15 +66,14 @@ package com.radixdlt.bootstrap;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.RawGenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.TestSetupUtils;
+import com.radixdlt.utils.WrappedByteArray;
 import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -95,7 +94,7 @@ public final class GenesisFileStoreTest {
     final var genesisData = GenesisData.testingDefaultEmpty();
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    final var rawGenesisData = new RawGenesisData(HashCode.fromBytes(encodedGenesisData));
+    final var rawGenesisData = new WrappedByteArray(encodedGenesisData);
     final var genesisDataHash =
         new Blake2b256Hasher(DefaultSerialization.getInstance()).hashBytes(encodedGenesisData);
     genesisFileStore.saveGenesisData(new RawGenesisDataWithHash(rawGenesisData, genesisDataHash));

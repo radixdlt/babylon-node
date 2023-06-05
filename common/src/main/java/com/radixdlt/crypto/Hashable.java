@@ -62,42 +62,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.crypto;
 
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.sync.TransactionsAndProofReader;
-
-public record REv2LedgerInitializer(
-    Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
-
-  public void initialize(GenesisProvider genesisProvider) {
-    // If the database was already initialized, we verify that the
-    // previous genesis matches the current configuration
-    // to protect from node misconfiguration
-    // (i.e. configuring genesis A, but node really using prev genesis B).
-    reader
-        .getPostGenesisEpochProof()
-        .ifPresentOrElse(
-            firstEpochProof -> {
-              // Opaque value of the first epoch proof is the hash of GenesisData
-              final var existingGenesisHash = firstEpochProof.getOpaque();
-              final var currentGenesisHash = genesisProvider.genesisDataHash();
-              if (!currentGenesisHash.equals(existingGenesisHash)) {
-                throw new IllegalStateException(
-                    String.format(
-                        """
-                              Current genesis data (of hash %s) doesn't match the genesis data that has previously \
-                              been used to initialize the database (%s). \
-                              Make sure your configuration is correct (check `network.id` and/or \
-                               `network.genesis_data` and/or `network.genesis_file`).""",
-                        currentGenesisHash, existingGenesisHash));
-              }
-            },
-            () -> {
-              // It's a fresh database, so execute the genesis
-              rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
-            });
-  }
+public interface Hashable {
+  byte[] hashableBytes();
 }

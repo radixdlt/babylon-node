@@ -66,8 +66,8 @@ package com.radixdlt.bootstrap;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.genesis.RawGenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.Optional;
 
 public interface GenesisStore extends GenesisProvider {
@@ -75,10 +75,10 @@ public interface GenesisStore extends GenesisProvider {
 
   Optional<HashCode> readGenesisDataHash();
 
-  Optional<RawGenesisData> readGenesisData();
+  Optional<WrappedByteArray> readGenesisData();
 
   @Override
-  default RawGenesisData genesisData() {
+  default WrappedByteArray genesisData() {
     return readGenesisData().orElseThrow();
   }
 

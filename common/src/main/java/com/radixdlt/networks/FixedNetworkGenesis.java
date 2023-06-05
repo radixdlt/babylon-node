@@ -65,8 +65,7 @@
 package com.radixdlt.networks;
 
 import com.google.common.hash.HashCode;
-import java.util.Arrays;
-import java.util.Objects;
+import com.radixdlt.utils.WrappedByteArray;
 
 public sealed interface FixedNetworkGenesis {
 
@@ -74,30 +73,14 @@ public sealed interface FixedNetworkGenesis {
 
   record Resource(HashCode genesisDataHash, String resourcePath) implements FixedNetworkGenesis {}
 
-  record Constant(HashCode genesisDataHash, byte[] genesisData) implements FixedNetworkGenesis {
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof Constant otherConstant
-          && genesisDataHash.equals(otherConstant.genesisDataHash)
-          && Arrays.equals(genesisData, otherConstant.genesisData);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(genesisDataHash, Arrays.hashCode(genesisData));
-    }
-
-    @Override
-    public String toString() {
-      return String.format("FixedNetworkGenesis.Constant{hash=%s}", genesisDataHash);
-    }
-  }
+  record Constant(HashCode genesisDataHash, WrappedByteArray genesisData)
+      implements FixedNetworkGenesis {}
 
   static FixedNetworkGenesis resource(HashCode genesisDataHash, String resourcePath) {
     return new Resource(genesisDataHash, resourcePath);
   }
 
-  static FixedNetworkGenesis constant(HashCode genesisDataHash, byte[] genesisData) {
+  static FixedNetworkGenesis constant(HashCode genesisDataHash, WrappedByteArray genesisData) {
     return new Constant(genesisDataHash, genesisData);
   }
 }

@@ -80,10 +80,7 @@ import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.cli.ParseException;
@@ -107,7 +104,8 @@ public final class RadixNodeBootstrapperTest {
     final var network = Network.LOCALNET;
     final var genesisStore = new GenesisFileStore(new File(tmpFolder.getRoot(), "genesis.bin"));
 
-    final var genesisData1 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
+    final var genesisData1 =
+        encodeToCompressedBase64(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
     final var nodeHandle1 =
@@ -121,7 +119,8 @@ public final class RadixNodeBootstrapperTest {
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
     // Let's try again, same genesis store but a different genesis txn
-    final var genesisData2 = encodeToString(genesisWithSingleValidator(ECKeyPair.generateNew()));
+    final var genesisData2 =
+        encodeToCompressedBase64(genesisWithSingleValidator(ECKeyPair.generateNew()));
     final var properties2 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData2));
     final var nodeHandle2 =
@@ -142,7 +141,8 @@ public final class RadixNodeBootstrapperTest {
 
     // This transaction matches the genesis of GENESIS_TEST network
     final var genesisData1 =
-        encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
+        encodeToCompressedBase64(
+            genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
 
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
@@ -158,7 +158,8 @@ public final class RadixNodeBootstrapperTest {
 
     // This transaction doesn't match the genesis of GENESIS_TEST network
     final var genesisData2 =
-        encodeToString(genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {9, 9, 9})));
+        encodeToCompressedBase64(
+            genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {9, 9, 9})));
     final var properties2 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData2));
     final var nodeHandle2 =
@@ -251,7 +252,7 @@ public final class RadixNodeBootstrapperTest {
                         Address.virtualAccountAddress(key.getPublicKey()))))));
   }
 
-  private String encodeToString(GenesisData genesisData) throws IOException {
+  private String encodeToCompressedBase64(GenesisData genesisData) throws IOException {
     final var encoded =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     final var compressed = Compress.compress(encoded);

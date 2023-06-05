@@ -68,15 +68,15 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.utils.WrappedByteArray;
 
-public record RawGenesisDataWithHash(RawGenesisData genesisData, HashCode genesisDataHash)
+public record RawGenesisDataWithHash(WrappedByteArray genesisData, HashCode genesisDataHash)
     implements GenesisProvider {
 
   public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData, Hasher hasher) {
     final var genesisDataBytes =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     return new RawGenesisDataWithHash(
-        new RawGenesisData(HashCode.fromBytes(genesisDataBytes)),
-        hasher.hashBytes(genesisDataBytes));
+        new WrappedByteArray(genesisDataBytes), hasher.hashBytes(genesisDataBytes));
   }
 }

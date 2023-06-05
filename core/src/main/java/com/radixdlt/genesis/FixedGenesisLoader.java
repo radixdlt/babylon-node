@@ -64,6 +64,26 @@
 
 package com.radixdlt.genesis;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.networks.FixedNetworkGenesis;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.WrappedByteArray;
+import java.io.IOException;
 
-public record RawGenesisData(HashCode genesisDataBytes) {}
+public final class FixedGenesisLoader {
+  public static WrappedByteArray loadGenesisData(FixedNetworkGenesis fixedNetworkGenesis) {
+    return switch (fixedNetworkGenesis) {
+      case FixedNetworkGenesis.Constant constant -> constant.genesisData();
+      case FixedNetworkGenesis.Resource resource -> {
+        try (var is =
+            FixedGenesisLoader.class
+                .getClassLoader()
+                .getResourceAsStream(resource.resourcePath())) {
+          final var compressedGenesisBytes = is.readAllBytes();
+          yield new WrappedByteArray(Compress.uncompress(compressedGenesisBytes));
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to load fixed network genesis from resources", e);
+        }
+      }
+    };
+  }
+}

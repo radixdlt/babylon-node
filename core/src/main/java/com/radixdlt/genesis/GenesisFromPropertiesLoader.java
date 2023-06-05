@@ -66,8 +66,8 @@ package com.radixdlt.genesis;
 
 import static java.util.function.Predicate.not;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -84,7 +84,7 @@ import org.apache.logging.log4j.Logger;
 public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
   private static final Logger log = LogManager.getLogger();
 
-  public Optional<RawGenesisData> loadGenesisDataFromProperties() {
+  public Optional<WrappedByteArray> loadGenesisDataFromProperties() {
     final var genesisFileProp =
         Optional.ofNullable(properties.get("network.genesis_file")).filter(not(String::isBlank));
     final var genesisDataProp =
@@ -108,24 +108,24 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
     }
   }
 
-  private static RawGenesisData fromCompressedBase64(byte[] compressedGenesisBytesBase64)
+  private static WrappedByteArray fromCompressedBase64(byte[] compressedGenesisBytesBase64)
       throws IOException {
     final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
     return fromCompressedBytes(compressedGenesisBytes);
   }
 
-  private static RawGenesisData fromCompressedBase64String(String compressedGenesisBytesBase64)
+  private static WrappedByteArray fromCompressedBase64String(String compressedGenesisBytesBase64)
       throws IOException {
     final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
     return fromCompressedBytes(compressedGenesisBytes);
   }
 
-  private static RawGenesisData fromCompressedBytes(byte[] compressedBytes) throws IOException {
+  private static WrappedByteArray fromCompressedBytes(byte[] compressedBytes) throws IOException {
     final var uncompressedGenesisBytes = Compress.uncompress(compressedBytes);
-    return new RawGenesisData(HashCode.fromBytes(uncompressedGenesisBytes));
+    return new WrappedByteArray(uncompressedGenesisBytes);
   }
 
-  private static RawGenesisData readGenesisBytesFromFile(String genesisFile) {
+  private static WrappedByteArray readGenesisBytesFromFile(String genesisFile) {
     try {
       final var compressedGenesisBytesBase64 = Files.readAllBytes(Path.of(genesisFile));
       return fromCompressedBase64(compressedGenesisBytesBase64);

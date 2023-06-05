@@ -65,9 +65,10 @@
 package com.radixdlt.genesis;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.utils.WrappedByteArray;
 
 public interface GenesisProvider {
-  RawGenesisData genesisData();
+  WrappedByteArray genesisData();
 
   HashCode genesisDataHash();
 }

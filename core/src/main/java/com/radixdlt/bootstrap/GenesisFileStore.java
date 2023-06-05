@@ -65,8 +65,8 @@
 package com.radixdlt.bootstrap;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.genesis.RawGenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
+import com.radixdlt.utils.WrappedByteArray;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -98,8 +98,7 @@ public final class GenesisFileStore implements GenesisStore {
     }
     try (FileOutputStream outputStream = new FileOutputStream(this.file)) {
       outputStream.write(genesisDataWithHash.genesisDataHash().asBytes());
-      final var compressed =
-          Snappy.compress(genesisDataWithHash.genesisData().genesisDataBytes().asBytes());
+      final var compressed = Snappy.compress(genesisDataWithHash.genesisData().value());
       outputStream.write(compressed);
     } catch (IOException e) {
       throw new RuntimeException("Couldn't write to the genesis file", e);
@@ -124,7 +123,7 @@ public final class GenesisFileStore implements GenesisStore {
   }
 
   @Override
-  public Optional<RawGenesisData> readGenesisData() {
+  public Optional<WrappedByteArray> readGenesisData() {
     if (!file.exists()) {
       return Optional.empty();
     }
@@ -137,7 +136,7 @@ public final class GenesisFileStore implements GenesisStore {
       System.arraycopy(
           hashAndData, HASH_LENGTH, compressedData, 0, hashAndData.length - HASH_LENGTH);
       final var uncompressedData = Snappy.uncompress(compressedData);
-      return Optional.of(new RawGenesisData(HashCode.fromBytes(uncompressedData)));
+      return Optional.of(new WrappedByteArray(uncompressedData));
     } catch (IOException e) {
       throw new RuntimeException("Couldn't read the genesis file", e);
     }
