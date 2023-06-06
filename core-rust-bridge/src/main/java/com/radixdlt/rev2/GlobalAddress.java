@@ -62,38 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.rev2;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.MetadataValue;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public record GenesisValidator(
-    ECDSASecp256k1PublicKey key,
-    boolean acceptDelegatedStake,
-    boolean isRegistered,
-    ImmutableList<Tuple2<String, MetadataValue>> metadata,
-    ComponentAddress owner) {
+public record GlobalAddress(byte[] value) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        GenesisValidator.class,
-        codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
+        GlobalAddress.class,
+        codecs ->
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_REFERENCE,
+                BYTE_LENGTH,
+                GlobalAddress::value,
+                GlobalAddress::new));
   }
 
-  public static GenesisValidator testingDefaultFromPubKey(ECDSASecp256k1PublicKey key) {
-    return new GenesisValidator(
-        key,
-        true,
-        true,
-        ImmutableList.of(
-            tuple("url", new MetadataValue.Url("http://validator.local?key=" + key.toHex()))),
-        Address.virtualAccountAddress(key));
+  public static final int BYTE_LENGTH = 30;
+
+  public static GlobalAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid global address length");
+    }
+    return new GlobalAddress(addressBytes);
+  }
+
+  public String toHexString() {
+    return Hex.toHexString(value);
+  }
+
+  @Override
+  public String toString() {
+    return toHexString();
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof GlobalAddress other && Arrays.equals(this.value, other.value);
   }
 }

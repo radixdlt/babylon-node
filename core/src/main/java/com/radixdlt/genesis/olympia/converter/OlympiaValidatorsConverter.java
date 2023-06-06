@@ -74,6 +74,8 @@ import com.radixdlt.genesis.GenesisDataChunk;
 import com.radixdlt.genesis.GenesisValidator;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.identifiers.Address;
+import com.radixdlt.lang.Tuple.Tuple2;
+import com.radixdlt.rev2.MetadataValue;
 import java.util.Optional;
 
 public final class OlympiaValidatorsConverter {
@@ -97,9 +99,10 @@ public final class OlympiaValidatorsConverter {
       throw new OlympiaToBabylonGenesisConverterException(
           "Olympia validator public key is invalid", e);
     }
-    final var metadata =
+    final ImmutableList<Tuple2<String, MetadataValue>> metadata =
         ImmutableList.of(
-            tuple("name", olympiaValidator.name()), tuple("info_url", olympiaValidator.url()));
+            tuple("name", new MetadataValue.String(olympiaValidator.name())),
+            tuple("info_url", new MetadataValue.Url(olympiaValidator.url())));
 
     final var owner = accounts.get(olympiaValidator.ownerAccountIndex());
     return new GenesisValidator(

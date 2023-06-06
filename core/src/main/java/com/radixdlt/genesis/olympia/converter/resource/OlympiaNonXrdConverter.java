@@ -80,6 +80,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.MetadataValue;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.UInt32;
@@ -293,17 +294,17 @@ public final class OlympiaNonXrdConverter {
       List<OlympiaStateIR.Account> accounts,
       Decimal initialSupply,
       OlympiaStateIR.Resource resource) {
-    final var metadataBuilder = ImmutableList.<Tuple2<String, String>>builder();
+    final var metadataBuilder = ImmutableList.<Tuple2<String, MetadataValue>>builder();
     metadataBuilder.addAll(
         List.of(
-            tuple("symbol", resource.symbol()),
-            tuple("name", resource.name()),
-            tuple("description", resource.description())));
+            tuple("symbol", new MetadataValue.String(resource.symbol())),
+            tuple("name", new MetadataValue.String(resource.name())),
+            tuple("description", new MetadataValue.String(resource.description()))));
     if (!resource.url().isBlank()) {
-      metadataBuilder.add(tuple("info_url", resource.url()));
+      metadataBuilder.add(tuple("info_url", new MetadataValue.Url(resource.url())));
     }
     if (!resource.iconUrl().isBlank()) {
-      metadataBuilder.add(tuple("icon_url", resource.iconUrl()));
+      metadataBuilder.add(tuple("icon_url", new MetadataValue.Url(resource.iconUrl())));
     }
 
     final var owner =

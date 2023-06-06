@@ -168,7 +168,7 @@ public final class GenesisBuilder {
           ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, Decimal>> validatorsAndStake) {
     final var validators =
         validatorsAndStake.stream()
-            .map(tuple -> GenesisValidator.defaultFromPubKey(tuple.first()))
+            .map(tuple -> GenesisValidator.testingDefaultFromPubKey(tuple.first()))
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 
@@ -199,7 +199,7 @@ public final class GenesisBuilder {
           ComponentAddress staker) {
     final var validators =
         validatorsAndStake.stream()
-            .map(tuple -> GenesisValidator.defaultFromPubKey(tuple.first()))
+            .map(tuple -> GenesisValidator.testingDefaultFromPubKey(tuple.first()))
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 

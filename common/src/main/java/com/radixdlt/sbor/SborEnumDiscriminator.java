@@ -62,38 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.sbor;
 
-import static com.radixdlt.lang.Tuple.tuple;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.MetadataValue;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import java.lang.annotation.Retention;
 
-public record GenesisValidator(
-    ECDSASecp256k1PublicKey key,
-    boolean acceptDelegatedStake,
-    boolean isRegistered,
-    ImmutableList<Tuple2<String, MetadataValue>> metadata,
-    ComponentAddress owner) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GenesisValidator.class,
-        codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
-  }
-
-  public static GenesisValidator testingDefaultFromPubKey(ECDSASecp256k1PublicKey key) {
-    return new GenesisValidator(
-        key,
-        true,
-        true,
-        ImmutableList.of(
-            tuple("url", new MetadataValue.Url("http://validator.local?key=" + key.toHex()))),
-        Address.virtualAccountAddress(key));
-  }
+@Retention(RUNTIME)
+public @interface SborEnumDiscriminator {
+  byte value();
 }

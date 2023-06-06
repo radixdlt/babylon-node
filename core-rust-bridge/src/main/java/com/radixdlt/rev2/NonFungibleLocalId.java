@@ -62,38 +62,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis;
+package com.radixdlt.rev2;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.MetadataValue;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
+import com.radixdlt.utils.UInt128;
+import com.radixdlt.utils.UInt64;
+import java.nio.charset.StandardCharsets;
 
-public record GenesisValidator(
-    ECDSASecp256k1PublicKey key,
-    boolean acceptDelegatedStake,
-    boolean isRegistered,
-    ImmutableList<Tuple2<String, MetadataValue>> metadata,
-    ComponentAddress owner) {
-  public static void registerCodec(CodecMap codecMap) {
+public sealed interface NonFungibleLocalId {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        GenesisValidator.class,
-        codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
+        NonFungibleLocalId.class,
+        codecs ->
+            new Codec<NonFungibleLocalId>() {
+              @Override
+              public void encodeWithoutTypeId(EncoderApi encoder, NonFungibleLocalId value) {
+                switch (value) {
+                  case String str -> {
+                    encoder.writeByte((byte) 0);
+                    encoder.writeSize(str.value.length());
+                    encoder.writeBytes(str.value.getBytes(StandardCharsets.UTF_8));
+                  }
+                  case Integer i -> {
+                    encoder.writeByte((byte) 1);
+                    codecs.of(UInt64.class).encodeWithoutTypeId(encoder, i.value);
+                  }
+                  case Bytes b -> {
+                    encoder.writeByte((byte) 2);
+                    encoder.writeSize(b.value.length);
+                    encoder.writeBytes(b.value);
+                  }
+                  case UUID uuid -> {
+                    encoder.writeByte((byte) 3);
+                    codecs.of(UInt128.class).encodeWithoutTypeId(encoder, uuid.value);
+                  }
+                }
+              }
+
+              @Override
+              public NonFungibleLocalId decodeWithoutTypeId(DecoderApi decoder) {
+                switch (decoder.readByte()) {
+                  case 0x00 -> {
+                    final var size = decoder.readSize();
+                    return new String(new java.lang.String(decoder.readBytes(size)));
+                  }
+                  case 0x01 -> {
+                    return new Integer(codecs.of(UInt64.class).decodeWithoutTypeId(decoder));
+                  }
+                  case 0x02 -> {
+                    final var size = decoder.readSize();
+                    return new Bytes(decoder.readBytes(size));
+                  }
+                  case 0x03 -> {
+                    return new UUID(codecs.of(UInt128.class).decodeWithoutTypeId(decoder));
+                  }
+                }
+                throw new SborDecodeException("Invalid NonFungibleLocalId discriminator byte.");
+              }
+
+              @Override
+              public TypeId getTypeId() {
+                return TypeId.TYPE_CUSTOM_NON_FUNGIBLE_LOCAL_ID;
+              }
+            });
   }
 
-  public static GenesisValidator testingDefaultFromPubKey(ECDSASecp256k1PublicKey key) {
-    return new GenesisValidator(
-        key,
-        true,
-        true,
-        ImmutableList.of(
-            tuple("url", new MetadataValue.Url("http://validator.local?key=" + key.toHex()))),
-        Address.virtualAccountAddress(key));
-  }
+  record String(java.lang.String value) implements NonFungibleLocalId {}
+
+  record Integer(UInt64 value) implements NonFungibleLocalId {}
+
+  record Bytes(byte[] value) implements NonFungibleLocalId {}
+
+  record UUID(UInt128 value) implements NonFungibleLocalId {}
 }
