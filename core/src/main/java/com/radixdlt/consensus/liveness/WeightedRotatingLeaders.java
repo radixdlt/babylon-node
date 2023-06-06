@@ -91,16 +91,11 @@ import java.util.Map.Entry;
  * <p>This class is stateful and is NOT thread-safe.
  */
 public final class WeightedRotatingLeaders implements ProposerElection {
-  private static final int DEFAULT_CACHE_SIZE = 10;
   private static final UInt384 POW_2_256 = UInt384.from(UInt256.MAX_VALUE).increment();
 
   private final BFTValidatorSet validatorSet;
   private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
   private final CachingNextLeaderComputer nextLeaderComputer;
-
-  public WeightedRotatingLeaders(BFTValidatorSet validatorSet) {
-    this(validatorSet, DEFAULT_CACHE_SIZE);
-  }
 
   public WeightedRotatingLeaders(BFTValidatorSet validatorSet, int cacheSize) {
     this.validatorSet = validatorSet;

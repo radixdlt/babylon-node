@@ -77,10 +77,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
@@ -144,7 +141,7 @@ public class ConsensusModuleTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
     this.requestSender = rmock(RemoteEventDispatcher.class);
