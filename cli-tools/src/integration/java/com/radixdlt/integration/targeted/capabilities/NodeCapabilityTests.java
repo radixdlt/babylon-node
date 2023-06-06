@@ -79,7 +79,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.shell.RadixShell;
 import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.UInt64;
 import io.prometheus.client.Counter;
 import java.time.Duration;
 import java.util.*;
