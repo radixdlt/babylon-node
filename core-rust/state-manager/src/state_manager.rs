@@ -155,13 +155,6 @@ pub enum StateManagerRejectReason {
     TransactionValidationError(TransactionValidationError),
 }
 
-#[derive(Debug, Clone)]
-enum IntentHashDuplicateWith {
-    Proposed,
-    Prepared,
-    Committed,
-}
-
 #[derive(Debug)]
 pub struct GenesisHeaderData {
     epoch: Epoch,
@@ -300,8 +293,8 @@ where
             DuplicateIntentHashDetector::new(read_store.deref());
 
         for raw_ancestor in prepare_request.prepared_uncommitted_transactions {
-            // TODO(optimization-only): We could avoid the validations here (mostly: creation of
-            // the executable) by accessing the execution cache in a more clever way.
+            // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
+            // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
@@ -1090,6 +1083,13 @@ struct PendingTransactionResult {
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<RejectionReason>,
+}
+
+#[derive(Debug, Clone)]
+enum IntentHashDuplicateWith {
+    Proposed,
+    Prepared,
+    Committed,
 }
 
 /// An internal implementation delegate dealing with intent hash duplicates.
