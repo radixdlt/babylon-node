@@ -15,11 +15,11 @@ export * from "./generated";
 interface CoreApiClientSettings {
   basePath: string;
   logicalNetworkName?: string;
-  /** On the browser, `window.fetch`, on NodeJS, this will need to be provided by a library such as `node-fetch` */
-  fetch: any;
-  /** For use with node-fetch */
+  /** On Node.JS < 18, this will need to be provided by a library such as `node-fetch` */
+  fetch?: any;
+  /** DEPRECATED: Use `advanced.agent`. For use with node-fetch */
   httpAgent?: any;
-  /** For use with node-fetch */
+  /** DEPRECATED: Use `advanced.agent`. For use with node-fetch */
   httpsAgent?: any;
   advanced?: ConfigurationParameters;
 }
@@ -53,13 +53,7 @@ export class CoreApiClient {
   private static constructConfiguration(
     settings: CoreApiClientSettings
   ): Configuration {
-    const parameters: ConfigurationParameters = {
-      ...(settings.advanced || {}),
-      basePath: settings.basePath,
-      fetchApi: settings.fetch,
-    };
-    // This is basically to allow easily fixing an issue in node-fetch discussed in this
-    // bug report: https://github.com/node-fetch/node-fetch/issues/1735
+    // Left for backward compatibility
     if (settings.httpAgent || settings.httpsAgent) {
       const agentSelector = (parsedUrl: any) => {
         if (parsedUrl.protocol === "https:") {
@@ -67,17 +61,17 @@ export class CoreApiClient {
         }
         return settings.httpAgent;
       };
-      parameters.middleware = parameters.middleware || [];
-      parameters.middleware.unshift({
-        pre: (fetchParams: RequestContext): any => ({
-          ...fetchParams,
-          init: {
-            ...fetchParams.init,
-            agent: agentSelector,
-          },
-        }),
-      });
+      settings.advanced = {
+        ...(settings.advanced || {}),
+        agent: agentSelector,
+      };
     }
+
+    const parameters: ConfigurationParameters = {
+      ...(settings.advanced || {}),
+      basePath: settings.basePath,
+      fetchApi: settings.fetch,
+    };
     return new Configuration(parameters);
   }
 
