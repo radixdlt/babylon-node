@@ -127,14 +127,14 @@ public class ConsensusModuleTest {
 
   @Before
   public void setup() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
         Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0))
+                LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex, LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0));
+            genesisVertex,
+            LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =

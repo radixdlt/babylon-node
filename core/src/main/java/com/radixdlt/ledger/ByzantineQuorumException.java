@@ -64,6 +64,8 @@
 
 package com.radixdlt.ledger;
 
+import com.radixdlt.statecomputer.commit.CommitError;
+
 /**
  * Exception which suggests that there exists a byzantine quorum which got us to this exception
  * state.
@@ -72,11 +74,7 @@ package com.radixdlt.ledger;
  * known good state.
  */
 public class ByzantineQuorumException extends RuntimeException {
-  public ByzantineQuorumException(String message) {
-    super(message);
-  }
-
-  public ByzantineQuorumException(String message, Exception cause) {
-    super(message, cause);
+  public ByzantineQuorumException(CommitError commitError) {
+    super(commitError.toString());
   }
 }

@@ -26,8 +26,10 @@ pub fn to_api_lts_committed_transaction_outcome(
         + receipt.local_execution.fee_summary.total_execution_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
-        state_version: to_api_state_version(identifiers.at_commit.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&identifiers.at_commit.accumulator_hash),
+        state_version: to_api_state_version(identifiers.resultant_accumulator_state.state_version)?,
+        accumulator_hash: to_api_accumulator_hash(
+            &identifiers.resultant_accumulator_state.accumulator_hash,
+        ),
         user_transaction_identifiers: identifiers.payload.typed.user().map(|hashes| {
             Box::new(models::TransactionIdentifiers {
                 intent_hash: to_api_intent_hash(hashes.intent_hash),

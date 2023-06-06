@@ -64,17 +64,18 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.AccumulatorState;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import java.util.Comparator;
 import java.util.Set;
 
 public final class LedgerInitializer {
 
-  public record GenesisResult(HashCode accumulatorHash, Set<ActiveValidatorInfo> validatorSet) {
+  public record GenesisResult(
+      AccumulatorState accumulatorState, Set<ActiveValidatorInfo> validatorSet) {
 
     public BFTValidatorId getActiveValidator(int validatorIndex) {
       var validator =
@@ -95,7 +96,6 @@ public final class LedgerInitializer {
 
   public GenesisResult prepareAndCommit(GenesisData genesis) {
     var header = this.stateComputer.executeGenesis(genesis).ledgerHeader();
-    return new GenesisResult(
-        header.accumulatorState().accumulatorHash(), header.nextEpoch().unwrap().validators());
+    return new GenesisResult(header.accumulatorState(), header.nextEpoch().unwrap().validators());
   }
 }

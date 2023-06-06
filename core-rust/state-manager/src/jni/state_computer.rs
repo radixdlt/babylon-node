@@ -64,8 +64,8 @@
 
 use crate::transaction::RawLedgerTransaction;
 use crate::{
-    AccumulatorHash, AccumulatorState, CommittableTransaction, LedgerHashes, LedgerHeader,
-    LedgerProof, PreviousVertex, RejectedTransaction, TimestampedValidatorSignature,
+    AccumulatorState, CommittableTransaction, LedgerHashes, LedgerHeader, LedgerProof,
+    RejectedTransaction, TimestampedValidatorSignature,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -291,9 +291,10 @@ impl From<JavaCommitRequest> for CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
-    pub parent_accumulator_hash: AccumulatorHash,
-    pub previous_vertices: Vec<PreviousVertex>,
-    pub proposed: Vec<RawNotarizedTransaction>,
+    pub committed_accumulator_state: AccumulatorState,
+    pub prepared_uncommitted_transactions: Vec<RawLedgerTransaction>,
+    pub prepared_uncommitted_accumulator_state: AccumulatorState,
+    pub proposed_transactions: Vec<RawNotarizedTransaction>,
     pub is_fallback: bool,
     pub epoch: Epoch,
     pub round: Round,
@@ -305,9 +306,11 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
-            parent_accumulator: prepare_request.parent_accumulator_hash,
-            prepared_vertices: prepare_request.previous_vertices,
-            proposed_payloads: prepare_request.proposed,
+            committed_accumulator_state: prepare_request.committed_accumulator_state,
+            prepared_uncommitted_transactions: prepare_request.prepared_uncommitted_transactions,
+            prepared_uncommitted_accumulator_state: prepare_request
+                .prepared_uncommitted_accumulator_state,
+            proposed_transactions: prepare_request.proposed_transactions,
             is_fallback: prepare_request.is_fallback,
             epoch: prepare_request.epoch,
             round: prepare_request.round,
@@ -324,15 +327,17 @@ pub struct JavaPrepareResult {
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
+    pub accumulator_state: AccumulatorState,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
-    fn from(prepare_results: PrepareResult) -> Self {
+    fn from(prepare_result: PrepareResult) -> Self {
         JavaPrepareResult {
-            committed: prepare_results.committed,
-            rejected: prepare_results.rejected,
-            next_epoch: prepare_results.next_epoch,
-            ledger_hashes: prepare_results.ledger_hashes,
+            committed: prepare_result.committed,
+            rejected: prepare_result.rejected,
+            next_epoch: prepare_result.next_epoch,
+            ledger_hashes: prepare_result.ledger_hashes,
+            accumulator_state: prepare_result.accumulator_state,
         }
     }
 }

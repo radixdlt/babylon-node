@@ -68,7 +68,7 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::transaction::LegacyLedgerPayloadHash;
 use crate::{
-    AccumulatorHash, ChangeAction, CommitBasedIdentifiers, DetailedTransactionOutcome,
+    AccumulatorHash, AccumulatorState, ChangeAction, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
     StateHash, SubstateChange, TransactionTreeHash,
 };
@@ -101,7 +101,7 @@ pub struct ProcessedCommitResult {
 pub struct HashUpdateContext<'s, S> {
     pub store: &'s S,
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
-    pub parent_transaction_identifiers: &'s CommitBasedIdentifiers,
+    pub parent_accumulator_state: &'s AccumulatorState,
     pub legacy_payload_hash: &'s LegacyLedgerPayloadHash,
 }
 
@@ -168,7 +168,7 @@ impl ProcessedCommitResult {
         execution_trace: TransactionExecutionTrace,
     ) -> Self {
         let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
-        let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
+        let parent_transaction_identifiers = hash_update_context.parent_accumulator_state;
         let transaction_hash = hash_update_context.legacy_payload_hash;
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash

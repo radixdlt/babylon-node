@@ -160,6 +160,10 @@ public final class LedgerProof {
     }
   }
 
+  public static LedgerProof fromDto(DtoLedgerProof dto) {
+    return new LedgerProof(dto.getOpaque(), dto.getLedgerHeader(), dto.getSignatures());
+  }
+
   public DtoLedgerProof toDto() {
     return new DtoLedgerProof(opaque, ledgerHeader, signatures);
   }

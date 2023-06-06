@@ -252,7 +252,7 @@ impl RocksDBStore {
             receipt,
             identifiers,
         } = transaction_bundle;
-        let state_version = identifiers.at_commit.state_version;
+        let state_version = identifiers.resultant_accumulator_state.state_version;
         let ledger_payload_hash = identifiers.payload.ledger_payload_hash;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
@@ -1022,7 +1022,10 @@ impl RocksDBStore {
         batch: &mut WriteBatch,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
-        let state_version = transaction_bundle.identifiers.at_commit.state_version;
+        let state_version = transaction_bundle
+            .identifiers
+            .resultant_accumulator_state
+            .state_version;
 
         self.batch_update_account_change_index_from_receipt(
             batch,

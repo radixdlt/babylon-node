@@ -72,7 +72,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -212,7 +211,6 @@ public class EpochsSyncModule extends AbstractModule {
       PeersView peersView,
       Comparator<AccumulatorState> accComparator,
       RemoteSyncResponseSignaturesVerifier signaturesVerifier,
-      LedgerAccumulatorVerifier accumulatorVerifier,
       VerifiedSyncResponseHandler verifiedSyncResponseHandler,
       InvalidSyncResponseHandler invalidSyncResponseHandler) {
     return (remoteSyncResponseValidatorSetVerifier, syncState) ->
@@ -228,7 +226,6 @@ public class EpochsSyncModule extends AbstractModule {
             accComparator,
             remoteSyncResponseValidatorSetVerifier,
             signaturesVerifier,
-            accumulatorVerifier,
             verifiedSyncResponseHandler,
             invalidSyncResponseHandler,
             syncState);

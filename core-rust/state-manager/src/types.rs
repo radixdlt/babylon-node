@@ -192,9 +192,10 @@ pub struct CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub parent_accumulator: AccumulatorHash,
-    pub prepared_vertices: Vec<PreviousVertex>,
-    pub proposed_payloads: Vec<RawNotarizedTransaction>,
+    pub committed_accumulator_state: AccumulatorState,
+    pub prepared_uncommitted_transactions: Vec<RawLedgerTransaction>,
+    pub prepared_uncommitted_accumulator_state: AccumulatorState,
+    pub proposed_transactions: Vec<RawNotarizedTransaction>,
     pub is_fallback: bool,
     pub epoch: Epoch,
     pub round: Round,
@@ -204,17 +205,12 @@ pub struct PrepareRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PreviousVertex {
-    pub transaction_payloads: Vec<RawLedgerTransaction>,
-    pub resultant_accumulator: AccumulatorHash,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<CommittableTransaction>,
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
+    pub accumulator_state: AccumulatorState,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -277,10 +273,19 @@ pub struct LedgerHeader {
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct AccumulatorState {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
+}
+
+impl AccumulatorState {
+    pub fn pre_genesis() -> Self {
+        Self {
+            state_version: 0,
+            accumulator_hash: AccumulatorHash::pre_genesis(),
+        }
+    }
 }
 
 pub struct EpochTransactionIdentifiers {

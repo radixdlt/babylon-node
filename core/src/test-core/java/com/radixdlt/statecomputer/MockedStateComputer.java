@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -74,13 +73,10 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockExecuted;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
@@ -110,14 +106,18 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      HashCode parentAccumulator,
-      List<ExecutedVertex> previousVertices,
+      AccumulatorState committedAccumulatorState,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      AccumulatorState preparedUncommittedAccumulatorState,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
         proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
         0,
-        LedgerHashes.zero());
+        LedgerHashes.zero(),
+        new AccumulatorState(
+            preparedUncommittedAccumulatorState.getStateVersion() + proposedTransactions.size(),
+            HashUtils.zero256()));
   }
 
   @Override

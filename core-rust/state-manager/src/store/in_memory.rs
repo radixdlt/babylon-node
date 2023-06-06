@@ -138,7 +138,7 @@ impl InMemoryStore {
     ) {
         if self.is_account_change_index_enabled() {
             self.update_account_change_index_from_receipt(
-                identifiers.at_commit.state_version,
+                identifiers.resultant_accumulator_state.state_version,
                 &receipt.local_execution,
             );
         }
@@ -155,28 +155,38 @@ impl InMemoryStore {
                     "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
                 );
             }
-            self.transaction_intent_lookup
-                .insert(*intent_hash, identifiers.at_commit.state_version);
+            self.transaction_intent_lookup.insert(
+                *intent_hash,
+                identifiers.resultant_accumulator_state.state_version,
+            );
 
             self.user_payload_hash_lookup.insert(
                 *notarized_transaction_hash,
-                identifiers.at_commit.state_version,
+                identifiers.resultant_accumulator_state.state_version,
             );
         }
 
         self.ledger_payload_hash_lookup.insert(
             identifiers.payload.ledger_payload_hash,
-            identifiers.at_commit.state_version,
+            identifiers.resultant_accumulator_state.state_version,
         );
 
-        self.transactions
-            .insert(identifiers.at_commit.state_version, transaction);
-        self.ledger_receipts
-            .insert(identifiers.at_commit.state_version, receipt.on_ledger);
-        self.local_transaction_executions
-            .insert(identifiers.at_commit.state_version, receipt.local_execution);
-        self.transaction_identifiers
-            .insert(identifiers.at_commit.state_version, identifiers);
+        self.transactions.insert(
+            identifiers.resultant_accumulator_state.state_version,
+            transaction,
+        );
+        self.ledger_receipts.insert(
+            identifiers.resultant_accumulator_state.state_version,
+            receipt.on_ledger,
+        );
+        self.local_transaction_executions.insert(
+            identifiers.resultant_accumulator_state.state_version,
+            receipt.local_execution,
+        );
+        self.transaction_identifiers.insert(
+            identifiers.resultant_accumulator_state.state_version,
+            identifiers,
+        );
     }
 }
 
