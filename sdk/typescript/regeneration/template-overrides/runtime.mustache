@@ -7,20 +7,19 @@ import { ErrorResponse } from './models'
 
 export const BASE_PATH = "{{{basePath}}}".replace(/\/+$/, "");
 
-{{! RADIX CHANGES: Slight comment improvements }}
+{{! RADIX CHANGES: Remove unused fields, add agent and dispatcher and slight comment improvements }}
 export interface ConfigurationParameters {
     basePath?: string; // Override base path
     fetchApi?: FetchAPI; // Override for fetch implementation
+    agent?: any; // Override for HTTP/s agent (for eg node-fetch)
+    dispatcher?: any; // Override for undici dispatcher (for eg native Node.JS fetch)
     middleware?: Middleware[]; // Middleware to apply before/after fetch requests
     queryParamsStringify?: (params: HTTPQuery) => string; // stringify function for query strings
-    username?: string; // Parameter for basic security
-    password?: string; // Parameter for basic security
-    apiKey?: string | ((name: string) => string); // Parameter for apiKey security
-    accessToken?: string | Promise<string> | ((name?: string, scopes?: string[]) => string | Promise<string>); // Parameter for oauth2 security
     headers?: HTTPHeaders; // Header params we want to use on every request
     credentials?: RequestCredentials; // Value for the credentials param we want to use on each request
 }
 
+{{! RADIX CHANGES: Remove unused fields and add agent }}
 export class Configuration {
     constructor(private configuration: ConfigurationParameters = {}) {}
 
@@ -36,36 +35,21 @@ export class Configuration {
         return this.configuration.fetchApi;
     }
 
+    get agent(): any {
+        return this.configuration.agent;
+    }
+
+    {{! RADIX CHANGES: Add dispatcher }}
+    get dispatcher(): any {
+        return this.configuration.dispatcher;
+    }
+
     get middleware(): Middleware[] {
         return this.configuration.middleware || [];
     }
 
     get queryParamsStringify(): (params: HTTPQuery) => string {
         return this.configuration.queryParamsStringify || querystring;
-    }
-
-    get username(): string | undefined {
-        return this.configuration.username;
-    }
-
-    get password(): string | undefined {
-        return this.configuration.password;
-    }
-
-    get apiKey(): ((name: string) => string) | undefined {
-        const apiKey = this.configuration.apiKey;
-        if (apiKey) {
-            return typeof apiKey === 'function' ? apiKey : () => apiKey;
-        }
-        return undefined;
-    }
-
-    get accessToken(): ((name?: string, scopes?: string[]) => string | Promise<string>) | undefined {
-        const accessToken = this.configuration.accessToken;
-        if (accessToken) {
-            return typeof accessToken === 'function' ? accessToken : async () => accessToken;
-        }
-        return undefined;
     }
 
     get headers(): HTTPHeaders | undefined {
@@ -133,7 +117,10 @@ export class BaseAPI {
                 ? initOverrides
                 : async () => initOverrides;
 
+        {{! RADIX CHANGES: Pass agent and dispatcher }}
         const initParams = {
+            agent: this.configuration.agent,
+            dispatcher: this.configuration.dispatcher,
             method: context.method,
             headers,
             body: context.body,

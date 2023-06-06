@@ -70,10 +70,12 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.utils.PrivateKeys;
@@ -85,21 +87,17 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   private final LedgerHashes preGenesisLedgerHashes;
   private final Round epochMaxRound;
   private final EpochNodeWeightMapping epochNodeWeightMapping;
+  private final StateComputerConfig.ProposerElectionMode proposerElectionMode;
 
   public MockedEpochsConsensusRecoveryModule(
       Round epochMaxRound,
       EpochNodeWeightMapping epochNodeWeightMapping,
-      LedgerHashes preGenesisLedgerHashes) {
+      LedgerHashes preGenesisLedgerHashes,
+      StateComputerConfig.ProposerElectionMode proposerElectionMode) {
     this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
     this.preGenesisLedgerHashes = preGenesisLedgerHashes;
-  }
-
-  public MockedEpochsConsensusRecoveryModule(
-      Round epochMaxRound, EpochNodeWeightMapping epochNodeWeightMapping) {
-    this.epochMaxRound = epochMaxRound;
-    this.epochNodeWeightMapping = epochNodeWeightMapping;
-    this.preGenesisLedgerHashes = LedgerHashes.zero();
+    this.proposerElectionMode = proposerElectionMode;
   }
 
   @Override
@@ -153,7 +151,11 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
             proof.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    final var proposerElection =
+        switch (this.proposerElectionMode) {
+          case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
+          case WITH_INITIAL_ROUNDS_ITERATION -> ProposerElections.defaultRotation(validatorSet);
+        };
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

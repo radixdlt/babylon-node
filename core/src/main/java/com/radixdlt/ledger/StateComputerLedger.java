@@ -67,7 +67,6 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
-import com.google.common.primitives.Ints;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -334,16 +333,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return;
       }
 
-      final var transactions = committedTransactionsWithProof.getTransactions();
-      final var startIndex =
-          transactions.size()
-              - nextHeader.getStateVersion()
-              + againstLedgerHeader.getStateVersion();
-      final var extension = transactions.subList(Ints.checkedCast(startIndex), transactions.size());
-
-      var extensionToCommit =
-          CommittedTransactionsWithProof.create(
-              extension, committedTransactionsWithProof.getProof());
+      final var extensionToCommit =
+          committedTransactionsWithProof.getExtensionFrom(againstLedgerHeader.getStateVersion());
 
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStore);
@@ -352,7 +343,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // synchronization theoretically needed here).
       this.currentLedgerHeader = nextHeader;
 
-      extensionTransactionCount = extension.size();
+      extensionTransactionCount = extensionToCommit.getTransactions().size();
     }
 
     this.metrics.ledger().stateVersion().set(nextHeader.getStateVersion());
