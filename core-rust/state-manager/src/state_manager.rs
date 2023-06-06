@@ -986,6 +986,7 @@ where
             result_receipts.push(local_receipt.clone());
 
             committed_transaction_bundles.push(CommittedTransactionBundle {
+                state_version: state_tracker.latest_state_version(),
                 raw,
                 receipt: local_receipt,
                 identifiers: CommittedTransactionIdentifiers {

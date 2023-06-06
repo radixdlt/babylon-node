@@ -274,15 +274,15 @@ impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
         let commit_ledger_header = &commit_bundle.proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
-        let base_state_version = commit_state_version - commit_bundle.transactions.len() as u64 + 1;
 
-        for (index, bundle) in commit_bundle.transactions.into_iter().enumerate() {
+        for bundle in commit_bundle.transactions.into_iter() {
             let CommittedTransactionBundle {
+                state_version,
                 raw,
                 receipt,
                 identifiers,
             } = bundle;
-            self.insert_transaction(base_state_version + index as u64, raw, receipt, identifiers);
+            self.insert_transaction(state_version, raw, receipt, identifiers);
         }
 
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
@@ -337,6 +337,7 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
         match self.store.transactions.get(&state_version) {
             None => None,
             Some(transaction) => Some(CommittedTransactionBundle {
+                state_version,
                 raw: transaction.clone(),
                 receipt: LocalTransactionReceipt {
                     on_ledger: self

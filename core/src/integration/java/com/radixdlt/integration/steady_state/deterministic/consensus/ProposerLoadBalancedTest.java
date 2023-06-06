@@ -72,7 +72,6 @@ import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -112,7 +111,6 @@ public class ProposerLoadBalancedTest {
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10000000),
                             mapping,
-                            HashUtils.zero256(),
                             LedgerHashes.zero(),
                             MockedMempoolConfig.noMempool(),
                             StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
