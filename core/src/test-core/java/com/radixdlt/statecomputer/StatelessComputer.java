@@ -70,7 +70,7 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -170,7 +170,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = new WeightedRotatingLeaders(validatorSet, 10);
+                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);

@@ -394,7 +394,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         withEpochs.epochMaxRound(),
                         withEpochs.mapping(),
                         withEpochs.preGenesisAccumulatorHash(),
-                        withEpochs.preGenesisLedgerHashes()));
+                        withEpochs.preGenesisLedgerHashes(),
+                        withEpochs.proposerElectionMode()));
               }
             }
           }

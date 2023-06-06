@@ -85,7 +85,7 @@ import java.util.stream.Stream;
 public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfigWithEpochs(
+    return mockedWithEpochs(
         epochMaxRound, mapping, HashUtils.zero256(), LedgerHashes.zero(), mempoolType);
   }
 
@@ -95,8 +95,29 @@ public sealed interface StateComputerConfig {
       HashCode preGenesisAccumulatorHash,
       LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType) {
+    return mockedWithEpochs(
+        epochMaxRound,
+        mapping,
+        preGenesisAccumulatorHash,
+        preGenesisLedgerHashes,
+        mempoolType,
+        ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION);
+  }
+
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
+      HashCode preGenesisAccumulatorHash,
+      LedgerHashes preGenesisLedgerHashes,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, preGenesisAccumulatorHash, preGenesisLedgerHashes, mempoolType);
+        epochMaxRound,
+        mapping,
+        preGenesisAccumulatorHash,
+        preGenesisLedgerHashes,
+        mempoolType,
+        proposerElectionMode);
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
@@ -154,12 +175,22 @@ public sealed interface StateComputerConfig {
       EpochNodeWeightMapping mapping,
       HashCode preGenesisAccumulatorHash,
       LedgerHashes preGenesisLedgerHashes,
-      MockedMempoolConfig mempoolType)
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode)
       implements MockedStateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {
       return mempoolType;
     }
+  }
+
+  /** A choice of {@link com.radixdlt.consensus.liveness.ProposerElection} implementation. */
+  enum ProposerElectionMode {
+    /** Use the {@link com.radixdlt.consensus.liveness.WeightedRotatingLeaders} only. */
+    ONLY_WEIGHTED_BY_STAKE,
+
+    /** Use the newer {@link com.radixdlt.consensus.liveness.ProposerElections#defaultRotation}. */
+    WITH_INITIAL_ROUNDS_ITERATION,
   }
 
   record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)
