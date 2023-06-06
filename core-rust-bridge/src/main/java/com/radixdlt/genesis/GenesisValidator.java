@@ -87,13 +87,12 @@ public record GenesisValidator(
         codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
   }
 
-  public static GenesisValidator testingDefaultFromPubKey(ECDSASecp256k1PublicKey key) {
-    return new GenesisValidator(
-        key,
-        true,
-        true,
-        ImmutableList.of(
-            tuple("url", new MetadataValue.Url("http://validator.local?key=" + key.toHex()))),
-        Address.virtualAccountAddress(key));
+  public static GenesisValidator testingDefaultFromPubKey(int index, ECDSASecp256k1PublicKey key) {
+    final var metadata =
+        ImmutableList.<Tuple2<String, MetadataValue>>of(
+            tuple(
+                "name", new MetadataValue.String(String.format("Default validator %s", index + 1))),
+            tuple("url", new MetadataValue.Url("http://validator.local?key=" + key.toHex())));
+    return new GenesisValidator(key, true, true, metadata, Address.virtualAccountAddress(key));
   }
 }
