@@ -68,13 +68,13 @@ pub(crate) async fn handle_stream_transactions(
     let bundles = database
         .get_committed_transaction_bundle_iter(from_state_version)
         .take(limit);
-    for (index, bundle) in bundles.enumerate() {
+    for bundle in bundles {
         let CommittedTransactionBundle {
+            state_version,
             raw,
             receipt,
             identifiers,
         } = bundle;
-        let state_version = from_state_version + index as u64;
         let model = LedgerTransaction::from_raw(&raw).map_err(|error| {
             MappingError::CouldNotDecodeTransaction {
                 state_version,

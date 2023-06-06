@@ -67,7 +67,6 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
-import com.google.common.primitives.Ints;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -208,10 +207,10 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     final StateComputerResult result;
     synchronized (this.commitAndAdvanceLedgerLock) {
-      final var againstLedgerHeader = this.currentLedgerHeader.getHeader();
-      final var againstStateVersion = againstLedgerHeader.getStateVersion();
+      final var committedLedgerHeader = this.currentLedgerHeader.getHeader();
+      final var committedStateVersion = committedLedgerHeader.getStateVersion();
 
-      if (againstStateVersion > parentHeader.getStateVersion()) {
+      if (committedStateVersion > parentHeader.getStateVersion()) {
         // We have received a stale vertex to prepare - ignore it.
         return Optional.empty();
       }
@@ -232,8 +231,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       while (previousVertexIterator.hasNext()) {
         final var previousVertexBaseHeader =
             previousVertexIterator.peek().vertex().getParentHeader().getLedgerHeader();
-        if (previousVertexBaseHeader.getStateVersion() == againstStateVersion) {
-          if (!previousVertexBaseHeader.getHashes().equals(againstLedgerHeader.getHashes())) {
+        if (previousVertexBaseHeader.getStateVersion() == committedStateVersion) {
+          if (!previousVertexBaseHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
             // Some vertex has matched on the state version (which isn't particularly improbable,
             // since only a number of transactions must coincide). However, the ledger hashes did
             // not match, which means that other vertices than ours were committed.
@@ -249,14 +248,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         // None of the previous vertices has matched our current top of ledger. There is still a
         // possibility that the proposed vertex is built right on that top. But if not, then we
         // cannot progress.
-        if (!parentHeader.getHashes().equals(againstLedgerHeader.getHashes())) {
+        if (!parentHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
           return Optional.empty();
         }
       }
 
       result =
           this.stateComputer.prepare(
-              againstLedgerHeader.getHashes(),
+              committedLedgerHeader.getHashes(),
               verticesInExtension,
               parentHeader.getHashes(),
               vertex.getTransactions(),
@@ -334,16 +333,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return;
       }
 
-      final var transactions = committedTransactionsWithProof.getTransactions();
-      final var startIndex =
-          transactions.size()
-              - nextHeader.getStateVersion()
-              + againstLedgerHeader.getStateVersion();
-      final var extension = transactions.subList(Ints.checkedCast(startIndex), transactions.size());
-
-      var extensionToCommit =
-          CommittedTransactionsWithProof.create(
-              extension, committedTransactionsWithProof.getProof());
+      final var extensionToCommit =
+          committedTransactionsWithProof.getExtensionFrom(againstLedgerHeader.getStateVersion());
 
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStore);
@@ -352,7 +343,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // synchronization theoretically needed here).
       this.currentLedgerHeader = nextHeader;
 
-      extensionTransactionCount = extension.size();
+      extensionTransactionCount = extensionToCommit.getTransactions().size();
     }
 
     this.metrics.ledger().stateVersion().set(nextHeader.getStateVersion());

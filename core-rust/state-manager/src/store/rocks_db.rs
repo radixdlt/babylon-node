@@ -238,18 +238,18 @@ impl RocksDBStore {
     fn add_transaction_to_write_batch(
         &self,
         batch: &mut WriteBatch,
-        state_version: u64,
         transaction_bundle: CommittedTransactionBundle,
     ) {
         if self.is_account_change_index_enabled() {
             self.batch_update_account_change_index_from_committed_transaction(
                 batch,
-                state_version,
+                transaction_bundle.state_version,
                 &transaction_bundle,
             );
         }
 
         let CommittedTransactionBundle {
+            state_version,
             raw,
             receipt,
             identifiers,
@@ -294,7 +294,7 @@ impl RocksDBStore {
             let maybe_existing_state_version = self
                 .db
                 .get_cf(
-                    self.cf_handle(&StateVersionByTxnIntentHash),
+                    self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
                     ledger_payload_hash,
                 )
                 .unwrap();
@@ -431,10 +431,9 @@ impl CommitStore for RocksDBStore {
 
         let commit_ledger_header = &commit_bundle.proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
-        let base_state_version = commit_state_version - transactions_count as u64 + 1;
 
-        for (index, txn_bundle) in commit_bundle.transactions.into_iter().enumerate() {
-            let payload_identifiers = &txn_bundle.identifiers.payload;
+        for transaction_bundle in commit_bundle.transactions {
+            let payload_identifiers = &transaction_bundle.identifiers.payload;
             if let TypedTransactionIdentifiers::User { intent_hash, .. } =
                 &payload_identifiers.typed
             {
@@ -442,11 +441,7 @@ impl CommitStore for RocksDBStore {
                 user_transactions_count += 1;
             }
             processed_payload_hashes.insert(payload_identifiers.ledger_payload_hash);
-            self.add_transaction_to_write_batch(
-                &mut batch,
-                base_state_version + index as u64,
-                txn_bundle,
-            );
+            self.add_transaction_to_write_batch(&mut batch, transaction_bundle);
         }
 
         if processed_intent_hashes.len() != user_transactions_count {
@@ -587,6 +582,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                     .expect("Missing txn hashes")
                     .unwrap();
 
+                let current_state_version = self.state_version;
                 for (other_key_description, other_key_bytes) in [
                     ("transaction version", txn_kv.0),
                     ("ledger receipt version", ledger_receipt_kv.0),
@@ -595,9 +591,8 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 ] {
                     let other_row_version =
                         u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
-                    let expected_state_version = self.state_version;
-                    if other_row_version != expected_state_version {
-                        panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({expected_state_version})");
+                    if other_row_version != current_state_version {
+                        panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({current_state_version})");
                     }
                 }
 
@@ -613,6 +608,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 self.state_version += 1;
 
                 Some(CommittedTransactionBundle {
+                    state_version: current_state_version,
                     raw: txn,
                     receipt: complete_receipt,
                     identifiers,

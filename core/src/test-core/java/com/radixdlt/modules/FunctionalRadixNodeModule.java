@@ -393,7 +393,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     new MockedEpochsConsensusRecoveryModule(
                         withEpochs.epochMaxRound(),
                         withEpochs.mapping(),
-                        withEpochs.preGenesisLedgerHashes()));
+                        withEpochs.preGenesisLedgerHashes(),
+                        withEpochs.proposerElectionMode()));
               }
             }
           }

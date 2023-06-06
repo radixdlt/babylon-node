@@ -55,9 +55,9 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
     let bundles = database
         .get_committed_transaction_bundle_iter(from_state_version)
         .take(limit);
-    for (index, bundle) in bundles.enumerate() {
-        let state_version = from_state_version + index as u64;
+    for bundle in bundles {
         let CommittedTransactionBundle {
+            state_version,
             receipt,
             identifiers,
             ..

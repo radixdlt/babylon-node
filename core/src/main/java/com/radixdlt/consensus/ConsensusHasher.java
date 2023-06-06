@@ -84,7 +84,10 @@ public final class ConsensusHasher {
       outputStream.write(opaque.asBytes()); // 32 bytes
       if (header != null) {
         outputStream.writeLong(header.getStateVersion()); // 8 bytes
-        // TODO: include the header.getStateHash().asBytes() when we are ready to affect consensus
+        var ledgerHashes = header.getHashes(); // 3 * 32 bytes
+        outputStream.write(ledgerHashes.getTransactionRoot().asBytes());
+        outputStream.write(ledgerHashes.getReceiptRoot().asBytes());
+        outputStream.write(ledgerHashes.getStateRoot().asBytes());
         outputStream.writeLong(header.getEpoch()); // 8 bytes
         outputStream.writeLong(header.getRound().number()); // 8 bytes
         outputStream.writeLong(header.consensusParentRoundTimestamp()); // 8 bytes

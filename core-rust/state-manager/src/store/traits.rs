@@ -139,6 +139,7 @@ pub trait ConfigurableDatabase {
 }
 
 pub struct CommittedTransactionBundle {
+    pub state_version: u64,
     pub raw: RawLedgerTransaction,
     pub receipt: LocalTransactionReceipt,
     pub identifiers: CommittedTransactionIdentifiers,

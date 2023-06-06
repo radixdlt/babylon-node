@@ -113,6 +113,27 @@ struct InternalTransactionIds {
     committed_transaction_root: Option<TransactionTreeHash>,
 }
 
+/// A cached tree of transactions, representing a potentially non-linear ledger evolution.
+///
+/// Important implementation note on an efficient identification of transactions within the tree
+/// (i.e. without re-computation of transaction merkle tree updates on cache-hits):
+///
+/// A transaction may be unambiguously identified by 2 different business keys here:
+///
+/// - By a [`TransactionPlacement`]:
+/// A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
+/// root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
+/// that would be rejected).
+///
+/// - By a transaction root:
+/// This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
+/// There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
+/// not compute them for transactions that are rejected (technically we could compute just the
+/// transaction root alone, but in our current impl we do not - for simplicity and performance).
+/// Yet, in this cache, we want to reference rejected transactions as well.
+///
+/// For the above reasons, we need two [`HashMap`]s leading to [`DerivedStageKey`]s (we identify the
+/// candidate transactions by their placement, and we identify their parents by transaction root).
 pub struct ExecutionCache {
     stage_tree: StageTree<ProcessedTransactionReceipt, ImmutableStore>,
     base_transaction_root: TransactionTreeHash,
