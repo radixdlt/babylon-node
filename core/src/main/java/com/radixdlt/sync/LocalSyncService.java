@@ -453,7 +453,7 @@ public final class LocalSyncService {
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
     }
 
-    if (!this.verifySyncResponse(syncResponse)) {
+    if (!this.verifyConsensusProofOnSyncResponse(syncResponse)) {
       log.warn(
           "LocalSync: Received consensus-mismatched sync response {} from {}",
           syncResponse,
@@ -485,7 +485,7 @@ public final class LocalSyncService {
     return currentState.clearPendingRequest();
   }
 
-  private boolean verifySyncResponse(SyncResponse syncResponse) {
+  private boolean verifyConsensusProofOnSyncResponse(SyncResponse syncResponse) {
     if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {
       log.warn("Invalid validator set");
       return false;

@@ -64,7 +64,6 @@
 
 package com.radixdlt.store;
 
-import com.google.common.primitives.Ints;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
@@ -125,13 +124,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
           store.committedTransactionRuns.higherEntry(startStateVersion);
 
       if (entry != null) {
-        final var transactions = entry.getValue().getTransactions();
-        final var committedStateVersion =
-            entry.getValue().getProof().getAccumulatorState().getStateVersion();
-        final var startIndex = transactions.size() - committedStateVersion + startStateVersion;
-        final var extension =
-            transactions.subList(Ints.checkedCast(startIndex), transactions.size());
-        return CommittedTransactionsWithProof.create(extension, entry.getValue().getProof());
+        return entry.getValue().getExtensionFrom(startStateVersion);
       }
 
       return null;

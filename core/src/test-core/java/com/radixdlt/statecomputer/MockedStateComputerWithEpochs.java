@@ -79,6 +79,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -116,25 +117,30 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
       AccumulatorState preparedUncommittedAccumulatorState,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var result =
-        stateComputer.prepare(
-            committedAccumulatorState,
-            preparedUncommittedVertices,
-            preparedUncommittedAccumulatorState,
-            proposedTransactions,
-            roundDetails);
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
-      result =
-          new StateComputerResult(
-              result.getSuccessfullyExecutedTransactions(),
-              result.getRejectedTransactionCount(),
-              NextEpoch.create(
-                  roundDetails.epoch() + 1,
-                  validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),
-              result.getLedgerHashes(),
-              result.getAccumulatorState());
+      final var baseResult =
+          stateComputer.prepare(
+              committedAccumulatorState,
+              preparedUncommittedVertices,
+              preparedUncommittedAccumulatorState,
+              // simulate a single "round change" transaction, since state version must progress
+              Collections.singletonList(RawNotarizedTransaction.create(new byte[0])),
+              roundDetails);
+      final var nextEpoch = roundDetails.epoch() + 1; // adjust the base result with "next epoch"
+      return new StateComputerResult(
+          baseResult.getSuccessfullyExecutedTransactions(),
+          baseResult.getRejectedTransactionCount(),
+          NextEpoch.create(nextEpoch, validatorSetMapping.apply(nextEpoch).getValidators()),
+          baseResult.getLedgerHashes(),
+          baseResult.getAccumulatorState());
+    } else {
+      return stateComputer.prepare(
+          committedAccumulatorState,
+          preparedUncommittedVertices,
+          preparedUncommittedAccumulatorState,
+          proposedTransactions,
+          roundDetails);
     }
-    return result;
   }
 
   @Override

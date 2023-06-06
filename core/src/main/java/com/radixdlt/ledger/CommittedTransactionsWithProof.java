@@ -64,6 +64,7 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.primitives.Ints;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
@@ -113,6 +114,25 @@ public final class CommittedTransactionsWithProof {
 
   public LedgerProof getProof() {
     return proof;
+  }
+
+  /**
+   * Returns a suffix of the {@link #transactions} that starts from the given state version. This
+   * kind of logic is needed in case of a race condition between different commit requests, as we
+   * may have already committed some of this commit request's transactions. We extract the
+   * transactions that we actually still need to commit.
+   */
+  public CommittedTransactionsWithProof getExtensionFrom(long startStateVersion) {
+    final var proofStateVersion = this.proof.getAccumulatorState().getStateVersion();
+    final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
+    if (startIndex < 0 || startIndex > this.transactions.size()) {
+      throw new IllegalArgumentException(
+          "%s transactions ending with state version %s cannot be an extension of state version %s"
+              .formatted(this.transactions.size(), proofStateVersion, startStateVersion));
+    }
+    final var extension =
+        this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
+    return CommittedTransactionsWithProof.create(extension, this.proof);
   }
 
   @Override
