@@ -1,6 +1,5 @@
 import fetch from "node-fetch";
 import http from 'node:http';
-import https from 'node:http';
 
 import { CoreApiClient, LtsCommittedTransactionStatus, LtsTransactionIntentStatus, ResponseError } from "../lib";
 
@@ -13,8 +12,9 @@ async function newCoreApiClient(): Promise<CoreApiClient> {
         logicalNetworkName: "localnet",
         // Configuration for node-fetch
         fetch,
-        httpAgent: new http.Agent({ keepAlive: true }),
-        httpsAgent: new https.Agent({ keepAlive: true }),
+        advanced: {
+            agent: new http.Agent({ keepAlive: true })
+        }
     });
 }
 
