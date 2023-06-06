@@ -62,43 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.consensus.liveness;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElections;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
-public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.getHighestRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+/** A static factory of {@link ProposerElection}s. */
+public abstract class ProposerElections {
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  }
+  /** A default size for {@link WeightedRotatingLeaders} cache. */
+  private static final int DEFAULT_CACHE_SIZE = 10;
 
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  /**
+   * Creates a default production validation rotation over the given validator set. Currently, our
+   * implementation will:
+   *
+   * <ul>
+   *   <li>first, go over each validator once (in the "highest stake first" order);
+   *   <li>and then apply the {@link WeightedRotatingLeaders "frequency proportional to stake"}
+   *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
+   * </ul>
+   */
+  public static ProposerElection defaultRotation(BFTValidatorSet validatorSet) {
+    return new RotateOnceDecorator(
+        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
   }
 }

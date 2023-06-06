@@ -123,7 +123,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
             proof.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet, 10);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

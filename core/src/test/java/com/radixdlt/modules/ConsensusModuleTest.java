@@ -144,7 +144,7 @@ public class ConsensusModuleTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet, 10);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
     this.requestSender = rmock(RemoteEventDispatcher.class);

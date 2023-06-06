@@ -291,7 +291,7 @@ public class EpochManagerTest {
             QuorumCertificate.createInitialEpochQC(
                 vertex,
                 LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0));
-        var proposerElection = new WeightedRotatingLeaders(validatorSet);
+        var proposerElection = new WeightedRotatingLeaders(validatorSet, 10);
         return new BFTConfiguration(
             proposerElection,
             validatorSet,
@@ -331,7 +331,7 @@ public class EpochManagerTest {
             header.proposerTimestamp());
     var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
+    var proposerElection = new WeightedRotatingLeaders(nextValidatorSet, 10);
     var bftConfiguration =
         new BFTConfiguration(
             proposerElection,
