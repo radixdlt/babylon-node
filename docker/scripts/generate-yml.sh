@@ -71,7 +71,7 @@ fi
 
 
 
-echo "version: '2.1'" >${file_name}
+echo "version: '3.8'" >${file_name}
 echo "name: 'radixdlt-babylon-node-${validators}-core-network'" >${file_name}
 echo "services:" >>${file_name}
 
