@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -122,7 +122,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
             proof.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

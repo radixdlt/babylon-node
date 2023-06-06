@@ -72,7 +72,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -312,7 +312,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   var header = txnsAndProof.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(header, bftConfiguration);

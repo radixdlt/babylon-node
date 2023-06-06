@@ -62,43 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.consensus.liveness;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElections;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.rev2.LastEpochProof;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.KeyComparator;
+import java.util.*;
 
-public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.getHighestRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+/**
+ * A {@link ProposerElection} decorator which first simply iterates over all validators once (in the
+ * "highest stake first" order), and then lets the underlying implementation take over.
+ */
+public final class RotateOnceDecorator implements ProposerElection {
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  /** A comparator determining order of the initial rounds' leaders. */
+  private static final Comparator<BFTValidator> VALIDATOR_COMPARATOR =
+      Comparator.comparing(BFTValidator::getPower) // first compare by stake, descending
+          .reversed()
+          .thenComparing( // then by key (same as `WeightedRotatingLeaders`)
+              v -> v.getValidatorId().getKey(), KeyComparator.instance())
+          .thenComparing( // and also by optional address (because keys do not have to be unique!)
+              v ->
+                  v.getValidatorId()
+                      .getValidatorAddress()
+                      .map(ComponentAddress::value)
+                      .orElse(null),
+              Ordering.from(UnsignedBytes.lexicographicalComparator()).nullsFirst());
+
+  /** An ordered list of all validators, to be traversed once during initial rounds. */
+  private final BFTValidatorId[] initialRoundsProposers;
+
+  /** An underlying instance, to take over for the remaining rounds. */
+  private final ProposerElection underlying;
+
+  /**
+   * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
+   * same {@link BFTValidatorSet} as passed here.
+   */
+  public RotateOnceDecorator(BFTValidatorSet validatorSet, ProposerElection underlying) {
+    this.initialRoundsProposers =
+        validatorSet.getValidators().stream()
+            .sorted(VALIDATOR_COMPARATOR)
+            .map(BFTValidator::getValidatorId)
+            .toArray(BFTValidatorId[]::new);
+    this.underlying = underlying;
   }
 
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  @Override
+  public BFTValidatorId getProposer(Round round) {
+    final var number = round.number();
+    final var initialRoundsCount = this.initialRoundsProposers.length;
+    if (number < initialRoundsCount) {
+      return this.initialRoundsProposers[(int) number];
+    } else {
+      return this.underlying.getProposer(Round.of(number - initialRoundsCount));
+    }
   }
 
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  @Override
+  public String toString() {
+    return String.format("%s(%s)", this.getClass().getSimpleName(), this.underlying);
   }
 }
