@@ -56,7 +56,6 @@ export class CoreApiClient {
     // Left for backward compatibility
     if (settings.httpAgent || settings.httpsAgent) {
       const agentSelector = (parsedUrl: any) => {
-        console.log(parsedUrl);
         if (parsedUrl.protocol === "https:") {
           return settings.httpsAgent || settings.httpAgent;
         }
