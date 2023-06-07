@@ -141,7 +141,7 @@ public final class REv2GenesisFromOlympiaTest {
     try (var is =
         REv2GenesisFromOlympiaTest.class
             .getClassLoader()
-            .getResourceAsStream("genesis/test-olympia-end-state-compressed.raw")) {
+            .getResourceAsStream("genesis/testing-olympia-end-state-compressed.raw")) {
       final var compressed = is.readAllBytes();
       final var uncompressed = Snappy.uncompress(compressed);
       return new OlympiaStateIRDeserializer().deserialize(new ByteArrayInputStream(uncompressed));
