@@ -117,19 +117,9 @@ public final class REv2GenesisFromOlympiaTest {
   @Test
   public void genesis_from_olympia_should_initialize_correct_xrd_balances() throws IOException {
     final var olympiaEndState = readOlympiaStateIRFromResources();
-    // TODO: update the genesis file in resources
-    final var olympiaEndStateWithNonZeroEpoch =
-        new OlympiaStateIR(
-            olympiaEndState.validators(),
-            olympiaEndState.resources(),
-            olympiaEndState.accounts(),
-            olympiaEndState.balances(),
-            olympiaEndState.stakes(),
-            olympiaEndState.lastConsensusTimestamp(),
-            1L);
     final var genesisData =
         OlympiaStateToBabylonGenesisConverter.toGenesisData(
-            olympiaEndStateWithNonZeroEpoch, OlympiaToBabylonConverterConfig.DEFAULT);
+            olympiaEndState, OlympiaToBabylonConverterConfig.DEFAULT);
     try (var test = createTest(genesisData)) {
       test.startAllNodes();
       var stateReader = test.getInstance(0, REv2StateReader.class);

@@ -231,7 +231,7 @@ public final class RadixNodeBootstrapper {
                     - network genesis (based on network.id): %s \n
                     - genesis stored from previous runs: %s \n
                     Make sure your configuration is correct (check `network.id` and/or \
-            `       network.genesis_data` and/or `network.genesis_file`).""",
+                    `network.genesis_data` and/or `network.genesis_file`).""",
                   configuredGenesis, fixedNetworkGenesisHash, storedGenesisHash)));
     }
   }
