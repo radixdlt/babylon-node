@@ -97,8 +97,7 @@ public record ExecutedTransaction(
     return Objects.equals(ledgerTransactionHash, that.ledgerTransactionHash)
         && Objects.equals(status, that.status)
         && Objects.equals(errorMessage, that.errorMessage)
-        && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes)
-        && Arrays.equals(transactionBytes, that.transactionBytes);
+        && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes);
   }
 
   @Override
@@ -107,12 +106,12 @@ public record ExecutedTransaction(
     result = 31 * result + Objects.hash(status);
     result = 31 * result + Objects.hash(errorMessage);
     result = 31 * result + Arrays.hashCode(consensusReceiptBytes);
-    result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
   }
 
   @Override
   public String toString() {
-    return "ExecutedTransaction{}";
+    return "ExecutedTransaction{ledgerTransactionHash=%s, status=%s, errorMessage=%s}"
+        .formatted(ledgerTransactionHash, status, errorMessage);
   }
 }
