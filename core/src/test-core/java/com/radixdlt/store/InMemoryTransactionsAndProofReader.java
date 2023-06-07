@@ -118,8 +118,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   @Override
   public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
     synchronized (lock) {
-      final long startStateVersion =
-          start.getLedgerHeader().getAccumulatorState().getStateVersion();
+      final long startStateVersion = start.getLedgerHeader().getStateVersion();
       Entry<Long, CommittedTransactionsWithProof> entry =
           store.committedTransactionRuns.higherEntry(startStateVersion);
 

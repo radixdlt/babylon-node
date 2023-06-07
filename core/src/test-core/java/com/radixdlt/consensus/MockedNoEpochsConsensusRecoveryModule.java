@@ -71,7 +71,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -109,14 +108,13 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     VertexWithHash genesisVertex =
         Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(
-                    AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0))
+                LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
-            proof.getAccumulatorState(),
+            proof.getStateVersion(),
             proof.getLedgerHashes(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());

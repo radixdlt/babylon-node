@@ -5,7 +5,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
 
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{LocalTransactionReceipt, PreviewRequest, ProcessedTransactionReceipt};
+use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
@@ -87,13 +87,6 @@ fn to_api_response(
     result: ProcessedPreviewResult,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
-    let substate_changes = match result.processed_receipt {
-        ProcessedTransactionReceipt::Commit(commit) => {
-            commit.local_receipt.on_ledger.substate_changes
-        }
-        _ => vec![],
-    };
-
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
     let response = match receipt.result {
@@ -140,7 +133,7 @@ fn to_api_response(
 
             let local_receipt = LocalTransactionReceipt::from((
                 commit_result,
-                substate_changes,
+                result.substate_changes,
                 receipt.execution_trace,
             ));
 

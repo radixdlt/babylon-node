@@ -72,7 +72,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.*;
@@ -123,9 +122,9 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
@@ -144,12 +143,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactionCount;
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions,
-        invalidTransactionCount,
-        LedgerHashes.zero(),
-        new AccumulatorState(
-            preparedUncommittedAccumulatorState.getStateVersion() + successfulTransactions.size(),
-            HashUtils.zero256()));
+        successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
@@ -166,7 +160,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
                           Round.genesis(),
-                          proof.getAccumulatorState(),
+                          proof.getStateVersion(),
                           proof.getLedgerHashes(),
                           proof.consensusParentRoundTimestamp(),
                           proof.proposerTimestamp());

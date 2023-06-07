@@ -112,8 +112,8 @@ public class OneByzantineGenesisTest {
                     new MockedEpochsConsensusRecoveryModule(
                         Round.of(1000000),
                         EpochNodeWeightMapping.constant(3, 1),
-                        HashUtils.random256(),
-                        LedgerHashes.zero(),
+                        LedgerHashes.create(
+                            HashUtils.random256(), HashUtils.random256(), HashUtils.random256()),
                         StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
@@ -162,7 +162,6 @@ public class OneByzantineGenesisTest {
                     new MockedEpochsConsensusRecoveryModule(
                         Round.of(10000000),
                         EpochNodeWeightMapping.constant(4),
-                        HashUtils.zero256(),
                         LedgerHashes.zero(),
                         StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))

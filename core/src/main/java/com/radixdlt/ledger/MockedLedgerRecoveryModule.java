@@ -77,7 +77,7 @@ public class MockedLedgerRecoveryModule extends AbstractModule {
   @Provides
   @LastEpochProof
   public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    return LedgerProof.genesis(AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
+    return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
   }
 
   @Provides

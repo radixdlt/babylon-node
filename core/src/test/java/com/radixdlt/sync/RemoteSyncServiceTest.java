@@ -76,7 +76,6 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -88,7 +87,6 @@ import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Comparator;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -113,9 +111,7 @@ public class RemoteSyncServiceTest {
     this.statusUpdateDispatcher = rmock(RemoteEventDispatcher.class);
 
     final var initialHeader = mock(LedgerProof.class);
-    final var initialAccumulatorState = mock(AccumulatorState.class);
-    when(initialHeader.getAccumulatorState()).thenReturn(initialAccumulatorState);
-    when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
+    when(initialHeader.getStateVersion()).thenReturn(1L);
 
     this.processor =
         new RemoteSyncService(
@@ -127,7 +123,6 @@ public class RemoteSyncServiceTest {
             statusUpdateDispatcher,
             new SyncRelayConfig(5000L, 10, 5000L, 10, 50),
             new MetricsInitializer().initialize(),
-            Comparator.comparingLong(AccumulatorState::getStateVersion),
             initialHeader);
   }
 
@@ -197,9 +192,7 @@ public class RemoteSyncServiceTest {
   public void when_ledger_update_but_syncing__then_dont_send_status_update() {
     final var tail = mock(LedgerProof.class);
     final var ledgerUpdate = mock(LedgerUpdate.class);
-    final var accumulatorState = mock(AccumulatorState.class);
-    when(accumulatorState.getStateVersion()).thenReturn(2L);
-    when(tail.getAccumulatorState()).thenReturn(accumulatorState);
+    when(tail.getStateVersion()).thenReturn(2L);
     when(ledgerUpdate.getTail()).thenReturn(tail);
 
     final var validatorSet = mock(BFTValidatorSet.class);

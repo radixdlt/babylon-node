@@ -97,7 +97,6 @@ import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.transactions.LegacyLedgerPayloadHash;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -115,7 +114,6 @@ public class LocalSyncServiceTest {
   private SyncRelayConfig syncRelayConfig;
   private Metrics metrics;
   private PeersView peersView;
-  private Comparator<AccumulatorState> accComparator;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
   private RemoteSyncResponseSignaturesVerifier signaturesVerifier;
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler;
@@ -131,7 +129,6 @@ public class LocalSyncServiceTest {
     this.syncRelayConfig = SyncRelayConfig.of(1000L, 10, 10000L);
     this.metrics = new MetricsInitializer().initialize();
     this.peersView = mock(PeersView.class);
-    this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
     this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
     this.signaturesVerifier = mock(RemoteSyncResponseSignaturesVerifier.class);
     this.verifiedSyncResponseHandler = mock(VerifiedSyncResponseHandler.class);
@@ -149,7 +146,6 @@ public class LocalSyncServiceTest {
             syncRelayConfig,
             metrics,
             peersView,
-            accComparator,
             validatorSetVerifier,
             signaturesVerifier,
             verifiedSyncResponseHandler,
@@ -629,11 +625,7 @@ public class LocalSyncServiceTest {
 
   private SyncResponse createValidMockedSyncResponse() {
     final var respHeadLedgerHeader = mock(LedgerHeader.class);
-    final var respHeadAccumulatorState = mock(AccumulatorState.class);
-    when(respHeadLedgerHeader.getAccumulatorState()).thenReturn(respHeadAccumulatorState);
     final var respTailLedgerHeader = mock(LedgerHeader.class);
-    final var respTailAccumulatorState = mock(AccumulatorState.class);
-    when(respTailLedgerHeader.getAccumulatorState()).thenReturn(respTailAccumulatorState);
     final var respHead = mock(DtoLedgerProof.class);
     when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
     final var respTail = mock(DtoLedgerProof.class);
@@ -662,9 +654,7 @@ public class LocalSyncServiceTest {
 
   private LedgerProof createHeaderAtStateVersion(long version) {
     final LedgerProof header = mock(LedgerProof.class);
-    final AccumulatorState accumulatorState = mock(AccumulatorState.class);
-    when(header.getAccumulatorState()).thenReturn(accumulatorState);
-    when(accumulatorState.getStateVersion()).thenReturn(version);
+    when(header.getStateVersion()).thenReturn(version);
     return header;
   }
 

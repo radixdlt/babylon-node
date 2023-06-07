@@ -72,7 +72,6 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +81,7 @@ public class VertexStoreStateCreationTest {
   private HashCode genesisHash;
   private Hasher hasher;
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), AccumulatorState.zero(), LedgerHashes.zero(), 0, 0);
+      LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setup() {

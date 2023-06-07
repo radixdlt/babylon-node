@@ -87,7 +87,6 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.ZeroHasher;
@@ -116,7 +115,7 @@ public class VertexStoreTest {
   private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), AccumulatorState.zero(), LedgerHashes.zero(), 0, 0);
+      LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setUp() {

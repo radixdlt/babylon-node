@@ -73,9 +73,9 @@ import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public record PrepareRequest(
-    AccumulatorState committedAccumulatorState,
+    LedgerHashes committedLedgerHashes,
     List<RawLedgerTransaction> preparedUncommittedTransactions,
-    AccumulatorState preparedUncommittedAccumulatorState,
+    LedgerHashes preparedUncommittedLedgerHashes,
     List<RawNotarizedTransaction> proposedTransactions,
     boolean isFallback,
     UInt64 epoch,

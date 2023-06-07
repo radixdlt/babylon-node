@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -112,17 +113,17 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       final var baseResult =
           stateComputer.prepare(
-              committedAccumulatorState,
+              committedLedgerHashes,
               preparedUncommittedVertices,
-              preparedUncommittedAccumulatorState,
+              preparedUncommittedLedgerHashes,
               // simulate a single "round change" transaction, since state version must progress
               Collections.singletonList(RawNotarizedTransaction.create(new byte[0])),
               roundDetails);
@@ -131,13 +132,12 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
           baseResult.getSuccessfullyExecutedTransactions(),
           baseResult.getRejectedTransactionCount(),
           NextEpoch.create(nextEpoch, validatorSetMapping.apply(nextEpoch).getValidators()),
-          baseResult.getLedgerHashes(),
-          baseResult.getAccumulatorState());
+          baseResult.getLedgerHashes());
     } else {
       return stateComputer.prepare(
-          committedAccumulatorState,
+          committedLedgerHashes,
           preparedUncommittedVertices,
-          preparedUncommittedAccumulatorState,
+          preparedUncommittedLedgerHashes,
           proposedTransactions,
           roundDetails);
     }

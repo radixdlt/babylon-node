@@ -83,8 +83,7 @@ public final class ConsensusHasher {
       outputStream.writeInt(header != null ? 0 : 1); // 4 bytes (Version)
       outputStream.write(opaque.asBytes()); // 32 bytes
       if (header != null) {
-        outputStream.write(header.getAccumulatorState().getAccumulatorHash().asBytes()); // 32 bytes
-        outputStream.writeLong(header.getAccumulatorState().getStateVersion()); // 8 bytes
+        outputStream.writeLong(header.getStateVersion()); // 8 bytes
         var ledgerHashes = header.getHashes(); // 3 * 32 bytes
         outputStream.write(ledgerHashes.getTransactionRoot().asBytes());
         outputStream.write(ledgerHashes.getReceiptRoot().asBytes());

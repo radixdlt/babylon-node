@@ -89,7 +89,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
@@ -151,13 +150,12 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
-            AccumulatorState committedAccumulatorState,
+            LedgerHashes committedLedgerHashes,
             List<ExecutedVertex> preparedUncommittedVertices,
-            AccumulatorState preparedUncommittedAccumulatorHash,
+            LedgerHashes preparedUncommittedLedgerHashes,
             List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {
-          return new StateComputerResult(
-              List.of(), 0, LedgerHashes.zero(), AccumulatorState.zero());
+          return new StateComputerResult(List.of(), 0, LedgerHashes.zero());
         }
 
         @Override
@@ -268,15 +266,13 @@ public class EpochManagerTest {
       @Provides
       @LastProof
       LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
-        return LedgerProof.genesis(
-            AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
+        return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
       }
 
       @Provides
       @LastEpochProof
       LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-        return LedgerProof.genesis(
-            AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0);
+        return LedgerProof.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0);
       }
 
       @Provides
@@ -284,14 +280,11 @@ public class EpochManagerTest {
           @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
         var vertex =
             Vertex.createInitialEpochVertex(
-                    LedgerHeader.genesis(
-                        AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0))
+                    LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
                 .withId(hasher);
         var qc =
             QuorumCertificate.createInitialEpochQC(
-                vertex,
-                LedgerHeader.genesis(
-                    AccumulatorState.zero(), LedgerHashes.zero(), validatorSet, 0, 0));
+                vertex, LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0));
         var proposerElection = ProposerElections.defaultRotation(validatorSet);
         return new BFTConfiguration(
             proposerElection,
@@ -318,14 +311,13 @@ public class EpochManagerTest {
     epochManager.start();
     BFTValidatorSet nextValidatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)));
-    LedgerHeader header =
-        LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), nextValidatorSet, 0, 0);
+    LedgerHeader header = LedgerHeader.genesis(0, LedgerHashes.zero(), nextValidatorSet, 0, 0);
     VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,
             Round.genesis(),
-            header.getAccumulatorState(),
+            header.getStateVersion(),
             header.getHashes(),
             header.consensusParentRoundTimestamp(),
             header.proposerTimestamp());

@@ -65,6 +65,8 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -98,27 +100,23 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     private final int rejectedTransactionCount;
     private final NextEpoch nextEpoch;
     private final LedgerHashes ledgerHashes;
-    private final AccumulatorState accumulatorState;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
         NextEpoch nextEpoch,
-        LedgerHashes ledgerHashes,
-        AccumulatorState accumulatorState) {
+        LedgerHashes ledgerHashes) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.rejectedTransactionCount = rejectedTransactionCount;
       this.nextEpoch = nextEpoch;
       this.ledgerHashes = ledgerHashes;
-      this.accumulatorState = accumulatorState;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         int rejectedTransactionCount,
-        LedgerHashes ledgerHashes,
-        AccumulatorState accumulatorState) {
-      this(executedTransactions, rejectedTransactionCount, null, ledgerHashes, accumulatorState);
+        LedgerHashes ledgerHashes) {
+      this(executedTransactions, rejectedTransactionCount, null, ledgerHashes);
     }
 
     public Optional<NextEpoch> getNextEpoch() {
@@ -127,10 +125,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public LedgerHashes getLedgerHashes() {
       return ledgerHashes;
-    }
-
-    public AccumulatorState getAccumulatorState() {
-      return accumulatorState;
     }
 
     public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
@@ -149,9 +143,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-        AccumulatorState committedAccumulatorState,
+        LedgerHashes committedLedgerHashes,
         List<ExecutedVertex> preparedUncommittedVertices,
-        AccumulatorState preparedUncommittedAccumulatorState,
+        LedgerHashes preparedUncommittedLedgerHashes,
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
@@ -207,75 +201,63 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   private Optional<ExecutedVertex> prepareInternal(
-      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+      LinkedList<ExecutedVertex> previousVertices, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
-    final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 
     final StateComputerResult result;
     synchronized (this.commitAndAdvanceLedgerLock) {
-      final AccumulatorState againstAccumulatorState =
-          this.currentLedgerHeader.getHeader().getAccumulatorState();
+      final var committedLedgerHeader = this.currentLedgerHeader.getHeader();
+      final var committedStateVersion = committedLedgerHeader.getStateVersion();
 
-      if (againstAccumulatorState.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+      if (committedStateVersion > parentHeader.getStateVersion()) {
+        // We have received a stale vertex to prepare - ignore it.
         return Optional.empty();
       }
 
       if (parentHeader.isEndOfEpoch()) {
-        // Don't execute any transactions and commit to the same LedgerHeader
-        // if in the process of an epoch change. Updates to LedgerHeader here
-        // may cause a disagreement on the next epoch initial vertex if a TC
-        // occurs for example.
+        // Don't execute any transactions and commit to the same LedgerHeader if in the process of
+        // an epoch change. Updates to LedgerHeader here may cause a disagreement on the next epoch
+        // initial vertex if a TC occurs for example.
         return Optional.of(
             new ExecutedVertex(
                 vertexWithHash, parentHeader, ImmutableList.of(), this.timeSupplier.currentTime()));
       }
 
       // It's possible that this function is called with a list of vertices which starts with some
-      // committed vertices
-      // By matching on the accumulator, we remove the already committed vertices from the
-      // "previous" list
-      final var committedAccumulatorHash = againstAccumulatorState.getAccumulatorHash();
-      // Whether any of the `previous` vertices has matched
-      // against the committed accumulator hash.
-      // `previous` vertices following the first matched vertex (including itself)
-      // are included in extension (`verticesInExtension`)
-      var committedAccumulatorHasMatchedStartOfAPreviousVertex = false;
-      var verticesInExtension = new ArrayList<ExecutedVertex>();
-      for (var previousVertex : previous) {
-        var previousVertexParentAccumulatorHash =
-            previousVertex
-                .vertex()
-                .getParentHeader()
-                .getLedgerHeader()
-                .getAccumulatorState()
-                .getAccumulatorHash();
-        if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
-          committedAccumulatorHasMatchedStartOfAPreviousVertex = true;
+      // committed vertices. By matching on the state version, we remove the already committed
+      // vertices from the "previous" list.
+      final var previousVertexIterator = Iterators.peekingIterator(previousVertices.iterator());
+      while (previousVertexIterator.hasNext()) {
+        final var previousVertexBaseHeader =
+            previousVertexIterator.peek().vertex().getParentHeader().getLedgerHeader();
+        if (previousVertexBaseHeader.getStateVersion() == committedStateVersion) {
+          if (!previousVertexBaseHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
+            // Some vertex has matched on the state version (which isn't particularly improbable,
+            // since only a number of transactions must coincide). However, the ledger hashes did
+            // not match, which means that other vertices than ours were committed.
+            return Optional.empty();
+          }
+          break;
         }
-        if (committedAccumulatorHasMatchedStartOfAPreviousVertex) {
-          verticesInExtension.add(previousVertex);
-        }
+        previousVertexIterator.next();
       }
+      final var verticesInExtension = Streams.stream(previousVertexIterator).toList();
 
-      final var vertexMatchesAccumulator =
-          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
-
-      // Check that ledger's accumulator state has been matched
-      // against any previous vertex's parent (extension not empty)
-      // or the parent of the "vertex" itself (extension empty).
-      if (!committedAccumulatorHasMatchedStartOfAPreviousVertex && !vertexMatchesAccumulator) {
-        // This could trigger if the vertices don't line up with the committed state.
-        // In other words, they don't provide a valid partial path from the committed state to the
-        // start of the proposal.
-        return Optional.empty();
+      if (verticesInExtension.isEmpty()) {
+        // None of the previous vertices has matched our current top of ledger. There is still a
+        // possibility that the proposed vertex is built right on that top. But if not, then we
+        // cannot progress.
+        if (!parentHeader.getHashes().equals(committedLedgerHeader.getHashes())) {
+          return Optional.empty();
+        }
       }
 
       result =
           this.stateComputer.prepare(
-              againstAccumulatorState,
+              committedLedgerHeader.getHashes(),
               verticesInExtension,
-              parentAccumulatorState,
+              parentHeader.getHashes(),
               vertex.getTransactions(),
               RoundDetails.fromVertex(vertexWithHash));
     }
@@ -284,7 +266,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         LedgerHeader.create(
             parentHeader.getEpoch(),
             vertex.getRound(),
-            result.getAccumulatorState(),
+            parentHeader.getStateVersion() + result.getSuccessfullyExecutedTransactions().size(),
             result.getLedgerHashes(),
             vertex.getQCToParent().getWeightedTimestampOfSignatures(),
             vertex.proposerTimestamp(),
@@ -352,8 +334,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       }
 
       final var extensionToCommit =
-          committedTransactionsWithProof.getExtensionFrom(
-              againstLedgerHeader.getAccumulatorState().getStateVersion());
+          committedTransactionsWithProof.getExtensionFrom(againstLedgerHeader.getStateVersion());
 
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStore);

@@ -74,7 +74,6 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.math.BigInteger;
 import java.util.List;
@@ -122,7 +121,7 @@ public class SerializerTestDataGenerator {
         LedgerHeader.create(
             Math.abs(random.nextLong()),
             randomRound(),
-            new AccumulatorState(Math.abs(random.nextLong()) + 1, HashUtils.random256()),
+            Math.abs(random.nextLong()) + 1,
             LedgerHashes.create(
                 HashUtils.random256(), HashUtils.random256(), HashUtils.random256()),
             Math.abs(random.nextLong()) + 1,

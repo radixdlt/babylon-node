@@ -65,7 +65,6 @@
 package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -75,7 +74,6 @@ import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.StateComputerLedger;
 import java.util.Comparator;
@@ -89,11 +87,6 @@ public class LedgerModule extends AbstractModule {
         .to(OrderByEpochAndVersionComparator.class)
         .in(Scopes.SINGLETON);
     bind(StateComputerLedger.class).in(Scopes.SINGLETON);
-  }
-
-  @Provides
-  private Comparator<AccumulatorState> accumulatorStateComparator() {
-    return Comparator.comparingLong(AccumulatorState::getStateVersion);
   }
 
   @ProvidesIntoSet

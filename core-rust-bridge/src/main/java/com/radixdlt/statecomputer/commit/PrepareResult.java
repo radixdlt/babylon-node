@@ -73,8 +73,7 @@ public record PrepareResult(
     List<CommittableTransaction> committed,
     List<RejectedTransaction> rejected,
     Option<NextEpoch> nextEpoch,
-    LedgerHashes ledgerHashes,
-    AccumulatorState accumulatorState) {
+    LedgerHashes ledgerHashes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,

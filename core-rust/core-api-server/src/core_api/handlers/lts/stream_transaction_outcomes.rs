@@ -52,17 +52,22 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for bundle in database
+    let bundles = database
         .get_committed_transaction_bundle_iter(from_state_version)
-        .take(limit)
-    {
+        .take(limit);
+    for bundle in bundles {
         let CommittedTransactionBundle {
+            state_version,
             receipt,
             identifiers,
             ..
         } = bundle;
-        let committed_transaction =
-            to_api_lts_committed_transaction_outcome(&mapping_context, receipt, identifiers)?;
+        let committed_transaction = to_api_lts_committed_transaction_outcome(
+            &mapping_context,
+            state_version,
+            receipt,
+            identifiers,
+        )?;
 
         let committed_transaction_size = committed_transaction.get_json_size();
         current_total_size += committed_transaction_size;

@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -118,15 +119,15 @@ public final class MockedMempoolStateComputer implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      AccumulatorState committedAccumulatorState,
+      LedgerHashes committedLedgerHashes,
       List<ExecutedVertex> preparedUncommittedVertices,
-      AccumulatorState preparedUncommittedAccumulatorState,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     return this.stateComputer.prepare(
-        committedAccumulatorState,
+        committedLedgerHashes,
         preparedUncommittedVertices,
-        preparedUncommittedAccumulatorState,
+        preparedUncommittedLedgerHashes,
         proposedTransactions,
         roundDetails);
   }

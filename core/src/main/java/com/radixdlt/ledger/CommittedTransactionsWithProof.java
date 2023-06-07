@@ -123,7 +123,7 @@ public final class CommittedTransactionsWithProof {
    * transactions that we actually still need to commit.
    */
   public CommittedTransactionsWithProof getExtensionFrom(long startStateVersion) {
-    final var proofStateVersion = this.proof.getAccumulatorState().getStateVersion();
+    final var proofStateVersion = this.proof.getStateVersion();
     final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
     if (startIndex < 0 || startIndex > this.transactions.size()) {
       throw new IllegalArgumentException(

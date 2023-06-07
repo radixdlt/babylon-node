@@ -243,16 +243,17 @@ impl RocksDBStore {
         if self.is_account_change_index_enabled() {
             self.batch_update_account_change_index_from_committed_transaction(
                 batch,
+                transaction_bundle.state_version,
                 &transaction_bundle,
             );
         }
 
         let CommittedTransactionBundle {
+            state_version,
             raw,
             receipt,
             identifiers,
         } = transaction_bundle;
-        let state_version = identifiers.resultant_accumulator_state.state_version;
         let ledger_payload_hash = identifiers.payload.ledger_payload_hash;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
@@ -265,16 +266,16 @@ impl RocksDBStore {
             /* For user transactions we only need to check for duplicate intent hashes to know
             that user payload hash and ledger payload hash are also unique. */
 
-            let maybe_existing_intent_hash = self
+            let maybe_existing_state_version = self
                 .db
                 .get_cf(self.cf_handle(&StateVersionByTxnIntentHash), intent_hash)
                 .unwrap();
 
-            if let Some(state_version) = maybe_existing_intent_hash {
+            if let Some(existing_state_version) = maybe_existing_state_version {
                 panic!(
                     "Attempted to save intent hash {:?} which already exists at state version {:?}",
                     intent_hash,
-                    u64::from_be_bytes(state_version.try_into().unwrap())
+                    u64::from_be_bytes(existing_state_version.try_into().unwrap())
                 );
             }
 
@@ -290,19 +291,19 @@ impl RocksDBStore {
                 state_version.to_be_bytes(),
             );
         } else {
-            let maybe_existing_ledger_payload_hash = self
+            let maybe_existing_state_version = self
                 .db
                 .get_cf(
-                    self.cf_handle(&StateVersionByTxnIntentHash),
+                    self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
                     ledger_payload_hash,
                 )
                 .unwrap();
 
-            if let Some(state_version) = maybe_existing_ledger_payload_hash {
+            if let Some(existing_state_version) = maybe_existing_state_version {
                 panic!(
                     "Attempted to save ledger payload hash {:?} which already exists at state version {:?}",
                     ledger_payload_hash,
-                    u64::from_be_bytes(state_version.try_into().unwrap())
+                    u64::from_be_bytes(existing_state_version.try_into().unwrap())
                 );
             }
         }
@@ -428,8 +429,11 @@ impl CommitStore for RocksDBStore {
         let transactions_count = commit_bundle.transactions.len();
         let mut processed_payload_hashes = HashSet::new();
 
-        for txn_bundle in commit_bundle.transactions {
-            let payload_identifiers = &txn_bundle.identifiers.payload;
+        let commit_ledger_header = &commit_bundle.proof.ledger_header;
+        let commit_state_version = commit_ledger_header.state_version;
+
+        for transaction_bundle in commit_bundle.transactions {
+            let payload_identifiers = &transaction_bundle.identifiers.payload;
             if let TypedTransactionIdentifiers::User { intent_hash, .. } =
                 &payload_identifiers.typed
             {
@@ -437,7 +441,7 @@ impl CommitStore for RocksDBStore {
                 user_transactions_count += 1;
             }
             processed_payload_hashes.insert(payload_identifiers.ledger_payload_hash);
-            self.add_transaction_to_write_batch(&mut batch, txn_bundle);
+            self.add_transaction_to_write_batch(&mut batch, transaction_bundle);
         }
 
         if processed_intent_hashes.len() != user_transactions_count {
@@ -448,11 +452,6 @@ impl CommitStore for RocksDBStore {
             panic!("Commit request contains duplicate payload hashes");
         }
 
-        let commit_state_version = commit_bundle
-            .proof
-            .ledger_header
-            .accumulator_state
-            .state_version;
         let encoded_proof = scrypto_encode(&commit_bundle.proof).unwrap();
         batch.put_cf(
             self.cf_handle(&LedgerProofByStateVersion),
@@ -460,7 +459,7 @@ impl CommitStore for RocksDBStore {
             &encoded_proof,
         );
 
-        if let Some(next_epoch) = commit_bundle.proof.ledger_header.next_epoch {
+        if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             batch.put_cf(
                 self.cf_handle(&LedgerProofByEpoch),
                 next_epoch.epoch.number().to_be_bytes(),
@@ -580,9 +579,10 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 let identifiers_kv = self
                     .identifiers_iter
                     .next()
-                    .expect("Missing txn accumulator hash")
+                    .expect("Missing txn hashes")
                     .unwrap();
 
+                let current_state_version = self.state_version;
                 for (other_key_description, other_key_bytes) in [
                     ("transaction version", txn_kv.0),
                     ("ledger receipt version", ledger_receipt_kv.0),
@@ -591,9 +591,8 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 ] {
                     let other_row_version =
                         u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
-                    let expected_state_version = self.state_version;
-                    if other_row_version != expected_state_version {
-                        panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({expected_state_version})");
+                    if other_row_version != current_state_version {
+                        panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({current_state_version})");
                     }
                 }
 
@@ -609,6 +608,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 self.state_version += 1;
 
                 Some(CommittedTransactionBundle {
+                    state_version: current_state_version,
                     raw: txn,
                     receipt: complete_receipt,
                     identifiers,
@@ -740,7 +740,7 @@ impl TransactionIndex<&LedgerTransactionHash> for RocksDBStore {
 }
 
 impl TransactionIdentifierLoader for RocksDBStore {
-    fn get_top_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
+    fn get_top_transaction_identifiers(&self) -> Option<(u64, CommittedTransactionIdentifiers)> {
         self.db
             .iterator_cf(
                 self.cf_handle(&TxnIdentifiersByStateVersion),
@@ -748,7 +748,12 @@ impl TransactionIdentifierLoader for RocksDBStore {
             )
             .map(|res| res.unwrap())
             .next()
-            .map(|(_, value)| scrypto_decode(&value).expect("Failed to decode identifiers"))
+            .map(|(key, value)| {
+                (
+                    u64::from_be_bytes((*key).try_into().unwrap()),
+                    scrypto_decode(&value).expect("Failed to decode identifiers"),
+                )
+            })
     }
 }
 
@@ -1020,13 +1025,9 @@ impl RocksDBStore {
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
         batch: &mut WriteBatch,
+        state_version: u64,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
-        let state_version = transaction_bundle
-            .identifiers
-            .resultant_accumulator_state
-            .state_version;
-
         self.batch_update_account_change_index_from_receipt(
             batch,
             state_version,

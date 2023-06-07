@@ -73,19 +73,6 @@ use transaction::prelude::*;
 
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 
-define_wrapped_hash!(AccumulatorHash);
-
-impl AccumulatorHash {
-    pub fn pre_genesis() -> Self {
-        Self(Hash([0; Hash::LENGTH]))
-    }
-
-    pub fn accumulate(&self, ledger_payload_hash: &LegacyLedgerPayloadHash) -> Self {
-        let concat_bytes = [self.0.as_slice(), ledger_payload_hash.as_slice()].concat();
-        Self(blake2b_256_hash(concat_bytes))
-    }
-}
-
 define_wrapped_hash!(SubstateChangeHash);
 
 impl SubstateChangeHash {
@@ -185,16 +172,16 @@ pub enum CommitError {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommitRequest {
-    pub transaction_payloads: Vec<RawLedgerTransaction>,
+    pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub committed_accumulator_state: AccumulatorState,
+    pub committed_ledger_hashes: LedgerHashes,
     pub prepared_uncommitted_transactions: Vec<RawLedgerTransaction>,
-    pub prepared_uncommitted_accumulator_state: AccumulatorState,
+    pub prepared_uncommitted_ledger_hashes: LedgerHashes,
     pub proposed_transactions: Vec<RawNotarizedTransaction>,
     pub is_fallback: bool,
     pub epoch: Epoch,
@@ -210,7 +197,6 @@ pub struct PrepareResult {
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,
-    pub accumulator_state: AccumulatorState,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -266,26 +252,11 @@ pub struct LedgerProof {
 pub struct LedgerHeader {
     pub epoch: Epoch,
     pub round: Round,
-    pub accumulator_state: AccumulatorState,
+    pub state_version: u64,
     pub hashes: LedgerHashes,
     pub consensus_parent_round_timestamp_ms: i64,
     pub proposer_timestamp_ms: i64,
     pub next_epoch: Option<NextEpoch>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct AccumulatorState {
-    pub state_version: u64,
-    pub accumulator_hash: AccumulatorHash,
-}
-
-impl AccumulatorState {
-    pub fn pre_genesis() -> Self {
-        Self {
-            state_version: 0,
-            accumulator_hash: AccumulatorHash::pre_genesis(),
-        }
-    }
 }
 
 pub struct EpochTransactionIdentifiers {
@@ -306,7 +277,7 @@ impl EpochTransactionIdentifiers {
 
     pub fn from(epoch_header: &LedgerHeader) -> Self {
         Self {
-            state_version: epoch_header.accumulator_state.state_version,
+            state_version: epoch_header.state_version,
             transaction_hash: epoch_header.hashes.transaction_root,
             receipt_hash: epoch_header.hashes.receipt_root,
         }

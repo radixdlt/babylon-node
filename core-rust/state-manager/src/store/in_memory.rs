@@ -132,15 +132,13 @@ impl InMemoryStore {
 
     fn insert_transaction(
         &mut self,
+        state_version: u64,
         transaction: RawLedgerTransaction,
         receipt: LocalTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         if self.is_account_change_index_enabled() {
-            self.update_account_change_index_from_receipt(
-                identifiers.resultant_accumulator_state.state_version,
-                &receipt.local_execution,
-            );
+            self.update_account_change_index_from_receipt(state_version, &receipt.local_execution);
         }
 
         if let TypedTransactionIdentifiers::User {
@@ -155,38 +153,22 @@ impl InMemoryStore {
                     "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
                 );
             }
-            self.transaction_intent_lookup.insert(
-                *intent_hash,
-                identifiers.resultant_accumulator_state.state_version,
-            );
-
-            self.user_payload_hash_lookup.insert(
-                *notarized_transaction_hash,
-                identifiers.resultant_accumulator_state.state_version,
-            );
+            self.transaction_intent_lookup
+                .insert(*intent_hash, state_version);
+            self.user_payload_hash_lookup
+                .insert(*notarized_transaction_hash, state_version);
         }
 
-        self.ledger_payload_hash_lookup.insert(
-            identifiers.payload.ledger_payload_hash,
-            identifiers.resultant_accumulator_state.state_version,
-        );
+        self.ledger_payload_hash_lookup
+            .insert(identifiers.payload.ledger_payload_hash, state_version);
 
-        self.transactions.insert(
-            identifiers.resultant_accumulator_state.state_version,
-            transaction,
-        );
-        self.ledger_receipts.insert(
-            identifiers.resultant_accumulator_state.state_version,
-            receipt.on_ledger,
-        );
-        self.local_transaction_executions.insert(
-            identifiers.resultant_accumulator_state.state_version,
-            receipt.local_execution,
-        );
-        self.transaction_identifiers.insert(
-            identifiers.resultant_accumulator_state.state_version,
-            identifiers,
-        );
+        self.transactions.insert(state_version, transaction);
+        self.ledger_receipts
+            .insert(state_version, receipt.on_ledger);
+        self.local_transaction_executions
+            .insert(state_version, receipt.local_execution);
+        self.transaction_identifiers
+            .insert(state_version, identifiers);
     }
 }
 
@@ -290,21 +272,23 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
 
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        for CommittedTransactionBundle {
-            raw,
-            receipt,
-            identifiers,
-        } in commit_bundle.transactions
-        {
-            self.insert_transaction(raw, receipt, identifiers);
+        let commit_ledger_header = &commit_bundle.proof.ledger_header;
+        let commit_state_version = commit_ledger_header.state_version;
+
+        for bundle in commit_bundle.transactions.into_iter() {
+            let CommittedTransactionBundle {
+                state_version,
+                raw,
+                receipt,
+                identifiers,
+            } = bundle;
+            self.insert_transaction(state_version, raw, receipt, identifiers);
         }
 
-        let commit_ledger_header = &commit_bundle.proof.ledger_header;
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             self.epoch_proofs
                 .insert(next_epoch.epoch, commit_bundle.proof.clone());
         }
-        let commit_state_version = commit_ledger_header.accumulator_state.state_version;
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
@@ -353,6 +337,7 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
         match self.store.transactions.get(&state_version) {
             None => None,
             Some(transaction) => Some(CommittedTransactionBundle {
+                state_version,
                 raw: transaction.clone(),
                 receipt: LocalTransactionReceipt {
                     on_ledger: self
@@ -439,11 +424,11 @@ impl QueryableTransactionStore for InMemoryStore {
 }
 
 impl TransactionIdentifierLoader for InMemoryStore {
-    fn get_top_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
+    fn get_top_transaction_identifiers(&self) -> Option<(u64, CommittedTransactionIdentifiers)> {
         self.transaction_identifiers
             .iter()
             .next_back()
-            .map(|(_, value)| value.clone())
+            .map(|(state_version, value)| (*state_version, value.clone()))
     }
 }
 

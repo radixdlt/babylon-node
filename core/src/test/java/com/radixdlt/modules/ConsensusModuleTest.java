@@ -84,12 +84,10 @@ import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
@@ -128,13 +126,11 @@ public class ConsensusModuleTest {
   @Before
   public void setup() {
     var genesisVertex =
-        Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex,
-            LedgerHeader.genesis(AccumulatorState.zero(), LedgerHashes.zero(), null, 0, 0));
+            genesisVertex, LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
@@ -256,13 +252,7 @@ public class ConsensusModuleTest {
         new BFTHeader(
             Round.of(1),
             vertex.hash(),
-            LedgerHeader.create(
-                1,
-                Round.of(1),
-                new AccumulatorState(1, HashUtils.zero256()),
-                LedgerHashes.zero(),
-                1,
-                1));
+            LedgerHeader.create(1, Round.of(1), 1, LedgerHashes.zero(), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
