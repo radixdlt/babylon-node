@@ -71,12 +71,20 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
 import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
+import java.security.Security;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InterfaceSerializationTest {
   private final Serialization serialization =
       Serialization.create(
           ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+
+  @BeforeClass
+  public static void beforeClass() {
+    Security.insertProviderAt(new BouncyCastleProvider(), 1);
+  }
 
   @Test
   public void one_subclass_can_be_serialized_and_deserialized_via_interface() throws Exception {

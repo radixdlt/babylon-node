@@ -62,15 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia;
+package com.radixdlt.rev2;
 
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.genesis.GenesisProvider;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
-public final class OlympiaStateToBabylonGenesisMapper {
+public record REv2LedgerInitializer(
+    Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
 
-  public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
-    // TODO(genesis): coming in a separate PR
-    return GenesisData.testingDefaultEmpty();
+  public void initialize(GenesisProvider genesisProvider) {
+    // If the database was already initialized, we verify that the
+    // previous genesis matches the current configuration
+    // to protect from node misconfiguration
+    // (i.e. configuring genesis A, but node really using prev genesis B).
+    reader
+        .getPostGenesisEpochProof()
+        .ifPresentOrElse(
+            firstEpochProof -> {
+              // Opaque value of the first epoch proof is the hash of GenesisData
+              final var existingGenesisHash = firstEpochProof.getOpaque();
+              final var currentGenesisHash = genesisProvider.genesisDataHash();
+              if (!currentGenesisHash.equals(existingGenesisHash)) {
+                throw new IllegalStateException(
+                    String.format(
+                        """
+                              Current genesis data (of hash %s) doesn't match the genesis data that has previously \
+                              been used to initialize the database (%s). \
+                              Make sure your configuration is correct (check `network.id` and/or \
+                               `network.genesis_data` and/or `network.genesis_file`).""",
+                        currentGenesisHash, existingGenesisHash));
+              }
+            },
+            () -> {
+              // It's a fresh database, so execute the genesis
+              rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
+            });
   }
 }

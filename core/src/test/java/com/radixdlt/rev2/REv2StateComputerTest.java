@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
@@ -75,6 +76,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
@@ -85,10 +87,17 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.modules.REv2LedgerInitializerModule;
+import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
+import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -107,6 +116,16 @@ public class REv2StateComputerTest {
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
             Option.none()),
+        new REv2LedgerInitializerModule(
+            RawGenesisDataWithHash.fromGenesisData(
+                GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
+                    ImmutableList.of(ONLY_VALIDATOR_ID.getKey()),
+                    Decimal.of(1),
+                    Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
+                    Map.of(),
+                    GenesisConsensusManagerConfig.Builder.testDefaults()),
+                new Blake2b256Hasher(DefaultSerialization.getInstance()))),
+        new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -136,24 +155,24 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis =
-        GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-            ImmutableList.of(ONLY_VALIDATOR_ID.getKey()),
-            Decimal.of(1),
-            Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
-            Map.of(),
-            GenesisConsensusManagerConfig.Builder.testDefaults());
-    var genesisResult =
-        new LedgerInitializer(injector.getInstance(RustStateComputer.class))
-            .prepareAndCommit(genesis);
+    var unused = injector.getInstance(REv2LedgerInitializerToken.class);
+    var genesisEpochProof =
+        injector.getInstance(REv2TransactionAndProofStore.class).getFirstEpochProof().orElseThrow();
+    var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
     var validTransaction = TransactionBuilder.forTests().prepare().raw();
 
     // Act
     var roundDetails =
-        new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
+        new RoundDetails(
+            1,
+            1,
+            false,
+            0,
+            getValidatorFromEpochHeader(genesisEpochProof.ledgerHeader(), 0),
+            1000,
+            1000);
     var result =
-        stateComputer.prepare(
-            genesisResult.accumulatorHash(), List.of(), List.of(validTransaction), roundDetails);
+        stateComputer.prepare(accumulatorHash, List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
     assertThat(result.getRejectedTransactionCount()).isZero();
@@ -164,26 +183,37 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis =
-        GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-            ImmutableList.of(ONLY_VALIDATOR_ID.getKey()),
-            Decimal.of(1),
-            Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
-            Map.of(),
-            GenesisConsensusManagerConfig.Builder.testDefaults());
-    var genesisResult =
-        new LedgerInitializer(injector.getInstance(RustStateComputer.class))
-            .prepareAndCommit(genesis);
+    var unused = injector.getInstance(REv2LedgerInitializerToken.class);
+    var genesisEpochProof =
+        injector.getInstance(REv2TransactionAndProofStore.class).getFirstEpochProof().orElseThrow();
+    var accumulatorHash = genesisEpochProof.ledgerHeader().accumulatorState().accumulatorHash();
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
     var roundDetails =
-        new RoundDetails(1, 1, false, 0, genesisResult.getActiveValidator(0), 1000, 1000);
+        new RoundDetails(
+            1,
+            1,
+            false,
+            0,
+            getValidatorFromEpochHeader(genesisEpochProof.ledgerHeader(), 0),
+            1000,
+            1000);
     var result =
         stateComputer.prepare(
-            genesisResult.accumulatorHash(), List.of(), List.of(invalidTransaction), roundDetails);
+            accumulatorHash, List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
     assertThat(result.getRejectedTransactionCount()).isEqualTo(1);
+  }
+
+  private BFTValidatorId getValidatorFromEpochHeader(LedgerHeader epochHeader, int validatorIndex) {
+    final var validator =
+        epochHeader.nextEpoch().unwrap().validators().stream()
+            .sorted(Comparator.comparing(ActiveValidatorInfo::stake).reversed())
+            .skip(validatorIndex)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("some validator expected"));
+    return BFTValidatorId.create(validator.address(), validator.key());
   }
 }

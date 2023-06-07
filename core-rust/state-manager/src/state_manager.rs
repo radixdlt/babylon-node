@@ -97,7 +97,7 @@ use radix_engine::system::bootstrap::*;
 use radix_engine_interface::blueprints::consensus_manager::LeaderProposalHistory;
 use radix_engine_interface::constants::GENESIS_HELPER;
 use radix_engine_interface::network::NetworkDefinition;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
 use utils::rust::collections::NonIterMap;
 
@@ -114,6 +114,8 @@ pub struct StateManagerLoggingConfig {
 }
 
 const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
+
+const GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(2000);
 
 pub struct StateManager<S> {
     store: Arc<RwLock<S>>,
@@ -169,6 +171,7 @@ pub struct GenesisHeaderData {
     timestamp: i64,
     state_version: u64,
     accumulator: AccumulatorHash,
+    genesis_opaque_hash: Hash,
 }
 
 #[derive(Debug)]
@@ -189,7 +192,7 @@ impl GenesisTransactionResult {
         let commit_request = CommitRequest {
             transaction_payloads: vec![self.raw],
             proof: LedgerProof {
-                opaque: Hash([0; Hash::LENGTH]),
+                opaque: header_data.genesis_opaque_hash,
                 ledger_header: LedgerHeader {
                     epoch: header_data.epoch,
                     round: header_data.round,
@@ -254,7 +257,7 @@ where
             self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
                 .warn_after(
-                    TRANSACTION_RUNTIME_WARN_THRESHOLD,
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
                     format!("prepare genesis {}", payload_hash),
                 ),
         );
@@ -755,6 +758,7 @@ where
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
+            Hash([0; Hash::LENGTH]),
         )
     }
 
@@ -764,13 +768,35 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
+        genesis_opaque_hash: Hash,
     ) -> LedgerProof {
+        let start_instant = Instant::now();
+
+        let read_db = self.store.read();
+        if read_db.get_first_epoch_proof().is_some() {
+            panic!("Can't execute genesis: database already initialized")
+        }
+        let maybe_top_txn_identifiers = read_db.get_top_transaction_identifiers();
+        drop(read_db);
+        if let Some(top_txn_identifiers) = maybe_top_txn_identifiers {
+            // No epoch proof, but there are some committed txns
+            panic!(
+                "The database is in inconsistent state: \
+                there are committed transactions (up to state version {}), but there's no epoch proof. \
+                This is likely caused by the the genesis data ingestion being interrupted. \
+                Consider wiping your database dir and trying again.", top_txn_identifiers.at_commit.state_version);
+        }
+
+        let genesis_data_chunks_len = genesis_data_chunks.len();
+        let num_genesis_txns = genesis_data_chunks_len + 2; // + bootstrap + wrap up
+
         let mut header_data = GenesisHeaderData {
             epoch: initial_epoch,
             round: Round::of(0),
             timestamp: initial_timestamp_ms,
             state_version: 0,
             accumulator: AccumulatorHash::pre_genesis(),
+            genesis_opaque_hash,
         };
 
         // System bootstrap
@@ -784,6 +810,8 @@ where
             .prepare_genesis(system_bootstrap_transaction)
             .to_commit_request(&mut header_data);
 
+        info!("Committing genesis txn {} of {}", 1, num_genesis_txns);
+
         let system_bootstrap_receipt = self
             .commit(commit_request, true)
             .expect("System bootstrap commit failed")
@@ -792,12 +820,21 @@ where
         match system_bootstrap_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis system bootstrap txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!(
+                    "Genesis system bootstrap txn didn't succeed {:?}",
+                    system_bootstrap_receipt
+                );
             }
         }
 
         // Data ingestion
         for (chunk_number, chunk) in genesis_data_chunks.into_iter().enumerate() {
+            info!(
+                "Committing genesis txn {} of {}",
+                chunk_number + 1,
+                num_genesis_txns
+            );
+
             let genesis_data_ingestion_transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
 
@@ -813,7 +850,10 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed"); // TODO(genesis): better error handling?
+                    panic!(
+                        "Genesis data ingestion txn didn't succeed {:?}",
+                        genesis_data_ingestion_commit_receipt
+                    );
                 }
             }
         }
@@ -827,6 +867,11 @@ where
 
         let final_ledger_proof = commit_request.proof.clone();
 
+        info!(
+            "Committing genesis txn {} of {}",
+            num_genesis_txns, num_genesis_txns
+        );
+
         let genesis_wrap_up_receipt = self
             .commit(commit_request, true)
             .expect("Genesis wrap up commit failed")
@@ -835,9 +880,18 @@ where
         match genesis_wrap_up_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis wrap up txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!(
+                    "Genesis wrap up txn didn't succeed {:?}",
+                    genesis_wrap_up_receipt
+                );
             }
         }
+
+        info!(
+            "{} genesis transactions successfully executed in {} seconds",
+            num_genesis_txns,
+            start_instant.elapsed().as_secs()
+        );
 
         final_ledger_proof
     }
@@ -899,10 +953,11 @@ where
 
         let mut result_receipts = vec![];
         for (i, (raw, prepared)) in prepared_transactions.into_iter().enumerate() {
-            let (validated, execution_type) = if genesis {
+            let (validated, execution_type, warn_threshold) = if genesis {
                 (
                     self.ledger_transaction_validator.validate_genesis(prepared),
                     ConfigType::Genesis,
+                    GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
                 )
             } else {
                 (
@@ -915,6 +970,7 @@ where
                             );
                         }),
                     ConfigType::Regular,
+                    TRANSACTION_RUNTIME_WARN_THRESHOLD,
                 )
             };
 
@@ -938,10 +994,7 @@ where
                     &legacy_hash,
                     self.execution_configurator
                         .wrap(executable, execution_type)
-                        .warn_after(
-                            TRANSACTION_RUNTIME_WARN_THRESHOLD,
-                            format!("committing {}", payload_hash),
-                        ),
+                        .warn_after(warn_threshold, format!("committing {}", payload_hash)),
                 );
                 let commit = processed.expect_commit(format!("committing {}", payload_hash));
 

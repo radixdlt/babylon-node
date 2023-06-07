@@ -75,6 +75,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
@@ -83,6 +84,7 @@ import com.radixdlt.mempool.MempoolReevaluationModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -90,12 +92,11 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import java.io.File;
 import java.time.Duration;
-import java.util.Optional;
 import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class FunctionalRadixNodeModule extends AbstractModule {
   public sealed interface NodeStorageConfig {
     /**
@@ -107,14 +108,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
      * For tests that use a real storage. Either BerkeleyDB (on the Java side; I think it's just
      * BerkeleySafetyStore) or RocksRb (on the Rust side).
      */
-    record TempFolder(TemporaryFolder tempFolder) implements NodeStorageConfig {}
+    record FileStorage(File folder) implements NodeStorageConfig {}
 
     static NodeStorageConfig none() {
       return new None();
     }
 
     static NodeStorageConfig tempFolder(TemporaryFolder tempFolder) {
-      return new TempFolder(tempFolder);
+      return file(tempFolder.getRoot());
+    }
+
+    static NodeStorageConfig file(File folder) {
+      return new FileStorage(folder);
     }
   }
 
@@ -302,8 +307,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     switch (this.nodeStorageConfig) {
       case NodeStorageConfig.None none -> {}
-      case NodeStorageConfig.TempFolder tempFolder -> {
-        final var tempFolderPath = tempFolder.tempFolder().getRoot().getAbsolutePath();
+      case NodeStorageConfig.FileStorage fileStorage -> {
+        final var tempFolderPath = fileStorage.folder.getAbsolutePath();
         install(new PrefixedNodeStorageLocationModule(tempFolderPath));
 
         final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;
@@ -399,7 +404,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
-            install(new REv2LedgerRecoveryModule(Optional.of(rev2Config.genesis())));
+            final var genesisProvider =
+                RawGenesisDataWithHash.fromGenesisData(
+                    rev2Config.genesis(), new Blake2b256Hasher(DefaultSerialization.getInstance()));
+            install(new REv2LedgerInitializerModule(genesisProvider));
+            install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
 
             switch (rev2Config.proposerConfig()) {

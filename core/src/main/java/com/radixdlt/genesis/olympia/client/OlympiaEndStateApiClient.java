@@ -62,21 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia;
+package com.radixdlt.genesis.olympia.client;
 
 import com.google.inject.Inject;
-import com.jcabi.http.request.JdkRequest;
+import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
 import com.radixdlt.networks.Network;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.Optional;
+import javax.net.ssl.*;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class OlympiaEndStateApiClient {
+  private static final X509ExtendedTrustManager TRUST_ALL_MANAGER =
+      new X509ExtendedTrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) {}
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) {}
+
+        @Override
+        public void checkClientTrusted(
+            X509Certificate[] chain, String authType, SSLEngine engine) {}
+
+        @Override
+        public void checkServerTrusted(
+            X509Certificate[] chain, String authType, SSLEngine engine) {}
+
+        @Override
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+          return new X509Certificate[] {};
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+      };
+
   private static final String END_STATE_API_PATH = "/olympia-end-state";
 
   private static final String STATUS_FIELD = "status";
@@ -87,11 +125,15 @@ public final class OlympiaEndStateApiClient {
     record Ready(String signature, String hash, String base64Contents)
         implements OlympiaEndStateResponse {}
 
-    record NotReady(String signature, String placeholderHash) implements OlympiaEndStateResponse {}
+    record NotReady(
+        Optional<String> testPayload, Optional<String> testPayloadHash, Optional<String> signature)
+        implements OlympiaEndStateResponse {}
   }
 
   private final URL endStateApiUrl;
+  private final Optional<String> basicAuthCredentialsBase64;
   private final Network network;
+  private final OkHttpClient okHttpClient;
 
   @Inject
   public OlympiaEndStateApiClient(OlympiaGenesisConfig config, Network network) {
@@ -106,15 +148,36 @@ public final class OlympiaEndStateApiClient {
                   Invalid endStateApiUrl (coreApiUrl=%s path=%s)""",
               config.nodeCoreApiUrl(), END_STATE_API_PATH));
     }
+    this.basicAuthCredentialsBase64 = config.basicAuthCredentialsBase64();
     this.network = network;
+    this.okHttpClient = createOkHttpClient();
   }
 
-  public OlympiaEndStateResponse getOlympiaEndState() throws IOException, JSONException {
+  private static OkHttpClient createOkHttpClient() {
+    // We're safe to just skip SSL verification here.
+    // The genesis response from Olympia includes node signature,
+    // which we use to verify the contents.
+    final SSLContext sslContext;
+    try {
+      sslContext = SSLContext.getInstance("SSL");
+      sslContext.init(null, new TrustManager[] {TRUST_ALL_MANAGER}, new SecureRandom());
+    } catch (KeyManagementException | NoSuchAlgorithmException e) {
+      throw new RuntimeException("SSL init failed", e);
+    }
+    final var builder = new OkHttpClient.Builder();
+    builder.sslSocketFactory(sslContext.getSocketFactory(), TRUST_ALL_MANAGER);
+    builder.hostnameVerifier((hostname, session) -> true);
+    return builder.build();
+  }
+
+  public OlympiaEndStateResponse getOlympiaEndState(boolean includeTestPayload)
+      throws IOException, JSONException {
     final var requestData =
         new JSONObject()
             .put(
                 "network_identifier",
-                new JSONObject().put("network", toOlympiaNetworkIdentifier(network)));
+                new JSONObject().put("network", toOlympiaNetworkIdentifier(network)))
+            .put("include_test_payload", includeTestPayload);
 
     final var response = postForJson(endStateApiUrl, requestData);
 
@@ -129,27 +192,38 @@ public final class OlympiaEndStateApiClient {
       }
       case STATUS_NOT_READY -> {
         return new OlympiaEndStateResponse.NotReady(
-            response.getString("signature"), response.getString("placeholder_hash"));
+            response.has("test_payload")
+                ? Optional.ofNullable(response.getString("test_payload"))
+                : Optional.empty(),
+            response.has("test_payload_hash")
+                ? Optional.ofNullable(response.getString("test_payload_hash"))
+                : Optional.empty(),
+            response.has("signature")
+                ? Optional.ofNullable(response.getString("signature"))
+                : Optional.empty());
       }
       default -> throw new RuntimeException("Unexpected response status " + status);
     }
   }
 
-  private static JSONObject postForJson(URL url, JSONObject request) throws IOException {
-    final var response =
-        new JdkRequest(url)
-            .header("Content-Type", "application/json")
-            .method(JdkRequest.POST)
-            .fetch(new ByteArrayInputStream(request.toString().getBytes(StandardCharsets.UTF_8)));
+  private JSONObject postForJson(URL url, JSONObject requestData) throws IOException {
+    final var requestBuilder =
+        new Request.Builder()
+            .url(url)
+            .post(RequestBody.create(requestData.toString(), MediaType.parse("application/json")));
+    this.basicAuthCredentialsBase64.map(
+        basicAuthCreds ->
+            requestBuilder.header("Authorization", String.format("Basic %s", basicAuthCreds)));
 
-    if (response.status() != HttpURLConnection.HTTP_OK) {
-      throw new RuntimeException(
-          String.format(
-              "The request didn't succeed. Expected status code %s but got %s",
-              HttpURLConnection.HTTP_OK, response.status()));
+    try (final var response = okHttpClient.newCall(requestBuilder.build()).execute()) {
+      if (response.code() != HttpURLConnection.HTTP_OK) {
+        throw new RuntimeException(
+            String.format(
+                "The request didn't succeed. Expected status code %s but got %s: %s",
+                HttpURLConnection.HTTP_OK, response.code(), response.body().string()));
+      }
+      return new JSONObject(response.body().string());
     }
-
-    return new JSONObject(response.body());
   }
 
   private String toOlympiaNetworkIdentifier(Network network) {

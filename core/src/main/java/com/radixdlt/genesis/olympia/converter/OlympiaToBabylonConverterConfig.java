@@ -62,40 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.genesis.olympia.converter;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
-import java.util.Comparator;
-import java.util.Set;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.utils.UInt256;
 
-public final class LedgerInitializer {
-
-  public record GenesisResult(HashCode accumulatorHash, Set<ActiveValidatorInfo> validatorSet) {
-
-    public BFTValidatorId getActiveValidator(int validatorIndex) {
-      var validator =
-          this.validatorSet().stream()
-              .sorted(Comparator.comparing(ActiveValidatorInfo::stake).reversed())
-              .skip(validatorIndex)
-              .findFirst()
-              .orElseThrow(() -> new IllegalStateException("some validator expected"));
-      return BFTValidatorId.create(validator.address(), validator.key());
-    }
-  }
-
-  private final RustStateComputer stateComputer;
-
-  public LedgerInitializer(RustStateComputer stateComputer) {
-    this.stateComputer = stateComputer;
-  }
-
-  public GenesisResult prepareAndCommit(GenesisData genesis) {
-    var header = this.stateComputer.executeGenesis(genesis).ledgerHeader();
-    return new GenesisResult(
-        header.accumulatorState().accumulatorHash(), header.nextEpoch().unwrap().validators());
-  }
+public record OlympiaToBabylonConverterConfig(
+    /* Maximum number of validators in a single genesis chunk (transaction) */
+    int maxValidatorsPerChunk,
+    /* Maximum number of stakes in a single genesis chunk (transaction) */
+    int maxStakesPerChunk,
+    /* Maximum number of XRD balances in a single genesis chunk (transaction) */
+    int maxXrdBalancesPerChunk,
+    /* Maximum number of resources in a single genesis chunk (transaction) */
+    int maxResourcesPerChunk,
+    /* Maximum number of non-XRD resource balances in a single genesis chunk (transaction) */
+    int maxNonXrdResourceBalancesPerChunk,
+    /* Maximum resource supply that can be converted unmodified.
+    Any value above the threshold will be scaled down (including the
+    corresponding balances). */
+    Decimal maxGenesisResourceUnscaledSupply) {
+  public static final OlympiaToBabylonConverterConfig DEFAULT =
+      new OlympiaToBabylonConverterConfig(
+          100,
+          100,
+          100,
+          100,
+          100,
+          // TODO(REP-73): Decimal.from(UInt256.TWO.pow(160))
+          Decimal.from(UInt256.from("1000000000000000000")));
 }

@@ -64,33 +64,11 @@
 
 package com.radixdlt.genesis;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.networks.Network;
-import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.google.common.hash.HashCode;
+import com.radixdlt.utils.WrappedByteArray;
 
-public final class PreGenesisNodeModule extends AbstractModule {
+public interface GenesisProvider {
+  WrappedByteArray genesisData();
 
-  private final RuntimeProperties properties;
-  private final Network network;
-
-  public PreGenesisNodeModule(RuntimeProperties properties, Network network) {
-    this.properties = properties;
-    this.network = network;
-  }
-
-  @Override
-  public void configure() {
-    bind(RuntimeProperties.class).toInstance(this.properties);
-    bind(Network.class).toInstance(this.network);
-    install(new NodeStorageLocationFromPropertiesModule());
-  }
-
-  @Provides
-  @Singleton
-  GenesisFromPropertiesLoader genesisFromPropertiesLoader() {
-    return new GenesisFromPropertiesLoader(properties, network);
-  }
+  HashCode genesisDataHash();
 }
