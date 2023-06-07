@@ -68,9 +68,8 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::transaction::LegacyLedgerPayloadHash;
 use crate::{
-    ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers, LedgerHashes,
-    LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, SubstateChange,
-    TransactionTreeHash,
+    ChangeAction, EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch,
+    ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
@@ -94,6 +93,7 @@ pub enum ProcessedTransactionReceipt {
     Abort(AbortResult),
 }
 
+#[derive(Clone, Debug)]
 pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
@@ -125,39 +125,27 @@ impl ProcessedTransactionReceipt {
         }
     }
 
-    pub fn expect_commit<S: Into<String>>(&self, description: S) -> &ProcessedCommitResult {
+    pub fn expect_commit(&self, description: impl Display) -> &ProcessedCommitResult {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => commit,
             ProcessedTransactionReceipt::Reject(reject) => {
-                panic!(
-                    "Transaction ({}) was rejected: {:?}",
-                    description.into(),
-                    reject
-                )
+                panic!("Transaction ({}) was rejected: {:?}", description, reject)
             }
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!(
-                    "Transaction ({}) was aborted: {:?}",
-                    description.into(),
-                    abort
-                )
+                panic!("Transaction ({}) was aborted: {:?}", description, abort)
             }
         }
     }
 
-    pub fn expect_commit_or_reject<S: Into<String>>(
+    pub fn expect_commit_or_reject(
         &self,
-        description: S,
-    ) -> Result<&ProcessedCommitResult, &RejectResult> {
+        description: impl Display,
+    ) -> Result<&ProcessedCommitResult, RejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
-            ProcessedTransactionReceipt::Reject(reject) => Err(reject),
+            ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!(
-                    "Transaction ({}) was aborted: {:?}",
-                    description.into(),
-                    abort
-                )
+                panic!("Transaction {} was aborted: {:?}", description, abort)
             }
         }
     }
@@ -223,17 +211,6 @@ impl ProcessedCommitResult {
                 receipt_tree_diff,
             },
             database_updates,
-        }
-    }
-
-    pub fn check_success<S: Into<String>>(&self, description: S) {
-        let local_detailed_outcome = &self.local_receipt.local_execution.outcome;
-        if let DetailedTransactionOutcome::Failure(error) = local_detailed_outcome {
-            panic!(
-                "Transaction ({}) was failed: {:?}",
-                description.into(),
-                error
-            )
         }
     }
 
@@ -322,6 +299,7 @@ impl ProcessedCommitResult {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,
     pub state_hash_tree_diff: StateHashTreeDiff,
@@ -329,7 +307,7 @@ pub struct HashStructuresDiff {
     pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
@@ -354,6 +332,7 @@ impl Default for StateHashTreeDiff {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct AccuTreeDiff<K, N> {
     pub key: K,
     pub slice: TreeSlice<N>,
