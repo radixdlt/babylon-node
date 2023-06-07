@@ -66,6 +66,8 @@ package com.radixdlt.rev2;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 public sealed interface PublicKeyHash {
   static void registerCodec(CodecMap codecMap) {
@@ -74,7 +76,45 @@ public sealed interface PublicKeyHash {
         codecs -> EnumCodec.fromPermittedRecordSubclasses(PublicKeyHash.class, codecs));
   }
 
-  record EcdsaSecp256k1(byte[] value) implements PublicKeyHash {}
+  record EcdsaSecp256k1(byte[] value) implements PublicKeyHash {
+    public String toHexString() {
+      return Hex.toHexString(value);
+    }
 
-  record EddsaEd25519(byte[] value) implements PublicKeyHash {}
+    @Override
+    public String toString() {
+      return toHexString();
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof EcdsaSecp256k1 other && Arrays.equals(this.value, other.value);
+    }
+  }
+
+  record EddsaEd25519(byte[] value) implements PublicKeyHash {
+    public String toHexString() {
+      return Hex.toHexString(value);
+    }
+
+    @Override
+    public String toString() {
+      return toHexString();
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof EddsaEd25519 other && Arrays.equals(this.value, other.value);
+    }
+  }
 }

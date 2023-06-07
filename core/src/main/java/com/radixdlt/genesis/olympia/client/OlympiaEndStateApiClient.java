@@ -211,7 +211,7 @@ public final class OlympiaEndStateApiClient {
         new Request.Builder()
             .url(url)
             .post(RequestBody.create(requestData.toString(), MediaType.parse("application/json")));
-    this.basicAuthCredentialsBase64.map(
+    this.basicAuthCredentialsBase64.ifPresent(
         basicAuthCreds ->
             requestBuilder.header("Authorization", String.format("Basic %s", basicAuthCreds)));
 
