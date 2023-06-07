@@ -156,13 +156,6 @@ pub enum StateManagerRejectReason {
 }
 
 #[derive(Debug)]
-enum IntentHashDuplicateWith {
-    Proposed,
-    Prepared,
-    Committed,
-}
-
-#[derive(Debug)]
 pub struct GenesisHeaderData {
     epoch: Epoch,
     round: Round,
@@ -287,54 +280,8 @@ where
 
         //========================================================================================
         // PART 1:
-        // We check all the proposed transactions to see if their intent hash has already been committed
-        // so that we can mark them as duplicates when we come to execute them.
-        //
-        // TODO - Remove when this check lives in the engine/executor.
-        //========================================================================================
-
-        let prepared_proposed_results: Vec<_> = prepare_request
-            .proposed_transactions
-            .iter()
-            .map(
-                |raw| -> Result<
-                    (RawLedgerTransaction, PreparedLedgerTransaction),
-                    TransactionValidationError,
-                > {
-                    let ledger_transaction = LedgerTransaction::from_raw_user(raw)
-                        .map_err(|err| {
-                            TransactionValidationError::PrepareError(PrepareError::DecodeError(err))
-                        })?
-                        .to_raw()?;
-                    let prepared = self
-                        .ledger_transaction_validator
-                        .prepare_from_raw(&ledger_transaction)?;
-                    Ok((ledger_transaction, prepared))
-                },
-            )
-            .collect();
-
-        let mut intent_hash_potential_conflicts =
-            HashMap::<IntentHash, IntentHashDuplicateWith>::new();
-
-        for (_, prepared) in prepared_proposed_results.iter().flatten() {
-            let intent_hash = prepared
-                .as_user()
-                .expect("Proposed was created from user")
-                .intent_hash();
-            if read_store
-                .get_txn_state_version_by_identifier(&intent_hash)
-                .is_some()
-            {
-                intent_hash_potential_conflicts
-                    .insert(intent_hash, IntentHashDuplicateWith::Committed);
-            }
-        }
-
-        //========================================================================================
-        // PART 2:
-        // We ensure all the ancestor transactions are in our execution cache, ready to execute
-        // the ancestor transactions
+        // We execute all the ancestor transactions (on a happy path: only making sure they are in
+        // our execution cache),
         //========================================================================================
 
         let pending_transaction_base_state = AtState::PendingPreparingVertices {
@@ -342,18 +289,19 @@ where
         };
 
         let mut state_tracker = StateTracker::initial(base_state_version, base_ledger_hashes);
+        let mut duplicate_intent_hash_detector =
+            DuplicateIntentHashDetector::new(read_store.deref());
 
         for raw_ancestor in prepare_request.prepared_uncommitted_transactions {
-            // TODO - By passing through the accumulator / tree hash, avoid doing all this validation if the
-            // transactions are already in the execution cache!
+            // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
+            // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Already prepared transactions should be valid");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
-                intent_hash_potential_conflicts
-                    .insert(intent_hash, IntentHashDuplicateWith::Prepared);
+                duplicate_intent_hash_detector.record_prepared_uncommitted(intent_hash);
             }
 
             let legacy_hash = validated.legacy_ledger_payload_hash();
@@ -399,7 +347,7 @@ where
         }
 
         //========================================================================================
-        // PART 3:
+        // PART 2:
         // We start off the preparation by adding and executing the round change transaction
         //========================================================================================
 
@@ -477,7 +425,7 @@ where
         };
 
         //========================================================================================
-        // PART 4:
+        // PART 3:
         // We continue by attempting to execute the remaining transactions in the proposal
         //========================================================================================
 
@@ -485,17 +433,36 @@ where
         let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
 
-        for (i, proposed_prepare_result) in prepared_proposed_results.into_iter().enumerate() {
+        for (index, raw_user_transaction) in prepare_request
+            .proposed_transactions
+            .into_iter()
+            .enumerate()
+        {
             // Don't process any additional transactions if next epoch has occurred
             if next_epoch.is_some() {
                 break;
             }
 
-            let (raw, prepared) = match proposed_prepare_result {
-                Ok(prepared) => prepared,
+            let prepare_results = LedgerTransaction::from_raw_user(&raw_user_transaction)
+                .map_err(|err| {
+                    TransactionValidationError::PrepareError(PrepareError::DecodeError(err))
+                })
+                .and_then(|ledger_transaction| {
+                    ledger_transaction.to_raw().map_err(|err| {
+                        TransactionValidationError::PrepareError(PrepareError::EncodeError(err))
+                    })
+                })
+                .and_then(|raw_ledger_transaction| {
+                    self.ledger_transaction_validator
+                        .prepare_from_raw(&raw_ledger_transaction)
+                        .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
+                });
+
+            let (raw_ledger_transaction, prepared_transaction) = match prepare_results {
+                Ok(results) => results,
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
-                        index: i as u32,
+                        index: index as u32,
                         intent_hash: None,
                         notarized_transaction_hash: None,
                         ledger_hash: None,
@@ -505,27 +472,29 @@ where
                 }
             };
 
-            let prepared_user = prepared.as_user().expect("Proposed was created from user");
+            let prepared_user_transaction = prepared_transaction
+                .as_user()
+                .expect("Proposed was created from user");
 
-            let intent_hash = prepared_user.intent_hash();
-            let notarized_transaction_hash = prepared_user.notarized_transaction_hash();
-            let ledger_hash = prepared.ledger_transaction_hash();
-            let legacy_hash = prepared.legacy_ledger_payload_hash();
-            let invalid_at_epoch = prepared_user
+            let intent_hash = prepared_user_transaction.intent_hash();
+            let notarized_transaction_hash = prepared_user_transaction.notarized_transaction_hash();
+            let ledger_hash = prepared_transaction.ledger_transaction_hash();
+            let legacy_hash = prepared_transaction.legacy_ledger_payload_hash();
+            let invalid_at_epoch = prepared_user_transaction
                 .signed_intent
                 .intent
                 .header
                 .inner
                 .end_epoch_exclusive;
-            if let Some(state) = intent_hash_potential_conflicts.get(&intent_hash) {
+            if let Err(with) = duplicate_intent_hash_detector.check_proposed(&intent_hash) {
                 rejected_transactions.push(RejectedTransaction {
-                    index: i as u32,
+                    index: index as u32,
                     intent_hash: Some(intent_hash),
                     notarized_transaction_hash: Some(notarized_transaction_hash),
                     ledger_hash: Some(ledger_hash),
                     error: format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
-                        &intent_hash, state
+                        &intent_hash, with
                     ),
                 });
                 pending_transaction_results.push(PendingTransactionResult {
@@ -537,17 +506,17 @@ where
                 continue;
             }
 
-            // TODO - consider saving signature verification by re-using the validated transaction
-            // in the mempool if it's already been verified there
+            // TODO(optimization-only): We could avoid signature verification by re-using the
+            // validated transaction from the mempool.
             let validate_result = self
                 .ledger_transaction_validator
-                .validate_user_or_round_update(prepared);
+                .validate_user_or_round_update(prepared_transaction);
 
             let validated = match validate_result {
                 Ok(validated) => validated,
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
-                        index: i as u32,
+                        index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
                         ledger_hash: Some(ledger_hash),
@@ -590,11 +559,10 @@ where
                         state_tracker.update(&commit.hash_structures_diff);
                         next_epoch = commit.next_epoch();
 
-                        intent_hash_potential_conflicts
-                            .insert(intent_hash, IntentHashDuplicateWith::Proposed);
+                        duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                         committable_transactions.push(CommittableTransaction {
-                            index: Some(i as u32),
-                            raw,
+                            index: Some(index as u32),
+                            raw: raw_ledger_transaction,
                             intent_hash: Some(intent_hash),
                             notarized_transaction_hash: Some(notarized_transaction_hash),
                             ledger_hash,
@@ -610,7 +578,7 @@ where
                     Err(reject) => {
                         let error = reject.error.clone();
                         rejected_transactions.push(RejectedTransaction {
-                            index: i as u32,
+                            index: index as u32,
                             intent_hash: Some(intent_hash),
                             notarized_transaction_hash: Some(notarized_transaction_hash),
                             ledger_hash: Some(ledger_hash),
@@ -1115,4 +1083,63 @@ struct PendingTransactionResult {
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<RejectionReason>,
+}
+
+#[derive(Debug, Clone)]
+enum IntentHashDuplicateWith {
+    Proposed,
+    Prepared,
+    Committed,
+}
+
+/// An internal implementation delegate dealing with intent hash duplicates.
+// TODO: Remove after this responsibility is implemented by the Engine.
+struct DuplicateIntentHashDetector<'s, S> {
+    store: &'s S,
+    recorded_intent_hashes: NonIterMap<IntentHash, IntentHashDuplicateWith>,
+}
+
+impl<'s, S: for<'a> TransactionIndex<&'a IntentHash>> DuplicateIntentHashDetector<'s, S> {
+    pub fn new(store: &'s S) -> Self {
+        Self {
+            store,
+            recorded_intent_hashes: NonIterMap::new(),
+        }
+    }
+
+    /// Records an intent hash of a prepared, uncommitted transaction (a.k.a. "ancestor").
+    /// Please note that duplicates are not possible for these (since it was checked against during
+    /// previous prepare operations), and hence the `check_prepared_uncommitted()` method does not
+    /// exist.
+    pub fn record_prepared_uncommitted(&mut self, intent_hash: IntentHash) {
+        self.recorded_intent_hashes
+            .insert(intent_hash, IntentHashDuplicateWith::Prepared);
+    }
+
+    /// Checks whether the given intent hash of a newly-proposed transaction clashes with any other
+    /// transaction (i.e. an already committed one, or another proposed one, or some prepared
+    /// uncommitted one).
+    pub fn check_proposed(
+        &mut self,
+        intent_hash: &IntentHash,
+    ) -> Result<(), IntentHashDuplicateWith> {
+        if let Some(duplicate_with) = self.recorded_intent_hashes.get(intent_hash) {
+            return Err(duplicate_with.clone());
+        }
+        let committed_at_version = self.store.get_txn_state_version_by_identifier(intent_hash);
+        if committed_at_version.is_some() {
+            // we insert this to our map only as an optimization (avoid repeating the same DB read)
+            self.recorded_intent_hashes
+                .insert(*intent_hash, IntentHashDuplicateWith::Committed);
+            return Err(IntentHashDuplicateWith::Committed);
+        }
+        Ok(())
+    }
+
+    /// Records an intent hash of a proposed transaction which is expected to be committed.
+    /// From this point on, it will be taken into account by the `check_proposed()` method.
+    pub fn record_committable_proposed(&mut self, intent_hash: IntentHash) {
+        self.recorded_intent_hashes
+            .insert(intent_hash, IntentHashDuplicateWith::Proposed);
+    }
 }
