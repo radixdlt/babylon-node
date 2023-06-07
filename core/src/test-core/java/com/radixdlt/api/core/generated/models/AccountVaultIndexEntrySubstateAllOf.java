@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -40,7 +41,7 @@ public class AccountVaultIndexEntrySubstateAllOf {
   private String resourceAddress;
 
   public static final String JSON_PROPERTY_VAULT = "vault";
-  private String vault;
+  private EntityReference vault;
 
   public AccountVaultIndexEntrySubstateAllOf() { 
   }
@@ -71,28 +72,28 @@ public class AccountVaultIndexEntrySubstateAllOf {
   }
 
 
-  public AccountVaultIndexEntrySubstateAllOf vault(String vault) {
+  public AccountVaultIndexEntrySubstateAllOf vault(EntityReference vault) {
     this.vault = vault;
     return this;
   }
 
    /**
-   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * Get vault
    * @return vault
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getVault() {
+  public EntityReference getVault() {
     return vault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVault(String vault) {
+  public void setVault(EntityReference vault) {
     this.vault = vault;
   }
 

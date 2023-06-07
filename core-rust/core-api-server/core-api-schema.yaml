@@ -3327,7 +3327,7 @@ components:
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
             vault:
-              $ref: '#/components/schemas/EntityAddress'
+              $ref: '#/components/schemas/EntityReference'
     AccountDepositRuleIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

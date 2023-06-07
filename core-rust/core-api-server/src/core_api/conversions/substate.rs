@@ -191,7 +191,9 @@ pub fn to_api_account_vault_entry(
         resource_address: to_api_resource_address(context, resource_address)?,
         vault: vault
             .as_ref()
-            .map(|v| to_api_entity_address(context, v.as_node_id()))
+            .map(|v| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_entity_reference(context, v.as_node_id())?))
+            })
             .transpose()?,
     })
 }
