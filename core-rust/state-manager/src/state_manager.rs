@@ -222,8 +222,7 @@ where
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let payload_hash = prepared.ledger_transaction_hash();
-        let legacy_hash = prepared.legacy_ledger_payload_hash();
+        let ledger_transaction_hash = prepared.ledger_transaction_hash();
 
         let system_transaction = prepared
             .into_genesis()
@@ -236,16 +235,17 @@ where
             &epoch_identifiers,
             state_tracker.latest_state_version(),
             &state_tracker.latest_ledger_hashes().transaction_root,
-            &legacy_hash,
+            &ledger_transaction_hash,
             self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
                 .warn_after(
                     TRANSACTION_RUNTIME_WARN_THRESHOLD,
-                    format!("prepare genesis {}", payload_hash),
+                    format!("prepare genesis {}", ledger_transaction_hash),
                 ),
         );
 
-        let commit = processed.expect_commit(format!("prepare genesis {}", payload_hash));
+        let commit =
+            processed.expect_commit(format!("prepare genesis {}", ledger_transaction_hash));
         state_tracker.update(&commit.hash_structures_diff);
 
         GenesisTransactionResult {
@@ -304,8 +304,7 @@ where
                 duplicate_intent_hash_detector.record_prepared_uncommitted(intent_hash);
             }
 
-            let legacy_hash = validated.legacy_ledger_payload_hash();
-            let payload_hash = validated.ledger_transaction_hash();
+            let ledger_transaction_hash = validated.ledger_transaction_hash();
             let executable = validated.get_executable();
             {
                 let mut execution_cache = self.execution_cache.lock();
@@ -314,21 +313,22 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_state_version(),
                     &state_tracker.latest_ledger_hashes().transaction_root,
-                    &legacy_hash,
+                    &ledger_transaction_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
                         .warn_after(
                             TRANSACTION_RUNTIME_WARN_THRESHOLD,
-                            format!("already prepared {}", payload_hash),
+                            format!("already prepared {}", ledger_transaction_hash),
                         ),
                 );
 
-                let commit = processed.expect_commit(format!("already prepared {}", payload_hash));
+                let commit = processed
+                    .expect_commit(format!("already prepared {}", ledger_transaction_hash));
 
                 if let Some(next_epoch) = commit.next_epoch() {
                     panic!(
                         "Already prepared transaction {:?} should not contain next epoch {:?}",
-                        payload_hash, next_epoch
+                        ledger_transaction_hash, next_epoch
                     );
                 }
 
@@ -382,8 +382,7 @@ where
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_model(&ledger_round_update)
                 .expect("expected to be able to prepare the round update transaction");
-            let ledger_hash = prepared.ledger_transaction_hash();
-            let legacy_hash = prepared.legacy_ledger_payload_hash();
+            let ledger_transaction_hash = prepared.ledger_transaction_hash();
             let executable = prepared.get_executable();
 
             let next_epoch = {
@@ -393,7 +392,7 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_state_version(),
                     &state_tracker.latest_ledger_hashes().transaction_root,
-                    &legacy_hash,
+                    &ledger_transaction_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
                         .warn_after(
@@ -417,8 +416,7 @@ where
                     .expect("Expected round update to be encodable"),
                 intent_hash: None,
                 notarized_transaction_hash: None,
-                ledger_hash,
-                legacy_hash,
+                ledger_transaction_hash,
             });
 
             next_epoch
@@ -465,7 +463,7 @@ where
                         index: index as u32,
                         intent_hash: None,
                         notarized_transaction_hash: None,
-                        ledger_hash: None,
+                        ledger_transaction_hash: None,
                         error: format!("{error:?}"),
                     });
                     continue;
@@ -478,8 +476,7 @@ where
 
             let intent_hash = prepared_user_transaction.intent_hash();
             let notarized_transaction_hash = prepared_user_transaction.notarized_transaction_hash();
-            let ledger_hash = prepared_transaction.ledger_transaction_hash();
-            let legacy_hash = prepared_transaction.legacy_ledger_payload_hash();
+            let ledger_transaction_hash = prepared_transaction.ledger_transaction_hash();
             let invalid_at_epoch = prepared_user_transaction
                 .signed_intent
                 .intent
@@ -491,7 +488,7 @@ where
                     index: index as u32,
                     intent_hash: Some(intent_hash),
                     notarized_transaction_hash: Some(notarized_transaction_hash),
-                    ledger_hash: Some(ledger_hash),
+                    ledger_transaction_hash: Some(ledger_transaction_hash),
                     error: format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
                         &intent_hash, with
@@ -519,7 +516,7 @@ where
                         index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
-                        ledger_hash: Some(ledger_hash),
+                        ledger_transaction_hash: Some(ledger_transaction_hash),
                         error: format!("{:?}", &error),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
@@ -545,16 +542,18 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_state_version(),
                     &state_tracker.latest_ledger_hashes().transaction_root,
-                    &legacy_hash,
+                    &ledger_transaction_hash,
                     self.execution_configurator
                         .wrap(executable, ConfigType::Regular)
                         .warn_after(
                             TRANSACTION_RUNTIME_WARN_THRESHOLD,
-                            format!("newly proposed {}", ledger_hash),
+                            format!("newly proposed {}", ledger_transaction_hash),
                         ),
                 );
 
-                match processed.expect_commit_or_reject(format!("newly proposed {}", ledger_hash)) {
+                match processed
+                    .expect_commit_or_reject(format!("newly proposed {}", ledger_transaction_hash))
+                {
                     Ok(commit) => {
                         state_tracker.update(&commit.hash_structures_diff);
                         next_epoch = commit.next_epoch();
@@ -565,8 +564,7 @@ where
                             raw: raw_ledger_transaction,
                             intent_hash: Some(intent_hash),
                             notarized_transaction_hash: Some(notarized_transaction_hash),
-                            ledger_hash,
-                            legacy_hash,
+                            ledger_transaction_hash,
                         });
                         pending_transaction_results.push(PendingTransactionResult {
                             intent_hash,
@@ -581,7 +579,7 @@ where
                             index: index as u32,
                             intent_hash: Some(intent_hash),
                             notarized_transaction_hash: Some(notarized_transaction_hash),
-                            ledger_hash: Some(ledger_hash),
+                            ledger_transaction_hash: Some(ledger_transaction_hash),
                             error: format!("{:?}", &error),
                         });
                         pending_transaction_results.push(PendingTransactionResult {
@@ -889,8 +887,7 @@ where
                 )
             };
 
-            let payload_hash = validated.ledger_transaction_hash();
-            let legacy_hash = validated.legacy_ledger_payload_hash();
+            let ledger_transaction_hash = validated.ledger_transaction_hash();
             let executable = validated.get_executable();
 
             let (
@@ -907,15 +904,16 @@ where
                     &epoch_identifiers,
                     state_tracker.latest_state_version(),
                     &state_tracker.latest_ledger_hashes().transaction_root,
-                    &legacy_hash,
+                    &ledger_transaction_hash,
                     self.execution_configurator
                         .wrap(executable, execution_type)
                         .warn_after(
                             TRANSACTION_RUNTIME_WARN_THRESHOLD,
-                            format!("committing {}", payload_hash),
+                            format!("committing {}", ledger_transaction_hash),
                         ),
                 );
-                let commit = processed.expect_commit(format!("committing {}", payload_hash));
+                let commit =
+                    processed.expect_commit(format!("committing {}", ledger_transaction_hash));
 
                 let hash_structures_diff = &commit.hash_structures_diff;
                 state_tracker.update(hash_structures_diff);

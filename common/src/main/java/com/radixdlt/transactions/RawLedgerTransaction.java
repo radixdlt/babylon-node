@@ -69,6 +69,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -88,20 +89,14 @@ public final class RawLedgerTransaction {
   }
 
   private final byte[] payload;
-  private final LegacyLedgerPayloadHash legacyPayloadHash;
 
   private RawLedgerTransaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
-    this.legacyPayloadHash = HashUtils.legacyLedgerPayloadHash(payload);
   }
 
   @JsonCreator
   public static RawLedgerTransaction create(byte[] payload) {
     return new RawLedgerTransaction(payload);
-  }
-
-  public LegacyLedgerPayloadHash getLegacyPayloadHash() {
-    return legacyPayloadHash;
   }
 
   public int payloadLength() {
@@ -115,7 +110,7 @@ public final class RawLedgerTransaction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(legacyPayloadHash);
+    return Arrays.hashCode(payload);
   }
 
   @Override
@@ -124,7 +119,7 @@ public final class RawLedgerTransaction {
       return false;
     }
 
-    return Objects.equals(this.legacyPayloadHash, other.legacyPayloadHash);
+    return Arrays.equals(this.payload, other.payload);
   }
 
   @Override

@@ -206,8 +206,7 @@ pub struct CommittableTransaction {
     pub raw: RawLedgerTransaction,
     pub intent_hash: Option<IntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
-    pub ledger_hash: LedgerTransactionHash,
-    pub legacy_hash: LegacyLedgerPayloadHash,
+    pub ledger_transaction_hash: LedgerTransactionHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -216,7 +215,7 @@ pub struct RejectedTransaction {
     // Note - these are None if the transaction can't even be prepared to determine the hashes
     pub intent_hash: Option<IntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
-    pub ledger_hash: Option<LedgerTransactionHash>,
+    pub ledger_transaction_hash: Option<LedgerTransactionHash>,
     pub error: String,
 }
 

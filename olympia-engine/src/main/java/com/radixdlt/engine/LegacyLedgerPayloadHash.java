@@ -62,27 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.engine;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Bytes;
-import java.util.Objects;
 
 public record LegacyLedgerPayloadHash(HashCode inner) {
-  public LegacyLedgerPayloadHash {
-    Objects.requireNonNull(inner);
-  }
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        LegacyLedgerPayloadHash.class,
-        codecs ->
-            StructCodec.transparent(
-                LegacyLedgerPayloadHash::new,
-                codecs.of(HashCode.class),
-                LegacyLedgerPayloadHash::inner));
+  public static LegacyLedgerPayloadHash createFor(RawLedgerTransaction rawLedgerTransaction) {
+    return new LegacyLedgerPayloadHash(HashUtils.blake2b256(rawLedgerTransaction.getPayload()));
   }
 
   public String hex() {

@@ -126,7 +126,6 @@ public final class StateManagerSbor {
     SignedIntentHash.registerCodec(codecMap);
     NotarizedTransactionHash.registerCodec(codecMap);
     LedgerTransactionHash.registerCodec(codecMap);
-    LegacyLedgerPayloadHash.registerCodec(codecMap);
     TransactionStatus.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);
