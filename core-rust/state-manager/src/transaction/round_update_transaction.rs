@@ -29,26 +29,30 @@ impl RoundUpdateTransactionV1 {
     }
 
     pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
-        let hash = HashAccumulator::new()
+        let prepared_instructions = InstructionsV1(self.create_instructions()).prepare_partial()?;
+        let encoded_source = manifest_encode(&self)?;
+        // Minor TODO - for a slight performance improvement, change this to be read from the decoder
+        // As per the other hashes, don't include the prefix byte
+        let source_hash = hash(&encoded_source[1..]);
+        let instructions_hash = prepared_instructions.summary.hash;
+        let round_update_hash = HashAccumulator::new()
             .update([
                 TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
                 TransactionDiscriminator::V1RoundUpdate as u8,
             ])
-            .update(format!(
-                "RoundChange({},{})",
-                self.epoch.number(),
-                self.round.number()
-            ))
+            // We include the full source transaction contents
+            .update(source_hash)
+            // We also include the instructions hash, so the exact instructions can be proven
+            .update(instructions_hash)
             .finalize();
-        let prepared_instructions = InstructionsV1(self.create_instructions()).prepare_partial()?;
         Ok(PreparedRoundUpdateTransactionV1 {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs: index_map_new(),
             summary: Summary {
-                effective_length: 0,
-                total_bytes_hashed: 0,
-                hash,
+                effective_length: prepared_instructions.summary.effective_length,
+                total_bytes_hashed: prepared_instructions.summary.total_bytes_hashed,
+                hash: round_update_hash,
             },
         })
     }
