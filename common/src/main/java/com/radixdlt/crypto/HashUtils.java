@@ -68,7 +68,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.transactions.LegacyLedgerPayloadHash;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -172,16 +171,6 @@ public final class HashUtils {
    */
   public static int compare(HashCode fst, HashCode snd) {
     return hashComparator.compare(fst, snd);
-  }
-
-  /**
-   * Calculate hash which can serve as transaction ID.
-   *
-   * @param payload input bytes to hash
-   * @return calculated hash
-   */
-  public static LegacyLedgerPayloadHash legacyLedgerPayloadHash(byte[] payload) {
-    return new LegacyLedgerPayloadHash(blake2b256(payload));
   }
 
   private HashUtils() {

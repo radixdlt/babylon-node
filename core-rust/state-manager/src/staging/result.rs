@@ -66,7 +66,7 @@ use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
-use crate::transaction::LegacyLedgerPayloadHash;
+use crate::transaction::LedgerTransactionHash;
 use crate::{
     ChangeAction, EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch,
     ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
@@ -104,7 +104,7 @@ pub struct HashUpdateContext<'s, S> {
     pub store: &'s S,
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
     pub parent_state_version: u64,
-    pub legacy_payload_hash: &'s LegacyLedgerPayloadHash,
+    pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
 impl ProcessedTransactionReceipt {
@@ -167,7 +167,7 @@ impl ProcessedCommitResult {
     ) -> Self {
         let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
-        let transaction_legacy_hash = hash_update_context.legacy_payload_hash;
+        let ledger_transaction_hash = hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
         let database_updates = commit_result.state_updates.database_updates.clone();
@@ -183,7 +183,7 @@ impl ProcessedCommitResult {
             epoch_transaction_identifiers.state_version,
             epoch_transaction_identifiers.transaction_hash,
             parent_state_version,
-            TransactionTreeHash::from(transaction_legacy_hash.into_hash()),
+            TransactionTreeHash::from(ledger_transaction_hash.into_hash()),
         );
 
         let local_receipt =

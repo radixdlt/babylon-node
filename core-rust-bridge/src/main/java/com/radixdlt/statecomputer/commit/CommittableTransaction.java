@@ -75,8 +75,7 @@ public record CommittableTransaction(
     RawLedgerTransaction raw,
     Option<IntentHash> intentHash,
     Option<NotarizedTransactionHash> notarizedTransactionHash,
-    LedgerTransactionHash ledgerTransactionHash,
-    LegacyLedgerPayloadHash legacyLedgerPayloadHash) {
+    LedgerTransactionHash ledgerTransactionHash) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommittableTransaction.class,

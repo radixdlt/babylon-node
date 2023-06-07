@@ -223,7 +223,7 @@ where
             .expect("Could not encode genesis transaction");
         let prepared = PreparedLedgerTransaction::prepare_from_raw(&raw)
             .expect("Could not prepare genesis transaction");
-        let legacy_hash = prepared.legacy_ledger_payload_hash();
+        let ledger_transaction_hash = prepared.ledger_transaction_hash();
 
         let system_transaction = prepared
             .into_genesis()
@@ -236,7 +236,7 @@ where
             &epoch_identifiers,
             base_state_version,
             &base_ledger_hashes.transaction_root,
-            &legacy_hash,
+            &ledger_transaction_hash,
             self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, "genesis"),
@@ -380,8 +380,7 @@ where
                     .expect("Expected round update to be encodable"),
                 intent_hash: None,
                 notarized_transaction_hash: None,
-                ledger_hash: validated.ledger_transaction_hash(),
-                legacy_hash: validated.legacy_ledger_payload_hash(),
+                ledger_transaction_hash: validated.ledger_transaction_hash(),
             });
         }
 
@@ -426,7 +425,7 @@ where
                         index: index as u32,
                         intent_hash: None,
                         notarized_transaction_hash: None,
-                        ledger_hash: None,
+                        ledger_transaction_hash: None,
                         error: format!("{error:?}"),
                     });
                     continue;
@@ -439,7 +438,7 @@ where
 
             let intent_hash = prepared_user_transaction.intent_hash();
             let notarized_transaction_hash = prepared_user_transaction.notarized_transaction_hash();
-            let ledger_hash = prepared_transaction.ledger_transaction_hash();
+            let ledger_transaction_hash = prepared_transaction.ledger_transaction_hash();
             let invalid_at_epoch = prepared_user_transaction
                 .signed_intent
                 .intent
@@ -451,7 +450,7 @@ where
                     index: index as u32,
                     intent_hash: Some(intent_hash),
                     notarized_transaction_hash: Some(notarized_transaction_hash),
-                    ledger_hash: Some(ledger_hash),
+                    ledger_transaction_hash: Some(ledger_transaction_hash),
                     error: format!(
                         "Duplicate intent hash: {:?}, state: {:?}",
                         &intent_hash, with
@@ -479,7 +478,7 @@ where
                         index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
-                        ledger_hash: Some(ledger_hash),
+                        ledger_transaction_hash: Some(ledger_transaction_hash),
                         error: format!("{:?}", &error),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
@@ -504,8 +503,7 @@ where
                         raw: raw_ledger_transaction,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
-                        ledger_hash: validated.ledger_transaction_hash(),
-                        legacy_hash: validated.legacy_ledger_payload_hash(),
+                        ledger_transaction_hash,
                     });
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
@@ -519,7 +517,7 @@ where
                         index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
-                        ledger_hash: Some(ledger_hash),
+                        ledger_transaction_hash: Some(ledger_transaction_hash),
                         error: format!("{:?}", &error),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
@@ -1126,7 +1124,7 @@ impl<'s, S: ReadableStore> TransactionSeriesExecutor<'s, S> {
             &self.epoch_transaction_identifiers,
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
-            &transaction.legacy_ledger_payload_hash,
+            &transaction.ledger_transaction_hash(),
             self.execution_configurator
                 .wrap(transaction.get_executable(), config_type)
                 .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &description),

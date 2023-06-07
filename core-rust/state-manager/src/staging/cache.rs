@@ -79,7 +79,7 @@ use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
-use crate::transaction::{LegacyLedgerPayloadHash, TransactionLogic};
+use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
@@ -93,17 +93,17 @@ use slotmap::SecondaryMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 struct TransactionPlacement {
     parent_transaction_root: TransactionTreeHash,
-    legacy_payload_hash: LegacyLedgerPayloadHash,
+    ledger_transaction_hash: LedgerTransactionHash,
 }
 
 impl TransactionPlacement {
     fn new(
         parent_transaction_root: &TransactionTreeHash,
-        legacy_payload_hash: &LegacyLedgerPayloadHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
     ) -> Self {
         Self {
             parent_transaction_root: *parent_transaction_root,
-            legacy_payload_hash: *legacy_payload_hash,
+            ledger_transaction_hash: *ledger_transaction_hash,
         }
     }
 }
@@ -162,11 +162,11 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: u64,
         parent_transaction_root: &TransactionTreeHash,
-        legacy_payload_hash: &LegacyLedgerPayloadHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
         let transaction_placement =
-            TransactionPlacement::new(parent_transaction_root, legacy_payload_hash);
+            TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
         let transaction_key = self
             .transaction_placement_to_key
             .get(&transaction_placement);
@@ -183,7 +183,7 @@ impl ExecutionCache {
                         store: &staged_store,
                         epoch_transaction_identifiers,
                         parent_state_version,
-                        legacy_payload_hash,
+                        ledger_transaction_hash,
                     },
                     transaction_receipt,
                 );

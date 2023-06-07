@@ -73,6 +73,7 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.LegacyLedgerPayloadHash;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -137,7 +138,7 @@ public final class REParser {
     }
 
     public HashCode transactionPayloadHash() {
-      return transaction.getLegacyPayloadHash().inner();
+      return LegacyLedgerPayloadHash.createFor(transaction).inner();
     }
 
     public int upSubstateCount() {
