@@ -72,7 +72,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,10 +97,7 @@ public class LedgerProofTest {
     HashCode accumulatorHash = mock(HashCode.class);
     Round round = mock(Round.class);
     when(l0.getEpoch()).thenReturn(3L);
-    AccumulatorState accumulatorState = mock(AccumulatorState.class);
-    when(accumulatorState.getAccumulatorHash()).thenReturn(accumulatorHash);
-    when(accumulatorState.getStateVersion()).thenReturn(12345L);
-    when(l0.getAccumulatorState()).thenReturn(accumulatorState);
+    when(l0.getStateVersion()).thenReturn(12345L);
     when(l0.getRound()).thenReturn(round);
     when(l0.consensusParentRoundTimestamp()).thenReturn(2468L);
     when(l0.isEndOfEpoch()).thenReturn(true);
@@ -131,16 +127,12 @@ public class LedgerProofTest {
   public void testComparsionBetweenDifferentStateVersions() {
     LedgerHeader l0 = mock(LedgerHeader.class);
     when(l0.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState = mock(AccumulatorState.class);
-    when(accumulatorState.getStateVersion()).thenReturn(2L);
-    when(l0.getAccumulatorState()).thenReturn(accumulatorState);
+    when(l0.getStateVersion()).thenReturn(2L);
     LedgerProof s0 =
         new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     LedgerHeader l1 = mock(LedgerHeader.class);
     when(l1.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState1 = mock(AccumulatorState.class);
-    when(accumulatorState1.getStateVersion()).thenReturn(3L);
-    when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
+    when(l1.getStateVersion()).thenReturn(3L);
     LedgerProof s1 =
         new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
     assertThat(headerComparator.compare(s0, s1)).isNegative();
@@ -151,17 +143,13 @@ public class LedgerProofTest {
   public void testComparsionWithEndOfEpoch() {
     LedgerHeader l0 = mock(LedgerHeader.class);
     when(l0.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState = mock(AccumulatorState.class);
-    when(accumulatorState.getStateVersion()).thenReturn(2L);
-    when(l0.getAccumulatorState()).thenReturn(accumulatorState);
+    when(l0.getStateVersion()).thenReturn(2L);
     when(l0.isEndOfEpoch()).thenReturn(false);
     LedgerProof s0 =
         new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     LedgerHeader l1 = mock(LedgerHeader.class);
     when(l1.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState1 = mock(AccumulatorState.class);
-    when(accumulatorState1.getStateVersion()).thenReturn(3L);
-    when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
+    when(l1.getStateVersion()).thenReturn(3L);
     when(l1.isEndOfEpoch()).thenReturn(true);
     LedgerProof s1 =
         new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
@@ -173,17 +161,13 @@ public class LedgerProofTest {
   public void testComparsionEqual() {
     LedgerHeader l0 = mock(LedgerHeader.class);
     when(l0.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState = mock(AccumulatorState.class);
-    when(accumulatorState.getStateVersion()).thenReturn(3L);
-    when(l0.getAccumulatorState()).thenReturn(accumulatorState);
+    when(l0.getStateVersion()).thenReturn(3L);
     when(l0.isEndOfEpoch()).thenReturn(true);
     LedgerProof s0 =
         new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     LedgerHeader l1 = mock(LedgerHeader.class);
     when(l1.getEpoch()).thenReturn(2L);
-    AccumulatorState accumulatorState1 = mock(AccumulatorState.class);
-    when(accumulatorState1.getStateVersion()).thenReturn(3L);
-    when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
+    when(l1.getStateVersion()).thenReturn(3L);
     when(l1.isEndOfEpoch()).thenReturn(true);
     LedgerProof s1 =
         new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));

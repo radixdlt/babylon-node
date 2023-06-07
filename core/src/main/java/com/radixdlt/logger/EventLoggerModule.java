@@ -246,12 +246,11 @@ public final class EventLoggerModule extends AbstractModule {
     var proof = ledgerUpdate.getTail();
     logger.log(
         logLevel,
-        "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
+        "lgr_commit{epoch={} round={} version={} txn_root={} user_txns={}}",
         proof.getEpoch(),
         proof.getRound().number(),
         proof.getStateVersion(),
-        Bytes.toHexString(proof.getAccumulatorState().getAccumulatorHash().asBytes())
-            .substring(0, 16),
+        Bytes.toHexString(proof.getLedgerHashes().getTransactionRoot().asBytes()).substring(0, 16),
         userTransactionsCount);
   }
 

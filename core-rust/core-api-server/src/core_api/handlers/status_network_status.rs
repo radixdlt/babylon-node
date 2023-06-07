@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{CommitBasedIdentifiers, LedgerHashes, LedgerProof};
+use state_manager::{LedgerHashes, LedgerProof};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -13,9 +13,10 @@ pub(crate) async fn handle_status_network_status(
     let mapping_context = MappingContext::new(&state.network);
 
     let database = state.database.read();
+    let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     Ok(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
-            &CommitBasedIdentifiers::pre_genesis(),
+            0,
             &LedgerHashes::pre_genesis(),
         )?),
         genesis_epoch_round: database
@@ -27,25 +28,24 @@ pub(crate) async fn handle_status_network_status(
         post_genesis_state_identifier: database
             .get_first_epoch_proof()
             .and_then(|epoch_proof| {
-                let state_version = epoch_proof.ledger_header.accumulator_state.state_version;
-                database.get_committed_transaction_identifiers(state_version)
+                let state_version = epoch_proof.ledger_header.state_version;
+                database
+                    .get_committed_ledger_hashes(state_version)
+                    .map(|ledger_hashes| (state_version, ledger_hashes))
             })
-            .map(|identifiers| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_committed_state_identifiers(
-                    &identifiers.at_commit,
-                    &identifiers.resultant_ledger,
-                )?))
-            })
+            .map(
+                |(state_version, ledger_hashes)| -> Result<_, MappingError> {
+                    Ok(Box::new(to_api_committed_state_identifiers(
+                        state_version,
+                        &ledger_hashes,
+                    )?))
+                },
+            )
             .transpose()?,
-        current_state_identifier: database
-            .get_top_transaction_identifiers()
-            .map(|ids| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_committed_state_identifiers(
-                    &ids.at_commit,
-                    &ids.resultant_ledger,
-                )?))
-            })
-            .transpose()?,
+        current_state_identifier: Some(Box::new(to_api_committed_state_identifiers(
+            current_state_version,
+            &current_ledger_hashes,
+        )?)),
         current_epoch_round: database
             .get_last_proof()
             .map(|proof| -> Result<_, MappingError> {
@@ -68,12 +68,11 @@ pub fn to_api_epoch_round(
 }
 
 pub fn to_api_committed_state_identifiers(
-    commit_based_identifiers: &CommitBasedIdentifiers,
+    state_version: u64,
     ledger_hashes: &LedgerHashes,
 ) -> Result<models::CommittedStateIdentifier, MappingError> {
     Ok(models::CommittedStateIdentifier {
-        state_version: to_api_state_version(commit_based_identifiers.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&commit_based_identifiers.accumulator_hash),
+        state_version: to_api_state_version(state_version)?,
         state_tree_hash: to_api_state_tree_hash(&ledger_hashes.state_root),
         transaction_tree_hash: to_api_transaction_tree_hash(&ledger_hashes.transaction_root),
         receipt_tree_hash: to_api_receipt_tree_hash(&ledger_hashes.receipt_root),

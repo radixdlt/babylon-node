@@ -77,7 +77,6 @@ import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.*;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -95,7 +94,6 @@ public final class RemoteSyncService {
   private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
-  private final Comparator<AccumulatorState> accComparator;
   private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
   private LedgerProof currentHeader;
@@ -110,7 +108,6 @@ public final class RemoteSyncService {
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
-      Comparator<AccumulatorState> accComparator,
       @LastProof LedgerProof initialHeader) {
     this.peersView = Objects.requireNonNull(peersView);
     this.localSyncService = Objects.requireNonNull(localSyncService);
@@ -120,7 +117,6 @@ public final class RemoteSyncService {
     this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
     this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
     this.metrics = metrics;
-    this.accComparator = Objects.requireNonNull(accComparator);
     this.ledgerStatusUpdateSendRateLimiter =
         RateLimiter.create(syncRelayConfig.maxLedgerUpdatesRate());
 
@@ -178,9 +174,7 @@ public final class RemoteSyncService {
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
     final LedgerProof updatedHeader = ledgerUpdate.getTail();
-    if (accComparator.compare(
-            updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState())
-        > 0) {
+    if (updatedHeader.getStateVersion() > this.currentHeader.getStateVersion()) {
       this.currentHeader = updatedHeader;
       this.sendStatusUpdateToSomePeers(updatedHeader);
     }

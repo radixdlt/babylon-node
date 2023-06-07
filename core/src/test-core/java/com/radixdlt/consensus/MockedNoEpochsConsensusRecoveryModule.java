@@ -68,11 +68,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -108,22 +106,21 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
   @Provides
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     VertexWithHash genesisVertex =
         Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0))
+                LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
-            proof.getAccumulatorState(),
+            proof.getStateVersion(),
             proof.getLedgerHashes(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

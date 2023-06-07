@@ -72,7 +72,6 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
 import com.radixdlt.utils.UInt64;
@@ -178,7 +177,7 @@ public final class REv2ToConsensus {
     return LedgerHeader.create(
         ledgerHeader.epoch().toNonNegativeLong().unwrap(),
         Round.of(ledgerHeader.round().toNonNegativeLong().unwrap()),
-        REv2ToConsensus.accumulatorState(ledgerHeader.accumulatorState()),
+        ledgerHeader.stateVersion().toNonNegativeLong().unwrap(),
         REv2ToConsensus.ledgerHashes(ledgerHeader.hashes()),
         ledgerHeader.consensusParentRoundTimestampMs(),
         ledgerHeader.proposerTimestampMs(),
@@ -190,24 +189,10 @@ public final class REv2ToConsensus {
     return new com.radixdlt.statecomputer.commit.LedgerHeader(
         UInt64.fromNonNegativeLong(ledgerHeader.getEpoch()),
         UInt64.fromNonNegativeLong(ledgerHeader.getRound().number()),
-        REv2ToConsensus.accumulatorState(ledgerHeader.getAccumulatorState()),
+        UInt64.fromNonNegativeLong(ledgerHeader.getStateVersion()),
         REv2ToConsensus.ledgerHashes(ledgerHeader.getHashes()),
         ledgerHeader.consensusParentRoundTimestamp(),
         ledgerHeader.proposerTimestamp(),
         Option.from(ledgerHeader.getNextEpoch().map(REv2ToConsensus::nextEpoch)));
-  }
-
-  public static AccumulatorState accumulatorState(
-      com.radixdlt.statecomputer.commit.AccumulatorState accumulatorState) {
-    return new AccumulatorState(
-        accumulatorState.stateVersion().toNonNegativeLong().unwrap(),
-        accumulatorState.accumulatorHash());
-  }
-
-  public static com.radixdlt.statecomputer.commit.AccumulatorState accumulatorState(
-      AccumulatorState accumulatorState) {
-    return new com.radixdlt.statecomputer.commit.AccumulatorState(
-        UInt64.fromNonNegativeLong(accumulatorState.getStateVersion()),
-        accumulatorState.getAccumulatorHash());
   }
 }

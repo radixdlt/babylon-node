@@ -62,17 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.statecomputer;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.*;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public record AccumulatorState(UInt64 stateVersion, HashCode accumulatorHash) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        AccumulatorState.class,
-        codecs -> StructCodec.fromRecordComponents(AccumulatorState.class, codecs));
+public final class MockedMempoolStateComputer implements StateComputer {
+
+  private static final Logger log = LogManager.getLogger();
+
+  private final SimpleMempool mempool;
+  private final MockedStateComputer stateComputer;
+
+  @Inject
+  public MockedMempoolStateComputer(
+      SimpleMempool mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.mempool = mempool;
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
+
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
+    mempoolAdd
+        .transactions()
+        .forEach(
+            txn -> {
+              try {
+                this.mempool.addTransaction(txn);
+              } catch (MempoolRejectedException e) {
+                log.error(e);
+              }
+            });
+  }
+
+  @Override
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return this.mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, Set.of());
+  }
+
+  @Override
+  public StateComputerResult prepare(
+      LedgerHashes committedLedgerHashes,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      LedgerHashes preparedUncommittedLedgerHashes,
+      List<RawNotarizedTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    return this.stateComputer.prepare(
+        committedLedgerHashes,
+        preparedUncommittedVertices,
+        preparedUncommittedLedgerHashes,
+        proposedTransactions,
+        roundDetails);
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
+    this.stateComputer.commit(committedTransactionsWithProof, vertexStore);
+    this.mempool.handleTransactionsCommitted(
+        committedTransactionsWithProof.getTransactions().stream()
+            // This undoes the (hacky) re-mapping done by a fake `prepare()` using `MockExecuted`
+            // (see e.g. `MockedStateComputer` implementation).
+            .map(t -> RawNotarizedTransaction.create(t.getPayload()))
+            .toList());
   }
 }

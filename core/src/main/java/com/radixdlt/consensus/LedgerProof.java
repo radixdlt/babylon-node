@@ -72,7 +72,6 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -117,8 +116,8 @@ public final class LedgerProof {
   }
 
   public static LedgerProof mockAtStateVersion(long stateVersion) {
-    final var acc = new AccumulatorState(stateVersion, HashUtils.zero256());
-    final var header = LedgerHeader.create(0, Round.genesis(), acc, LedgerHashes.zero(), 0, 0);
+    final var header =
+        LedgerHeader.create(0, Round.genesis(), stateVersion, LedgerHashes.zero(), 0, 0);
     return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
   }
 
@@ -127,14 +126,14 @@ public final class LedgerProof {
   }
 
   public static LedgerProof genesis(
-      AccumulatorState accumulatorState,
+      long stateVersion,
       LedgerHashes ledgerHashes,
       BFTValidatorSet nextValidators,
       long consensusParentRoundTimestamp,
       long ledgerTimestamp) {
     var genesisLedgerHeader =
         LedgerHeader.genesis(
-            accumulatorState,
+            stateVersion,
             ledgerHashes,
             nextValidators,
             consensusParentRoundTimestamp,
@@ -154,10 +153,12 @@ public final class LedgerProof {
         return p0.ledgerHeader.isEndOfEpoch() ? 1 : -1;
       }
 
-      return Long.compare(
-          p0.ledgerHeader.getAccumulatorState().getStateVersion(),
-          p1.ledgerHeader.getAccumulatorState().getStateVersion());
+      return Long.compare(p0.ledgerHeader.getStateVersion(), p1.ledgerHeader.getStateVersion());
     }
+  }
+
+  public static LedgerProof fromDto(DtoLedgerProof dto) {
+    return new LedgerProof(dto.getOpaque(), dto.getLedgerHeader(), dto.getSignatures());
   }
 
   public DtoLedgerProof toDto() {
@@ -192,17 +193,13 @@ public final class LedgerProof {
     return ledgerHeader.getRound();
   }
 
-  public AccumulatorState getAccumulatorState() {
-    return ledgerHeader.getAccumulatorState();
-  }
-
   public LedgerHashes getLedgerHashes() {
     return ledgerHeader.getHashes();
   }
 
   // TODO: Remove
   public long getStateVersion() {
-    return ledgerHeader.getAccumulatorState().getStateVersion();
+    return ledgerHeader.getStateVersion();
   }
 
   public long consensusParentRoundTimestamp() {

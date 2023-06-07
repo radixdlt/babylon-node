@@ -82,6 +82,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -111,8 +112,9 @@ public class OneByzantineGenesisTest {
                     new MockedEpochsConsensusRecoveryModule(
                         Round.of(1000000),
                         EpochNodeWeightMapping.constant(3, 1),
-                        HashUtils.random256(),
-                        LedgerHashes.zero()))
+                        LedgerHashes.create(
+                            HashUtils.random256(), HashUtils.random256(), HashUtils.random256()),
+                        StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -158,7 +160,10 @@ public class OneByzantineGenesisTest {
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 () ->
                     new MockedEpochsConsensusRecoveryModule(
-                        Round.of(10000000), EpochNodeWeightMapping.constant(4)))
+                        Round.of(10000000),
+                        EpochNodeWeightMapping.constant(4),
+                        LedgerHashes.zero(),
+                        StateComputerConfig.ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

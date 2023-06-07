@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
@@ -74,20 +73,17 @@ import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockExecuted;
-import com.radixdlt.ledger.RoundDetails;
+import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
@@ -117,21 +113,33 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      HashCode parentAccumulator,
-      List<ExecutedVertex> previousVertices,
+      LedgerHashes committedLedgerHashes,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
+      final var baseResult =
+          stateComputer.prepare(
+              committedLedgerHashes,
+              preparedUncommittedVertices,
+              preparedUncommittedLedgerHashes,
+              // simulate a single "round change" transaction, since state version must progress
+              Collections.singletonList(RawNotarizedTransaction.create(new byte[0])),
+              roundDetails);
+      final var nextEpoch = roundDetails.epoch() + 1; // adjust the base result with "next epoch"
       return new StateComputerResult(
-          proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
-          0,
-          NextEpoch.create(
-              roundDetails.epoch() + 1,
-              validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),
-          LedgerHashes.zero());
+          baseResult.getSuccessfullyExecutedTransactions(),
+          baseResult.getRejectedTransactionCount(),
+          NextEpoch.create(nextEpoch, validatorSetMapping.apply(nextEpoch).getValidators()),
+          baseResult.getLedgerHashes());
     } else {
       return stateComputer.prepare(
-          parentAccumulator, previousVertices, proposedTransactions, roundDetails);
+          committedLedgerHashes,
+          preparedUncommittedVertices,
+          preparedUncommittedLedgerHashes,
+          proposedTransactions,
+          roundDetails);
     }
   }
 

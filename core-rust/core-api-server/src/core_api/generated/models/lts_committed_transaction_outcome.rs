@@ -17,7 +17,7 @@ pub struct LtsCommittedTransactionOutcome {
     /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
-    /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
+    /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = combine(ACC_N, LEDGER_HASH_{N}))` (where `combine()` is an arbitrary deterministic function we use). 
     #[serde(rename = "accumulator_hash")]
     pub accumulator_hash: String,
     #[serde(rename = "user_transaction_identifiers", skip_serializing_if = "Option::is_none")]

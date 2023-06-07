@@ -72,7 +72,7 @@ import com.radixdlt.utils.UInt64;
 public record LedgerHeader(
     UInt64 epoch,
     UInt64 round,
-    AccumulatorState accumulatorState,
+    UInt64 stateVersion,
     LedgerHashes hashes,
     long consensusParentRoundTimestampMs,
     long proposerTimestampMs,

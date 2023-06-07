@@ -65,24 +65,21 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -91,7 +88,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PreviousVertex;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -233,19 +229,18 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      HashCode parentAccumulatorHash,
-      List<ExecutedVertex> previousVertices,
+      LedgerHashes committedLedgerHashes,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var mappedPreviousVertices =
-        previousVertices.stream()
-            .map(
-                v ->
-                    new PreviousVertex(
-                        v.successfulTransactions()
-                            .map(StateComputerLedger.ExecutedTransaction::transaction)
-                            .toList(),
-                        v.getLedgerHeader().getAccumulatorState().getAccumulatorHash()))
+    var preparedUncommittedTransactions =
+        preparedUncommittedVertices.stream()
+            .flatMap(
+                vertex ->
+                    vertex
+                        .successfulTransactions()
+                        .map(StateComputerLedger.ExecutedTransaction::transaction))
             .toList();
     var gapRoundLeaderAddresses =
         LongStream.range(roundDetails.previousQcRoundNumber() + 1, roundDetails.roundNumber())
@@ -255,8 +250,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .toList();
     var prepareRequest =
         new PrepareRequest(
-            parentAccumulatorHash,
-            mappedPreviousVertices,
+            REv2ToConsensus.ledgerHashes(committedLedgerHashes),
+            preparedUncommittedTransactions,
+            REv2ToConsensus.ledgerHashes(preparedUncommittedLedgerHashes),
             proposedTransactions,
             roundDetails.isFallback(),
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
@@ -298,10 +294,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             txnsAndProof.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
-    if (result.isError()) {
-      log.warn("Could not commit: {}", result.unwrapError());
-      return;
-    }
+    result.onError(
+        error -> {
+          throw new ByzantineQuorumException(error);
+        });
 
     var epochChangeOptional =
         txnsAndProof
@@ -312,7 +308,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   var header = txnsAndProof.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(header, bftConfiguration);

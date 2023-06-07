@@ -131,7 +131,7 @@ public class MockedSyncServiceModule extends AbstractModule {
         LedgerUpdate.class,
         update -> {
           final LedgerProof headerAndProof = update.getTail();
-          long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+          long stateVersion = headerAndProof.getStateVersion();
           long firstVersion = stateVersion - update.getNewTransactions().size() + 1;
           for (int i = 0; i < update.getNewTransactions().size(); i++) {
             sharedCommittedTransactions.put(firstVersion + i, update.getNewTransactions().get(i));

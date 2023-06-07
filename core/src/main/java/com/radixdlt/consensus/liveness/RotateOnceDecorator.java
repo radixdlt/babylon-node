@@ -62,78 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
-import com.radixdlt.crypto.Hasher;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.KeyComparator;
+import java.util.*;
 
-/** Hash chain accumulator and verifier */
-@ThreadSafe
-public class SimpleLedgerAccumulatorAndVerifier
-    implements LedgerAccumulator, LedgerAccumulatorVerifier {
-  private final Hasher hasher;
+/**
+ * A {@link ProposerElection} decorator which first simply iterates over all validators once (in the
+ * "highest stake first" order), and then lets the underlying implementation take over.
+ */
+public final class RotateOnceDecorator implements ProposerElection {
 
-  @Inject
-  public SimpleLedgerAccumulatorAndVerifier(Hasher hasher) {
-    this.hasher = hasher;
+  /** A comparator determining order of the initial rounds' leaders. */
+  private static final Comparator<BFTValidator> VALIDATOR_COMPARATOR =
+      Comparator.comparing(BFTValidator::getPower) // first compare by stake, descending
+          .reversed()
+          .thenComparing( // then by key (same as `WeightedRotatingLeaders`)
+              v -> v.getValidatorId().getKey(), KeyComparator.instance())
+          .thenComparing( // and also by optional address (because keys do not have to be unique!)
+              v ->
+                  v.getValidatorId()
+                      .getValidatorAddress()
+                      .map(ComponentAddress::value)
+                      .orElse(null),
+              Ordering.from(UnsignedBytes.lexicographicalComparator()).nullsFirst());
+
+  /** An ordered list of all validators, to be traversed once during initial rounds. */
+  private final BFTValidatorId[] initialRoundsProposers;
+
+  /** An underlying instance, to take over for the remaining rounds. */
+  private final ProposerElection underlying;
+
+  /**
+   * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
+   * same {@link BFTValidatorSet} as passed here.
+   */
+  public RotateOnceDecorator(BFTValidatorSet validatorSet, ProposerElection underlying) {
+    this.initialRoundsProposers =
+        validatorSet.getValidators().stream()
+            .sorted(VALIDATOR_COMPARATOR)
+            .map(BFTValidator::getValidatorId)
+            .toArray(BFTValidatorId[]::new);
+    this.underlying = underlying;
   }
 
   @Override
-  public AccumulatorState accumulate(AccumulatorState parent, HashCode hash) {
-    byte[] concat = new byte[32 * 2];
-    System.arraycopy(parent.getAccumulatorHash().asBytes(), 0, concat, 0, 32);
-    System.arraycopy(hash.asBytes(), 0, concat, 32, 32);
-    HashCode nextAccumulatorHash = hasher.hashBytes(concat);
-    return new AccumulatorState(parent.getStateVersion() + 1, nextAccumulatorHash);
+  public BFTValidatorId getProposer(Round round) {
+    final var number = round.number();
+    final var initialRoundsCount = this.initialRoundsProposers.length;
+    if (number < initialRoundsCount) {
+      return this.initialRoundsProposers[(int) number];
+    } else {
+      return this.underlying.getProposer(Round.of(number - initialRoundsCount));
+    }
   }
 
   @Override
-  public boolean verify(
-      AccumulatorState start, ImmutableList<HashCode> transactions, AccumulatorState end) {
-    AccumulatorState accumulatorState = start;
-    for (HashCode hash : transactions) {
-      accumulatorState = this.accumulate(accumulatorState, hash);
-    }
-    return Objects.equals(accumulatorState, end);
-  }
-
-  @Override
-  public <T> Optional<List<T>> verifyAndGetExtension(
-      AccumulatorState current,
-      List<T> transactions,
-      Function<T, HashCode> hashCodeMapper,
-      AccumulatorState tail) {
-    if (tail.getStateVersion() < current.getStateVersion()) {
-      throw new IllegalArgumentException(
-          String.format("Tail %s is has lower state version than current %s", tail, current));
-    }
-
-    final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
-    if (current.getStateVersion() + 1 < firstVersion) {
-      // Missing versions
-      return Optional.empty();
-    }
-
-    if (transactions.isEmpty()) {
-      return Objects.equals(current, tail) ? Optional.of(ImmutableList.of()) : Optional.empty();
-    }
-
-    final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-    final List<T> extension = transactions.subList(startIndex, transactions.size());
-    final ImmutableList<HashCode> hashes =
-        extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
-    if (!verify(current, hashes, tail)) {
-      // Does not extend
-      return Optional.empty();
-    }
-
-    return Optional.of(extension);
+  public String toString() {
+    return String.format("%s(%s)", this.getClass().getSimpleName(), this.underlying);
   }
 }

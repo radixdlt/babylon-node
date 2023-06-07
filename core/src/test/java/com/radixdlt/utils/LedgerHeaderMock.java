@@ -67,17 +67,9 @@ package com.radixdlt.utils;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 public class LedgerHeaderMock {
   public static LedgerHeader get() {
-    return LedgerHeader.create(
-        0,
-        Round.genesis(),
-        new AccumulatorState(0, HashUtils.zero256()),
-        LedgerHashes.zero(),
-        0,
-        0);
+    return LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), 0, 0);
   }
 }

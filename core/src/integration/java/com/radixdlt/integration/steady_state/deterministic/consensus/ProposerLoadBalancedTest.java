@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -108,7 +109,11 @@ public class ProposerLoadBalancedTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10000000), mapping, MockedMempoolConfig.noMempool()))));
+                            Round.of(10000000),
+                            mapping,
+                            LedgerHashes.zero(),
+                            MockedMempoolConfig.noMempool(),
+                            StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
     test.startAllNodes();
     test.runUntilMessage(
         DeterministicTest.hasReachedRound(Round.of(numRounds)),
@@ -182,7 +187,7 @@ public class ProposerLoadBalancedTest {
     final long proposalChunk = 20_000L; // Actually 3! * proposalChunk proposals run
     List<Long> proposals =
         this.run(
-            3, 1 * 2 * 3 * proposalChunk, EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3));
+            3, (1 + 2 + 3) * proposalChunk, EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3));
     assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
   }
 

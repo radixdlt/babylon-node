@@ -65,23 +65,30 @@ pub(crate) async fn handle_stream_transactions(
 
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
-    for bundle in database
+    let bundles = database
         .get_committed_transaction_bundle_iter(from_state_version)
-        .take(limit)
-    {
+        .take(limit);
+    for bundle in bundles {
         let CommittedTransactionBundle {
+            state_version,
             raw,
             receipt,
             identifiers,
         } = bundle;
         let model = LedgerTransaction::from_raw(&raw).map_err(|error| {
             MappingError::CouldNotDecodeTransaction {
-                state_version: identifiers.at_commit.state_version,
+                state_version,
                 error,
             }
         })?;
-        let committed_transaction =
-            to_api_committed_transaction(&mapping_context, raw, model, receipt, identifiers)?;
+        let committed_transaction = to_api_committed_transaction(
+            &mapping_context,
+            state_version,
+            raw,
+            model,
+            receipt,
+            identifiers,
+        )?;
 
         let committed_transaction_size = committed_transaction.get_json_size();
         current_total_size += committed_transaction_size;
@@ -111,6 +118,7 @@ pub(crate) async fn handle_stream_transactions(
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
     context: &MappingContext,
+    state_version: u64,
     raw_ledger_transaction: RawLedgerTransaction,
     ledger_transaction: LedgerTransaction,
     receipt: LocalTransactionReceipt,
@@ -120,8 +128,8 @@ pub fn to_api_committed_transaction(
 
     Ok(models::CommittedTransaction {
         resultant_state_identifiers: Box::new(to_api_committed_state_identifiers(
-            &identifiers.at_commit,
-            &identifiers.resultant_ledger,
+            state_version,
+            &identifiers.resultant_ledger_hashes,
         )?),
         ledger_transaction: Some(to_api_ledger_transaction(
             context,
