@@ -65,7 +65,7 @@
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 
 use crate::query::*;
-use crate::staging::{ExecutionCache, HashStructuresDiff, ReadableStore};
+use crate::staging::{ExecutionCache, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -215,8 +215,6 @@ where
             .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
 
-        let mut state_tracker = StateTracker::initial(base_state_version, base_ledger_hashes);
-
         let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
             .to_raw()
             .expect("Could not encode genesis transaction");
@@ -234,8 +232,8 @@ where
         let processed = execution_cache.execute_transaction(
             self.store.read().deref(),
             &epoch_identifiers,
-            state_tracker.latest_state_version(),
-            &state_tracker.latest_ledger_hashes().transaction_root,
+            base_state_version,
+            &base_ledger_hashes.transaction_root,
             &legacy_hash,
             self.execution_configurator
                 .wrap(executable, ConfigType::Genesis)
@@ -246,11 +244,10 @@ where
         );
 
         let commit = processed.expect_commit(format!("prepare genesis {}", payload_hash));
-        state_tracker.update(&commit.hash_structures_diff);
 
         GenesisTransactionResult {
             raw,
-            ledger_hashes: *state_tracker.latest_ledger_hashes(),
+            ledger_hashes: commit.hash_structures_diff.ledger_hashes,
             next_epoch: commit.next_epoch(),
         }
     }
@@ -325,14 +322,7 @@ where
 
                 let commit = processed.expect_commit(format!("already prepared {}", payload_hash));
 
-                if let Some(next_epoch) = commit.next_epoch() {
-                    panic!(
-                        "Already prepared transaction {:?} should not contain next epoch {:?}",
-                        payload_hash, next_epoch
-                    );
-                }
-
-                state_tracker.update(&commit.hash_structures_diff);
+                state_tracker.update(commit);
             }
         }
 
@@ -353,7 +343,7 @@ where
 
         let mut committable_transactions = Vec::new();
 
-        let mut next_epoch = {
+        {
             // We create a separate scope to ensure any variables don't leak to later in the method.
             // TODO: Unify this with the proposed payloads execution
             let validator_index_by_address = Self::to_validator_set_index(epoch_header);
@@ -386,7 +376,7 @@ where
             let legacy_hash = prepared.legacy_ledger_payload_hash();
             let executable = prepared.get_executable();
 
-            let next_epoch = {
+            {
                 let mut execution_cache = self.execution_cache.lock();
                 let processed_round_update = execution_cache.execute_transaction(
                     read_store.deref(),
@@ -406,9 +396,8 @@ where
                     .expect_commit(format!("round update {}", prepare_request.round.number()));
                 round_update_commit
                     .check_success(format!("round update {}", prepare_request.round.number()));
-                state_tracker.update(&round_update_commit.hash_structures_diff);
-                round_update_commit.next_epoch()
-            };
+                state_tracker.update(round_update_commit);
+            }
 
             committable_transactions.push(CommittableTransaction {
                 index: None,
@@ -420,9 +409,7 @@ where
                 ledger_hash,
                 legacy_hash,
             });
-
-            next_epoch
-        };
+        }
 
         //========================================================================================
         // PART 3:
@@ -439,7 +426,7 @@ where
             .enumerate()
         {
             // Don't process any additional transactions if next epoch has occurred
-            if next_epoch.is_some() {
+            if state_tracker.next_epoch().is_some() {
                 break;
             }
 
@@ -556,8 +543,7 @@ where
 
                 match processed.expect_commit_or_reject(format!("newly proposed {}", ledger_hash)) {
                     Ok(commit) => {
-                        state_tracker.update(&commit.hash_structures_diff);
-                        next_epoch = commit.next_epoch();
+                        state_tracker.update(commit);
 
                         duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                         committable_transactions.push(CommittableTransaction {
@@ -634,7 +620,7 @@ where
         PrepareResult {
             committed: committable_transactions,
             rejected: rejected_transactions,
-            next_epoch,
+            next_epoch: state_tracker.next_epoch().cloned(),
             ledger_hashes: *state_tracker.latest_ledger_hashes(),
         }
     }
@@ -660,6 +646,7 @@ where
 struct StateTracker {
     state_version: u64,
     ledger_hashes: LedgerHashes,
+    next_epoch: Option<NextEpoch>,
 }
 
 impl StateTracker {
@@ -667,12 +654,23 @@ impl StateTracker {
         Self {
             state_version: base_state_version,
             ledger_hashes: base_ledger_hashes,
+            next_epoch: None,
         }
     }
 
-    pub fn update(&mut self, hash_structures_diff: &HashStructuresDiff) {
+    pub fn update(&mut self, result: &ProcessedCommitResult) {
+        if let Some(next_epoch) = &self.next_epoch {
+            panic!(
+                "the {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
+                next_epoch,
+                self.ledger_hashes,
+                self.state_version,
+                result.hash_structures_diff.ledger_hashes
+            );
+        }
         self.state_version += 1;
-        self.ledger_hashes = hash_structures_diff.ledger_hashes;
+        self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
+        self.next_epoch = result.next_epoch();
     }
 
     pub fn latest_ledger_hashes(&self) -> &LedgerHashes {
@@ -681,6 +679,10 @@ impl StateTracker {
 
     pub fn latest_state_version(&self) -> u64 {
         self.state_version
+    }
+
+    pub fn next_epoch(&self) -> Option<&NextEpoch> {
+        self.next_epoch.as_ref()
     }
 }
 
@@ -894,7 +896,6 @@ where
             let executable = validated.get_executable();
 
             let (
-                next_epoch,
                 state_hash_tree_diff,
                 transaction_tree_slice,
                 receipt_tree_slice,
@@ -917,9 +918,9 @@ where
                 );
                 let commit = processed.expect_commit(format!("committing {}", payload_hash));
 
+                state_tracker.update(commit);
+
                 let hash_structures_diff = &commit.hash_structures_diff;
-                state_tracker.update(hash_structures_diff);
-                let next_epoch = commit.next_epoch();
                 let state_hash_tree_diff = hash_structures_diff.state_hash_tree_diff.clone();
                 let transaction_tree_slice =
                     hash_structures_diff.transaction_tree_diff.slice.clone();
@@ -927,7 +928,6 @@ where
                 let local_receipt = commit.local_receipt.clone();
                 let database_updates = commit.database_updates.clone();
                 (
-                    next_epoch,
                     state_hash_tree_diff,
                     transaction_tree_slice,
                     receipt_tree_slice,
@@ -938,7 +938,7 @@ where
 
             Self::check_epoch_proof_match(
                 commit_ledger_header,
-                next_epoch,
+                state_tracker.next_epoch(),
                 i == (commit_transactions_len - 1),
             )?;
 
@@ -1017,14 +1017,14 @@ where
 
     fn check_epoch_proof_match(
         commit_ledger_header: &LedgerHeader,
-        opt_transaction_next_epoch: Option<NextEpoch>,
+        opt_transaction_next_epoch: Option<&NextEpoch>,
         is_last_transaction_in_request: bool,
     ) -> Result<(), CommitError> {
         if is_last_transaction_in_request {
             match &commit_ledger_header.next_epoch {
                 Some(proof_next_epoch) => {
                     if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
-                        if transaction_next_epoch != *proof_next_epoch {
+                        if transaction_next_epoch != proof_next_epoch {
                             error!(
                                 "computed next epoch differs from the one in proof ({:?} != {:?})",
                                 transaction_next_epoch, proof_next_epoch
