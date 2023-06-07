@@ -81,6 +81,7 @@ import com.radixdlt.genesis.olympia.state.OlympiaStateIRDeserializer;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIRSerializationException;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.ThreadFactories;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -90,7 +91,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xerial.snappy.Snappy;
 
 @SuppressWarnings({"UnstableApiUsage", "OptionalUsedAsFieldOrParameterType"})
 public final class OlympiaGenesisService {
@@ -182,7 +182,7 @@ public final class OlympiaGenesisService {
 
         final byte[] uncompressedBytes;
         try {
-          uncompressedBytes = Snappy.uncompress(contentBytes);
+          uncompressedBytes = Compress.uncompress(contentBytes);
         } catch (IOException e) {
           completableFuture.completeExceptionally(
               new RuntimeException(
