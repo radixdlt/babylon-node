@@ -161,13 +161,14 @@ public final class GenesisBuilder {
             .collect(ImmutableList.toImmutableList()));
   }
 
-  // Allocates stakes to validator's default component address (same pub key)
+  // Allocates stakes to the validator's owner account address (which defaults to the account with
+  // the same key as the validator)
   private static Tuple.Tuple2<GenesisDataChunk.Validators, GenesisDataChunk.Stakes>
       prepareValidatorsAndStakesChunks(
           ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, Decimal>> validatorsAndStake) {
     final var validators =
-        validatorsAndStake.stream()
-            .map(tuple -> GenesisValidator.defaultFromPubKey(tuple.first()))
+        IntStream.range(0, validatorsAndStake.size())
+            .mapToObj(i -> GenesisValidator.defaultFromPubKey(i, validatorsAndStake.get(i).first()))
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 
@@ -197,8 +198,8 @@ public final class GenesisBuilder {
           ImmutableList<Tuple.Tuple2<ECDSASecp256k1PublicKey, Decimal>> validatorsAndStake,
           ComponentAddress staker) {
     final var validators =
-        validatorsAndStake.stream()
-            .map(tuple -> GenesisValidator.defaultFromPubKey(tuple.first()))
+        IntStream.range(0, validatorsAndStake.size())
+            .mapToObj(i -> GenesisValidator.defaultFromPubKey(i, validatorsAndStake.get(i).first()))
             .collect(ImmutableList.toImmutableList());
     final var validatorsChunk = new GenesisDataChunk.Validators(validators);
 
