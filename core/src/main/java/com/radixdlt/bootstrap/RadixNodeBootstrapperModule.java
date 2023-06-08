@@ -101,7 +101,7 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
   @Provides
   @Singleton
   GenesisStore genesisStore(@NodeStorageLocation String nodeStorageLocation) {
-    return new GenesisFileStore(new File(nodeStorageLocation, "genesis.bin"));
+    return new GenesisFileStore(new File(nodeStorageLocation, "executed_genesis"));
   }
 
   private static Either<Exception, Network> readNetworkFromProperties(

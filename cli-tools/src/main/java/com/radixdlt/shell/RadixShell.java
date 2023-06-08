@@ -83,7 +83,6 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -208,8 +207,6 @@ public final class RadixShell {
         properties.set("network.genesis_data", genesisDataBase64);
       }
 
-      final var genesisData =
-          new GenesisFromPropertiesLoader(properties).loadGenesisDataFromProperties().orElseThrow();
       final var bootstrapperInjector =
           Guice.createInjector(new RadixNodeBootstrapperModule(properties));
       final var unstartedRadixNode =

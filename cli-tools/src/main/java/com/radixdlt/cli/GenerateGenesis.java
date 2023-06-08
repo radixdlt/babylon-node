@@ -76,11 +76,15 @@ import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.*;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UniqueListBuilder;
+import java.io.File;
 import java.security.Security;
-import java.util.*;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -124,7 +128,7 @@ public final class GenerateGenesis {
     options.addOption("h", "help", false, "Show usage information (this message)");
     options.addOption("p", "public-keys", true, "Specify validator keys");
     options.addOption("v", "validator-count", true, "Specify number of validators to generate");
-    options.addOption("n", "network-id", true, "Specify the network ID");
+    options.addOption("n", "network", true, "Specify the network name or ID");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -169,8 +173,7 @@ public final class GenerateGenesis {
                       .encodeNodeAddress(generatedValidatorKeys.get(i).getPublicKey()));
             });
 
-    final var networkId = Integer.parseInt(cmd.getOptionValue("n"));
-    final var network = Network.ofId(networkId).orElseThrow();
+    final var network = parseNetwork(cmd.getOptionValue("n"));
     final var validators = validatorsBuilder.build();
     final var genesisData = createGenesisData(network, validators);
     final var encodedGenesisData =
@@ -180,11 +183,42 @@ public final class GenerateGenesis {
         Base64.getEncoder().encodeToString(compressedGenesisData);
 
     if (validatorsCount > 0) {
+      // For some reason we use the presence of the validatorsCount command to decide whether we are
+      // running this for docker, or for an actual environment...
       System.out.format("export RADIXDLT_GENESIS_DATA=%s%n", compressedGenesisDataBase64);
     } else {
-      try (var writer = new BufferedWriter(new FileWriter("genesis.base64"))) {
-        writer.write(compressedGenesisDataBase64);
+      System.out.format(
+          "The base64-encoded genesis for use with RADIXDLT_GENESIS_DATA / network.genesis_data"
+              + " is:%n%s%n",
+          compressedGenesisDataBase64);
+      System.out.println();
+      var filePath = new File("genesis_data.bin").getAbsolutePath();
+      System.out.format(
+          "Also saving the genesis data file in binary format for use with"
+              + " RADIXDLT_GENESIS_DATA_FILE / network.genesis_data_file to: %s%n",
+          filePath);
+      try (var outputStream = new java.io.FileOutputStream(filePath)) {
+        outputStream.write(compressedGenesisData);
       }
+    }
+  }
+
+  private static Network parseNetwork(String commandLineValue) {
+    final var asName = Network.ofName(commandLineValue);
+    if (asName.isPresent()) {
+      return asName.get();
+    }
+    try {
+      final var asId = Network.ofId(Integer.parseInt(commandLineValue));
+      if (asId.isPresent()) {
+        return asId.get();
+      }
+      throw new RuntimeException("Was not a valid network id");
+    } catch (Exception ex) {
+      throw new RuntimeException(
+          "Could not resolve (lower case) logical network name, or network id. Try specifying eg"
+              + " -Pnetwork=gilganet",
+          ex);
     }
   }
 

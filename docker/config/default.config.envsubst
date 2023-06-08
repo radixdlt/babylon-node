@@ -1,6 +1,6 @@
 network.id=$RADIXDLT_NETWORK_ID
 network.genesis_data=$RADIXDLT_GENESIS_DATA
-network.genesis_file=$RADIXDLT_GENESIS_FILE
+network.genesis_data_file=$RADIXDLT_GENESIS_DATA_FILE
 
 node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
 node.key.create_if_missing=$RADIXDLT_NODE_KEY_CREATE_IF_MISSING

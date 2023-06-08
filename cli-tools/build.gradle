@@ -136,7 +136,7 @@ def secretPasswordKey = project.getProperties().get('secretPasswordKey', "")
 def nodeNames = project.getProperties().get('nodeNames', "")
 def validators = project.getProperties().get('validators', '0')
 def publicKeys = project.getProperties().get('publicKeys', '')
-def networkId = project.getProperties().get('networkId', '')
+def network = project.getProperties().get('network', '')
 
 task getClassPathForRadixShell {
     doLast {
@@ -188,7 +188,7 @@ task generateDevGenesis(type: Exec) {
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generate_genesis_log4j2.properties"}",
             "com.radixdlt.cli.GenerateGenesis",
             "--validator-count=${validators}",
-            "--network-id=${networkId}"
+            "--network=${network}"
 }
 
 task generateGenesisFile(type: Exec) {
@@ -207,7 +207,7 @@ task generateGenesisFile(type: Exec) {
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generate_genesis_log4j2.properties"}",
             "com.radixdlt.cli.GenerateGenesis",
             "--public-keys=${publicKeys}",
-            "--network-id=${networkId}"
+            "--network=${network}"
 }
 
 task createGenerateGenesisScripts(type: CreateStartScripts) {

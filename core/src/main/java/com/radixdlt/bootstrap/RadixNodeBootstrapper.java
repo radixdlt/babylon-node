@@ -81,7 +81,6 @@ import com.radixdlt.genesis.olympia.OlympiaGenesisService;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
@@ -179,8 +178,7 @@ public final class RadixNodeBootstrapper {
 
     if (distinctGenesisHashes.size() == 0) {
       // No genesis was configured, use Olympia (if configured) or error
-      final var useOlympiaFlagIsSet =
-          properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false);
+      final var useOlympiaFlagIsSet = properties.get("genesis.use_olympia", false);
       if (useOlympiaFlagIsSet) {
         final var olympiaBootstrapper = new OlympiaGenesisBootstrapper();
         olympiaBootstrapper.start();
@@ -191,7 +189,7 @@ public final class RadixNodeBootstrapper {
             new RuntimeException(
                 """
                   Radix node couldn't be initialized. No genesis transaction has been configured. Make \
-                  sure that either `network.genesis_data` or `network.genesis_file` is set or that \
+                  sure that either `network.genesis_data` or `network.genesis_data_file` is set or that \
                   you're using a well known network (`network.id`). If you're running an Olympia \
                   node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
                   documentation for more details."""));
@@ -227,11 +225,11 @@ public final class RadixNodeBootstrapper {
               String.format(
                   """
                     Inconsistent genesis configuration. The following genesis sources were read: \n
-                    - properties (network.genesis_data or network.genesis_file): %s \n
+                    - properties (network.genesis_data or network.genesis_data_file): %s \n
                     - network genesis (based on network.id): %s \n
                     - genesis stored from previous runs: %s \n
                     Make sure your configuration is correct (check `network.id` and/or \
-                    `network.genesis_data` and/or `network.genesis_file`).""",
+                    `network.genesis_data` and/or `network.genesis_data_file`).""",
                   configuredGenesis, fixedNetworkGenesisHash, storedGenesisHash)));
     }
   }

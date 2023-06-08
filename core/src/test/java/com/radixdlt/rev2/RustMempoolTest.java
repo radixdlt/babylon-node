@@ -68,7 +68,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.Blake2b256Hasher;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
@@ -87,7 +86,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
-  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   /** A no-op dispatcher of transactions to be relayed. */
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
@@ -95,7 +93,7 @@ public final class RustMempoolTest {
   private static void initStateComputer(StateManager stateManager) {
     final var metrics = new MetricsInitializer().initialize();
     final var genesisProvider =
-        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty(), HASHER);
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
     new REv2LedgerInitializer(
             new Blake2b256Hasher(DefaultSerialization.getInstance()),
             new RustStateComputer(metrics, stateManager),

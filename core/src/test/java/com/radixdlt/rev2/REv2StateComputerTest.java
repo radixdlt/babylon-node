@@ -68,7 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
-import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
@@ -91,7 +90,6 @@ import com.radixdlt.rev2.modules.REv2LedgerInitializerModule;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
@@ -123,8 +121,7 @@ public class REv2StateComputerTest {
                     Decimal.of(1),
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
-                    GenesisConsensusManagerConfig.Builder.testDefaults()),
-                new Blake2b256Hasher(DefaultSerialization.getInstance()))),
+                    GenesisConsensusManagerConfig.Builder.testDefaults()))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override

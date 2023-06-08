@@ -66,17 +66,20 @@ package com.radixdlt.genesis;
 
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.WrappedByteArray;
 
 public record RawGenesisDataWithHash(WrappedByteArray genesisData, HashCode genesisDataHash)
     implements GenesisProvider {
+  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
-  public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData, Hasher hasher) {
+  public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData) {
     final var genesisDataBytes =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     return new RawGenesisDataWithHash(
-        new WrappedByteArray(genesisDataBytes), hasher.hashBytes(genesisDataBytes));
+        new WrappedByteArray(genesisDataBytes), HASHER.hashBytes(genesisDataBytes));
   }
 }

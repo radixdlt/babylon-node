@@ -91,7 +91,7 @@ public record REv2LedgerInitializer(
                               Current genesis data (of hash %s) doesn't match the genesis data that has previously \
                               been used to initialize the database (%s). \
                               Make sure your configuration is correct (check `network.id` and/or \
-                               `network.genesis_data` and/or `network.genesis_file`).""",
+                               `network.genesis_data` and/or `network.genesis_data_file`).""",
                         currentGenesisHash, existingGenesisHash));
               }
             },
