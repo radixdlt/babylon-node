@@ -67,18 +67,18 @@ package com.radixdlt.statecomputer.commit;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 
-public sealed interface CommitError {
+public sealed interface InvalidCommitRequestError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CommitError.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(CommitError.class, codecs));
+        InvalidCommitRequestError.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(InvalidCommitRequestError.class, codecs));
   }
 
-  record MissingEpochProof() implements CommitError {}
+  record MissingEpochProof() implements InvalidCommitRequestError {}
 
-  record SuperfluousEpochProof() implements CommitError {}
+  record SuperfluousEpochProof() implements InvalidCommitRequestError {}
 
-  record EpochProofMismatch() implements CommitError {}
+  record EpochProofMismatch() implements InvalidCommitRequestError {}
 
-  record LedgerHashesMismatch() implements CommitError {}
+  record LedgerHashesMismatch() implements InvalidCommitRequestError {}
 }

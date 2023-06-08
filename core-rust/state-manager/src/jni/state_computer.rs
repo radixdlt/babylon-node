@@ -77,7 +77,7 @@ use crate::jni::state_manager::JNIStateManager;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
-use crate::types::{CommitError, CommitRequest, PrepareRequest, PrepareResult};
+use crate::types::{InvalidCommitRequestError, CommitRequest, PrepareRequest, PrepareResult};
 use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
 use radix_engine::system::bootstrap::GenesisDataChunk;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -171,7 +171,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |commit_request: CommitRequest| -> Result<(), CommitError> {
+        |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
             state_manager
                 .commit(commit_request, false)

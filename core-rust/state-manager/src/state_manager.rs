@@ -758,7 +758,7 @@ where
         &self,
         commit_request: CommitRequest,
         genesis: bool,
-    ) -> Result<Vec<LocalTransactionReceipt>, CommitError> {
+    ) -> Result<Vec<LocalTransactionReceipt>, InvalidCommitRequestError> {
         let commit_transactions_len = commit_request.transactions.len();
         if commit_transactions_len == 0 {
             panic!("cannot commit 0 transactions from request {commit_request:?}");
@@ -896,7 +896,7 @@ where
                 "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
                 commit_state_version, final_ledger_hashes, commit_ledger_hashes
             );
-            return Err(CommitError::LedgerHashesMismatch);
+            return Err(InvalidCommitRequestError::LedgerHashesMismatch);
         }
 
         self.execution_cache
@@ -944,7 +944,7 @@ where
         commit_ledger_header: &LedgerHeader,
         opt_transaction_next_epoch: Option<&NextEpoch>,
         is_last_transaction_in_request: bool,
-    ) -> Result<(), CommitError> {
+    ) -> Result<(), InvalidCommitRequestError> {
         if is_last_transaction_in_request {
             match &commit_ledger_header.next_epoch {
                 Some(proof_next_epoch) => {
@@ -954,14 +954,14 @@ where
                                 "computed next epoch differs from the one in proof ({:?} != {:?})",
                                 transaction_next_epoch, proof_next_epoch
                             );
-                            return Err(CommitError::EpochProofMismatch);
+                            return Err(InvalidCommitRequestError::EpochProofMismatch);
                         }
                     } else {
                         error!(
                             "computed no next epoch, but proof contains {:?}",
                             proof_next_epoch
                         );
-                        return Err(CommitError::SuperfluousEpochProof);
+                        return Err(InvalidCommitRequestError::SuperfluousEpochProof);
                     }
                 }
                 None => {
@@ -970,7 +970,7 @@ where
                             "no next epoch in proof, but last transaction in batch computed {:?}",
                             transaction_next_epoch
                         );
-                        return Err(CommitError::MissingEpochProof);
+                        return Err(InvalidCommitRequestError::MissingEpochProof);
                     }
                 }
             };
@@ -979,7 +979,7 @@ where
                 "non-last transaction in batch computed {:?}",
                 transaction_next_epoch
             );
-            return Err(CommitError::MissingEpochProof);
+            return Err(InvalidCommitRequestError::MissingEpochProof);
         }
         Ok(())
     }

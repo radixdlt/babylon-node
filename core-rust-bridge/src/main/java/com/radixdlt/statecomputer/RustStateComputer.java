@@ -128,11 +128,11 @@ public class RustStateComputer {
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
 
-  public Result<Tuple.Tuple0, CommitError> commit(CommitRequest commitRequest) {
+  public Result<Tuple.Tuple0, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
     return commitFunc.call(commitRequest);
   }
 
-  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, CommitError>> commitFunc;
+  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>> commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 

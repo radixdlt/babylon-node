@@ -254,7 +254,7 @@ pub struct PreviewRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CommitError {
+pub enum InvalidCommitRequestError {
     MissingEpochProof,
     SuperfluousEpochProof,
     EpochProofMismatch,

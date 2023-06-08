@@ -64,14 +64,14 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.statecomputer.commit.CommitError;
+import com.radixdlt.statecomputer.commit.InvalidCommitRequestError;
 
 /**
  * An exception signalling that the contents of a properly-signed commit request were not internally
  * consistent (e.g. non-parseable or non-committable transactions, ledger proof mismatches).
  */
 public class InvalidCommitRequestException extends RuntimeException {
-  public InvalidCommitRequestException(CommitError commitError) {
-    super(commitError.toString());
+  public InvalidCommitRequestException(InvalidCommitRequestError error) {
+    super(error.toString());
   }
 }
