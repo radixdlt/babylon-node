@@ -234,7 +234,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var preparedUncommittedTransactions =
+    var ancestorTransactions =
         preparedUncommittedVertices.stream()
             .flatMap(
                 vertex ->
@@ -251,7 +251,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var prepareRequest =
         new PrepareRequest(
             REv2ToConsensus.ledgerHashes(committedLedgerHashes),
-            preparedUncommittedTransactions,
+            ancestorTransactions,
             REv2ToConsensus.ledgerHashes(preparedUncommittedLedgerHashes),
             proposedTransactions,
             roundDetails.isFallback(),

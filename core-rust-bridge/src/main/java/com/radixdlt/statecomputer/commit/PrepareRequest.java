@@ -74,8 +74,8 @@ import java.util.List;
 
 public record PrepareRequest(
     LedgerHashes committedLedgerHashes,
-    List<RawLedgerTransaction> preparedUncommittedTransactions,
-    LedgerHashes preparedUncommittedLedgerHashes,
+    List<RawLedgerTransaction> ancestorTransactions,
+    LedgerHashes ancestorLedgerHashes,
     List<RawNotarizedTransaction> proposedTransactions,
     boolean isFallback,
     UInt64 epoch,
