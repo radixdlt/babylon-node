@@ -133,8 +133,7 @@ public final class MockedMempoolStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(
-      LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
     this.stateComputer.commit(ledgerExtension, vertexStore);
     this.mempool.handleTransactionsCommitted(
         ledgerExtension.getTransactions().stream()

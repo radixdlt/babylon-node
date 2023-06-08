@@ -132,7 +132,8 @@ public class RustStateComputer {
     return commitFunc.call(commitRequest);
   }
 
-  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>> commitFunc;
+  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>>
+      commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 

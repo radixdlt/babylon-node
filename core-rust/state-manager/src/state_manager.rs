@@ -313,9 +313,7 @@ where
                 .expect("ancestor transaction rejected");
         }
 
-        if &prepare_request.ancestor_ledger_hashes
-            != series_executor.latest_ledger_hashes()
-        {
+        if &prepare_request.ancestor_ledger_hashes != series_executor.latest_ledger_hashes() {
             panic!(
                 "State {:?} after ancestor transactions does not match the state {:?} from request",
                 series_executor.latest_ledger_hashes(),

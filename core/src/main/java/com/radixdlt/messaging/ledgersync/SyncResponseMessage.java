@@ -82,8 +82,7 @@ public final class SyncResponseMessage extends Message {
 
   @JsonCreator
   public SyncResponseMessage(
-      @JsonProperty(value = "run", required = true)
-      DtoLedgerExtension ledgerExtension) {
+      @JsonProperty(value = "run", required = true) DtoLedgerExtension ledgerExtension) {
     this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
   }
 

@@ -291,7 +291,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var commitRequest =
         new CommitRequest(
-            ledgerExtension.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
+            ledgerExtension.getTransactions(),
+            REv2ToConsensus.ledgerProof(proof),
+            vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     result.onError(

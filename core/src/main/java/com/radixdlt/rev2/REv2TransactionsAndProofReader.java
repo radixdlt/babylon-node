@@ -66,8 +66,8 @@ package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;

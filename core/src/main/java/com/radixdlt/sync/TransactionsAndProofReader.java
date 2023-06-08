@@ -65,8 +65,8 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerExtension;
 import java.util.Optional;
 
 /** Reader of committed transactions */

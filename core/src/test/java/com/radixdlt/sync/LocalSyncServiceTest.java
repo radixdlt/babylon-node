@@ -644,8 +644,7 @@ public class LocalSyncServiceTest {
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
     return new LedgerUpdate(
-        LedgerExtension.create(
-            ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
+        LedgerExtension.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
         ImmutableClassToInstanceMap.of());
   }
 

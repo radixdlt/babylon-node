@@ -149,9 +149,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
-    void commit(
-        LedgerExtension ledgerExtension,
-        VertexStoreState vertexStore);
+    void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -321,8 +319,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
-  private void commit(
-      LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+  private void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
     final LedgerProof nextHeader = ledgerExtension.getProof();
 
     final int extensionTransactionCount; // for metrics purposes only

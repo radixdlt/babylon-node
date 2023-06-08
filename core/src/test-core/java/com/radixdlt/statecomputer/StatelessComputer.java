@@ -182,8 +182,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(
-      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
     var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }

@@ -93,14 +93,12 @@ public final class LedgerExtension {
   private final List<RawLedgerTransaction> transactions;
   private final LedgerProof proof;
 
-  private LedgerExtension(
-      List<RawLedgerTransaction> transactions, LedgerProof proof) {
+  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
     this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
-  public static LedgerExtension create(
-      List<RawLedgerTransaction> transactions, LedgerProof proof) {
+  public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
     return new LedgerExtension(transactions, proof);
   }
 

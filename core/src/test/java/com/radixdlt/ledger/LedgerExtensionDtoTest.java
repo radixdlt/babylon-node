@@ -93,9 +93,7 @@ public class LedgerExtensionDtoTest {
 
   @Test
   public void deserializationWithNullTxnListIsSafe() {
-    var dto =
-        new DtoLedgerExtension(
-            null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+    var dto = new DtoLedgerExtension(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
 
     assertNotNull(dto.getTransactions());
   }

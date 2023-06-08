@@ -115,8 +115,7 @@ public class MessageCentralLedgerSyncTest {
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-    DtoLedgerExtension dtoLedgerExtension =
-        mock(DtoLedgerExtension.class);
+    DtoLedgerExtension dtoLedgerExtension = mock(DtoLedgerExtension.class);
     when(syncResponseMessage.getLedgerExtension()).thenReturn(dtoLedgerExtension);
     messageCentral.send(peer, syncResponseMessage);
     testObserver.awaitCount(1);

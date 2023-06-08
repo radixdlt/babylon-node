@@ -138,9 +138,7 @@ public class MessagePreprocessorTest {
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
           tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
           tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
-          tuple(
-              new SyncResponseMessage(mock(DtoLedgerExtension.class)),
-              "dtoLedgerExtension"));
+          tuple(new SyncResponseMessage(mock(DtoLedgerExtension.class)), "ledgerExtension"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 
@@ -197,12 +195,8 @@ public class MessagePreprocessorTest {
       setField(message, field, value);
     } catch (Exception e) {
       fail(
-          "Unable to set field "
-              + field
-              + " for message of type "
-              + message.getClass()
-              + " because of "
-              + e.getMessage());
+          "Unable to set field %s for message of %s because of %s"
+              .formatted(field, message.getClass(), e));
 
       throw new RuntimeException("unreachable"); // tame compiler
     }

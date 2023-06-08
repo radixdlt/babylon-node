@@ -77,7 +77,7 @@ use crate::jni::state_manager::JNIStateManager;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
-use crate::types::{InvalidCommitRequestError, CommitRequest, PrepareRequest, PrepareResult};
+use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
 use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
 use radix_engine::system::bootstrap::GenesisDataChunk;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;

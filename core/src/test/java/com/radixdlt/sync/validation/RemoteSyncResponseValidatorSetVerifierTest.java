@@ -102,8 +102,7 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(true);
 
-    assertTrue(
-        validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
+    assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
   }
 
   @Test
@@ -112,7 +111,6 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(false);
 
-    assertFalse(
-        validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
+    assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
   }
 }

@@ -159,9 +159,7 @@ public class EpochManagerTest {
         }
 
         @Override
-        public void commit(
-            LedgerExtension ledgerExtension,
-            VertexStoreState vertexStoreState) {
+        public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
           // No-op
         }
       };

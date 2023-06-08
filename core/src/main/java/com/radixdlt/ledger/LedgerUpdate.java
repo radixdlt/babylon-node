@@ -77,9 +77,7 @@ public final class LedgerUpdate {
   // FIXME: Easiest way to implement this part for now
   private final ClassToInstanceMap<Object> output;
 
-  public LedgerUpdate(
-      LedgerExtension ledgerExtension,
-      ClassToInstanceMap<Object> output) {
+  public LedgerUpdate(LedgerExtension ledgerExtension, ClassToInstanceMap<Object> output) {
     this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
     this.output = Objects.requireNonNull(output);
   }
@@ -102,8 +100,7 @@ public final class LedgerUpdate {
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{transactions=%s}", this.getClass().getSimpleName(), ledgerExtension);
+    return String.format("%s{transactions=%s}", this.getClass().getSimpleName(), ledgerExtension);
   }
 
   @Override

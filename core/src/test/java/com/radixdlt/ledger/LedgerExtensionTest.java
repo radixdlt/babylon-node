@@ -86,8 +86,7 @@ public class LedgerExtensionTest {
     this.ledgerProof = mock(LedgerProof.class);
     when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
 
-    this.emptyLedgerExtension =
-        LedgerExtension.create(ImmutableList.of(), ledgerProof);
+    this.emptyLedgerExtension = LedgerExtension.create(ImmutableList.of(), ledgerProof);
   }
 
   @Test
