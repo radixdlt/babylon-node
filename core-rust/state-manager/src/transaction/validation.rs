@@ -110,7 +110,6 @@ impl LedgerTransactionValidator {
         Ok(ValidatedLedgerTransaction {
             inner: validated_inner,
             summary: prepared.summary,
-            legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash,
         })
     }
 
@@ -124,7 +123,6 @@ impl LedgerTransactionValidator {
         ValidatedLedgerTransaction {
             inner: ValidatedLedgerTransactionInner::Genesis(t),
             summary: prepared.summary,
-            legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash,
         }
     }
 }

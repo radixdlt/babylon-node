@@ -64,7 +64,7 @@
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
-use crate::transaction::RawLedgerTransaction;
+use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
 use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -74,6 +74,7 @@ use radix_engine::types::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
+    ledger_transaction_hash: LedgerTransactionHash,
     outcome: TransactionOutcomeJava,
     error_message: Option<String>,
     consensus_receipt_bytes: Vec<u8>,
@@ -119,12 +120,15 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
+            let committed_identifiers =
+                read_database.get_committed_transaction_identifiers(state_version)?;
             let committed_ledger_transaction_receipt =
                 read_database.get_committed_ledger_transaction_receipt(state_version)?;
             let local_transaction_execution =
                 read_database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
+                ledger_transaction_hash: committed_identifiers.payload.ledger_payload_hash,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,

@@ -111,7 +111,6 @@ impl LedgerTransaction {
 pub struct PreparedLedgerTransaction {
     pub inner: PreparedLedgerTransactionInner,
     pub summary: Summary,
-    pub legacy_ledger_payload_hash: LegacyLedgerPayloadHash,
 }
 
 impl PreparedLedgerTransaction {
@@ -246,29 +245,21 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
         decoder.read_expected_enum_variant_header(TransactionDiscriminator::V1Ledger as u8, 1)?;
-        let prepared_inner = PreparedLedgerTransactionInner::prepare_as_full_body_child(decoder)?;
+        let inner = PreparedLedgerTransactionInner::prepare_as_full_body_child(decoder)?;
         decoder.track_stack_depth_decrease()?;
 
         let summary = Summary {
-            effective_length: prepared_inner.get_summary().effective_length,
-            total_bytes_hashed: prepared_inner.get_summary().total_bytes_hashed,
-            hash: prepared_inner.get_ledger_hash().0,
+            effective_length: inner.get_summary().effective_length,
+            total_bytes_hashed: inner.get_summary().total_bytes_hashed,
+            hash: inner.get_ledger_hash().0,
         };
-        let end_offset = decoder.get_offset();
-        Ok(Self {
-            inner: prepared_inner,
-            summary,
-            // TODO - remove this when we change the legacy payload hash behaviour for ledger sync
-            // Note - we assume that the payload started at 0 and ends at end_offset
-            legacy_ledger_payload_hash: hash(decoder.get_slice(0, end_offset)).into(),
-        })
+        Ok(Self { inner, summary })
     }
 }
 
 pub struct ValidatedLedgerTransaction {
     pub inner: ValidatedLedgerTransactionInner,
     pub summary: Summary,
-    pub legacy_ledger_payload_hash: LegacyLedgerPayloadHash,
 }
 
 /// Note - we don't allow System transactions here, because they are Genesis or Protocol Updates,
@@ -329,29 +320,6 @@ impl ValidatedLedgerTransaction {
 impl HasLedgerTransactionHash for ValidatedLedgerTransaction {
     fn ledger_transaction_hash(&self) -> LedgerTransactionHash {
         LedgerTransactionHash::from_hash(self.summary.hash)
-    }
-}
-
-impl HasLegacyLedgerPayloadHash for ValidatedLedgerTransaction {
-    fn legacy_ledger_payload_hash(&self) -> LegacyLedgerPayloadHash {
-        self.legacy_ledger_payload_hash
-    }
-}
-
-// TODO: Remove for mainnet launch as part of the work to replace the accumulator hash with
-// the receipt tree hash
-define_wrapped_hash!(
-    /// A hash of the whole payload, for use by the accumulator
-    LegacyLedgerPayloadHash
-);
-
-pub trait HasLegacyLedgerPayloadHash {
-    fn legacy_ledger_payload_hash(&self) -> LegacyLedgerPayloadHash;
-}
-
-impl HasLegacyLedgerPayloadHash for PreparedLedgerTransaction {
-    fn legacy_ledger_payload_hash(&self) -> LegacyLedgerPayloadHash {
-        self.legacy_ledger_payload_hash
     }
 }
 
