@@ -628,7 +628,7 @@ public class LocalSyncServiceTest {
     when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
     final var respTail = mock(DtoLedgerProof.class);
     when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
-    final var response = mock(CommittedTransactionsWithProofDto.class);
+    final var response = mock(DtoLedgerExtension.class);
     final var txn = mock(RawLedgerTransaction.class);
     when(response.getTransactions()).thenReturn(ImmutableList.of(txn));
     when(response.getHead()).thenReturn(respHead);
@@ -644,7 +644,7 @@ public class LocalSyncServiceTest {
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
     return new LedgerUpdate(
-        CommittedTransactionsWithProof.create(
+        LedgerExtension.create(
             ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
         ImmutableClassToInstanceMap.of());
   }

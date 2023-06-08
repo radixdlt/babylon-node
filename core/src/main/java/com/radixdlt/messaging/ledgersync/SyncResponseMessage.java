@@ -66,7 +66,7 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
+import com.radixdlt.ledger.DtoLedgerExtension;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -78,22 +78,22 @@ import java.util.Objects;
 public final class SyncResponseMessage extends Message {
   @JsonProperty("run")
   @DsonOutput(Output.ALL)
-  private final CommittedTransactionsWithProofDto transactionsWithProofDto;
+  private final DtoLedgerExtension ledgerExtension;
 
   @JsonCreator
   public SyncResponseMessage(
       @JsonProperty(value = "run", required = true)
-          CommittedTransactionsWithProofDto transactionsWithProofDto) {
-    this.transactionsWithProofDto = Objects.requireNonNull(transactionsWithProofDto);
+      DtoLedgerExtension ledgerExtension) {
+    this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
   }
 
-  public CommittedTransactionsWithProofDto getTransactions() {
-    return transactionsWithProofDto;
+  public DtoLedgerExtension getLedgerExtension() {
+    return ledgerExtension;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{run=%s}", getClass().getSimpleName(), transactionsWithProofDto);
+    return String.format("%s{run=%s}", getClass().getSimpleName(), ledgerExtension);
   }
 
   @Override
@@ -103,12 +103,12 @@ public final class SyncResponseMessage extends Message {
     }
 
     return (o instanceof SyncResponseMessage that)
-        && Objects.equals(transactionsWithProofDto, that.transactionsWithProofDto)
+        && Objects.equals(ledgerExtension, that.ledgerExtension)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionsWithProofDto, getTimestamp());
+    return Objects.hash(ledgerExtension, getTimestamp());
   }
 }

@@ -66,7 +66,7 @@ package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -94,7 +94,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   }
 
   @Override
-  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+  public LedgerExtension getTransactions(DtoLedgerProof start) {
     final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
 
     final var rawTxnsAndProofOpt =
@@ -106,7 +106,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
     return rawTxnsAndProofOpt
         .map(
             rawTxnsAndProof ->
-                CommittedTransactionsWithProof.create(
+                LedgerExtension.create(
                     rawTxnsAndProof.transactions().stream()
                         .map(RawLedgerTransaction::create)
                         .toList(),

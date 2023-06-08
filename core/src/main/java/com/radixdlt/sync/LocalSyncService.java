@@ -434,7 +434,7 @@ public final class LocalSyncService {
       return currentState;
     }
 
-    if (syncResponse.getTransactionsWithProofDto().getTransactions().isEmpty()) {
+    if (syncResponse.getLedgerExtension().getTransactions().isEmpty()) {
       log.warn("LocalSync: Received empty sync response from {}", sender);
       // didn't receive any transactions, remove from candidate peers and processSync
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));

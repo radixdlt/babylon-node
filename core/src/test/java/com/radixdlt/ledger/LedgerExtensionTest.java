@@ -76,28 +76,28 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommittedTransactionsWithProofTest {
-  private LedgerProof stateAndProof;
-  private CommittedTransactionsWithProof emptyCommittedTransactionsWithProof;
+public class LedgerExtensionTest {
+  private LedgerProof ledgerProof;
+  private LedgerExtension emptyLedgerExtension;
   private final long stateVersion = 232L;
 
   @Before
   public void setUp() {
-    this.stateAndProof = mock(LedgerProof.class);
-    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
+    this.ledgerProof = mock(LedgerProof.class);
+    when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
 
-    this.emptyCommittedTransactionsWithProof =
-        CommittedTransactionsWithProof.create(ImmutableList.of(), stateAndProof);
+    this.emptyLedgerExtension =
+        LedgerExtension.create(ImmutableList.of(), ledgerProof);
   }
 
   @Test
   public void testGetters() {
-    assertThat(this.emptyCommittedTransactionsWithProof.getProof()).isEqualTo(stateAndProof);
+    assertThat(this.emptyLedgerExtension.getProof()).isEqualTo(ledgerProof);
   }
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(CommittedTransactionsWithProof.class)
+    EqualsVerifier.forClass(LedgerExtension.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

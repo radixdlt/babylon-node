@@ -134,10 +134,10 @@ public final class MockedMempoolStateComputer implements StateComputer {
 
   @Override
   public void commit(
-      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
-    this.stateComputer.commit(committedTransactionsWithProof, vertexStore);
+      LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    this.stateComputer.commit(ledgerExtension, vertexStore);
     this.mempool.handleTransactionsCommitted(
-        committedTransactionsWithProof.getTransactions().stream()
+        ledgerExtension.getTransactions().stream()
             // This undoes the (hacky) re-mapping done by a fake `prepare()` using `MockExecuted`
             // (see e.g. `MockedStateComputer` implementation).
             .map(t -> RawNotarizedTransaction.create(t.getPayload()))

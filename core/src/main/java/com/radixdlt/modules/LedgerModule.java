@@ -74,7 +74,7 @@ import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.StateComputerLedger;
 import java.util.Comparator;
 
@@ -91,7 +91,7 @@ public class LedgerModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<CommittedTransactionsWithProof> syncToLedgerCommittor(
+  private EventProcessor<LedgerExtension> syncToLedgerCommittor(
       StateComputerLedger stateComputerLedger) {
     return stateComputerLedger.syncEventProcessor();
   }

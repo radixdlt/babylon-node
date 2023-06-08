@@ -73,14 +73,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class LedgerUpdate {
-  private final CommittedTransactionsWithProof committedTransactionsWithProof;
+  private final LedgerExtension ledgerExtension;
   // FIXME: Easiest way to implement this part for now
   private final ClassToInstanceMap<Object> output;
 
   public LedgerUpdate(
-      CommittedTransactionsWithProof committedTransactionsWithProof,
+      LedgerExtension ledgerExtension,
       ClassToInstanceMap<Object> output) {
-    this.committedTransactionsWithProof = Objects.requireNonNull(committedTransactionsWithProof);
+    this.ledgerExtension = Objects.requireNonNull(ledgerExtension);
     this.output = Objects.requireNonNull(output);
   }
 
@@ -89,26 +89,26 @@ public final class LedgerUpdate {
   }
 
   public List<RawLedgerTransaction> getNewTransactions() {
-    return committedTransactionsWithProof.getTransactions();
+    return ledgerExtension.getTransactions();
   }
 
   public LedgerProof getTail() {
-    return committedTransactionsWithProof.getProof();
+    return ledgerExtension.getProof();
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return committedTransactionsWithProof.getProof().getNextValidatorSet();
+    return ledgerExtension.getProof().getNextValidatorSet();
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{transactions=%s}", this.getClass().getSimpleName(), committedTransactionsWithProof);
+        "%s{transactions=%s}", this.getClass().getSimpleName(), ledgerExtension);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(committedTransactionsWithProof, output);
+    return Objects.hash(ledgerExtension, output);
   }
 
   @Override
@@ -118,7 +118,7 @@ public final class LedgerUpdate {
     }
 
     LedgerUpdate other = (LedgerUpdate) o;
-    return Objects.equals(other.committedTransactionsWithProof, this.committedTransactionsWithProof)
+    return Objects.equals(other.ledgerExtension, this.ledgerExtension)
         && Objects.equals(other.output, this.output);
   }
 }

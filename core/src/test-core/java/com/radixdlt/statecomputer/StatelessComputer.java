@@ -146,14 +146,14 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
         successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
   }
 
-  private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
+  private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
     var output =
-        txnsAndProof
+        ledgerExtension
             .getProof()
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof proof = txnsAndProof.getProof();
+                  LedgerProof proof = ledgerExtension.getProof();
                   VertexWithHash genesisVertex =
                       Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
@@ -178,13 +178,13 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());
 
-    return new LedgerUpdate(txnsAndProof, output);
+    return new LedgerUpdate(ledgerExtension, output);
   }
 
   @Override
   public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    var ledgerUpdate = this.generateLedgerUpdate(txnsAndProof);
+      LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+    var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

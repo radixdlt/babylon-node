@@ -76,7 +76,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.MetricsInitializer;
@@ -135,12 +135,11 @@ public class RemoteSyncServiceTest {
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
     when(request.getHeader()).thenReturn(header);
     NodeId node = mock(NodeId.class);
-    CommittedTransactionsWithProof committedTransactionsWithProof =
-        mock(CommittedTransactionsWithProof.class);
+    LedgerExtension ledgerExtension = mock(LedgerExtension.class);
     LedgerProof verifiedHeader = mock(LedgerProof.class);
     when(verifiedHeader.toDto()).thenReturn(header);
-    when(committedTransactionsWithProof.getProof()).thenReturn(verifiedHeader);
-    when(reader.getTransactions(any())).thenReturn(committedTransactionsWithProof);
+    when(ledgerExtension.getProof()).thenReturn(verifiedHeader);
+    when(reader.getTransactions(any())).thenReturn(ledgerExtension);
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
   }
@@ -148,10 +147,10 @@ public class RemoteSyncServiceTest {
   @Test(expected = NullPointerException.class)
   public void when_bad_remote_sync_request__then_throw_NPE() {
     var node = mock(NodeId.class);
-    var transactionsWithProof = mock(CommittedTransactionsWithProof.class);
+    var ledgerExtension = mock(LedgerExtension.class);
     var verifiedHeader = mock(LedgerProof.class);
-    when(transactionsWithProof.getProof()).thenReturn(verifiedHeader);
-    when(reader.getTransactions(any())).thenReturn(transactionsWithProof);
+    when(ledgerExtension.getProof()).thenReturn(verifiedHeader);
+    when(reader.getTransactions(any())).thenReturn(ledgerExtension);
 
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());

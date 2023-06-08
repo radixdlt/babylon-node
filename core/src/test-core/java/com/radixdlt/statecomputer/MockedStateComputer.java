@@ -117,15 +117,14 @@ public final class MockedStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
     var output =
-        txnsAndProof
+        ledgerExtension
             .getProof()
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof proof = txnsAndProof.getProof();
+                  LedgerProof proof = ledgerExtension.getProof();
                   VertexWithHash genesisVertex =
                       Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
@@ -150,7 +149,7 @@ public final class MockedStateComputer implements StateComputer {
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());
 
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    var ledgerUpdate = new LedgerUpdate(ledgerExtension, output);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

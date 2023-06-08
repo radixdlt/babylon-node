@@ -83,7 +83,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.*;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
@@ -227,7 +227,7 @@ public class DispatcherModule extends AbstractModule {
     final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() {};
     Multibinder.newSetBinder(binder(), committedUpdateKey);
     Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
-    final var syncUpdateKey = new TypeLiteral<EventProcessor<CommittedTransactionsWithProof>>() {};
+    final var syncUpdateKey = new TypeLiteral<EventProcessor<LedgerExtension>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
@@ -424,8 +424,8 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<CommittedTransactionsWithProof> syncUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<CommittedTransactionsWithProof>> processors,
+  private EventDispatcher<LedgerExtension> syncUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<LedgerExtension>> processors,
       Metrics metrics) {
     return commit -> {
       metrics.sync().validResponsesReceived().inc(commit.getTransactions().size());

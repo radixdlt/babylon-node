@@ -85,23 +85,23 @@ import java.util.Objects;
  * <p>Notes:
  *
  * <ul>
- *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof" and
- *       "TransactionRun"
+ *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof",
+ *       "TransactionRun" and "CommittedTransactionWithProof".
  * </ul>
  */
-public final class CommittedTransactionsWithProof {
+public final class LedgerExtension {
   private final List<RawLedgerTransaction> transactions;
   private final LedgerProof proof;
 
-  private CommittedTransactionsWithProof(
+  private LedgerExtension(
       List<RawLedgerTransaction> transactions, LedgerProof proof) {
     this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
-  public static CommittedTransactionsWithProof create(
+  public static LedgerExtension create(
       List<RawLedgerTransaction> transactions, LedgerProof proof) {
-    return new CommittedTransactionsWithProof(transactions, proof);
+    return new LedgerExtension(transactions, proof);
   }
 
   public List<RawLedgerTransaction> getTransactions() {
@@ -122,7 +122,7 @@ public final class CommittedTransactionsWithProof {
    * may have already committed some of this commit request's transactions. We extract the
    * transactions that we actually still need to commit.
    */
-  public CommittedTransactionsWithProof getExtensionFrom(long startStateVersion) {
+  public LedgerExtension getExtensionFrom(long startStateVersion) {
     final var proofStateVersion = this.proof.getStateVersion();
     final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
     if (startIndex < 0 || startIndex > this.transactions.size()) {
@@ -132,7 +132,7 @@ public final class CommittedTransactionsWithProof {
     }
     final var extension =
         this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
-    return CommittedTransactionsWithProof.create(extension, this.proof);
+    return LedgerExtension.create(extension, this.proof);
   }
 
   @Override
@@ -142,11 +142,11 @@ public final class CommittedTransactionsWithProof {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof CommittedTransactionsWithProof)) {
+    if (!(o instanceof LedgerExtension)) {
       return false;
     }
 
-    CommittedTransactionsWithProof other = (CommittedTransactionsWithProof) o;
+    LedgerExtension other = (LedgerExtension) o;
     return Objects.equals(this.transactions, other.transactions)
         && Objects.equals(this.proof, other.proof);
   }

@@ -279,8 +279,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
-    var proof = txnsAndProof.getProof();
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    var proof = ledgerExtension.getProof();
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
@@ -291,7 +291,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
+            ledgerExtension.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     result.onError(
@@ -300,12 +300,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         });
 
     var epochChangeOptional =
-        txnsAndProof
+        ledgerExtension
             .getProof()
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  var header = txnsAndProof.getProof();
+                  var header = ledgerExtension.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = ProposerElections.defaultRotation(validatorSet);
@@ -320,7 +320,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
           this.currentProposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
           outputBuilder.put(EpochChange.class, epochChange);
         });
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+    var ledgerUpdate = new LedgerUpdate(ledgerExtension, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }
