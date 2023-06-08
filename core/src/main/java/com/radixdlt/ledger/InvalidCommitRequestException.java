@@ -67,14 +67,11 @@ package com.radixdlt.ledger;
 import com.radixdlt.statecomputer.commit.CommitError;
 
 /**
- * Exception which suggests that there exists a byzantine quorum which got us to this exception
- * state.
- *
- * <p>TODO: Remove all instance of this class and replace with mechanism to log and revert to last
- * known good state.
+ * An exception signalling that the contents of a properly-signed commit request were not internally
+ * consistent (e.g. non-parseable or non-committable transactions, ledger proof mismatches).
  */
-public class ByzantineQuorumException extends RuntimeException {
-  public ByzantineQuorumException(CommitError commitError) {
+public class InvalidCommitRequestException extends RuntimeException {
+  public InvalidCommitRequestException(CommitError commitError) {
     super(commitError.toString());
   }
 }

@@ -73,7 +73,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.InvalidCommitRequestException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -452,7 +452,7 @@ public final class LocalSyncService {
 
     try {
       this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
-    } catch (ByzantineQuorumException exception) {
+    } catch (InvalidCommitRequestException exception) {
       // TODO: at some point in future, we may want to distinguish between different causes of this
       // exception (i.e. would need to be passed from the Engine).
       // E.g. a mismatched accumulator hash is an indication of a dishonest sender, but a mismatched

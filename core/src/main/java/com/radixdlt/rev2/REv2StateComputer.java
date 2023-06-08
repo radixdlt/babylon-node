@@ -296,7 +296,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var result = stateComputer.commit(commitRequest);
     result.onError(
         error -> {
-          throw new ByzantineQuorumException(error);
+          throw new InvalidCommitRequestException(error);
         });
 
     var epochChangeOptional =
