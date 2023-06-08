@@ -144,8 +144,8 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
       // Capture the transactions between these 2 proofs
       var epochTransactions =
           LongStream.range(
-                  previousHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1,
-                  epochHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1)
+                  previousHeader.stateVersion().toNonNegativeLong().unwrap() + 1,
+                  epochHeader.stateVersion().toNonNegativeLong().unwrap() + 1)
               .mapToObj(reader::getTransactionAtStateVersion)
               .map(Option::unwrap)
               .toList();

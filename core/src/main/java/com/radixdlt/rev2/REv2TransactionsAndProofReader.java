@@ -95,8 +95,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-    final var startStateVersionInclusive =
-        start.getLedgerHeader().getAccumulatorState().getStateVersion() + 1;
+    final var startStateVersionInclusive = start.getLedgerHeader().getStateVersion() + 1;
 
     final var rawTxnsAndProofOpt =
         transactionStore.getTxnsAndProof(

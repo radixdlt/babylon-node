@@ -151,9 +151,7 @@ public final class StateManagerSbor {
     LedgerHashes.registerCodec(codecMap);
     LedgerProof.registerCodec(codecMap);
     LedgerHeader.registerCodec(codecMap);
-    AccumulatorState.registerCodec(codecMap);
     TimestampedValidatorSignature.registerCodec(codecMap);
-    PreviousVertex.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     CommittableTransaction.registerCodec(codecMap);

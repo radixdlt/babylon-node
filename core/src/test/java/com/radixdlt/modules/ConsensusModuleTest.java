@@ -77,22 +77,17 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
@@ -130,21 +125,19 @@ public class ConsensusModuleTest {
 
   @Before
   public void setup() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex, LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0));
+            genesisVertex, LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
     this.requestSender = rmock(RemoteEventDispatcher.class);
@@ -259,13 +252,7 @@ public class ConsensusModuleTest {
         new BFTHeader(
             Round.of(1),
             vertex.hash(),
-            LedgerHeader.create(
-                1,
-                Round.of(1),
-                new AccumulatorState(1, HashUtils.zero256()),
-                LedgerHashes.zero(),
-                1,
-                1));
+            LedgerHeader.create(1, Round.of(1), 1, LedgerHashes.zero(), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);

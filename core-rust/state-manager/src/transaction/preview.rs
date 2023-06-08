@@ -1,16 +1,16 @@
 use parking_lot::RwLock;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine::transaction::{PreviewError, TransactionReceipt};
+use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_common::types::Epoch;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
-use crate::staging::{HashUpdateContext, ProcessedTransactionReceipt, ReadableStore};
+use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
-use crate::{EpochTransactionIdentifiers, PreviewRequest};
+use crate::{PreviewRequest, ProcessedCommitResult, SubstateChange};
 use radix_engine_common::prelude::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
@@ -28,7 +28,7 @@ pub struct TransactionPreviewer<S> {
 
 pub struct ProcessedPreviewResult {
     pub receipt: TransactionReceipt,
-    pub processed_receipt: ProcessedTransactionReceipt,
+    pub substate_changes: Vec<SubstateChange>,
 }
 
 impl<S> TransactionPreviewer<S> {
@@ -54,12 +54,6 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let read_store = self.store.read();
         let intent = self.create_intent(preview_request, read_store.deref());
 
-        let transaction_identifiers = read_store.get_top_commit_identifiers();
-        let epoch_identifiers = read_store
-            .get_last_epoch_proof()
-            .map(|epoch_proof| EpochTransactionIdentifiers::from(&epoch_proof.ledger_header))
-            .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
-
         let validator = NotarizedTransactionValidator::new(self.validation_config);
         let validated = validator
             .validate_preview_intent_v1(intent)
@@ -68,24 +62,21 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .execution_configurator
             .wrap(validated.get_executable(), ConfigType::Preview)
             .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
-        let receipt = transaction_logic.execute_on(read_store.deref());
 
-        // Fake a LedgerPayloadHash for the purposes of mapping the receipt as it doesn't matter for preview
-        // TODO - don't do most of this work for preview
-        let fake_ledger_hash = LegacyLedgerPayloadHash::from_hash(validated.intent.summary.hash);
-        let processed_receipt = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
-            HashUpdateContext {
-                store: read_store.deref(),
-                epoch_transaction_identifiers: &epoch_identifiers,
-                parent_transaction_identifiers: &transaction_identifiers,
-                legacy_payload_hash: &fake_ledger_hash,
-            },
-            receipt.clone(),
-        );
+        let receipt = transaction_logic.execute_on(read_store.deref());
+        let substate_changes = match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
+                    read_store.deref(),
+                    &commit.state_updates.system_updates,
+                )
+            }
+            _ => Vec::new(),
+        };
 
         Ok(ProcessedPreviewResult {
             receipt,
-            processed_receipt,
+            substate_changes,
         })
     }
 
@@ -226,13 +217,6 @@ mod tests {
         });
 
         // just checking that we're getting some processed substate changes back in the response
-        assert!(!preview_response
-            .unwrap()
-            .processed_receipt
-            .expect_commit("".to_string())
-            .local_receipt
-            .on_ledger
-            .substate_changes
-            .is_empty());
+        assert!(!preview_response.unwrap().substate_changes.is_empty());
     }
 }

@@ -76,6 +76,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     for state_version in state_versions.take(limit) {
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
             &mapping_context,
+            state_version,
             database
                 .get_committed_local_transaction_receipt(state_version)
                 .expect("Transaction receipt index corrupted"),

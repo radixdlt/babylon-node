@@ -81,8 +81,6 @@ import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.logger.EventLoggerConfig;
@@ -130,8 +128,6 @@ public final class MempoolRunnerTest {
                     return Flowable.never();
                   }
                 });
-        bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
-        bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
         bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);

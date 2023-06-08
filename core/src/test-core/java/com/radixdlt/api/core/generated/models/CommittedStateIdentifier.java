@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   CommittedStateIdentifier.JSON_PROPERTY_STATE_VERSION,
-  CommittedStateIdentifier.JSON_PROPERTY_ACCUMULATOR_HASH,
   CommittedStateIdentifier.JSON_PROPERTY_STATE_TREE_HASH,
   CommittedStateIdentifier.JSON_PROPERTY_TRANSACTION_TREE_HASH,
   CommittedStateIdentifier.JSON_PROPERTY_RECEIPT_TREE_HASH
@@ -41,9 +40,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class CommittedStateIdentifier {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
-
-  public static final String JSON_PROPERTY_ACCUMULATOR_HASH = "accumulator_hash";
-  private String accumulatorHash;
 
   public static final String JSON_PROPERTY_STATE_TREE_HASH = "state_tree_hash";
   private String stateTreeHash;
@@ -82,32 +78,6 @@ public class CommittedStateIdentifier {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
-  }
-
-
-  public CommittedStateIdentifier accumulatorHash(String accumulatorHash) {
-    this.accumulatorHash = accumulatorHash;
-    return this;
-  }
-
-   /**
-   * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is &#x60;ACC_{N+1} &#x3D; Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))&#x60;, starting with &#x60;ACC_0 &#x3D; 000..000&#x60; the pre-genesis accumulator. 
-   * @return accumulatorHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. ")
-  @JsonProperty(JSON_PROPERTY_ACCUMULATOR_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getAccumulatorHash() {
-    return accumulatorHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCUMULATOR_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccumulatorHash(String accumulatorHash) {
-    this.accumulatorHash = accumulatorHash;
   }
 
 
@@ -202,7 +172,6 @@ public class CommittedStateIdentifier {
     }
     CommittedStateIdentifier committedStateIdentifier = (CommittedStateIdentifier) o;
     return Objects.equals(this.stateVersion, committedStateIdentifier.stateVersion) &&
-        Objects.equals(this.accumulatorHash, committedStateIdentifier.accumulatorHash) &&
         Objects.equals(this.stateTreeHash, committedStateIdentifier.stateTreeHash) &&
         Objects.equals(this.transactionTreeHash, committedStateIdentifier.transactionTreeHash) &&
         Objects.equals(this.receiptTreeHash, committedStateIdentifier.receiptTreeHash);
@@ -210,7 +179,7 @@ public class CommittedStateIdentifier {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash, stateTreeHash, transactionTreeHash, receiptTreeHash);
+    return Objects.hash(stateVersion, stateTreeHash, transactionTreeHash, receiptTreeHash);
   }
 
   @Override
@@ -218,7 +187,6 @@ public class CommittedStateIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class CommittedStateIdentifier {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
-    sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
     sb.append("    stateTreeHash: ").append(toIndentedString(stateTreeHash)).append("\n");
     sb.append("    transactionTreeHash: ").append(toIndentedString(transactionTreeHash)).append("\n");
     sb.append("    receiptTreeHash: ").append(toIndentedString(receiptTreeHash)).append("\n");

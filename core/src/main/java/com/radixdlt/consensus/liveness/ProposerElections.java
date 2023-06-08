@@ -62,17 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
-/**
- * Accumulates transactions into a single version hash which represents all transactions which have
- * been committed in a certain order.
- *
- * <p>All implementations should be functional and stateless.
- */
-@FunctionalInterface
-public interface LedgerAccumulator {
-  AccumulatorState accumulate(AccumulatorState parent, HashCode hash);
+/** A static factory of {@link ProposerElection}s. */
+public abstract class ProposerElections {
+
+  /** A default size for {@link WeightedRotatingLeaders} cache. */
+  private static final int DEFAULT_CACHE_SIZE = 10;
+
+  /**
+   * Creates a default production validation rotation over the given validator set. Currently, our
+   * implementation will:
+   *
+   * <ul>
+   *   <li>first, go over each validator once (in the "highest stake first" order);
+   *   <li>and then apply the {@link WeightedRotatingLeaders "frequency proportional to stake"}
+   *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
+   * </ul>
+   */
+  public static ProposerElection defaultRotation(BFTValidatorSet validatorSet) {
+    return new RotateOnceDecorator(
+        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+  }
 }

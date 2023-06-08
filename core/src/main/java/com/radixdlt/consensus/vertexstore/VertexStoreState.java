@@ -126,7 +126,7 @@ public final class VertexStoreState {
         LedgerHeader.create(
             nextEpoch.getEpoch(),
             Round.genesis(),
-            epochProof.getAccumulatorState(),
+            epochProof.getStateVersion(),
             epochProof.getLedgerHashes(),
             epochProof.consensusParentRoundTimestamp(),
             epochProof.proposerTimestamp());
