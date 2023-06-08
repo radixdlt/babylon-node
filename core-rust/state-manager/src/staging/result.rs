@@ -69,7 +69,7 @@ use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
     ChangeAction, EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch,
-    ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
+    ReceiptTreeHash, StateHash, StateVersion, SubstateChange, TransactionTreeHash,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
@@ -103,7 +103,7 @@ pub struct ProcessedCommitResult {
 pub struct HashUpdateContext<'s, S> {
     pub store: &'s S,
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
-    pub parent_state_version: u64,
+    pub parent_state_version: StateVersion,
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
@@ -251,13 +251,16 @@ impl ProcessedCommitResult {
         substate_changes
     }
 
-    fn compute_accu_tree_update<S: ReadableAccuTreeStore<u64, M>, M: Merklizable + Clone>(
+    fn compute_accu_tree_update<
+        S: ReadableAccuTreeStore<StateVersion, M>,
+        M: Merklizable + Clone,
+    >(
         store: &S,
-        epoch_state_version: u64,
+        epoch_state_version: StateVersion,
         epoch_root: M,
-        parent_state_version: u64,
+        parent_state_version: StateVersion,
         new_leaf_hash: M,
-    ) -> AccuTreeDiff<u64, M> {
+    ) -> AccuTreeDiff<StateVersion, M> {
         let mut collector = CollectingAccuTreeStore::new(store);
         let mut epoch_scoped_store =
             EpochScopedAccuTreeStore::new(&mut collector, epoch_state_version);
@@ -270,7 +273,7 @@ impl ProcessedCommitResult {
 
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
-        parent_state_version: u64,
+        parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
         let mut hash_changes = Vec::new();
@@ -292,7 +295,7 @@ impl ProcessedCommitResult {
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
-            Some(parent_state_version).filter(|v| *v > 0),
+            Some(parent_state_version.number()).filter(|v| *v > 0),
             hash_changes,
         );
         collector.into_diff_with(root_hash)
@@ -303,8 +306,8 @@ impl ProcessedCommitResult {
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,
     pub state_hash_tree_diff: StateHashTreeDiff,
-    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionTreeHash>,
-    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
+    pub transaction_tree_diff: AccuTreeDiff<StateVersion, TransactionTreeHash>,
+    pub receipt_tree_diff: AccuTreeDiff<StateVersion, ReceiptTreeHash>,
 }
 
 #[derive(Clone, Debug)]
@@ -340,11 +343,11 @@ pub struct AccuTreeDiff<K, N> {
 
 struct EpochScopedAccuTreeStore<'s, S> {
     forest_store: &'s mut S,
-    epoch_state_version: u64,
+    epoch_state_version: StateVersion,
 }
 
 impl<'s, S> EpochScopedAccuTreeStore<'s, S> {
-    pub fn new(forest_store: &'s mut S, epoch_state_version: u64) -> Self {
+    pub fn new(forest_store: &'s mut S, epoch_state_version: StateVersion) -> Self {
         Self {
             forest_store,
             epoch_state_version,
@@ -352,20 +355,24 @@ impl<'s, S> EpochScopedAccuTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, N>, N> ReadableAccuTreeStore<usize, N>
+impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
     for EpochScopedAccuTreeStore<'s, S>
 {
     fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
-        let end_state_version = self.epoch_state_version + *epoch_tree_size as u64 - 1;
+        let end_state_version = self
+            .epoch_state_version
+            .relative(*epoch_tree_size as u64 - 1);
         self.forest_store.get_tree_slice(&end_state_version)
     }
 }
 
-impl<'s, S: WriteableAccuTreeStore<u64, N>, N> WriteableAccuTreeStore<usize, N>
+impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
     for EpochScopedAccuTreeStore<'s, S>
 {
     fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
-        let end_state_version = self.epoch_state_version + epoch_tree_size as u64 - 1;
+        let end_state_version = self
+            .epoch_state_version
+            .relative(epoch_tree_size as u64 - 1);
         self.forest_store.put_tree_slice(end_state_version, slice)
     }
 }

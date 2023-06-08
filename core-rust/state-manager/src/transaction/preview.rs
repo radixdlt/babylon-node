@@ -1,7 +1,6 @@
 use parking_lot::RwLock;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
-use radix_engine_common::types::Epoch;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use std::time::Duration;
@@ -87,8 +86,8 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
         let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
             let current_epoch = read_store.get_epoch();
             Range {
-                start: current_epoch.number(),
-                end: current_epoch.number() + self.validation_config.max_epoch_range,
+                start: current_epoch,
+                end: current_epoch.after(self.validation_config.max_epoch_range),
             }
         });
         let (instructions, blobs) = preview_request.manifest.for_intent();
@@ -96,8 +95,8 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             intent: IntentV1 {
                 header: TransactionHeaderV1 {
                     network_id: self.validation_config.network_id,
-                    start_epoch_inclusive: Epoch::of(effective_epoch_range.start),
-                    end_epoch_exclusive: Epoch::of(effective_epoch_range.end),
+                    start_epoch_inclusive: effective_epoch_range.start,
+                    end_epoch_exclusive: effective_epoch_range.end,
                     nonce: preview_request.nonce,
                     notary_public_key: notary,
                     notary_is_signatory: preview_request.notary_is_signatory,

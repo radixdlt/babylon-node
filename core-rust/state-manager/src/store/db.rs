@@ -69,7 +69,10 @@ use std::path::PathBuf;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
-use crate::{CommittedTransactionIdentifiers, LedgerHashes, ReceiptTreeHash, TransactionTreeHash};
+use crate::{
+    CommittedTransactionIdentifiers, LedgerHashes, ReceiptTreeHash, StateVersion,
+    TransactionTreeHash,
+};
 use enum_dispatch::enum_dispatch;
 use radix_engine_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
@@ -168,8 +171,11 @@ impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionTreeHash> for StateManagerDatabase {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StateManagerDatabase {
+    fn get_tree_slice(
+        &self,
+        state_version: &StateVersion,
+    ) -> Option<TreeSlice<TransactionTreeHash>> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
@@ -177,8 +183,8 @@ impl ReadableAccuTreeStore<u64, TransactionTreeHash> for StateManagerDatabase {
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for StateManagerDatabase {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StateManagerDatabase {
+    fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
@@ -187,7 +193,7 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for StateManagerDatabase {
 }
 
 impl TransactionIndex<&IntentHash> for StateManagerDatabase {
-    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<StateVersion> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
@@ -203,7 +209,7 @@ impl TransactionIndex<&NotarizedTransactionHash> for StateManagerDatabase {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &NotarizedTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
@@ -219,7 +225,7 @@ impl TransactionIndex<&LedgerTransactionHash> for StateManagerDatabase {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &LedgerTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
