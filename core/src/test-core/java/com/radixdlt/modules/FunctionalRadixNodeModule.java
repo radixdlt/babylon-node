@@ -84,7 +84,6 @@ import com.radixdlt.mempool.MempoolReevaluationModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -405,8 +404,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           }
           case REv2StateComputerConfig rev2Config -> {
             final var genesisProvider =
-                RawGenesisDataWithHash.fromGenesisData(
-                    rev2Config.genesis(), new Blake2b256Hasher(DefaultSerialization.getInstance()));
+                RawGenesisDataWithHash.fromGenesisData(rev2Config.genesis());
             install(new REv2LedgerInitializerModule(genesisProvider));
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());

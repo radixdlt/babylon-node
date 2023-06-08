@@ -86,12 +86,13 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
 
   public Optional<WrappedByteArray> loadGenesisDataFromProperties() {
     final var genesisFileProp =
-        Optional.ofNullable(properties.get("network.genesis_file")).filter(not(String::isBlank));
+        Optional.ofNullable(properties.get("network.genesis_data_file"))
+            .filter(not(String::isBlank));
     final var genesisDataProp =
         Optional.ofNullable(properties.get("network.genesis_data")).filter(not(String::isBlank));
     if (genesisFileProp.isPresent() && genesisDataProp.isPresent()) {
       throw new RuntimeException(
-          "Both network.genesis_file and network.genesis_data were configured (choose one).");
+          "Both network.genesis_data_file and network.genesis_data were configured (choose one).");
     } else if (genesisFileProp.isPresent()) {
       log.info("Loading genesis from file: {}", genesisFileProp.orElseThrow());
       return Optional.of(readGenesisBytesFromFile(genesisFileProp.orElseThrow()));
@@ -108,12 +109,6 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
     }
   }
 
-  private static WrappedByteArray fromCompressedBase64(byte[] compressedGenesisBytesBase64)
-      throws IOException {
-    final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
-    return fromCompressedBytes(compressedGenesisBytes);
-  }
-
   private static WrappedByteArray fromCompressedBase64String(String compressedGenesisBytesBase64)
       throws IOException {
     final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
@@ -126,11 +121,14 @@ public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
   }
 
   private static WrappedByteArray readGenesisBytesFromFile(String genesisFile) {
+    // Note - for simplicity, we use the same file format as GenesisFileStore's genesis_data.bin
+    // This makes the two files interchangable, to avoid confusion
     try {
-      final var compressedGenesisBytesBase64 = Files.readAllBytes(Path.of(genesisFile));
-      return fromCompressedBase64(compressedGenesisBytesBase64);
+      final var compressedBytes = Files.readAllBytes(Path.of(genesisFile));
+      return fromCompressedBytes(compressedBytes);
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't read the genesis data from file " + genesisFile, e);
+      throw new RuntimeException(
+          "Couldn't read / decompress the genesis data from file " + genesisFile, e);
     }
   }
 }

@@ -70,7 +70,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
@@ -81,16 +80,18 @@ import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.cli.ParseException;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RadixNodeBootstrapperTest {
-  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
 
@@ -102,7 +103,7 @@ public final class RadixNodeBootstrapperTest {
   @Test
   public void test_genesis_hash_verification_from_properties() throws ParseException, IOException {
     final var network = Network.LOCALNET;
-    final var genesisStore = new GenesisFileStore(new File(tmpFolder.getRoot(), "genesis.bin"));
+    final var genesisStore = new GenesisFileStore(tmpFolder.newFolder());
 
     final var genesisData1 =
         encodeToCompressedBase64(genesisWithSingleValidator(ECKeyPair.generateNew()));
@@ -140,9 +141,7 @@ public final class RadixNodeBootstrapperTest {
     final var network = Network.GENESIS_TEST;
 
     // This transaction matches the genesis of GENESIS_TEST network
-    final var genesisData1 =
-        encodeToCompressedBase64(
-            genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3})));
+    final var genesisData1 = encodeToCompressedBase64(staticGenesisTestNetworkGenesisData());
 
     final var properties1 =
         RuntimeProperties.defaultWithOverrides(Map.of("network.genesis_data", genesisData1));
@@ -152,7 +151,7 @@ public final class RadixNodeBootstrapperTest {
                 new Blake2b256Hasher(DefaultSerialization.getInstance()),
                 properties1,
                 new GenesisFromPropertiesLoader(properties1),
-                new GenesisFileStore(new File(tmpFolder.newFolder(), "genesis.bin")))
+                new GenesisFileStore(tmpFolder.newFolder()))
             .bootstrapRadixNode();
     assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
 
@@ -168,9 +167,55 @@ public final class RadixNodeBootstrapperTest {
                 new Blake2b256Hasher(DefaultSerialization.getInstance()),
                 properties2,
                 new GenesisFromPropertiesLoader(properties2),
-                new GenesisFileStore(new File(tmpFolder.newFolder(), "genesis.bin")))
+                new GenesisFileStore(tmpFolder.newFolder()))
             .bootstrapRadixNode();
     assertTrue(nodeHandle2 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Failed);
+  }
+
+  @Test
+  public void network_can_boot_from_test_genesis() throws ParseException, IOException {
+    // This network has a fixed genesis, so property (if set) must match
+    final var network = Network.GENESIS_TEST;
+
+    // Note - this test relies on `test_genesis.bin` being valid
+    // Unignore and run can_generate_test_genesis to regenerate it if necessary
+    final var properties = RuntimeProperties.empty();
+    final var nodeHandle =
+        new RadixNodeBootstrapper(
+                network,
+                new Blake2b256Hasher(DefaultSerialization.getInstance()),
+                properties,
+                new GenesisFromPropertiesLoader(properties),
+                new GenesisFileStore(tmpFolder.newFolder()))
+            .bootstrapRadixNode();
+    assertTrue(nodeHandle instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
+  }
+
+  @Test
+  @Ignore
+  public void can_generate_test_genesis() throws IOException {
+    final var rawDataWithHash =
+        RawGenesisDataWithHash.fromGenesisData(staticGenesisTestNetworkGenesisData());
+    final var testGenesisDataFile =
+        Paths.get("src", "test", "resources", "genesis", "test_genesis.bin").toFile();
+    if (!testGenesisDataFile.exists()) {
+      throw new RuntimeException("Please manually create resources/genesis/test_genesis.bin");
+    }
+    assert (testGenesisDataFile.delete());
+    assert (testGenesisDataFile.createNewFile());
+    System.out.printf("Outputting to: %s%n", testGenesisDataFile);
+    try (FileOutputStream outputStream = new FileOutputStream(testGenesisDataFile)) {
+      final var compressed = Compress.compress(rawDataWithHash.genesisData().value());
+      outputStream.write(compressed);
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't write to the genesis data file", e);
+    }
+    System.out.printf(
+        "The hash is: %s%n", Hex.toHexString(rawDataWithHash.genesisDataHash().asBytes()));
+  }
+
+  private GenesisData staticGenesisTestNetworkGenesisData() {
+    return genesisWithSingleValidator(ECKeyPair.fromSeed(new byte[] {1, 2, 3}));
   }
 
   @Test
@@ -185,16 +230,18 @@ public final class RadixNodeBootstrapperTest {
     final var genesisDataBytes =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     final var compressedGenesisDataBytes = Compress.compress(genesisDataBytes);
-    final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisDataBytes);
-    try (var writer = new BufferedWriter(new FileWriter(genesisFile))) {
-      writer.write(genesisDataBase64);
+    try (var outputStream = new FileOutputStream(genesisFile)) {
+      outputStream.write(compressedGenesisDataBytes);
     }
 
     final var properties =
         RuntimeProperties.defaultWithOverrides(
             Map.of(
-                "network.genesis_file", genesisFile.getAbsolutePath(), "network.genesis_data", ""));
-    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
+                "network.genesis_data_file",
+                genesisFile.getAbsolutePath(),
+                "network.genesis_data",
+                ""));
+    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFolder());
     final var nodeHandle =
         new RadixNodeBootstrapper(
                 network,
@@ -208,22 +255,22 @@ public final class RadixNodeBootstrapperTest {
   }
 
   @Test
-  public void test_loading_genesis_from_genesis_file() throws IOException, ParseException {
+  public void test_loading_genesis_from_genesis_data_file() throws IOException, ParseException {
     final var network = Network.LOCALNET;
     // Just a sanity check in case someone adds it later :)
     // This test requires a network without a fixed genesis
     assertTrue(network.fixedGenesis().isEmpty());
 
-    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
+    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFolder());
     genesisFileStore.saveGenesisData(
-        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty(), HASHER));
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty()));
 
     // Explicitly no genesis configured, but there's one in the genesis store
     final var properties =
         RuntimeProperties.defaultWithOverrides(
             Map.of(
                 "network.genesis_data", "",
-                "network.genesis_file", ""));
+                "network.genesis_data_file", ""));
     final var nodeHandle =
         new RadixNodeBootstrapper(
                 network,

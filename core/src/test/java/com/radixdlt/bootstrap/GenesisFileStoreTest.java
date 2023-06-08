@@ -90,7 +90,7 @@ public final class GenesisFileStoreTest {
 
   @Test
   public void genesisFileStoreTest() throws IOException {
-    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFile());
+    final var genesisFileStore = new GenesisFileStore(tmpFolder.newFolder());
     final var genesisData = GenesisData.testingDefaultEmpty();
     final var encodedGenesisData =
         StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));

@@ -89,6 +89,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 
 /**
  * Persisted properties are property sets that are committed to storage and may be reloaded on the
@@ -122,6 +123,10 @@ public class RuntimeProperties {
       runtimeProperties.set(e.getKey(), e.getValue());
     }
     return runtimeProperties;
+  }
+
+  public static RuntimeProperties empty() throws ParseException {
+    return new RuntimeProperties();
   }
 
   RuntimeProperties() {
@@ -217,7 +222,7 @@ public class RuntimeProperties {
    * @return either the property value, or {@code defaultValue} if no value set
    */
   public int get(String key, int defaultValue) {
-    return get(key, defaultValue, Integer::parseInt);
+    return get(key, true, defaultValue, Integer::parseInt);
   }
 
   /**
@@ -228,7 +233,7 @@ public class RuntimeProperties {
    * @return either the property value, or {@code defaultValue} if no value set
    */
   public long get(String key, long defaultValue) {
-    return get(key, defaultValue, Long::parseLong);
+    return get(key, true, defaultValue, Long::parseLong);
   }
 
   /**
@@ -239,7 +244,7 @@ public class RuntimeProperties {
    * @return either the property value, or {@code defaultValue} if no value set
    */
   public double get(String key, double defaultValue) {
-    return get(key, defaultValue, Double::parseDouble);
+    return get(key, true, defaultValue, Double::parseDouble);
   }
 
   /**
@@ -253,7 +258,7 @@ public class RuntimeProperties {
    *     ignoring case.
    */
   public boolean get(String key, boolean defaultValue) {
-    return get(key, defaultValue, BooleanUtils::parseBoolean);
+    return get(key, true, defaultValue, BooleanUtils::parseBoolean);
   }
 
   /**
@@ -312,10 +317,13 @@ public class RuntimeProperties {
    * @return parsed value or defaultValue if no value was provided.
    * @throws IllegalArgumentException if there is an error when parsing the property value.
    */
-  public <T> T get(String key, T defaultValue, Function<String, T> parser) {
+  public <T> T get(
+      String key, boolean useDefaultIfExistsButEmpty, T defaultValue, Function<String, T> parser) {
     var value = get(key);
     try {
-      return value == null ? defaultValue : parser.apply(value);
+      return value == null || useDefaultIfExistsButEmpty && Strings.isBlank(value)
+          ? defaultValue
+          : parser.apply(value);
     } catch (Exception ex) {
       var msg =
           String.format(

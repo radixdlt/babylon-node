@@ -69,76 +69,104 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.WrappedByteArray;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import org.bouncycastle.util.encoders.DecoderException;
+import org.bouncycastle.util.encoders.Hex;
 
 public final class GenesisFileStore implements GenesisStore {
   private static final int HASH_LENGTH = 32;
 
-  private final File file;
+  private final File genesisFolder;
+  private final File genesisDataFile;
+  private final File genesisHashFile;
 
-  public GenesisFileStore(File file) {
-    this.file = file;
+  public GenesisFileStore(File genesisFolder) {
+    this.genesisFolder = genesisFolder;
+    this.genesisDataFile = new File(genesisFolder, "genesis_data.bin");
+    this.genesisHashFile = new File(genesisFolder, "genesis_hash.txt");
   }
 
   @Override
   public void saveGenesisData(RawGenesisDataWithHash genesisDataWithHash) {
-    if (!file.exists()) {
+    if (!genesisFolder.exists()) {
       try {
-        final var unused = file.getParentFile().mkdirs();
-        if (!file.createNewFile()) {
-          throw new RuntimeException("Genesis file doesn't exist and failed to create");
+        if (!genesisFolder.mkdirs()) {
+          throw new RuntimeException("Genesis data folder doesn't exist and failed to create");
+        }
+        if (!genesisDataFile.createNewFile()) {
+          throw new RuntimeException("Genesis data file doesn't exist and failed to create");
+        }
+        if (!genesisHashFile.createNewFile()) {
+          throw new RuntimeException("Genesis hash file doesn't exist and failed to create");
         }
       } catch (IOException e) {
-        throw new RuntimeException("Genesis file doesn't exist and failed to create", e);
+        throw new RuntimeException(
+            "Genesis data or hash file doesn't exist and failed to create", e);
       }
     }
-    try (FileOutputStream outputStream = new FileOutputStream(this.file)) {
-      outputStream.write(genesisDataWithHash.genesisDataHash().asBytes());
+    try (FileOutputStream outputStream = new FileOutputStream(genesisDataFile)) {
       final var compressed = Compress.compress(genesisDataWithHash.genesisData().value());
       outputStream.write(compressed);
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't write to the genesis file", e);
+      throw new RuntimeException("Couldn't write to the genesis data file", e);
+    }
+    try (FileOutputStream outputStream = new FileOutputStream(genesisHashFile)) {
+      outputStream.write(Hex.encode(genesisDataWithHash.genesisDataHash().asBytes()));
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't write to the genesis hash file", e);
     }
   }
 
   @Override
   public Optional<HashCode> readGenesisDataHash() {
-    if (!file.exists()) {
+    if (!genesisHashFile.exists()) {
       return Optional.empty();
     }
-    try (final var fis = new FileInputStream(file)) {
-      final var hashBytes = new byte[HASH_LENGTH];
-      final var numBytesRead = fis.read(hashBytes);
-      if (numBytesRead != HASH_LENGTH) {
+    try {
+      final var hexEncodedHashBytes = Files.readAllBytes(genesisHashFile.toPath());
+      if (hexEncodedHashBytes.length == 0) {
         return Optional.empty();
       }
-      return Optional.of(HashCode.fromBytes(hashBytes));
+      if (hexEncodedHashBytes.length != 2 * HASH_LENGTH) {
+        throw new IOException("The stored hash was not of the right length");
+      }
+      try {
+        final var hashBytes = Hex.decode(hexEncodedHashBytes);
+        return Optional.of(HashCode.fromBytes(hashBytes));
+      } catch (DecoderException e) {
+        throw new IOException("The stored hash was not valid hex.", e);
+      }
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't read the genesis file", e);
+      throw new RuntimeException(
+          String.format(
+              "Couldn't read or decode the genesis hash file (%s). You may need to delete the"
+                  + " ledger and try running genesis again.",
+              genesisHashFile),
+          e);
     }
   }
 
   @Override
   public Optional<WrappedByteArray> readGenesisData() {
-    if (!file.exists()) {
+    if (!genesisDataFile.exists()) {
       return Optional.empty();
     }
     try {
-      final var hashAndData = Files.readAllBytes(file.toPath());
-      if (hashAndData.length == 0) {
+      final var compressedData = Files.readAllBytes(genesisDataFile.toPath());
+      if (compressedData.length == 0) {
         return Optional.empty();
       }
-      final var compressedData = new byte[hashAndData.length - HASH_LENGTH];
-      System.arraycopy(
-          hashAndData, HASH_LENGTH, compressedData, 0, hashAndData.length - HASH_LENGTH);
-      final var uncompressedData = Compress.uncompress(compressedData);
-      return Optional.of(new WrappedByteArray(uncompressedData));
+      return Optional.of(new WrappedByteArray(Compress.uncompress(compressedData)));
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't read the genesis file", e);
+      throw new RuntimeException(
+          String.format(
+              "Couldn't read or uncompress the genesis data file (%s). You may need to delete the"
+                  + " ledger and try running genesis again.",
+              genesisDataFile),
+          e);
     }
   }
 }
