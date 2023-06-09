@@ -64,89 +64,40 @@
 
 package com.radixdlt.ledger;
 
-import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * A data transfer object for a CommittedTransactionsWithProof, including a proof at the start of
- * the run.
- *
- * <p>This may not have been verified yet.
- */
-@Immutable
-@SerializerId2("ledger.committed_transactions_with_proof")
-public final class CommittedTransactionsWithProofDto {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+public class LedgerExtensionTest {
+  private LedgerProof ledgerProof;
+  private LedgerExtension emptyLedgerExtension;
+  private final long stateVersion = 232L;
 
-  @JsonProperty("txns")
-  @DsonOutput(Output.ALL)
-  private final List<RawLedgerTransaction> transactions;
+  @Before
+  public void setUp() {
+    this.ledgerProof = mock(LedgerProof.class);
+    when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
 
-  @JsonProperty("head")
-  @DsonOutput(Output.ALL)
-  private final DtoLedgerProof head;
-
-  @JsonProperty("tail")
-  @DsonOutput(Output.ALL)
-  private final DtoLedgerProof tail;
-
-  @JsonCreator
-  public CommittedTransactionsWithProofDto(
-      @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "head", required = true) DtoLedgerProof head,
-      @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
-    this.transactions = transactions == null ? ImmutableList.of() : transactions;
-    this.head = requireNonNull(head);
-    this.tail = requireNonNull(tail);
-
-    this.transactions.forEach(Objects::requireNonNull);
+    this.emptyLedgerExtension = LedgerExtension.create(ImmutableList.of(), ledgerProof);
   }
 
-  public List<RawLedgerTransaction> getTransactions() {
-    return transactions;
+  @Test
+  public void testGetters() {
+    assertThat(this.emptyLedgerExtension.getProof()).isEqualTo(ledgerProof);
   }
 
-  public DtoLedgerProof getHead() {
-    return head;
-  }
-
-  public DtoLedgerProof getTail() {
-    return tail;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    return (o instanceof CommittedTransactionsWithProofDto that)
-        && Objects.equals(transactions, that.transactions)
-        && Objects.equals(head, that.head)
-        && Objects.equals(tail, that.tail);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transactions, head, tail);
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(LedgerExtension.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

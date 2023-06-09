@@ -89,7 +89,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
@@ -159,9 +159,7 @@ public class EpochManagerTest {
         }
 
         @Override
-        public void commit(
-            CommittedTransactionsWithProof committedTransactionsWithProof,
-            VertexStoreState vertexStoreState) {
+        public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
           // No-op
         }
       };
@@ -337,7 +335,7 @@ public class EpochManagerTest {
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(
-            mock(CommittedTransactionsWithProof.class),
+            mock(LedgerExtension.class),
             ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 
     // Act

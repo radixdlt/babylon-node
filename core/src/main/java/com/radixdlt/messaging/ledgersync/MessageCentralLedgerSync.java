@@ -123,7 +123,7 @@ public final class MessageCentralLedgerSync {
         .map(
             m -> {
               final var msg = m.message();
-              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getTransactions()));
+              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getLedgerExtension()));
             });
   }
 
@@ -152,7 +152,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncResponse(NodeId nodeId, SyncResponse syncResponse) {
-    final var msg = new SyncResponseMessage(syncResponse.getTransactionsWithProofDto());
+    final var msg = new SyncResponseMessage(syncResponse.getLedgerExtension());
     this.messageCentral.send(nodeId, msg);
   }
 

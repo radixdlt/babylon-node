@@ -149,9 +149,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
-    void commit(
-        CommittedTransactionsWithProof committedTransactionsWithProof,
-        VertexStoreState vertexStore);
+    void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -290,11 +288,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               .map(ExecutedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
-      var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
+      var ledgerExtension = LedgerExtension.create(transactions, proof);
       metrics
           .ledger()
           .commit()
-          .measure(() -> this.commit(transactionsWithProof, committedUpdate.vertexStoreState()));
+          .measure(() -> this.commit(ledgerExtension, committedUpdate.vertexStoreState()));
     };
   }
 
@@ -317,13 +315,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         .inc(numCommittedNonFallbackVertices);
   }
 
-  public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
+  public EventProcessor<LedgerExtension> syncEventProcessor() {
     return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
-  private void commit(
-      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
-    final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
+  private void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    final LedgerProof nextHeader = ledgerExtension.getProof();
 
     final int extensionTransactionCount; // for metrics purposes only
     synchronized (this.commitAndAdvanceLedgerLock) {
@@ -334,7 +331,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       }
 
       final var extensionToCommit =
-          committedTransactionsWithProof.getExtensionFrom(againstLedgerHeader.getStateVersion());
+          ledgerExtension.getExtensionFrom(againstLedgerHeader.getStateVersion());
 
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStore);

@@ -254,7 +254,7 @@ pub struct PreviewRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CommitError {
+pub enum InvalidCommitRequestError {
     MissingEpochProof,
     SuperfluousEpochProof,
     EpochProofMismatch,
@@ -271,8 +271,8 @@ pub struct CommitRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
     pub committed_ledger_hashes: LedgerHashes,
-    pub prepared_uncommitted_transactions: Vec<RawLedgerTransaction>,
-    pub prepared_uncommitted_ledger_hashes: LedgerHashes,
+    pub ancestor_transactions: Vec<RawLedgerTransaction>,
+    pub ancestor_ledger_hashes: LedgerHashes,
     pub proposed_transactions: Vec<RawNotarizedTransaction>,
     pub is_fallback: bool,
     pub epoch: Epoch,

@@ -73,29 +73,27 @@ import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class CommittedTransactionsWithProofDtoTest {
+public class LedgerExtensionDtoTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(CommittedTransactionsWithProofDto.class)
+    EqualsVerifier.forClass(DtoLedgerExtension.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullHeadThrowsException() {
-    new CommittedTransactionsWithProofDto(List.of(), null, mock(DtoLedgerProof.class));
+    new DtoLedgerExtension(List.of(), null, mock(DtoLedgerProof.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullTailThrowsException() {
-    new CommittedTransactionsWithProofDto(List.of(), mock(DtoLedgerProof.class), null);
+    new DtoLedgerExtension(List.of(), mock(DtoLedgerProof.class), null);
   }
 
   @Test
   public void deserializationWithNullTxnListIsSafe() {
-    var dto =
-        new CommittedTransactionsWithProofDto(
-            null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+    var dto = new DtoLedgerExtension(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
 
     assertNotNull(dto.getTransactions());
   }

@@ -296,30 +296,28 @@ where
         let mut duplicate_intent_hash_detector =
             DuplicateIntentHashDetector::new(read_store.deref());
 
-        for raw_ancestor in prepare_request.prepared_uncommitted_transactions {
+        for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
             // and executable creation) by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
-                .expect("Already prepared transactions should be valid");
+                .expect("Ancestor transactions should be valid");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
-                duplicate_intent_hash_detector.record_prepared_uncommitted(intent_hash);
+                duplicate_intent_hash_detector.record_ancestor(intent_hash);
             }
 
             series_executor
-                .execute(ConfigType::Regular, &validated, "prepared uncommitted")
-                .expect("prepared uncommited transaction rejected");
+                .execute(ConfigType::Regular, &validated, "ancestor")
+                .expect("ancestor transaction rejected");
         }
 
-        if &prepare_request.prepared_uncommitted_ledger_hashes
-            != series_executor.latest_ledger_hashes()
-        {
+        if &prepare_request.ancestor_ledger_hashes != series_executor.latest_ledger_hashes() {
             panic!(
-                "State {:?} after prepared transactions does not match the state {:?} from request",
+                "State {:?} after ancestor transactions does not match the state {:?} from request",
                 series_executor.latest_ledger_hashes(),
-                prepare_request.prepared_uncommitted_ledger_hashes,
+                prepare_request.ancestor_ledger_hashes,
             );
         }
 
@@ -758,7 +756,7 @@ where
         &self,
         commit_request: CommitRequest,
         genesis: bool,
-    ) -> Result<Vec<LocalTransactionReceipt>, CommitError> {
+    ) -> Result<Vec<LocalTransactionReceipt>, InvalidCommitRequestError> {
         let commit_transactions_len = commit_request.transactions.len();
         if commit_transactions_len == 0 {
             panic!("cannot commit 0 transactions from request {commit_request:?}");
@@ -896,7 +894,7 @@ where
                 "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
                 commit_state_version, final_ledger_hashes, commit_ledger_hashes
             );
-            return Err(CommitError::LedgerHashesMismatch);
+            return Err(InvalidCommitRequestError::LedgerHashesMismatch);
         }
 
         self.execution_cache
@@ -944,7 +942,7 @@ where
         commit_ledger_header: &LedgerHeader,
         opt_transaction_next_epoch: Option<&NextEpoch>,
         is_last_transaction_in_request: bool,
-    ) -> Result<(), CommitError> {
+    ) -> Result<(), InvalidCommitRequestError> {
         if is_last_transaction_in_request {
             match &commit_ledger_header.next_epoch {
                 Some(proof_next_epoch) => {
@@ -954,14 +952,14 @@ where
                                 "computed next epoch differs from the one in proof ({:?} != {:?})",
                                 transaction_next_epoch, proof_next_epoch
                             );
-                            return Err(CommitError::EpochProofMismatch);
+                            return Err(InvalidCommitRequestError::EpochProofMismatch);
                         }
                     } else {
                         error!(
                             "computed no next epoch, but proof contains {:?}",
                             proof_next_epoch
                         );
-                        return Err(CommitError::SuperfluousEpochProof);
+                        return Err(InvalidCommitRequestError::SuperfluousEpochProof);
                     }
                 }
                 None => {
@@ -970,7 +968,7 @@ where
                             "no next epoch in proof, but last transaction in batch computed {:?}",
                             transaction_next_epoch
                         );
-                        return Err(CommitError::MissingEpochProof);
+                        return Err(InvalidCommitRequestError::MissingEpochProof);
                     }
                 }
             };
@@ -979,7 +977,7 @@ where
                 "non-last transaction in batch computed {:?}",
                 transaction_next_epoch
             );
-            return Err(CommitError::MissingEpochProof);
+            return Err(InvalidCommitRequestError::MissingEpochProof);
         }
         Ok(())
     }
@@ -1013,7 +1011,7 @@ struct PendingTransactionResult {
 #[derive(Debug, Clone)]
 enum IntentHashDuplicateWith {
     Proposed,
-    Prepared,
+    Ancestor,
     Committed,
 }
 
@@ -1032,18 +1030,18 @@ impl<'s, S: for<'a> TransactionIndex<&'a IntentHash>> DuplicateIntentHashDetecto
         }
     }
 
-    /// Records an intent hash of a prepared, uncommitted transaction (a.k.a. "ancestor").
-    /// Please note that duplicates are not possible for these (since it was checked against during
-    /// previous prepare operations), and hence the `check_prepared_uncommitted()` method does not
-    /// exist.
-    pub fn record_prepared_uncommitted(&mut self, intent_hash: IntentHash) {
+    /// Records an intent hash of an ancestor (i.e. one of already-prepared-but-not-yet-committed)
+    /// transaction.
+    /// Please note that duplicates are not possible for ancestor transactions (since they were all
+    /// checked against this during previous prepare operations), and hence the `check_ancestor()`
+    /// method does not exist.
+    pub fn record_ancestor(&mut self, intent_hash: IntentHash) {
         self.recorded_intent_hashes
-            .insert(intent_hash, IntentHashDuplicateWith::Prepared);
+            .insert(intent_hash, IntentHashDuplicateWith::Ancestor);
     }
 
     /// Checks whether the given intent hash of a newly-proposed transaction clashes with any other
-    /// transaction (i.e. an already committed one, or another proposed one, or some prepared
-    /// uncommitted one).
+    /// transaction (i.e. an already committed one, or an ancestor, or another proposed one).
     pub fn check_proposed(
         &mut self,
         intent_hash: &IntentHash,

@@ -64,41 +64,14 @@
 
 package com.radixdlt.ledger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.radixdlt.statecomputer.commit.InvalidCommitRequestError;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
-
-public class CommittedTransactionsWithProofTest {
-  private LedgerProof stateAndProof;
-  private CommittedTransactionsWithProof emptyCommittedTransactionsWithProof;
-  private final long stateVersion = 232L;
-
-  @Before
-  public void setUp() {
-    this.stateAndProof = mock(LedgerProof.class);
-    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
-
-    this.emptyCommittedTransactionsWithProof =
-        CommittedTransactionsWithProof.create(ImmutableList.of(), stateAndProof);
-  }
-
-  @Test
-  public void testGetters() {
-    assertThat(this.emptyCommittedTransactionsWithProof.getProof()).isEqualTo(stateAndProof);
-  }
-
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(CommittedTransactionsWithProof.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+/**
+ * An exception signalling that the contents of a properly-signed commit request were not internally
+ * consistent (e.g. non-parseable or non-committable transactions, ledger proof mismatches).
+ */
+public class InvalidCommitRequestException extends RuntimeException {
+  public InvalidCommitRequestException(InvalidCommitRequestError error) {
+    super(error.toString());
   }
 }

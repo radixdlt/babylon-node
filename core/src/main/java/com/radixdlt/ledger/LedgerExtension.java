@@ -62,23 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.ledger;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
+import com.google.common.primitives.Ints;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
+import java.util.Objects;
 
-public sealed interface CommitError {
-  static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        CommitError.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(CommitError.class, codecs));
+/**
+ * A run of committed transactions, with a known-valid LedgerProof pointing at the last transaction.
+ *
+ * <p>The run of transactions will reside in a single epoch, so that it can be validated as
+ * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
+ * accumulator, which can be cross-checked against the list of transactions. This allows
+ * verification of the transaction run, if the parent accumulator of the first transaction is known.
+ *
+ * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
+ * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
+ * enables trustless syncing of X transactions at a time.
+ *
+ * <p>Notes:
+ *
+ * <ul>
+ *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof",
+ *       "TransactionRun" and "CommittedTransactionWithProof".
+ * </ul>
+ */
+public final class LedgerExtension {
+  private final List<RawLedgerTransaction> transactions;
+  private final LedgerProof proof;
+
+  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+    this.transactions = Objects.requireNonNull(transactions);
+    this.proof = Objects.requireNonNull(proof);
   }
 
-  record MissingEpochProof() implements CommitError {}
+  public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+    return new LedgerExtension(transactions, proof);
+  }
 
-  record SuperfluousEpochProof() implements CommitError {}
+  public List<RawLedgerTransaction> getTransactions() {
+    return transactions;
+  }
 
-  record EpochProofMismatch() implements CommitError {}
+  public boolean contains(RawLedgerTransaction transaction) {
+    return transactions.contains(transaction);
+  }
 
-  record LedgerHashesMismatch() implements CommitError {}
+  public LedgerProof getProof() {
+    return proof;
+  }
+
+  /**
+   * Returns a suffix of the {@link #transactions} that starts from the given state version. This
+   * kind of logic is needed in case of a race condition between different commit requests, as we
+   * may have already committed some of this commit request's transactions. We extract the
+   * transactions that we actually still need to commit.
+   */
+  public LedgerExtension getExtensionFrom(long startStateVersion) {
+    final var proofStateVersion = this.proof.getStateVersion();
+    final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
+    if (startIndex < 0 || startIndex > this.transactions.size()) {
+      throw new IllegalArgumentException(
+          "%s transactions ending with state version %s cannot be an extension of state version %s"
+              .formatted(this.transactions.size(), proofStateVersion, startStateVersion));
+    }
+    final var extension =
+        this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
+    return LedgerExtension.create(extension, this.proof);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactions, proof);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LedgerExtension)) {
+      return false;
+    }
+
+    LedgerExtension other = (LedgerExtension) o;
+    return Objects.equals(this.transactions, other.transactions)
+        && Objects.equals(this.proof, other.proof);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{transactions=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
+  }
 }

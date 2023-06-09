@@ -62,19 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.commit;
 
-import com.radixdlt.statecomputer.commit.CommitError;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-/**
- * Exception which suggests that there exists a byzantine quorum which got us to this exception
- * state.
- *
- * <p>TODO: Remove all instance of this class and replace with mechanism to log and revert to last
- * known good state.
- */
-public class ByzantineQuorumException extends RuntimeException {
-  public ByzantineQuorumException(CommitError commitError) {
-    super(commitError.toString());
+public sealed interface InvalidCommitRequestError {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        InvalidCommitRequestError.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(InvalidCommitRequestError.class, codecs));
   }
+
+  record MissingEpochProof() implements InvalidCommitRequestError {}
+
+  record SuperfluousEpochProof() implements InvalidCommitRequestError {}
+
+  record EpochProofMismatch() implements InvalidCommitRequestError {}
+
+  record LedgerHashesMismatch() implements InvalidCommitRequestError {}
 }
