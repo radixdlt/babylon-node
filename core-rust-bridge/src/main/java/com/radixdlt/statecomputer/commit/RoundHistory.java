@@ -62,16 +62,23 @@
  * permissions under this License.
  */
 
-mod executable_logic;
-mod ledger_transaction;
-mod preview;
-mod round_update_transaction;
-mod series_execution;
-mod validation;
+package com.radixdlt.statecomputer.commit;
 
-pub use executable_logic::*;
-pub use ledger_transaction::*;
-pub use preview::*;
-pub use round_update_transaction::*;
-pub use series_execution::*;
-pub use validation::*;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
+
+public record RoundHistory(
+    boolean isFallback,
+    UInt64 epoch,
+    UInt64 roundNumber,
+    List<ComponentAddress> gapRoundLeaderAddresses,
+    ComponentAddress proposerAddress,
+    long proposerTimestampMs) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RoundHistory.class, codecs -> StructCodec.fromRecordComponents(RoundHistory.class, codecs));
+  }
+}

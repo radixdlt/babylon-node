@@ -152,6 +152,7 @@ public final class StateManagerSbor {
     LedgerHeader.registerCodec(codecMap);
     TimestampedValidatorSignature.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
+    RoundHistory.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     CommittableTransaction.registerCodec(codecMap);
     RejectedTransaction.registerCodec(codecMap);
