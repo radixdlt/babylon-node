@@ -65,7 +65,7 @@
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
 use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
-use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome};
+use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -116,7 +116,8 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |state_version: u64| -> Option<ExecutedTransaction> {
+        |state_version_number: u64| -> Option<ExecutedTransaction> {
+            let state_version = StateVersion::of(state_version_number);
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
@@ -157,7 +158,8 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |state_version: u64| -> Option<TransactionDetails> {
+        |state_version_number: u64| -> Option<TransactionDetails> {
+            let state_version = StateVersion::of(state_version_number);
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_local_transaction_execution =
@@ -188,7 +190,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let txns_and_proof = database.read().get_txns_and_proof(
-                request.start_state_version_inclusive,
+                StateVersion::of(request.start_state_version_inclusive),
                 request.max_number_of_txns_if_more_than_one_proof,
                 request.max_payload_size_in_bytes,
             );

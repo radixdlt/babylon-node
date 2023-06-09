@@ -163,7 +163,7 @@ pub struct GenesisHeaderData {
     epoch: Epoch,
     round: Round,
     timestamp: i64,
-    state_version: u64,
+    state_version: StateVersion,
 }
 
 #[derive(Debug)]
@@ -175,7 +175,7 @@ pub struct GenesisTransactionResult {
 
 impl GenesisTransactionResult {
     pub fn to_commit_request(self, header_data: &mut GenesisHeaderData) -> CommitRequest {
-        header_data.state_version += 1;
+        header_data.state_version = header_data.state_version.next();
 
         let commit_request = CommitRequest {
             transactions: vec![self.raw],
@@ -593,13 +593,13 @@ where
 }
 
 struct StateTracker {
-    state_version: u64,
+    state_version: StateVersion,
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
 }
 
 impl StateTracker {
-    pub fn initial(base_state_version: u64, base_ledger_hashes: LedgerHashes) -> Self {
+    pub fn initial(base_state_version: StateVersion, base_ledger_hashes: LedgerHashes) -> Self {
         Self {
             state_version: base_state_version,
             ledger_hashes: base_ledger_hashes,
@@ -617,7 +617,7 @@ impl StateTracker {
                 result.hash_structures_diff.ledger_hashes
             );
         }
-        self.state_version += 1;
+        self.state_version = self.state_version.next();
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.next_epoch = result.next_epoch();
     }
@@ -682,7 +682,7 @@ where
             epoch: initial_epoch,
             round: Round::of(0),
             timestamp: initial_timestamp_ms,
-            state_version: 0,
+            state_version: StateVersion::pre_genesis(),
         };
 
         // System bootstrap
@@ -767,7 +767,7 @@ where
         let commit_ledger_header = &commit_request.proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
         let commit_request_start_state_version =
-            commit_state_version - (commit_transactions_len as u64);
+            commit_state_version.relative(-(commit_transactions_len as i128));
 
         // Whilst we could validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
@@ -916,7 +916,7 @@ where
 
         self.ledger_metrics
             .state_version
-            .set(commit_state_version as i64);
+            .set(commit_state_version.number() as i64);
         self.ledger_metrics
             .transactions_committed
             .inc_by(commit_transactions_len as u64);
@@ -1091,7 +1091,7 @@ impl<'s, S: ReadableStore> TransactionSeriesExecutor<'s, S> {
         execution_cache: &'s Mutex<ExecutionCache>,
         execution_configurator: &'s ExecutionConfigurator,
         epoch_transaction_identifiers: EpochTransactionIdentifiers,
-        base_state_version: u64,
+        base_state_version: StateVersion,
         base_ledger_hashes: LedgerHashes,
     ) -> Self {
         Self {
@@ -1140,7 +1140,7 @@ impl<'s, S: ReadableStore> TransactionSeriesExecutor<'s, S> {
         &self.state_tracker.ledger_hashes
     }
 
-    pub fn latest_state_version(&self) -> u64 {
+    pub fn latest_state_version(&self) -> StateVersion {
         self.state_tracker.state_version
     }
 

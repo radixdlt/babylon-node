@@ -3,7 +3,7 @@ use transaction::{errors::TransactionValidationError, model::*};
 
 use crate::{
     transaction::{CheckMetadata, StaticValidation},
-    MempoolAddRejection,
+    MempoolAddRejection, StateVersion,
 };
 
 use lru::LruCache;
@@ -220,8 +220,12 @@ impl TransactionAttempt {
 pub enum AtState {
     // We might need this to be versioned by protocol update later...
     Static,
-    Committed { state_version: u64 },
-    PendingPreparingVertices { base_committed_state_version: u64 },
+    Committed {
+        state_version: StateVersion,
+    },
+    PendingPreparingVertices {
+        base_committed_state_version: StateVersion,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -398,7 +402,7 @@ const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 pub struct PendingTransactionResultCache {
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
-    recently_committed_intents: LruCache<IntentHash, (u64, SystemTime)>,
+    recently_committed_intents: LruCache<IntentHash, (StateVersion, SystemTime)>,
 }
 
 impl PendingTransactionResultCache {
@@ -447,14 +451,14 @@ impl PendingTransactionResultCache {
     pub fn track_committed_transactions(
         &mut self,
         current_timestamp: SystemTime,
-        previous_state_version: u64,
+        previous_state_version: StateVersion,
         hashes: Vec<IntentHash>,
     ) {
         let mut resultant_state_version = previous_state_version;
         for intent_hash in hashes {
             // Note - we keep the relevant statuses of all known payloads for the intent in the cache
             // so that we can still serve status responses for them - we just ensure we mark them as rejected
-            resultant_state_version += 1;
+            resultant_state_version = resultant_state_version.next();
 
             self.recently_committed_intents
                 .push(intent_hash, (resultant_state_version, current_timestamp));
@@ -610,7 +614,9 @@ mod tests {
             rejection: Some(RejectionReason::FromExecution(Box::new(
                 RejectionError::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed { state_version: 0 },
+            against_state: AtState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            },
             timestamp: SystemTime::now(),
         };
 
@@ -737,7 +743,7 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
         let intent_hash_2 = intent_hash(2);
 
-        cache.track_committed_transactions(now, 0, vec![intent_hash_1]);
+        cache.track_committed_transactions(now, StateVersion::pre_genesis(), vec![intent_hash_1]);
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         assert!(record.is_some());
 
@@ -769,7 +775,9 @@ mod tests {
             rejection: Some(RejectionReason::FromExecution(Box::new(
                 RejectionError::SuccessButFeeLoanNotRepaid,
             ))),
-            against_state: AtState::Committed { state_version: 0 },
+            against_state: AtState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            },
             timestamp: start,
         };
         let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
@@ -780,7 +788,7 @@ mod tests {
                 },
             ))),
             against_state: AtState::Committed {
-                state_version: 10000,
+                state_version: StateVersion::of(10000),
             },
             timestamp: start,
         };
@@ -788,12 +796,16 @@ mod tests {
             rejection: Some(RejectionReason::ValidationError(
                 TransactionValidationError::TransactionTooLarge,
             )),
-            against_state: AtState::Committed { state_version: 0 },
+            against_state: AtState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            },
             timestamp: start,
         };
         let attempt_with_no_rejection = TransactionAttempt {
             rejection: None,
-            against_state: AtState::Committed { state_version: 0 },
+            against_state: AtState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            },
             timestamp: start,
         };
 

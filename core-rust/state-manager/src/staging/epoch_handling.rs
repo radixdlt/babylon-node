@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+use crate::StateVersion;
+
 /// An extracted logic related to the "accu tree per epoch" approach (where the first leaf of the
 /// next epoch's tree is an auto-inserted root of the previous epoch's tree).
 pub struct AccuTreeEpochHandler {
@@ -72,10 +74,14 @@ impl AccuTreeEpochHandler {
     /// Creates an instance scoped at a particular epoch, based on 2 state versions: the state
     /// version of the transaction which started that epoch, and the state version of the last
     /// committed transaction.
-    pub fn new(epoch_state_version: u64, current_state_version: u64) -> Self {
+    pub fn new(epoch_state_version: StateVersion, current_state_version: StateVersion) -> Self {
         Self {
-            epoch_version_count: usize::try_from(current_state_version - epoch_state_version)
-                .unwrap(),
+            epoch_version_count: StateVersion::calculate_progress(
+                epoch_state_version,
+                current_state_version,
+            )
+            .and_then(usize::try_from)
+            .unwrap(),
         }
     }
 

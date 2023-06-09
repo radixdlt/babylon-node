@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerProof};
+use state_manager::{LedgerHashes, LedgerProof, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -16,7 +16,7 @@ pub(crate) async fn handle_status_network_status(
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     Ok(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
-            0,
+            StateVersion::pre_genesis(),
             &LedgerHashes::pre_genesis(),
         )?),
         genesis_epoch_round: database
@@ -68,7 +68,7 @@ pub fn to_api_epoch_round(
 }
 
 pub fn to_api_committed_state_identifiers(
-    state_version: u64,
+    state_version: StateVersion,
     ledger_hashes: &LedgerHashes,
 ) -> Result<models::CommittedStateIdentifier, MappingError> {
     Ok(models::CommittedStateIdentifier {

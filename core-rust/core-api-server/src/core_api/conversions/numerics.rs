@@ -1,5 +1,6 @@
 use radix_engine_common::math::*;
 use radix_engine_interface::prelude::*;
+use state_manager::StateVersion;
 
 use crate::core_api::models;
 
@@ -45,13 +46,14 @@ pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
-    if state_version > MAX_API_STATE_VERSION {
+pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingError> {
+    let state_version_number = state_version.number();
+    if state_version_number > MAX_API_STATE_VERSION {
         return Err(MappingError::IntegerError {
             message: "State version larger than max api state version".to_owned(),
         });
     }
-    Ok(state_version
+    Ok(state_version_number
         .try_into()
         .expect("State version too large somehow"))
 }
@@ -124,38 +126,40 @@ pub fn to_api_instant_from_safe_timestamp(
     })
 }
 
-pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionError> {
-    if state_version < 1 {
+pub fn extract_api_state_version(
+    state_version_number: i64,
+) -> Result<StateVersion, ExtractionError> {
+    if state_version_number < 1 {
         return Err(ExtractionError::InvalidInteger {
             message: "State version must be >= 1".to_owned(),
         });
     }
-    let state_version: u64 = state_version
-        .try_into()
-        .expect("State version invalid somehow");
-    if state_version > MAX_API_STATE_VERSION {
+    if state_version_number > MAX_API_STATE_VERSION as i64 {
         return Err(ExtractionError::InvalidInteger {
             message: format!(
                 "State version is larger than the max allowed: {MAX_API_STATE_VERSION}"
             ),
         });
     }
-    Ok(state_version)
+    Ok(StateVersion::of(
+        state_version_number
+            .try_into()
+            .expect("State version invalid somehow"),
+    ))
 }
 
-pub fn extract_api_epoch(epoch: i64) -> Result<u64, ExtractionError> {
+pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
     if epoch < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Epoch too low".to_owned(),
         });
     }
-    let epoch: u64 = epoch.try_into().expect("Epoch invalid somehow");
-    if epoch > MAX_API_EPOCH {
+    if epoch > MAX_API_EPOCH as i64 {
         return Err(ExtractionError::InvalidInteger {
             message: "Epoch larger than max api epoch".to_owned(),
         });
     }
-    Ok(epoch)
+    Ok(Epoch::of(epoch.try_into().expect("Epoch invalid somehow")))
 }
 
 #[allow(dead_code)]

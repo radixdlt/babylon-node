@@ -2,6 +2,7 @@ use crate::core_api::*;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use state_manager::store::traits::QueryableProofStore;
+use state_manager::StateVersion;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -108,7 +109,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
 fn response(
     context: &MappingContext,
-    state_version: u64,
+    state_version: StateVersion,
     account_address: &ComponentAddress,
     resource_address: &ResourceAddress,
     amount: &Decimal,
