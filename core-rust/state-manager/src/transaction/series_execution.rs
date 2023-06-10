@@ -63,7 +63,6 @@
  */
 
 use std::fmt::Formatter;
-use std::time::Duration;
 
 use crate::query::*;
 use crate::staging::{ExecutionCache, ReadableStore};
@@ -76,8 +75,6 @@ use ::transaction::prelude::*;
 use parking_lot::Mutex;
 use radix_engine::transaction::RejectResult;
 use utils::rust::collections::NonIterMap;
-
-const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
@@ -144,7 +141,10 @@ where
             &transaction.ledger_transaction_hash(),
             self.execution_configurator
                 .wrap(transaction.get_executable(), config_type)
-                .warn_after(TRANSACTION_RUNTIME_WARN_THRESHOLD, &description),
+                .warn_after(
+                    config_type.get_transaction_runtime_warn_threshold(),
+                    &description,
+                ),
         );
         let result = processed.expect_commit_or_reject(&description).cloned();
         if let Ok(commit) = &result {

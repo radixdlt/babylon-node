@@ -90,6 +90,7 @@ import com.radixdlt.crypto.Hasher;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
@@ -103,7 +104,7 @@ public class SafetyRulesTest {
     this.safetyState = mock(SafetyState.class);
     Hasher hasher = mock(Hasher.class);
     when(hasher.hashDsonEncoded(any())).thenReturn(HashUtils.random256());
-    when(hasher.hashBytes(any())).thenReturn(HashUtils.random256());
+    when(hasher.hashBytes(ArgumentMatchers.<byte[]>any())).thenReturn(HashUtils.random256());
     HashSigner hashSigner = mock(HashSigner.class);
     when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASecp256k1Signature.zeroSignature());
 

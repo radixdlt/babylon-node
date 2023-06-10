@@ -26,7 +26,7 @@ pub(crate) async fn handle_status_network_status(
             })
             .transpose()?,
         post_genesis_state_identifier: database
-            .get_first_epoch_proof()
+            .get_post_genesis_epoch_proof()
             .and_then(|epoch_proof| {
                 let state_version = epoch_proof.ledger_header.state_version;
                 database

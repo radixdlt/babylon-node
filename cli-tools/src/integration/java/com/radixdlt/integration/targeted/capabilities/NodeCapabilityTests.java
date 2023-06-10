@@ -69,17 +69,19 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.radixdlt.crypto.ECKeyPair;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.shell.RadixShell;
+import com.radixdlt.utils.Compress;
 import io.prometheus.client.Counter;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 
@@ -302,10 +304,17 @@ public class NodeCapabilityTests {
   }
 
   private RadixShell.Node startNode(int port, boolean ledgerSyncEnabled) throws Exception {
+    final var genesisData =
+        GenesisBuilder.createGenesisWithNumValidators(
+            1, Decimal.of(1), GenesisConsensusManagerConfig.Builder.testDefaults());
+    final var encodedGenesisData =
+        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    final var genesisDataBase64 =
+        Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
     return nodeBuilder()
         .p2pServer(port)
         .ledgerSync()
-        .prop("network.genesis_txn", ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex())
+        .prop("network.genesis_data", genesisDataBase64)
         .prop("capabilities.ledger_sync.enabled", Boolean.toString(ledgerSyncEnabled))
         .build();
   }

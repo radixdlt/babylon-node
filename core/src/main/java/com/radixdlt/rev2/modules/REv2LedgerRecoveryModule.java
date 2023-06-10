@@ -70,44 +70,29 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
 import com.radixdlt.rev2.LastStoredProof;
-import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class REv2LedgerRecoveryModule extends AbstractModule {
-
   private static final Logger log = LogManager.getLogger();
-  private final Optional<GenesisData> genesis;
-
-  public REv2LedgerRecoveryModule(Optional<GenesisData> genesis) {
-    this.genesis = genesis;
-  }
 
   @Provides
   @Singleton
   @LastStoredProof
   private LedgerProof lastProof(
-      RustStateComputer stateComputer, TransactionsAndProofReader transactionsAndProofReader) {
-    final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
+      // Require the token to ensure ledger genesis init
+      REv2LedgerInitializerToken rev2LedgerInitializerToken,
+      TransactionsAndProofReader transactionsAndProofReader) {
     return transactionsAndProofReader
         .getLastProof()
-        .orElseGet(
-            () -> {
-              final var genesisData =
-                  this.genesis.orElseThrow(() -> new RuntimeException("Missing genesis data"));
-              return REv2ToConsensus.ledgerProof(stateComputer.executeGenesis(genesisData));
-            });
+        .orElseThrow(() -> new RuntimeException("The database wasn't initialized"));
   }
 
   @Provides

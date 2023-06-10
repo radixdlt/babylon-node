@@ -136,6 +136,7 @@ def secretPasswordKey = project.getProperties().get('secretPasswordKey', "")
 def nodeNames = project.getProperties().get('nodeNames', "")
 def validators = project.getProperties().get('validators', '0')
 def publicKeys = project.getProperties().get('publicKeys', '')
+def network = project.getProperties().get('network', '')
 
 task getClassPathForRadixShell {
     doLast {
@@ -159,6 +160,7 @@ task generateNodeKey(type: Exec) {
     description = "Generate Node key"
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "--enable-preview",
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "com.radixdlt.cloud.AWSSecrets",
             "--enable-aws-secrets=${enableAWSSecret}",
@@ -170,7 +172,7 @@ task generateNodeKey(type: Exec) {
             "--secret-password-key=${secretPasswordKey}"
 }
 
-task generateDevUniverse(type: Exec) {
+task generateDevGenesis(type: Exec) {
     dependsOn compileJava
 
     dependsOn ':core:jar'
@@ -178,13 +180,15 @@ task generateDevUniverse(type: Exec) {
     dependsOn ':core-rust-bridge:jar'
     dependsOn ':olympia-engine:jar'
     group = "Execution"
-    description = "Generate development universe"
+    description = "Generate development genesis"
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "--enable-preview",
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
-            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
-            "com.radixdlt.cli.GenerateUniverses",
-            "--validator-count=${validators}"
+            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generate_genesis_log4j2.properties"}",
+            "com.radixdlt.cli.GenerateGenesis",
+            "--validator-count=${validators}",
+            "--network=${network}"
 }
 
 task generateGenesisFile(type: Exec) {
@@ -195,24 +199,26 @@ task generateGenesisFile(type: Exec) {
     dependsOn ':core-rust-bridge:jar'
     dependsOn ':olympia-engine:jar'
     group = "Execution"
-    description = "Generate development universe"
+    description = "Generate development genesis"
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "--enable-preview",
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
-            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
-            "com.radixdlt.cli.GenerateUniverses",
-            "--public-keys=${publicKeys}"
+            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generate_genesis_log4j2.properties"}",
+            "com.radixdlt.cli.GenerateGenesis",
+            "--public-keys=${publicKeys}",
+            "--network=${network}"
 }
 
-task createGenerateUniversesScripts(type: CreateStartScripts) {
-    mainClassName = 'com.radixdlt.cli.GenerateUniverses'
-    applicationName = 'generate_universes'
+task createGenerateGenesisScripts(type: CreateStartScripts) {
+    mainClassName = 'com.radixdlt.cli.GenerateGenesis'
+    applicationName = 'generate_genesis'
 }
 
-tasks.getByName("createGenerateUniversesScripts").outputDir = tasks.getByName("startScripts").outputDir
-tasks.getByName("createGenerateUniversesScripts").classpath = tasks.getByName("startScripts").classpath
-tasks.getByName("createGenerateUniversesScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
-tasks.getByName("createGenerateUniversesScripts") {
+tasks.getByName("createGenerateGenesisScripts").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createGenerateGenesisScripts").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createGenerateGenesisScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateGenesisScripts") {
     // Make sure all scripts have consistent classpath
     doLast {
         def windowsScriptFile = file getWindowsScript()
@@ -221,7 +227,7 @@ tasks.getByName("createGenerateUniversesScripts") {
         unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
     }
 }
-tasks.getByName("startScripts").dependsOn createGenerateUniversesScripts
+tasks.getByName("startScripts").dependsOn createGenerateGenesisScripts
 
 task createGenerateNodeKeyScripts(type: CreateStartScripts) {
     mainClassName = 'com.radixdlt.keygen.KeyGenerator'

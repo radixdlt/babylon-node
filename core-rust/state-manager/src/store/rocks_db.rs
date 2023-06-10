@@ -884,7 +884,7 @@ impl QueryableProofStore for RocksDBStore {
         self.get_first(&LedgerProofByStateVersion)
     }
 
-    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
         self.get_first(&LedgerProofByEpoch)
     }
 

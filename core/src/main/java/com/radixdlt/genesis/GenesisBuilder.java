@@ -64,8 +64,11 @@
 
 package com.radixdlt.genesis;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -82,8 +85,7 @@ public final class GenesisBuilder {
       Decimal initialStake,
       GenesisConsensusManagerConfig.Builder builder) {
     final var validatorsAndStakesChunks =
-        prepareValidatorsAndStakesChunks(
-            ImmutableList.of(Tuple.Tuple2.of(validator, initialStake)));
+        prepareValidatorsAndStakesChunks(ImmutableList.of(tuple(validator, initialStake)));
     return new GenesisData(
         UInt64.fromNonNegativeLong(1),
         0,
@@ -111,7 +113,7 @@ public final class GenesisBuilder {
     final var validatorsAndStakesChunks =
         prepareValidatorsAndStakesChunks(
             PrivateKeys.numeric(1)
-                .map(keyPair -> Tuple.Tuple2.of(keyPair.getPublicKey(), initialStake))
+                .map(keyPair -> tuple(keyPair.getPublicKey(), initialStake))
                 .limit(numValidators)
                 .collect(ImmutableList.toImmutableList()));
 
@@ -137,7 +139,7 @@ public final class GenesisBuilder {
     final var validatorsAndStakesChunks =
         prepareValidatorsAndStakesChunks(
             validators.stream()
-                .map(v -> Tuple.Tuple2.of(v, initialStake))
+                .map(v -> tuple(v, initialStake))
                 .collect(ImmutableList.toImmutableList()),
             stakerAddress);
 
@@ -154,9 +156,8 @@ public final class GenesisBuilder {
         xrdBalances.entrySet().stream()
             .map(
                 e -> {
-                  final var accountAddress =
-                      ComponentAddress.virtualAccountFromPublicKey(e.getKey());
-                  return Tuple.Tuple2.of(accountAddress, e.getValue());
+                  final var accountAddress = Address.virtualAccountAddress(e.getKey());
+                  return tuple(accountAddress, e.getValue());
                 })
             .collect(ImmutableList.toImmutableList()));
   }
@@ -181,7 +182,7 @@ public final class GenesisBuilder {
                 idx -> {
                   final var validator = validators.get(idx);
                   final var stake = validatorsAndStake.get(idx).last();
-                  return Tuple.Tuple2.of(
+                  return tuple(
                       validator.key(),
                       ImmutableList.of(
                           new GenesisStakeAllocation(UInt32.fromNonNegativeInt(idx), stake)));
@@ -189,7 +190,7 @@ public final class GenesisBuilder {
             .collect(ImmutableList.toImmutableList());
     final var stakeChunk = new GenesisDataChunk.Stakes(stakeOwners, stakeAllocations);
 
-    return Tuple.Tuple2.of(validatorsChunk, stakeChunk);
+    return tuple(validatorsChunk, stakeChunk);
   }
 
   // Allocates all stakes to a specified staker account
@@ -209,13 +210,13 @@ public final class GenesisBuilder {
                 idx -> {
                   final var validator = validators.get(idx);
                   final var stake = validatorsAndStake.get(idx).last();
-                  return Tuple.Tuple2.of(
+                  return tuple(
                       validator.key(),
                       ImmutableList.of(
                           new GenesisStakeAllocation(UInt32.fromNonNegativeInt(0), stake)));
                 })
             .collect(ImmutableList.toImmutableList());
     final var stakeChunk = new GenesisDataChunk.Stakes(ImmutableList.of(staker), stakeAllocations);
-    return Tuple.Tuple2.of(validatorsChunk, stakeChunk);
+    return tuple(validatorsChunk, stakeChunk);
   }
 }

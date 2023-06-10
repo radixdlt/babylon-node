@@ -104,10 +104,11 @@ public final class REv2TransactionAndProofStore {
         Natives.builder(stateManager, REv2TransactionAndProofStore::getLastProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
-    this.getFirstEpochProofFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getFirstEpochProof)
+    this.getPostGenesisEpochProofFunc =
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getPostGenesisEpochProof)
             .measure(
-                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getFirstEpochProof")))
+                timer.label(
+                    new MethodId(REv2TransactionAndProofStore.class, "getPostGenesisEpochProof")))
             .build(new TypeToken<>() {});
     this.getEpochProofFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
@@ -139,8 +140,8 @@ public final class REv2TransactionAndProofStore {
     return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
-  public Optional<LedgerProof> getFirstEpochProof() {
-    return this.getFirstEpochProofFunc.call(Tuple.tuple()).toOptional();
+  public Optional<LedgerProof> getPostGenesisEpochProof() {
+    return this.getPostGenesisEpochProofFunc.call(Tuple.tuple()).toOptional();
   }
 
   public Optional<LedgerProof> getEpochProof(long epoch) {
@@ -166,9 +167,9 @@ public final class REv2TransactionAndProofStore {
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getFirstEpochProofFunc;
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;
 
-  private static native byte[] getFirstEpochProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getPostGenesisEpochProof(StateManager stateManager, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 

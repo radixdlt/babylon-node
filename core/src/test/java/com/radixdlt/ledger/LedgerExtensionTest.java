@@ -72,14 +72,21 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.TestSetupUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class LedgerExtensionTest {
   private LedgerProof ledgerProof;
   private LedgerExtension emptyLedgerExtension;
   private final long stateVersion = 232L;
+
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
 
   @Before
   public void setUp() {

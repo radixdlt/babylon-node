@@ -64,133 +64,71 @@
 
 package com.radixdlt.genesis;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.utils.IOUtils;
-import com.radixdlt.utils.PrivateKeys;
+import static java.util.function.Predicate.not;
+
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
 
 /**
  * Responsible for loading the genesis data from a configured file, or directly from a property
- * value
+ * value.
  */
-public record GenesisFromPropertiesLoader(RuntimeProperties properties, Network network) {
+public record GenesisFromPropertiesLoader(RuntimeProperties properties) {
   private static final Logger log = LogManager.getLogger();
 
-  // Genesis parameters for XRD allocation for testnets
-  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
-      Set.of(
-          Network.GILGANET,
-          Network.ENKINET,
-          Network.HAMMUNET,
-          Network.MARDUNET,
-          Network.DUMUNET,
-          Network.NERGALNET,
-          Network.NEBUNET,
-          Network.KISHARNET,
-          Network.ANSHARNET);
-
-  private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
-      Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
-  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
-      Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
-  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
-      Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
-  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
-      ECDSASecp256k1PublicKey.tryFromHex(
-              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
-          .unwrap();
-  private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
-      Decimal.of(1); // Allow it to be easily changed in eg tests
-
-  public Optional<GenesisData> loadGenesisDataFromProperties() {
-    final var genesisFileProp = properties.get("network.genesis_file");
-    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
-      log.info("Loading genesis from file: {}", genesisFileProp);
-      return Optional.of(createGenesisDataFromHex(loadRawGenesisFromFile(genesisFileProp)));
-    } else if (!Strings.isNullOrEmpty(properties.get("network.genesis_txn"))) {
-      log.info("Loading genesis from genesis_txn property");
-      return Optional.of(createGenesisDataFromHex(properties.get("network.genesis_txn")));
+  public Optional<WrappedByteArray> loadGenesisDataFromProperties() {
+    final var genesisFileProp =
+        Optional.ofNullable(properties.get("network.genesis_data_file"))
+            .filter(not(String::isBlank));
+    final var genesisDataProp =
+        Optional.ofNullable(properties.get("network.genesis_data")).filter(not(String::isBlank));
+    if (genesisFileProp.isPresent() && genesisDataProp.isPresent()) {
+      throw new RuntimeException(
+          "Both network.genesis_data_file and network.genesis_data were configured (choose one).");
+    } else if (genesisFileProp.isPresent()) {
+      log.info("Loading genesis from file: {}", genesisFileProp.orElseThrow());
+      return Optional.of(readGenesisBytesFromFile(genesisFileProp.orElseThrow()));
+    } else if (genesisDataProp.isPresent()) {
+      log.info("Loading genesis from genesis_data property");
+      try {
+        return Optional.of(fromCompressedBase64String(genesisDataProp.orElseThrow()));
+      } catch (IOException e) {
+        throw new RuntimeException(
+            "Couldn't decode the genesis data from the network.genesis_data property", e);
+      }
     } else {
       return Optional.empty();
     }
   }
 
-  // TODO: this should just load a list of genesis chunks straight from a file
-  // move testing stake allocation etc to GenerateUniverses (also: rename that file :))
-  private GenesisData createGenesisDataFromHex(String input) {
-    final var validators =
-        Streams.stream(
-                Splitter.fixedLength(ECDSASecp256k1PublicKey.COMPRESSED_BYTES * 2).split(input))
-            .map(
-                pubKeyBytes -> {
-                  log.info("Initial validator: {}", pubKeyBytes);
-                  try {
-                    return ECDSASecp256k1PublicKey.fromHex(pubKeyBytes);
-                  } catch (PublicKeyException e) {
-                    throw new RuntimeException(e);
-                  }
-                })
-            .collect(ImmutableList.toImmutableList());
-
-    final var usePowerfulStakingAccount =
-        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
-
-    final var stakeAmount =
-        usePowerfulStakingAccount
-            ? GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
-            : GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR;
-
-    final var stakingAccount =
-        usePowerfulStakingAccount
-            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
-            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
-
-    final Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances =
-        usePowerfulStakingAccount
-            ? Map.of(
-                GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
-                GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
-            : Map.of();
-
-    log.info("Genesis XRD balances: {}", xrdBalances.isEmpty() ? "(empty)" : "");
-    xrdBalances.forEach((k, v) -> log.info("{}: {}", k, v));
-
-    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
-
-    final var mustUseProductionEmissions =
-        NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
-    if (!mustUseProductionEmissions && !usePowerfulStakingAccount) {
-      consensusConfig =
-          consensusConfig.totalEmissionXrdPerEpoch(
-              GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
-    }
-
-    return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
+  private static WrappedByteArray fromCompressedBase64String(String compressedGenesisBytesBase64)
+      throws IOException {
+    final var compressedGenesisBytes = Base64.getDecoder().decode(compressedGenesisBytesBase64);
+    return fromCompressedBytes(compressedGenesisBytes);
   }
 
-  private String loadRawGenesisFromFile(String genesisFile) {
-    try (var genesisJsonString = new FileInputStream(genesisFile)) {
-      var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
-      return genesisJson.getString("genesis");
+  private static WrappedByteArray fromCompressedBytes(byte[] compressedBytes) throws IOException {
+    final var uncompressedGenesisBytes = Compress.uncompress(compressedBytes);
+    return new WrappedByteArray(uncompressedGenesisBytes);
+  }
+
+  private static WrappedByteArray readGenesisBytesFromFile(String genesisFile) {
+    // Note - for simplicity, we use the same file format as GenesisFileStore's genesis_data.bin
+    // This makes the two files interchangable, to avoid confusion
+    try {
+      final var compressedBytes = Files.readAllBytes(Path.of(genesisFile));
+      return fromCompressedBytes(compressedBytes);
     } catch (IOException e) {
-      throw new IllegalStateException(e);
+      throw new RuntimeException(
+          "Couldn't read / decompress the genesis data from file " + genesisFile, e);
     }
   }
 }

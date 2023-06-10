@@ -203,7 +203,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getFirstEpochProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getPostGenesisEpochProof(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
@@ -211,7 +211,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNIStateManager::get_database(&env, j_state_manager);
-        let proof = database.read().get_first_epoch_proof();
+        let proof = database.read().get_post_genesis_epoch_proof();
         proof
     })
 }

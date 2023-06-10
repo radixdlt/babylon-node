@@ -62,15 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.genesis.olympia;
+package com.radixdlt.genesis;
 
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.google.common.hash.HashCode;
+import com.radixdlt.utils.WrappedByteArray;
 
-public final class OlympiaStateToBabylonGenesisMapper {
+public interface GenesisProvider {
+  WrappedByteArray genesisData();
 
-  public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
-    // TODO(genesis): coming in a separate PR
-    return GenesisData.testingDefaultEmpty();
-  }
+  HashCode genesisDataHash();
 }

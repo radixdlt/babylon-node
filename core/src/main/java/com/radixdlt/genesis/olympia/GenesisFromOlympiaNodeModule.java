@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.genesis.PreGenesisSystemApiModule;
+import com.radixdlt.genesis.olympia.client.OlympiaEndStateApiClient;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
@@ -91,7 +92,10 @@ public final class GenesisFromOlympiaNodeModule extends AbstractModule {
     bind(OlympiaEndStateApiClient.class).in(Scopes.SINGLETON);
     bind(OlympiaGenesisService.class).in(Scopes.SINGLETON);
 
-    install(new PreGenesisSystemApiModule("127.0.0.1", 3334));
+    install(
+        new PreGenesisSystemApiModule(
+            properties.get("api.system.bind_address", "127.0.0.1"),
+            properties.get("api.system.port", 3334)));
   }
 
   @Provides

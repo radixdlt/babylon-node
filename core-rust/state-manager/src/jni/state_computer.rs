@@ -119,8 +119,11 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |genesis_data: JavaGenesisData| -> LedgerProof {
+        |raw_genesis_data: Vec<u8>| -> LedgerProof {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let genesis_data_hash = hash(&raw_genesis_data);
+            let genesis_data: JavaGenesisData =
+                scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
             let config = genesis_data.initial_config;
             state_manager.execute_genesis(
                 genesis_data.chunks,
@@ -139,6 +142,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                     num_fee_increase_delay_epochs: config.num_fee_increase_delay_epochs,
                 },
                 genesis_data.initial_timestamp_ms,
+                genesis_data_hash,
             )
         },
     )

@@ -127,7 +127,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 
       if (Polymorphic.class.isAssignableFrom(cls)) {
         // Polymorphic class hierarchy checked later
-        log.debug("Polymorphic class:" + cls.getName() + " with ID:" + id);
+        log.trace("Polymorphic class:" + cls.getName() + " with ID:" + id);
         polymorphicMap.computeIfAbsent(id, k -> new ArrayList<>()).add(cls);
       } else {
         // Check for duplicates
@@ -138,7 +138,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
                   "Aborting, duplicate ID %s discovered in classes: [%s, %s]",
                   id, cls.getName(), dupClass.getName()));
         }
-        log.debug("Putting Class:" + cls.getName() + " with ID:" + id);
+        log.trace("Putting Class:" + cls.getName() + " with ID:" + id);
         collectSupertypes(cls);
         collectInterfaces(cls);
       }
