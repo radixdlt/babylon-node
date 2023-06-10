@@ -71,12 +71,15 @@ import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.utils.UInt256;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
 /** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
+
+  public static final Decimal ZERO = Decimal.of(0L);
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -86,9 +89,7 @@ public class Decimal implements Comparable<Decimal> {
             new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_DECIMAL,
                 SBOR_BYTE_LENGTH,
-                decimal -> {
-                  return Arrays.reverse(decimal.underlyingValue.toByteArray());
-                },
+                decimal -> Arrays.reverse(decimal.underlyingValue.toByteArray()),
                 bytes -> new Decimal(UInt256.from(Arrays.reverse(bytes)))));
   }
 
@@ -102,6 +103,39 @@ public class Decimal implements Comparable<Decimal> {
 
   public static Decimal from(UInt256 fixedPointRepresentation) {
     return new Decimal(fixedPointRepresentation);
+  }
+
+  /**
+   * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
+   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt256.
+   */
+  public static Decimal fromBigIntegerSubunits(BigInteger bigInt) {
+    if (bigInt.compareTo(BigInteger.ZERO) < 0) {
+      throw new IllegalArgumentException(
+          "Can't create a Decimal from a negative BigInteger representation");
+    }
+    final var bigIntSignedBytes = bigInt.toByteArray();
+    final byte[] uint256Bytes;
+    if (bigIntSignedBytes.length == UInt256.BYTES + 1 && bigIntSignedBytes[0] == 0x00) {
+      // A signed representation of a positive 32-bytes integer can actually contain
+      // 33 bytes (additional 0x00 byte), so we just skip it.
+      uint256Bytes = Arrays.copyOfRange(bigIntSignedBytes, 1, bigIntSignedBytes.length);
+    } else if (bigIntSignedBytes.length > UInt256.BYTES) {
+      // Can't fit
+      throw new IllegalArgumentException("Decimal overflow");
+    } else {
+      uint256Bytes = bigIntSignedBytes;
+    }
+    return Decimal.from(UInt256.from(uint256Bytes));
+  }
+
+  public Decimal add(Decimal other) {
+    var newUnderlying = this.underlyingValue.add(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
+  public BigInteger toBigIntegerSubunits() {
+    return underlyingValue.toBigInt();
   }
 
   public static Decimal of(long amount) {

@@ -38,6 +38,7 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentPropos
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -121,7 +122,7 @@ public class AccountVaultIndexEntrySubstate extends Substate {
   private String resourceAddress;
 
   public static final String JSON_PROPERTY_VAULT = "vault";
-  private String vault;
+  private EntityReference vault;
 
   public AccountVaultIndexEntrySubstate() { 
   }
@@ -152,28 +153,28 @@ public class AccountVaultIndexEntrySubstate extends Substate {
   }
 
 
-  public AccountVaultIndexEntrySubstate vault(String vault) {
+  public AccountVaultIndexEntrySubstate vault(EntityReference vault) {
     this.vault = vault;
     return this;
   }
 
    /**
-   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * Get vault
    * @return vault
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getVault() {
+  public EntityReference getVault() {
     return vault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVault(String vault) {
+  public void setVault(EntityReference vault) {
     this.vault = vault;
   }
 

@@ -477,7 +477,7 @@ impl QueryableProofStore for InMemoryStore {
         self.proofs.values().next().cloned()
     }
 
-    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
         self.epoch_proofs.values().next().cloned()
     }
 

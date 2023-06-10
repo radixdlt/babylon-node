@@ -94,7 +94,7 @@ use tracing::{error, info};
 
 use std::ops::Deref;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -154,6 +154,7 @@ pub struct GenesisHeaderData {
     round: Round,
     timestamp: i64,
     state_version: StateVersion,
+    genesis_opaque_hash: Hash,
 }
 
 #[derive(Debug)]
@@ -170,7 +171,7 @@ impl GenesisTransactionResult {
         let commit_request = CommitRequest {
             transactions: vec![self.raw],
             proof: LedgerProof {
-                opaque: Hash([0; Hash::LENGTH]),
+                opaque: header_data.genesis_opaque_hash,
                 ledger_header: LedgerHeader {
                     epoch: header_data.epoch,
                     round: header_data.round,
@@ -557,6 +558,7 @@ where
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
+            Hash([0; Hash::LENGTH]),
         )
     }
 
@@ -566,12 +568,34 @@ where
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
+        genesis_opaque_hash: Hash,
     ) -> LedgerProof {
+        let start_instant = Instant::now();
+
+        let read_db = self.store.read();
+        if read_db.get_post_genesis_epoch_proof().is_some() {
+            panic!("Can't execute genesis: database already initialized")
+        }
+        let maybe_top_txn_identifiers = read_db.get_top_transaction_identifiers();
+        drop(read_db);
+        if let Some(top_txn_identifiers) = maybe_top_txn_identifiers {
+            // No epoch proof, but there are some committed txns
+            panic!(
+                "The database is in inconsistent state: \
+                there are committed transactions (up to state version {}), but there's no epoch proof. \
+                This is likely caused by the the genesis data ingestion being interrupted. \
+                Consider wiping your database dir and trying again.", top_txn_identifiers.0);
+        }
+
+        let genesis_data_chunks_len = genesis_data_chunks.len();
+        let num_genesis_txns = genesis_data_chunks_len + 2; // + bootstrap + wrap up
+
         let mut header_data = GenesisHeaderData {
             epoch: initial_epoch,
             round: Round::of(0),
             timestamp: initial_timestamp_ms,
             state_version: StateVersion::pre_genesis(),
+            genesis_opaque_hash,
         };
 
         // System bootstrap
@@ -585,6 +609,8 @@ where
             .prepare_genesis(system_bootstrap_transaction)
             .to_commit_request(&mut header_data);
 
+        info!("Committing genesis txn {} of {}", 1, num_genesis_txns);
+
         let system_bootstrap_receipt = self
             .commit(commit_request, true)
             .expect("System bootstrap commit failed")
@@ -593,12 +619,21 @@ where
         match system_bootstrap_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis system bootstrap txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!(
+                    "Genesis system bootstrap txn didn't succeed {:?}",
+                    system_bootstrap_receipt
+                );
             }
         }
 
         // Data ingestion
         for (chunk_number, chunk) in genesis_data_chunks.into_iter().enumerate() {
+            info!(
+                "Committing genesis txn {} of {}",
+                chunk_number + 1,
+                num_genesis_txns
+            );
+
             let genesis_data_ingestion_transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
 
@@ -614,7 +649,10 @@ where
             match genesis_data_ingestion_commit_receipt.on_ledger.outcome {
                 LedgerTransactionOutcome::Success => {}
                 LedgerTransactionOutcome::Failure => {
-                    panic!("Genesis data ingestion txn didn't succeed"); // TODO(genesis): better error handling?
+                    panic!(
+                        "Genesis data ingestion txn didn't succeed {:?}",
+                        genesis_data_ingestion_commit_receipt
+                    );
                 }
             }
         }
@@ -628,6 +666,11 @@ where
 
         let final_ledger_proof = commit_request.proof.clone();
 
+        info!(
+            "Committing genesis txn {} of {}",
+            num_genesis_txns, num_genesis_txns
+        );
+
         let genesis_wrap_up_receipt = self
             .commit(commit_request, true)
             .expect("Genesis wrap up commit failed")
@@ -636,9 +679,18 @@ where
         match genesis_wrap_up_receipt.on_ledger.outcome {
             LedgerTransactionOutcome::Success => {}
             LedgerTransactionOutcome::Failure => {
-                panic!("Genesis wrap up txn didn't succeed"); // TODO(genesis): better error handling?
+                panic!(
+                    "Genesis wrap up txn didn't succeed {:?}",
+                    genesis_wrap_up_receipt
+                );
             }
         }
+
+        info!(
+            "{} genesis transactions successfully executed in {} seconds",
+            num_genesis_txns,
+            start_instant.elapsed().as_secs()
+        );
 
         final_ledger_proof
     }

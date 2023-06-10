@@ -122,7 +122,7 @@ index ba8d873e1..def8dc9ea 100644
 --- a/docker/core.yml
 +++ b/docker/core.yml
 @@ -13,7 +13,7 @@ services:
-       RADIXDLT_GENESIS_TXN: ${RADIXDLT_GENESIS_TXN}
+       RADIXDLT_GENESIS_DATA: ${RADIXDLT_GENESIS_DATA}
        JAVA_OPTS: -server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacert
 s -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxr
 emote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.host

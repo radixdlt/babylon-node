@@ -18,9 +18,8 @@ pub struct AccountVaultIndexEntrySubstate {
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
     #[serde(rename = "vault", skip_serializing_if = "Option::is_none")]
-    pub vault: Option<String>,
+    pub vault: Option<Box<crate::core_api::generated::models::EntityReference>>,
 }
 
 impl AccountVaultIndexEntrySubstate {

@@ -64,37 +64,49 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
-import com.radixdlt.statecomputer.commit.LedgerHashes;
-import java.util.Comparator;
-import java.util.Set;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public final class LedgerInitializer {
+public record GlobalAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GlobalAddress.class,
+        codecs ->
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_REFERENCE,
+                BYTE_LENGTH,
+                GlobalAddress::value,
+                GlobalAddress::new));
+  }
 
-  public record GenesisResult(LedgerHashes ledgerHashes, Set<ActiveValidatorInfo> validatorSet) {
+  public static final int BYTE_LENGTH = 30;
 
-    public BFTValidatorId getActiveValidator(int validatorIndex) {
-      var validator =
-          this.validatorSet().stream()
-              .sorted(Comparator.comparing(ActiveValidatorInfo::stake).reversed())
-              .skip(validatorIndex)
-              .findFirst()
-              .orElseThrow(() -> new IllegalStateException("some validator expected"));
-      return BFTValidatorId.create(validator.address(), validator.key());
+  public static GlobalAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid global address length");
     }
+    return new GlobalAddress(addressBytes);
   }
 
-  private final RustStateComputer stateComputer;
-
-  public LedgerInitializer(RustStateComputer stateComputer) {
-    this.stateComputer = stateComputer;
+  public String toHexString() {
+    return Hex.toHexString(value);
   }
 
-  public GenesisResult prepareAndCommit(GenesisData genesis) {
-    var header = this.stateComputer.executeGenesis(genesis).ledgerHeader();
-    return new GenesisResult(header.hashes(), header.nextEpoch().unwrap().validators());
+  @Override
+  public String toString() {
+    return toHexString();
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof GlobalAddress other && Arrays.equals(this.value, other.value);
   }
 }

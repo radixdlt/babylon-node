@@ -132,6 +132,7 @@ public final class StateManagerSbor {
     ComponentAddress.registerCodec(codecMap);
     PackageAddress.registerCodec(codecMap);
     ResourceAddress.registerCodec(codecMap);
+    GlobalAddress.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
@@ -141,6 +142,7 @@ public final class StateManagerSbor {
     TxnsAndProofRequest.registerCodec(codecMap);
     TxnsAndProof.registerCodec(codecMap);
     PublicKey.registerCodec(codecMap);
+    PublicKeyHash.registerCodec(codecMap);
     ECDSASecp256k1PublicKey.registerCodec(codecMap);
     EdDSAEd25519PublicKey.registerCodec(codecMap);
     Signature.registerCodec(codecMap);
@@ -172,6 +174,9 @@ public final class StateManagerSbor {
     GenesisResourceAllocation.registerCodec(codecMap);
     GenesisValidator.registerCodec(codecMap);
     GenesisStakeAllocation.registerCodec(codecMap);
+    MetadataValue.registerCodec(codecMap);
+    NonFungibleLocalId.registerCodec(codecMap);
+    NonFungibleGlobalId.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

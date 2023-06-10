@@ -130,6 +130,10 @@ public class UInt32 implements Comparable<UInt32>, Serializable {
     return a.lte(b) ? a : b;
   }
 
+  public int toInt() {
+    return underlyingValue;
+  }
+
   @Override
   public String toString() {
     return Integer.toUnsignedString(underlyingValue);

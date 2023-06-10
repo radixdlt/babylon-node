@@ -22,8 +22,8 @@ reporoot="${scriptdir}/../.."
 export SKIP_NATIVE_RUST_BUILD=TRUE
 
 echo "||> Generating environment variables for running with $validators_count validators"
-# generateDevUniverse outputs a bunch of "export" lines to stdout.
-ENV_TO_LOAD=$(${reporoot}/gradlew -q -P "validators=${validators_count}" ":cli-tools:generateDevUniverse")
+# generateDevGenesis outputs a bunch of "export" lines to stdout.
+ENV_TO_LOAD=$(${reporoot}/gradlew -q -P "validators=${validators_count}" -P "networkId=240" ":cli-tools:generateDevGenesis")
 
 echo "||> Loading environment variables for $validators_count validators"
 # If the below line errors with a syntax error, see what's going wrong by adding echo "$ENV_TO_LOAD"

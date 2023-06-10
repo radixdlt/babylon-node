@@ -62,92 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.cli;
+package com.radixdlt.genesis.olympia.converter;
 
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.networks.Network;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.PrivateKeys;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.security.Security;
-import java.util.HashSet;
-import java.util.stream.IntStream;
-import org.apache.commons.cli.*;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONObject;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.utils.UInt256;
 
-/** Generates the universe (genesis commit) for the Olympia Radix Engine */
-public final class GenerateUniverses {
-  private GenerateUniverses() {}
-
-  public static void main(String[] args) throws Exception {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
-    Options options = new Options();
-    options.addOption("h", "help", false, "Show usage information (this message)");
-    options.addOption("p", "public-keys", true, "Specify validator keys");
-    options.addOption("v", "validator-count", true, "Specify number of validators to generate");
-
-    CommandLineParser parser = new DefaultParser();
-    CommandLine cmd = parser.parse(options, args);
-    if (!cmd.getArgList().isEmpty()) {
-      System.err.println("Extra arguments: " + String.join(" ", cmd.getArgList()));
-      usage(options);
-      return;
-    }
-
-    if (cmd.hasOption('h')) {
-      usage(options);
-      return;
-    }
-
-    var validatorKeys = new HashSet<ECDSASecp256k1PublicKey>();
-    if (cmd.getOptionValue("p") != null) {
-      var hexKeys = cmd.getOptionValue("p").split(",");
-      for (var hexKey : hexKeys) {
-        validatorKeys.add(ECDSASecp256k1PublicKey.fromHex(hexKey));
-      }
-    }
-    final int validatorsCount =
-        cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-    var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
-    generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
-    IntStream.range(0, generatedValidatorKeys.size())
-        .forEach(
-            i -> {
-              System.out.format(
-                  "export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n",
-                  i, Bytes.toBase64String(generatedValidatorKeys.get(i).getPrivateKey()));
-              System.out.format(
-                  "export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n",
-                  i,
-                  Addressing.ofNetwork(Network.LOCALNET)
-                      .encodeNodeAddress(generatedValidatorKeys.get(i).getPublicKey()));
-            });
-
-    final var genesisTxnBuilder = new StringBuilder();
-    for (var key : validatorKeys) {
-      genesisTxnBuilder.append(Hex.toHexString(key.getCompressedBytes()));
-    }
-
-    final var genesisTxn = genesisTxnBuilder.toString();
-
-    if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisTxn);
-    } else {
-      try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
-
-        writer.write(new JSONObject().put("genesis", genesisTxn).toString());
-      }
-    }
-  }
-
-  private static void usage(Options options) {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
-  }
+public record OlympiaToBabylonConverterConfig(
+    /* Maximum number of validators in a single genesis chunk (transaction) */
+    int maxValidatorsPerChunk,
+    /* Maximum number of stakes in a single genesis chunk (transaction) */
+    int maxStakesPerChunk,
+    /* Maximum number of XRD balances in a single genesis chunk (transaction) */
+    int maxXrdBalancesPerChunk,
+    /* Maximum number of resources in a single genesis chunk (transaction) */
+    int maxResourcesPerChunk,
+    /* Maximum number of non-XRD resource balances in a single genesis chunk (transaction) */
+    int maxNonXrdResourceBalancesPerChunk,
+    /* Maximum resource supply that can be converted unmodified.
+    Any value above the threshold will be scaled down (including the
+    corresponding balances). */
+    Decimal maxGenesisResourceUnscaledSupply) {
+  public static final OlympiaToBabylonConverterConfig DEFAULT =
+      new OlympiaToBabylonConverterConfig(
+          100,
+          100,
+          100,
+          100,
+          100,
+          // TODO(REP-73): Decimal.from(UInt256.TWO.pow(160))
+          Decimal.from(UInt256.from("1000000000000000000")));
 }
