@@ -226,7 +226,7 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn check_success(self, description: impl Display) -> Self {
+    pub fn expect_success(self, description: impl Display) -> Self {
         if let DetailedTransactionOutcome::Failure(error) =
             &self.local_receipt.local_execution.outcome
         {

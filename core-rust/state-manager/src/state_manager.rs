@@ -214,7 +214,7 @@ where
         let commit = series_executor
             .execute(ConfigType::Genesis, &validated, "genesis")
             .expect("genesis not committable")
-            .check_success("genesis");
+            .expect_success("genesis");
 
         GenesisTransactionResult {
             raw,
@@ -301,7 +301,7 @@ where
         series_executor
             .execute(ConfigType::Regular, &validated_round_update, "round update")
             .expect("round update rejected")
-            .check_success("round update");
+            .expect_success("round update");
 
         committable_transactions.push(CommittableTransaction {
             index: None,
