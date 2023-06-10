@@ -255,10 +255,8 @@ pub struct PreviewRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InvalidCommitRequestError {
-    MissingEpochProof,
-    SuperfluousEpochProof,
-    EpochProofMismatch,
-    LedgerHashesMismatch,
+    TransactionParsingFailed,
+    TransactionRootMismatch,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

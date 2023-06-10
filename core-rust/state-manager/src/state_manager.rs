@@ -62,10 +62,9 @@
  * permissions under this License.
  */
 
-use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
-use crate::staging::epoch_handling::AccuTreeEpochHandler;
+use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::staging::{ExecutionCache, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::*;
@@ -90,7 +89,7 @@ use radix_engine_interface::network::NetworkDefinition;
 
 use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
-use tracing::{error, info};
+use tracing::{info, warn};
 
 use std::ops::Deref;
 use std::sync::Arc;
@@ -712,42 +711,71 @@ where
 
         // Whilst we could validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
-        let prepared_transactions: Vec<_> = commit_request
+        let prepare_results = commit_request
             .transactions
-            .into_iter()
-            .map(|raw| -> (RawLedgerTransaction, PreparedLedgerTransaction) {
-                let prepared = self.ledger_transaction_validator.prepare_from_raw(&raw)
-                    .unwrap_or_else(|error| {
-                        panic!("Committed transaction cannot be prepared - likely byzantine quorum: {error:?}");
-                    });
-                (raw, prepared)
+            .iter()
+            .map(|raw_transaction| {
+                self.ledger_transaction_validator
+                    .prepare_from_raw(raw_transaction)
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>();
+
+        let prepared_transactions = match prepare_results {
+            Ok(prepared_transactions) => prepared_transactions,
+            Err(error) => {
+                warn!("cannot parse transaction to be committed {error:?}",);
+                return Err(InvalidCommitRequestError::TransactionParsingFailed);
+            }
+        };
 
         let mut write_store = self.store.write();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
             panic!(
-                "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
-                commit_request_start_state_version, series_executor.latest_state_version()
+                "ledger state version differs from the proof ({} vs ({} - {} == {}))",
+                series_executor.latest_state_version(),
+                commit_state_version,
+                commit_transactions_len,
+                commit_request_start_state_version
             );
+        }
+
+        // TODO(optimization-only): we could reach to the `execution_cache` to find the transaction
+        // root chain there (to avoid this "repeated" calculation here).
+        let resultant_transaction_root = Self::calculate_transaction_root(
+            write_store.deref(),
+            series_executor.epoch_identifiers(),
+            series_executor.latest_state_version(),
+            &prepared_transactions,
+        );
+        if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
+            warn!(
+                "resultant transaction root at version {} differs from the proof ({} != {})",
+                commit_state_version,
+                resultant_transaction_root,
+                commit_ledger_header.hashes.transaction_root
+            );
+            return Err(InvalidCommitRequestError::TransactionRootMismatch);
         }
 
         let mut committed_transaction_bundles = Vec::new();
         let mut substate_store_update = SubstateStoreUpdate::new();
         let mut state_tree_update = HashTreeUpdate::new();
-        let transaction_tree_len = AccuTreeEpochHandler::new(
+        let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
             series_executor.epoch_identifiers().state_version,
             series_executor.latest_state_version(),
-        )
-        .current_accu_tree_len();
-        let mut transaction_tree_slice_merger = AccuTreeSliceMerger::new(transaction_tree_len);
-        let mut receipt_tree_slice_merger = AccuTreeSliceMerger::new(transaction_tree_len);
+        );
+        let mut transaction_tree_slice_merger = epoch_accu_trees.create_merger();
+        let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
         let mut intent_hashes = Vec::new();
 
         let mut result_receipts = vec![];
-        for (i, (raw, prepared)) in prepared_transactions.into_iter().enumerate() {
+        for (raw, prepared) in commit_request
+            .transactions
+            .into_iter()
+            .zip(prepared_transactions)
+        {
             let (validated, config_type) = if genesis {
                 (
                     self.ledger_transaction_validator.validate_genesis(prepared),
@@ -755,65 +783,38 @@ where
                 )
             } else {
                 (
-                    self
-                        .ledger_transaction_validator
+                    self.ledger_transaction_validator
                         .validate_user_or_round_update(prepared)
                         .unwrap_or_else(|error| {
-                            panic!(
-                                "Committed transaction is not valid - likely byzantine quorum: {error:?}"
-                            );
+                            panic!("cannot validate transaction to be committed: {error:?}");
                         }),
                     ConfigType::Regular,
                 )
             };
 
-            let (
-                state_hash_tree_diff,
-                transaction_tree_slice,
-                receipt_tree_slice,
-                local_receipt,
-                database_updates,
-            ) = {
-                let commit = series_executor
-                    .execute(config_type, &validated, "prepared")
-                    .expect("prepared transaction not committable");
-                let hash_structures_diff = &commit.hash_structures_diff;
-                let state_hash_tree_diff = hash_structures_diff.state_hash_tree_diff.clone();
-                let transaction_tree_slice =
-                    hash_structures_diff.transaction_tree_diff.slice.clone();
-                let receipt_tree_slice = hash_structures_diff.receipt_tree_diff.slice.clone();
-                let local_receipt = commit.local_receipt.clone();
-                let database_updates = commit.database_updates.clone();
-                (
-                    state_hash_tree_diff,
-                    transaction_tree_slice,
-                    receipt_tree_slice,
-                    local_receipt,
-                    database_updates,
-                )
-            };
-
-            Self::check_epoch_proof_match(
-                commit_ledger_header,
-                series_executor.next_epoch(),
-                i == (commit_transactions_len - 1),
-            )?;
+            let commit = series_executor
+                .execute(config_type, &validated, "prepared")
+                .expect("cannot execute transaction to be committed");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
                 intent_hashes.push(intent_hash);
             }
 
-            substate_store_update.apply(database_updates);
-            state_tree_update.add(series_executor.latest_state_version(), state_hash_tree_diff);
-            transaction_tree_slice_merger.append(transaction_tree_slice);
-            receipt_tree_slice_merger.append(receipt_tree_slice);
+            substate_store_update.apply(commit.database_updates.clone());
+            let hash_structures_diff = commit.hash_structures_diff;
+            state_tree_update.add(
+                series_executor.latest_state_version(),
+                hash_structures_diff.state_hash_tree_diff,
+            );
+            transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
+            receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
 
-            result_receipts.push(local_receipt.clone());
+            result_receipts.push(commit.local_receipt.clone());
 
             committed_transaction_bundles.push(CommittedTransactionBundle {
                 state_version: series_executor.latest_state_version(),
                 raw,
-                receipt: local_receipt,
+                receipt: commit.local_receipt,
                 identifiers: CommittedTransactionIdentifiers {
                     payload: validated.create_identifiers(),
                     resultant_ledger_hashes: *series_executor.latest_ledger_hashes(),
@@ -821,14 +822,21 @@ where
             });
         }
 
-        let commit_ledger_hashes = &commit_ledger_header.hashes;
-        let final_ledger_hashes = series_executor.latest_ledger_hashes();
-        if final_ledger_hashes != commit_ledger_hashes {
-            error!(
-                "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
-                commit_state_version, final_ledger_hashes, commit_ledger_hashes
+        if series_executor.next_epoch() != commit_ledger_header.next_epoch.as_ref() {
+            panic!(
+                "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
+                commit_state_version,
+                series_executor.next_epoch(),
+                commit_ledger_header.next_epoch
             );
-            return Err(InvalidCommitRequestError::LedgerHashesMismatch);
+        }
+
+        let final_ledger_hashes = series_executor.latest_ledger_hashes();
+        if final_ledger_hashes != &commit_ledger_header.hashes {
+            panic!(
+                "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
+                commit_state_version, final_ledger_hashes, commit_ledger_header.hashes
+            );
         }
 
         self.execution_cache
@@ -872,48 +880,25 @@ where
         Ok(result_receipts)
     }
 
-    fn check_epoch_proof_match(
-        commit_ledger_header: &LedgerHeader,
-        opt_transaction_next_epoch: Option<&NextEpoch>,
-        is_last_transaction_in_request: bool,
-    ) -> Result<(), InvalidCommitRequestError> {
-        if is_last_transaction_in_request {
-            match &commit_ledger_header.next_epoch {
-                Some(proof_next_epoch) => {
-                    if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
-                        if transaction_next_epoch != proof_next_epoch {
-                            error!(
-                                "computed next epoch differs from the one in proof ({:?} != {:?})",
-                                transaction_next_epoch, proof_next_epoch
-                            );
-                            return Err(InvalidCommitRequestError::EpochProofMismatch);
-                        }
-                    } else {
-                        error!(
-                            "computed no next epoch, but proof contains {:?}",
-                            proof_next_epoch
-                        );
-                        return Err(InvalidCommitRequestError::SuperfluousEpochProof);
-                    }
-                }
-                None => {
-                    if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
-                        error!(
-                            "no next epoch in proof, but last transaction in batch computed {:?}",
-                            transaction_next_epoch
-                        );
-                        return Err(InvalidCommitRequestError::MissingEpochProof);
-                    }
-                }
-            };
-        } else if let Some(transaction_next_epoch) = opt_transaction_next_epoch {
-            error!(
-                "non-last transaction in batch computed {:?}",
-                transaction_next_epoch
+    fn calculate_transaction_root(
+        store: &S,
+        epoch_identifiers: &EpochTransactionIdentifiers,
+        parent_version: StateVersion,
+        transactions: &[PreparedLedgerTransaction],
+    ) -> TransactionTreeHash {
+        let epoch_accu_trees =
+            EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_version);
+        let mut collector = CollectingAccuTreeStore::new(store);
+        epoch_accu_trees
+            .create_builder(epoch_identifiers.transaction_hash, &mut collector)
+            .append_batch(
+                transactions
+                    .iter()
+                    .map(|transaction| transaction.ledger_transaction_hash().into_hash())
+                    .map(TransactionTreeHash::from)
+                    .collect(),
             );
-            return Err(InvalidCommitRequestError::MissingEpochProof);
-        }
-        Ok(())
+        *collector.into_diff().slice.root()
     }
 }
 

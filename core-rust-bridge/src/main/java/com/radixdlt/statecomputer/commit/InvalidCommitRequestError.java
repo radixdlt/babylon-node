@@ -74,11 +74,7 @@ public sealed interface InvalidCommitRequestError {
         codecs -> EnumCodec.fromPermittedRecordSubclasses(InvalidCommitRequestError.class, codecs));
   }
 
-  record MissingEpochProof() implements InvalidCommitRequestError {}
+  record TransactionParsingFailed() implements InvalidCommitRequestError {}
 
-  record SuperfluousEpochProof() implements InvalidCommitRequestError {}
-
-  record EpochProofMismatch() implements InvalidCommitRequestError {}
-
-  record LedgerHashesMismatch() implements InvalidCommitRequestError {}
+  record TransactionRootMismatch() implements InvalidCommitRequestError {}
 }
