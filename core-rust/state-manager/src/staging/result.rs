@@ -68,9 +68,11 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ChangeAction, EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch,
-    ReceiptTreeHash, StateHash, StateVersion, SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
+    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
+    SubstateChange, TransactionTreeHash,
 };
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
@@ -214,6 +216,18 @@ impl ProcessedCommitResult {
         }
     }
 
+    pub fn check_success(self, description: impl Display) -> Self {
+        if let DetailedTransactionOutcome::Failure(error) =
+            &self.local_receipt.local_execution.outcome
+        {
+            panic!(
+                "{} (ledger hash: {}) failed: {:?}",
+                description, self.hash_structures_diff.ledger_hashes.transaction_root, error
+            );
+        }
+        self
+    }
+
     pub fn next_epoch(&self) -> Option<NextEpoch> {
         self.local_receipt
             .local_execution
@@ -299,6 +313,24 @@ impl ProcessedCommitResult {
             hash_changes,
         );
         collector.into_diff_with(root_hash)
+    }
+}
+
+impl From<EpochChangeEvent> for NextEpoch {
+    fn from(epoch_change_event: EpochChangeEvent) -> Self {
+        NextEpoch {
+            validator_set: epoch_change_event
+                .validator_set
+                .validators_by_stake_desc
+                .into_iter()
+                .map(|(address, validator)| ActiveValidatorInfo {
+                    address,
+                    key: validator.key,
+                    stake: validator.stake,
+                })
+                .collect(),
+            epoch: epoch_change_event.epoch,
+        }
     }
 }
 

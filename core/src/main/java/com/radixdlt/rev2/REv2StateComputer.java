@@ -88,6 +88,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.RoundHistory;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -254,12 +255,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             ancestorTransactions,
             REv2ToConsensus.ledgerHashes(preparedUncommittedLedgerHashes),
             proposedTransactions,
-            roundDetails.isFallback(),
-            UInt64.fromNonNegativeLong(roundDetails.epoch()),
-            UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
-            gapRoundLeaderAddresses,
-            roundDetails.roundProposer().getActiveValidatorAddress(),
-            roundDetails.proposerTimestampMs());
+            new RoundHistory(
+                roundDetails.isFallback(),
+                UInt64.fromNonNegativeLong(roundDetails.epoch()),
+                UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
+                gapRoundLeaderAddresses,
+                roundDetails.roundProposer().getActiveValidatorAddress(),
+                roundDetails.proposerTimestampMs()));
 
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =

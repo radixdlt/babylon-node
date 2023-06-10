@@ -274,6 +274,11 @@ pub struct PrepareRequest {
     pub ancestor_transactions: Vec<RawLedgerTransaction>,
     pub ancestor_ledger_hashes: LedgerHashes,
     pub proposed_transactions: Vec<RawNotarizedTransaction>,
+    pub round_history: RoundHistory,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct RoundHistory {
     pub is_fallback: bool,
     pub epoch: Epoch,
     pub round: Round,
