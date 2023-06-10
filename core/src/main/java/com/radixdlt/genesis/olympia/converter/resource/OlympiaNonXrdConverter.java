@@ -73,9 +73,12 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisDataChunk;
 import com.radixdlt.genesis.GenesisResource;
 import com.radixdlt.genesis.GenesisResourceAllocation;
+import com.radixdlt.genesis.olympia.bech32.Bits;
+import com.radixdlt.genesis.olympia.bech32.OlympiaBech32;
 import com.radixdlt.genesis.olympia.converter.OlympiaToBabylonConverterConfig;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.identifiers.Address;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
@@ -190,10 +193,7 @@ public final class OlympiaNonXrdConverter {
           // Build the chunk and add it to the list builder,
           // reset the counter and the accounts index for the next chunk
           resourceBalancesInCurrentChunkBuilder.add(
-              tuple(
-                  Address.globalFungible(
-                      olympiaToBabylonResourceAddressBytes(resource.addr().getBytes())),
-                  currentAllocations.build()));
+              tuple(olympiaToBabylonResourceAddress(resource.addr()), currentAllocations.build()));
           currentAllocations = ImmutableList.builder();
 
           resourceBalancesChunksBuilder.add(
@@ -214,8 +214,7 @@ public final class OlympiaNonXrdConverter {
       if (!lastAllocationsForCurrentResource.isEmpty()) {
         resourceBalancesInCurrentChunkBuilder.add(
             tuple(
-                Address.globalFungible(
-                    olympiaToBabylonResourceAddressBytes(resource.addr().getBytes())),
+                olympiaToBabylonResourceAddress(resource.addr()),
                 lastAllocationsForCurrentResource));
         // Note that we don't reset any chunk-scoped builders/counters
         // No need to reset currentAllocations here, we'll create a fresh instance
@@ -313,13 +312,24 @@ public final class OlympiaNonXrdConverter {
             .map(
                 idx -> Address.virtualAccountAddress(accounts.get(idx).publicKeyBytes().asBytes()));
 
-    final var addrBytes = olympiaToBabylonResourceAddressBytes(resource.addr().getBytes());
+    final var addrBytes = olympiaToBabylonResourceAddressBytes(resource.addr());
     return new GenesisResource(
         addrBytes, initialSupply, metadataBuilder.build(), Option.from(owner));
   }
 
-  private static byte[] olympiaToBabylonResourceAddressBytes(byte[] input) {
-    final var hash = HASHER.hashBytes(input);
+  public static REAddr olympiaRriToReAddr(String rri) {
+    final var decodedBech32 = OlympiaBech32.decode(rri);
+    final var rriBytes =
+        Bits.convertBits(decodedBech32.data, 0, decodedBech32.data.length, 5, 8, false);
+    return REAddr.of(rriBytes);
+  }
+
+  public static ResourceAddress olympiaToBabylonResourceAddress(REAddr rri) {
+    return Address.globalFungible(olympiaToBabylonResourceAddressBytes(rri));
+  }
+
+  public static byte[] olympiaToBabylonResourceAddressBytes(REAddr rri) {
+    final var hash = HASHER.hashBytes(rri.getBytes());
     return Arrays.copyOfRange(
         hash.asBytes(), 0, ResourceAddress.BYTE_LENGTH - ResourceAddress.ENTITY_ID_LEN);
   }
