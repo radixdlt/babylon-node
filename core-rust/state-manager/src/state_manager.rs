@@ -701,7 +701,7 @@ where
     ) -> Result<Vec<LocalTransactionReceipt>, InvalidCommitRequestError> {
         let commit_transactions_len = commit_request.transactions.len();
         if commit_transactions_len == 0 {
-            panic!("cannot commit 0 transactions from request {commit_request:?}");
+            panic!("broken invariant: no transactions in request {commit_request:?}");
         }
 
         let commit_ledger_header = &commit_request.proof.ledger_header;
@@ -723,7 +723,10 @@ where
         let prepared_transactions = match prepare_results {
             Ok(prepared_transactions) => prepared_transactions,
             Err(error) => {
-                warn!("cannot parse transaction to be committed {error:?}",);
+                warn!(
+                    "invalid commit request: cannot parse transaction to be committed: {:?}",
+                    error
+                );
                 return Err(InvalidCommitRequestError::TransactionParsingFailed);
             }
         };
@@ -733,11 +736,11 @@ where
 
         if commit_request_start_state_version != series_executor.latest_state_version() {
             panic!(
-                "ledger state version differs from the proof ({} vs ({} - {} == {}))",
-                series_executor.latest_state_version(),
+                "broken invariant: commit request assumed state version ({} - {} = {}) while ledger is at {}",
                 commit_state_version,
                 commit_transactions_len,
-                commit_request_start_state_version
+                commit_request_start_state_version,
+                series_executor.latest_state_version(),
             );
         }
 
@@ -751,7 +754,7 @@ where
         );
         if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
             warn!(
-                "resultant transaction root at version {} differs from the proof ({} != {})",
+                "invalid commit request: resultant transaction root at version {} differs from the proof ({} != {})",
                 commit_state_version,
                 resultant_transaction_root,
                 commit_ledger_header.hashes.transaction_root
@@ -888,17 +891,16 @@ where
     ) -> TransactionTreeHash {
         let epoch_accu_trees =
             EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_version);
-        let mut collector = CollectingAccuTreeStore::new(store);
-        epoch_accu_trees
-            .create_builder(epoch_identifiers.transaction_hash, &mut collector)
-            .append_batch(
-                transactions
-                    .iter()
-                    .map(|transaction| transaction.ledger_transaction_hash().into_hash())
-                    .map(TransactionTreeHash::from)
-                    .collect(),
-            );
-        *collector.into_diff().slice.root()
+        let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.transaction_hash,
+            store,
+            transactions
+                .iter()
+                .map(|transaction| transaction.ledger_transaction_hash())
+                .map(TransactionTreeHash::from)
+                .collect(),
+        );
+        *transaction_tree_diff.slice.root()
     }
 }
 

@@ -169,7 +169,7 @@ impl ProcessedCommitResult {
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
-        let ledger_transaction_hash = hash_update_context.ledger_transaction_hash;
+        let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
         let database_updates = commit_result.state_updates.database_updates.clone();
@@ -184,29 +184,21 @@ impl ProcessedCommitResult {
         let epoch_accu_trees =
             EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_state_version);
 
-        let transaction_tree_diff = {
-            let mut collector = CollectingAccuTreeStore::new(store);
-            epoch_accu_trees
-                .create_builder(epoch_identifiers.transaction_hash, &mut collector)
-                .append(TransactionTreeHash::from(
-                    ledger_transaction_hash.into_hash(),
-                ));
-            collector.into_diff()
-        };
+        let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.transaction_hash,
+            store,
+            vec![TransactionTreeHash::from(ledger_transaction_hash)],
+        );
 
         let local_receipt =
             LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
-        let receipt_tree_diff = {
-            let mut collector = CollectingAccuTreeStore::new(store);
-            epoch_accu_trees
-                .create_builder(epoch_identifiers.receipt_hash, &mut collector)
-                .append(ReceiptTreeHash::from(
-                    consensus_receipt.get_hash().into_hash(),
-                ));
-            collector.into_diff()
-        };
+        let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.receipt_hash,
+            store,
+            vec![ReceiptTreeHash::from(consensus_receipt.get_hash())],
+        );
 
         let ledger_hashes = LedgerHashes {
             state_root: state_hash_tree_diff.new_root,

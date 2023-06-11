@@ -68,12 +68,12 @@ use crate::accumulator_tree::storage::{
 };
 use crate::accumulator_tree::tree_builder::AccuTree;
 use crate::accumulator_tree::IsMerklizableHash;
-use crate::StateVersion;
+use crate::{AccuTreeDiff, CollectingAccuTreeStore, StateVersion};
 
 /// A factory of accu tree utilities operating under the "accu tree per epoch" approach (where the
 /// first leaf of the next epoch's tree is an auto-inserted root of the previous epoch's tree).
 pub struct EpochAwareAccuTreeFactory {
-    epoch_state_version: StateVersion,
+    epoch_start_state_version: StateVersion,
     epoch_version_count: usize,
 }
 
@@ -81,13 +81,16 @@ impl EpochAwareAccuTreeFactory {
     /// Creates a factory scoped at a particular epoch, based on 2 state versions: the state version
     /// of the transaction which started that epoch, and the state version of the last committed
     /// transaction.
-    pub fn new(epoch_state_version: StateVersion, current_state_version: StateVersion) -> Self {
+    pub fn new(
+        epoch_start_state_version: StateVersion,
+        current_state_version: StateVersion,
+    ) -> Self {
         let epoch_version_count =
-            StateVersion::calculate_progress(epoch_state_version, current_state_version)
+            StateVersion::calculate_progress(epoch_start_state_version, current_state_version)
                 .and_then(usize::try_from)
                 .unwrap();
         Self {
-            epoch_state_version,
+            epoch_start_state_version,
             epoch_version_count,
         }
     }
@@ -102,22 +105,38 @@ impl EpochAwareAccuTreeFactory {
     ) -> EpochAccuTreeBuilder<S, N> {
         EpochAccuTreeBuilder::new(
             store,
-            self.epoch_state_version,
+            self.epoch_start_state_version,
             previous_epoch_root,
-            self.current_accu_tree_len(),
+            self.current_accu_tree_leaf_count(),
         )
     }
 
     /// Creates an accu tree merger which can merge the next slice(s) of the scoped epoch's accu
     /// tree at the current version (i.e. declared during this factory's construction).
     pub fn create_merger<N>(&self) -> AccuTreeSliceMerger<N> {
-        AccuTreeSliceMerger::new(self.current_accu_tree_len())
+        AccuTreeSliceMerger::new(self.current_accu_tree_leaf_count())
+    }
+
+    /// Captures an incremental update to the epoch accu tree caused by adding the given leaf
+    /// hashes.
+    /// This is only a convenience method (i.e. a shorthand for using a [`CollectingAccuTreeStore`]
+    /// with a `create_builder() + append()`).
+    pub fn compute_tree_diff<S: ReadableAccuTreeStore<StateVersion, N>, N: IsMerklizableHash>(
+        &self,
+        previous_epoch_root: N,
+        store: &S,
+        new_leaf_hashes: Vec<N>,
+    ) -> AccuTreeDiff<StateVersion, N> {
+        let mut collector = CollectingAccuTreeStore::new(store);
+        self.create_builder(previous_epoch_root, &mut collector)
+            .append_batch(new_leaf_hashes);
+        collector.into_diff()
     }
 
     /// Returns the actual number of leaves in the epoch's accu tree.
     /// This takes into account the extra first leaf (i.e. previous epoch's tree root), and handles
     /// the "fresh epoch" (i.e. empty accu tree) case.
-    fn current_accu_tree_len(&self) -> usize {
+    fn current_accu_tree_leaf_count(&self) -> usize {
         if self.epoch_version_count == 0 {
             0
         } else {
@@ -129,23 +148,23 @@ impl EpochAwareAccuTreeFactory {
 /// An [`AccuTree`] wrapper which adds the proper "accu tree per epoch" handling.
 pub struct EpochAccuTreeBuilder<'s, S, N> {
     previous_epoch_root: Option<N>,
-    epoch_tree_len: usize,
+    epoch_tree_leaf_count: usize,
     epoch_scoped_store: EpochScopedAccuTreeStore<'s, S>,
 }
 
 impl<'s, S: AccuTreeStore<StateVersion, N>, N: IsMerklizableHash> EpochAccuTreeBuilder<'s, S, N> {
     fn new(
         store: &'s mut S,
-        epoch_state_version: StateVersion,
+        epoch_start_state_version: StateVersion,
         previous_epoch_root: N,
-        epoch_tree_len: usize,
+        epoch_tree_leaf_count: usize,
     ) -> Self {
         Self {
             previous_epoch_root: Some(previous_epoch_root),
-            epoch_tree_len,
+            epoch_tree_leaf_count,
             epoch_scoped_store: EpochScopedAccuTreeStore {
                 store,
-                epoch_state_version,
+                epoch_start_state_version,
             },
         }
     }
@@ -159,18 +178,19 @@ impl<'s, S: AccuTreeStore<StateVersion, N>, N: IsMerklizableHash> EpochAccuTreeB
 
     /// A batch variant of the [`append()`] method.
     pub fn append_batch(&mut self, mut new_leaf_hashes: Vec<N>) {
-        if self.epoch_tree_len == 0 {
+        if self.epoch_tree_leaf_count == 0 {
             new_leaf_hashes.insert(0, self.previous_epoch_root.take().unwrap());
         }
         let appended_len = new_leaf_hashes.len();
-        AccuTree::new(&mut self.epoch_scoped_store, self.epoch_tree_len).append(new_leaf_hashes);
-        self.epoch_tree_len += appended_len;
+        AccuTree::new(&mut self.epoch_scoped_store, self.epoch_tree_leaf_count)
+            .append(new_leaf_hashes);
+        self.epoch_tree_leaf_count += appended_len;
     }
 }
 
 struct EpochScopedAccuTreeStore<'s, S> {
     store: &'s mut S,
-    epoch_state_version: StateVersion,
+    epoch_start_state_version: StateVersion,
 }
 
 impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
@@ -178,7 +198,7 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usi
 {
     fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
         let end_state_version = self
-            .epoch_state_version
+            .epoch_start_state_version
             .relative(*epoch_tree_size as u64 - 1);
         self.store.get_tree_slice(&end_state_version)
     }
@@ -189,7 +209,7 @@ impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<u
 {
     fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
         let end_state_version = self
-            .epoch_state_version
+            .epoch_start_state_version
             .relative(epoch_tree_size as u64 - 1);
         self.store.put_tree_slice(end_state_version, slice)
     }

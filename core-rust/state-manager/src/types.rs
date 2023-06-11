@@ -128,10 +128,22 @@ define_wrapped_hash! {
     TransactionTreeHash
 }
 
+impl From<LedgerTransactionHash> for TransactionTreeHash {
+    fn from(hash: LedgerTransactionHash) -> Self {
+        Self::from(hash.into_hash())
+    }
+}
+
 impl IsMerklizableHash for TransactionTreeHash {}
 
 define_wrapped_hash! {
     ReceiptTreeHash
+}
+
+impl From<LedgerReceiptHash> for ReceiptTreeHash {
+    fn from(hash: LedgerReceiptHash) -> Self {
+        Self::from(hash.into_hash())
+    }
 }
 
 impl IsMerklizableHash for ReceiptTreeHash {}
