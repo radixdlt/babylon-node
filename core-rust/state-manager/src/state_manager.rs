@@ -688,14 +688,20 @@ where
             );
         }
 
-        // TODO(optimization-only): we could reach to the `execution_cache` to find the transaction
-        // root chain there (to avoid this "repeated" calculation here).
-        let resultant_transaction_root = Self::calculate_transaction_root(
-            write_store.deref(),
-            series_executor.epoch_identifiers(),
-            series_executor.latest_state_version(),
-            &prepared_transactions,
-        );
+        let resultant_transaction_root = self
+            .find_transaction_root_in_execution_cache(
+                &series_executor.latest_ledger_hashes().transaction_root,
+                &prepared_transactions,
+            )
+            .unwrap_or_else(|| {
+                Self::calculate_transaction_root(
+                    write_store.deref(),
+                    series_executor.epoch_identifiers(),
+                    series_executor.latest_state_version(),
+                    &prepared_transactions,
+                )
+            });
+
         if resultant_transaction_root != commit_ledger_header.hashes.transaction_root {
             warn!(
                 "invalid commit request: resultant transaction root at version {} differs from the proof ({} != {})",
@@ -859,6 +865,25 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
+    }
+
+    fn find_transaction_root_in_execution_cache(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        transactions: &[PreparedLedgerTransaction],
+    ) -> Option<TransactionTreeHash> {
+        let execution_cache = self.execution_cache.lock();
+        let mut transaction_root = parent_transaction_root;
+        for transaction in transactions {
+            transaction_root = match execution_cache.get_cached_transaction_root(
+                transaction_root,
+                &transaction.ledger_transaction_hash(),
+            ) {
+                Some(cached) => cached,
+                None => return None,
+            }
+        }
+        Some(*transaction_root)
     }
 
     fn calculate_transaction_root(

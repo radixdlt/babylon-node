@@ -211,6 +211,20 @@ impl ExecutionCache {
         self.base_transaction_root = *new_base_transaction_root;
     }
 
+    pub fn get_cached_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
+    ) -> Option<&TransactionTreeHash> {
+        self.transaction_placement_to_key
+            .get(&TransactionPlacement::new(
+                parent_transaction_root,
+                ledger_transaction_hash,
+            ))
+            .and_then(|transaction_key| self.key_to_internal_transaction_ids.get(*transaction_key))
+            .and_then(|ids| ids.committed_transaction_root.as_ref())
+    }
+
     fn get_existing_stage_key(&self, transaction_root: &TransactionTreeHash) -> StageKey {
         if *transaction_root == self.base_transaction_root {
             StageKey::Root
