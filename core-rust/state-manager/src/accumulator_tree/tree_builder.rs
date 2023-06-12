@@ -81,7 +81,7 @@ pub trait Merklizable {
 /// loaded/saved one. This approach allows to easily access the last slice (needed for `append()`
 /// operation) by knowing only the current tree size.
 /// For convenience, this structure tracks the current tree size internally between calls.
-pub struct AccuTree<'s, S: AccuTreeStore<usize, N>, N> {
+pub struct AccuTree<'s, S, N> {
     store: &'s mut S,
     current_len: usize,
     phantom_data: PhantomData<N>,
