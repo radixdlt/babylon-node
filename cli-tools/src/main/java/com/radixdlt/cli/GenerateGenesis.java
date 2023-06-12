@@ -187,23 +187,24 @@ public final class GenerateGenesis {
     if (validatorsCount > 0) {
       // For some reason we use the presence of the validatorsCount command to decide whether we are
       // running this for docker, or for an actual environment...
-      System.out.format("""
-        export RADIXDLT_GENESIS_DATA=%s
-        """,
-        compressedGenesisDataBase64
-      );
+      System.out.format(
+          """
+          export RADIXDLT_GENESIS_DATA=%s
+          """, compressedGenesisDataBase64);
     } else {
-      System.out.format("""
+      System.out.format(
+          """
           The base64-encoded genesis for use with network.genesis_data (RADIXDLT_GENESIS_DATA) is:
           %s
           """,
           compressedGenesisDataBase64);
       System.out.println();
       var filePath = new File("genesis_data.bin").getAbsolutePath();
-      System.out.format("""
-              Also saving the genesis data file in binary format for use with network.genesis_data_file (RADIXDLT_GENESIS_DATA_FILE) to:
-              %s
-              """,
+      System.out.format(
+          """
+          Also saving the genesis data file in binary format for use with network.genesis_data_file (RADIXDLT_GENESIS_DATA_FILE) to:
+          %s
+          """,
           filePath);
       try (var outputStream = new java.io.FileOutputStream(filePath)) {
         outputStream.write(compressedGenesisData);
@@ -214,9 +215,14 @@ public final class GenerateGenesis {
   @SuppressWarnings("UnstableApiUsage")
   private static Network parseNetwork(String commandLineValue) {
     return Network.ofName(commandLineValue)
-            .orElseGet(() -> Optional.ofNullable(Ints.tryParse(commandLineValue))
-            .flatMap(Network::ofId)
-            .orElseThrow(() -> new RuntimeException("""
+        .orElseGet(
+            () ->
+                Optional.ofNullable(Ints.tryParse(commandLineValue))
+                    .flatMap(Network::ofId)
+                    .orElseThrow(
+                        () ->
+                            new RuntimeException(
+                                """
                 Could not resolve (lower case) logical network name, or network id.
                 Try specifying eg -Pnetwork=gilganet""")));
   }
