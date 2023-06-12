@@ -451,17 +451,13 @@ impl PendingTransactionResultCache {
     pub fn track_committed_transactions(
         &mut self,
         current_timestamp: SystemTime,
-        previous_state_version: StateVersion,
-        hashes: Vec<IntentHash>,
+        hashes: Vec<(StateVersion, IntentHash)>,
     ) {
-        let mut resultant_state_version = previous_state_version;
-        for intent_hash in hashes {
+        for (state_version, intent_hash) in hashes {
             // Note - we keep the relevant statuses of all known payloads for the intent in the cache
             // so that we can still serve status responses for them - we just ensure we mark them as rejected
-            resultant_state_version = resultant_state_version.next();
-
             self.recently_committed_intents
-                .push(intent_hash, (resultant_state_version, current_timestamp));
+                .push(intent_hash, (state_version, current_timestamp));
 
             if let Some(payload_hashes) = self.intent_lookup.get(&intent_hash) {
                 for cached_payload_hash in payload_hashes {
@@ -474,9 +470,7 @@ impl PendingTransactionResultCache {
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
                         rejection: Some(RejectionReason::IntentHashCommitted),
-                        against_state: AtState::Committed {
-                            state_version: resultant_state_version,
-                        },
+                        against_state: AtState::Committed { state_version },
                         timestamp: current_timestamp,
                     })
                 }
@@ -743,7 +737,7 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
         let intent_hash_2 = intent_hash(2);
 
-        cache.track_committed_transactions(now, StateVersion::pre_genesis(), vec![intent_hash_1]);
+        cache.track_committed_transactions(now, vec![(StateVersion::of(1), intent_hash_1)]);
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         assert!(record.is_some());
 

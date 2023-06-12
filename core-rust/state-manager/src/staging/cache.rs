@@ -427,12 +427,11 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let database_updates = commit.database_updates.clone();
-            for (db_partition_key, partition_updates) in database_updates {
+            for (db_partition_key, partition_updates) in &commit.database_updates {
                 for (db_sort_key, database_update) in partition_updates {
-                    let db_substate_key = (db_partition_key.clone(), db_sort_key);
+                    let db_substate_key = (db_partition_key.clone(), db_sort_key.clone());
                     self.substate_updates
-                        .insert(db_substate_key, database_update);
+                        .insert(db_substate_key, database_update.clone());
                 }
             }
             let hash_structures_diff = &commit.hash_structures_diff;
