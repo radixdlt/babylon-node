@@ -247,9 +247,7 @@ pub mod commit {
     use crate::accumulator_tree::storage::TreeSlice;
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
-    use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    };
+    use radix_engine_store_interface::interface::DatabaseUpdates;
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, PartitionPayload, TreeNode};
     use utils::rust::collections::IndexMap;
 
@@ -264,7 +262,7 @@ pub mod commit {
     }
 
     pub struct SubstateStoreUpdate {
-        pub updates: IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>,
+        pub updates: DatabaseUpdates,
     }
 
     impl SubstateStoreUpdate {
@@ -274,7 +272,17 @@ pub mod commit {
             }
         }
 
+        pub fn from_single(database_updates: DatabaseUpdates) -> Self {
+            Self {
+                updates: database_updates,
+            }
+        }
+
         pub fn apply(&mut self, database_updates: DatabaseUpdates) {
+            if self.updates.is_empty() {
+                self.updates = database_updates;
+                return;
+            }
             for (partition_key, partition_updates) in database_updates {
                 let curr_partition_updates = self
                     .updates
@@ -305,6 +313,17 @@ pub mod commit {
                 new_re_node_layer_nodes: Vec::new(),
                 new_substate_layer_nodes: Vec::new(),
                 stale_node_keys_at_state_version: Vec::new(),
+            }
+        }
+
+        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+            Self {
+                new_re_node_layer_nodes: diff.new_re_node_layer_nodes,
+                new_substate_layer_nodes: diff.new_substate_layer_nodes,
+                stale_node_keys_at_state_version: vec![(
+                    at_state_version,
+                    diff.stale_hash_tree_node_keys,
+                )],
             }
         }
 

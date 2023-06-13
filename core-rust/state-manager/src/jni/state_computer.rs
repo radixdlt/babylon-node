@@ -177,9 +177,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         request_payload,
         |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            state_manager
-                .commit(commit_request, false)
-                .map(|_unused| ())
+            state_manager.commit(commit_request)
         },
     )
 }
