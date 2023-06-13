@@ -590,25 +590,6 @@ where
                 Consider wiping your database dir and trying again.", top_txn_identifiers.0);
         }
 
-        let mut named_system_transactions = Vec::new();
-        named_system_transactions.push((
-            "system bootstrap",
-            create_system_bootstrap_transaction(
-                initial_epoch,
-                initial_config,
-                initial_timestamp_ms,
-            ),
-        ));
-        named_system_transactions.extend(genesis_data_chunks.into_iter().enumerate().map(
-            |(index, chunk)| {
-                (
-                    "data ingestion chunk",
-                    create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, index),
-                )
-            },
-        ));
-        named_system_transactions.push(("genesis wrap-up", create_genesis_wrap_up_transaction()));
-
         let mut genesis_commit_request_factory = GenesisCommitRequestFactory {
             epoch: initial_epoch,
             timestamp: initial_timestamp_ms,
@@ -616,26 +597,42 @@ where
             genesis_opaque_hash,
         };
 
-        let mut final_ledger_proof = None;
-        let genesis_transactions_len = named_system_transactions.len();
-        for (index, (name, transaction)) in named_system_transactions.into_iter().enumerate() {
+        info!("Committing system bootstrap");
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            initial_config,
+            initial_timestamp_ms,
+        );
+        let prepare_result = self.prepare_genesis(transaction);
+        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
+        self.commit_genesis(commit_request);
+
+        let genesis_data_chunks_len = genesis_data_chunks.len();
+        for (index, chunk) in genesis_data_chunks.into_iter().enumerate() {
             info!(
-                "Committing genesis transaction {} of {} (i.e. {})",
+                "Committing data ingestion chunk {} of {}",
                 index + 1,
-                genesis_transactions_len,
-                name
+                genesis_data_chunks_len
             );
+            let transaction =
+                create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, index);
             let prepare_result = self.prepare_genesis(transaction);
             let commit_request = genesis_commit_request_factory.create_next(prepare_result);
-            final_ledger_proof.replace(commit_request.proof.clone());
             self.commit_genesis(commit_request);
         }
+
+        info!("Committing genesis wrap-up");
+        let transaction = create_genesis_wrap_up_transaction();
+        let prepare_result = self.prepare_genesis(transaction);
+        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
+        let final_ledger_proof = commit_request.proof.clone();
+        self.commit_genesis(commit_request);
 
         info!(
             "Genesis transactions successfully executed in {:?}",
             start_instant.elapsed()
         );
-        final_ledger_proof.unwrap()
+        final_ledger_proof
     }
 
     /// Validates and commits the transactions from the given request (or returns an error in case
