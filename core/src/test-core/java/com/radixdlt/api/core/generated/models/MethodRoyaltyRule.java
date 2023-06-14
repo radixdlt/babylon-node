@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.RoyaltyAmount;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,15 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MethodRoyaltyRule.JSON_PROPERTY_METHOD_NAME,
-  MethodRoyaltyRule.JSON_PROPERTY_ROYALTY_RULE
+  MethodRoyaltyRule.JSON_PROPERTY_ROYALTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MethodRoyaltyRule {
   public static final String JSON_PROPERTY_METHOD_NAME = "method_name";
   private String methodName;
 
-  public static final String JSON_PROPERTY_ROYALTY_RULE = "royalty_rule";
-  private Long royaltyRule;
+  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
+  private RoyaltyAmount royaltyAmount;
 
   public MethodRoyaltyRule() { 
   }
@@ -71,31 +72,29 @@ public class MethodRoyaltyRule {
   }
 
 
-  public MethodRoyaltyRule royaltyRule(Long royaltyRule) {
-    this.royaltyRule = royaltyRule;
+  public MethodRoyaltyRule royaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the number of cost units required to access this method.
-   * minimum: 0
-   * maximum: 4294967295
-   * @return royaltyRule
+   * Get royaltyAmount
+   * @return royaltyAmount
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RULE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Long getRoyaltyRule() {
-    return royaltyRule;
+  public RoyaltyAmount getRoyaltyAmount() {
+    return royaltyAmount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RULE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyRule(Long royaltyRule) {
-    this.royaltyRule = royaltyRule;
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
   }
 
 
@@ -112,12 +111,12 @@ public class MethodRoyaltyRule {
     }
     MethodRoyaltyRule methodRoyaltyRule = (MethodRoyaltyRule) o;
     return Objects.equals(this.methodName, methodRoyaltyRule.methodName) &&
-        Objects.equals(this.royaltyRule, methodRoyaltyRule.royaltyRule);
+        Objects.equals(this.royaltyAmount, methodRoyaltyRule.royaltyAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(methodName, royaltyRule);
+    return Objects.hash(methodName, royaltyAmount);
   }
 
   @Override
@@ -125,7 +124,7 @@ public class MethodRoyaltyRule {
     StringBuilder sb = new StringBuilder();
     sb.append("class MethodRoyaltyRule {\n");
     sb.append("    methodName: ").append(toIndentedString(methodName)).append("\n");
-    sb.append("    royaltyRule: ").append(toIndentedString(royaltyRule)).append("\n");
+    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

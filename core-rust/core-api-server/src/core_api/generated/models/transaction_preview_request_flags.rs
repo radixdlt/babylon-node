@@ -13,8 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionPreviewRequestFlags {
-    #[serde(rename = "unlimited_loan")]
-    pub unlimited_loan: bool,
+    #[serde(rename = "use_free_credit")]
+    pub use_free_credit: bool,
     #[serde(rename = "assume_all_signature_proofs")]
     pub assume_all_signature_proofs: bool,
     #[serde(rename = "permit_duplicate_intent_hash")]
@@ -24,9 +24,9 @@ pub struct TransactionPreviewRequestFlags {
 }
 
 impl TransactionPreviewRequestFlags {
-    pub fn new(unlimited_loan: bool, assume_all_signature_proofs: bool, permit_duplicate_intent_hash: bool, permit_invalid_header_epoch: bool) -> TransactionPreviewRequestFlags {
+    pub fn new(use_free_credit: bool, assume_all_signature_proofs: bool, permit_duplicate_intent_hash: bool, permit_invalid_header_epoch: bool) -> TransactionPreviewRequestFlags {
         TransactionPreviewRequestFlags {
-            unlimited_loan,
+            use_free_credit,
             assume_all_signature_proofs,
             permit_duplicate_intent_hash,
             permit_invalid_header_epoch,

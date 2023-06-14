@@ -63,17 +63,20 @@ impl ExecutionConfigurator {
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
-                    ExecutionConfig::genesis().with_trace(trace),
+                    ExecutionConfig::for_genesis_transaction().with_kernel_trace(trace),
                 ),
                 (
                     ConfigType::Regular,
-                    ExecutionConfig::standard().with_trace(trace),
+                    ExecutionConfig::for_notarized_transaction().with_kernel_trace(trace),
                 ),
+                // TODO(during review): are the mappings below correct? should we add `ConfigType::System`?
                 (
                     ConfigType::Pending,
-                    ExecutionConfig::up_to_loan_repayment().with_trace(trace),
+                    ExecutionConfig::for_notarized_transaction()
+                        .up_to_loan_repayment(true)
+                        .with_kernel_trace(trace),
                 ),
-                (ConfigType::Preview, ExecutionConfig::default()),
+                (ConfigType::Preview, ExecutionConfig::for_preview()),
             ]),
         }
     }

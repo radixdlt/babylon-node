@@ -1666,6 +1666,16 @@ components:
     GlobalAddress:
       type: string
       description: The Bech32m-encoded human readable version of any global address
+    GlobalAddressPhantom:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
     Instant:
       type: object
       required:
@@ -1905,46 +1915,31 @@ components:
 ##########################################
 # GENERAL / SHARED MODELS - Access Rules #
 ##########################################
-    NodeAuthorityRules:
+    RoleRule:
       type: object
       required:
-        - rules
-        - mutability
+        - role_key
+        - access_rule
       properties:
-        rules:
-          type: array
-          items:
-            $ref: '#/components/schemas/AuthorityRule'
-        mutability:
-          type: array
-          items:
-            $ref: '#/components/schemas/AuthorityRule'
-    AuthorityRule:
-      type: object
-      required:
-        - key
-        - rule
-      properties:
-        key:
-          $ref: '#/components/schemas/AuthorityKey'
-        rule:
+        role_key:
+          type: string
+        access_rule:
           $ref: '#/components/schemas/AccessRule'
-    AuthorityKey:
+    MutabilityRule:
       type: object
       required:
-        - module
-        - name
+        - role_key
+        - updater_role_keys
+        - updaters_mutable
       properties:
-        module:
+        role_key:
           type: string
-          enum:
-            - Object
-            - Main
-            - Metadata
-            - Royalty
-            - AccessRules
-        name:
-          type: string
+        updater_role_keys:
+          type: array
+          items:
+            type: string
+        updaters_mutable:
+          type: boolean
     AccessRuleType:
       type: string
       enum:
@@ -1988,7 +1983,6 @@ components:
         - ProofRule
         - AnyOf
         - AllOf
-        - Authority
     AccessRuleNode:
       type: object
       required:
@@ -2003,7 +1997,6 @@ components:
           ProofRule: '#/components/schemas/ProofAccessRuleNode'
           AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
           AllOf: '#/components/schemas/AllOfAccessRuleNode'
-          Authority: '#/components/schemas/AuthorityRuleNode'
     ProofAccessRuleNode:
       allOf:
         - $ref: '#/components/schemas/AccessRuleNode'
@@ -2035,15 +2028,6 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AccessRuleNode'
-    AuthorityRuleNode:
-      allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
-        - type: object
-          required:
-            - key
-          properties:
-            key:
-              $ref: '#/components/schemas/AuthorityKey'
     ProofRuleType:
       type: string
       enum:
@@ -2301,31 +2285,35 @@ components:
       type: object
       required:
         - method_rules
-        - default_rule
       properties:
         method_rules:
           description: The royalty rules by method
           type: array
           items:
             $ref: '#/components/schemas/MethodRoyaltyRule'
-        default_rule:
-          $ref: '#/components/schemas/RoyaltyRule'
     MethodRoyaltyRule:
       type: object
       required:
         - method_name
-        - royalty_rule
       properties:
         method_name:
           type: string
-        royalty_rule:
-          $ref: '#/components/schemas/RoyaltyRule'
-    RoyaltyRule:
-      type: integer
-      format: int64
-      minimum: 0
-      maximum: 4294967295
-      description: An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
+        royalty_amount:
+          description: The due royalty; missing field denotes a free method.
+          $ref: '#/components/schemas/RoyaltyAmount'
+    RoyaltyAmount:
+      type: object
+      required:
+        - amount
+        - unit
+      properties:
+        amount:
+          $ref: '#/components/schemas/Decimal'
+        unit:
+          type: string
+          enum:
+            - XRD
+            - USD
 ########################################
 # GENERAL / SHARED MODELS - validators #
 ########################################
@@ -2371,10 +2359,13 @@ components:
     KeyValueStoreSchema:
       type: object
       required:
+        - schema
         - key_type
         - value_type
         - can_own
       properties:
+        schema:
+          $ref: '#/components/schemas/ScryptoSchema'
         key_type:
           $ref: '#/components/schemas/LocalTypeIndex'
           description: |
@@ -2389,13 +2380,23 @@ components:
     PackageSchema:
       type: object
       required:
-        - blueprint_schemas
+        - blueprint_definitions
       properties:
-        blueprint_schemas:
+        blueprint_definitions:
           type: object
-          description: A map from the blueprint name to BlueprintSchema
+          description: A map from the blueprint name to BlueprintDefinition
           additionalProperties:
-            $ref: '#/components/schemas/BlueprintSchema'
+            $ref: '#/components/schemas/BlueprintDefinition'
+    BlueprintDefinition:
+      type: object
+      required:
+        - schema
+        - template
+      properties:
+        schema:
+          $ref: '#/components/schemas/BlueprintSchema'
+        template:
+          $ref: '#/components/schemas/BlueprintTemplate'
     BlueprintSchema:
       type: object
       required:
@@ -2404,6 +2405,8 @@ components:
         - virtual_lazy_load_function_schemas
         - event_schemas
         - collection_partitions
+        - dependencies
+        - features
       properties:
         outer_blueprint:
           type: string
@@ -2432,6 +2435,81 @@ components:
           description: The collection partitions for this blueprint.
           items:
             $ref: '#/components/schemas/BlueprintSchemaCollectionPartition'
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalAddress'
+        features:
+          type: array
+          items:
+            type: string
+    BlueprintTemplate:
+      type: object
+      required:
+        - method_auth_template
+        - outer_method_auth_template
+      properties:
+        method_auth_template:
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodAuthTemplateEntry'
+        outer_method_auth_template:
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodAuthTemplateEntry'
+    MethodAuthTemplateEntry:
+      type: object
+      required:
+        - key
+        - permission
+      properties:
+        key:
+          $ref: '#/components/schemas/MethodKey'
+        permission:
+          $ref: '#/components/schemas/MethodPermission'
+    MethodKey:
+      type: object
+      required:
+        - object_module_id
+        - ident
+      properties:
+        object_module_id:
+          $ref: "#/components/schemas/ObjectModuleId"
+        ident:
+          type: string
+    MethodPermissionType:
+      type: string
+      enum:
+        - Public
+        - Protected
+    MethodPermission:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/MethodPermissionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match MethodPermissionType options above
+          Public: '#/components/schemas/PublicMethodPermission'
+          Protected: '#/components/schemas/ProtectedMethodPermission'
+    PublicMethodPermission:
+      allOf:
+        - $ref: '#/components/schemas/MethodPermission'
+        - type: object
+    ProtectedMethodPermission:
+      allOf:
+        - $ref: '#/components/schemas/MethodPermission'
+        - type: object
+          required:
+            - allowed_role_keys
+          properties:
+            allowed_role_keys:
+              type: array
+              items:
+                type: string
     BlueprintSchemaFieldPartition:
       type: object
       description: The fields partition of the blueprint.
@@ -2449,7 +2527,17 @@ components:
           type: array
           description: The field substates for this blueprint.
           items:
-            $ref: '#/components/schemas/LocalTypeIndex'
+            $ref: '#/components/schemas/BlueprintFieldSchema'
+    BlueprintFieldSchema:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LocalTypeIndex'
+        feature:
+          type: string
+          description: A feature required for the field.
     BlueprintSchemaCollectionPartition:
       type: object
       description: The fields partition of the blueprint.
@@ -2587,7 +2675,7 @@ components:
       required:
         - input
         - output
-        - export_name
+        - export
       properties:
         receiver_info:
           $ref: '#/components/schemas/ReceiverInfo'
@@ -2599,7 +2687,8 @@ components:
           $ref: '#/components/schemas/LocalTypeIndex'
           description: |
             The type index of the function output in the context of the blueprint's SBOR schema.
-        export_name:
+        export:
+          description: Name used for export
           type: string
     ReceiverInfo:
       type: object
@@ -2654,6 +2743,9 @@ components:
         - InternalGenericComponent
         - InternalAccount
         - InternalKeyValueStore
+        - GlobalOneResourcePool
+        - GlobalTwoResourcePool
+        - GlobalMultiResourcePool
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -2707,6 +2799,9 @@ components:
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
+          OneResourcePoolSubstate: '#/components/schemas/OneResourcePoolSubstate'
+          TwoResourcePoolSubstate: '#/components/schemas/TwoResourcePoolSubstate'
+          MultiResourcePoolSubstate: '#/components/schemas/MultiResourcePoolSubstate'
     SubstateType:
       type: string
       enum:
@@ -2743,6 +2838,9 @@ components:
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
+        - OneResourcePool
+        - TwoResourcePool
+        - MultiResourcePool
 ### SUBSTATES
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
@@ -2771,6 +2869,8 @@ components:
           # NOTE: These need to match TypeInfoType options above
           Object: '#/components/schemas/ObjectTypeInfoDetails'
           KeyValueStore: '#/components/schemas/KeyValueStoreTypeInfoDetails'
+          GlobalAddressReservation: '#/components/schemas/GlobalAddressReservationTypeInfoDetails'
+          GlobalAddressPhantom: '#/components/schemas/GlobalAddressPhantomTypeInfoDetails'
     ObjectTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -2779,6 +2879,7 @@ components:
             - package_address
             - blueprint_name
             - global
+            - features
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
@@ -2790,6 +2891,10 @@ components:
               $ref: '#/components/schemas/GlobalAddress'
             instance_schema:
               $ref: '#/components/schemas/InstanceSchema'
+            features:
+              type: array
+              items:
+                type: string
     KeyValueStoreTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -2800,15 +2905,31 @@ components:
             key_value_store_info:
               description: The SBOR schema of the KeyValueStore
               $ref: '#/components/schemas/KeyValueStoreInfo'
+    GlobalAddressReservationTypeInfoDetails:
+      allOf:
+        - $ref: '#/components/schemas/TypeInfoDetails'
+        - type: object
+          description: The owned allocated global address
+          required:
+            - global_address
+          properties:
+            global_address:
+              $ref: '#/components/schemas/GlobalAddress'
+    GlobalAddressPhantomTypeInfoDetails:
+      allOf:
+        - $ref: '#/components/schemas/TypeInfoDetails'
+        - type: object
+          description: A phantom global object which makes the allocated global address usable
+          required:
+            - global_address_phantom
+          properties:
+            global_address_phantom:
+              $ref: '#/components/schemas/GlobalAddressPhantom'
     KeyValueStoreInfo:
       type: object
       required:
-        - schema
         - kv_store_schema
       properties:
-        schema:
-          $ref: '#/components/schemas/ScryptoSchema'
-          description: The SBOR schema of the key value store.
         kv_store_schema:
           $ref: '#/components/schemas/KeyValueStoreSchema'
     AccessRulesModuleFieldAccessRulesSubstate:
@@ -2816,25 +2937,24 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - access_rules
-            - inner_blueprint_access_rules
+            - roles
+            - role_mutability
           properties:
-            access_rules:
-              $ref: '#/components/schemas/NodeAuthorityRules'
-            inner_blueprint_access_rules:
+            roles:
               type: array
               items:
-                $ref: '#/components/schemas/BlueprintAccessRules'
+                $ref: '#/components/schemas/RoleRule'
+            role_mutability:
+              type: array
+              items:
+                $ref: '#/components/schemas/MutabilityRule'
     BlueprintAccessRules:
       type: object
       required:
         - blueprint_name
-        - access_rules
       properties:
         blueprint_name:
           type: string
-        access_rules:
-          $ref: '#/components/schemas/NodeAuthorityRules'
     RoyaltyModuleFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2871,19 +2991,9 @@ components:
         - type: object
           required:
             - package_schema
-            - dependent_resources
-            - dependent_components
           properties:
             package_schema:
               $ref: '#/components/schemas/PackageSchema'
-            dependent_resources:
-              type: array
-              items:
-                $ref: '#/components/schemas/ResourceAddress'
-            dependent_components:
-              type: array
-              items:
-                $ref: '#/components/schemas/ComponentAddress'
     PackageFieldCodeTypeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2928,13 +3038,10 @@ components:
         - type: object
           required:
             - function_auth
-            - default_auth
           properties:
             function_auth:
               items:
                 $ref: '#/components/schemas/PackageFunctionAccessRule'
-            default_auth:
-              $ref: '#/components/schemas/AccessRule'
     PackageFunctionAccessRule:
       type: object
       required:
@@ -3374,6 +3481,59 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    OneResourcePoolSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - vault
+            - pool_unit_resource_address
+          properties:
+            vault:
+              $ref: '#/components/schemas/EntityReference'
+            pool_unit_resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    TwoResourcePoolSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - vaults
+            - pool_unit_resource_address
+          properties:
+            vaults:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                $ref: '#/components/schemas/PoolVault'
+            pool_unit_resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    MultiResourcePoolSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - vaults
+            - pool_unit_resource_address
+          properties:
+            vaults:
+              type: array
+              minItems: 3
+              items:
+                $ref: '#/components/schemas/PoolVault'
+            pool_unit_resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    PoolVault:
+      type: object
+      required:
+        - vault
+        - resource_address
+      properties:
+        vault:
+          $ref: '#/components/schemas/EntityReference'
+        resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
 ##########################################
 # REQUEST: /lts/transaction/construction #
 ##########################################
@@ -4745,12 +4905,12 @@ components:
         flags:
           type: object
           required:
-            - unlimited_loan
+            - use_free_credit
             - assume_all_signature_proofs
             - permit_duplicate_intent_hash
             - permit_invalid_header_epoch
           properties:
-            unlimited_loan:
+            use_free_credit:
               type: boolean
             assume_all_signature_proofs:
               type: boolean
@@ -5242,7 +5402,6 @@ components:
         - type: object
           required:
             - divisibility
-            - total_supply
           properties:
             divisibility:
               $ref: "#/components/schemas/Substate"
@@ -5254,7 +5413,6 @@ components:
         - type: object
           required:
             - id_type
-            - total_supply
             - mutable_fields
           properties:
             id_type:

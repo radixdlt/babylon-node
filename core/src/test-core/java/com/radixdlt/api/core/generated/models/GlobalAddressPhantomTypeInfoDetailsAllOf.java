@@ -22,124 +22,55 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.GlobalAddressPhantom;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * AuthorityKey
+ * A phantom global object which makes the allocated global address usable
  */
+@ApiModel(description = "A phantom global object which makes the allocated global address usable")
 @JsonPropertyOrder({
-  AuthorityKey.JSON_PROPERTY_MODULE,
-  AuthorityKey.JSON_PROPERTY_NAME
+  GlobalAddressPhantomTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL_ADDRESS_PHANTOM
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class AuthorityKey {
-  /**
-   * Gets or Sets module
-   */
-  public enum ModuleEnum {
-    OBJECT("Object"),
-    
-    MAIN("Main"),
-    
-    METADATA("Metadata"),
-    
-    ROYALTY("Royalty"),
-    
-    ACCESSRULES("AccessRules");
+public class GlobalAddressPhantomTypeInfoDetailsAllOf {
+  public static final String JSON_PROPERTY_GLOBAL_ADDRESS_PHANTOM = "global_address_phantom";
+  private GlobalAddressPhantom globalAddressPhantom;
 
-    private String value;
-
-    ModuleEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static ModuleEnum fromValue(String value) {
-      for (ModuleEnum b : ModuleEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+  public GlobalAddressPhantomTypeInfoDetailsAllOf() { 
   }
 
-  public static final String JSON_PROPERTY_MODULE = "module";
-  private ModuleEnum module;
-
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
-
-  public AuthorityKey() { 
-  }
-
-  public AuthorityKey module(ModuleEnum module) {
-    this.module = module;
+  public GlobalAddressPhantomTypeInfoDetailsAllOf globalAddressPhantom(GlobalAddressPhantom globalAddressPhantom) {
+    this.globalAddressPhantom = globalAddressPhantom;
     return this;
   }
 
    /**
-   * Get module
-   * @return module
+   * Get globalAddressPhantom
+   * @return globalAddressPhantom
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MODULE)
+  @JsonProperty(JSON_PROPERTY_GLOBAL_ADDRESS_PHANTOM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ModuleEnum getModule() {
-    return module;
+  public GlobalAddressPhantom getGlobalAddressPhantom() {
+    return globalAddressPhantom;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODULE)
+  @JsonProperty(JSON_PROPERTY_GLOBAL_ADDRESS_PHANTOM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModule(ModuleEnum module) {
-    this.module = module;
-  }
-
-
-  public AuthorityKey name(String name) {
-    this.name = name;
-    return this;
-  }
-
-   /**
-   * Get name
-   * @return name
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getName() {
-    return name;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setGlobalAddressPhantom(GlobalAddressPhantom globalAddressPhantom) {
+    this.globalAddressPhantom = globalAddressPhantom;
   }
 
 
   /**
-   * Return true if this AuthorityKey object is equal to o.
+   * Return true if this GlobalAddressPhantomTypeInfoDetails_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -149,22 +80,20 @@ public class AuthorityKey {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AuthorityKey authorityKey = (AuthorityKey) o;
-    return Objects.equals(this.module, authorityKey.module) &&
-        Objects.equals(this.name, authorityKey.name);
+    GlobalAddressPhantomTypeInfoDetailsAllOf globalAddressPhantomTypeInfoDetailsAllOf = (GlobalAddressPhantomTypeInfoDetailsAllOf) o;
+    return Objects.equals(this.globalAddressPhantom, globalAddressPhantomTypeInfoDetailsAllOf.globalAddressPhantom);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(module, name);
+    return Objects.hash(globalAddressPhantom);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AuthorityKey {\n");
-    sb.append("    module: ").append(toIndentedString(module)).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("class GlobalAddressPhantomTypeInfoDetailsAllOf {\n");
+    sb.append("    globalAddressPhantom: ").append(toIndentedString(globalAddressPhantom)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreSchema {
+    #[serde(rename = "schema")]
+    pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
     #[serde(rename = "key_type")]
     pub key_type: Box<crate::core_api::generated::models::LocalTypeIndex>,
     #[serde(rename = "value_type")]
@@ -23,8 +25,9 @@ pub struct KeyValueStoreSchema {
 }
 
 impl KeyValueStoreSchema {
-    pub fn new(key_type: crate::core_api::generated::models::LocalTypeIndex, value_type: crate::core_api::generated::models::LocalTypeIndex, can_own: bool) -> KeyValueStoreSchema {
+    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, key_type: crate::core_api::generated::models::LocalTypeIndex, value_type: crate::core_api::generated::models::LocalTypeIndex, can_own: bool) -> KeyValueStoreSchema {
         KeyValueStoreSchema {
+            schema: Box::new(schema),
             key_type: Box::new(key_type),
             value_type: Box::new(value_type),
             can_own,

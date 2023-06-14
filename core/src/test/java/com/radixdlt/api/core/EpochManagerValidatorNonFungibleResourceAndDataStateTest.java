@@ -118,11 +118,11 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
       //noinspection OptionalGetWithoutIsPresent
       final var ownerAccessRule =
           (ProtectedAccessRule)
-              accessRulesSubstate.getAccessRules().getRules().stream()
-                  .filter(r -> r.getKey().getName().equals("Owner"))
+              accessRulesSubstate.getRoles().stream()
+                  .filter(r -> r.getRoleKey().equals("_owner_"))
                   .findFirst()
                   .get()
-                  .getRule();
+                  .getAccessRule();
       final var proofRuleNode = (ProofAccessRuleNode) ownerAccessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
       final var requirement = (NonFungibleRequirement) requireProofRule.getRequirement();

@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AuthorityRuleNodeAllOf {
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::AuthorityKey>,
+pub struct MultiResourcePoolSubstateAllOf {
+    #[serde(rename = "vaults")]
+    pub vaults: Vec<crate::core_api::generated::models::PoolVault>,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "pool_unit_resource_address")]
+    pub pool_unit_resource_address: String,
 }
 
-impl AuthorityRuleNodeAllOf {
-    pub fn new(key: crate::core_api::generated::models::AuthorityKey) -> AuthorityRuleNodeAllOf {
-        AuthorityRuleNodeAllOf {
-            key: Box::new(key),
+impl MultiResourcePoolSubstateAllOf {
+    pub fn new(vaults: Vec<crate::core_api::generated::models::PoolVault>, pool_unit_resource_address: String) -> MultiResourcePoolSubstateAllOf {
+        MultiResourcePoolSubstateAllOf {
+            vaults,
+            pool_unit_resource_address,
         }
     }
 }

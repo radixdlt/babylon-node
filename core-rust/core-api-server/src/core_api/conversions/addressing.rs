@@ -1,10 +1,10 @@
 use crate::core_api::models;
 use crate::core_api::*;
 use models::SubstateType;
-use radix_engine::track::db_key_mapper::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::db_key_mapper::*;
 
 pub fn to_api_global_address(
     context: &MappingContext,
@@ -85,6 +85,9 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::InternalAccount => models::EntityType::InternalAccount,
         EntityType::InternalKeyValueStore => models::EntityType::InternalKeyValueStore,
         EntityType::InternalGenericComponent => models::EntityType::InternalGenericComponent,
+        EntityType::GlobalOneResourcePool => models::EntityType::GlobalOneResourcePool,
+        EntityType::GlobalTwoResourcePool => models::EntityType::GlobalTwoResourcePool,
+        EntityType::GlobalMultiResourcePool => models::EntityType::GlobalMultiResourcePool,
     }
 }
 
@@ -297,6 +300,16 @@ pub fn to_api_substate_id(
             SubstateType::GenericKeyValueStoreEntry,
             models::PartitionKind::KeyValue,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::OneResourcePoolField(_)) => {
+            (SubstateType::OneResourcePool, models::PartitionKind::Field)
+        }
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TwoResourcePoolField(_)) => {
+            (SubstateType::TwoResourcePool, models::PartitionKind::Field)
+        }
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::MultiResourcePoolField(_)) => (
+            SubstateType::MultiResourcePool,
+            models::PartitionKind::Field,
+        ),
     };
 
     let entity_module = match typed_substate_key {
@@ -382,4 +395,18 @@ pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::Obj
         ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
         ObjectModuleId::AccessRules => models::ObjectModuleId::AccessRules,
     }
+}
+
+// TODO(during review): I noticed we tend to return `ObjectModuleId` enum but the Engine's
+// `SchemaMethodKey` only provides `u8`, and I found no existing (public) conversion util for this,
+// which hints me that I am doing something wrong here:
+pub fn resolve_object_module_id(value: u8) -> Result<ObjectModuleId, MappingError> {
+    for object_module_id in ObjectModuleId::iter() {
+        if object_module_id.to_u8() == value {
+            return Ok(object_module_id);
+        }
+    }
+    Err(MappingError::IntegerError {
+        message: format!("invalid object module id: {}", value),
+    })
 }

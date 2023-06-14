@@ -22,85 +22,118 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AccessRule;
-import com.radixdlt.api.core.generated.models.AuthorityKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * AuthorityRule
+ * RoyaltyAmount
  */
 @JsonPropertyOrder({
-  AuthorityRule.JSON_PROPERTY_KEY,
-  AuthorityRule.JSON_PROPERTY_RULE
+  RoyaltyAmount.JSON_PROPERTY_AMOUNT,
+  RoyaltyAmount.JSON_PROPERTY_UNIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class AuthorityRule {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private AuthorityKey key;
+public class RoyaltyAmount {
+  public static final String JSON_PROPERTY_AMOUNT = "amount";
+  private String amount;
 
-  public static final String JSON_PROPERTY_RULE = "rule";
-  private AccessRule rule;
+  /**
+   * Gets or Sets unit
+   */
+  public enum UnitEnum {
+    XRD("XRD"),
+    
+    USD("USD");
 
-  public AuthorityRule() { 
+    private String value;
+
+    UnitEnum(String value) {
+      this.value = value;
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static UnitEnum fromValue(String value) {
+      for (UnitEnum b : UnitEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
   }
 
-  public AuthorityRule key(AuthorityKey key) {
-    this.key = key;
+  public static final String JSON_PROPERTY_UNIT = "unit";
+  private UnitEnum unit;
+
+  public RoyaltyAmount() { 
+  }
+
+  public RoyaltyAmount amount(String amount) {
+    this.amount = amount;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return amount
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AuthorityKey getKey() {
-    return key;
+  public String getAmount() {
+    return amount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(AuthorityKey key) {
-    this.key = key;
+  public void setAmount(String amount) {
+    this.amount = amount;
   }
 
 
-  public AuthorityRule rule(AccessRule rule) {
-    this.rule = rule;
+  public RoyaltyAmount unit(UnitEnum unit) {
+    this.unit = unit;
     return this;
   }
 
    /**
-   * Get rule
-   * @return rule
+   * Get unit
+   * @return unit
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RULE)
+  @JsonProperty(JSON_PROPERTY_UNIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRule getRule() {
-    return rule;
+  public UnitEnum getUnit() {
+    return unit;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RULE)
+  @JsonProperty(JSON_PROPERTY_UNIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRule(AccessRule rule) {
-    this.rule = rule;
+  public void setUnit(UnitEnum unit) {
+    this.unit = unit;
   }
 
 
   /**
-   * Return true if this AuthorityRule object is equal to o.
+   * Return true if this RoyaltyAmount object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +143,22 @@ public class AuthorityRule {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AuthorityRule authorityRule = (AuthorityRule) o;
-    return Objects.equals(this.key, authorityRule.key) &&
-        Objects.equals(this.rule, authorityRule.rule);
+    RoyaltyAmount royaltyAmount = (RoyaltyAmount) o;
+    return Objects.equals(this.amount, royaltyAmount.amount) &&
+        Objects.equals(this.unit, royaltyAmount.unit);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, rule);
+    return Objects.hash(amount, unit);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AuthorityRule {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    rule: ").append(toIndentedString(rule)).append("\n");
+    sb.append("class RoyaltyAmount {\n");
+    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
+    sb.append("    unit: ").append(toIndentedString(unit)).append("\n");
     sb.append("}");
     return sb.toString();
   }

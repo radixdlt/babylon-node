@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.core.regression;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
 import com.radixdlt.crypto.ECKeyPair;
@@ -72,12 +74,10 @@ import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ResourceAddress;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   @Test
-  @Ignore // TODO - Babylon RCnet-V2 - unignore once fix is merged
   public void test_can_mint_and_burn_in_same_transaction_against_previously_used_resource()
       throws Exception {
     try (var test = buildRunningServerTest()) {
@@ -104,8 +104,13 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
     }
   }
 
+  // TODO(during review): let's take special care here - I changed the asserted behavior to exactly
+  // the opposite, since apparently that's the Engine's current decision (see Engine's test cases
+  // `mint_and_burn_of_non_fungible_2x_should_fail()` and
+  // `mint_of_previously_minted_burned_non_fungible_should_fail()`.
+
   @Test
-  public void can_mint_non_fungible_id_which_previously_existed_transiently_inside_a_transaction()
+  public void minting_non_fungible_id_which_previously_existed_transiently_in_a_transaction_fails()
       throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
@@ -121,19 +126,20 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               resourceAddress, accountAddress, List.of(1), List.of(1)),
           List.of(accountKeyPair));
 
-      // We can mint the id "1" again
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(1), List.of()),
-          List.of(accountKeyPair));
+      // We can NOT mint the id "1" again
+      var result =
+          submitAndWaitForCommittedFailure(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(1), List.of()),
+              List.of(accountKeyPair));
+      assertThat(result.errorMessage()).contains("SystemError(MutatingImmutableSubstate)");
     }
   }
 
   @Test
-  public void
-      can_mint_non_fungible_id_which_previously_existed_outside_of_a_transaction_and_then_got_burned()
-          throws Exception {
+  public void minting_non_fungible_id_which_existed_persistently_and_then_got_burned_fails()
+      throws Exception {
     try (var test = buildRunningServerTest()) {
       test.suppressUnusedWarning();
 
@@ -155,12 +161,14 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               resourceAddress, accountAddress, List.of(), List.of(1)),
           List.of(accountKeyPair));
 
-      // We can mint the id "1" again
-      submitAndWaitForSuccess(
-          test,
-          Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
-              resourceAddress, accountAddress, List.of(1), List.of()),
-          List.of(accountKeyPair));
+      // We can NOT mint the id "1" again
+      var result =
+          submitAndWaitForCommittedFailure(
+              test,
+              Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
+                  resourceAddress, accountAddress, List.of(1), List.of()),
+              List.of(accountKeyPair));
+      assertThat(result.errorMessage()).contains("SystemError(MutatingImmutableSubstate)");
     }
   }
 

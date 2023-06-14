@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AuthorityRuleNode {
+pub struct BlueprintFieldSchema {
     #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::AccessRuleNodeType,
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::AuthorityKey>,
+    pub _type: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    /// A feature required for the field.
+    #[serde(rename = "feature", skip_serializing_if = "Option::is_none")]
+    pub feature: Option<String>,
 }
 
-impl AuthorityRuleNode {
-    pub fn new(_type: crate::core_api::generated::models::AccessRuleNodeType, key: crate::core_api::generated::models::AuthorityKey) -> AuthorityRuleNode {
-        AuthorityRuleNode {
-            _type,
-            key: Box::new(key),
+impl BlueprintFieldSchema {
+    pub fn new(_type: crate::core_api::generated::models::LocalTypeIndex) -> BlueprintFieldSchema {
+        BlueprintFieldSchema {
+            _type: Box::new(_type),
+            feature: None,
         }
     }
 }

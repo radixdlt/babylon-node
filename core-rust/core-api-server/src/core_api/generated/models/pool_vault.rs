@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AuthorityRule {
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::AuthorityKey>,
-    #[serde(rename = "rule")]
-    pub rule: Option<crate::core_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct PoolVault {
+    #[serde(rename = "vault")]
+    pub vault: Box<crate::core_api::generated::models::EntityReference>,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
 }
 
-impl AuthorityRule {
-    pub fn new(key: crate::core_api::generated::models::AuthorityKey, rule: crate::core_api::generated::models::AccessRule) -> AuthorityRule {
-        AuthorityRule {
-            key: Box::new(key),
-            rule: Option::Some(rule),
+impl PoolVault {
+    pub fn new(vault: crate::core_api::generated::models::EntityReference, resource_address: String) -> PoolVault {
+        PoolVault {
+            vault: Box::new(vault),
+            resource_address,
         }
     }
 }

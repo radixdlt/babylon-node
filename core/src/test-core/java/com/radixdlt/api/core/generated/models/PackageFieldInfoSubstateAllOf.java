@@ -25,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.PackageSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,20 +32,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageFieldInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageFieldInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_SCHEMA,
-  PackageFieldInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_RESOURCES,
-  PackageFieldInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_COMPONENTS
+  PackageFieldInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageFieldInfoSubstateAllOf {
   public static final String JSON_PROPERTY_PACKAGE_SCHEMA = "package_schema";
   private PackageSchema packageSchema;
-
-  public static final String JSON_PROPERTY_DEPENDENT_RESOURCES = "dependent_resources";
-  private List<String> dependentResources = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_DEPENDENT_COMPONENTS = "dependent_components";
-  private List<String> dependentComponents = new ArrayList<>();
 
   public PackageFieldInfoSubstateAllOf() { 
   }
@@ -78,68 +68,6 @@ public class PackageFieldInfoSubstateAllOf {
   }
 
 
-  public PackageFieldInfoSubstateAllOf dependentResources(List<String> dependentResources) {
-    this.dependentResources = dependentResources;
-    return this;
-  }
-
-  public PackageFieldInfoSubstateAllOf addDependentResourcesItem(String dependentResourcesItem) {
-    this.dependentResources.add(dependentResourcesItem);
-    return this;
-  }
-
-   /**
-   * Get dependentResources
-   * @return dependentResources
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<String> getDependentResources() {
-    return dependentResources;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDependentResources(List<String> dependentResources) {
-    this.dependentResources = dependentResources;
-  }
-
-
-  public PackageFieldInfoSubstateAllOf dependentComponents(List<String> dependentComponents) {
-    this.dependentComponents = dependentComponents;
-    return this;
-  }
-
-  public PackageFieldInfoSubstateAllOf addDependentComponentsItem(String dependentComponentsItem) {
-    this.dependentComponents.add(dependentComponentsItem);
-    return this;
-  }
-
-   /**
-   * Get dependentComponents
-   * @return dependentComponents
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<String> getDependentComponents() {
-    return dependentComponents;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDependentComponents(List<String> dependentComponents) {
-    this.dependentComponents = dependentComponents;
-  }
-
-
   /**
    * Return true if this PackageFieldInfoSubstate_allOf object is equal to o.
    */
@@ -152,14 +80,12 @@ public class PackageFieldInfoSubstateAllOf {
       return false;
     }
     PackageFieldInfoSubstateAllOf packageFieldInfoSubstateAllOf = (PackageFieldInfoSubstateAllOf) o;
-    return Objects.equals(this.packageSchema, packageFieldInfoSubstateAllOf.packageSchema) &&
-        Objects.equals(this.dependentResources, packageFieldInfoSubstateAllOf.dependentResources) &&
-        Objects.equals(this.dependentComponents, packageFieldInfoSubstateAllOf.dependentComponents);
+    return Objects.equals(this.packageSchema, packageFieldInfoSubstateAllOf.packageSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageSchema, dependentResources, dependentComponents);
+    return Objects.hash(packageSchema);
   }
 
   @Override
@@ -167,8 +93,6 @@ public class PackageFieldInfoSubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageFieldInfoSubstateAllOf {\n");
     sb.append("    packageSchema: ").append(toIndentedString(packageSchema)).append("\n");
-    sb.append("    dependentResources: ").append(toIndentedString(dependentResources)).append("\n");
-    sb.append("    dependentComponents: ").append(toIndentedString(dependentComponents)).append("\n");
     sb.append("}");
     return sb.toString();
   }

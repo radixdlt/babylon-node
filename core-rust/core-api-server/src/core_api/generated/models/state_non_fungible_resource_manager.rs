@@ -17,18 +17,18 @@ pub struct StateNonFungibleResourceManager {
     pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "id_type")]
     pub id_type: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "total_supply")]
-    pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "total_supply", skip_serializing_if = "Option::is_none")]
+    pub total_supply: Option<Box<crate::core_api::generated::models::Substate>>,
     #[serde(rename = "mutable_fields")]
     pub mutable_fields: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StateNonFungibleResourceManager {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, id_type: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate, mutable_fields: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManager {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, id_type: crate::core_api::generated::models::Substate, mutable_fields: crate::core_api::generated::models::Substate) -> StateNonFungibleResourceManager {
         StateNonFungibleResourceManager {
             resource_type,
             id_type: Option::Some(id_type),
-            total_supply: Option::Some(total_supply),
+            total_supply: None,
             mutable_fields: Option::Some(mutable_fields),
         }
     }

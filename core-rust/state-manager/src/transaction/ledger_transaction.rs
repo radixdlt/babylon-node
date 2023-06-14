@@ -366,13 +366,11 @@ impl HasLedgerTransactionHash for PreparedLedgerTransaction {
 mod tests {
     use super::*;
 
-    use transaction::validation::*;
-
     #[test]
     pub fn v1_ledger_transaction_structure() {
-        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
-        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let notarized = TransactionBuilder::new()
             .header(TransactionHeaderV1 {

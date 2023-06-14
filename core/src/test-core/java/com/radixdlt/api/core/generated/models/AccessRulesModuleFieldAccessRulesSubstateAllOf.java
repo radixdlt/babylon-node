@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintAccessRules;
-import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
+import com.radixdlt.api.core.generated.models.MutabilityRule;
+import com.radixdlt.api.core.generated.models.RoleRule;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -35,74 +35,79 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccessRulesModuleFieldAccessRulesSubstateAllOf
  */
 @JsonPropertyOrder({
-  AccessRulesModuleFieldAccessRulesSubstateAllOf.JSON_PROPERTY_ACCESS_RULES,
-  AccessRulesModuleFieldAccessRulesSubstateAllOf.JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES
+  AccessRulesModuleFieldAccessRulesSubstateAllOf.JSON_PROPERTY_ROLES,
+  AccessRulesModuleFieldAccessRulesSubstateAllOf.JSON_PROPERTY_ROLE_MUTABILITY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessRulesModuleFieldAccessRulesSubstateAllOf {
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private NodeAuthorityRules accessRules;
+  public static final String JSON_PROPERTY_ROLES = "roles";
+  private List<RoleRule> roles = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES = "inner_blueprint_access_rules";
-  private List<BlueprintAccessRules> innerBlueprintAccessRules = new ArrayList<>();
+  public static final String JSON_PROPERTY_ROLE_MUTABILITY = "role_mutability";
+  private List<MutabilityRule> roleMutability = new ArrayList<>();
 
   public AccessRulesModuleFieldAccessRulesSubstateAllOf() { 
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstateAllOf accessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
+  public AccessRulesModuleFieldAccessRulesSubstateAllOf roles(List<RoleRule> roles) {
+    this.roles = roles;
+    return this;
+  }
+
+  public AccessRulesModuleFieldAccessRulesSubstateAllOf addRolesItem(RoleRule rolesItem) {
+    this.roles.add(rolesItem);
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get roles
+   * @return roles
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NodeAuthorityRules getAccessRules() {
-    return accessRules;
+  public List<RoleRule> getRoles() {
+    return roles;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
+  public void setRoles(List<RoleRule> roles) {
+    this.roles = roles;
   }
 
 
-  public AccessRulesModuleFieldAccessRulesSubstateAllOf innerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
-    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
+  public AccessRulesModuleFieldAccessRulesSubstateAllOf roleMutability(List<MutabilityRule> roleMutability) {
+    this.roleMutability = roleMutability;
     return this;
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstateAllOf addInnerBlueprintAccessRulesItem(BlueprintAccessRules innerBlueprintAccessRulesItem) {
-    this.innerBlueprintAccessRules.add(innerBlueprintAccessRulesItem);
+  public AccessRulesModuleFieldAccessRulesSubstateAllOf addRoleMutabilityItem(MutabilityRule roleMutabilityItem) {
+    this.roleMutability.add(roleMutabilityItem);
     return this;
   }
 
    /**
-   * Get innerBlueprintAccessRules
-   * @return innerBlueprintAccessRules
+   * Get roleMutability
+   * @return roleMutability
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLE_MUTABILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintAccessRules> getInnerBlueprintAccessRules() {
-    return innerBlueprintAccessRules;
+  public List<MutabilityRule> getRoleMutability() {
+    return roleMutability;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLE_MUTABILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInnerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
-    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
+  public void setRoleMutability(List<MutabilityRule> roleMutability) {
+    this.roleMutability = roleMutability;
   }
 
 
@@ -118,21 +123,21 @@ public class AccessRulesModuleFieldAccessRulesSubstateAllOf {
       return false;
     }
     AccessRulesModuleFieldAccessRulesSubstateAllOf accessRulesModuleFieldAccessRulesSubstateAllOf = (AccessRulesModuleFieldAccessRulesSubstateAllOf) o;
-    return Objects.equals(this.accessRules, accessRulesModuleFieldAccessRulesSubstateAllOf.accessRules) &&
-        Objects.equals(this.innerBlueprintAccessRules, accessRulesModuleFieldAccessRulesSubstateAllOf.innerBlueprintAccessRules);
+    return Objects.equals(this.roles, accessRulesModuleFieldAccessRulesSubstateAllOf.roles) &&
+        Objects.equals(this.roleMutability, accessRulesModuleFieldAccessRulesSubstateAllOf.roleMutability);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accessRules, innerBlueprintAccessRules);
+    return Objects.hash(roles, roleMutability);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessRulesModuleFieldAccessRulesSubstateAllOf {\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    innerBlueprintAccessRules: ").append(toIndentedString(innerBlueprintAccessRules)).append("\n");
+    sb.append("    roles: ").append(toIndentedString(roles)).append("\n");
+    sb.append("    roleMutability: ").append(toIndentedString(roleMutability)).append("\n");
     sb.append("}");
     return sb.toString();
   }

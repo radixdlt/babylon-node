@@ -12,40 +12,35 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AuthorityKey {
-    #[serde(rename = "module")]
-    pub module: Module,
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct RoyaltyAmount {
+    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
+    #[serde(rename = "unit")]
+    pub unit: Unit,
 }
 
-impl AuthorityKey {
-    pub fn new(module: Module, name: String) -> AuthorityKey {
-        AuthorityKey {
-            module,
-            name,
+impl RoyaltyAmount {
+    pub fn new(amount: String, unit: Unit) -> RoyaltyAmount {
+        RoyaltyAmount {
+            amount,
+            unit,
         }
     }
 }
 
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Module {
-    #[serde(rename = "Object")]
-    Object,
-    #[serde(rename = "Main")]
-    Main,
-    #[serde(rename = "Metadata")]
-    Metadata,
-    #[serde(rename = "Royalty")]
-    Royalty,
-    #[serde(rename = "AccessRules")]
-    AccessRules,
+pub enum Unit {
+    #[serde(rename = "XRD")]
+    XRD,
+    #[serde(rename = "USD")]
+    USD,
 }
 
-impl Default for Module {
-    fn default() -> Module {
-        Self::Object
+impl Default for Unit {
+    fn default() -> Unit {
+        Self::XRD
     }
 }
 

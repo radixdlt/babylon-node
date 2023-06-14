@@ -70,7 +70,7 @@ use jni::JNIEnv;
 use radix_engine::types::ComponentAddress;
 use radix_engine_common::prelude::{Bech32Encoder, NetworkDefinition};
 use radix_engine_common::types::{EntityType, NodeId, ResourceAddress};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::crypto::Secp256k1PublicKey;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeAddress(
@@ -152,10 +152,10 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualAccountAdd
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |unchecked_public_key_bytes: [u8; EcdsaSecp256k1PublicKey::LENGTH]| {
+        |unchecked_public_key_bytes: [u8; Secp256k1PublicKey::LENGTH]| {
             // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
             // this is okay. We need to support this because there are such accounts on Olympia.
-            let public_key = EcdsaSecp256k1PublicKey(unchecked_public_key_bytes);
+            let public_key = Secp256k1PublicKey(unchecked_public_key_bytes);
             ComponentAddress::virtual_account_from_public_key(&public_key)
         },
     )

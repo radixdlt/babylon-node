@@ -15,15 +15,15 @@
 pub struct StateFungibleResourceManagerAllOf {
     #[serde(rename = "divisibility")]
     pub divisibility: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "total_supply")]
-    pub total_supply: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "total_supply", skip_serializing_if = "Option::is_none")]
+    pub total_supply: Option<Box<crate::core_api::generated::models::Substate>>,
 }
 
 impl StateFungibleResourceManagerAllOf {
-    pub fn new(divisibility: crate::core_api::generated::models::Substate, total_supply: crate::core_api::generated::models::Substate) -> StateFungibleResourceManagerAllOf {
+    pub fn new(divisibility: crate::core_api::generated::models::Substate) -> StateFungibleResourceManagerAllOf {
         StateFungibleResourceManagerAllOf {
             divisibility: Option::Some(divisibility),
-            total_supply: Option::Some(total_supply),
+            total_supply: None,
         }
     }
 }

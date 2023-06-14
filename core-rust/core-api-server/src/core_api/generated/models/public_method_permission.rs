@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NodeAuthorityRules {
-    #[serde(rename = "rules")]
-    pub rules: Vec<crate::core_api::generated::models::AuthorityRule>,
-    #[serde(rename = "mutability")]
-    pub mutability: Vec<crate::core_api::generated::models::AuthorityRule>,
+pub struct PublicMethodPermission {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::MethodPermissionType,
 }
 
-impl NodeAuthorityRules {
-    pub fn new(rules: Vec<crate::core_api::generated::models::AuthorityRule>, mutability: Vec<crate::core_api::generated::models::AuthorityRule>) -> NodeAuthorityRules {
-        NodeAuthorityRules {
-            rules,
-            mutability,
+impl PublicMethodPermission {
+    pub fn new(_type: crate::core_api::generated::models::MethodPermissionType) -> PublicMethodPermission {
+        PublicMethodPermission {
+            _type,
         }
     }
 }

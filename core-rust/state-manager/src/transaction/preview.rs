@@ -1,6 +1,6 @@
 use parking_lot::RwLock;
-use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,8 +11,8 @@ use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
 use crate::{PreviewRequest, ProcessedCommitResult, SubstateChange};
 use radix_engine_common::prelude::*;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
+use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
@@ -81,7 +81,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
     fn create_intent(&self, preview_request: PreviewRequest, read_store: &S) -> PreviewIntentV1 {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
-            PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
+            PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
         let effective_epoch_range = preview_request.explicit_epoch_range.unwrap_or_else(|| {
             let current_epoch = read_store.get_epoch();
@@ -108,7 +108,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             },
             signer_public_keys: preview_request.signer_public_keys,
             flags: PreviewFlags {
-                unlimited_loan: preview_request.flags.unlimited_loan,
+                use_free_credit: preview_request.flags.use_free_credit,
                 assume_all_signature_proofs: preview_request.flags.assume_all_signature_proofs,
                 permit_duplicate_intent_hash: preview_request.flags.permit_duplicate_intent_hash,
                 permit_invalid_header_epoch: preview_request.flags.permit_invalid_header_epoch,
@@ -208,7 +208,7 @@ mod tests {
             nonce: 0,
             signer_public_keys: vec![],
             flags: PreviewFlags {
-                unlimited_loan: true,
+                use_free_credit: true,
                 assume_all_signature_proofs: true,
                 permit_duplicate_intent_hash: false,
                 permit_invalid_header_epoch: false,

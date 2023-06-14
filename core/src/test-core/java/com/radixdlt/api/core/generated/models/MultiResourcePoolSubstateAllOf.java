@@ -22,54 +22,91 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AuthorityKey;
+import com.radixdlt.api.core.generated.models.PoolVault;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * AuthorityRuleNodeAllOf
+ * MultiResourcePoolSubstateAllOf
  */
 @JsonPropertyOrder({
-  AuthorityRuleNodeAllOf.JSON_PROPERTY_KEY
+  MultiResourcePoolSubstateAllOf.JSON_PROPERTY_VAULTS,
+  MultiResourcePoolSubstateAllOf.JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class AuthorityRuleNodeAllOf {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private AuthorityKey key;
+public class MultiResourcePoolSubstateAllOf {
+  public static final String JSON_PROPERTY_VAULTS = "vaults";
+  private List<PoolVault> vaults = new ArrayList<>();
 
-  public AuthorityRuleNodeAllOf() { 
+  public static final String JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS = "pool_unit_resource_address";
+  private String poolUnitResourceAddress;
+
+  public MultiResourcePoolSubstateAllOf() { 
   }
 
-  public AuthorityRuleNodeAllOf key(AuthorityKey key) {
-    this.key = key;
+  public MultiResourcePoolSubstateAllOf vaults(List<PoolVault> vaults) {
+    this.vaults = vaults;
+    return this;
+  }
+
+  public MultiResourcePoolSubstateAllOf addVaultsItem(PoolVault vaultsItem) {
+    this.vaults.add(vaultsItem);
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get vaults
+   * @return vaults
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AuthorityKey getKey() {
-    return key;
+  public List<PoolVault> getVaults() {
+    return vaults;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(AuthorityKey key) {
-    this.key = key;
+  public void setVaults(List<PoolVault> vaults) {
+    this.vaults = vaults;
+  }
+
+
+  public MultiResourcePoolSubstateAllOf poolUnitResourceAddress(String poolUnitResourceAddress) {
+    this.poolUnitResourceAddress = poolUnitResourceAddress;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return poolUnitResourceAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPoolUnitResourceAddress() {
+    return poolUnitResourceAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPoolUnitResourceAddress(String poolUnitResourceAddress) {
+    this.poolUnitResourceAddress = poolUnitResourceAddress;
   }
 
 
   /**
-   * Return true if this AuthorityRuleNode_allOf object is equal to o.
+   * Return true if this MultiResourcePoolSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +116,22 @@ public class AuthorityRuleNodeAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AuthorityRuleNodeAllOf authorityRuleNodeAllOf = (AuthorityRuleNodeAllOf) o;
-    return Objects.equals(this.key, authorityRuleNodeAllOf.key);
+    MultiResourcePoolSubstateAllOf multiResourcePoolSubstateAllOf = (MultiResourcePoolSubstateAllOf) o;
+    return Objects.equals(this.vaults, multiResourcePoolSubstateAllOf.vaults) &&
+        Objects.equals(this.poolUnitResourceAddress, multiResourcePoolSubstateAllOf.poolUnitResourceAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key);
+    return Objects.hash(vaults, poolUnitResourceAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AuthorityRuleNodeAllOf {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("class MultiResourcePoolSubstateAllOf {\n");
+    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
+    sb.append("    poolUnitResourceAddress: ").append(toIndentedString(poolUnitResourceAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

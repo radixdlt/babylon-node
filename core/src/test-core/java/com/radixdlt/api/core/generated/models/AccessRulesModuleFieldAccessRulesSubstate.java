@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesS
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.BlueprintAccessRules;
 import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeRoundedToMinutesSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
@@ -45,22 +44,26 @@ import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
-import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
+import com.radixdlt.api.core.generated.models.MultiResourcePoolSubstate;
+import com.radixdlt.api.core.generated.models.MutabilityRule;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
+import com.radixdlt.api.core.generated.models.OneResourcePoolSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldFunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltySubstate;
+import com.radixdlt.api.core.generated.models.RoleRule;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.TwoResourcePoolSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
@@ -75,8 +78,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccessRulesModuleFieldAccessRulesSubstate
  */
 @JsonPropertyOrder({
-  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_ACCESS_RULES,
-  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES
+  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_ROLES,
+  AccessRulesModuleFieldAccessRulesSubstate.JSON_PROPERTY_ROLE_MUTABILITY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -103,12 +106,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = GenericKeyValueStoreEntrySubstate.class, name = "GenericKeyValueStoreEntry"),
   @JsonSubTypes.Type(value = GenericScryptoComponentFieldStateSubstate.class, name = "GenericScryptoComponentFieldState"),
   @JsonSubTypes.Type(value = MetadataModuleEntrySubstate.class, name = "MetadataModuleEntry"),
+  @JsonSubTypes.Type(value = MultiResourcePoolSubstate.class, name = "MultiResourcePoolSubstate"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerDataEntrySubstate.class, name = "NonFungibleResourceManagerDataEntry"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldIdTypeSubstate.class, name = "NonFungibleResourceManagerFieldIdType"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldMutableFieldsSubstate.class, name = "NonFungibleResourceManagerFieldMutableFields"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldTotalSupplySubstate.class, name = "NonFungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = NonFungibleVaultContentsIndexEntrySubstate.class, name = "NonFungibleVaultContentsIndexEntry"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
+  @JsonSubTypes.Type(value = OneResourcePoolSubstate.class, name = "OneResourcePoolSubstate"),
   @JsonSubTypes.Type(value = PackageFieldCodeSubstate.class, name = "PackageFieldCode"),
   @JsonSubTypes.Type(value = PackageFieldCodeTypeSubstate.class, name = "PackageFieldCodeType"),
   @JsonSubTypes.Type(value = PackageFieldFunctionAccessRulesSubstate.class, name = "PackageFieldFunctionAccessRules"),
@@ -116,74 +121,80 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageFieldRoyaltySubstate.class, name = "PackageFieldRoyalty"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulator"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldConfigSubstate.class, name = "RoyaltyModuleFieldConfig"),
+  @JsonSubTypes.Type(value = TwoResourcePoolSubstate.class, name = "TwoResourcePoolSubstate"),
   @JsonSubTypes.Type(value = TypeInfoModuleFieldTypeInfoSubstate.class, name = "TypeInfoModuleFieldTypeInfo"),
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
 public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private NodeAuthorityRules accessRules;
+  public static final String JSON_PROPERTY_ROLES = "roles";
+  private List<RoleRule> roles = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES = "inner_blueprint_access_rules";
-  private List<BlueprintAccessRules> innerBlueprintAccessRules = new ArrayList<>();
+  public static final String JSON_PROPERTY_ROLE_MUTABILITY = "role_mutability";
+  private List<MutabilityRule> roleMutability = new ArrayList<>();
 
   public AccessRulesModuleFieldAccessRulesSubstate() { 
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate accessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
+  public AccessRulesModuleFieldAccessRulesSubstate roles(List<RoleRule> roles) {
+    this.roles = roles;
+    return this;
+  }
+
+  public AccessRulesModuleFieldAccessRulesSubstate addRolesItem(RoleRule rolesItem) {
+    this.roles.add(rolesItem);
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get roles
+   * @return roles
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NodeAuthorityRules getAccessRules() {
-    return accessRules;
+  public List<RoleRule> getRoles() {
+    return roles;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
+  public void setRoles(List<RoleRule> roles) {
+    this.roles = roles;
   }
 
 
-  public AccessRulesModuleFieldAccessRulesSubstate innerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
-    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
+  public AccessRulesModuleFieldAccessRulesSubstate roleMutability(List<MutabilityRule> roleMutability) {
+    this.roleMutability = roleMutability;
     return this;
   }
 
-  public AccessRulesModuleFieldAccessRulesSubstate addInnerBlueprintAccessRulesItem(BlueprintAccessRules innerBlueprintAccessRulesItem) {
-    this.innerBlueprintAccessRules.add(innerBlueprintAccessRulesItem);
+  public AccessRulesModuleFieldAccessRulesSubstate addRoleMutabilityItem(MutabilityRule roleMutabilityItem) {
+    this.roleMutability.add(roleMutabilityItem);
     return this;
   }
 
    /**
-   * Get innerBlueprintAccessRules
-   * @return innerBlueprintAccessRules
+   * Get roleMutability
+   * @return roleMutability
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLE_MUTABILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintAccessRules> getInnerBlueprintAccessRules() {
-    return innerBlueprintAccessRules;
+  public List<MutabilityRule> getRoleMutability() {
+    return roleMutability;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INNER_BLUEPRINT_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_ROLE_MUTABILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInnerBlueprintAccessRules(List<BlueprintAccessRules> innerBlueprintAccessRules) {
-    this.innerBlueprintAccessRules = innerBlueprintAccessRules;
+  public void setRoleMutability(List<MutabilityRule> roleMutability) {
+    this.roleMutability = roleMutability;
   }
 
 
@@ -199,14 +210,14 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
       return false;
     }
     AccessRulesModuleFieldAccessRulesSubstate accessRulesModuleFieldAccessRulesSubstate = (AccessRulesModuleFieldAccessRulesSubstate) o;
-    return Objects.equals(this.accessRules, accessRulesModuleFieldAccessRulesSubstate.accessRules) &&
-        Objects.equals(this.innerBlueprintAccessRules, accessRulesModuleFieldAccessRulesSubstate.innerBlueprintAccessRules) &&
+    return Objects.equals(this.roles, accessRulesModuleFieldAccessRulesSubstate.roles) &&
+        Objects.equals(this.roleMutability, accessRulesModuleFieldAccessRulesSubstate.roleMutability) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accessRules, innerBlueprintAccessRules, super.hashCode());
+    return Objects.hash(roles, roleMutability, super.hashCode());
   }
 
   @Override
@@ -214,8 +225,8 @@ public class AccessRulesModuleFieldAccessRulesSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessRulesModuleFieldAccessRulesSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
-    sb.append("    innerBlueprintAccessRules: ").append(toIndentedString(innerBlueprintAccessRules)).append("\n");
+    sb.append("    roles: ").append(toIndentedString(roles)).append("\n");
+    sb.append("    roleMutability: ").append(toIndentedString(roleMutability)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -252,12 +263,14 @@ static {
   mappings.put("GenericKeyValueStoreEntry", GenericKeyValueStoreEntrySubstate.class);
   mappings.put("GenericScryptoComponentFieldState", GenericScryptoComponentFieldStateSubstate.class);
   mappings.put("MetadataModuleEntry", MetadataModuleEntrySubstate.class);
+  mappings.put("MultiResourcePoolSubstate", MultiResourcePoolSubstate.class);
   mappings.put("NonFungibleResourceManagerDataEntry", NonFungibleResourceManagerDataEntrySubstate.class);
   mappings.put("NonFungibleResourceManagerFieldIdType", NonFungibleResourceManagerFieldIdTypeSubstate.class);
   mappings.put("NonFungibleResourceManagerFieldMutableFields", NonFungibleResourceManagerFieldMutableFieldsSubstate.class);
   mappings.put("NonFungibleResourceManagerFieldTotalSupply", NonFungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("NonFungibleVaultContentsIndexEntry", NonFungibleVaultContentsIndexEntrySubstate.class);
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
+  mappings.put("OneResourcePoolSubstate", OneResourcePoolSubstate.class);
   mappings.put("PackageFieldCode", PackageFieldCodeSubstate.class);
   mappings.put("PackageFieldCodeType", PackageFieldCodeTypeSubstate.class);
   mappings.put("PackageFieldFunctionAccessRules", PackageFieldFunctionAccessRulesSubstate.class);
@@ -265,6 +278,7 @@ static {
   mappings.put("PackageFieldRoyalty", PackageFieldRoyaltySubstate.class);
   mappings.put("RoyaltyModuleFieldAccumulator", RoyaltyModuleFieldAccumulatorSubstate.class);
   mappings.put("RoyaltyModuleFieldConfig", RoyaltyModuleFieldConfigSubstate.class);
+  mappings.put("TwoResourcePoolSubstate", TwoResourcePoolSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
   mappings.put("AccessRulesModuleFieldAccessRulesSubstate", AccessRulesModuleFieldAccessRulesSubstate.class);

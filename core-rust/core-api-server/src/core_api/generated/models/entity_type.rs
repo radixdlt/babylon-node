@@ -48,6 +48,12 @@ pub enum EntityType {
     InternalAccount,
     #[serde(rename = "InternalKeyValueStore")]
     InternalKeyValueStore,
+    #[serde(rename = "GlobalOneResourcePool")]
+    GlobalOneResourcePool,
+    #[serde(rename = "GlobalTwoResourcePool")]
+    GlobalTwoResourcePool,
+    #[serde(rename = "GlobalMultiResourcePool")]
+    GlobalMultiResourcePool,
 
 }
 
@@ -72,6 +78,9 @@ impl ToString for EntityType {
             Self::InternalGenericComponent => String::from("InternalGenericComponent"),
             Self::InternalAccount => String::from("InternalAccount"),
             Self::InternalKeyValueStore => String::from("InternalKeyValueStore"),
+            Self::GlobalOneResourcePool => String::from("GlobalOneResourcePool"),
+            Self::GlobalTwoResourcePool => String::from("GlobalTwoResourcePool"),
+            Self::GlobalMultiResourcePool => String::from("GlobalMultiResourcePool"),
         }
     }
 }

@@ -92,7 +92,13 @@ public enum SubstateType {
   
   GENERICSCRYPTOCOMPONENTFIELDSTATE("GenericScryptoComponentFieldState"),
   
-  GENERICKEYVALUESTOREENTRY("GenericKeyValueStoreEntry");
+  GENERICKEYVALUESTOREENTRY("GenericKeyValueStoreEntry"),
+  
+  ONERESOURCEPOOL("OneResourcePool"),
+  
+  TWORESOURCEPOOL("TwoResourcePool"),
+  
+  MULTIRESOURCEPOOL("MultiResourcePool");
 
   private String value;
 

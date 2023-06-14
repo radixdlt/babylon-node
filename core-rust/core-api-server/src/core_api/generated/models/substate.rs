@@ -20,10 +20,10 @@ pub enum Substate {
     },
     #[serde(rename="AccessRulesModuleFieldAccessRules")]
     AccessRulesModuleFieldAccessRulesSubstate {
-        #[serde(rename = "access_rules")]
-        access_rules: Box<crate::core_api::generated::models::NodeAuthorityRules>,
-        #[serde(rename = "inner_blueprint_access_rules")]
-        inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
+        #[serde(rename = "roles")]
+        roles: Vec<crate::core_api::generated::models::RoleRule>,
+        #[serde(rename = "role_mutability")]
+        role_mutability: Vec<crate::core_api::generated::models::MutabilityRule>,
     },
     #[serde(rename="AccountDepositRuleIndexEntry")]
     AccountDepositRuleIndexEntrySubstate {
@@ -147,6 +147,14 @@ pub enum Substate {
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
+    #[serde(rename="MultiResourcePoolSubstate")]
+    MultiResourcePoolSubstate {
+        #[serde(rename = "vaults")]
+        vaults: Vec<crate::core_api::generated::models::PoolVault>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "pool_unit_resource_address")]
+        pool_unit_resource_address: String,
+    },
     #[serde(rename="NonFungibleResourceManagerDataEntry")]
     NonFungibleResourceManagerDataEntrySubstate {
         #[serde(rename = "is_deleted")]
@@ -182,6 +190,14 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
+    #[serde(rename="OneResourcePoolSubstate")]
+    OneResourcePoolSubstate {
+        #[serde(rename = "vault")]
+        vault: Box<crate::core_api::generated::models::EntityReference>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "pool_unit_resource_address")]
+        pool_unit_resource_address: String,
+    },
     #[serde(rename="PackageFieldCode")]
     PackageFieldCodeSubstate {
         /// The hex-encoded package code
@@ -197,17 +213,11 @@ pub enum Substate {
     PackageFieldFunctionAccessRulesSubstate {
         #[serde(rename = "function_auth")]
         function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>,
-        #[serde(rename = "default_auth")]
-        default_auth: Box<crate::core_api::generated::models::AccessRule>,
     },
     #[serde(rename="PackageFieldInfo")]
     PackageFieldInfoSubstate {
         #[serde(rename = "package_schema")]
         package_schema: Box<crate::core_api::generated::models::PackageSchema>,
-        #[serde(rename = "dependent_resources")]
-        dependent_resources: Vec<String>,
-        #[serde(rename = "dependent_components")]
-        dependent_components: Vec<String>,
     },
     #[serde(rename="PackageFieldRoyalty")]
     PackageFieldRoyaltySubstate {
@@ -225,6 +235,14 @@ pub enum Substate {
     RoyaltyModuleFieldConfigSubstate {
         #[serde(rename = "royalty_config")]
         royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+    },
+    #[serde(rename="TwoResourcePoolSubstate")]
+    TwoResourcePoolSubstate {
+        #[serde(rename = "vaults")]
+        vaults: Vec<crate::core_api::generated::models::PoolVault>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "pool_unit_resource_address")]
+        pool_unit_resource_address: String,
     },
     #[serde(rename="TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfoSubstate {

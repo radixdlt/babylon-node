@@ -17,15 +17,15 @@ pub enum StateResourceManager {
     StateFungibleResourceManager {
         #[serde(rename = "divisibility")]
         divisibility: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "total_supply")]
-        total_supply: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "total_supply", skip_serializing_if = "Option::is_none")]
+        total_supply: Option<Box<crate::core_api::generated::models::Substate>>,
     },
     #[serde(rename="NonFungible")]
     StateNonFungibleResourceManager {
         #[serde(rename = "id_type")]
         id_type: Box<crate::core_api::generated::models::Substate>,
-        #[serde(rename = "total_supply")]
-        total_supply: Box<crate::core_api::generated::models::Substate>,
+        #[serde(rename = "total_supply", skip_serializing_if = "Option::is_none")]
+        total_supply: Option<Box<crate::core_api::generated::models::Substate>>,
         #[serde(rename = "mutable_fields")]
         mutable_fields: Box<crate::core_api::generated::models::Substate>,
     },

@@ -150,9 +150,13 @@ impl PreparedRoundUpdateTransactionV1 {
                     initial_proofs: btreeset!(AuthAddresses::validator_role()),
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment::NoFee,
+                // TODO(during review): I copied that from Engine's "system transaction" handling
+                fee_payment: FeePayment {
+                    tip_percentage: 0,
+                    free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
+                },
                 runtime_validations: vec![],
-                pre_allocated_ids: indexset!(),
+                pre_allocated_addresses: vec![],
             },
         )
     }

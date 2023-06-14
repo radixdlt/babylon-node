@@ -96,9 +96,10 @@ public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
                       .packageAddress(faucetPackageAddress));
 
       final var packageInfoSubstate = (PackageFieldInfoSubstate) packageResponse.getInfo();
-      final var blueprintSchemas = packageInfoSubstate.getPackageSchema().getBlueprintSchemas();
-      assertThat(blueprintSchemas).hasSize(1);
-      assertThat(blueprintSchemas).containsKey("Faucet");
+      final var blueprintDefinitions =
+          packageInfoSubstate.getPackageSchema().getBlueprintDefinitions();
+      assertThat(blueprintDefinitions).hasSize(1);
+      assertThat(blueprintDefinitions).containsKey("Faucet");
     }
   }
 }

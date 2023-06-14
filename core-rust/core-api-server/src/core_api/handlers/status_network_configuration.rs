@@ -29,10 +29,10 @@ pub(crate) async fn handle_status_network_configuration(
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
             secp256k1_signature_virtual_badge: bech32_encoder
-                .encode(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
             ed25519_signature_virtual_badge: bech32_encoder
-                .encode(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
             package_of_direct_caller_virtual_badge: bech32_encoder
                 .encode(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref())

@@ -25,16 +25,19 @@ pub struct ObjectTypeInfoDetailsAllOf {
     pub outer_object: Option<String>,
     #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
     pub instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
+    #[serde(rename = "features")]
+    pub features: Vec<String>,
 }
 
 impl ObjectTypeInfoDetailsAllOf {
-    pub fn new(package_address: String, blueprint_name: String, global: bool) -> ObjectTypeInfoDetailsAllOf {
+    pub fn new(package_address: String, blueprint_name: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetailsAllOf {
         ObjectTypeInfoDetailsAllOf {
             package_address,
             blueprint_name,
             global,
             outer_object: None,
             instance_schema: None,
+            features,
         }
     }
 }

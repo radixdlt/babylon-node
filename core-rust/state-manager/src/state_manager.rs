@@ -523,7 +523,7 @@ where
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
     pub fn execute_test_genesis(&self) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
-        let genesis_validator: GenesisValidator = EcdsaSecp256k1PublicKey([0; 33]).into();
+        let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
             GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
             GenesisDataChunk::Stakes {

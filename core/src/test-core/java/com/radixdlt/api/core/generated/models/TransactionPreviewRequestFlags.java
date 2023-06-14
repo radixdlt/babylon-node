@@ -31,15 +31,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionPreviewRequestFlags
  */
 @JsonPropertyOrder({
-  TransactionPreviewRequestFlags.JSON_PROPERTY_UNLIMITED_LOAN,
+  TransactionPreviewRequestFlags.JSON_PROPERTY_USE_FREE_CREDIT,
   TransactionPreviewRequestFlags.JSON_PROPERTY_ASSUME_ALL_SIGNATURE_PROOFS,
   TransactionPreviewRequestFlags.JSON_PROPERTY_PERMIT_DUPLICATE_INTENT_HASH,
   TransactionPreviewRequestFlags.JSON_PROPERTY_PERMIT_INVALID_HEADER_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionPreviewRequestFlags {
-  public static final String JSON_PROPERTY_UNLIMITED_LOAN = "unlimited_loan";
-  private Boolean unlimitedLoan;
+  public static final String JSON_PROPERTY_USE_FREE_CREDIT = "use_free_credit";
+  private Boolean useFreeCredit;
 
   public static final String JSON_PROPERTY_ASSUME_ALL_SIGNATURE_PROOFS = "assume_all_signature_proofs";
   private Boolean assumeAllSignatureProofs;
@@ -53,29 +53,29 @@ public class TransactionPreviewRequestFlags {
   public TransactionPreviewRequestFlags() { 
   }
 
-  public TransactionPreviewRequestFlags unlimitedLoan(Boolean unlimitedLoan) {
-    this.unlimitedLoan = unlimitedLoan;
+  public TransactionPreviewRequestFlags useFreeCredit(Boolean useFreeCredit) {
+    this.useFreeCredit = useFreeCredit;
     return this;
   }
 
    /**
-   * Get unlimitedLoan
-   * @return unlimitedLoan
+   * Get useFreeCredit
+   * @return useFreeCredit
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNLIMITED_LOAN)
+  @JsonProperty(JSON_PROPERTY_USE_FREE_CREDIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getUnlimitedLoan() {
-    return unlimitedLoan;
+  public Boolean getUseFreeCredit() {
+    return useFreeCredit;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNLIMITED_LOAN)
+  @JsonProperty(JSON_PROPERTY_USE_FREE_CREDIT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnlimitedLoan(Boolean unlimitedLoan) {
-    this.unlimitedLoan = unlimitedLoan;
+  public void setUseFreeCredit(Boolean useFreeCredit) {
+    this.useFreeCredit = useFreeCredit;
   }
 
 
@@ -169,7 +169,7 @@ public class TransactionPreviewRequestFlags {
       return false;
     }
     TransactionPreviewRequestFlags transactionPreviewRequestFlags = (TransactionPreviewRequestFlags) o;
-    return Objects.equals(this.unlimitedLoan, transactionPreviewRequestFlags.unlimitedLoan) &&
+    return Objects.equals(this.useFreeCredit, transactionPreviewRequestFlags.useFreeCredit) &&
         Objects.equals(this.assumeAllSignatureProofs, transactionPreviewRequestFlags.assumeAllSignatureProofs) &&
         Objects.equals(this.permitDuplicateIntentHash, transactionPreviewRequestFlags.permitDuplicateIntentHash) &&
         Objects.equals(this.permitInvalidHeaderEpoch, transactionPreviewRequestFlags.permitInvalidHeaderEpoch);
@@ -177,14 +177,14 @@ public class TransactionPreviewRequestFlags {
 
   @Override
   public int hashCode() {
-    return Objects.hash(unlimitedLoan, assumeAllSignatureProofs, permitDuplicateIntentHash, permitInvalidHeaderEpoch);
+    return Objects.hash(useFreeCredit, assumeAllSignatureProofs, permitDuplicateIntentHash, permitInvalidHeaderEpoch);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPreviewRequestFlags {\n");
-    sb.append("    unlimitedLoan: ").append(toIndentedString(unlimitedLoan)).append("\n");
+    sb.append("    useFreeCredit: ").append(toIndentedString(useFreeCredit)).append("\n");
     sb.append("    assumeAllSignatureProofs: ").append(toIndentedString(assumeAllSignatureProofs)).append("\n");
     sb.append("    permitDuplicateIntentHash: ").append(toIndentedString(permitDuplicateIntentHash)).append("\n");
     sb.append("    permitInvalidHeaderEpoch: ").append(toIndentedString(permitInvalidHeaderEpoch)).append("\n");
