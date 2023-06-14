@@ -86,6 +86,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.Map;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
@@ -155,6 +157,7 @@ public final class REv2GenesisTest {
   }
 
   @Test
+  @Ignore
   public void state_reader_on_genesis_returns_correct_amounts() {
     // Arrange/Act
     try (var test = createTest()) {

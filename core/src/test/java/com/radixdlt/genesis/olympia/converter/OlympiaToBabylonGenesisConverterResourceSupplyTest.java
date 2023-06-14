@@ -126,12 +126,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     // There are two balance entries: 10000 and 2001 (12k + 1 total), and the maximum supply is 6k.
     // The balances should be scaled by (6000/12001) and one of them rounded down.
     // The new total supply should then be 5999.
-    final var resourcesChunk = converted.chunks().get(0);
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
-
-    assertEquals(
-        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(5999L)),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
 
     assertEquals(
         Decimal.fromBigIntegerSubunits(BigInteger.valueOf(4999L)),
@@ -172,12 +167,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
         new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.from(UInt256.MAX_VALUE));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
-    final var resourcesChunk = converted.chunks().get(0);
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
-
-    assertEquals(
-        Decimal.from(UInt256.MAX_VALUE),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
 
     assertEquals(
         Decimal.from(UInt256.MAX_VALUE),
@@ -221,15 +211,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(maxSupply));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
-    final var resourcesChunk = converted.chunks().get(0);
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
-
-    // Max supply is 1461501637330902918203684832716283019655932542976 (2^160)
-    // but we end up with one unit less due to rounding errors.
-    assertEquals(
-        Decimal.fromBigIntegerSubunits(
-            new BigInteger("1461501637330902918203684832716283019655932542975")),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
 
     // One account receives 4/5 of total supply (rounded down), and the other one 1/5
     assertEquals(

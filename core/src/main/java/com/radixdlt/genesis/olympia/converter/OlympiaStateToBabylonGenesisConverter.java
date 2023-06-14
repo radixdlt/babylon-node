@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.genesis.*;
 import com.radixdlt.genesis.olympia.converter.resource.OlympiaResourcesConverter;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.utils.UInt64;
 import java.util.stream.Stream;
 
@@ -100,6 +101,7 @@ public final class OlympiaStateToBabylonGenesisConverter {
         UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
         olympiaStateIR.lastConsensusTimestamp(),
         GenesisConsensusManagerConfig.Builder.productionDefaults().build(),
+        Decimal.ZERO,
         Stream.of(
                 validatorsChunks.stream(),
                 stakesChunks.stream(),

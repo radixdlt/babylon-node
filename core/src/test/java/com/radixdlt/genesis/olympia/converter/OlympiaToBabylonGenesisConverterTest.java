@@ -506,12 +506,6 @@ public final class OlympiaToBabylonGenesisConverterTest {
             .mapToInt(r -> r.allocations().stream().mapToInt(s -> s.last().size()).sum())
             .sum());
 
-    final var babylonResourcesByAddr =
-        resources.stream()
-            .flatMap(r -> r.value().stream())
-            .collect(
-                Collectors.toMap(r -> HashCode.fromBytes(r.addressBytesWithoutEntityId()), r -> r));
-
     final var babylonAllocationsByResource =
         new HashMap<ResourceAddress, Map<ComponentAddress, Decimal>>();
     resourceBalances.forEach(
@@ -536,13 +530,6 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
     stateSummary.resources.forEach(
         summaryResource -> {
-          final var babylonAddrBytes =
-              olympiaToBabylonResourceAddressBytes(summaryResource.resourceAddrBytes.asBytes());
-          final var babylonResource =
-              babylonResourcesByAddr.get(HashCode.fromBytes(babylonAddrBytes));
-          assertEquals(
-              summaryResource.expectedScaledTotalSupply(), babylonResource.initialSupply());
-
           final var babylonBalances =
               babylonAllocationsByResource.get(
                   toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes()));

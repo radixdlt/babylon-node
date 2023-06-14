@@ -759,6 +759,7 @@ where
             initial_config,
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
+            dec!("100000000"),
         )
     }
 
@@ -769,6 +770,7 @@ where
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
+        faucet_supply: Decimal,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -859,7 +861,7 @@ where
         }
 
         // Wrap up
-        let genesis_wrap_up_transaction = create_genesis_wrap_up_transaction();
+        let genesis_wrap_up_transaction = create_genesis_wrap_up_transaction(faucet_supply);
 
         let commit_request = self
             .prepare_genesis(genesis_wrap_up_transaction)

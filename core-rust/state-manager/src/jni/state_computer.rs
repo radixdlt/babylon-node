@@ -99,6 +99,7 @@ pub struct JavaGenesisData {
     pub initial_epoch: Epoch,
     pub initial_timestamp_ms: i64,
     pub initial_config: JavaConsensusManagerConfig,
+    pub faucet_supply: Decimal,
     pub chunks: Vec<GenesisDataChunk>,
 }
 
@@ -149,6 +150,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                 },
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
+                genesis_data.faucet_supply,
             );
             result.into()
         },

@@ -90,6 +90,7 @@ public final class GenesisBuilder {
         UInt64.fromNonNegativeLong(1),
         0,
         builder.build(),
+        Decimal.of(1000_000_000_000L),
         ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()));
   }
 
@@ -121,7 +122,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        Decimal.of(1000_000_000_000L),
+        chunksBuilder.build());
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -147,7 +152,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        Decimal.of(1000_000_000_000L),
+        chunksBuilder.build());
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

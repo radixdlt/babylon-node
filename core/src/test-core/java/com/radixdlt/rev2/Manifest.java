@@ -228,7 +228,7 @@ public class Manifest {
         String.format(
             """
             %s
-            CREATE_VALIDATOR Bytes("%s");
+            CREATE_VALIDATOR Bytes("%s") Decimal("0");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
             params.faucetLockFeeLine(), key.toHex(), params.encode(ownerAccount));
