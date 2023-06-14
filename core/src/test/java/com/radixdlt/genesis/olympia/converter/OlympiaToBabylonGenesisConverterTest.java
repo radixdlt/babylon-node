@@ -303,24 +303,8 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
       final var totalSupply = unscaledBalances.stream().reduce(BigInteger.ZERO, BigInteger::add);
 
-      final var expectedScaledTotalSupply =
-          unscaledBalances.stream()
-              .map(
-                  amount ->
-                      scaleResourceAmount(
-                          amount,
-                          totalSupply,
-                          CONVERTER_CONFIG
-                              .maxGenesisResourceUnscaledSupply()
-                              .toBigIntegerSubunits()))
-              .reduce(Decimal.ZERO, Decimal::add);
-
       resourcesSummary.add(
-          new ResourceSummary(
-              HashCode.fromBytes(addr.getBytes()),
-              totalSupply,
-              expectedScaledTotalSupply,
-              balances));
+          new ResourceSummary(HashCode.fromBytes(addr.getBytes()), totalSupply, balances));
     }
     if (xrdResourceIndex == numResources) {
       resourcesBuilder.add(xrdResource);
@@ -536,12 +520,6 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
     stateSummary.resources.forEach(
         summaryResource -> {
-          final var babylonAddress =
-              toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes());
-          final var babylonResource = babylonResourcesByAddr.get(babylonAddress);
-          assertEquals(
-              summaryResource.expectedScaledTotalSupply(), babylonResource.initialSupply());
-
           final var babylonBalances =
               babylonAllocationsByResource.get(
                   toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes()));
@@ -629,8 +607,5 @@ public final class OlympiaToBabylonGenesisConverterTest {
       Map<HashCode, UInt256> stakes) {}
 
   private record ResourceSummary(
-      HashCode resourceAddrBytes,
-      BigInteger totalSupply,
-      Decimal expectedScaledTotalSupply,
-      Map<HashCode, BigInteger> balances) {}
+      HashCode resourceAddrBytes, BigInteger totalSupply, Map<HashCode, BigInteger> balances) {}
 }

@@ -622,7 +622,7 @@ where
         }
 
         info!("Committing genesis wrap-up");
-        let transaction = create_genesis_wrap_up_transaction();
+        let transaction = create_genesis_wrap_up_transaction(dec!("1000000000"));
         let prepare_result = self.prepare_genesis(transaction);
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();

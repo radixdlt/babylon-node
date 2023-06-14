@@ -73,6 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.TestSetupUtils;
@@ -295,6 +296,7 @@ public final class RadixNodeBootstrapperTest {
                         key.getPublicKey(),
                         true,
                         true,
+                        Decimal.fraction(1, 100),
                         ImmutableList.of(),
                         Address.virtualAccountAddress(key.getPublicKey()))))));
   }
