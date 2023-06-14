@@ -313,8 +313,7 @@ public final class OlympiaNonXrdConverter {
                 idx -> Address.virtualAccountAddress(accounts.get(idx).publicKeyBytes().asBytes()));
 
     final var address = olympiaToBabylonResourceAddress(resource.addr());
-    return new GenesisResource(
-        address, initialSupply, metadataBuilder.build(), Option.from(owner));
+    return new GenesisResource(address, initialSupply, metadataBuilder.build(), Option.from(owner));
   }
 
   public static REAddr olympiaRriToReAddr(String rri) {
