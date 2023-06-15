@@ -64,7 +64,7 @@
 
 use crate::mempool::*;
 use crate::simple_mempool::MempoolTransaction;
-use crate::{MempoolMetrics, TakesMetricLabels};
+use crate::{MempoolAddSource, MempoolMetrics, TakesMetricLabels};
 use prometheus::Registry;
 use rand::seq::SliceRandom;
 use transaction::model::*;
