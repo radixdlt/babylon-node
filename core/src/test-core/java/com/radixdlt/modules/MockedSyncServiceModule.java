@@ -80,7 +80,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.LastEpochProof;
@@ -152,7 +152,7 @@ public class MockedSyncServiceModule extends AbstractModule {
   @ProcessOnDispatch
   EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
       @LastEpochProof LedgerProof genesis,
-      EventDispatcher<CommittedTransactionsWithProof> syncedTransactionRunDispatcher) {
+      EventDispatcher<LedgerExtension> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
       long currentVersion = genesis.getStateVersion();
       long currentEpoch = genesis.getNextEpoch().orElseThrow().getEpoch();
@@ -162,8 +162,7 @@ public class MockedSyncServiceModule extends AbstractModule {
             LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
-        syncedTransactionRunDispatcher.dispatch(
-            CommittedTransactionsWithProof.create(transactions, proof));
+        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(transactions, proof));
         currentVersion = proof.getStateVersion();
         currentEpoch = proof.getNextEpoch().map(NextEpoch::getEpoch).orElse(proof.getEpoch());
       }
@@ -186,8 +185,7 @@ public class MockedSyncServiceModule extends AbstractModule {
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncedTransactionRunDispatcher.dispatch(
-            CommittedTransactionsWithProof.create(txns, request.getTarget()));
+        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(txns, request.getTarget()));
         currentVersion = targetVersion;
         currentEpoch = request.getTarget().getEpoch();
       }

@@ -65,9 +65,10 @@
 package com.radixdlt.genesis.olympia.state;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import java.math.BigInteger;
 import java.util.Optional;
 
 /** The intermediate representation (IR) of the Olympia ledger state. */
@@ -76,10 +77,12 @@ public record OlympiaStateIR(
     ImmutableList<Resource> resources,
     ImmutableList<Account> accounts,
     ImmutableList<AccountBalance> balances,
-    ImmutableList<Stake> stakes) {
+    ImmutableList<Stake> stakes,
+    long lastConsensusTimestamp,
+    long lastEpoch) {
 
   public record Validator(
-      ECDSASecp256k1PublicKey validatorKey,
+      HashCode publicKeyBytes,
       String name,
       String url,
       boolean allowsDelegation,
@@ -100,9 +103,9 @@ public record OlympiaStateIR(
       String iconUrl,
       String url) {}
 
-  public record Account(ECDSASecp256k1PublicKey publicKey) {}
+  public record Account(HashCode publicKeyBytes) {}
 
-  public record AccountBalance(int accountIndex, int resourceIndex, UInt256 amount) {}
+  public record AccountBalance(int accountIndex, int resourceIndex, BigInteger amount) {}
 
   public record Stake(int accountIndex, int validatorIndex, UInt256 stakeUnitAmount) {}
 }

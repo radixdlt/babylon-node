@@ -70,7 +70,6 @@ import org.bouncycastle.crypto.BasicAgreement;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.DerivationFunction;
-import org.bouncycastle.crypto.DerivationParameters;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.KeyParser;
@@ -81,7 +80,6 @@ import org.bouncycastle.crypto.params.IESParameters;
 import org.bouncycastle.crypto.params.IESWithCipherParameters;
 import org.bouncycastle.crypto.params.KDFParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.MGFParameters;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.BigIntegers;
@@ -94,10 +92,10 @@ import org.bouncycastle.util.Pack;
  */
 public class IESEngine {
   private final Digest hash;
-  private BasicAgreement agree;
-  private DerivationFunction kdf;
-  private Mac mac;
-  private BufferedBlockCipher cipher;
+  private final BasicAgreement agree;
+  private final DerivationFunction kdf;
+  private final Mac mac;
+  private final BufferedBlockCipher cipher;
 
   private boolean forEncryption;
   private CipherParameters privParam, pubParam;
@@ -411,12 +409,7 @@ public class IESEngine {
     vz = z;
 
     // Initialise the KDF.
-    DerivationParameters kdfParam;
-    if (kdf instanceof MGF1BytesGeneratorExt) {
-      kdfParam = new MGFParameters(vz);
-    } else {
-      kdfParam = new KDFParameters(vz, param.getDerivationV());
-    }
+    final var kdfParam = new KDFParameters(vz, param.getDerivationV());
     kdf.init(kdfParam);
 
     return forEncryption

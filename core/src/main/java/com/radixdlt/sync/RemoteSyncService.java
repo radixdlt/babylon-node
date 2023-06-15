@@ -129,9 +129,9 @@ public final class RemoteSyncService {
 
   private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
-    final var transactionsWithProof = getTransactionsWithProofForSyncRequest(remoteCurrentHeader);
+    final var ledgerExtension = getLedgerExtensionForSyncRequest(remoteCurrentHeader);
 
-    if (transactionsWithProof == null) {
+    if (ledgerExtension == null) {
       log.warn(
           "REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.",
           remoteCurrentHeader,
@@ -140,10 +140,10 @@ public final class RemoteSyncService {
     }
 
     final var verifiable =
-        new CommittedTransactionsWithProofDto(
-            transactionsWithProof.getTransactions(),
+        new DtoLedgerExtension(
+            ledgerExtension.getTransactions(),
             remoteCurrentHeader,
-            transactionsWithProof.getProof().toDto());
+            ledgerExtension.getProof().toDto());
 
     log.trace(
         "REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}",
@@ -155,8 +155,7 @@ public final class RemoteSyncService {
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 
-  private CommittedTransactionsWithProof getTransactionsWithProofForSyncRequest(
-      DtoLedgerProof startHeader) {
+  private LedgerExtension getLedgerExtensionForSyncRequest(DtoLedgerProof startHeader) {
     return committedReader.getTransactions(startHeader);
   }
 

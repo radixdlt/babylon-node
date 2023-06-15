@@ -71,7 +71,7 @@ use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
     StateHashTreeDiff,
 };
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, TransactionTreeHash};
+use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use im::hashmap::HashMap as ImmutableHashMap;
 
 use im::ordmap::OrdMap as ImmutableOrdMap;
@@ -160,7 +160,7 @@ impl ExecutionCache {
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_state_version: u64,
+        parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
@@ -209,6 +209,20 @@ impl ExecutionCache {
             self.remove_node(&removed_key);
         }
         self.base_transaction_root = *new_base_transaction_root;
+    }
+
+    pub fn get_cached_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
+    ) -> Option<&TransactionTreeHash> {
+        self.transaction_placement_to_key
+            .get(&TransactionPlacement::new(
+                parent_transaction_root,
+                ledger_transaction_hash,
+            ))
+            .and_then(|transaction_key| self.key_to_internal_transaction_ids.get(*transaction_key))
+            .and_then(|ids| ids.committed_transaction_root.as_ref())
     }
 
     fn get_existing_stage_key(&self, transaction_root: &TransactionTreeHash) -> StageKey {
@@ -341,10 +355,10 @@ impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for StagedStore<'s, S> 
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, TransactionTreeHash>>
-    ReadableAccuTreeStore<u64, TransactionTreeHash> for StagedStore<'s, S>
+impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
+    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+    fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<TransactionTreeHash>> {
         self.overlay
             .transaction_tree_slices
             .get(key)
@@ -353,10 +367,10 @@ impl<'s, S: ReadableAccuTreeStore<u64, TransactionTreeHash>>
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, ReceiptTreeHash>> ReadableAccuTreeStore<u64, ReceiptTreeHash>
-    for StagedStore<'s, S>
+impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
+    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+    fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.overlay
             .receipt_tree_slices
             .get(key)
@@ -410,8 +424,8 @@ pub struct ImmutableStore {
     substate_updates: ImmutableOrdMap<(DbPartitionKey, DbSortKey), DatabaseUpdate>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<PartitionPayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<()>>,
-    transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
-    receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptTreeHash>>,
+    transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
 }
 
 impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
@@ -427,12 +441,11 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let database_updates = commit.database_updates.clone();
-            for (db_partition_key, partition_updates) in database_updates {
+            for (db_partition_key, partition_updates) in &commit.database_updates {
                 for (db_sort_key, database_update) in partition_updates {
-                    let db_substate_key = (db_partition_key.clone(), db_sort_key);
+                    let db_substate_key = (db_partition_key.clone(), db_sort_key.clone());
                     self.substate_updates
-                        .insert(db_substate_key, database_update);
+                        .insert(db_substate_key, database_update.clone());
                 }
             }
             let hash_structures_diff = &commit.hash_structures_diff;

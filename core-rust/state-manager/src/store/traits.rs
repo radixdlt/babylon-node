@@ -65,7 +65,7 @@
 use crate::staging::StateHashTreeDiff;
 use crate::store::StateManagerDatabase;
 use crate::transaction::*;
-use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
 pub use commit::*;
 use enum_dispatch::enum_dispatch;
 pub use proofs::*;
@@ -139,7 +139,7 @@ pub trait ConfigurableDatabase {
 }
 
 pub struct CommittedTransactionBundle {
-    pub state_version: u64,
+    pub state_version: StateVersion,
     pub raw: RawLedgerTransaction,
     pub receipt: LocalTransactionReceipt,
     pub identifiers: CommittedTransactionIdentifiers,
@@ -178,42 +178,45 @@ pub mod transactions {
     pub trait IterableTransactionStore {
         fn get_committed_transaction_bundle_iter(
             &self,
-            from_state_version: u64,
+            from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_>;
     }
 
     #[enum_dispatch]
     pub trait QueryableTransactionStore {
-        fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction>;
+        fn get_committed_transaction(
+            &self,
+            state_version: StateVersion,
+        ) -> Option<RawLedgerTransaction>;
 
         fn get_committed_transaction_identifiers(
             &self,
-            state_version: u64,
+            state_version: StateVersion,
         ) -> Option<CommittedTransactionIdentifiers>;
 
         fn get_committed_ledger_transaction_receipt(
             &self,
-            state_version: u64,
+            state_version: StateVersion,
         ) -> Option<LedgerTransactionReceipt>;
 
         fn get_committed_local_transaction_execution(
             &self,
-            state_version: u64,
+            state_version: StateVersion,
         ) -> Option<LocalTransactionExecution>;
 
         fn get_committed_local_transaction_receipt(
             &self,
-            state_version: u64,
+            state_version: StateVersion,
         ) -> Option<LocalTransactionReceipt>;
 
-        fn get_committed_ledger_hashes(&self, state_version: u64) -> Option<LedgerHashes> {
+        fn get_committed_ledger_hashes(&self, state_version: StateVersion) -> Option<LedgerHashes> {
             self.get_committed_transaction_identifiers(state_version)
                 .map(|ids| ids.resultant_ledger_hashes)
         }
     }
 
     pub trait TransactionIndex<T>: QueryableTransactionStore {
-        fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<u64>;
+        fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<StateVersion>;
     }
 }
 
@@ -224,15 +227,15 @@ pub mod proofs {
 
     #[enum_dispatch]
     pub trait QueryableProofStore {
-        fn max_state_version(&self) -> u64;
+        fn max_state_version(&self) -> StateVersion;
         fn get_txns_and_proof(
             &self,
-            start_state_version_inclusive: u64,
+            start_state_version_inclusive: StateVersion,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
         ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
-        fn get_first_epoch_proof(&self) -> Option<LedgerProof>;
+        fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
         fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
@@ -242,11 +245,9 @@ pub mod proofs {
 pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptTreeHash, TransactionTreeHash};
+    use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
-    use radix_engine_store_interface::interface::{
-        DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    };
+    use radix_engine_store_interface::interface::DatabaseUpdates;
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, PartitionPayload, TreeNode};
     use utils::rust::collections::IndexMap;
 
@@ -261,7 +262,7 @@ pub mod commit {
     }
 
     pub struct SubstateStoreUpdate {
-        pub updates: IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>,
+        pub updates: DatabaseUpdates,
     }
 
     impl SubstateStoreUpdate {
@@ -271,7 +272,17 @@ pub mod commit {
             }
         }
 
+        pub fn from_single(database_updates: DatabaseUpdates) -> Self {
+            Self {
+                updates: database_updates,
+            }
+        }
+
         pub fn apply(&mut self, database_updates: DatabaseUpdates) {
+            if self.updates.is_empty() {
+                self.updates = database_updates;
+                return;
+            }
             for (partition_key, partition_updates) in database_updates {
                 let curr_partition_updates = self
                     .updates
@@ -293,7 +304,7 @@ pub mod commit {
     pub struct HashTreeUpdate {
         pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
         pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
-        pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
+        pub stale_node_keys_at_state_version: Vec<(StateVersion, Vec<NodeKey>)>,
     }
 
     impl HashTreeUpdate {
@@ -305,7 +316,18 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: u64, diff: StateHashTreeDiff) {
+        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+            Self {
+                new_re_node_layer_nodes: diff.new_re_node_layer_nodes,
+                new_substate_layer_nodes: diff.new_substate_layer_nodes,
+                stale_node_keys_at_state_version: vec![(
+                    at_state_version,
+                    diff.stale_hash_tree_node_keys,
+                )],
+            }
+        }
+
+        pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
             self.new_re_node_layer_nodes
                 .extend(diff.new_re_node_layer_nodes);
             self.new_substate_layer_nodes
@@ -333,7 +355,7 @@ pub mod extensions {
 
     #[enum_dispatch]
     pub trait AccountChangeIndexExtension {
-        fn account_change_index_last_processed_state_version(&self) -> u64;
+        fn account_change_index_last_processed_state_version(&self) -> StateVersion;
 
         fn catchup_account_change_index(&mut self);
     }
@@ -343,7 +365,7 @@ pub mod extensions {
         fn get_state_versions_for_account_iter(
             &self,
             account: GlobalAddress,
-            from_state_version: u64,
-        ) -> Box<dyn Iterator<Item = u64> + '_>;
+            from_state_version: StateVersion,
+        ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
     }
 }

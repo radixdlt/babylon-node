@@ -84,4 +84,8 @@ public interface Hasher {
    * @param bytes byte array to hash
    */
   HashCode hashBytes(byte[] bytes);
+
+  default HashCode hash(Hashable hashable) {
+    return hashBytes(hashable.hashableBytes());
+  }
 }

@@ -1,5 +1,6 @@
 use radix_engine::types::*;
 
+use crate::{LedgerHeader, RoundHistory};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use sbor::FixedEnumVariant;
@@ -14,6 +15,45 @@ pub struct RoundUpdateTransactionV1 {
 }
 
 impl RoundUpdateTransactionV1 {
+    pub fn new(epoch_header: Option<&LedgerHeader>, round_history: &RoundHistory) -> Self {
+        let validator_index_by_address = epoch_header
+            .expect("at least genesis epoch is expected before any prepare")
+            .next_epoch
+            .as_ref()
+            .expect("epoch header must contain next epoch information")
+            .validator_set
+            .iter()
+            .enumerate()
+            .map(|(validator_index, validator_info)| {
+                (
+                    validator_info.address,
+                    ValidatorIndex::try_from(validator_index)
+                        .expect("validator set size limit guarantees this"),
+                )
+            })
+            .collect::<NonIterMap<_, _>>();
+        RoundUpdateTransactionV1 {
+            proposer_timestamp_ms: round_history.proposer_timestamp_ms,
+            epoch: round_history.epoch,
+            round: round_history.round,
+            leader_proposal_history: LeaderProposalHistory {
+                gap_round_leaders: round_history
+                    .gap_round_leader_addresses
+                    .iter()
+                    .map(|leader_address| {
+                        *validator_index_by_address
+                            .get(leader_address)
+                            .expect("gap round leader must belong to the validator set")
+                    })
+                    .collect::<Vec<_>>(),
+                current_leader: *validator_index_by_address
+                    .get(&round_history.proposer_address)
+                    .expect("proposer must belong to the validator set"),
+                is_fallback: round_history.is_fallback,
+            },
+        }
+    }
+
     /// Note - we purposefully restrict what the content of a Round Update transaction can do
     /// so we convert it to instructions at run-time.
     pub fn create_instructions(&self) -> Vec<InstructionV1> {

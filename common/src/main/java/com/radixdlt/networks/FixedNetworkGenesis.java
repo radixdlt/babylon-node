@@ -64,29 +64,23 @@
 
 package com.radixdlt.networks;
 
-import java.util.Arrays;
+import com.google.common.hash.HashCode;
+import com.radixdlt.utils.WrappedByteArray;
 
 public sealed interface FixedNetworkGenesis {
-  record Resource(String resourcePath) implements FixedNetworkGenesis {}
 
-  record Constant(byte[] genesisData) implements FixedNetworkGenesis {
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof Constant otherConstant
-          && Arrays.equals(genesisData, otherConstant.genesisData);
-    }
+  HashCode genesisDataHash();
 
-    @Override
-    public int hashCode() {
-      return Arrays.hashCode(genesisData);
-    }
+  record Resource(HashCode genesisDataHash, String resourcePath) implements FixedNetworkGenesis {}
+
+  record Constant(HashCode genesisDataHash, WrappedByteArray genesisData)
+      implements FixedNetworkGenesis {}
+
+  static FixedNetworkGenesis resource(HashCode genesisDataHash, String resourcePath) {
+    return new Resource(genesisDataHash, resourcePath);
   }
 
-  static FixedNetworkGenesis resource(String resourcePath) {
-    return new Resource(resourcePath);
-  }
-
-  static FixedNetworkGenesis constant(byte[] genesisData) {
-    return new Constant(genesisData);
+  static FixedNetworkGenesis constant(HashCode genesisDataHash, WrappedByteArray genesisData) {
+    return new Constant(genesisDataHash, genesisData);
   }
 }

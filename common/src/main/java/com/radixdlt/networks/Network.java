@@ -64,11 +64,13 @@
 
 package com.radixdlt.networks;
 
-import com.radixdlt.crypto.ECKeyPair;
+import com.google.common.hash.HashCode;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.bouncycastle.util.encoders.Hex;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public enum Network {
 
   /// Public Facing Permanent Networks (0x00 - 0x09)
@@ -77,6 +79,13 @@ public enum Network {
   // TODO(post-babylon): add a fixed genesis from resources for mainnet
   MAINNET(1 /* 0x01 */, "mainnet", "rdx"),
   STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_"),
+
+  // Temporary networks that match Olympia - for genesis testing mostly
+  OLYMPIA_RELEASENET(3, "releasenet", "tdx_3_"),
+  OLYMPIA_RCNET(4, "rcnet", "tdx_4_"),
+  OLYMPIA_MILESTONENET(5, "milestonenet", "tdx_5_"),
+  OLYMPIA_DEVOPSNET(6, "devopsnet", "tdx_6_"),
+  OLYMPIA_SANDPITNET(7, "sandpitnet", "tdx_7_"),
 
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
@@ -109,11 +118,16 @@ public enum Network {
   // - inttestnet = The network used when running integration tests
   LOCALNET(240 /* 0xF0 */, "localnet", "loc"),
   INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "test"),
-  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim");
-
-  // For the Radix Shell to provide a default
-  public static final String DefaultHexGenesisTransaction =
-      ECKeyPair.generateNew().getPublicKey().toHex();
+  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim"),
+  // A dedicated network for testing genesis
+  GENESIS_TEST(
+      243 /* 0xF2 */,
+      "genesis_test",
+      "genesis_test",
+      FixedNetworkGenesis.resource(
+          HashCode.fromBytes(
+              Hex.decode("8224a260ac04ce77e4d0b6359f8010faa3f3ba2adba601d612b2f40b67a558a3")),
+          "genesis/test_genesis.bin"));
 
   private final int intId;
   private final byte byteId;

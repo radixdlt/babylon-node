@@ -4,7 +4,7 @@ use radix_engine::{
 };
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    SubstateChange, TransactionTreeHash,
+    StateVersion, SubstateChange, TransactionTreeHash,
 };
 use transaction::prelude::*;
 
@@ -13,7 +13,7 @@ use crate::core_api::*;
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
     context: &MappingContext,
-    state_version: u64,
+    state_version: StateVersion,
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {

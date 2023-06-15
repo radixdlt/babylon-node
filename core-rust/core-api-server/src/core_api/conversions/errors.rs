@@ -2,6 +2,7 @@ use radix_engine::types::NonFungibleIdType;
 use radix_engine_common::{address::EncodeBech32AddressError, types::PartitionNumber};
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
+use state_manager::StateVersion;
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
 
@@ -55,7 +56,7 @@ pub enum MappingError {
         message: String,
     },
     CouldNotDecodeTransaction {
-        state_version: u64,
+        state_version: StateVersion,
         error: DecodeError,
     },
 }

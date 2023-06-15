@@ -67,8 +67,8 @@ package com.radixdlt.store;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Map.Entry;
@@ -78,7 +78,7 @@ import java.util.TreeMap;
 /** A correct in memory committed reader used for testing */
 public final class InMemoryTransactionsAndProofReader implements TransactionsAndProofReader {
   public static final class Store {
-    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
+    final TreeMap<Long, LedgerExtension> committedLedgerExtensions = new TreeMap<>();
     final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
   }
 
@@ -100,9 +100,9 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
             version <= update.getTail().getStateVersion();
             version++) {
           int index = (int) (version - firstVersion);
-          store.committedTransactionRuns.put(
+          store.committedLedgerExtensions.put(
               version,
-              CommittedTransactionsWithProof.create(
+              LedgerExtension.create(
                   transactions.subList(index, transactions.size()), update.getTail()));
         }
 
@@ -116,11 +116,11 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   }
 
   @Override
-  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+  public LedgerExtension getTransactions(DtoLedgerProof start) {
     synchronized (lock) {
       final long startStateVersion = start.getLedgerHeader().getStateVersion();
-      Entry<Long, CommittedTransactionsWithProof> entry =
-          store.committedTransactionRuns.higherEntry(startStateVersion);
+      Entry<Long, LedgerExtension> entry =
+          store.committedLedgerExtensions.higherEntry(startStateVersion);
 
       if (entry != null) {
         return entry.getValue().getExtensionFrom(startStateVersion);
@@ -146,7 +146,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
 
   @Override
   public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
+    return Optional.ofNullable(store.committedLedgerExtensions.lastEntry())
         .map(p -> p.getValue().getProof());
   }
 

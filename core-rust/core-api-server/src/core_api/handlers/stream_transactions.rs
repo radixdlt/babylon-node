@@ -5,7 +5,7 @@ use radix_engine::types::hash;
 use radix_engine_common::types::ValidatorIndex;
 use state_manager::store::traits::*;
 use state_manager::transaction::*;
-use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt};
+use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
 
 use std::collections::HashMap;
 use transaction::manifest;
@@ -24,7 +24,7 @@ pub(crate) async fn handle_stream_transactions(
         .with_transaction_formats(&request.transaction_format_options)
         .with_substate_formats(&request.substate_format_options);
 
-    let from_state_version: u64 = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request
@@ -118,7 +118,7 @@ pub(crate) async fn handle_stream_transactions(
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
     context: &MappingContext,
-    state_version: u64,
+    state_version: StateVersion,
     raw_ledger_transaction: RawLedgerTransaction,
     ledger_transaction: LedgerTransaction,
     receipt: LocalTransactionReceipt,

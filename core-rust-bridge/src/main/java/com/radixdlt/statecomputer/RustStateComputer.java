@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
@@ -112,11 +111,11 @@ public class RustStateComputer {
             .build(new TypeToken<>() {});
   }
 
-  public LedgerProof executeGenesis(GenesisData genesisData) {
-    return executeGenesisFunc.call(genesisData);
+  public LedgerProof executeGenesis(byte[] rawGenesisData) {
+    return executeGenesisFunc.call(rawGenesisData);
   }
 
-  private final Natives.Call1<GenesisData, LedgerProof> executeGenesisFunc;
+  private final Natives.Call1<byte[], LedgerProof> executeGenesisFunc;
 
   private static native byte[] executeGenesis(StateManager stateManager, byte[] payload);
 
@@ -128,11 +127,12 @@ public class RustStateComputer {
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
 
-  public Result<Tuple.Tuple0, CommitError> commit(CommitRequest commitRequest) {
+  public Result<Tuple.Tuple0, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
     return commitFunc.call(commitRequest);
   }
 
-  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, CommitError>> commitFunc;
+  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>>
+      commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 

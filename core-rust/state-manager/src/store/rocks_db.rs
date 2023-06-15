@@ -64,12 +64,12 @@
 
 use std::collections::HashSet;
 use std::fmt;
-use std::mem::size_of;
 
 use crate::store::traits::*;
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
+    TransactionTreeHash,
 };
 use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
@@ -275,20 +275,20 @@ impl RocksDBStore {
                 panic!(
                     "Attempted to save intent hash {:?} which already exists at state version {:?}",
                     intent_hash,
-                    u64::from_be_bytes(existing_state_version.try_into().unwrap())
+                    StateVersion::from_bytes(existing_state_version)
                 );
             }
 
             batch.put_cf(
                 self.cf_handle(&StateVersionByTxnIntentHash),
                 intent_hash,
-                state_version.to_be_bytes(),
+                state_version.to_bytes(),
             );
 
             batch.put_cf(
                 self.cf_handle(&StateVersionByTxnUserPayloadHash),
                 notarized_transaction_hash,
-                state_version.to_be_bytes(),
+                state_version.to_bytes(),
             );
         } else {
             let maybe_existing_state_version = self
@@ -303,7 +303,7 @@ impl RocksDBStore {
                 panic!(
                     "Attempted to save ledger payload hash {:?} which already exists at state version {:?}",
                     ledger_payload_hash,
-                    u64::from_be_bytes(existing_state_version.try_into().unwrap())
+                    StateVersion::from_bytes(existing_state_version)
                 );
             }
         }
@@ -311,31 +311,31 @@ impl RocksDBStore {
         batch.put_cf(
             self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
             ledger_payload_hash,
-            state_version.to_be_bytes(),
+            state_version.to_bytes(),
         );
 
         batch.put_cf(
             self.cf_handle(&TxnByStateVersion),
-            state_version.to_be_bytes(),
+            state_version.to_bytes(),
             &raw.0,
         );
 
         batch.put_cf(
             self.cf_handle(&TxnIdentifiersByStateVersion),
-            state_version.to_be_bytes(),
+            state_version.to_bytes(),
             scrypto_encode(&identifiers).unwrap(),
         );
 
         batch.put_cf(
             self.cf_handle(&LedgerReceiptByStateVersion),
-            state_version.to_be_bytes(),
+            state_version.to_bytes(),
             scrypto_encode(&receipt.on_ledger).unwrap(),
         );
 
         if self.is_local_transaction_execution_index_enabled() {
             batch.put_cf(
                 self.cf_handle(&LocalTransactionExecutionByStateVersion),
-                state_version.to_be_bytes(),
+                state_version.to_bytes(),
                 scrypto_encode(&receipt.local_execution).unwrap(),
             );
         }
@@ -410,12 +410,12 @@ impl ConfigurableDatabase for RocksDBStore {
             .expect("DB error writing database config");
     }
 
-    fn is_local_transaction_execution_index_enabled(&self) -> bool {
-        self.config.enable_local_transaction_execution_index
-    }
-
     fn is_account_change_index_enabled(&self) -> bool {
         self.config.enable_account_change_index
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.config.enable_local_transaction_execution_index
     }
 }
 
@@ -455,7 +455,7 @@ impl CommitStore for RocksDBStore {
         let encoded_proof = scrypto_encode(&commit_bundle.proof).unwrap();
         batch.put_cf(
             self.cf_handle(&LedgerProofByStateVersion),
-            commit_state_version.to_be_bytes(),
+            commit_state_version.to_bytes(),
             &encoded_proof,
         );
 
@@ -504,19 +504,19 @@ impl CommitStore for RocksDBStore {
             let encoded_node_keys = stale_node_keys.1.iter().map(encode_key).collect::<Vec<_>>();
             batch.put_cf(
                 self.cf_handle(&StaleStateHashTreeNodeKeysByStateVersion),
-                stale_node_keys.0.to_be_bytes(),
+                stale_node_keys.0.to_bytes(),
                 scrypto_encode(&encoded_node_keys).unwrap(),
             )
         }
 
         batch.put_cf(
             self.cf_handle(&TransactionAccuTreeSliceByStateVersion),
-            commit_state_version.to_be_bytes(),
+            commit_state_version.to_bytes(),
             scrypto_encode(&commit_bundle.transaction_tree_slice).unwrap(),
         );
         batch.put_cf(
             self.cf_handle(&ReceiptAccuTreeSliceByStateVersion),
-            commit_state_version.to_be_bytes(),
+            commit_state_version.to_bytes(),
             scrypto_encode(&commit_bundle.receipt_tree_slice).unwrap(),
         );
 
@@ -525,7 +525,7 @@ impl CommitStore for RocksDBStore {
 }
 
 pub struct RocksDBCommittedTransactionBundleIterator<'a> {
-    state_version: u64,
+    state_version: StateVersion,
     txns_iter: DBIteratorWithThreadMode<'a, DB>,
     ledger_receipts_iter: DBIteratorWithThreadMode<'a, DB>,
     local_executions_iter: DBIteratorWithThreadMode<'a, DB>,
@@ -533,8 +533,8 @@ pub struct RocksDBCommittedTransactionBundleIterator<'a> {
 }
 
 impl<'a> RocksDBCommittedTransactionBundleIterator<'a> {
-    fn new(from_state_version: u64, store: &'a RocksDBStore) -> Self {
-        let start_state_version_bytes = from_state_version.to_be_bytes();
+    fn new(from_state_version: StateVersion, store: &'a RocksDBStore) -> Self {
+        let start_state_version_bytes = from_state_version.to_bytes();
         Self {
             state_version: from_state_version,
             txns_iter: store.db.iterator_cf(
@@ -589,8 +589,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                     ("local execution version", local_execution_kv.0),
                     ("identifiers version", identifiers_kv.0),
                 ] {
-                    let other_row_version =
-                        u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
+                    let other_row_version = StateVersion::from_bytes(other_key_bytes);
                     if other_row_version != current_state_version {
                         panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({current_state_version})");
                     }
@@ -605,7 +604,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
                 };
                 let identifiers = scrypto_decode(identifiers_kv.1.as_ref()).unwrap();
 
-                self.state_version += 1;
+                self.state_version = self.state_version.next();
 
                 Some(CommittedTransactionBundle {
                     state_version: current_state_version,
@@ -621,7 +620,7 @@ impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
 impl IterableTransactionStore for RocksDBStore {
     fn get_committed_transaction_bundle_iter(
         &self,
-        from_state_version: u64,
+        from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
         // This should not happen. This interface should be used after checking (e.g. `core-api-server/src/core-api/handlers/`).
         // However, with or without this debug_assert there would still be a panic if LocalTransactionExecution is missing.
@@ -635,24 +634,24 @@ impl IterableTransactionStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction> {
+    fn get_committed_transaction(
+        &self,
+        state_version: StateVersion,
+    ) -> Option<RawLedgerTransaction> {
         self.db
-            .get_cf(
-                self.cf_handle(&TxnByStateVersion),
-                state_version.to_be_bytes(),
-            )
+            .get_cf(self.cf_handle(&TxnByStateVersion), state_version.to_bytes())
             .expect("DB error loading transaction")
             .map(RawLedgerTransaction)
     }
 
     fn get_committed_transaction_identifiers(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<CommittedTransactionIdentifiers> {
         self.db
             .get_cf(
                 self.cf_handle(&TxnIdentifiersByStateVersion),
-                state_version.to_be_bytes(),
+                state_version.to_bytes(),
             )
             .expect("DB error loading identifiers")
             .map(|v| scrypto_decode(&v).expect("Failed to decode identifiers"))
@@ -660,24 +659,24 @@ impl QueryableTransactionStore for RocksDBStore {
 
     fn get_committed_ledger_transaction_receipt(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LedgerTransactionReceipt> {
-        self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_be_bytes())
+        self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_bytes())
     }
 
     fn get_committed_local_transaction_execution(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LocalTransactionExecution> {
         self.get_by_key(
             &LocalTransactionExecutionByStateVersion,
-            &state_version.to_be_bytes(),
+            &state_version.to_bytes(),
         )
     }
 
     fn get_committed_local_transaction_receipt(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LocalTransactionReceipt> {
         let ledger_transaction_receipt =
             self.get_committed_ledger_transaction_receipt(state_version);
@@ -701,11 +700,11 @@ impl QueryableTransactionStore for RocksDBStore {
 }
 
 impl TransactionIndex<&IntentHash> for RocksDBStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<StateVersion> {
         self.db
             .get_cf(self.cf_handle(&StateVersionByTxnIntentHash), identifier)
             .expect("DB error reading state version for intent hash")
-            .map(|b| u64::from_be_bytes(b.try_into().unwrap()))
+            .map(StateVersion::from_bytes)
     }
 }
 
@@ -713,14 +712,14 @@ impl TransactionIndex<&NotarizedTransactionHash> for RocksDBStore {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &NotarizedTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnUserPayloadHash),
                 identifier,
             )
             .expect("DB error reading state version for user payload hash")
-            .map(|b| u64::from_be_bytes(b.try_into().unwrap()))
+            .map(StateVersion::from_bytes)
     }
 }
 
@@ -728,19 +727,21 @@ impl TransactionIndex<&LedgerTransactionHash> for RocksDBStore {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &LedgerTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         self.db
             .get_cf(
                 self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
                 identifier,
             )
             .expect("DB error reading state version for ledger payload hash")
-            .map(|b| u64::from_be_bytes(b.try_into().unwrap()))
+            .map(StateVersion::from_bytes)
     }
 }
 
 impl TransactionIdentifierLoader for RocksDBStore {
-    fn get_top_transaction_identifiers(&self) -> Option<(u64, CommittedTransactionIdentifiers)> {
+    fn get_top_transaction_identifiers(
+        &self,
+    ) -> Option<(StateVersion, CommittedTransactionIdentifiers)> {
         self.db
             .iterator_cf(
                 self.cf_handle(&TxnIdentifiersByStateVersion),
@@ -750,7 +751,7 @@ impl TransactionIdentifierLoader for RocksDBStore {
             .next()
             .map(|(key, value)| {
                 (
-                    u64::from_be_bytes((*key).try_into().unwrap()),
+                    StateVersion::from_bytes(key),
                     scrypto_decode(&value).expect("Failed to decode identifiers"),
                 )
             })
@@ -758,18 +759,18 @@ impl TransactionIdentifierLoader for RocksDBStore {
 }
 
 impl QueryableProofStore for RocksDBStore {
-    fn max_state_version(&self) -> u64 {
+    fn max_state_version(&self) -> StateVersion {
         self.db
             .iterator_cf(self.cf_handle(&TxnByStateVersion), IteratorMode::End)
             .next()
             .map(|res| res.unwrap())
-            .map(|(key, _)| u64::from_be_bytes((*key).try_into().unwrap()))
-            .unwrap_or(0)
+            .map(|(key, _)| StateVersion::from_bytes(key))
+            .unwrap_or(StateVersion::pre_genesis())
     }
 
     fn get_txns_and_proof(
         &self,
-        start_state_version_inclusive: u64,
+        start_state_version_inclusive: StateVersion,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
     ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
@@ -780,7 +781,7 @@ impl QueryableProofStore for RocksDBStore {
         let mut proofs_iter = self.db.iterator_cf(
             self.cf_handle(&LedgerProofByStateVersion),
             IteratorMode::From(
-                &start_state_version_inclusive.to_be_bytes(),
+                &start_state_version_inclusive.to_bytes(),
                 Direction::Forward,
             ),
         );
@@ -788,7 +789,7 @@ impl QueryableProofStore for RocksDBStore {
         let mut txns_iter = self.db.iterator_cf(
             self.cf_handle(&TxnByStateVersion),
             IteratorMode::From(
-                &start_state_version_inclusive.to_be_bytes(),
+                &start_state_version_inclusive.to_bytes(),
                 Direction::Forward,
             ),
         );
@@ -803,8 +804,7 @@ impl QueryableProofStore for RocksDBStore {
             match proofs_iter.next() {
                 Some(next_proof_result) => {
                     let next_proof_kv = next_proof_result.unwrap();
-                    let next_proof_state_version =
-                        u64::from_be_bytes((*next_proof_kv.0).try_into().unwrap());
+                    let next_proof_state_version = StateVersion::from_bytes(next_proof_kv.0);
                     let next_proof: LedgerProof = scrypto_decode(next_proof_kv.1.as_ref()).unwrap();
 
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
@@ -826,7 +826,7 @@ impl QueryableProofStore for RocksDBStore {
                             Some(next_txn_result) => {
                                 let next_txn_kv = next_txn_result.unwrap();
                                 let next_txn_state_version =
-                                    u64::from_be_bytes((*next_txn_kv.0).try_into().unwrap());
+                                    StateVersion::from_bytes(next_txn_kv.0);
                                 let next_txn_payload = next_txn_kv.1.to_vec();
 
                                 payload_size_including_next_proof_txns +=
@@ -880,6 +880,14 @@ impl QueryableProofStore for RocksDBStore {
         latest_usable_proof.map(|proof| (txns, proof))
     }
 
+    fn get_first_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByStateVersion)
+    }
+
+    fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
+        self.get_first(&LedgerProofByEpoch)
+    }
+
     fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof> {
         self.db
             .get_cf(
@@ -888,14 +896,6 @@ impl QueryableProofStore for RocksDBStore {
             )
             .unwrap()
             .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
-    }
-
-    fn get_first_proof(&self) -> Option<LedgerProof> {
-        self.get_first(&LedgerProofByStateVersion)
-    }
-
-    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
-        self.get_first(&LedgerProofByEpoch)
     }
 
     fn get_last_proof(&self) -> Option<LedgerProof> {
@@ -949,20 +949,23 @@ impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionTreeHash> for RocksDBStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for RocksDBStore {
+    fn get_tree_slice(
+        &self,
+        state_version: &StateVersion,
+    ) -> Option<TreeSlice<TransactionTreeHash>> {
         self.get_by_key(
             &TransactionAccuTreeSliceByStateVersion,
-            &state_version.to_be_bytes(),
+            &state_version.to_bytes(),
         )
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for RocksDBStore {
+    fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.get_by_key(
             &ReceiptAccuTreeSliceByStateVersion,
-            &state_version.to_be_bytes(),
+            &state_version.to_bytes(),
         )
     }
 }
@@ -1004,7 +1007,7 @@ impl RocksDBStore {
     fn batch_update_account_change_index_from_receipt(
         &self,
         batch: &mut WriteBatch,
-        state_version: u64,
+        state_version: StateVersion,
         receipt: &LocalTransactionReceipt,
     ) {
         for (address, _) in receipt
@@ -1017,7 +1020,7 @@ impl RocksDBStore {
                 continue;
             }
             let mut key = address.to_vec();
-            key.extend(state_version.to_be_bytes());
+            key.extend(state_version.to_bytes());
             batch.put_cf(self.cf_handle(&AccountChangeStateVersions), key, []);
         }
     }
@@ -1025,7 +1028,7 @@ impl RocksDBStore {
     fn batch_update_account_change_index_from_committed_transaction(
         &self,
         batch: &mut WriteBatch,
-        state_version: u64,
+        state_version: StateVersion,
         transaction_bundle: &CommittedTransactionBundle,
     ) {
         self.batch_update_account_change_index_from_receipt(
@@ -1039,16 +1042,16 @@ impl RocksDBStore {
             ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
                 .to_string()
                 .as_bytes(),
-            state_version.to_be_bytes(),
+            state_version.to_bytes(),
         );
     }
 
     fn update_account_change_index_from_store(
         &mut self,
-        start_state_version_inclusive: u64,
+        start_state_version_inclusive: StateVersion,
         limit: u64,
-    ) -> u64 {
-        let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
+    ) -> StateVersion {
+        let start_state_version_bytes = start_state_version_inclusive.to_bytes();
         let mut receipts_iter = self.db.iterator_cf(
             self.cf_handle(&LocalTransactionExecutionByStateVersion),
             IteratorMode::From(&start_state_version_bytes, Direction::Forward),
@@ -1062,11 +1065,9 @@ impl RocksDBStore {
             match receipts_iter.next() {
                 Some(next_receipt_result) => {
                     let next_receipt_kv = next_receipt_result.unwrap();
+                    let next_receipt_state_version = StateVersion::from_bytes(next_receipt_kv.0);
 
-                    let next_receipt_state_version =
-                        u64::from_be_bytes((*next_receipt_kv.0).try_into().unwrap());
-
-                    let expected_state_version = start_state_version_inclusive + index;
+                    let expected_state_version = start_state_version_inclusive.relative(index);
                     if expected_state_version != next_receipt_state_version {
                         panic!(
                             "DB inconsistency! Missing receipt at state version {expected_state_version}"
@@ -1095,7 +1096,7 @@ impl RocksDBStore {
             ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
                 .to_string()
                 .as_bytes(),
-            last_state_version.to_be_bytes(),
+            last_state_version.to_bytes(),
         );
 
         self.db
@@ -1107,7 +1108,7 @@ impl RocksDBStore {
 }
 
 impl AccountChangeIndexExtension for RocksDBStore {
-    fn account_change_index_last_processed_state_version(&self) -> u64 {
+    fn account_change_index_last_processed_state_version(&self) -> StateVersion {
         self.db
             .get_pinned_cf(
                 self.cf_handle(&ExtensionsData),
@@ -1116,8 +1117,8 @@ impl AccountChangeIndexExtension for RocksDBStore {
                     .as_bytes(),
             )
             .unwrap()
-            .map(|pinnable_slice| u64::from_be_bytes(pinnable_slice.as_ref().try_into().unwrap()))
-            .unwrap_or(0)
+            .map(StateVersion::from_bytes)
+            .unwrap_or(StateVersion::pre_genesis())
     }
 
     fn catchup_account_change_index(&mut self) {
@@ -1137,7 +1138,7 @@ impl AccountChangeIndexExtension for RocksDBStore {
 
         while last_processed_state_version < last_state_version {
             last_processed_state_version = self.update_account_change_index_from_store(
-                last_processed_state_version + 1,
+                last_processed_state_version.next(),
                 MAX_TRANSACTION_BATCH,
             );
             info!("Account Change Index updated to {last_processed_state_version}/{last_state_version}");
@@ -1153,9 +1154,13 @@ pub struct RocksDBAccountChangeIndexIterator<'a> {
 }
 
 impl<'a> RocksDBAccountChangeIndexIterator<'a> {
-    fn new(from_state_version: u64, account: GlobalAddress, store: &'a RocksDBStore) -> Self {
+    fn new(
+        from_state_version: StateVersion,
+        account: GlobalAddress,
+        store: &'a RocksDBStore,
+    ) -> Self {
         let mut key = account.to_vec();
-        key.extend(from_state_version.to_be_bytes());
+        key.extend(from_state_version.to_bytes());
         Self {
             account_bytes: account.to_vec(),
             account_change_iter: store.db.iterator_cf(
@@ -1167,15 +1172,15 @@ impl<'a> RocksDBAccountChangeIndexIterator<'a> {
 }
 
 impl Iterator for RocksDBAccountChangeIndexIterator<'_> {
-    type Item = u64;
+    type Item = StateVersion;
 
-    fn next(&mut self) -> Option<u64> {
+    fn next(&mut self) -> Option<StateVersion> {
         match self.account_change_iter.next() {
             Some(entry) => {
                 let (key, _value) = entry.unwrap();
                 let (address_bytes, state_version_bytes) =
-                    key.split_at(key.len() - size_of::<u64>());
-                let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
+                    key.split_at(key.len() - StateVersion::BYTE_LEN);
+                let state_version = StateVersion::from_bytes(state_version_bytes);
                 if address_bytes != self.account_bytes {
                     None
                 } else {
@@ -1191,8 +1196,8 @@ impl IterableAccountChangeIndex for RocksDBStore {
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
-        from_state_version: u64,
-    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = StateVersion> + '_> {
         Box::new(RocksDBAccountChangeIndexIterator::new(
             from_state_version,
             account,
@@ -1226,7 +1231,10 @@ mod tests {
 
         assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0])) < iterator_start);
         assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 3])) < iterator_start);
-        assert!(encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])) == iterator_start);
+        assert_eq!(
+            encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 4])),
+            iterator_start
+        );
         assert!(iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5])));
         assert!(
             iterator_start < encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![0, 5, 7]))

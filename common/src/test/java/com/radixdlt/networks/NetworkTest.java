@@ -73,7 +73,6 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 public class NetworkTest {
-
   @Test
   public void test_hrp_suffices_align_with_network_id() {
     for (var network : Network.values()) {
@@ -89,6 +88,9 @@ public class NetworkTest {
       } else if (network.getLogicalName().equals("inttestnet")) {
         assertEquals("account_test", network.getAccountComponentHrp());
         assertEquals("validator_test", network.getValidatorHrp());
+      } else if (network.getLogicalName().equals("genesis_test")) {
+        assertEquals("account_genesis_test", network.getAccountComponentHrp());
+        assertEquals("validator_genesis_test", network.getValidatorHrp());
       } else {
         var hexId = Integer.toString(network.getId(), 16).toLowerCase();
         assertEquals(String.format("account_tdx_%s_", hexId), network.getAccountComponentHrp());
@@ -110,7 +112,12 @@ public class NetworkTest {
     var logicalNameExceptions =
         Map.of(
             "INTEGRATIONTESTNET", "inttestnet",
-            "LOCALSIMULATOR", "simulator");
+            "LOCALSIMULATOR", "simulator",
+            "OLYMPIA_RELEASENET", "releasenet",
+            "OLYMPIA_RCNET", "rcnet",
+            "OLYMPIA_MILESTONENET", "milestonenet",
+            "OLYMPIA_DEVOPSNET", "devopsnet",
+            "OLYMPIA_SANDPITNET", "sandpitnet");
 
     for (var network : Network.values()) {
       var networkEnumName = network.name();

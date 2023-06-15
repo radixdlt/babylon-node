@@ -66,6 +66,7 @@ package com.radixdlt.sbor.codec;
 
 import com.google.common.base.Preconditions;
 import com.radixdlt.lang.Functions;
+import com.radixdlt.sbor.SborEnumDiscriminator;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -132,7 +133,8 @@ public class EnumCodec<T> implements Codec<T> {
     for (int i = 0; i < enumEntries.length; i++) {
       var enumEntry = enumEntries[i];
       var baseClass = enumEntry.getBaseClass();
-      var enumKey = (byte) i;
+      final var discriminatorAnnotation = baseClass.getAnnotation(SborEnumDiscriminator.class);
+      var enumKey = discriminatorAnnotation != null ? discriminatorAnnotation.value() : (byte) i;
       enumEntryCodecMap.put(enumKey, enumEntry);
       inverseClassMap.put(baseClass, enumKey);
     }

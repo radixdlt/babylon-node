@@ -88,6 +88,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.RoundHistory;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -234,7 +235,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var preparedUncommittedTransactions =
+    var ancestorTransactions =
         preparedUncommittedVertices.stream()
             .flatMap(
                 vertex ->
@@ -251,15 +252,16 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var prepareRequest =
         new PrepareRequest(
             REv2ToConsensus.ledgerHashes(committedLedgerHashes),
-            preparedUncommittedTransactions,
+            ancestorTransactions,
             REv2ToConsensus.ledgerHashes(preparedUncommittedLedgerHashes),
             proposedTransactions,
-            roundDetails.isFallback(),
-            UInt64.fromNonNegativeLong(roundDetails.epoch()),
-            UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
-            gapRoundLeaderAddresses,
-            roundDetails.roundProposer().getActiveValidatorAddress(),
-            roundDetails.proposerTimestampMs());
+            new RoundHistory(
+                roundDetails.isFallback(),
+                UInt64.fromNonNegativeLong(roundDetails.epoch()),
+                UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
+                gapRoundLeaderAddresses,
+                roundDetails.roundProposer().getActiveValidatorAddress(),
+                roundDetails.proposerTimestampMs()));
 
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =
@@ -279,8 +281,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
-    var proof = txnsAndProof.getProof();
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    var proof = ledgerExtension.getProof();
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
@@ -291,21 +293,23 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
+            ledgerExtension.getTransactions(),
+            REv2ToConsensus.ledgerProof(proof),
+            vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     result.onError(
         error -> {
-          throw new ByzantineQuorumException(error);
+          throw new InvalidCommitRequestException(error);
         });
 
     var epochChangeOptional =
-        txnsAndProof
+        ledgerExtension
             .getProof()
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  var header = txnsAndProof.getProof();
+                  var header = ledgerExtension.getProof();
                   final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = ProposerElections.defaultRotation(validatorSet);
@@ -320,7 +324,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
           this.currentProposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
           outputBuilder.put(EpochChange.class, epochChange);
         });
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+    var ledgerUpdate = new LedgerUpdate(ledgerExtension, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

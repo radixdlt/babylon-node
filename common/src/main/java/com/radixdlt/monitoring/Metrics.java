@@ -65,12 +65,14 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.MoreCollectors;
-import io.prometheus.client.*;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Info;
+import io.prometheus.client.Summary;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.DoubleSupplier;
 import javax.annotation.Nullable;
 
@@ -272,8 +274,15 @@ public record Metrics(
           Arrays.stream(cls.getDeclaredMethods())
               .filter(m -> Modifier.isNative(m.getModifiers()))
               .map(Method::getName)
-              .filter(Predicates.equalTo(methodName))
-              .collect(MoreCollectors.onlyElement()));
+              .filter(s -> Objects.equals(s, methodName))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new RuntimeException(
+                          String.format(
+                              "Could not find native method \"%s\" in %s for the metrics MethodId"
+                                  + " label",
+                              methodName, cls))));
     }
   }
 

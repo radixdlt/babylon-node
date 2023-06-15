@@ -144,8 +144,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
-    this.stateComputer.commit(committedTransactionsWithProof, vertexStore);
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    this.stateComputer.commit(ledgerExtension, vertexStore);
   }
 }

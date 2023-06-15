@@ -64,25 +64,18 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public record PrepareRequest(
     LedgerHashes committedLedgerHashes,
-    List<RawLedgerTransaction> preparedUncommittedTransactions,
-    LedgerHashes preparedUncommittedLedgerHashes,
+    List<RawLedgerTransaction> ancestorTransactions,
+    LedgerHashes ancestorLedgerHashes,
     List<RawNotarizedTransaction> proposedTransactions,
-    boolean isFallback,
-    UInt64 epoch,
-    UInt64 roundNumber,
-    List<ComponentAddress> gapRoundLeaderAddresses,
-    ComponentAddress proposerAddress,
-    long proposerTimestampMs) {
+    RoundHistory roundHistory) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareRequest.class,

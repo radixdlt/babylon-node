@@ -68,8 +68,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
@@ -93,7 +93,7 @@ public final class LedgerFileSync {
   public static void writeToFile(
       String fileName, Serialization serialization, TransactionsAndProofReader committedReader)
       throws IOException {
-    final var initialProof = committedReader.getEpochProof(1L);
+    final var initialProof = committedReader.getPostGenesisEpochProof();
     final var endProofOpt = committedReader.getLastProof();
     if (initialProof.isPresent() && endProofOpt.isPresent()) {
       final var endProof = endProofOpt.get();
@@ -121,7 +121,7 @@ public final class LedgerFileSync {
   public static void restoreFromFile(
       String fileName,
       Serialization serialization,
-      EventDispatcher<CommittedTransactionsWithProof> transactionsWithProofDispatcher)
+      EventDispatcher<LedgerExtension> ledgerExtensionDispatcher)
       throws IOException {
     try (var in = new FileInputStream(fileName)) {
       while (in.available() > 0) {
@@ -132,11 +132,11 @@ public final class LedgerFileSync {
                 Compress.uncompress(data), CommittedTransactionsWithProofDto.class);
         final var proof = wrapper.getProof();
         // TODO: verify the proof
-        final var transactionsWithProof =
-            CommittedTransactionsWithProof.create(
+        final var ledgerExtension =
+            LedgerExtension.create(
                 wrapper.getTxns(),
                 new LedgerProof(proof.getOpaque(), proof.getLedgerHeader(), proof.getSignatures()));
-        transactionsWithProofDispatcher.dispatch(transactionsWithProof);
+        ledgerExtensionDispatcher.dispatch(ledgerExtension);
       }
     }
   }

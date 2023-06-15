@@ -301,4 +301,14 @@ public class Bytes {
   public static HashCode take(HashCode bytes, int n) {
     return HashCode.fromBytes(Arrays.copyOfRange(bytes.asBytes(), 0, n));
   }
+
+  public static byte[] leftPadWithZeros(byte[] input, int resLen) {
+    if (input.length >= resLen) {
+      return input;
+    }
+    final var padded = new byte[resLen];
+    final var paddingLen = resLen - input.length;
+    System.arraycopy(input, 0, padded, paddingLen, input.length);
+    return padded;
+  }
 }

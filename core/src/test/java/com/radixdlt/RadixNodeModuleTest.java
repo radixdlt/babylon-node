@@ -73,11 +73,11 @@ import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
-import java.util.Optional;
 import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
@@ -100,9 +100,12 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
+
     Guice.createInjector(
             new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
+                properties,
+                NETWORK,
+                RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty())))
         .injectMembers(this);
   }
 
@@ -119,7 +122,10 @@ public class RadixNodeModuleTest {
             () ->
                 Guice.createInjector(
                         new RadixNodeModule(
-                            properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
+                            properties,
+                            NETWORK,
+                            RawGenesisDataWithHash.fromGenesisData(
+                                GenesisData.testingDefaultEmpty())))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -138,7 +144,9 @@ public class RadixNodeModuleTest {
 
     Guice.createInjector(
             new RadixNodeModule(
-                properties, NETWORK, Optional.of(GenesisData.testingDefaultEmpty())))
+                properties,
+                NETWORK,
+                RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty())))
         .injectMembers(this);
   }
 

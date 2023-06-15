@@ -216,7 +216,7 @@ dependencies {
     implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'
     implementation 'com.sleepycat:je'
-    implementation 'com.jcabi:jcabi-http:1.20.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
 
     implementation 'com.lmax:disruptor'
 
@@ -230,6 +230,7 @@ dependencies {
     implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
+    testImplementation project(path: ':common')
     testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.mockito:mockito-core'

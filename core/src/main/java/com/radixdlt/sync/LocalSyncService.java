@@ -73,7 +73,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.InvalidCommitRequestException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -434,7 +434,7 @@ public final class LocalSyncService {
       return currentState;
     }
 
-    if (syncResponse.getTransactionsWithProofDto().getTransactions().isEmpty()) {
+    if (syncResponse.getLedgerExtension().getTransactions().isEmpty()) {
       log.warn("LocalSync: Received empty sync response from {}", sender);
       // didn't receive any transactions, remove from candidate peers and processSync
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
@@ -452,13 +452,9 @@ public final class LocalSyncService {
 
     try {
       this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
-    } catch (ByzantineQuorumException exception) {
-      // TODO: at some point in future, we may want to distinguish between different causes of this
-      // exception (i.e. would need to be passed from the Engine).
-      // E.g. a mismatched accumulator hash is an indication of a dishonest sender, but a mismatched
-      // state hash may be a problem with a local database. Right now we always punish the sender.
+    } catch (InvalidCommitRequestException exception) {
       log.warn(
-          "LocalSync: Received ledger-mismatched ({}) sync response {} from {}",
+          "LocalSync: Received invalid commit request ({}) in sync response {} from {}",
           exception.getMessage(),
           syncResponse,
           sender);

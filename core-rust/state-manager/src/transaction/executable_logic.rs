@@ -22,12 +22,24 @@ pub trait TransactionLogic<S> {
 }
 
 /// A well-known type of execution.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum ConfigType {
     Genesis,
     Regular,
     Pending,
     Preview,
+}
+
+const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
+const GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(2000);
+
+impl ConfigType {
+    pub fn get_transaction_runtime_warn_threshold(&self) -> Duration {
+        match self {
+            ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+            _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
+        }
+    }
 }
 
 /// A preconfigured set of execution settings, allowing to turn `Executable` transactions into
