@@ -68,25 +68,12 @@ use transaction::{errors::TransactionValidationError, prelude::NotarizedTransact
 
 use std::string::ToString;
 
-use crate::MetricLabel;
-
 pub use crate::pending_transaction_result_cache::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MempoolAddSource {
     CoreApi,
     MempoolSync,
-}
-
-impl MetricLabel for MempoolAddSource {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match *self {
-            MempoolAddSource::CoreApi => "CoreApi",
-            MempoolAddSource::MempoolSync => "MempoolSync",
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -139,22 +126,6 @@ impl MempoolAddRejection {
             AtState::Committed { .. } => self.reason.is_rejected_because_intent_already_committed(),
             AtState::PendingPreparingVertices { .. } => false,
             AtState::Static => false,
-        }
-    }
-}
-
-impl MetricLabel for MempoolAddError {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match self {
-            MempoolAddError::Rejected(rejection) => match &rejection.reason {
-                RejectionReason::FromExecution(_) => "ExecutionError",
-                RejectionReason::ValidationError(_) => "ValidationError",
-                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
-            },
-            MempoolAddError::Full { .. } => "MempoolFull",
-            MempoolAddError::Duplicate(_) => "Duplicate",
         }
     }
 }
