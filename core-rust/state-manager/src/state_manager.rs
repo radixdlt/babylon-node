@@ -649,28 +649,36 @@ where
         let commit_request_start_state_version =
             commit_state_version.relative(-(commit_transactions_len as i128));
 
-        // Whilst we could validate intent hash duplicates here, these are checked by validators on prepare already,
-        // and the check will move into the engine at some point and we'll get it for free then...
-        let prepare_results = commit_request
-            .transactions
-            .iter()
-            .map(|raw_transaction| {
-                self.ledger_transaction_validator
-                    .prepare_from_raw(raw_transaction)
-            })
-            .collect::<Result<Vec<_>, _>>();
+        // Step 1.: Parse the transactions (and collect specific metrics from them, as a drive-by)
+        let mut prepared_transactions = Vec::new();
+        let mut leader_round_counters_builder = LeaderRoundCountersBuilder::default();
+        for (index, raw_transaction) in commit_request.transactions.iter().enumerate() {
+            let result = self
+                .ledger_transaction_validator
+                .prepare_from_raw(raw_transaction);
+            let prepared_transaction = match result {
+                Ok(prepared_transaction) => prepared_transaction,
+                Err(error) => {
+                    warn!(
+                        "invalid commit request: cannot parse transaction at index {}: {:?}",
+                        index, error
+                    );
+                    return Err(InvalidCommitRequestError::TransactionParsingFailed);
+                }
+            };
 
-        let prepared_transactions = match prepare_results {
-            Ok(prepared_transactions) => prepared_transactions,
-            Err(error) => {
-                warn!(
-                    "invalid commit request: cannot parse transaction to be committed: {:?}",
-                    error
-                );
-                return Err(InvalidCommitRequestError::TransactionParsingFailed);
+            if let PreparedLedgerTransactionInner::RoundUpdateV1(_) = &prepared_transaction.inner {
+                let round_update = LedgerTransaction::from_raw(raw_transaction)
+                    .expect("the same transaction was parsed fine above");
+                if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
+                    leader_round_counters_builder.update(&round_update.leader_proposal_history);
+                }
             }
-        };
 
+            prepared_transactions.push(prepared_transaction);
+        }
+
+        // Step 2.: Start the write DB transaction, check invariants, set-up DB update structures
         let mut write_store = self.store.write();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
@@ -719,6 +727,7 @@ where
         let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
         let mut intent_hashes = Vec::new();
 
+        // Step 3.: Actually execute the transactions, collect their results into DB structures
         for (raw, prepared) in commit_request
             .transactions
             .into_iter()
@@ -759,6 +768,7 @@ where
             });
         }
 
+        // Step 4.: Check final invariants, perform the DB commit
         if series_executor.next_epoch() != commit_ledger_header.next_epoch.as_ref() {
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
@@ -780,6 +790,8 @@ where
             .lock()
             .progress_base(&final_ledger_hashes.transaction_root);
 
+        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
+
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
@@ -797,7 +809,11 @@ where
             .write()
             .track_committed_transactions(SystemTime::now(), intent_hashes);
 
-        self.update_ledger_metrics(commit_transactions_len, commit_state_version);
+        self.update_ledger_metrics(
+            commit_transactions_len,
+            commit_state_version,
+            round_counters,
+        );
         Ok(())
     }
 
@@ -845,16 +861,36 @@ where
         });
         drop(write_store);
 
-        self.update_ledger_metrics(1, resultant_state_version);
+        self.update_ledger_metrics(1, resultant_state_version, Vec::new());
     }
 
-    fn update_ledger_metrics(&self, added_transactions: usize, new_state_version: StateVersion) {
+    fn update_ledger_metrics(
+        &self,
+        added_transactions: usize,
+        new_state_version: StateVersion,
+        validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+    ) {
         self.ledger_metrics
             .state_version
             .set(new_state_version.number() as i64);
         self.ledger_metrics
             .transactions_committed
             .inc_by(added_transactions as u64);
+        for (validator_address, counter) in validator_proposal_counters {
+            for (round_resolution, count) in [
+                (ConsensusRoundResolution::Successful, counter.successful),
+                (
+                    ConsensusRoundResolution::MissedByFallback,
+                    counter.missed_by_fallback,
+                ),
+                (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
+            ] {
+                self.ledger_metrics
+                    .consensus_rounds_committed
+                    .with_two_labels(validator_address, round_resolution)
+                    .inc_by(count as u64);
+            }
+        }
         self.ledger_metrics.last_update_epoch_second.set(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)

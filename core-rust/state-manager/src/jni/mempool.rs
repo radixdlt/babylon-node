@@ -73,6 +73,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
 use crate::mempool::*;
+use crate::MempoolAddSource;
 use node_common::java::*;
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
