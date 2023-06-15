@@ -173,7 +173,6 @@ pub struct LeaderRoundCountersBuilder {
     /// Then, it is lazily-initialized by any larger-than-previously-observed [`ValidatorIndex`]
     /// (within `update()`; see `get_counter_mut()`). The size of this vector is thus effectively
     /// bounded by `u8::MAX` (even if validator indices found in proposal history were invalid).
-    // TODO(during review): actually it's hard to say if this is more performant than `BTreeMap<ValidatorIndex, _>`...?
     counters_by_index: Vec<LeaderRoundCounter>,
 }
 
@@ -185,13 +184,13 @@ impl LeaderRoundCountersBuilder {
     pub fn update(&mut self, leader_proposal_history: &LeaderProposalHistory) {
         let current_leader_counter = self.get_counter_mut(&leader_proposal_history.current_leader);
         if leader_proposal_history.is_fallback {
-            current_leader_counter.fallback += 1;
+            current_leader_counter.missed_by_fallback += 1;
         } else {
             current_leader_counter.successful += 1;
         }
         for gap_round_leader_index in leader_proposal_history.gap_round_leaders.iter() {
             let gap_round_leader_counter = self.get_counter_mut(gap_round_leader_index);
-            gap_round_leader_counter.gap += 1;
+            gap_round_leader_counter.missed_by_gap += 1;
         }
     }
 
@@ -226,13 +225,13 @@ impl LeaderRoundCountersBuilder {
 #[derive(Default, Debug)]
 pub struct LeaderRoundCounter {
     pub successful: usize,
-    pub fallback: usize,
-    pub gap: usize,
+    pub missed_by_fallback: usize,
+    pub missed_by_gap: usize,
 }
 
 impl LeaderRoundCounter {
     fn is_non_zero(&self) -> bool {
-        self.successful != 0 || self.fallback != 0 || self.gap != 0
+        self.successful != 0 || self.missed_by_fallback != 0 || self.missed_by_gap != 0
     }
 }
 

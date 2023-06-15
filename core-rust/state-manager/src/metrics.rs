@@ -251,8 +251,8 @@ impl MetricLabel for ComponentAddress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConsensusRoundResolution {
     Successful,
-    Fallback,
-    Gap,
+    MissedByFallback,
+    MissedByGap,
 }
 
 impl MetricLabel for ConsensusRoundResolution {
@@ -261,8 +261,8 @@ impl MetricLabel for ConsensusRoundResolution {
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         match *self {
             ConsensusRoundResolution::Successful => "Successful",
-            ConsensusRoundResolution::Fallback => "Fallback",
-            ConsensusRoundResolution::Gap => "Gap",
+            ConsensusRoundResolution::MissedByFallback => "MissedByFallback",
+            ConsensusRoundResolution::MissedByGap => "MissedByGap",
         }
     }
 }

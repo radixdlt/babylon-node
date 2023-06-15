@@ -880,8 +880,11 @@ where
         for (validator_address, counter) in validator_proposal_counters {
             for (round_resolution, count) in [
                 (ConsensusRoundResolution::Successful, counter.successful),
-                (ConsensusRoundResolution::Fallback, counter.fallback),
-                (ConsensusRoundResolution::Gap, counter.gap),
+                (
+                    ConsensusRoundResolution::MissedByFallback,
+                    counter.missed_by_fallback,
+                ),
+                (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
             ] {
                 self.ledger_metrics
                     .consensus_rounds_committed
