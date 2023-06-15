@@ -25,7 +25,7 @@ pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     user_transaction_validator: NotarizedTransactionValidator,
-    commitability_validator: &'a CommitabilityValidator<StateManagerDatabase>,
+    committability_validator: &'a CommittabilityValidator<StateManagerDatabase>,
 }
 
 pub(crate) async fn handle_transaction_parse(
@@ -45,7 +45,7 @@ pub(crate) async fn handle_transaction_parse(
         user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(
             state.network.id,
         )),
-        commitability_validator: state.commitability_validator.deref(),
+        committability_validator: state.committability_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
@@ -165,7 +165,7 @@ fn attempt_parsing_as_notarized_transaction(
                     .map_err(RejectionReason::ValidationError)
                     .and_then(|validated| {
                         let rejection = context
-                            .commitability_validator
+                            .committability_validator
                             .check_for_rejection(&validated, SystemTime::now())
                             .rejection;
                         match rejection {

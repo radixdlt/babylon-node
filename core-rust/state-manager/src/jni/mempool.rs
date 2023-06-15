@@ -167,7 +167,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommitability(
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommittability(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
@@ -175,7 +175,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCo
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |max_reevaluated_count: u32| {
         let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
-        mempool_manager.reevaluate_transaction_commitability(max_reevaluated_count);
+        mempool_manager.reevaluate_transaction_committability(max_reevaluated_count);
     })
 }
 

@@ -107,7 +107,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
   // TODO(during review): let's take special care here - I changed the asserted behavior to exactly
   // the opposite, since apparently that's the Engine's current decision (see Engine's test cases
   // `mint_and_burn_of_non_fungible_2x_should_fail()` and
-  // `mint_of_previously_minted_burned_non_fungible_should_fail()`.
+  // `mint_of_previously_minted_burned_non_fungible_should_fail()`).
 
   @Test
   public void minting_non_fungible_id_which_previously_existed_transiently_in_a_transaction_fails()

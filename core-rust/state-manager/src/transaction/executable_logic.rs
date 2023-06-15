@@ -24,9 +24,15 @@ pub trait TransactionLogic<S> {
 /// A well-known type of execution.
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum ConfigType {
+    /// A system genesis transaction.
     Genesis,
+    /// A system transaction _other_ than genesis (e.g. round update).
+    OtherSystem,
+    /// A user transaction during regular execution (e.g. prepare or commit).
     Regular,
+    /// A user transaction during "committability check" execution (e.g. in mempool).
     Pending,
+    /// A user transaction during preview execution.
     Preview,
 }
 
@@ -66,10 +72,13 @@ impl ExecutionConfigurator {
                     ExecutionConfig::for_genesis_transaction().with_kernel_trace(trace),
                 ),
                 (
+                    ConfigType::OtherSystem,
+                    ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
+                ),
+                (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction().with_kernel_trace(trace),
                 ),
-                // TODO(during review): are the mappings below correct? should we add `ConfigType::System`?
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction()

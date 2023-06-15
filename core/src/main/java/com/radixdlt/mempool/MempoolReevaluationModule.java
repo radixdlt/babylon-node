@@ -116,6 +116,6 @@ public final class MempoolReevaluationModule extends AbstractModule {
     return new EventProcessorOnRunner<>(
         Runners.MEMPOOL,
         MempoolReevaluationTrigger.class,
-        event -> mempoolReevaluator.reevaluateTransactionCommitability(maxReevaluatedCount));
+        event -> mempoolReevaluator.reevaluateTransactionCommittability(maxReevaluatedCount));
   }
 }

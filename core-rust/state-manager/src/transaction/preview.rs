@@ -124,7 +124,7 @@ mod tests {
     use crate::simple_mempool::SimpleMempool;
     use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
     use crate::transaction::{
-        CachedCommitabilityValidator, CommitabilityValidator, ExecutionConfigurator,
+        CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
         TransactionPreviewer,
     };
     use crate::{
@@ -158,14 +158,14 @@ mod tests {
         let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));
-        let commitability_validator = Arc::new(CommitabilityValidator::new(
+        let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
             execution_configurator.clone(),
         ));
-        let cached_commitability_validator = CachedCommitabilityValidator::new(
+        let cached_committability_validator = CachedCommittabilityValidator::new(
             database.clone(),
-            commitability_validator,
+            committability_validator,
             pending_transaction_result_cache.clone(),
         );
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
@@ -173,7 +173,7 @@ mod tests {
         )));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,
-            cached_commitability_validator,
+            cached_committability_validator,
             &metric_registry,
         ));
         let state_manager: Arc<RwLock<ActualStateManager>> =

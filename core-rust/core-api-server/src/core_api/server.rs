@@ -87,7 +87,7 @@ use handle_status_network_configuration as handle_provide_info_at_root_path;
 use state_manager::mempool_manager::MempoolManager;
 use state_manager::simple_mempool::SimpleMempool;
 use state_manager::store::StateManagerDatabase;
-use state_manager::transaction::{CommitabilityValidator, TransactionPreviewer};
+use state_manager::transaction::{CommittabilityValidator, TransactionPreviewer};
 use state_manager::PendingTransactionResultCache;
 
 #[derive(Clone)]
@@ -98,7 +98,7 @@ pub struct CoreApiState {
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
-    pub commitability_validator: Arc<CommitabilityValidator<StateManagerDatabase>>,
+    pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
 }
 

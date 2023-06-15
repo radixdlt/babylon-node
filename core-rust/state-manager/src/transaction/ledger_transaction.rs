@@ -3,6 +3,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
 use sbor::*;
 
+use crate::transaction::ConfigType;
 use transaction::define_raw_transaction_payload;
 use transaction::prelude::*;
 
@@ -290,6 +291,16 @@ impl ValidatedLedgerTransaction {
             }
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
+        }
+    }
+
+    /// Gets a [`ConfigType`] to be used during regular execution (i.e. not preview, not in-mempool
+    /// committability check).
+    pub fn config_type(&self) -> ConfigType {
+        match &self.inner {
+            ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
+            ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
+            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
         }
     }
 

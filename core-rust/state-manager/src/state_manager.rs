@@ -212,7 +212,7 @@ where
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         let commit = series_executor
-            .execute(ConfigType::Genesis, &validated, "genesis")
+            .execute(&validated, "genesis")
             .expect("genesis not committable")
             .expect_success("genesis");
 
@@ -269,7 +269,7 @@ where
             }
 
             series_executor
-                .execute(ConfigType::Regular, &validated, "ancestor")
+                .execute(&validated, "ancestor")
                 .expect("ancestor transaction rejected");
         }
 
@@ -300,7 +300,7 @@ where
             .expect("expected to be able to prepare the round update transaction");
 
         series_executor
-            .execute(ConfigType::Regular, &validated_round_update, "round update")
+            .execute(&validated_round_update, "round update")
             .expect("round update rejected")
             .expect_success("round update");
 
@@ -423,8 +423,7 @@ where
                 }
             };
 
-            let execute_result =
-                series_executor.execute(ConfigType::Regular, &validated, "newly proposed");
+            let execute_result = series_executor.execute(&validated, "newly proposed");
             match execute_result {
                 Ok(_) => {
                     duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
@@ -733,7 +732,7 @@ where
                 });
 
             let commit = series_executor
-                .execute(ConfigType::Regular, &validated, "prepared")
+                .execute(&validated, "prepared")
                 .expect("cannot execute transaction to be committed");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
@@ -810,7 +809,7 @@ where
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let commit = series_executor
-            .execute(ConfigType::Genesis, &request.validated, "genesis")
+            .execute(&request.validated, "genesis")
             .expect("cannot execute genesis")
             .expect_success("genesis not successful");
 
