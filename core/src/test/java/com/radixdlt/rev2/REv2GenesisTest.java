@@ -86,7 +86,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.Map;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
