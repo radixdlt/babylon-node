@@ -22,7 +22,7 @@ CMD ["/bin/bash"]
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.5+dfsg1-1+deb11u2 \
-    libssl-dev=1.1.1n-0+deb11u4 \
+    libssl-dev=1.1.1n-0+deb11u5 \
     pkg-config=0.29.2-1 \
     unzip=6.0-26+deb11u1 \
     wget=1.21-1+deb11u1 \
@@ -115,7 +115,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.31-9cross4 \
     libclang-dev=1:11.0-51+nmu5 \
-    libssl-dev=1.1.1n-0+deb11u4 \
+    libssl-dev=1.1.1n-0+deb11u5 \
     pkg-config=0.29.2-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -227,7 +227,7 @@ RUN apt-get update -y \
     openjdk-17-jre-headless=17.0.6+10-1~deb11u1 \
     unzip=6.0-26+deb11u1 \
     daemontools=1:0.76-7 \
-    libssl-dev=1.1.1n-0+deb11u4 \
+    libssl-dev=1.1.1n-0+deb11u5 \
     software-properties-common=0.96.20.2-2.1 \
     gettext-base=0.21-4 \
   && apt-get clean \
