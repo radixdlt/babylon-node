@@ -17,13 +17,16 @@ pub struct NonFungibleResourceManagerDataEntrySubstateAllOf {
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
     pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename = "is_mutable")]
+    pub is_mutable: bool,
 }
 
 impl NonFungibleResourceManagerDataEntrySubstateAllOf {
-    pub fn new(is_deleted: bool) -> NonFungibleResourceManagerDataEntrySubstateAllOf {
+    pub fn new(is_deleted: bool, is_mutable: bool) -> NonFungibleResourceManagerDataEntrySubstateAllOf {
         NonFungibleResourceManagerDataEntrySubstateAllOf {
             is_deleted,
             data_struct: None,
+            is_mutable,
         }
     }
 }

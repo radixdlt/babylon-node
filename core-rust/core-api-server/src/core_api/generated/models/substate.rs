@@ -132,6 +132,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+        #[serde(rename = "is_mutable")]
+        is_mutable: bool,
     },
     #[serde(rename="GenericScryptoComponentFieldState")]
     GenericScryptoComponentFieldStateSubstate {
@@ -146,6 +148,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+        #[serde(rename = "is_mutable")]
+        is_mutable: bool,
     },
     #[serde(rename="MultiResourcePoolSubstate")]
     MultiResourcePoolSubstate {
@@ -161,6 +165,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+        #[serde(rename = "is_mutable")]
+        is_mutable: bool,
     },
     #[serde(rename="NonFungibleResourceManagerFieldIdType")]
     NonFungibleResourceManagerFieldIdTypeSubstate {

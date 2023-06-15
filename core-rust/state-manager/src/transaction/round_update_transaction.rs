@@ -146,6 +146,7 @@ impl PreparedRoundUpdateTransactionV1 {
                 },
                 fee_payment: FeePayment {
                     tip_percentage: 0,
+                    // TODO(after pulling in Engine fix): this should be `0` (needs https://github.com/radixdlt/radixdlt-scrypto/pull/1112)
                     free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
                 },
                 runtime_validations: vec![],

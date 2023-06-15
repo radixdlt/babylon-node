@@ -397,9 +397,7 @@ pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::Obj
     }
 }
 
-// TODO(during review): I noticed we tend to return `ObjectModuleId` enum but the Engine's
-// `SchemaMethodKey` only provides `u8`, and I found no existing (public) conversion util for this,
-// which hints me that I am doing something wrong here:
+// TODO(after pulling newer Engine): this helper should not be needed (we will always receive `ObjectModuleId` from Engine)
 pub fn resolve_object_module_id(value: u8) -> Result<ObjectModuleId, MappingError> {
     for object_module_id in ObjectModuleId::iter() {
         if object_module_id.to_u8() == value {

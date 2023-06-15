@@ -77,7 +77,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   MetadataModuleEntrySubstate.JSON_PROPERTY_FIELD_NAME,
   MetadataModuleEntrySubstate.JSON_PROPERTY_IS_DELETED,
-  MetadataModuleEntrySubstate.JSON_PROPERTY_DATA_STRUCT
+  MetadataModuleEntrySubstate.JSON_PROPERTY_DATA_STRUCT,
+  MetadataModuleEntrySubstate.JSON_PROPERTY_IS_MUTABLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -133,6 +134,9 @@ public class MetadataModuleEntrySubstate extends Substate {
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
+
+  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
+  private Boolean isMutable;
 
   public MetadataModuleEntrySubstate() { 
   }
@@ -215,6 +219,32 @@ public class MetadataModuleEntrySubstate extends Substate {
   }
 
 
+  public MetadataModuleEntrySubstate isMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+    return this;
+  }
+
+   /**
+   * Get isMutable
+   * @return isMutable
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsMutable() {
+    return isMutable;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+  }
+
+
   /**
    * Return true if this MetadataModuleEntrySubstate object is equal to o.
    */
@@ -230,12 +260,13 @@ public class MetadataModuleEntrySubstate extends Substate {
     return Objects.equals(this.fieldName, metadataModuleEntrySubstate.fieldName) &&
         Objects.equals(this.isDeleted, metadataModuleEntrySubstate.isDeleted) &&
         Objects.equals(this.dataStruct, metadataModuleEntrySubstate.dataStruct) &&
+        Objects.equals(this.isMutable, metadataModuleEntrySubstate.isMutable) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldName, isDeleted, dataStruct, super.hashCode());
+    return Objects.hash(fieldName, isDeleted, dataStruct, isMutable, super.hashCode());
   }
 
   @Override
@@ -246,6 +277,7 @@ public class MetadataModuleEntrySubstate extends Substate {
     sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
     sb.append("}");
     return sb.toString();
   }

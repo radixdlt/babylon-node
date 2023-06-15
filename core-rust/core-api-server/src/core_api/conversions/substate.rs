@@ -4,7 +4,7 @@ use radix_engine::blueprints::package::PackageCodeTypeSubstate;
 use radix_engine::system::node_modules::access_rules::*;
 use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use radix_engine_interface::blueprints::account::{AccountDefaultDepositRule, ResourceDepositRule};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
@@ -16,6 +16,7 @@ use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::*;
+
 use radix_engine_queries::typed_substate_layout::*;
 
 use super::MappingError;
@@ -307,8 +308,8 @@ pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    // TODO(during review): do we want to expose the `DynSubstate.mutability` here?
-    let (is_deleted, data_struct) = match &substate.value {
+    let KeyValueEntrySubstate { value, mutability } = substate;
+    let (is_deleted, data_struct) = match value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -317,9 +318,14 @@ pub fn to_api_generic_key_value_store_substate(
         ),
         None => (true, None),
     };
+    let is_mutable = match mutability {
+        SubstateMutability::Mutable => true,
+        SubstateMutability::Immutable => false,
+    };
     Ok(models::Substate::GenericKeyValueStoreEntrySubstate {
         is_deleted,
         data_struct,
+        is_mutable,
     })
 }
 
@@ -384,21 +390,26 @@ pub fn to_api_metadata_value_substate(
         scrypto_decode(key_bytes).map_err(|_| MappingError::InvalidMetadataKey {
             message: "Was not a string".to_string(),
         })?;
-    // TODO(during review): do we want to expose the `DynSubstate.mutability` here?
-    Ok(match &substate.value {
-        Some(entry) => models::Substate::MetadataModuleEntrySubstate {
-            field_name,
-            is_deleted: false,
-            data_struct: Some(Box::new(to_api_data_struct_from_bytes(
+    let MetadataValueSubstate { value, mutability } = substate;
+    let (is_deleted, data_struct) = match value {
+        Some(entry) => (
+            false,
+            Some(Box::new(to_api_data_struct_from_bytes(
                 context,
                 &scrypto_encode(entry).unwrap(),
             )?)),
-        },
-        None => models::Substate::MetadataModuleEntrySubstate {
-            field_name,
-            is_deleted: true,
-            data_struct: None,
-        },
+        ),
+        None => (true, None),
+    };
+    let is_mutable = match mutability {
+        SubstateMutability::Mutable => true,
+        SubstateMutability::Immutable => false,
+    };
+    Ok(models::Substate::MetadataModuleEntrySubstate {
+        field_name,
+        is_deleted,
+        data_struct,
+        is_mutable,
     })
 }
 
@@ -1561,8 +1572,8 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    // TODO(during review): do we want to expose the `DynSubstate.mutability` here?
-    let (is_deleted, data_struct) = match &substate.value {
+    let KeyValueEntrySubstate { value, mutability } = substate;
+    let (is_deleted, data_struct) = match value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -1571,10 +1582,15 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
         ),
         None => (true, None),
     };
+    let is_mutable = match mutability {
+        SubstateMutability::Mutable => true,
+        SubstateMutability::Immutable => false,
+    };
     Ok(
         models::Substate::NonFungibleResourceManagerDataEntrySubstate {
             is_deleted,
             data_struct,
+            is_mutable,
         },
     )
 }

@@ -19,14 +19,17 @@ pub struct GenericKeyValueStoreEntrySubstate {
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
     pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename = "is_mutable")]
+    pub is_mutable: bool,
 }
 
 impl GenericKeyValueStoreEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_deleted: bool) -> GenericKeyValueStoreEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_deleted: bool, is_mutable: bool) -> GenericKeyValueStoreEntrySubstate {
         GenericKeyValueStoreEntrySubstate {
             substate_type,
             is_deleted,
             data_struct: None,
+            is_mutable,
         }
     }
 }

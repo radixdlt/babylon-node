@@ -2978,6 +2978,7 @@ components:
           required:
             - field_name
             - is_deleted
+            - is_mutable
           properties:
             field_name:
               type: string
@@ -2985,6 +2986,8 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+            is_mutable:
+              type: boolean
     PackageFieldInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3118,11 +3121,14 @@ components:
         - type: object
           required:
             - is_deleted
+            - is_mutable
           properties:
             is_deleted:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+            is_mutable:
+              type: boolean
     FungibleVaultFieldBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3476,11 +3482,14 @@ components:
         - type: object
           required:
             - is_deleted
+            - is_mutable
           properties:
             is_deleted:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+            is_mutable:
+              type: boolean
     OneResourcePoolSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

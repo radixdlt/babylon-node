@@ -76,7 +76,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_IS_DELETED,
-  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_DATA_STRUCT
+  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_DATA_STRUCT,
+  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_IS_MUTABLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -129,6 +130,9 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
+
+  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
+  private Boolean isMutable;
 
   public GenericKeyValueStoreEntrySubstate() { 
   }
@@ -185,6 +189,32 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
   }
 
 
+  public GenericKeyValueStoreEntrySubstate isMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+    return this;
+  }
+
+   /**
+   * Get isMutable
+   * @return isMutable
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsMutable() {
+    return isMutable;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+  }
+
+
   /**
    * Return true if this GenericKeyValueStoreEntrySubstate object is equal to o.
    */
@@ -199,12 +229,13 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
     GenericKeyValueStoreEntrySubstate genericKeyValueStoreEntrySubstate = (GenericKeyValueStoreEntrySubstate) o;
     return Objects.equals(this.isDeleted, genericKeyValueStoreEntrySubstate.isDeleted) &&
         Objects.equals(this.dataStruct, genericKeyValueStoreEntrySubstate.dataStruct) &&
+        Objects.equals(this.isMutable, genericKeyValueStoreEntrySubstate.isMutable) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isDeleted, dataStruct, super.hashCode());
+    return Objects.hash(isDeleted, dataStruct, isMutable, super.hashCode());
   }
 
   @Override
@@ -214,6 +245,7 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
     sb.append("}");
     return sb.toString();
   }
