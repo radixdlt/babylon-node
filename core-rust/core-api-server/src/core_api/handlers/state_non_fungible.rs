@@ -41,8 +41,6 @@ pub(crate) async fn handle_state_non_fungible(
         .into_response_error("non_fungible_id"));
     }
 
-    // TODO(during review): I believe I changed the behavior here (previously we returned error for
-    // deleted substate, and now we will return `is_deleted=true`); is this the right thing to do?
     let substate = read_optional_collection_substate::<KeyValueEntrySubstate<ScryptoRawValue<'_>>>(
         database.deref(),
         resource_address.as_node_id(),
