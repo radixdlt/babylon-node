@@ -280,7 +280,7 @@ pub fn to_api_account_deposit_rule_entry(
     typed_key: &TypedSubstateKey,
     substate: &Option<ResourceDepositRule>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(resource_address)) = typed_key else {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
     };
     Ok(models::Substate::AccountDepositRuleIndexEntrySubstate {
