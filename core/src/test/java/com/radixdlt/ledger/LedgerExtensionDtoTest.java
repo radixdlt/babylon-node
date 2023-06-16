@@ -64,76 +64,37 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ImmutableList;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
-import com.radixdlt.crypto.Hasher;
+import com.radixdlt.crypto.HashUtils;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import javax.annotation.concurrent.ThreadSafe;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/** Hash chain accumulator and verifier */
-@ThreadSafe
-public class SimpleLedgerAccumulatorAndVerifier
-    implements LedgerAccumulator, LedgerAccumulatorVerifier {
-  private final Hasher hasher;
-
-  @Inject
-  public SimpleLedgerAccumulatorAndVerifier(Hasher hasher) {
-    this.hasher = hasher;
+public class LedgerExtensionDtoTest {
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(DtoLedgerExtension.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 
-  @Override
-  public AccumulatorState accumulate(AccumulatorState parent, HashCode hash) {
-    byte[] concat = new byte[32 * 2];
-    System.arraycopy(parent.getAccumulatorHash().asBytes(), 0, concat, 0, 32);
-    System.arraycopy(hash.asBytes(), 0, concat, 32, 32);
-    HashCode nextAccumulatorHash = hasher.hashBytes(concat);
-    return new AccumulatorState(parent.getStateVersion() + 1, nextAccumulatorHash);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullHeadThrowsException() {
+    new DtoLedgerExtension(List.of(), null, mock(DtoLedgerProof.class));
   }
 
-  @Override
-  public boolean verify(
-      AccumulatorState start, ImmutableList<HashCode> transactions, AccumulatorState end) {
-    AccumulatorState accumulatorState = start;
-    for (HashCode hash : transactions) {
-      accumulatorState = this.accumulate(accumulatorState, hash);
-    }
-    return Objects.equals(accumulatorState, end);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullTailThrowsException() {
+    new DtoLedgerExtension(List.of(), mock(DtoLedgerProof.class), null);
   }
 
-  @Override
-  public <T> Optional<List<T>> verifyAndGetExtension(
-      AccumulatorState current,
-      List<T> transactions,
-      Function<T, HashCode> hashCodeMapper,
-      AccumulatorState tail) {
-    if (tail.getStateVersion() < current.getStateVersion()) {
-      throw new IllegalArgumentException(
-          String.format("Tail %s is has lower state version than current %s", tail, current));
-    }
+  @Test
+  public void deserializationWithNullTxnListIsSafe() {
+    var dto = new DtoLedgerExtension(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
 
-    final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
-    if (current.getStateVersion() + 1 < firstVersion) {
-      // Missing versions
-      return Optional.empty();
-    }
-
-    if (transactions.isEmpty()) {
-      return Objects.equals(current, tail) ? Optional.of(ImmutableList.of()) : Optional.empty();
-    }
-
-    final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-    final List<T> extension = transactions.subList(startIndex, transactions.size());
-    final ImmutableList<HashCode> hashes =
-        extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
-    if (!verify(current, hashes, tail)) {
-      // Does not extend
-      return Optional.empty();
-    }
-
-    return Optional.of(extension);
+    assertNotNull(dto.getTransactions());
   }
 }

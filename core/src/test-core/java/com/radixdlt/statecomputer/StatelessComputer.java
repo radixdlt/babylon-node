@@ -65,12 +65,11 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -123,8 +122,9 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      HashCode parentAccumulator,
-      List<ExecutedVertex> previousVertices,
+      LedgerHashes committedLedgerHashes,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      LedgerHashes preparedUncommittedLedgerHashes,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
@@ -146,21 +146,21 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
         successfulTransactions, invalidTransactionCount, LedgerHashes.zero());
   }
 
-  private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
+  private LedgerUpdate generateLedgerUpdate(LedgerExtension ledgerExtension) {
     var output =
-        txnsAndProof
+        ledgerExtension
             .getProof()
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof proof = txnsAndProof.getProof();
+                  LedgerProof proof = ledgerExtension.getProof();
                   VertexWithHash genesisVertex =
                       Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
                           Round.genesis(),
-                          proof.getAccumulatorState(),
+                          proof.getStateVersion(),
                           proof.getLedgerHashes(),
                           proof.consensusParentRoundTimestamp(),
                           proof.proposerTimestamp());
@@ -170,7 +170,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);
@@ -178,13 +178,12 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());
 
-    return new LedgerUpdate(txnsAndProof, output);
+    return new LedgerUpdate(ledgerExtension, output);
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    var ledgerUpdate = this.generateLedgerUpdate(txnsAndProof);
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+    var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

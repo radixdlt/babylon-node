@@ -67,32 +67,26 @@ package com.radixdlt.store;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
 /** A correct in memory committed reader used for testing */
 public final class InMemoryTransactionsAndProofReader implements TransactionsAndProofReader {
   public static final class Store {
-    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
+    final TreeMap<Long, LedgerExtension> committedLedgerExtensions = new TreeMap<>();
     final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
   }
 
   private final Object lock = new Object();
-  private final LedgerAccumulatorVerifier accumulatorVerifier;
   private final Store store;
 
   @Inject
-  InMemoryTransactionsAndProofReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
-    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+  InMemoryTransactionsAndProofReader(Store store) {
     this.store = store;
   }
 
@@ -106,9 +100,9 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
             version <= update.getTail().getStateVersion();
             version++) {
           int index = (int) (version - firstVersion);
-          store.committedTransactionRuns.put(
+          store.committedLedgerExtensions.put(
               version,
-              CommittedTransactionsWithProof.create(
+              LedgerExtension.create(
                   transactions.subList(index, transactions.size()), update.getTail()));
         }
 
@@ -122,23 +116,14 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   }
 
   @Override
-  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+  public LedgerExtension getTransactions(DtoLedgerProof start) {
     synchronized (lock) {
-      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-      Entry<Long, CommittedTransactionsWithProof> entry =
-          store.committedTransactionRuns.higherEntry(stateVersion);
+      final long startStateVersion = start.getLedgerHeader().getStateVersion();
+      Entry<Long, LedgerExtension> entry =
+          store.committedLedgerExtensions.higherEntry(startStateVersion);
 
       if (entry != null) {
-        List<RawLedgerTransaction> transactions =
-            accumulatorVerifier
-                .verifyAndGetExtension(
-                    start.getLedgerHeader().getAccumulatorState(),
-                    entry.getValue().getTransactions(),
-                    t -> t.getLegacyPayloadHash().inner(),
-                    entry.getValue().getProof().getAccumulatorState())
-                .orElseThrow(RuntimeException::new);
-
-        return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
+        return entry.getValue().getExtensionFrom(startStateVersion);
       }
 
       return null;
@@ -161,7 +146,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
 
   @Override
   public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
+    return Optional.ofNullable(store.committedLedgerExtensions.lastEntry())
         .map(p -> p.getValue().getProof());
   }
 

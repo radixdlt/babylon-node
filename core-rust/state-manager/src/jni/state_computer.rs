@@ -62,11 +62,7 @@
  * permissions under this License.
  */
 
-use crate::transaction::RawLedgerTransaction;
-use crate::{
-    AccumulatorHash, AccumulatorState, CommittableTransaction, LedgerHashes, LedgerHeader,
-    LedgerProof, PreviousVertex, RejectedTransaction, TimestampedValidatorSignature,
-};
+use crate::LedgerProof;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -76,14 +72,12 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_queries::query::ResourceAccounter;
 use std::ops::Deref;
-use transaction::model::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
-use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch};
+use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
 use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
 use radix_engine::system::bootstrap::GenesisDataChunk;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -125,13 +119,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |raw_genesis_data: Vec<u8>| -> JavaLedgerProof {
+        |raw_genesis_data: Vec<u8>| -> LedgerProof {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
             let genesis_data_hash = hash(&raw_genesis_data);
             let genesis_data: JavaGenesisData =
                 scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
             let config = genesis_data.initial_config;
-            let result = state_manager.execute_genesis(
+            state_manager.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -149,8 +143,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                 },
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
-            );
-            result.into()
+            )
         },
     )
 }
@@ -165,10 +158,9 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |prepare_request: JavaPrepareRequest| -> JavaPrepareResult {
+        |prepare_request: PrepareRequest| -> PrepareResult {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            let result = state_manager.prepare(prepare_request.into());
-            result.into()
+            state_manager.prepare(prepare_request)
         },
     )
 }
@@ -183,11 +175,9 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |commit_request: JavaCommitRequest| -> Result<(), CommitError> {
+        |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
-            state_manager
-                .commit(commit_request.into(), false)
-                .map(|_unused| ())
+            state_manager.commit(commit_request)
         },
     )
 }
@@ -277,138 +267,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
 pub fn export_extern_functions() {}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaCommitRequest {
-    pub transactions: Vec<RawLedgerTransaction>,
-    pub proof: JavaLedgerProof,
-    pub vertex_store: Option<Vec<u8>>,
-}
-
-impl From<JavaCommitRequest> for CommitRequest {
-    fn from(commit_request: JavaCommitRequest) -> Self {
-        CommitRequest {
-            transaction_payloads: commit_request.transactions,
-            proof: commit_request.proof.into(),
-            vertex_store: commit_request.vertex_store,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaPrepareRequest {
-    pub parent_accumulator_hash: AccumulatorHash,
-    pub previous_vertices: Vec<PreviousVertex>,
-    pub proposed: Vec<RawNotarizedTransaction>,
-    pub is_fallback: bool,
-    pub epoch: Epoch,
-    pub round: Round,
-    pub gap_round_leader_addresses: Vec<ComponentAddress>,
-    pub proposer_address: ComponentAddress,
-    pub proposer_timestamp_ms: i64,
-}
-
-impl From<JavaPrepareRequest> for PrepareRequest {
-    fn from(prepare_request: JavaPrepareRequest) -> Self {
-        PrepareRequest {
-            parent_accumulator: prepare_request.parent_accumulator_hash,
-            prepared_vertices: prepare_request.previous_vertices,
-            proposed_payloads: prepare_request.proposed,
-            is_fallback: prepare_request.is_fallback,
-            epoch: prepare_request.epoch,
-            round: prepare_request.round,
-            gap_round_leader_addresses: prepare_request.gap_round_leader_addresses,
-            proposer_address: prepare_request.proposer_address,
-            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaPrepareResult {
-    pub committed: Vec<CommittableTransaction>,
-    pub rejected: Vec<RejectedTransaction>,
-    pub next_epoch: Option<NextEpoch>,
-    pub ledger_hashes: LedgerHashes,
-}
-
-impl From<PrepareResult> for JavaPrepareResult {
-    fn from(prepare_results: PrepareResult) -> Self {
-        JavaPrepareResult {
-            committed: prepare_results.committed,
-            rejected: prepare_results.rejected,
-            next_epoch: prepare_results.next_epoch,
-            ledger_hashes: prepare_results.ledger_hashes,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaValidatorInfo {
     pub stake_unit_resource: ResourceAddress,
     pub unstake_receipt_resource: ResourceAddress,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaLedgerProof {
-    pub opaque: Hash,
-    pub ledger_header: JavaLedgerHeader,
-    pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
-}
-
-impl From<LedgerProof> for JavaLedgerProof {
-    fn from(ledger_proof: LedgerProof) -> Self {
-        Self {
-            opaque: ledger_proof.opaque,
-            ledger_header: ledger_proof.ledger_header.into(),
-            timestamped_signatures: ledger_proof.timestamped_signatures,
-        }
-    }
-}
-
-impl From<JavaLedgerProof> for LedgerProof {
-    fn from(ledger_proof: JavaLedgerProof) -> Self {
-        Self {
-            opaque: Hash(ledger_proof.opaque.into_bytes()),
-            ledger_header: ledger_proof.ledger_header.into(),
-            timestamped_signatures: ledger_proof.timestamped_signatures,
-        }
-    }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaLedgerHeader {
-    pub epoch: Epoch,
-    pub round: Round,
-    pub accumulator_state: AccumulatorState,
-    pub hashes: LedgerHashes,
-    pub consensus_parent_round_timestamp_ms: i64,
-    pub proposer_timestamp_ms: i64,
-    pub next_epoch: Option<NextEpoch>,
-}
-
-impl From<LedgerHeader> for JavaLedgerHeader {
-    fn from(ledger_header: LedgerHeader) -> Self {
-        Self {
-            epoch: ledger_header.epoch,
-            round: ledger_header.round,
-            accumulator_state: ledger_header.accumulator_state,
-            hashes: ledger_header.hashes,
-            consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
-            proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
-            next_epoch: ledger_header.next_epoch,
-        }
-    }
-}
-
-impl From<JavaLedgerHeader> for LedgerHeader {
-    fn from(ledger_header: JavaLedgerHeader) -> Self {
-        Self {
-            epoch: ledger_header.epoch,
-            round: ledger_header.round,
-            accumulator_state: ledger_header.accumulator_state,
-            hashes: ledger_header.hashes,
-            consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
-            proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
-            next_epoch: ledger_header.next_epoch,
-        }
-    }
 }

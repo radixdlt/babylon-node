@@ -62,51 +62,84 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync;
+package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.*;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Accumulator verifier which incorrectly always gives false positives. */
-public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractModule {
-  @Provides
-  private LedgerAccumulatorVerifier badVerifier() {
-    return new LedgerAccumulatorVerifier() {
-      @Override
-      public boolean verify(
-          AccumulatorState head, ImmutableList<HashCode> transactions, AccumulatorState tail) {
-        return true;
-      }
+public final class MockedMempoolStateComputer implements StateComputer {
 
-      @Override
-      public <T> Optional<List<T>> verifyAndGetExtension(
-          AccumulatorState current,
-          List<T> transactions,
-          Function<T, HashCode> hashCodeMapper,
-          AccumulatorState tail) {
-        final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
-        if (current.getStateVersion() + 1 < firstVersion) {
-          // Missing versions
-          return Optional.empty();
-        }
+  private static final Logger log = LogManager.getLogger();
 
-        if (transactions.isEmpty()) {
-          return (Objects.equals(current, tail))
-              ? Optional.of(ImmutableList.of())
-              : Optional.empty();
-        }
+  private final SimpleMempool mempool;
+  private final MockedStateComputer stateComputer;
 
-        final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-        return Optional.of(transactions.subList(startIndex, transactions.size()));
-      }
-    };
+  @Inject
+  public MockedMempoolStateComputer(
+      SimpleMempool mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.mempool = mempool;
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
+
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
+    mempoolAdd
+        .transactions()
+        .forEach(
+            txn -> {
+              try {
+                this.mempool.addTransaction(txn);
+              } catch (MempoolRejectedException e) {
+                log.error(e);
+              }
+            });
+  }
+
+  @Override
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return this.mempool.getTransactionsForProposal(1, Integer.MAX_VALUE, Set.of());
+  }
+
+  @Override
+  public StateComputerResult prepare(
+      LedgerHashes committedLedgerHashes,
+      List<ExecutedVertex> preparedUncommittedVertices,
+      LedgerHashes preparedUncommittedLedgerHashes,
+      List<RawNotarizedTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    return this.stateComputer.prepare(
+        committedLedgerHashes,
+        preparedUncommittedVertices,
+        preparedUncommittedLedgerHashes,
+        proposedTransactions,
+        roundDetails);
+  }
+
+  @Override
+  public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+    this.stateComputer.commit(ledgerExtension, vertexStore);
+    this.mempool.handleTransactionsCommitted(
+        ledgerExtension.getTransactions().stream()
+            // This undoes the (hacky) re-mapping done by a fake `prepare()` using `MockExecuted`
+            // (see e.g. `MockedStateComputer` implementation).
+            .map(t -> RawNotarizedTransaction.create(t.getPayload()))
+            .toList());
   }
 }

@@ -64,12 +64,10 @@
 
 package com.radixdlt.modules;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -85,18 +83,30 @@ import java.util.stream.Stream;
 public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, HashUtils.zero256(), LedgerHashes.zero(), mempoolType);
+    return mockedWithEpochs(epochMaxRound, mapping, LedgerHashes.zero(), mempoolType);
   }
 
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
-      HashCode preGenesisAccumulatorHash,
       LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType) {
+    return mockedWithEpochs(
+        epochMaxRound,
+        mapping,
+        preGenesisLedgerHashes,
+        mempoolType,
+        ProposerElectionMode.WITH_INITIAL_ROUNDS_ITERATION);
+  }
+
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
+      LedgerHashes preGenesisLedgerHashes,
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, preGenesisAccumulatorHash, preGenesisLedgerHashes, mempoolType);
+        epochMaxRound, mapping, preGenesisLedgerHashes, mempoolType, proposerElectionMode);
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
@@ -152,14 +162,23 @@ public sealed interface StateComputerConfig {
   record MockedStateComputerConfigWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
-      HashCode preGenesisAccumulatorHash,
       LedgerHashes preGenesisLedgerHashes,
-      MockedMempoolConfig mempoolType)
+      MockedMempoolConfig mempoolType,
+      ProposerElectionMode proposerElectionMode)
       implements MockedStateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {
       return mempoolType;
     }
+  }
+
+  /** A choice of {@link com.radixdlt.consensus.liveness.ProposerElection} implementation. */
+  enum ProposerElectionMode {
+    /** Use the {@link com.radixdlt.consensus.liveness.WeightedRotatingLeaders} only. */
+    ONLY_WEIGHTED_BY_STAKE,
+
+    /** Use the newer {@link com.radixdlt.consensus.liveness.ProposerElections#defaultRotation}. */
+    WITH_INITIAL_ROUNDS_ITERATION,
   }
 
   record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)

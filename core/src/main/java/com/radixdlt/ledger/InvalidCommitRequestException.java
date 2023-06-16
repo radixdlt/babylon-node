@@ -62,17 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.ledger;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.statecomputer.commit.InvalidCommitRequestError;
 
-public record AccumulatorState(UInt64 stateVersion, HashCode accumulatorHash) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        AccumulatorState.class,
-        codecs -> StructCodec.fromRecordComponents(AccumulatorState.class, codecs));
+/**
+ * An exception signalling that the contents of a properly-signed commit request were not internally
+ * consistent (e.g. non-parseable or non-committable transactions, ledger proof mismatches).
+ */
+public class InvalidCommitRequestException extends RuntimeException {
+  public InvalidCommitRequestException(InvalidCommitRequestError error) {
+    super(error.toString());
   }
 }

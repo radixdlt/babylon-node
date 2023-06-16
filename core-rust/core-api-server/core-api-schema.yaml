@@ -3779,7 +3779,7 @@ components:
           maxLength: 64
           description: |
             The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+            This hash is `ACC_{N+1} = combine(ACC_N, LEDGER_HASH_{N}))` (where `combine()` is an arbitrary deterministic function we use).
         user_transaction_identifiers:
           description: Only present if the transaction is a user-submitted notarized transaction.
           $ref: "#/components/schemas/TransactionIdentifiers"
@@ -4145,13 +4145,6 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
-        accumulator_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
         state_tree_hash:
           type: string
           minLength: 64

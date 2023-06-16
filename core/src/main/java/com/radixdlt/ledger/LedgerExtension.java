@@ -64,89 +64,94 @@
 
 package com.radixdlt.ledger;
 
-import static java.util.Objects.requireNonNull;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.google.common.primitives.Ints;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
 
 /**
- * A data transfer object for a CommittedTransactionsWithProof, including a proof at the start of
- * the run.
+ * A run of committed transactions, with a known-valid LedgerProof pointing at the last transaction.
  *
- * <p>This may not have been verified yet.
+ * <p>The run of transactions will reside in a single epoch, so that it can be validated as
+ * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
+ * accumulator, which can be cross-checked against the list of transactions. This allows
+ * verification of the transaction run, if the parent accumulator of the first transaction is known.
+ *
+ * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
+ * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
+ * enables trustless syncing of X transactions at a time.
+ *
+ * <p>Notes:
+ *
+ * <ul>
+ *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof",
+ *       "TransactionRun" and "CommittedTransactionWithProof".
+ * </ul>
  */
-@Immutable
-@SerializerId2("ledger.committed_transactions_with_proof")
-public final class CommittedTransactionsWithProofDto {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
-
-  @JsonProperty("txns")
-  @DsonOutput(Output.ALL)
+public final class LedgerExtension {
   private final List<RawLedgerTransaction> transactions;
+  private final LedgerProof proof;
 
-  @JsonProperty("head")
-  @DsonOutput(Output.ALL)
-  private final DtoLedgerProof head;
+  private LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+    this.transactions = Objects.requireNonNull(transactions);
+    this.proof = Objects.requireNonNull(proof);
+  }
 
-  @JsonProperty("tail")
-  @DsonOutput(Output.ALL)
-  private final DtoLedgerProof tail;
-
-  @JsonCreator
-  public CommittedTransactionsWithProofDto(
-      @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "head", required = true) DtoLedgerProof head,
-      @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
-    this.transactions = transactions == null ? ImmutableList.of() : transactions;
-    this.head = requireNonNull(head);
-    this.tail = requireNonNull(tail);
-
-    this.transactions.forEach(Objects::requireNonNull);
+  public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+    return new LedgerExtension(transactions, proof);
   }
 
   public List<RawLedgerTransaction> getTransactions() {
     return transactions;
   }
 
-  public DtoLedgerProof getHead() {
-    return head;
+  public boolean contains(RawLedgerTransaction transaction) {
+    return transactions.contains(transaction);
   }
 
-  public DtoLedgerProof getTail() {
-    return tail;
+  public LedgerProof getProof() {
+    return proof;
   }
 
-  @Override
-  public String toString() {
-    return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
+  /**
+   * Returns a suffix of the {@link #transactions} that starts from the given state version. This
+   * kind of logic is needed in case of a race condition between different commit requests, as we
+   * may have already committed some of this commit request's transactions. We extract the
+   * transactions that we actually still need to commit.
+   */
+  public LedgerExtension getExtensionFrom(long startStateVersion) {
+    final var proofStateVersion = this.proof.getStateVersion();
+    final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
+    if (startIndex < 0 || startIndex > this.transactions.size()) {
+      throw new IllegalArgumentException(
+          "%s transactions ending with state version %s cannot be an extension of state version %s"
+              .formatted(this.transactions.size(), proofStateVersion, startStateVersion));
     }
-
-    return (o instanceof CommittedTransactionsWithProofDto that)
-        && Objects.equals(transactions, that.transactions)
-        && Objects.equals(head, that.head)
-        && Objects.equals(tail, that.tail);
+    final var extension =
+        this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
+    return LedgerExtension.create(extension, this.proof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactions, head, tail);
+    return Objects.hash(transactions, proof);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LedgerExtension)) {
+      return false;
+    }
+
+    LedgerExtension other = (LedgerExtension) o;
+    return Objects.equals(this.transactions, other.transactions)
+        && Objects.equals(this.proof, other.proof);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{transactions=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
   }
 }

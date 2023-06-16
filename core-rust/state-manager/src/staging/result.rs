@@ -64,14 +64,15 @@
 
 use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
-use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::staging::epoch_handling::AccuTreeEpochHandler;
-use crate::transaction::LegacyLedgerPayloadHash;
+
+use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
+use crate::transaction::LedgerTransactionHash;
 use crate::{
-    AccumulatorHash, ChangeAction, CommitBasedIdentifiers, DetailedTransactionOutcome,
-    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
-    StateHash, SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
+    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
+    SubstateChange, TransactionTreeHash,
 };
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
@@ -80,7 +81,9 @@ use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
 use radix_engine::track::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
+
+use radix_engine::track::SystemUpdates;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
@@ -92,6 +95,7 @@ pub enum ProcessedTransactionReceipt {
     Abort(AbortResult),
 }
 
+#[derive(Clone, Debug)]
 pub struct ProcessedCommitResult {
     pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
@@ -101,8 +105,8 @@ pub struct ProcessedCommitResult {
 pub struct HashUpdateContext<'s, S> {
     pub store: &'s S,
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
-    pub parent_transaction_identifiers: &'s CommitBasedIdentifiers,
-    pub legacy_payload_hash: &'s LegacyLedgerPayloadHash,
+    pub parent_state_version: StateVersion,
+    pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
 impl ProcessedTransactionReceipt {
@@ -123,40 +127,36 @@ impl ProcessedTransactionReceipt {
         }
     }
 
-    pub fn expect_commit<S: Into<String>>(&self, description: S) -> &ProcessedCommitResult {
+    pub fn expect_commit(&self, description: impl Display) -> &ProcessedCommitResult {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => commit,
             ProcessedTransactionReceipt::Reject(reject) => {
-                panic!(
-                    "Transaction ({}) was rejected: {:?}",
-                    description.into(),
-                    reject
-                )
+                panic!("Transaction ({}) was rejected: {:?}", description, reject)
             }
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!(
-                    "Transaction ({}) was aborted: {:?}",
-                    description.into(),
-                    abort
-                )
+                panic!("Transaction ({}) was aborted: {:?}", description, abort)
             }
         }
     }
 
-    pub fn expect_commit_or_reject<S: Into<String>>(
+    pub fn expect_commit_or_reject(
         &self,
-        description: S,
-    ) -> Result<&ProcessedCommitResult, &RejectResult> {
+        description: impl Display,
+    ) -> Result<&ProcessedCommitResult, RejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
-            ProcessedTransactionReceipt::Reject(reject) => Err(reject),
+            ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
             ProcessedTransactionReceipt::Abort(abort) => {
-                panic!(
-                    "Transaction ({}) was aborted: {:?}",
-                    description.into(),
-                    abort
-                )
+                panic!("Transaction {} was aborted: {:?}", description, abort)
             }
+        }
+    }
+
+    pub fn get_committed_transaction_root(&self) -> Option<TransactionTreeHash> {
+        if let ProcessedTransactionReceipt::Commit(commit) = self {
+            Some(commit.hash_structures_diff.ledger_hashes.transaction_root)
+        } else {
+            None
         }
     }
 }
@@ -167,65 +167,39 @@ impl ProcessedCommitResult {
         commit_result: CommitResult,
         execution_trace: TransactionExecutionTrace,
     ) -> Self {
-        let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
-        let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
-        let transaction_hash = hash_update_context.legacy_payload_hash;
-        let transaction_accumulator_hash = parent_transaction_identifiers
-            .accumulator_hash
-            .accumulate(transaction_hash);
+        let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
+        let parent_state_version = hash_update_context.parent_state_version;
+        let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
-
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in
-            commit_result.state_updates.system_updates.clone()
-        {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(&node_id, module_id);
-                let sort_key = D::to_db_sort_key(&substate_key);
-                let change_action = match update {
-                    DatabaseUpdate::Set(value) => {
-                        match store.get_substate(&partition_key, &sort_key) {
-                            Some(_) => ChangeAction::Update(value),
-                            None => ChangeAction::Create(value),
-                        }
-                    }
-                    DatabaseUpdate::Delete => ChangeAction::Delete,
-                };
-                substate_changes.push(SubstateChange {
-                    node_id,
-                    partition_number: module_id,
-                    substate_key,
-                    action: change_action,
-                });
-            }
-        }
 
         let database_updates = commit_result.state_updates.database_updates.clone();
 
-        let state_hash_tree_diff = Self::compute_state_tree_update(
+        let substate_changes = Self::compute_substate_changes::<S, D>(
             store,
-            parent_transaction_identifiers.state_version,
-            &commit_result.state_updates.database_updates,
+            &commit_result.state_updates.system_updates,
+        );
+        let state_hash_tree_diff =
+            Self::compute_state_tree_update(store, parent_state_version, &database_updates);
+
+        let epoch_accu_trees =
+            EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_state_version);
+
+        let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.transaction_hash,
+            store,
+            vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
         let local_receipt =
             LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
-
-        let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
-            store,
-            epoch_transaction_identifiers.state_version,
-            epoch_transaction_identifiers.transaction_hash,
-            parent_transaction_identifiers.state_version,
-            TransactionTreeHash::from(transaction_hash.into_hash()),
-        );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
-        let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
+
+        let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
+            epoch_identifiers.receipt_hash,
             store,
-            epoch_transaction_identifiers.state_version,
-            epoch_transaction_identifiers.receipt_hash,
-            parent_transaction_identifiers.state_version,
-            ReceiptTreeHash::from(consensus_receipt.get_hash().into_hash()),
+            vec![ReceiptTreeHash::from(consensus_receipt.get_hash())],
         );
+
         let ledger_hashes = LedgerHashes {
             state_root: state_hash_tree_diff.new_root,
             transaction_root: *transaction_tree_diff.slice.root(),
@@ -235,7 +209,6 @@ impl ProcessedCommitResult {
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
-                transaction_accumulator_hash,
                 ledger_hashes,
                 state_hash_tree_diff,
                 transaction_tree_diff,
@@ -245,15 +218,16 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn check_success<S: Into<String>>(&self, description: S) {
-        let local_detailed_outcome = &self.local_receipt.local_execution.outcome;
-        if let DetailedTransactionOutcome::Failure(error) = local_detailed_outcome {
+    pub fn expect_success(self, description: impl Display) -> Self {
+        if let DetailedTransactionOutcome::Failure(error) =
+            &self.local_receipt.local_execution.outcome
+        {
             panic!(
-                "Transaction ({}) was failed: {:?}",
-                description.into(),
-                error
-            )
+                "{} (ledger hash: {}) failed: {:?}",
+                description, self.hash_structures_diff.ledger_hashes.transaction_root, error
+            );
         }
+        self
     }
 
     pub fn next_epoch(&self) -> Option<NextEpoch> {
@@ -264,26 +238,38 @@ impl ProcessedCommitResult {
             .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
     }
 
-    fn compute_accu_tree_update<S: ReadableAccuTreeStore<u64, M>, M: Merklizable + Clone>(
+    pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
-        epoch_state_version: u64,
-        epoch_root: M,
-        parent_state_version: u64,
-        new_leaf_hash: M,
-    ) -> AccuTreeDiff<u64, M> {
-        let mut collector = CollectingAccuTreeStore::new(store);
-        let mut epoch_scoped_store =
-            EpochScopedAccuTreeStore::new(&mut collector, epoch_state_version);
-        let epoch_handler = AccuTreeEpochHandler::new(epoch_state_version, parent_state_version);
-        let epoch_tree_len = epoch_handler.current_accu_tree_len();
-        let appended_hashes = epoch_handler.adjust_next_batch(epoch_root, vec![new_leaf_hash]);
-        AccuTree::new(&mut epoch_scoped_store, epoch_tree_len).append(appended_hashes);
-        collector.into_diff()
+        system_updates: &SystemUpdates,
+    ) -> Vec<SubstateChange> {
+        let mut substate_changes = Vec::new();
+        for ((node_id, module_id), node_module_updates) in system_updates {
+            for (substate_key, update) in node_module_updates {
+                let partition_key = D::to_db_partition_key(node_id, *module_id);
+                let sort_key = D::to_db_sort_key(substate_key);
+                let change_action = match update {
+                    DatabaseUpdate::Set(value) => {
+                        match store.get_substate(&partition_key, &sort_key) {
+                            Some(_) => ChangeAction::Update(value.clone()),
+                            None => ChangeAction::Create(value.clone()),
+                        }
+                    }
+                    DatabaseUpdate::Delete => ChangeAction::Delete,
+                };
+                substate_changes.push(SubstateChange {
+                    node_id: *node_id,
+                    partition_number: *module_id,
+                    substate_key: substate_key.clone(),
+                    action: change_action,
+                });
+            }
+        }
+        substate_changes
     }
 
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
-        parent_state_version: u64,
+        parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
     ) -> StateHashTreeDiff {
         let mut hash_changes = Vec::new();
@@ -305,22 +291,40 @@ impl ProcessedCommitResult {
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
-            Some(parent_state_version).filter(|v| *v > 0),
+            Some(parent_state_version.number()).filter(|v| *v > 0),
             hash_changes,
         );
         collector.into_diff_with(root_hash)
     }
 }
 
-pub struct HashStructuresDiff {
-    pub transaction_accumulator_hash: AccumulatorHash,
-    pub ledger_hashes: LedgerHashes,
-    pub state_hash_tree_diff: StateHashTreeDiff,
-    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionTreeHash>,
-    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
+impl From<EpochChangeEvent> for NextEpoch {
+    fn from(epoch_change_event: EpochChangeEvent) -> Self {
+        NextEpoch {
+            validator_set: epoch_change_event
+                .validator_set
+                .validators_by_stake_desc
+                .into_iter()
+                .map(|(address, validator)| ActiveValidatorInfo {
+                    address,
+                    key: validator.key,
+                    stake: validator.stake,
+                })
+                .collect(),
+            epoch: epoch_change_event.epoch,
+        }
+    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub struct HashStructuresDiff {
+    pub ledger_hashes: LedgerHashes,
+    pub state_hash_tree_diff: StateHashTreeDiff,
+    pub transaction_tree_diff: AccuTreeDiff<StateVersion, TransactionTreeHash>,
+    pub receipt_tree_diff: AccuTreeDiff<StateVersion, ReceiptTreeHash>,
+}
+
+#[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
@@ -345,44 +349,13 @@ impl Default for StateHashTreeDiff {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct AccuTreeDiff<K, N> {
     pub key: K,
     pub slice: TreeSlice<N>,
 }
 
-struct EpochScopedAccuTreeStore<'s, S> {
-    forest_store: &'s mut S,
-    epoch_state_version: u64,
-}
-
-impl<'s, S> EpochScopedAccuTreeStore<'s, S> {
-    pub fn new(forest_store: &'s mut S, epoch_state_version: u64) -> Self {
-        Self {
-            forest_store,
-            epoch_state_version,
-        }
-    }
-}
-
-impl<'s, S: ReadableAccuTreeStore<u64, N>, N> ReadableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
-{
-    fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
-        let end_state_version = self.epoch_state_version + *epoch_tree_size as u64 - 1;
-        self.forest_store.get_tree_slice(&end_state_version)
-    }
-}
-
-impl<'s, S: WriteableAccuTreeStore<u64, N>, N> WriteableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
-{
-    fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
-        let end_state_version = self.epoch_state_version + epoch_tree_size as u64 - 1;
-        self.forest_store.put_tree_slice(end_state_version, slice)
-    }
-}
-
-struct CollectingAccuTreeStore<'s, S, K, N> {
+pub struct CollectingAccuTreeStore<'s, S, K, N> {
     readable_delegate: &'s S,
     diff: Option<AccuTreeDiff<K, N>>,
 }

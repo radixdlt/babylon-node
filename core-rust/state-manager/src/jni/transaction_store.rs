@@ -62,11 +62,10 @@
  * permissions under this License.
  */
 
-use crate::jni::state_computer::JavaLedgerProof;
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
-use crate::transaction::RawLedgerTransaction;
-use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome};
+use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
+use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -75,6 +74,7 @@ use radix_engine::types::*;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
+    ledger_transaction_hash: LedgerTransactionHash,
     outcome: TransactionOutcomeJava,
     error_message: Option<String>,
     consensus_receipt_bytes: Vec<u8>,
@@ -103,7 +103,7 @@ struct TxnsAndProofRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProof {
     transactions: Vec<RawLedgerTransaction>,
-    proof: JavaLedgerProof,
+    proof: LedgerProof,
 }
 
 #[no_mangle]
@@ -116,16 +116,20 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |state_version: u64| -> Option<ExecutedTransaction> {
+        |state_version_number: u64| -> Option<ExecutedTransaction> {
+            let state_version = StateVersion::of(state_version_number);
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
+            let committed_identifiers =
+                read_database.get_committed_transaction_identifiers(state_version)?;
             let committed_ledger_transaction_receipt =
                 read_database.get_committed_ledger_transaction_receipt(state_version)?;
             let local_transaction_execution =
                 read_database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
+                ledger_transaction_hash: committed_identifiers.payload.ledger_payload_hash,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
@@ -154,7 +158,8 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |state_version: u64| -> Option<TransactionDetails> {
+        |state_version_number: u64| -> Option<TransactionDetails> {
+            let state_version = StateVersion::of(state_version_number);
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_database = database.read();
             let committed_local_transaction_execution =
@@ -185,29 +190,29 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
         |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let txns_and_proof = database.read().get_txns_and_proof(
-                request.start_state_version_inclusive,
+                StateVersion::of(request.start_state_version_inclusive),
                 request.max_number_of_txns_if_more_than_one_proof,
                 request.max_payload_size_in_bytes,
             );
             txns_and_proof.map(|(transactions, proof)| TxnsAndProof {
                 transactions,
-                proof: JavaLedgerProof::from(proof),
+                proof,
             })
         },
     )
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getFirstEpochProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getPostGenesisEpochProof(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<JavaLedgerProof> {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
         let database = JNIStateManager::get_database(&env, j_state_manager);
-        let epoch_proof = database.read().get_first_epoch_proof();
-        epoch_proof.map(JavaLedgerProof::from)
+        let proof = database.read().get_post_genesis_epoch_proof();
+        proof
     })
 }
 
@@ -221,10 +226,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |epoch: Epoch| -> Option<JavaLedgerProof> {
+        |epoch: Epoch| -> Option<LedgerProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
-            let epoch_proof = database.read().get_epoch_proof(epoch);
-            epoch_proof.map(JavaLedgerProof::from)
+            let proof = database.read().get_epoch_proof(epoch);
+            proof
         },
     )
 }
@@ -239,10 +244,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |_no_args: ()| -> Option<JavaLedgerProof> {
+        |_no_args: ()| -> Option<LedgerProof> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
-            let last_proof = database.read().get_last_proof();
-            last_proof.map(JavaLedgerProof::from)
+            let proof = database.read().get_last_proof();
+            proof
         },
     )
 }

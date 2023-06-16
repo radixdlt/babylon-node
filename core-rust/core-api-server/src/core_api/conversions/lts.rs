@@ -4,7 +4,7 @@ use radix_engine::{
 };
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    SubstateChange,
+    StateVersion, SubstateChange, TransactionTreeHash,
 };
 use transaction::prelude::*;
 
@@ -13,6 +13,7 @@ use crate::core_api::*;
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
     context: &MappingContext,
+    state_version: StateVersion,
     receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {
@@ -26,8 +27,10 @@ pub fn to_api_lts_committed_transaction_outcome(
         + receipt.local_execution.fee_summary.total_execution_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
-        state_version: to_api_state_version(identifiers.at_commit.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&identifiers.at_commit.accumulator_hash),
+        state_version: to_api_state_version(state_version)?,
+        accumulator_hash: to_lts_api_accumulator_hash(
+            &identifiers.resultant_ledger_hashes.transaction_root,
+        ),
         user_transaction_identifiers: identifiers.payload.typed.user().map(|hashes| {
             Box::new(models::TransactionIdentifiers {
                 intent_hash: to_api_intent_hash(hashes.intent_hash),
@@ -193,4 +196,11 @@ pub fn get_fungible_balance(balance_change: &BalanceChange) -> Option<Decimal> {
         BalanceChange::Fungible(balance_change) => Some(*balance_change),
         BalanceChange::NonFungible { .. } => None,
     }
+}
+
+/// Retrofits the given transaction root, pretending it is an accumulator hash (for LTS purposes).
+/// The transaction root and accumulator hash encode the same information and have the same
+/// properties - only their computation differs.
+fn to_lts_api_accumulator_hash(transaction_root: &TransactionTreeHash) -> String {
+    to_hex(transaction_root)
 }

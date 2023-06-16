@@ -70,7 +70,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.rev2.LastEpochProof;
 
@@ -91,7 +91,7 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Singleton
   private BFTConfiguration initialConfig(
       BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 

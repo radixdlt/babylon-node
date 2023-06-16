@@ -74,7 +74,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -151,22 +151,15 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
-      EventDispatcher<CommittedTransactionsWithProof>
-          syncedCommittedTransactionsWithProofDispatcher) {
+      EventDispatcher<LedgerExtension> syncedLedgerExtensionDispatcher) {
     return resp -> {
-      var txnsAndProof = resp.getTransactionsWithProofDto();
-      // TODO: Stateful ledger header verification:
-      // TODO: -verify rootHash matches
-      var nextHeader =
-          new LedgerProof(
-              txnsAndProof.getTail().getOpaque(),
-              txnsAndProof.getTail().getLedgerHeader(),
-              txnsAndProof.getTail().getSignatures());
+      var dtoLedgerExtension = resp.getLedgerExtension();
+      var nextHeader = LedgerProof.fromDto(dtoLedgerExtension.getTail());
 
-      var verified =
-          CommittedTransactionsWithProof.create(txnsAndProof.getTransactions(), nextHeader);
+      var ledgerExtension =
+          LedgerExtension.create(dtoLedgerExtension.getTransactions(), nextHeader);
 
-      syncedCommittedTransactionsWithProofDispatcher.dispatch(verified);
+      syncedLedgerExtensionDispatcher.dispatch(ledgerExtension);
     };
   }
 

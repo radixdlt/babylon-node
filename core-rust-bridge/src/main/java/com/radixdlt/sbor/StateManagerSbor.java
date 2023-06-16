@@ -126,7 +126,6 @@ public final class StateManagerSbor {
     SignedIntentHash.registerCodec(codecMap);
     NotarizedTransactionHash.registerCodec(codecMap);
     LedgerTransactionHash.registerCodec(codecMap);
-    LegacyLedgerPayloadHash.registerCodec(codecMap);
     TransactionStatus.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);
@@ -153,17 +152,16 @@ public final class StateManagerSbor {
     LedgerHashes.registerCodec(codecMap);
     LedgerProof.registerCodec(codecMap);
     LedgerHeader.registerCodec(codecMap);
-    AccumulatorState.registerCodec(codecMap);
     TimestampedValidatorSignature.registerCodec(codecMap);
-    PreviousVertex.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
+    RoundHistory.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     CommittableTransaction.registerCodec(codecMap);
     RejectedTransaction.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);
     ActiveValidatorInfo.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
-    CommitError.registerCodec(codecMap);
+    InvalidCommitRequestError.registerCodec(codecMap);
     DatabaseBackendConfig.registerCodec(codecMap);
     DatabaseFlags.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);

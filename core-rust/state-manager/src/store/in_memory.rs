@@ -70,7 +70,8 @@ use crate::transaction::{
 };
 use crate::{
     CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, StateVersion,
+    TransactionTreeHash,
 };
 
 use crate::query::TransactionIdentifierLoader;
@@ -89,22 +90,22 @@ use transaction::model::*;
 #[derive(Debug)]
 pub struct InMemoryStore {
     flags: DatabaseFlags,
-    transactions: BTreeMap<u64, RawLedgerTransaction>,
-    transaction_identifiers: BTreeMap<u64, CommittedTransactionIdentifiers>,
-    ledger_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
-    local_transaction_executions: BTreeMap<u64, LocalTransactionExecution>,
-    transaction_intent_lookup: HashMap<IntentHash, u64>,
-    user_payload_hash_lookup: HashMap<NotarizedTransactionHash, u64>,
-    ledger_payload_hash_lookup: HashMap<LedgerTransactionHash, u64>,
-    proofs: BTreeMap<u64, LedgerProof>,
+    transactions: BTreeMap<StateVersion, RawLedgerTransaction>,
+    transaction_identifiers: BTreeMap<StateVersion, CommittedTransactionIdentifiers>,
+    ledger_receipts: BTreeMap<StateVersion, LedgerTransactionReceipt>,
+    local_transaction_executions: BTreeMap<StateVersion, LocalTransactionExecution>,
+    transaction_intent_lookup: HashMap<IntentHash, StateVersion>,
+    user_payload_hash_lookup: HashMap<NotarizedTransactionHash, StateVersion>,
+    ledger_payload_hash_lookup: HashMap<LedgerTransactionHash, StateVersion>,
+    proofs: BTreeMap<StateVersion, LedgerProof>,
     epoch_proofs: BTreeMap<Epoch, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: InMemorySubstateDatabase,
     tree_node_store: SerializedInMemoryTreeStore,
-    transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
-    receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
-    account_change_index_last_state_version: u64,
-    account_change_index_set: HashMap<GlobalAddress, BTreeSet<u64>>,
+    transaction_tree_slices: BTreeMap<StateVersion, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: BTreeMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
+    account_change_index_last_state_version: StateVersion,
+    account_change_index_set: HashMap<GlobalAddress, BTreeSet<StateVersion>>,
 }
 
 impl InMemoryStore {
@@ -125,22 +126,20 @@ impl InMemoryStore {
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
-            account_change_index_last_state_version: 0,
+            account_change_index_last_state_version: StateVersion::pre_genesis(),
             account_change_index_set: HashMap::new(),
         }
     }
 
     fn insert_transaction(
         &mut self,
+        state_version: StateVersion,
         transaction: RawLedgerTransaction,
         receipt: LocalTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         if self.is_account_change_index_enabled() {
-            self.update_account_change_index_from_receipt(
-                identifiers.at_commit.state_version,
-                &receipt.local_execution,
-            );
+            self.update_account_change_index_from_receipt(state_version, &receipt.local_execution);
         }
 
         if let TypedTransactionIdentifiers::User {
@@ -156,27 +155,21 @@ impl InMemoryStore {
                 );
             }
             self.transaction_intent_lookup
-                .insert(*intent_hash, identifiers.at_commit.state_version);
-
-            self.user_payload_hash_lookup.insert(
-                *notarized_transaction_hash,
-                identifiers.at_commit.state_version,
-            );
+                .insert(*intent_hash, state_version);
+            self.user_payload_hash_lookup
+                .insert(*notarized_transaction_hash, state_version);
         }
 
-        self.ledger_payload_hash_lookup.insert(
-            identifiers.payload.ledger_payload_hash,
-            identifiers.at_commit.state_version,
-        );
+        self.ledger_payload_hash_lookup
+            .insert(identifiers.payload.ledger_payload_hash, state_version);
 
-        self.transactions
-            .insert(identifiers.at_commit.state_version, transaction);
+        self.transactions.insert(state_version, transaction);
         self.ledger_receipts
-            .insert(identifiers.at_commit.state_version, receipt.on_ledger);
+            .insert(state_version, receipt.on_ledger);
         self.local_transaction_executions
-            .insert(identifiers.at_commit.state_version, receipt.local_execution);
+            .insert(state_version, receipt.local_execution);
         self.transaction_identifiers
-            .insert(identifiers.at_commit.state_version, identifiers);
+            .insert(state_version, identifiers);
     }
 }
 
@@ -198,12 +191,12 @@ impl ConfigurableDatabase for InMemoryStore {
         // We don't need to do anything for in memory store
     }
 
-    fn is_local_transaction_execution_index_enabled(&self) -> bool {
-        self.flags.enable_local_transaction_execution_index
-    }
-
     fn is_account_change_index_enabled(&self) -> bool {
         self.flags.enable_account_change_index
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.flags.enable_local_transaction_execution_index
     }
 }
 
@@ -220,7 +213,7 @@ impl RecoverableVertexStore for InMemoryStore {
 }
 
 impl TransactionIndex<&IntentHash> for InMemoryStore {
-    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<u64> {
+    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<StateVersion> {
         self.transaction_intent_lookup.get(identifier).cloned()
     }
 }
@@ -229,7 +222,7 @@ impl TransactionIndex<&NotarizedTransactionHash> for InMemoryStore {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &NotarizedTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         self.user_payload_hash_lookup.get(identifier).cloned()
     }
 }
@@ -238,7 +231,7 @@ impl TransactionIndex<&LedgerTransactionHash> for InMemoryStore {
     fn get_txn_state_version_by_identifier(
         &self,
         identifier: &LedgerTransactionHash,
-    ) -> Option<u64> {
+    ) -> Option<StateVersion> {
         self.ledger_payload_hash_lookup.get(identifier).cloned()
     }
 }
@@ -266,35 +259,40 @@ impl<P: Payload> ReadableTreeStore<P> for InMemoryStore {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionTreeHash> for InMemoryStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for InMemoryStore {
+    fn get_tree_slice(
+        &self,
+        state_version: &StateVersion,
+    ) -> Option<TreeSlice<TransactionTreeHash>> {
         self.transaction_tree_slices.get(state_version).cloned()
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+impl ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for InMemoryStore {
+    fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.receipt_tree_slices.get(state_version).cloned()
     }
 }
 
 impl CommitStore for InMemoryStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        for CommittedTransactionBundle {
-            raw,
-            receipt,
-            identifiers,
-        } in commit_bundle.transactions
-        {
-            self.insert_transaction(raw, receipt, identifiers);
+        let commit_ledger_header = &commit_bundle.proof.ledger_header;
+        let commit_state_version = commit_ledger_header.state_version;
+
+        for bundle in commit_bundle.transactions.into_iter() {
+            let CommittedTransactionBundle {
+                state_version,
+                raw,
+                receipt,
+                identifiers,
+            } = bundle;
+            self.insert_transaction(state_version, raw, receipt, identifiers);
         }
 
-        let commit_ledger_header = &commit_bundle.proof.ledger_header;
         if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             self.epoch_proofs
                 .insert(next_epoch.epoch, commit_bundle.proof.clone());
         }
-        let commit_state_version = commit_ledger_header.accumulator_state.state_version;
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
@@ -321,12 +319,12 @@ impl CommitStore for InMemoryStore {
 }
 
 pub struct InMemoryCommittedTransactionBundleIterator<'a> {
-    state_version: u64,
+    state_version: StateVersion,
     store: &'a InMemoryStore,
 }
 
 impl<'a> InMemoryCommittedTransactionBundleIterator<'a> {
-    fn new(from_state_version: u64, store: &'a InMemoryStore) -> Self {
+    fn new(from_state_version: StateVersion, store: &'a InMemoryStore) -> Self {
         InMemoryCommittedTransactionBundleIterator {
             state_version: from_state_version,
             store,
@@ -339,10 +337,11 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let state_version = self.state_version;
-        self.state_version += 1;
+        self.state_version = self.state_version.next();
         match self.store.transactions.get(&state_version) {
             None => None,
             Some(transaction) => Some(CommittedTransactionBundle {
+                state_version,
                 raw: transaction.clone(),
                 receipt: LocalTransactionReceipt {
                     on_ledger: self
@@ -372,7 +371,7 @@ impl Iterator for InMemoryCommittedTransactionBundleIterator<'_> {
 impl IterableTransactionStore for InMemoryStore {
     fn get_committed_transaction_bundle_iter(
         &self,
-        from_state_version: u64,
+        from_state_version: StateVersion,
     ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
         // This is to align behaviour with the RocksDB implementation. See comment there.
         debug_assert!(self.is_local_transaction_execution_index_enabled());
@@ -385,27 +384,30 @@ impl IterableTransactionStore for InMemoryStore {
 }
 
 impl QueryableTransactionStore for InMemoryStore {
-    fn get_committed_transaction(&self, state_version: u64) -> Option<RawLedgerTransaction> {
+    fn get_committed_transaction(
+        &self,
+        state_version: StateVersion,
+    ) -> Option<RawLedgerTransaction> {
         Some(self.transactions.get(&state_version)?.clone())
     }
 
     fn get_committed_transaction_identifiers(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<CommittedTransactionIdentifiers> {
         Some(self.transaction_identifiers.get(&state_version)?.clone())
     }
 
     fn get_committed_ledger_transaction_receipt(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LedgerTransactionReceipt> {
         Some(self.ledger_receipts.get(&state_version)?.clone())
     }
 
     fn get_committed_local_transaction_execution(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LocalTransactionExecution> {
         Some(
             self.local_transaction_executions
@@ -416,7 +418,7 @@ impl QueryableTransactionStore for InMemoryStore {
 
     fn get_committed_local_transaction_receipt(
         &self,
-        state_version: u64,
+        state_version: StateVersion,
     ) -> Option<LocalTransactionReceipt> {
         Some(LocalTransactionReceipt {
             on_ledger: self.ledger_receipts.get(&state_version)?.clone(),
@@ -429,27 +431,29 @@ impl QueryableTransactionStore for InMemoryStore {
 }
 
 impl TransactionIdentifierLoader for InMemoryStore {
-    fn get_top_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
+    fn get_top_transaction_identifiers(
+        &self,
+    ) -> Option<(StateVersion, CommittedTransactionIdentifiers)> {
         self.transaction_identifiers
             .iter()
             .next_back()
-            .map(|(_, value)| value.clone())
+            .map(|(state_version, value)| (*state_version, value.clone()))
     }
 }
 
 impl QueryableProofStore for InMemoryStore {
-    fn max_state_version(&self) -> u64 {
+    fn max_state_version(&self) -> StateVersion {
         self.transactions
             .iter()
             .next_back()
             .map(|(k, _v)| *k)
-            .unwrap_or_default()
+            .unwrap_or_else(StateVersion::pre_genesis)
     }
 
     /// In memory implementation doesn't need to respect the limits
     fn get_txns_and_proof(
         &self,
-        start_state_version_inclusive: u64,
+        start_state_version_inclusive: StateVersion,
         _max_number_of_txns_if_more_than_one_proof: u32,
         _max_payload_size_in_bytes: u32,
     ) -> Option<(Vec<RawLedgerTransaction>, LedgerProof)> {
@@ -473,7 +477,7 @@ impl QueryableProofStore for InMemoryStore {
         self.proofs.values().next().cloned()
     }
 
-    fn get_first_epoch_proof(&self) -> Option<LedgerProof> {
+    fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof> {
         self.epoch_proofs.values().next().cloned()
     }
 
@@ -489,7 +493,7 @@ impl QueryableProofStore for InMemoryStore {
 impl InMemoryStore {
     fn update_account_change_index_from_receipt(
         &mut self,
-        state_version: u64,
+        state_version: StateVersion,
         receipt: &LocalTransactionExecution,
     ) {
         for (address, _) in receipt.state_update_summary.balance_changes.iter() {
@@ -506,7 +510,7 @@ impl InMemoryStore {
 }
 
 impl AccountChangeIndexExtension for InMemoryStore {
-    fn account_change_index_last_processed_state_version(&self) -> u64 {
+    fn account_change_index_last_processed_state_version(&self) -> StateVersion {
         self.account_change_index_last_state_version
     }
 
@@ -514,7 +518,10 @@ impl AccountChangeIndexExtension for InMemoryStore {
         let last_state_version = self.max_state_version();
         let last_processed_state_version = self.account_change_index_last_processed_state_version();
 
-        for state_version in last_processed_state_version + 1..last_state_version + 1 {
+        for state_version in last_processed_state_version
+            .next()
+            .to(last_state_version.next())
+        {
             self.update_account_change_index_from_receipt(
                 state_version,
                 &self
@@ -531,8 +538,8 @@ impl IterableAccountChangeIndex for InMemoryStore {
     fn get_state_versions_for_account_iter(
         &self,
         account: GlobalAddress,
-        from_state_version: u64,
-    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        from_state_version: StateVersion,
+    ) -> Box<dyn Iterator<Item = StateVersion> + '_> {
         let Some(index) = self.account_change_index_set.get(&account) else { return Box::new(vec![].into_iter()); };
         return Box::new(
             index

@@ -66,10 +66,12 @@ mod executable_logic;
 mod ledger_transaction;
 mod preview;
 mod round_update_transaction;
+mod series_execution;
 mod validation;
 
 pub use executable_logic::*;
 pub use ledger_transaction::*;
 pub use preview::*;
 pub use round_update_transaction::*;
+pub use series_execution::*;
 pub use validation::*;

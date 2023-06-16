@@ -71,7 +71,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -104,9 +103,9 @@ public final class LedgerHeader {
 
   private final Round round;
 
-  @JsonProperty("accumulator_state")
+  @JsonProperty("state_version")
   @DsonOutput(Output.ALL)
-  private final AccumulatorState accumulatorState;
+  private final long stateVersion;
 
   @JsonProperty("hashes")
   @DsonOutput(Output.ALL)
@@ -129,7 +128,7 @@ public final class LedgerHeader {
   LedgerHeader(
       @JsonProperty("epoch") long epoch,
       @JsonProperty("round") long roundNumber,
-      @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
+      @JsonProperty(value = "state_version", required = true) long stateVersion,
       @JsonProperty(value = "hashes", required = true) LedgerHashes hashes,
       @JsonProperty("consensus_parent_round_timestamp_ms") long consensusParentRoundTimestampMs,
       @JsonProperty("proposer_timestamp") long proposerTimestampMs,
@@ -137,7 +136,7 @@ public final class LedgerHeader {
     this(
         epoch,
         Round.of(roundNumber),
-        accumulatorState,
+        stateVersion,
         hashes,
         consensusParentRoundTimestampMs,
         proposerTimestampMs,
@@ -147,19 +146,21 @@ public final class LedgerHeader {
   private LedgerHeader(
       long epoch,
       Round round,
-      AccumulatorState accumulatorState,
+      long stateVersion,
       LedgerHashes hashes,
       long consensusParentRoundTimestampMs,
       long proposerTimestampMs,
       NextEpoch nextEpoch) {
-    this.epoch = epoch;
-
     if (epoch < 0) {
       throw new IllegalArgumentException("Epoch can't be < 0");
     }
+    if (stateVersion < 0) {
+      throw new IllegalArgumentException("State version can't be < 0");
+    }
 
+    this.epoch = epoch;
     this.round = round;
-    this.accumulatorState = requireNonNull(accumulatorState);
+    this.stateVersion = stateVersion;
     this.hashes = requireNonNull(hashes);
     this.nextEpoch = nextEpoch;
     this.consensusParentRoundTimestampMs = consensusParentRoundTimestampMs;
@@ -167,7 +168,7 @@ public final class LedgerHeader {
   }
 
   public static LedgerHeader genesis(
-      AccumulatorState accumulatorState,
+      long stateVersion,
       LedgerHashes hashes,
       BFTValidatorSet validatorSet,
       long consensusParentRoundTimestamp,
@@ -175,7 +176,7 @@ public final class LedgerHeader {
     return new LedgerHeader(
         0,
         Round.genesis(),
-        accumulatorState,
+        stateVersion,
         hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
@@ -185,24 +186,18 @@ public final class LedgerHeader {
   public static LedgerHeader create(
       long epoch,
       Round round,
-      AccumulatorState accumulatorState,
+      long stateVersion,
       LedgerHashes hashes,
       long consensusParentRoundTimestamp,
       long proposerTimestamp) {
     return new LedgerHeader(
-        epoch,
-        round,
-        accumulatorState,
-        hashes,
-        consensusParentRoundTimestamp,
-        proposerTimestamp,
-        null);
+        epoch, round, stateVersion, hashes, consensusParentRoundTimestamp, proposerTimestamp, null);
   }
 
   public static LedgerHeader create(
       long epoch,
       Round round,
-      AccumulatorState accumulatorState,
+      long stateVersion,
       LedgerHashes hashes,
       long consensusParentRoundTimestamp,
       long proposerTimestamp,
@@ -210,7 +205,7 @@ public final class LedgerHeader {
     return new LedgerHeader(
         epoch,
         round,
-        accumulatorState,
+        stateVersion,
         hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
@@ -222,7 +217,7 @@ public final class LedgerHeader {
     return new LedgerHeader(
         this.epoch,
         round,
-        this.accumulatorState,
+        this.stateVersion,
         this.hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
@@ -243,8 +238,8 @@ public final class LedgerHeader {
     return Optional.ofNullable(nextEpoch);
   }
 
-  public AccumulatorState getAccumulatorState() {
-    return accumulatorState;
+  public long getStateVersion() {
+    return stateVersion;
   }
 
   public LedgerHashes getHashes() {
@@ -270,7 +265,7 @@ public final class LedgerHeader {
   @Override
   public int hashCode() {
     return Objects.hash(
-        this.accumulatorState,
+        this.stateVersion,
         this.hashes,
         this.consensusParentRoundTimestampMs,
         this.proposerTimestampMs,
@@ -288,7 +283,7 @@ public final class LedgerHeader {
     return (o instanceof LedgerHeader other)
         && this.consensusParentRoundTimestampMs == other.consensusParentRoundTimestampMs
         && this.proposerTimestampMs == other.proposerTimestampMs
-        && Objects.equals(this.accumulatorState, other.accumulatorState)
+        && this.stateVersion == other.stateVersion
         && Objects.equals(this.hashes, other.hashes)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
@@ -298,10 +293,10 @@ public final class LedgerHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s hashes=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
-            + " epoch=%s round=%s nextEpoch=%s}",
+        "%s{version=%s hashes=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
+            + " epoch=%s round=%s next_epoch=%s}",
         getClass().getSimpleName(),
-        this.accumulatorState,
+        this.stateVersion,
         this.hashes,
         this.consensusParentRoundTimestampMs,
         this.proposerTimestampMs,

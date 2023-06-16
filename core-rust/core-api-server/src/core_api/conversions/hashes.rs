@@ -1,6 +1,4 @@
-use state_manager::{
-    transaction::*, AccumulatorHash, ReceiptTreeHash, StateHash, TransactionTreeHash,
-};
+use state_manager::{transaction::*, ReceiptTreeHash, StateHash, TransactionTreeHash};
 use transaction::prelude::*;
 
 use crate::core_api::*;
@@ -20,10 +18,6 @@ pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash
 
 pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
-}
-
-pub fn to_api_accumulator_hash(accumulator_hash: &AccumulatorHash) -> String {
-    to_hex(accumulator_hash)
 }
 
 pub fn to_api_state_tree_hash(state_tree_hash: &StateHash) -> String {

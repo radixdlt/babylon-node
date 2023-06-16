@@ -62,35 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.Bytes;
-import java.util.Objects;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-public record LegacyLedgerPayloadHash(HashCode inner) {
-  public LegacyLedgerPayloadHash {
-    Objects.requireNonNull(inner);
-  }
-
-  public static void registerCodec(CodecMap codecMap) {
+public sealed interface InvalidCommitRequestError {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        LegacyLedgerPayloadHash.class,
-        codecs ->
-            StructCodec.transparent(
-                LegacyLedgerPayloadHash::new,
-                codecs.of(HashCode.class),
-                LegacyLedgerPayloadHash::inner));
+        InvalidCommitRequestError.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(InvalidCommitRequestError.class, codecs));
   }
 
-  public String hex() {
-    return Bytes.toHexString(this.inner.asBytes());
-  }
+  record TransactionParsingFailed() implements InvalidCommitRequestError {}
 
-  @Override
-  public String toString() {
-    return this.hex();
-  }
+  record TransactionRootMismatch() implements InvalidCommitRequestError {}
 }

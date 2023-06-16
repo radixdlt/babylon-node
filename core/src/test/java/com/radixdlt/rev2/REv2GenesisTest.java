@@ -166,7 +166,7 @@ public final class REv2GenesisTest {
 
       // should correspond to the genesis wrap up transaction
       final var latestStateVersion =
-          transactionStore.getLastProof().get().ledgerHeader().accumulatorState().stateVersion();
+          transactionStore.getLastProof().get().ledgerHeader().stateVersion();
       final var genesisWrapUp =
           transactionStore
               .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())

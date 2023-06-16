@@ -4,6 +4,7 @@ use radix_engine::transaction::{
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine::vm::ScryptoVm;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::time::{Duration, Instant};
 
 use radix_engine_interface::*;
@@ -21,12 +22,24 @@ pub trait TransactionLogic<S> {
 }
 
 /// A well-known type of execution.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum ConfigType {
     Genesis,
     Regular,
     Pending,
     Preview,
+}
+
+const TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
+const GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(2000);
+
+impl ConfigType {
+    pub fn get_transaction_runtime_warn_threshold(&self) -> Duration {
+        match self {
+            ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
+            _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
+        }
+    }
 }
 
 /// A preconfigured set of execution settings, allowing to turn `Executable` transactions into
@@ -91,15 +104,15 @@ pub struct ConfiguredExecutable<'a> {
 impl<'a> ConfiguredExecutable<'a> {
     /// Wraps this instance in a time-measuring decorator (which will log a `warn!` after the given
     /// runtime threshold).
-    pub fn warn_after(
+    pub fn warn_after<D: Display>(
         self,
         threshold: Duration,
-        logged_description: impl Into<String>,
-    ) -> TimeWarningTransactionLogic<Self> {
+        description: D,
+    ) -> TimeWarningTransactionLogic<Self, D> {
         TimeWarningTransactionLogic {
             underlying: self,
             threshold,
-            logged_description: logged_description.into(),
+            description,
         }
     }
 }
@@ -117,16 +130,17 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
 }
 
 /// A time-measuring decorator for a `TransactionLogic`.
-pub struct TimeWarningTransactionLogic<U> {
+pub struct TimeWarningTransactionLogic<U, D> {
     underlying: U,
     threshold: Duration,
-    logged_description: String, // for error-surfacing only
+    description: D,
 }
 
-impl<U, S> TransactionLogic<S> for TimeWarningTransactionLogic<U>
+impl<U, D, S> TransactionLogic<S> for TimeWarningTransactionLogic<U, D>
 where
     S: SubstateDatabase,
     U: TransactionLogic<S>,
+    D: Display,
 {
     fn execute_on(self, store: &S) -> TransactionReceipt {
         let start = Instant::now();
@@ -134,10 +148,10 @@ where
         let elapsed = start.elapsed();
         if elapsed > self.threshold {
             warn!(
-                "Transaction execution took {}ms, above warning threshold of {}ms ({})",
+                "Execution of {} took {}ms, above warning threshold of {}ms",
+                self.description,
                 elapsed.as_millis(),
                 self.threshold.as_millis(),
-                self.logged_description,
             );
         }
         result

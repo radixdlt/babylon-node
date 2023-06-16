@@ -64,7 +64,7 @@
 
 use crate::mempool::*;
 use crate::simple_mempool::MempoolTransaction;
-use crate::{MempoolMetrics, TakesMetricLabels};
+use crate::{MempoolAddSource, MempoolMetrics, TakesMetricLabels};
 use prometheus::Registry;
 use rand::seq::SliceRandom;
 use transaction::model::*;
@@ -297,10 +297,10 @@ impl MempoolManager {
     /// Removes all the transactions that have the given intent hashes.
     /// This method is meant to be called for transactions that were successfully committed - and
     /// this assumption is important for metric correctness.
-    pub fn remove_committed(&self, intent_hashes: &[IntentHash]) {
+    pub fn remove_committed<'a>(&self, intent_hashes: impl IntoIterator<Item = &'a IntentHash>) {
         let mut write_mempool = self.mempool.write();
         let removed = intent_hashes
-            .iter()
+            .into_iter()
             .flat_map(|intent_hash| write_mempool.remove_transactions(intent_hash))
             .collect::<Vec<_>>();
         drop(write_mempool);

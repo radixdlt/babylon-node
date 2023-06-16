@@ -68,23 +68,13 @@ use crate::{LedgerTransactionOutcome, SubstateChange};
 use radix_engine::types::*;
 use radix_engine_common::prelude::IsHash;
 use std::fmt;
+use std::fmt::Formatter;
+use std::mem::size_of;
+use std::num::TryFromIntError;
 use std::ops::Range;
 use transaction::prelude::*;
 
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
-
-define_wrapped_hash!(AccumulatorHash);
-
-impl AccumulatorHash {
-    pub fn pre_genesis() -> Self {
-        Self(Hash([0; Hash::LENGTH]))
-    }
-
-    pub fn accumulate(&self, ledger_payload_hash: &LegacyLedgerPayloadHash) -> Self {
-        let concat_bytes = [self.0.as_slice(), ledger_payload_hash.as_slice()].concat();
-        Self(blake2b_256_hash(concat_bytes))
-    }
-}
 
 define_wrapped_hash!(SubstateChangeHash);
 
@@ -138,13 +128,113 @@ define_wrapped_hash! {
     TransactionTreeHash
 }
 
+impl From<LedgerTransactionHash> for TransactionTreeHash {
+    fn from(hash: LedgerTransactionHash) -> Self {
+        Self::from(hash.into_hash())
+    }
+}
+
 impl IsMerklizableHash for TransactionTreeHash {}
 
 define_wrapped_hash! {
     ReceiptTreeHash
 }
 
+impl From<LedgerReceiptHash> for ReceiptTreeHash {
+    fn from(hash: LedgerReceiptHash) -> Self {
+        Self::from(hash.into_hash())
+    }
+}
+
 impl IsMerklizableHash for ReceiptTreeHash {}
+
+/// A type-safe state version number.
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Sbor)]
+#[sbor(transparent)]
+pub struct StateVersion(u64);
+
+/// A difference between two [`StateVersion`]s.
+/// It can be negative, and it technically would fit in a (hypothetical) `i65`, so we use `i128`.
+pub type StateVersionDelta = i128;
+
+/// A forward progress from one [`StateVersion`] to another.
+/// It is simply a difference (`to - from`, possibly 0); cannot be negative.
+pub type StateVersionProgress = u64;
+
+impl StateVersion {
+    /// A number of bytes needed to express a version.
+    pub const BYTE_LEN: usize = size_of::<u64>();
+
+    /// A conventional version assumed before any genesis transaction.
+    pub fn pre_genesis() -> Self {
+        Self(0)
+    }
+
+    /// Parses the given big-endian bytes to a version.
+    pub fn from_bytes(be_bytes: impl AsRef<[u8]>) -> Self {
+        Self(u64::from_be_bytes(be_bytes.as_ref().try_into().unwrap()))
+    }
+
+    /// Converts this version to big-endian bytes.
+    pub fn to_bytes(self) -> [u8; StateVersion::BYTE_LEN] {
+        self.0.to_be_bytes()
+    }
+
+    /// Creates a version from a direct number.
+    pub fn of(number: u64) -> Self {
+        Self(number)
+    }
+
+    /// Returns a direct number.
+    pub fn number(&self) -> u64 {
+        self.0
+    }
+
+    /// Creates an immediate successor version.
+    /// Panics on overflow.
+    pub fn next(&self) -> Self {
+        self.relative(1)
+    }
+
+    /// Creates a version relative to this one.
+    /// Panics on overflow or underflow.
+    pub fn relative(&self, delta: impl Into<StateVersionDelta>) -> Self {
+        let number = self.0 as i128; // every u64 is safe to represent as i128
+        let delta_number = delta.into();
+        let relative_number = number
+            .checked_add(delta_number)
+            .expect("both operands are representable by i65, so their sum must fit in i128");
+        Self(u64::try_from(relative_number).unwrap_or_else(|error| {
+            panic!(
+                "cannot reference state version {} + {} ({:?})",
+                self.0, delta_number, error
+            )
+        }))
+    }
+
+    /// Creates an iterator of all versions starting with this one, and ending at the given one
+    /// (exclusive).
+    /// This is an equivalent of a (hypothetical) `self..end` syntax (which is forbidden to
+    /// implement due to crate restrictions).
+    pub fn to(&self, end: StateVersion) -> impl Iterator<Item = StateVersion> {
+        (self.0..end.0).map(StateVersion::of)
+    }
+
+    /// Returns a number of state versions between `from` and `to`, or `Err` if the progress would
+    /// be negative.
+    pub fn calculate_progress(
+        from: StateVersion,
+        to: StateVersion,
+    ) -> Result<StateVersionProgress, TryFromIntError> {
+        u64::try_from((to.0 as i128) - (from.0 as i128))
+    }
+}
+
+impl Display for StateVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Sbor)]
 pub struct LedgerHashes {
@@ -166,7 +256,7 @@ impl LedgerHashes {
 #[derive(Debug)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifestV1,
-    pub explicit_epoch_range: Option<Range<u64>>,
+    pub explicit_epoch_range: Option<Range<Epoch>>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_is_signatory: bool,
     pub tip_percentage: u16,
@@ -176,37 +266,35 @@ pub struct PreviewRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CommitError {
-    MissingEpochProof,
-    SuperfluousEpochProof,
-    EpochProofMismatch,
-    LedgerHashesMismatch,
+pub enum InvalidCommitRequestError {
+    TransactionParsingFailed,
+    TransactionRootMismatch,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommitRequest {
-    pub transaction_payloads: Vec<RawLedgerTransaction>,
+    pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub parent_accumulator: AccumulatorHash,
-    pub prepared_vertices: Vec<PreviousVertex>,
-    pub proposed_payloads: Vec<RawNotarizedTransaction>,
+    pub committed_ledger_hashes: LedgerHashes,
+    pub ancestor_transactions: Vec<RawLedgerTransaction>,
+    pub ancestor_ledger_hashes: LedgerHashes,
+    pub proposed_transactions: Vec<RawNotarizedTransaction>,
+    pub round_history: RoundHistory,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct RoundHistory {
     pub is_fallback: bool,
     pub epoch: Epoch,
     pub round: Round,
     pub gap_round_leader_addresses: Vec<ComponentAddress>,
     pub proposer_address: ComponentAddress,
     pub proposer_timestamp_ms: i64,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PreviousVertex {
-    pub transaction_payloads: Vec<RawLedgerTransaction>,
-    pub resultant_accumulator: AccumulatorHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -224,8 +312,7 @@ pub struct CommittableTransaction {
     pub raw: RawLedgerTransaction,
     pub intent_hash: Option<IntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
-    pub ledger_hash: LedgerTransactionHash,
-    pub legacy_hash: LegacyLedgerPayloadHash,
+    pub ledger_transaction_hash: LedgerTransactionHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -234,7 +321,7 @@ pub struct RejectedTransaction {
     // Note - these are None if the transaction can't even be prepared to determine the hashes
     pub intent_hash: Option<IntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
-    pub ledger_hash: Option<LedgerTransactionHash>,
+    pub ledger_transaction_hash: Option<LedgerTransactionHash>,
     pub error: String,
 }
 
@@ -270,21 +357,15 @@ pub struct LedgerProof {
 pub struct LedgerHeader {
     pub epoch: Epoch,
     pub round: Round,
-    pub accumulator_state: AccumulatorState,
+    pub state_version: StateVersion,
     pub hashes: LedgerHashes,
     pub consensus_parent_round_timestamp_ms: i64,
     pub proposer_timestamp_ms: i64,
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccumulatorState {
-    pub state_version: u64,
-    pub accumulator_hash: AccumulatorHash,
-}
-
 pub struct EpochTransactionIdentifiers {
-    pub state_version: u64,
+    pub state_version: StateVersion,
     pub transaction_hash: TransactionTreeHash,
     pub receipt_hash: ReceiptTreeHash,
 }
@@ -293,7 +374,7 @@ impl EpochTransactionIdentifiers {
     pub fn pre_genesis() -> Self {
         let ledger_hashes = LedgerHashes::pre_genesis();
         Self {
-            state_version: 0,
+            state_version: StateVersion::pre_genesis(),
             transaction_hash: ledger_hashes.transaction_root,
             receipt_hash: ledger_hashes.receipt_root,
         }
@@ -301,7 +382,7 @@ impl EpochTransactionIdentifiers {
 
     pub fn from(epoch_header: &LedgerHeader) -> Self {
         Self {
-            state_version: epoch_header.accumulator_state.state_version,
+            state_version: epoch_header.state_version,
             transaction_hash: epoch_header.hashes.transaction_root,
             receipt_hash: epoch_header.hashes.receipt_root,
         }

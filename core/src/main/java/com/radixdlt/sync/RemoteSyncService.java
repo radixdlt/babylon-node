@@ -77,7 +77,6 @@ import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.*;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -95,7 +94,6 @@ public final class RemoteSyncService {
   private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
-  private final Comparator<AccumulatorState> accComparator;
   private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
   private LedgerProof currentHeader;
@@ -110,7 +108,6 @@ public final class RemoteSyncService {
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
-      Comparator<AccumulatorState> accComparator,
       @LastProof LedgerProof initialHeader) {
     this.peersView = Objects.requireNonNull(peersView);
     this.localSyncService = Objects.requireNonNull(localSyncService);
@@ -120,7 +117,6 @@ public final class RemoteSyncService {
     this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
     this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
     this.metrics = metrics;
-    this.accComparator = Objects.requireNonNull(accComparator);
     this.ledgerStatusUpdateSendRateLimiter =
         RateLimiter.create(syncRelayConfig.maxLedgerUpdatesRate());
 
@@ -133,9 +129,9 @@ public final class RemoteSyncService {
 
   private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
-    final var transactionsWithProof = getTransactionsWithProofForSyncRequest(remoteCurrentHeader);
+    final var ledgerExtension = getLedgerExtensionForSyncRequest(remoteCurrentHeader);
 
-    if (transactionsWithProof == null) {
+    if (ledgerExtension == null) {
       log.warn(
           "REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.",
           remoteCurrentHeader,
@@ -144,10 +140,10 @@ public final class RemoteSyncService {
     }
 
     final var verifiable =
-        new CommittedTransactionsWithProofDto(
-            transactionsWithProof.getTransactions(),
+        new DtoLedgerExtension(
+            ledgerExtension.getTransactions(),
             remoteCurrentHeader,
-            transactionsWithProof.getProof().toDto());
+            ledgerExtension.getProof().toDto());
 
     log.trace(
         "REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}",
@@ -159,8 +155,7 @@ public final class RemoteSyncService {
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 
-  private CommittedTransactionsWithProof getTransactionsWithProofForSyncRequest(
-      DtoLedgerProof startHeader) {
+  private LedgerExtension getLedgerExtensionForSyncRequest(DtoLedgerProof startHeader) {
     return committedReader.getTransactions(startHeader);
   }
 
@@ -178,9 +173,7 @@ public final class RemoteSyncService {
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
     final LedgerProof updatedHeader = ledgerUpdate.getTail();
-    if (accComparator.compare(
-            updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState())
-        > 0) {
+    if (updatedHeader.getStateVersion() > this.currentHeader.getStateVersion()) {
       this.currentHeader = updatedHeader;
       this.sendStatusUpdateToSomePeers(updatedHeader);
     }

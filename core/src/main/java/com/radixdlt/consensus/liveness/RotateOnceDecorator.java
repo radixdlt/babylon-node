@@ -62,76 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.KeyComparator;
+import java.util.*;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Blake2b256Hasher;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import org.junit.Before;
-import org.junit.Test;
+/**
+ * A {@link ProposerElection} decorator which first simply iterates over all validators once (in the
+ * "highest stake first" order), and then lets the underlying implementation take over.
+ */
+public final class RotateOnceDecorator implements ProposerElection {
 
-public class SimpleLedgerAccumulatorAndVerifierTest {
-  private SimpleLedgerAccumulatorAndVerifier accumulatorAndVerifier;
-  private Hasher hasher;
+  /** A comparator determining order of the initial rounds' leaders. */
+  private static final Comparator<BFTValidator> VALIDATOR_COMPARATOR =
+      Comparator.comparing(BFTValidator::getPower) // first compare by stake, descending
+          .reversed()
+          .thenComparing( // then by key (same as `WeightedRotatingLeaders`)
+              v -> v.getValidatorId().getKey(), KeyComparator.instance())
+          .thenComparing( // and also by optional address (because keys do not have to be unique!)
+              v ->
+                  v.getValidatorId()
+                      .getValidatorAddress()
+                      .map(ComponentAddress::value)
+                      .orElse(null),
+              Ordering.from(UnsignedBytes.lexicographicalComparator()).nullsFirst());
 
-  @Before
-  public void setup() {
-    hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
-    accumulatorAndVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
+  /** An ordered list of all validators, to be traversed once during initial rounds. */
+  private final BFTValidatorId[] initialRoundsProposers;
+
+  /** An underlying instance, to take over for the remaining rounds. */
+  private final ProposerElection underlying;
+
+  /**
+   * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
+   * same {@link BFTValidatorSet} as passed here.
+   */
+  public RotateOnceDecorator(BFTValidatorSet validatorSet, ProposerElection underlying) {
+    this.initialRoundsProposers =
+        validatorSet.getValidators().stream()
+            .sorted(VALIDATOR_COMPARATOR)
+            .map(BFTValidator::getValidatorId)
+            .toArray(BFTValidatorId[]::new);
+    this.underlying = underlying;
   }
 
-  @Test
-  public void when_accumulate__then_should_verify() {
-    AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
-    AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, HashUtils.zero256());
-    assertThat(
-            accumulatorAndVerifier.verify(
-                headState, ImmutableList.of(HashUtils.zero256()), nextState))
-        .isTrue();
+  @Override
+  public BFTValidatorId getProposer(Round round) {
+    final var number = round.number();
+    final var initialRoundsCount = this.initialRoundsProposers.length;
+    if (number < initialRoundsCount) {
+      return this.initialRoundsProposers[(int) number];
+    } else {
+      return this.underlying.getProposer(Round.of(number - initialRoundsCount));
+    }
   }
 
-  @Test
-  public void when_empty_round_truncate_from_bad_version__then_should_throw_exception() {
-    AccumulatorState curState = mock(AccumulatorState.class);
-    when(curState.getStateVersion()).thenReturn(1234L);
-    AccumulatorState nextState = mock(AccumulatorState.class);
-    when(nextState.getStateVersion()).thenReturn(1235L);
-
-    assertThat(
-            accumulatorAndVerifier.verifyAndGetExtension(
-                curState, ImmutableList.of(), i -> null, nextState))
-        .isEmpty();
-  }
-
-  @Test
-  public void when_empty_round_truncate_from_perfect_version__then_should_return_empty_list() {
-    AccumulatorState state = mock(AccumulatorState.class);
-    when(state.getStateVersion()).thenReturn(1234L);
-    when(state.getAccumulatorHash()).thenReturn(mock(HashCode.class));
-
-    assertThat(
-            accumulatorAndVerifier.verifyAndGetExtension(
-                state, ImmutableList.of(), i -> null, state))
-        .hasValue(ImmutableList.of());
-  }
-
-  @Test
-  public void when_single_round_truncate_from_perfect_version__then_should_return_equivalent() {
-    var txn = RawLedgerTransaction.create(new byte[] {0});
-    AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
-    AccumulatorState nextState =
-        accumulatorAndVerifier.accumulate(headState, txn.getLegacyPayloadHash().inner());
-    assertThat(
-            accumulatorAndVerifier.verifyAndGetExtension(
-                headState, ImmutableList.of(txn), t -> t.getLegacyPayloadHash().inner(), nextState))
-        .hasValue(ImmutableList.of(txn));
+  @Override
+  public String toString() {
+    return String.format("%s(%s)", this.getClass().getSimpleName(), this.underlying);
   }
 }

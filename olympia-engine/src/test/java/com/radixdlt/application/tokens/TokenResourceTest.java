@@ -83,6 +83,7 @@ import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.LegacyLedgerPayloadHash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
@@ -150,7 +151,8 @@ public class TokenResourceTest {
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "test"))
@@ -176,7 +178,8 @@ public class TokenResourceTest {
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
@@ -204,7 +207,8 @@ public class TokenResourceTest {
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .up(tokenResource)
             .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
@@ -226,7 +230,8 @@ public class TokenResourceTest {
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -250,7 +255,8 @@ public class TokenResourceTest {
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign());

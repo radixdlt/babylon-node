@@ -64,76 +64,47 @@
 
 package com.radixdlt.ledger;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.List;
-import java.util.Objects;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.TestSetupUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-/**
- * A run of committed transactions, with a known-valid LedgerProof pointing at the last transaction.
- *
- * <p>The run of transactions will reside in a single epoch, so that it can be validated as
- * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
- * accumulator, which can be cross-checked against the list of transactions. This allows
- * verification of the transaction run, if the parent accumulator of the first transaction is known.
- *
- * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
- * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
- * enables trustless syncing of X transactions at a time.
- *
- * <p>Notes:
- *
- * <ul>
- *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof" and
- *       "TransactionRun"
- * </ul>
- */
-public final class CommittedTransactionsWithProof {
-  private final List<RawLedgerTransaction> transactions;
-  private final LedgerProof proof;
+public class LedgerExtensionTest {
+  private LedgerProof ledgerProof;
+  private LedgerExtension emptyLedgerExtension;
+  private final long stateVersion = 232L;
 
-  private CommittedTransactionsWithProof(
-      List<RawLedgerTransaction> transactions, LedgerProof proof) {
-    this.transactions = Objects.requireNonNull(transactions);
-    this.proof = Objects.requireNonNull(proof);
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
   }
 
-  public static CommittedTransactionsWithProof create(
-      List<RawLedgerTransaction> transactions, LedgerProof proof) {
-    return new CommittedTransactionsWithProof(transactions, proof);
+  @Before
+  public void setUp() {
+    this.ledgerProof = mock(LedgerProof.class);
+    when(ledgerProof.getStateVersion()).thenReturn(stateVersion);
+
+    this.emptyLedgerExtension = LedgerExtension.create(ImmutableList.of(), ledgerProof);
   }
 
-  public List<RawLedgerTransaction> getTransactions() {
-    return transactions;
+  @Test
+  public void testGetters() {
+    assertThat(this.emptyLedgerExtension.getProof()).isEqualTo(ledgerProof);
   }
 
-  public boolean contains(RawLedgerTransaction transaction) {
-    return transactions.contains(transaction);
-  }
-
-  public LedgerProof getProof() {
-    return proof;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transactions, proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof CommittedTransactionsWithProof)) {
-      return false;
-    }
-
-    CommittedTransactionsWithProof other = (CommittedTransactionsWithProof) o;
-    return Objects.equals(this.transactions, other.transactions)
-        && Objects.equals(this.proof, other.proof);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{transactions=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(LedgerExtension.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

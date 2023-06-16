@@ -62,41 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.commit;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
 
-public class CommittedTransactionsWithProofDtoTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(CommittedTransactionsWithProofDto.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullHeadThrowsException() {
-    new CommittedTransactionsWithProofDto(List.of(), null, mock(DtoLedgerProof.class));
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullTailThrowsException() {
-    new CommittedTransactionsWithProofDto(List.of(), mock(DtoLedgerProof.class), null);
-  }
-
-  @Test
-  public void deserializationWithNullTxnListIsSafe() {
-    var dto =
-        new CommittedTransactionsWithProofDto(
-            null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
-
-    assertNotNull(dto.getTransactions());
+public record RoundHistory(
+    boolean isFallback,
+    UInt64 epoch,
+    UInt64 roundNumber,
+    List<ComponentAddress> gapRoundLeaderAddresses,
+    ComponentAddress proposerAddress,
+    long proposerTimestampMs) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RoundHistory.class, codecs -> StructCodec.fromRecordComponents(RoundHistory.class, codecs));
   }
 }

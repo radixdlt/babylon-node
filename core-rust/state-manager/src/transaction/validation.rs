@@ -36,7 +36,7 @@ impl LedgerTransactionValidator {
         let validation_config = ValidationConfig::default(network.id);
         Self {
             validation_config,
-            // Add a few extra bytes for the enum disciminator at the start(!)
+            // Add a few extra bytes for the enum discriminator at the start(!)
             ledger_payload_limit: validation_config.max_notarized_payload_size + 10,
             user_transaction_validator: NotarizedTransactionValidator::new(validation_config),
         }
@@ -110,7 +110,6 @@ impl LedgerTransactionValidator {
         Ok(ValidatedLedgerTransaction {
             inner: validated_inner,
             summary: prepared.summary,
-            legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash,
         })
     }
 
@@ -124,7 +123,6 @@ impl LedgerTransactionValidator {
         ValidatedLedgerTransaction {
             inner: ValidatedLedgerTransactionInner::Genesis(t),
             summary: prepared.summary,
-            legacy_ledger_payload_hash: prepared.legacy_ledger_payload_hash,
         }
     }
 }

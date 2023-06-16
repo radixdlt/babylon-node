@@ -62,21 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-/**
- * Exception which suggests that there exists a byzantine quorum which got us to this exception
- * state.
- *
- * <p>TODO: Remove all instance of this class and replace with mechanism to log and revert to last
- * known good state.
- */
-public class ByzantineQuorumException extends RuntimeException {
-  public ByzantineQuorumException(String message) {
-    super(message);
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.LongStream;
+import javax.annotation.Nullable;
+import org.junit.Test;
+
+public class RotateOnceDecoratorTest {
+
+  @Test
+  public void initial_rounds_iterate_through_all_validators_once() {
+    final var validators =
+        Arrays.asList(
+            BFTValidator.from(id(null, 7), power(22)), // for round 2
+            BFTValidator.from(id(1013, 3), power(33)), // for round 0
+            BFTValidator.from(id(1018, 7), power(22)), // for round 3
+            BFTValidator.from(id(1011, 5), power(22)) // for round 1
+            );
+    // the underlying mock returns a sequence of `[id(0, 1), id(1, 2), id(2, 3), ...]`
+    final var underlying = mock(ProposerElection.class);
+    when(underlying.getProposer(any()))
+        .then(
+            invocation -> {
+              final int seed = Ints.checkedCast(invocation.getArgument(0, Round.class).number());
+              return id(seed, seed + 1);
+            });
+
+    final var subject = new RotateOnceDecorator(BFTValidatorSet.from(validators), underlying);
+
+    // happy-path on initial rounds:
+    final int[] iteratedValidatorIndices =
+        LongStream.range(0, 4)
+            .mapToObj(Round::of)
+            .map(subject::getProposer)
+            .mapToInt(Lists.transform(validators, BFTValidator::getValidatorId)::indexOf)
+            .toArray();
+    assertThat(iteratedValidatorIndices)
+        .containsExactly(
+            1, // wins by stake (33 is before 22)
+            3, // wins by key tie-breaker (5 is before 7)
+            0, // wins by address tie-breaker (null is before 1018)
+            2); // well, does not win
+
+    // right after the initial rounds - the underlying impl returns the first one from its sequence
+    assertThat(subject.getProposer(Round.of(4))).isEqualTo(id(0, 1));
+
+    // repeated "initial rounds" query
+    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
+    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
+
+    // far outside the initial rounds - the underlying impl returns a `N - initial_rounds`-th one
+    assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
   }
 
-  public ByzantineQuorumException(String message, Exception cause) {
-    super(message, cause);
+  private static BFTValidatorId id(@Nullable Integer addressBytes, int keySeed) {
+    // we do not care about valid address representation (i.e. we do not call Engine), just ordering
+    final @Nullable ComponentAddress address =
+        Optional.ofNullable(addressBytes)
+            .map(Ints::toByteArray)
+            .map(ComponentAddress::new)
+            .orElse(null);
+    final ECDSASecp256k1PublicKey key = PrivateKeys.ofNumeric(keySeed).getPublicKey();
+    return BFTValidatorId.create(address, key);
+  }
+
+  private static UInt256 power(int value) {
+    return UInt256.from(value);
   }
 }

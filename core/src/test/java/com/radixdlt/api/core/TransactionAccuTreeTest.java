@@ -75,6 +75,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.LedgerTransactionHash;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -88,10 +89,12 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
     // Run and capture an example epoch
     CapturedEpoch epoch = captureEpoch(2);
 
-    // Compute the transaction hashes
+    // Collect the transaction hashes (note: we can no longer easily compute them from payload bytes
+    // on Java side)
     var transactionHashes =
         epoch.transactions().stream()
-            .map(transaction -> HashUtils.blake2b256(transaction.transactionBytes()))
+            .map(ExecutedTransaction::ledgerTransactionHash)
+            .map(LedgerTransactionHash::inner)
             .toArray(HashCode[]::new);
 
     // Assert that header's root hash is equal to manually computed one
@@ -144,8 +147,8 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
       // Capture the transactions between these 2 proofs
       var epochTransactions =
           LongStream.range(
-                  previousHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1,
-                  epochHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1)
+                  previousHeader.stateVersion().toNonNegativeLong().unwrap() + 1,
+                  epochHeader.stateVersion().toNonNegativeLong().unwrap() + 1)
               .mapToObj(reader::getTransactionAtStateVersion)
               .map(Option::unwrap)
               .toList();

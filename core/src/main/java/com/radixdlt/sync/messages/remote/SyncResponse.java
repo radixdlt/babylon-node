@@ -64,30 +64,30 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
+import com.radixdlt.ledger.DtoLedgerExtension;
 import java.util.Objects;
 
 /** A response to the SyncRequest message. */
 public final class SyncResponse {
 
-  private final CommittedTransactionsWithProofDto transactionsWithProofDto;
+  private final DtoLedgerExtension dtoLedgerExtension;
 
-  public static SyncResponse create(CommittedTransactionsWithProofDto transactionsWithProofDto) {
-    return new SyncResponse(transactionsWithProofDto);
+  public static SyncResponse create(DtoLedgerExtension dtoLedgerExtension) {
+    return new SyncResponse(dtoLedgerExtension);
   }
 
-  private SyncResponse(CommittedTransactionsWithProofDto transactionsWithProofDto) {
-    this.transactionsWithProofDto = Objects.requireNonNull(transactionsWithProofDto);
+  private SyncResponse(DtoLedgerExtension dtoLedgerExtension) {
+    this.dtoLedgerExtension = Objects.requireNonNull(dtoLedgerExtension);
   }
 
-  public CommittedTransactionsWithProofDto getTransactionsWithProofDto() {
-    return transactionsWithProofDto;
+  public DtoLedgerExtension getLedgerExtension() {
+    return dtoLedgerExtension;
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{transactionsWithProof=%s}", this.getClass().getSimpleName(), transactionsWithProofDto);
+        "%s{ledgerExtension=%s}", this.getClass().getSimpleName(), dtoLedgerExtension);
   }
 
   @Override
@@ -99,11 +99,11 @@ public final class SyncResponse {
       return false;
     }
     SyncResponse that = (SyncResponse) o;
-    return Objects.equals(transactionsWithProofDto, that.transactionsWithProofDto);
+    return Objects.equals(dtoLedgerExtension, that.dtoLedgerExtension);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionsWithProofDto);
+    return Objects.hash(dtoLedgerExtension);
   }
 }

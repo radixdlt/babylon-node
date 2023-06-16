@@ -65,13 +65,11 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
@@ -80,20 +78,17 @@ import org.junit.Test;
 public class LedgerHeaderTest {
   private LedgerHeader ledgerHeader;
   private long timestamp;
-  private AccumulatorState accumulatorState;
 
   @Before
   public void setup() {
     this.timestamp = 12345678L;
-    this.accumulatorState = mock(AccumulatorState.class);
     this.ledgerHeader =
-        LedgerHeader.create(
-            0, Round.genesis(), accumulatorState, LedgerHashes.zero(), timestamp, timestamp);
+        LedgerHeader.create(0, Round.genesis(), 0, LedgerHashes.zero(), timestamp, timestamp);
   }
 
   @Test
   public void testGetters() {
-    assertThat(ledgerHeader.getAccumulatorState()).isEqualTo(accumulatorState);
+    assertThat(ledgerHeader.getStateVersion()).isEqualTo(0);
     assertThat(ledgerHeader.consensusParentRoundTimestamp()).isEqualTo(timestamp);
     assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
   }
@@ -114,30 +109,18 @@ public class LedgerHeaderTest {
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongEpochThrowsException() {
     new LedgerHeader(
-        -1L,
-        1L,
-        mock(AccumulatorState.class),
-        LedgerHashes.zero(),
-        1L,
-        1L,
-        NextEpoch.create(1, ImmutableSet.of()));
+        -1L, 1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithWrongRoundThrowsException() {
     new LedgerHeader(
-        1L,
-        -1L,
-        mock(AccumulatorState.class),
-        LedgerHashes.zero(),
-        1L,
-        1L,
-        NextEpoch.create(1, ImmutableSet.of()));
+        1L, -1L, 1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
   }
 
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullAccumulatorStateThrowsException() {
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithWrongStateVersionThrowsException() {
     new LedgerHeader(
-        1L, 1L, null, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, 1L, -1L, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
   }
 }

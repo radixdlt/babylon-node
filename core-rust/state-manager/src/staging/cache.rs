@@ -71,10 +71,7 @@ use crate::staging::{
     AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
     StateHashTreeDiff,
 };
-use crate::{
-    AccumulatorHash, CommitBasedIdentifiers, EpochTransactionIdentifiers, ReceiptTreeHash,
-    TransactionTreeHash,
-};
+use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use im::hashmap::HashMap as ImmutableHashMap;
 
 use im::ordmap::OrdMap as ImmutableOrdMap;
@@ -82,7 +79,7 @@ use im::ordmap::OrdMap as ImmutableOrdMap;
 use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
-use crate::transaction::{LegacyLedgerPayloadHash, TransactionLogic};
+use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
@@ -93,20 +90,66 @@ use radix_engine_stores::hash_tree::tree_store::{
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
+struct TransactionPlacement {
+    parent_transaction_root: TransactionTreeHash,
+    ledger_transaction_hash: LedgerTransactionHash,
+}
+
+impl TransactionPlacement {
+    fn new(
+        parent_transaction_root: &TransactionTreeHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
+    ) -> Self {
+        Self {
+            parent_transaction_root: *parent_transaction_root,
+            ledger_transaction_hash: *ledger_transaction_hash,
+        }
+    }
+}
+
+struct InternalTransactionIds {
+    transaction_placement: TransactionPlacement,
+    committed_transaction_root: Option<TransactionTreeHash>,
+}
+
+/// A cached tree of transactions, representing a potentially non-linear ledger evolution.
+///
+/// Important implementation note on an efficient identification of transactions within the tree
+/// (i.e. without re-computation of transaction merkle tree updates on cache-hits):
+///
+/// A transaction may be unambiguously identified by 2 different business keys here:
+///
+/// - By a [`TransactionPlacement`]:
+/// A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
+/// root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
+/// that would be rejected).
+///
+/// - By a transaction root:
+/// This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
+/// There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
+/// not compute them for transactions that are rejected (technically we could compute just the
+/// transaction root alone, but in our current impl we do not - for simplicity and performance).
+/// Yet, in this cache, we want to reference rejected transactions as well.
+///
+/// For the above reasons, we need two [`HashMap`]s leading to [`DerivedStageKey`]s (we identify the
+/// candidate transactions by their placement, and we identify their parents by transaction root).
 pub struct ExecutionCache {
     stage_tree: StageTree<ProcessedTransactionReceipt, ImmutableStore>,
-    root_accumulator_hash: AccumulatorHash,
-    accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
-    key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
+    base_transaction_root: TransactionTreeHash,
+    transaction_placement_to_key: HashMap<TransactionPlacement, DerivedStageKey>,
+    transaction_root_to_key: HashMap<TransactionTreeHash, DerivedStageKey>,
+    key_to_internal_transaction_ids: SecondaryMap<DerivedStageKey, InternalTransactionIds>,
 }
 
 impl ExecutionCache {
-    pub fn new(root_accumulator_hash: AccumulatorHash) -> Self {
+    pub fn new(base_transaction_root: TransactionTreeHash) -> Self {
         ExecutionCache {
             stage_tree: StageTree::new(),
-            root_accumulator_hash,
-            accumulator_hash_to_key: HashMap::new(),
-            key_to_accumulator_hash: SecondaryMap::new(),
+            base_transaction_root,
+            transaction_placement_to_key: HashMap::new(),
+            transaction_root_to_key: HashMap::new(),
+            key_to_internal_transaction_ids: SecondaryMap::new(),
         }
     }
 
@@ -117,19 +160,20 @@ impl ExecutionCache {
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_transaction_identifiers: &CommitBasedIdentifiers,
-        legacy_payload_hash: &LegacyLedgerPayloadHash,
+        parent_state_version: StateVersion,
+        parent_transaction_root: &TransactionTreeHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
     ) -> &ProcessedTransactionReceipt {
-        let parent_accumulator_hash = &parent_transaction_identifiers.accumulator_hash;
-        let transaction_accumulator_hash = parent_accumulator_hash.accumulate(legacy_payload_hash);
-        match self
-            .accumulator_hash_to_key
-            .get(&transaction_accumulator_hash)
-        {
+        let transaction_placement =
+            TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
+        let transaction_key = self
+            .transaction_placement_to_key
+            .get(&transaction_placement);
+        match transaction_key {
             Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
-                let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
+                let parent_key = self.get_existing_stage_key(parent_transaction_root);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
@@ -138,48 +182,90 @@ impl ExecutionCache {
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
-                        parent_transaction_identifiers,
-                        legacy_payload_hash,
+                        parent_state_version,
+                        ledger_transaction_hash,
                     },
                     transaction_receipt,
                 );
+
+                let internal_transaction_ids = InternalTransactionIds {
+                    transaction_placement,
+                    committed_transaction_root: processed.get_committed_transaction_root(),
+                };
                 let transaction_key = self.stage_tree.new_child_node(parent_key, processed);
-                self.key_to_accumulator_hash
-                    .insert(transaction_key, transaction_accumulator_hash);
-                self.accumulator_hash_to_key
-                    .insert(transaction_accumulator_hash, transaction_key);
+                self.add_node(transaction_key, internal_transaction_ids);
+
                 self.stage_tree.get_delta(&transaction_key)
             }
         }
     }
 
-    pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
-        let new_root_key = self.get_existing_substore_key(new_root_hash);
+    pub fn progress_base(&mut self, new_base_transaction_root: &TransactionTreeHash) {
+        let new_base_key = self.get_existing_stage_key(new_base_transaction_root);
         let mut removed_keys = Vec::new();
         self.stage_tree
-            .reparent(new_root_key, &mut |key| removed_keys.push(*key));
+            .reparent(new_base_key, &mut |key| removed_keys.push(*key));
         for removed_key in removed_keys {
             self.remove_node(&removed_key);
         }
-        self.root_accumulator_hash = *new_root_hash;
+        self.base_transaction_root = *new_base_transaction_root;
     }
 
-    fn get_existing_substore_key(&self, accumulator_hash: &AccumulatorHash) -> StageKey {
-        if *accumulator_hash == self.root_accumulator_hash {
+    pub fn get_cached_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        ledger_transaction_hash: &LedgerTransactionHash,
+    ) -> Option<&TransactionTreeHash> {
+        self.transaction_placement_to_key
+            .get(&TransactionPlacement::new(
+                parent_transaction_root,
+                ledger_transaction_hash,
+            ))
+            .and_then(|transaction_key| self.key_to_internal_transaction_ids.get(*transaction_key))
+            .and_then(|ids| ids.committed_transaction_root.as_ref())
+    }
+
+    fn get_existing_stage_key(&self, transaction_root: &TransactionTreeHash) -> StageKey {
+        if *transaction_root == self.base_transaction_root {
             StageKey::Root
         } else {
-            StageKey::Derived(*self.accumulator_hash_to_key.get(accumulator_hash).unwrap())
+            StageKey::Derived(*self.transaction_root_to_key.get(transaction_root).unwrap())
         }
     }
 
-    fn remove_node(&mut self, key: &DerivedStageKey) {
-        // Note: we don't have to remove anything from key_to_accumulator_hash.
-        // Since it's a SecondaryMap, it's guaranteed to be removed once the key
-        // is removed from the "primary" SlotMap.
-        match self.key_to_accumulator_hash.get(*key) {
+    fn add_node(
+        &mut self,
+        transaction_key: DerivedStageKey,
+        internal_transaction_ids: InternalTransactionIds,
+    ) {
+        self.transaction_placement_to_key.insert(
+            internal_transaction_ids.transaction_placement,
+            transaction_key,
+        );
+        if let Some(transaction_root) = internal_transaction_ids.committed_transaction_root {
+            // We purposefully store the transaction root of only committed transactions
+            // (since only they can be parents of future transactions).
+            self.transaction_root_to_key
+                .insert(transaction_root, transaction_key);
+        }
+        self.key_to_internal_transaction_ids
+            .insert(transaction_key, internal_transaction_ids);
+    }
+
+    fn remove_node(&mut self, transaction_key: &DerivedStageKey) {
+        // Note: we don't have to remove anything from `key_to_transaction_placement`.
+        // Since it's a `SecondaryMap`, it's guaranteed to be removed once the key is removed from
+        // the "primary" `SlotMap` (which is `stage_tree.nodes` in our case).
+        match self.key_to_internal_transaction_ids.get(*transaction_key) {
             None => {}
-            Some(accumulator_hash) => {
-                self.accumulator_hash_to_key.remove(accumulator_hash);
+            Some(internal_transaction_ids) => {
+                self.transaction_placement_to_key
+                    .remove(&internal_transaction_ids.transaction_placement);
+                if let Some(transaction_root) =
+                    internal_transaction_ids.committed_transaction_root.as_ref()
+                {
+                    self.transaction_root_to_key.remove(transaction_root);
+                }
             }
         };
     }
@@ -269,10 +355,10 @@ impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for StagedStore<'s, S> 
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, TransactionTreeHash>>
-    ReadableAccuTreeStore<u64, TransactionTreeHash> for StagedStore<'s, S>
+impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
+    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+    fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<TransactionTreeHash>> {
         self.overlay
             .transaction_tree_slices
             .get(key)
@@ -281,10 +367,10 @@ impl<'s, S: ReadableAccuTreeStore<u64, TransactionTreeHash>>
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, ReceiptTreeHash>> ReadableAccuTreeStore<u64, ReceiptTreeHash>
-    for StagedStore<'s, S>
+impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
+    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+    fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.overlay
             .receipt_tree_slices
             .get(key)
@@ -338,8 +424,8 @@ pub struct ImmutableStore {
     substate_updates: ImmutableOrdMap<(DbPartitionKey, DbSortKey), DatabaseUpdate>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<PartitionPayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<()>>,
-    transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
-    receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptTreeHash>>,
+    transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
 }
 
 impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
@@ -355,12 +441,11 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let database_updates = commit.database_updates.clone();
-            for (db_partition_key, partition_updates) in database_updates {
+            for (db_partition_key, partition_updates) in &commit.database_updates {
                 for (db_sort_key, database_update) in partition_updates {
-                    let db_substate_key = (db_partition_key.clone(), db_sort_key);
+                    let db_substate_key = (db_partition_key.clone(), db_sort_key.clone());
                     self.substate_updates
-                        .insert(db_substate_key, database_update);
+                        .insert(db_substate_key, database_update.clone());
                 }
             }
             let hash_structures_diff = &commit.hash_structures_diff;

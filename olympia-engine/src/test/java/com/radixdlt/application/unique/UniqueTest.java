@@ -77,6 +77,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.LegacyLedgerPayloadHash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -141,7 +142,8 @@ public class UniqueTest {
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(
-                SubstateId.ofSubstate(genesis.getLegacyPayloadHash().inner(), 0), addr.getBytes())
+                SubstateId.ofSubstate(LegacyLedgerPayloadHash.createFor(genesis).inner(), 0),
+                addr.getBytes())
             .end();
     var sig = keyPair.sign(builder.hashToSign());
     var txn = builder.sig(sig).build();

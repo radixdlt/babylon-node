@@ -62,73 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
-@Immutable
-@SerializerId2("ledger.accumulator_state")
-public final class AccumulatorState {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+/** A static factory of {@link ProposerElection}s. */
+public abstract class ProposerElections {
 
-  @JsonProperty("state_version")
-  @DsonOutput(Output.ALL)
-  private final long stateVersion;
+  /** A default size for {@link WeightedRotatingLeaders} cache. */
+  private static final int DEFAULT_CACHE_SIZE = 10;
 
-  @JsonProperty("accumulator_hash")
-  @DsonOutput(Output.ALL)
-  private final HashCode accumulatorHash;
-
-  @JsonCreator
-  public AccumulatorState(
-      @JsonProperty("state_version") long stateVersion,
-      @JsonProperty(value = "accumulator_hash", required = true) HashCode accumulatorHash) {
-    if (stateVersion < 0) {
-      throw new IllegalArgumentException("State version must be >= 0");
-    }
-
-    this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
-    this.stateVersion = stateVersion;
-  }
-
-  public long getStateVersion() {
-    return stateVersion;
-  }
-
-  public HashCode getAccumulatorHash() {
-    return accumulatorHash;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof AccumulatorState)) {
-      return false;
-    }
-
-    AccumulatorState other = (AccumulatorState) o;
-    return stateVersion == other.stateVersion
-        && Objects.equals(accumulatorHash, other.accumulatorHash);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{version=%s hash=%s}", getClass().getSimpleName(), stateVersion, accumulatorHash);
+  /**
+   * Creates a default production validation rotation over the given validator set. Currently, our
+   * implementation will:
+   *
+   * <ul>
+   *   <li>first, go over each validator once (in the "highest stake first" order);
+   *   <li>and then apply the {@link WeightedRotatingLeaders "frequency proportional to stake"}
+   *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
+   * </ul>
+   */
+  public static ProposerElection defaultRotation(BFTValidatorSet validatorSet) {
+    return new RotateOnceDecorator(
+        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
   }
 }

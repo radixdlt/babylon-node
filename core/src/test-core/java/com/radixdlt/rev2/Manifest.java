@@ -68,6 +68,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Functions;
+import java.util.List;
 
 /** Used for creating various manifests - designed to work well with the TransactionBuilder */
 public class Manifest {
@@ -329,5 +330,73 @@ public class Manifest {
             params.encode(validatorAddress),
             params.encode(XRD),
             params.encode(stakingAccount));
+  }
+
+  public static Functions.Func1<Parameters, String> createAllowAllNonFungibleResource() {
+    return (params) ->
+        String.format(
+            """
+                    %s
+                    CREATE_NON_FUNGIBLE_RESOURCE
+                        Enum<NonFungibleIdType::Integer>()
+                        Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+                        Map<String, Enum>()
+                        Map<Enum, Tuple>(
+                            Enum<ResourceMethodAuthKey::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
+                            Enum<ResourceMethodAuthKey::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
+                        );
+                    """,
+            params.faucetLockFeeLine());
+  }
+
+  public static Functions.Func1<Parameters, String> mintNonFungiblesThenWithdrawAndBurnSome(
+      ResourceAddress allowAllNfResource,
+      ComponentAddress account,
+      List<Integer> idsToMint,
+      List<Integer> idsToWithdrawAndBurn) {
+    var mintDataMap =
+        String.join(
+            ",",
+            idsToMint.stream()
+                .map(
+                    id ->
+                        String.format(
+                            """
+            NonFungibleLocalId("#%s#") => Tuple(Tuple())
+            """,
+                            id))
+                .toList());
+    var idsToBurn =
+        String.join(
+            ",",
+            idsToWithdrawAndBurn.stream()
+                .map(
+                    id ->
+                        String.format(
+                            """
+            NonFungibleLocalId("#%s#")
+            """, id))
+                .toList());
+    return (params) ->
+        String.format(
+            """
+            %s
+            MINT_NON_FUNGIBLE
+                Address("%s")
+                Map<NonFungibleLocalId, Tuple>(%s);
+            CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "withdraw_non_fungibles" Address("%s") Array<NonFungibleLocalId>(%s);
+            TAKE_NON_FUNGIBLES_FROM_WORKTOP Address("%s") Array<NonFungibleLocalId>(%s) Bucket("burn");
+            BURN_RESOURCE Bucket("burn");
+            """,
+            params.faucetLockFeeLine(),
+            params.encode(allowAllNfResource),
+            mintDataMap,
+            params.encode(account),
+            params.encode(account),
+            params.encode(allowAllNfResource),
+            idsToBurn,
+            params.encode(allowAllNfResource),
+            idsToBurn);
   }
 }

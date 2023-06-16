@@ -62,17 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.engine;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.Bytes;
 
-/**
- * Accumulates transactions into a single version hash which represents all transactions which have
- * been committed in a certain order.
- *
- * <p>All implementations should be functional and stateless.
- */
-@FunctionalInterface
-public interface LedgerAccumulator {
-  AccumulatorState accumulate(AccumulatorState parent, HashCode hash);
+public record LegacyLedgerPayloadHash(HashCode inner) {
+  public static LegacyLedgerPayloadHash createFor(RawLedgerTransaction rawLedgerTransaction) {
+    return new LegacyLedgerPayloadHash(HashUtils.blake2b256(rawLedgerTransaction.getPayload()));
+  }
+
+  public String hex() {
+    return Bytes.toHexString(this.inner.asBytes());
+  }
+
+  @Override
+  public String toString() {
+    return this.hex();
+  }
 }
