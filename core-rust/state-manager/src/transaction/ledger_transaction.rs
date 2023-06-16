@@ -398,8 +398,6 @@ impl HasLedgerTransactionHash for PreparedLedgerTransaction {
 mod tests {
     use super::*;
 
-    use transaction::validation::*;
-
     #[test]
     pub fn v1_ledger_transaction_structure() {
         let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
