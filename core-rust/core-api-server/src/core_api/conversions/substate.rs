@@ -1431,7 +1431,7 @@ pub fn to_api_current_time_substate(
     // Use compiler to unpack to ensure we map all fields
     let ProposerMilliTimestampSubstate { epoch_milli } = substate;
 
-    Ok(models::Substate::ConsensusManagerCurrentTimeSubstate {
+    Ok(models::Substate::ConsensusManagerFieldCurrentTimeSubstate {
         proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(*epoch_milli)?),
     })
 }
@@ -1443,7 +1443,7 @@ pub fn to_api_current_time_rounded_to_minutes_substate(
     let ProposerMinuteTimestampSubstate { epoch_minute } = substate;
 
     Ok(
-        models::Substate::ConsensusManagerCurrentTimeRoundedToMinutesSubstate {
+        models::Substate::ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
             proposer_timestamp_rounded_down_to_minute: Box::new(
                 to_api_instant_from_safe_timestamp(i64::from(*epoch_minute) * 60 * 1000)?,
             ),

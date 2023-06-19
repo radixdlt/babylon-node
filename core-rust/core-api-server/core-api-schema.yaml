@@ -2789,8 +2789,8 @@ components:
           ConsensusManagerFieldState: '#/components/schemas/ConsensusManagerFieldStateSubstate'
           ConsensusManagerFieldCurrentValidatorSet: '#/components/schemas/ConsensusManagerFieldCurrentValidatorSetSubstate'
           ConsensusManagerFieldCurrentProposalStatistic: '#/components/schemas/ConsensusManagerFieldCurrentProposalStatisticSubstate'
-          ConsensusManagerFieldCurrentTimeRoundedToMinutes: '#/components/schemas/ConsensusManagerCurrentTimeRoundedToMinutesSubstate'
-          ConsensusManagerFieldCurrentTime: '#/components/schemas/ConsensusManagerCurrentTimeSubstate'
+          ConsensusManagerFieldCurrentTimeRoundedToMinutes: '#/components/schemas/ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate'
+          ConsensusManagerFieldCurrentTime: '#/components/schemas/ConsensusManagerFieldCurrentTimeSubstate'
           ConsensusManagerRegisteredValidatorsByStakeIndexEntry: '#/components/schemas/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate'
           ValidatorFieldState: '#/components/schemas/ValidatorFieldStateSubstate'
           AccountFieldState: '#/components/schemas/AccountFieldStateSubstate'
@@ -3310,7 +3310,7 @@ components:
           properties:
             active_validator:
               $ref: "#/components/schemas/ActiveValidator"
-    ConsensusManagerCurrentTimeRoundedToMinutesSubstate:
+    ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3322,7 +3322,7 @@ components:
               description: |
                 The latest round proposer's timestamp (rounded down to the current minute).
                 An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
-    ConsensusManagerCurrentTimeSubstate:
+    ConsensusManagerFieldCurrentTimeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object

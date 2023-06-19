@@ -30,11 +30,11 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesS
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeRoundedToMinutesSubstate;
-import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf;
-import com.radixdlt.api.core.generated.models.ConsensusManagerCurrentTimeSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSubstate;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
@@ -72,10 +72,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ConsensusManagerCurrentTimeRoundedToMinutesSubstate
+ * ConsensusManagerFieldCurrentTimeSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerCurrentTimeRoundedToMinutesSubstate.JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
+  ConsensusManagerFieldCurrentTimeSubstate.JSON_PROPERTY_PROPOSER_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -91,8 +91,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntry"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatistic"),
-  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeSubstate.class, name = "ConsensusManagerFieldCurrentTime"),
-  @JsonSubTypes.Type(value = ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentTimeSubstate.class, name = "ConsensusManagerFieldCurrentTime"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentValidatorSetSubstate.class, name = "ConsensusManagerFieldCurrentValidatorSet"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldStateSubstate.class, name = "ConsensusManagerFieldState"),
   @JsonSubTypes.Type(value = ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
@@ -122,41 +122,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class ConsensusManagerCurrentTimeRoundedToMinutesSubstate extends Substate {
-  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "proposer_timestamp_rounded_down_to_minute";
-  private Instant proposerTimestampRoundedDownToMinute;
+public class ConsensusManagerFieldCurrentTimeSubstate extends Substate {
+  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
+  private Instant proposerTimestamp;
 
-  public ConsensusManagerCurrentTimeRoundedToMinutesSubstate() { 
+  public ConsensusManagerFieldCurrentTimeSubstate() { 
   }
 
-  public ConsensusManagerCurrentTimeRoundedToMinutesSubstate proposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
-    this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
+  public ConsensusManagerFieldCurrentTimeSubstate proposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
     return this;
   }
 
    /**
-   * Get proposerTimestampRoundedDownToMinute
-   * @return proposerTimestampRoundedDownToMinute
+   * Get proposerTimestamp
+   * @return proposerTimestamp
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getProposerTimestampRoundedDownToMinute() {
-    return proposerTimestampRoundedDownToMinute;
+  public Instant getProposerTimestamp() {
+    return proposerTimestamp;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
-    this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
+  public void setProposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
   }
 
 
   /**
-   * Return true if this ConsensusManagerCurrentTimeRoundedToMinutesSubstate object is equal to o.
+   * Return true if this ConsensusManagerFieldCurrentTimeSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -166,22 +166,22 @@ public class ConsensusManagerCurrentTimeRoundedToMinutesSubstate extends Substat
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConsensusManagerCurrentTimeRoundedToMinutesSubstate consensusManagerCurrentTimeRoundedToMinutesSubstate = (ConsensusManagerCurrentTimeRoundedToMinutesSubstate) o;
-    return Objects.equals(this.proposerTimestampRoundedDownToMinute, consensusManagerCurrentTimeRoundedToMinutesSubstate.proposerTimestampRoundedDownToMinute) &&
+    ConsensusManagerFieldCurrentTimeSubstate consensusManagerFieldCurrentTimeSubstate = (ConsensusManagerFieldCurrentTimeSubstate) o;
+    return Objects.equals(this.proposerTimestamp, consensusManagerFieldCurrentTimeSubstate.proposerTimestamp) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerTimestampRoundedDownToMinute, super.hashCode());
+    return Objects.hash(proposerTimestamp, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConsensusManagerCurrentTimeRoundedToMinutesSubstate {\n");
+    sb.append("class ConsensusManagerFieldCurrentTimeSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    proposerTimestampRoundedDownToMinute: ").append(toIndentedString(proposerTimestampRoundedDownToMinute)).append("\n");
+    sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -207,8 +207,8 @@ static {
   mappings.put("AccountVaultIndexEntry", AccountVaultIndexEntrySubstate.class);
   mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentProposalStatistic", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);
-  mappings.put("ConsensusManagerFieldCurrentTime", ConsensusManagerCurrentTimeSubstate.class);
-  mappings.put("ConsensusManagerFieldCurrentTimeRoundedToMinutes", ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTime", ConsensusManagerFieldCurrentTimeSubstate.class);
+  mappings.put("ConsensusManagerFieldCurrentTimeRoundedToMinutes", ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentValidatorSet", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
   mappings.put("ConsensusManagerFieldState", ConsensusManagerFieldStateSubstate.class);
   mappings.put("ConsensusManagerRegisteredValidatorsByStakeIndexEntry", ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
@@ -236,8 +236,8 @@ static {
   mappings.put("TwoResourcePoolSubstate", TwoResourcePoolSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("ConsensusManagerCurrentTimeRoundedToMinutesSubstate", ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class);
-  JSON.registerDiscriminator(ConsensusManagerCurrentTimeRoundedToMinutesSubstate.class, "substate_type", mappings);
+  mappings.put("ConsensusManagerFieldCurrentTimeSubstate", ConsensusManagerFieldCurrentTimeSubstate.class);
+  JSON.registerDiscriminator(ConsensusManagerFieldCurrentTimeSubstate.class, "substate_type", mappings);
 }
 }
 

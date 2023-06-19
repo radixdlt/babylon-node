@@ -29,20 +29,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf
+ * ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
+  ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
+public class ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf {
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "proposer_timestamp_rounded_down_to_minute";
   private Instant proposerTimestampRoundedDownToMinute;
 
-  public ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf() { 
+  public ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf() { 
   }
 
-  public ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf proposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
+  public ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf proposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
     this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
     return this;
   }
@@ -69,7 +69,7 @@ public class ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
 
 
   /**
-   * Return true if this ConsensusManagerCurrentTimeRoundedToMinutesSubstate_allOf object is equal to o.
+   * Return true if this ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf consensusManagerCurrentTimeRoundedToMinutesSubstateAllOf = (ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf) o;
-    return Objects.equals(this.proposerTimestampRoundedDownToMinute, consensusManagerCurrentTimeRoundedToMinutesSubstateAllOf.proposerTimestampRoundedDownToMinute);
+    ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf consensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf = (ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf) o;
+    return Objects.equals(this.proposerTimestampRoundedDownToMinute, consensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.proposerTimestampRoundedDownToMinute);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {\n");
+    sb.append("class ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf {\n");
     sb.append("    proposerTimestampRoundedDownToMinute: ").append(toIndentedString(proposerTimestampRoundedDownToMinute)).append("\n");
     sb.append("}");
     return sb.toString();

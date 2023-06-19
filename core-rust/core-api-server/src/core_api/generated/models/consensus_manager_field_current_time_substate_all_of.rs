@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
-    #[serde(rename = "proposer_timestamp_rounded_down_to_minute")]
-    pub proposer_timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
+pub struct ConsensusManagerFieldCurrentTimeSubstateAllOf {
+    #[serde(rename = "proposer_timestamp")]
+    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
-    pub fn new(proposer_timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
-        ConsensusManagerCurrentTimeRoundedToMinutesSubstateAllOf {
-            proposer_timestamp_rounded_down_to_minute: Box::new(proposer_timestamp_rounded_down_to_minute),
+impl ConsensusManagerFieldCurrentTimeSubstateAllOf {
+    pub fn new(proposer_timestamp: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldCurrentTimeSubstateAllOf {
+        ConsensusManagerFieldCurrentTimeSubstateAllOf {
+            proposer_timestamp: Box::new(proposer_timestamp),
         }
     }
 }

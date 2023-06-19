@@ -79,12 +79,12 @@ pub enum Substate {
         missed: Vec<i64>,
     },
     #[serde(rename="ConsensusManagerFieldCurrentTime")]
-    ConsensusManagerCurrentTimeSubstate {
+    ConsensusManagerFieldCurrentTimeSubstate {
         #[serde(rename = "proposer_timestamp")]
         proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
     },
     #[serde(rename="ConsensusManagerFieldCurrentTimeRoundedToMinutes")]
-    ConsensusManagerCurrentTimeRoundedToMinutesSubstate {
+    ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
         #[serde(rename = "proposer_timestamp_rounded_down_to_minute")]
         proposer_timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
     },

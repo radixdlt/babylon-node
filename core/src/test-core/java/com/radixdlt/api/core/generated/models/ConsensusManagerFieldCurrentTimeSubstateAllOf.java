@@ -29,20 +29,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ConsensusManagerCurrentTimeSubstateAllOf
+ * ConsensusManagerFieldCurrentTimeSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerCurrentTimeSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP
+  ConsensusManagerFieldCurrentTimeSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ConsensusManagerCurrentTimeSubstateAllOf {
+public class ConsensusManagerFieldCurrentTimeSubstateAllOf {
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
   private Instant proposerTimestamp;
 
-  public ConsensusManagerCurrentTimeSubstateAllOf() { 
+  public ConsensusManagerFieldCurrentTimeSubstateAllOf() { 
   }
 
-  public ConsensusManagerCurrentTimeSubstateAllOf proposerTimestamp(Instant proposerTimestamp) {
+  public ConsensusManagerFieldCurrentTimeSubstateAllOf proposerTimestamp(Instant proposerTimestamp) {
     this.proposerTimestamp = proposerTimestamp;
     return this;
   }
@@ -69,7 +69,7 @@ public class ConsensusManagerCurrentTimeSubstateAllOf {
 
 
   /**
-   * Return true if this ConsensusManagerCurrentTimeSubstate_allOf object is equal to o.
+   * Return true if this ConsensusManagerFieldCurrentTimeSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class ConsensusManagerCurrentTimeSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConsensusManagerCurrentTimeSubstateAllOf consensusManagerCurrentTimeSubstateAllOf = (ConsensusManagerCurrentTimeSubstateAllOf) o;
-    return Objects.equals(this.proposerTimestamp, consensusManagerCurrentTimeSubstateAllOf.proposerTimestamp);
+    ConsensusManagerFieldCurrentTimeSubstateAllOf consensusManagerFieldCurrentTimeSubstateAllOf = (ConsensusManagerFieldCurrentTimeSubstateAllOf) o;
+    return Objects.equals(this.proposerTimestamp, consensusManagerFieldCurrentTimeSubstateAllOf.proposerTimestamp);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class ConsensusManagerCurrentTimeSubstateAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConsensusManagerCurrentTimeSubstateAllOf {\n");
+    sb.append("class ConsensusManagerFieldCurrentTimeSubstateAllOf {\n");
     sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("}");
     return sb.toString();
