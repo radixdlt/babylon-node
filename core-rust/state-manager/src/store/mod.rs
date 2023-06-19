@@ -64,6 +64,7 @@
 
 mod db;
 mod in_memory;
+mod parent_map;
 mod rocks_db;
 pub mod traits;
 

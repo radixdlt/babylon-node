@@ -86,6 +86,7 @@ use transaction::model::*;
 use radix_engine_store_interface::interface::*;
 
 use std::path::PathBuf;
+
 use tracing::{error, info};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
@@ -113,6 +114,10 @@ enum RocksDBColumnFamily {
     LedgerProofByEpoch,
     /// Radix Engine state
     Substates,
+    /// Metadata on the [`Substates`] (which is useful and can be computed, but is not provided by
+    /// the Engine itself).
+    /// Schema: `NodeId.0` -> `scrypto_encode(SubstateNodeMetadata)`
+    SubstateNodeMetadatas,
     /// Vertex store
     VertexStore,
     /// State hash tree: all nodes + keys of nodes that became stale by the given state version
@@ -129,9 +134,10 @@ enum RocksDBColumnFamily {
     AccountChangeStateVersions,
 }
 
+use crate::store::parent_map::NodeMetadataResolver;
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
     TxnByStateVersion,
     TxnIdentifiersByStateVersion,
     LedgerReceiptByStateVersion,
@@ -142,6 +148,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
     LedgerProofByStateVersion,
     LedgerProofByEpoch,
     Substates,
+    SubstateNodeMetadatas,
     VertexStore,
     StateHashTreeNodes,
     StaleStateHashTreeNodeKeysByStateVersion,
@@ -166,6 +173,7 @@ impl fmt::Display for RocksDBColumnFamily {
             LedgerProofByStateVersion => "ledger_proof_by_state_version",
             LedgerProofByEpoch => "ledger_proof_by_epoch",
             Substates => "substates",
+            SubstateNodeMetadatas => "substate_node_metadata",
             VertexStore => "vertex_store",
             StateHashTreeNodes => "state_hash_tree_nodes",
             StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
@@ -331,6 +339,19 @@ impl RocksDBStore {
             state_version.to_bytes(),
             scrypto_encode(&receipt.on_ledger).unwrap(),
         );
+
+        for (node_ids, metadata) in
+            NodeMetadataResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
+        {
+            let encoded_metadata = scrypto_encode(&metadata).unwrap();
+            for node_id in node_ids {
+                batch.put_cf(
+                    self.cf_handle(&SubstateNodeMetadatas),
+                    node_id.0,
+                    &encoded_metadata,
+                );
+            }
+        }
 
         if self.is_local_transaction_execution_index_enabled() {
             batch.put_cf(
@@ -940,6 +961,24 @@ impl SubstateDatabase for RocksDBStore {
             .map(|((_, sort_key), value)| (sort_key, value.as_ref().to_vec()));
 
         Box::new(iter)
+    }
+}
+
+impl SubstateNodeMetadataStore for RocksDBStore {
+    fn batch_get_metadata(&self, node_ids: &[NodeId]) -> Vec<Option<SubstateNodeMetadata>> {
+        self.db
+            .multi_get_cf(
+                node_ids
+                    .iter()
+                    .map(|node_id| (self.cf_handle(&SubstateNodeMetadatas), node_id.0)),
+            )
+            .into_iter()
+            .map(|result| {
+                result
+                    .unwrap()
+                    .map(|bytes| scrypto_decode::<SubstateNodeMetadata>(&bytes).unwrap())
+            })
+            .collect()
     }
 }
 

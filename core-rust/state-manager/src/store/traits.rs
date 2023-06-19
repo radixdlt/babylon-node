@@ -160,9 +160,62 @@ pub mod vertex {
 }
 
 pub mod substate {
+    use super::*;
+    use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+    use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
+    use std::slice;
+
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
+
+    /// A low-level storage of [`SubstateNodeMetadata`].
+    /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
+    /// batch method. Both provide default implementations (which mutually reduce one problem to the
+    /// other). The implementer must choose to implement at least one of the methods, based on its
+    /// nature (though implementing both rarely makes sense).
+    #[enum_dispatch]
+    pub trait SubstateNodeMetadataStore {
+        /// Returns the [`SubstateNodeMetadata`] for the given [`NodeId`], or [`None`] if:
+        /// - the `node_id` happens to be a root Node (since we do not track their metadata);
+        /// - or the `node_id` does not exist yet.
+        fn get_metadata(&self, node_id: &NodeId) -> Option<SubstateNodeMetadata> {
+            let metadatas = self.batch_get_metadata(slice::from_ref(node_id));
+            if metadatas.len() != 1 {
+                panic!(
+                    "trait contract violated: expected a single result for {:?}, got {:?}",
+                    node_id, metadatas
+                )
+            }
+            metadatas.into_iter().next().unwrap()
+        }
+
+        /// A batch counterpart of the [`get_metadata()`].
+        /// The results are returned in the same order as the input `node_ids`.
+        fn batch_get_metadata(&self, node_ids: &[NodeId]) -> Vec<Option<SubstateNodeMetadata>> {
+            node_ids
+                .iter()
+                .map(|node_id| self.get_metadata(node_id))
+                .collect()
+        }
+    }
+
+    /// Relevant metadata of a RE Node (which is not provided by the RE itself).
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct SubstateNodeMetadata {
+        /// A substate owning the Node (i.e. its immediate parent).
+        /// Note: this will always be present, since we do not track metadata of the root RE Nodes.
+        pub parent: SubstateReference,
+        /// A root ancestor of the Node's tree (i.e. the top of its parent chain).
+        /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
+        pub root: SubstateReference,
+    }
+
+    /// A complete ID of Substate.
+    #[derive(
+        Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    )]
+    pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 }
 
 pub mod transactions {

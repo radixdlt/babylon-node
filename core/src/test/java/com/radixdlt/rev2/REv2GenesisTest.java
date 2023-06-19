@@ -84,6 +84,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.Map;
 import org.junit.Test;
@@ -161,14 +162,14 @@ public final class REv2GenesisTest {
       test.startAllNodes();
 
       // Assert
-      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var stateReader = test.getInstance(0, TestStateReader.class);
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
 
       // should correspond to the genesis wrap up transaction
       final var latestStateVersion =
           transactionStore.getLastProof().get().ledgerHeader().stateVersion();
       final var genesisWrapUp =
-          transactionStore
+          stateReader
               .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
               .unwrap();
       assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
