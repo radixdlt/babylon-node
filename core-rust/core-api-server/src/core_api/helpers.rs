@@ -6,7 +6,7 @@ use state_manager::store::StateManagerDatabase;
 use std::io::Write;
 
 use super::{MappingError, ResponseError};
-use radix_engine::track::db_key_mapper::*;
+use radix_engine_store_interface::db_key_mapper::*;
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
@@ -14,21 +14,7 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Result<D, ResponseError<()>> {
-    read_optional_substate(
-        database,
-        node_id,
-        OBJECT_BASE_PARTITION,
-        substate_key
-    ).ok_or_else(
-        || {
-            MappingError::MismatchedSubstateId {
-                message: format!(
-                    "Substate key {substate_key:?} not found under NodeId {node_id:?} and partition number {OBJECT_BASE_PARTITION:?}"
-                ),
-            }
-            .into()
-        },
-    )
+    read_mandatory_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
@@ -65,7 +51,7 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
+pub(crate) fn read_optional_collection_substate<D: ScryptoDecode + Debug>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
     collection_index: CollectionIndex,
@@ -77,7 +63,7 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
     let partition_number = OBJECT_BASE_PARTITION
         .at_offset(PartitionOffset(1 + collection_index))
         .unwrap();
-    database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
+    read_optional_substate(database, node_id, partition_number, substate_key)
 }
 
 #[tracing::instrument(skip_all)]

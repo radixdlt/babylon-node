@@ -78,6 +78,12 @@ pub enum SubstateType {
     GenericScryptoComponentFieldState,
     #[serde(rename = "GenericKeyValueStoreEntry")]
     GenericKeyValueStoreEntry,
+    #[serde(rename = "OneResourcePool")]
+    OneResourcePool,
+    #[serde(rename = "TwoResourcePool")]
+    TwoResourcePool,
+    #[serde(rename = "MultiResourcePool")]
+    MultiResourcePool,
 
 }
 
@@ -117,6 +123,9 @@ impl ToString for SubstateType {
             Self::AccessControllerFieldState => String::from("AccessControllerFieldState"),
             Self::GenericScryptoComponentFieldState => String::from("GenericScryptoComponentFieldState"),
             Self::GenericKeyValueStoreEntry => String::from("GenericKeyValueStoreEntry"),
+            Self::OneResourcePool => String::from("OneResourcePool"),
+            Self::TwoResourcePool => String::from("TwoResourcePool"),
+            Self::MultiResourcePool => String::from("MultiResourcePool"),
         }
     }
 }

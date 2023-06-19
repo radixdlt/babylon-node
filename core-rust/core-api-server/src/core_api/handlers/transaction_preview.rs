@@ -7,6 +7,7 @@ use std::ops::Range;
 use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
+use transaction::manifest::BlobProvider;
 use transaction::model::PreviewFlags;
 
 pub(crate) async fn handle_transaction_preview(
@@ -41,8 +42,8 @@ fn extract_preview_request(
         .map(from_hex)
         .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("blobs"))?;
-
-    let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
+    let manifest_blob_provider = BlobProvider::new_with_blobs(manifest_blobs);
+    let manifest = manifest::compile(&request.manifest, network, manifest_blob_provider)
         .map_err(|err| client_error(format!("Invalid manifest - {err:?}")))?;
 
     let signer_public_keys: Vec<_> = request
@@ -74,7 +75,7 @@ fn extract_preview_request(
             .map_err(|err| err.into_response_error("nonce"))?,
         signer_public_keys,
         flags: PreviewFlags {
-            unlimited_loan: request.flags.unlimited_loan,
+            use_free_credit: request.flags.use_free_credit,
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
             permit_duplicate_intent_hash: request.flags.permit_duplicate_intent_hash,
             permit_invalid_header_epoch: request.flags.permit_invalid_header_epoch,

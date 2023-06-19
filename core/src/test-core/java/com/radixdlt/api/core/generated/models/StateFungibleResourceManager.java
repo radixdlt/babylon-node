@@ -100,10 +100,10 @@ public class StateFungibleResourceManager extends StateResourceManager {
    * Get totalSupply
    * @return totalSupply
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Substate getTotalSupply() {
     return totalSupply;
@@ -111,7 +111,7 @@ public class StateFungibleResourceManager extends StateResourceManager {
 
 
   @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTotalSupply(Substate totalSupply) {
     this.totalSupply = totalSupply;
   }

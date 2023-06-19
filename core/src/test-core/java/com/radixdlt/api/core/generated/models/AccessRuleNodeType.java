@@ -32,9 +32,7 @@ public enum AccessRuleNodeType {
   
   ANYOF("AnyOf"),
   
-  ALLOF("AllOf"),
-  
-  AUTHORITY("Authority");
+  ALLOF("AllOf");
 
   private String value;
 

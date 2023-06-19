@@ -17,16 +17,13 @@ pub struct PackageFieldFunctionAccessRulesSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "function_auth")]
     pub function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>,
-    #[serde(rename = "default_auth")]
-    pub default_auth: Option<crate::core_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl PackageFieldFunctionAccessRulesSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>, default_auth: crate::core_api::generated::models::AccessRule) -> PackageFieldFunctionAccessRulesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>) -> PackageFieldFunctionAccessRulesSubstate {
         PackageFieldFunctionAccessRulesSubstate {
             substate_type,
             function_auth,
-            default_auth: Option::Some(default_auth),
         }
     }
 }

@@ -80,9 +80,9 @@ use radix_engine::transaction::{
 use radix_engine_interface::prelude::*;
 
 use crate::staging::ReadableStore;
-use radix_engine::track::db_key_mapper::DatabaseKeyMapper;
 
 use radix_engine::track::SystemUpdates;
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,

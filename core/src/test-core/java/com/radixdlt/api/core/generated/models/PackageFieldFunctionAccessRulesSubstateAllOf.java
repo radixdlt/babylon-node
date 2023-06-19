@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AccessRule;
 import com.radixdlt.api.core.generated.models.PackageFunctionAccessRule;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,16 +34,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageFieldFunctionAccessRulesSubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageFieldFunctionAccessRulesSubstateAllOf.JSON_PROPERTY_FUNCTION_AUTH,
-  PackageFieldFunctionAccessRulesSubstateAllOf.JSON_PROPERTY_DEFAULT_AUTH
+  PackageFieldFunctionAccessRulesSubstateAllOf.JSON_PROPERTY_FUNCTION_AUTH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageFieldFunctionAccessRulesSubstateAllOf {
   public static final String JSON_PROPERTY_FUNCTION_AUTH = "function_auth";
   private List<PackageFunctionAccessRule> functionAuth = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_DEFAULT_AUTH = "default_auth";
-  private AccessRule defaultAuth;
 
   public PackageFieldFunctionAccessRulesSubstateAllOf() { 
   }
@@ -80,32 +75,6 @@ public class PackageFieldFunctionAccessRulesSubstateAllOf {
   }
 
 
-  public PackageFieldFunctionAccessRulesSubstateAllOf defaultAuth(AccessRule defaultAuth) {
-    this.defaultAuth = defaultAuth;
-    return this;
-  }
-
-   /**
-   * Get defaultAuth
-   * @return defaultAuth
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEFAULT_AUTH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public AccessRule getDefaultAuth() {
-    return defaultAuth;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DEFAULT_AUTH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefaultAuth(AccessRule defaultAuth) {
-    this.defaultAuth = defaultAuth;
-  }
-
-
   /**
    * Return true if this PackageFieldFunctionAccessRulesSubstate_allOf object is equal to o.
    */
@@ -118,13 +87,12 @@ public class PackageFieldFunctionAccessRulesSubstateAllOf {
       return false;
     }
     PackageFieldFunctionAccessRulesSubstateAllOf packageFieldFunctionAccessRulesSubstateAllOf = (PackageFieldFunctionAccessRulesSubstateAllOf) o;
-    return Objects.equals(this.functionAuth, packageFieldFunctionAccessRulesSubstateAllOf.functionAuth) &&
-        Objects.equals(this.defaultAuth, packageFieldFunctionAccessRulesSubstateAllOf.defaultAuth);
+    return Objects.equals(this.functionAuth, packageFieldFunctionAccessRulesSubstateAllOf.functionAuth);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(functionAuth, defaultAuth);
+    return Objects.hash(functionAuth);
   }
 
   @Override
@@ -132,7 +100,6 @@ public class PackageFieldFunctionAccessRulesSubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageFieldFunctionAccessRulesSubstateAllOf {\n");
     sb.append("    functionAuth: ").append(toIndentedString(functionAuth)).append("\n");
-    sb.append("    defaultAuth: ").append(toIndentedString(defaultAuth)).append("\n");
     sb.append("}");
     return sb.toString();
   }

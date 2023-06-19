@@ -34,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_FIELD_NAME,
   MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT,
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_MUTABLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MetadataModuleEntrySubstateAllOf {
@@ -46,6 +47,9 @@ public class MetadataModuleEntrySubstateAllOf {
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
+
+  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
+  private Boolean isMutable;
 
   public MetadataModuleEntrySubstateAllOf() { 
   }
@@ -128,6 +132,32 @@ public class MetadataModuleEntrySubstateAllOf {
   }
 
 
+  public MetadataModuleEntrySubstateAllOf isMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+    return this;
+  }
+
+   /**
+   * Get isMutable
+   * @return isMutable
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsMutable() {
+    return isMutable;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsMutable(Boolean isMutable) {
+    this.isMutable = isMutable;
+  }
+
+
   /**
    * Return true if this MetadataModuleEntrySubstate_allOf object is equal to o.
    */
@@ -142,12 +172,13 @@ public class MetadataModuleEntrySubstateAllOf {
     MetadataModuleEntrySubstateAllOf metadataModuleEntrySubstateAllOf = (MetadataModuleEntrySubstateAllOf) o;
     return Objects.equals(this.fieldName, metadataModuleEntrySubstateAllOf.fieldName) &&
         Objects.equals(this.isDeleted, metadataModuleEntrySubstateAllOf.isDeleted) &&
-        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct);
+        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct) &&
+        Objects.equals(this.isMutable, metadataModuleEntrySubstateAllOf.isMutable);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldName, isDeleted, dataStruct);
+    return Objects.hash(fieldName, isDeleted, dataStruct, isMutable);
   }
 
   @Override
@@ -157,6 +188,7 @@ public class MetadataModuleEntrySubstateAllOf {
     sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
     sb.append("}");
     return sb.toString();
   }

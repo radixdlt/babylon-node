@@ -24,9 +24,15 @@ pub trait TransactionLogic<S> {
 /// A well-known type of execution.
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum ConfigType {
+    /// A system genesis transaction.
     Genesis,
+    /// A system transaction _other_ than genesis (e.g. round update).
+    OtherSystem,
+    /// A user transaction during regular execution (e.g. prepare or commit).
     Regular,
+    /// A user transaction during "committability check" execution (e.g. in mempool).
     Pending,
+    /// A user transaction during preview execution.
     Preview,
 }
 
@@ -63,17 +69,23 @@ impl ExecutionConfigurator {
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
-                    ExecutionConfig::genesis().with_trace(trace),
+                    ExecutionConfig::for_genesis_transaction().with_kernel_trace(trace),
+                ),
+                (
+                    ConfigType::OtherSystem,
+                    ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
                 ),
                 (
                     ConfigType::Regular,
-                    ExecutionConfig::standard().with_trace(trace),
+                    ExecutionConfig::for_notarized_transaction().with_kernel_trace(trace),
                 ),
                 (
                     ConfigType::Pending,
-                    ExecutionConfig::up_to_loan_repayment().with_trace(trace),
+                    ExecutionConfig::for_notarized_transaction()
+                        .up_to_loan_repayment(true)
+                        .with_kernel_trace(trace),
                 ),
-                (ConfigType::Preview, ExecutionConfig::default()),
+                (ConfigType::Preview, ExecutionConfig::for_preview()),
             ]),
         }
     }

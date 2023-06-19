@@ -148,7 +148,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getErrorMessage())
           .isEqualTo(
-              "ErrorBeforeFeeLoanRepaid(ModuleError(CostingError(FeeReserveError(LoanRepaymentFailed))))");
+              "ErrorBeforeFeeLoanRepaid(SystemModuleError(CostingError(FeeReserveError(LoanRepaymentFailed))))");
     }
   }
 

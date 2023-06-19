@@ -13,15 +13,15 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageSchema {
-    /// A map from the blueprint name to BlueprintSchema
-    #[serde(rename = "blueprint_schemas")]
-    pub blueprint_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintSchema>,
+    /// A map from the blueprint name to BlueprintDefinition
+    #[serde(rename = "blueprint_definitions")]
+    pub blueprint_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintDefinition>,
 }
 
 impl PackageSchema {
-    pub fn new(blueprint_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintSchema>) -> PackageSchema {
+    pub fn new(blueprint_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintDefinition>) -> PackageSchema {
         PackageSchema {
-            blueprint_schemas,
+            blueprint_definitions,
         }
     }
 }

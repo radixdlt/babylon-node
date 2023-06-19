@@ -72,7 +72,6 @@ import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.core.LtsTransactionOutcomesTest;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -103,6 +102,8 @@ import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
 import java.net.http.HttpClient;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
@@ -333,7 +334,7 @@ public abstract class DeterministicCoreApiTestBase {
                 throw new RuntimeException(
                     "Transaction got committed as success without state version on response");
               }
-              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+              return new CommittedResult(intentHash, stateVersion, Optional.empty());
             }
             case CommittedFailure -> throw new RuntimeException(
                 String.format(
@@ -367,7 +368,9 @@ public abstract class DeterministicCoreApiTestBase {
                 throw new RuntimeException(
                     "Transaction got committed as failure without state version on response");
               }
-              return new LtsTransactionOutcomesTest.CommittedResult(intentHash, stateVersion);
+              var errorMessage =
+                  Objects.requireNonNull(response.getKnownPayloads().get(0).getErrorMessage());
+              return new CommittedResult(intentHash, stateVersion, Optional.of(errorMessage));
             }
             case PermanentRejection -> throw new RuntimeException(
                 String.format(
@@ -378,5 +381,6 @@ public abstract class DeterministicCoreApiTestBase {
         });
   }
 
-  public record CommittedResult(IntentHash intentHash, long stateVersion) {}
+  public record CommittedResult(
+      IntentHash intentHash, long stateVersion, Optional<String> errorMessage) {}
 }

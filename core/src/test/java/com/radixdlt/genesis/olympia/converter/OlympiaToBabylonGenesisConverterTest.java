@@ -79,6 +79,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisDataChunk;
+import com.radixdlt.genesis.GenesisResource;
 import com.radixdlt.genesis.GenesisValidator;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -509,8 +510,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
     final var babylonResourcesByAddr =
         resources.stream()
             .flatMap(r -> r.value().stream())
-            .collect(
-                Collectors.toMap(r -> HashCode.fromBytes(r.addressBytesWithoutEntityId()), r -> r));
+            .collect(Collectors.toMap(GenesisResource::address, r -> r));
 
     final var babylonAllocationsByResource =
         new HashMap<ResourceAddress, Map<ComponentAddress, Decimal>>();
@@ -536,10 +536,9 @@ public final class OlympiaToBabylonGenesisConverterTest {
 
     stateSummary.resources.forEach(
         summaryResource -> {
-          final var babylonAddrBytes =
-              olympiaToBabylonResourceAddressBytes(summaryResource.resourceAddrBytes.asBytes());
-          final var babylonResource =
-              babylonResourcesByAddr.get(HashCode.fromBytes(babylonAddrBytes));
+          final var babylonAddress =
+              toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes());
+          final var babylonResource = babylonResourcesByAddr.get(babylonAddress);
           assertEquals(
               summaryResource.expectedScaledTotalSupply(), babylonResource.initialSupply());
 

@@ -29,7 +29,6 @@ import com.radixdlt.api.core.generated.models.AccessRuleNode;
 import com.radixdlt.api.core.generated.models.AccessRuleNodeType;
 import com.radixdlt.api.core.generated.models.AllOfAccessRuleNode;
 import com.radixdlt.api.core.generated.models.AnyOfAccessRuleNode;
-import com.radixdlt.api.core.generated.models.AuthorityRuleNode;
 import com.radixdlt.api.core.generated.models.ProofAccessRuleNode;
 import com.radixdlt.api.core.generated.models.ProofAccessRuleNodeAllOf;
 import com.radixdlt.api.core.generated.models.ProofRule;
@@ -54,7 +53,6 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AllOfAccessRuleNode.class, name = "AllOf"),
   @JsonSubTypes.Type(value = AnyOfAccessRuleNode.class, name = "AnyOf"),
-  @JsonSubTypes.Type(value = AuthorityRuleNode.class, name = "Authority"),
   @JsonSubTypes.Type(value = ProofAccessRuleNode.class, name = "ProofRule"),
 })
 
@@ -138,7 +136,6 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AllOf", AllOfAccessRuleNode.class);
   mappings.put("AnyOf", AnyOfAccessRuleNode.class);
-  mappings.put("Authority", AuthorityRuleNode.class);
   mappings.put("ProofRule", ProofAccessRuleNode.class);
   mappings.put("ProofAccessRuleNode", ProofAccessRuleNode.class);
   JSON.registerDiscriminator(ProofAccessRuleNode.class, "type", mappings);

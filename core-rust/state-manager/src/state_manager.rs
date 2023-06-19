@@ -215,7 +215,7 @@ where
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         let commit = series_executor
-            .execute(ConfigType::Genesis, &validated, "genesis")
+            .execute(&validated, "genesis")
             .expect("genesis not committable")
             .expect_success("genesis");
 
@@ -272,7 +272,7 @@ where
             }
 
             series_executor
-                .execute(ConfigType::Regular, &validated, "ancestor")
+                .execute(&validated, "ancestor")
                 .expect("ancestor transaction rejected");
         }
 
@@ -313,7 +313,7 @@ where
             .expect("round update transaction should fit inside of empty vertex");
 
         let round_update_result = series_executor
-            .execute(ConfigType::Regular, &validated_round_update, "round update")
+            .execute(&validated_round_update, "round update")
             .expect("round update rejected");
 
         vertex_limits_tracker
@@ -468,8 +468,7 @@ where
                 }
             };
 
-            let execute_result =
-                series_executor.execute(ConfigType::Regular, &validated, "newly proposed");
+            let execute_result = series_executor.execute(&validated, "newly proposed");
             match execute_result {
                 Ok(processed_commit_result) => {
                     match vertex_limits_tracker.check_post_execution(
@@ -596,7 +595,7 @@ where
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
     pub fn execute_test_genesis(&self) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
-        let genesis_validator: GenesisValidator = EcdsaSecp256k1PublicKey([0; 33]).into();
+        let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
             GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
             GenesisDataChunk::Stakes {
@@ -815,7 +814,7 @@ where
                 });
 
             let commit = series_executor
-                .execute(ConfigType::Regular, &validated, "prepared")
+                .execute(&validated, "prepared")
                 .expect("cannot execute transaction to be committed");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
@@ -899,7 +898,7 @@ where
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let commit = series_executor
-            .execute(ConfigType::Genesis, &request.validated, "genesis")
+            .execute(&request.validated, "genesis")
             .expect("cannot execute genesis")
             .expect_success("genesis not successful");
 

@@ -125,11 +125,8 @@ public class Manifest {
             """
             %s
             CREATE_ACCOUNT_ADVANCED
-                Map<Enum, Tuple>(                         # Authority Rules
-                    Enum<AuthorityKey::Owner>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),     # Access
-                        Enum<AccessRule::AllowAll>(),     # Mutability
-                    )
+                Enum<OwnerRole::Updateable>(
+                    Enum<AccessRule::AllowAll>()
                 )
             ;
             """,
@@ -339,6 +336,7 @@ public class Manifest {
                     %s
                     CREATE_NON_FUNGIBLE_RESOURCE
                         Enum<NonFungibleIdType::Integer>()
+                        false
                         Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
                         Map<String, Enum>()
                         Map<Enum, Tuple>(

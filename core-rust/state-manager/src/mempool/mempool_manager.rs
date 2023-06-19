@@ -76,7 +76,7 @@ use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::simple_mempool::SimpleMempool;
 use crate::store::StateManagerDatabase;
 use crate::transaction::{
-    CachedCommitabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
+    CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
 };
 use parking_lot::RwLock;
 use rand::thread_rng;
@@ -86,7 +86,7 @@ use tracing::warn;
 pub struct MempoolManager {
     mempool: Arc<RwLock<SimpleMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
-    cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
+    cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
     metrics: MempoolMetrics,
 }
 
@@ -95,13 +95,13 @@ impl MempoolManager {
     pub fn new(
         mempool: Arc<RwLock<SimpleMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
-        cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
+        cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
             mempool,
             relay_dispatcher: Some(relay_dispatcher),
-            cached_commitability_validator,
+            cached_committability_validator,
             metrics: MempoolMetrics::new(metric_registry),
         }
     }
@@ -109,13 +109,13 @@ impl MempoolManager {
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
         mempool: Arc<RwLock<SimpleMempool>>,
-        cached_commitability_validator: CachedCommitabilityValidator<StateManagerDatabase>,
+        cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
         Self {
             mempool,
             relay_dispatcher: None,
-            cached_commitability_validator,
+            cached_committability_validator,
             metrics: MempoolMetrics::new(metric_registry),
         }
     }
@@ -156,10 +156,10 @@ impl MempoolManager {
         Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
     }
 
-    /// Checks the commitability of a random subset of transactions and removes the rejected ones
+    /// Checks the committability of a random subset of transactions and removes the rejected ones
     /// from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
-    pub fn reevaluate_transaction_commitability(&self, max_reevaluated_count: u32) {
+    pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
         let mut candidate_transactions = self.mempool.read().get_all_transactions();
 
         let mut transactions_to_remove = Vec::new();
@@ -167,7 +167,7 @@ impl MempoolManager {
         candidate_transactions.shuffle(&mut thread_rng());
         for candidate_transaction in candidate_transactions {
             let (record, was_cached) = self
-                .cached_commitability_validator
+                .cached_committability_validator
                 .check_for_rejection_cached_prevalidated(
                     &candidate_transaction.validated,
                     ForceRecalculation::No,
@@ -201,8 +201,8 @@ impl MempoolManager {
         }
     }
 
-    /// Adds the given transaction to the mempool (applying all the commitability checks, see
-    /// `add_if_commitable()`), and then triggers an unscheduled mempool sync (propagating only this
+    /// Adds the given transaction to the mempool (applying all the committability checks, see
+    /// `add_if_committable()`), and then triggers an unscheduled mempool sync (propagating only this
     /// transaction to other nodes).
     /// The triggering only takes place if the mempool did not already contain this transaction (to
     /// prevent flooding). Any error encountered during the triggering will only be logged (as
@@ -225,7 +225,7 @@ impl MempoolManager {
         Ok(())
     }
 
-    /// Checks the committability of the given transaction (see `CachedCommitabilityValidator`) and
+    /// Checks the committability of the given transaction (see `CachedCommittabilityValidator`) and
     /// either adds it to the mempool, or returns the encountered error.
     pub fn add_if_committable(
         &self,
@@ -235,7 +235,7 @@ impl MempoolManager {
     ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
         // STEP 1 - We prepare the transaction to check it's in the right structure and so we have hashes to work with
         let prepared = match self
-            .cached_commitability_validator
+            .cached_committability_validator
             .prepare_from_raw(&raw_transaction)
         {
             Ok(prepared) => prepared,
@@ -263,7 +263,7 @@ impl MempoolManager {
             ForceRecalculation::IfCachedAsValid
         };
         let (record, check_result) = self
-            .cached_commitability_validator
+            .cached_committability_validator
             .check_for_rejection_cached(prepared, force_recalculation);
 
         // STEP 4 - We check if the result should mean we add the transaction to our mempool

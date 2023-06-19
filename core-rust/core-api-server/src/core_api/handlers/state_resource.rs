@@ -9,11 +9,11 @@ use radix_engine_common::types::EntityType;
 enum ManagerByType {
     Fungible(
         FungibleResourceManagerDivisibilitySubstate,
-        FungibleResourceManagerTotalSupplySubstate,
+        Option<FungibleResourceManagerTotalSupplySubstate>,
     ),
     NonFungible(
         NonFungibleResourceManagerIdTypeSubstate,
-        NonFungibleResourceManagerTotalSupplySubstate,
+        Option<NonFungibleResourceManagerTotalSupplySubstate>,
         NonFungibleResourceManagerMutableFieldsSubstate,
     ),
 }
@@ -41,11 +41,11 @@ pub(crate) async fn handle_state_resource(
                 resource_node_id,
                 &FungibleResourceManagerField::Divisibility.into(),
             )?,
-            read_mandatory_main_field_substate(
+            read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
                 &FungibleResourceManagerField::TotalSupply.into(),
-            )?,
+            ),
         )
     } else {
         ManagerByType::NonFungible(
@@ -54,11 +54,11 @@ pub(crate) async fn handle_state_resource(
                 resource_node_id,
                 &NonFungibleResourceManagerField::IdType.into(),
             )?,
-            read_mandatory_main_field_substate(
+            read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
                 &NonFungibleResourceManagerField::TotalSupply.into(),
-            )?,
+            ),
             read_mandatory_main_field_substate(
                 database.deref(),
                 resource_node_id,
@@ -94,9 +94,11 @@ fn to_api_resource_manager(
                 divisibility: Box::new(to_api_fungible_resource_manager_divisibility_substate(
                     divisiility,
                 )?),
-                total_supply: Box::new(to_api_fungible_resource_manager_total_supply_substate(
-                    total_supply,
-                )?),
+                total_supply: total_supply
+                    .as_ref()
+                    .map(to_api_fungible_resource_manager_total_supply_substate)
+                    .transpose()?
+                    .map(Box::new),
             }
         }
         ManagerByType::NonFungible(id_type, total_supply, mutable_fields) => {
@@ -104,9 +106,11 @@ fn to_api_resource_manager(
                 id_type: Box::new(to_api_non_fungible_resource_manager_id_type_substate(
                     id_type,
                 )?),
-                total_supply: Box::new(to_api_non_fungible_resource_manager_total_supply_substate(
-                    total_supply,
-                )?),
+                total_supply: total_supply
+                    .as_ref()
+                    .map(to_api_fungible_resource_manager_total_supply_substate)
+                    .transpose()?
+                    .map(Box::new),
                 mutable_fields: Box::new(
                     to_api_non_fungible_resource_manager_mutable_fields_substate(
                         context,

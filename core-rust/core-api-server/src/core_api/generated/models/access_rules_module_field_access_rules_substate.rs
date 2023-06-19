@@ -15,18 +15,18 @@
 pub struct AccessRulesModuleFieldAccessRulesSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "access_rules")]
-    pub access_rules: Box<crate::core_api::generated::models::NodeAuthorityRules>,
-    #[serde(rename = "inner_blueprint_access_rules")]
-    pub inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>,
+    #[serde(rename = "roles")]
+    pub roles: Vec<crate::core_api::generated::models::RoleRule>,
+    #[serde(rename = "role_mutability")]
+    pub role_mutability: Vec<crate::core_api::generated::models::MutabilityRule>,
 }
 
 impl AccessRulesModuleFieldAccessRulesSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, access_rules: crate::core_api::generated::models::NodeAuthorityRules, inner_blueprint_access_rules: Vec<crate::core_api::generated::models::BlueprintAccessRules>) -> AccessRulesModuleFieldAccessRulesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, roles: Vec<crate::core_api::generated::models::RoleRule>, role_mutability: Vec<crate::core_api::generated::models::MutabilityRule>) -> AccessRulesModuleFieldAccessRulesSubstate {
         AccessRulesModuleFieldAccessRulesSubstate {
             substate_type,
-            access_rules: Box::new(access_rules),
-            inner_blueprint_access_rules,
+            roles,
+            role_mutability,
         }
     }
 }

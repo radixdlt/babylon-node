@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreSchema
  */
 @JsonPropertyOrder({
+  KeyValueStoreSchema.JSON_PROPERTY_SCHEMA,
   KeyValueStoreSchema.JSON_PROPERTY_KEY_TYPE,
   KeyValueStoreSchema.JSON_PROPERTY_VALUE_TYPE,
   KeyValueStoreSchema.JSON_PROPERTY_CAN_OWN
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreSchema {
+  public static final String JSON_PROPERTY_SCHEMA = "schema";
+  private ScryptoSchema schema;
+
   public static final String JSON_PROPERTY_KEY_TYPE = "key_type";
   private LocalTypeIndex keyType;
 
@@ -49,6 +54,32 @@ public class KeyValueStoreSchema {
 
   public KeyValueStoreSchema() { 
   }
+
+  public KeyValueStoreSchema schema(ScryptoSchema schema) {
+    this.schema = schema;
+    return this;
+  }
+
+   /**
+   * Get schema
+   * @return schema
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ScryptoSchema getSchema() {
+    return schema;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSchema(ScryptoSchema schema) {
+    this.schema = schema;
+  }
+
 
   public KeyValueStoreSchema keyType(LocalTypeIndex keyType) {
     this.keyType = keyType;
@@ -140,20 +171,22 @@ public class KeyValueStoreSchema {
       return false;
     }
     KeyValueStoreSchema keyValueStoreSchema = (KeyValueStoreSchema) o;
-    return Objects.equals(this.keyType, keyValueStoreSchema.keyType) &&
+    return Objects.equals(this.schema, keyValueStoreSchema.schema) &&
+        Objects.equals(this.keyType, keyValueStoreSchema.keyType) &&
         Objects.equals(this.valueType, keyValueStoreSchema.valueType) &&
         Objects.equals(this.canOwn, keyValueStoreSchema.canOwn);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyType, valueType, canOwn);
+    return Objects.hash(schema, keyType, valueType, canOwn);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreSchema {\n");
+    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    keyType: ").append(toIndentedString(keyType)).append("\n");
     sb.append("    valueType: ").append(toIndentedString(valueType)).append("\n");
     sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");

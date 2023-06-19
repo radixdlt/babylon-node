@@ -160,14 +160,14 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 const UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
 
 /// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
-/// (i.e. "commitable") at a specific state of the `store`.
-pub struct CommitabilityValidator<S> {
+/// (i.e. "committable") at a specific state of the `store`.
+pub struct CommittabilityValidator<S> {
     store: Arc<RwLock<S>>,
     execution_configurator: Arc<ExecutionConfigurator>,
     user_transaction_validator: NotarizedTransactionValidator,
 }
 
-impl<S> CommitabilityValidator<S> {
+impl<S> CommittabilityValidator<S> {
     pub fn new(
         network: &NetworkDefinition,
         store: Arc<RwLock<S>>,
@@ -198,7 +198,7 @@ impl<S> CommitabilityValidator<S> {
     }
 }
 
-impl<S> CommitabilityValidator<S>
+impl<S> CommittabilityValidator<S>
 where
     S: ReadableStore + QueryableProofStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
@@ -279,22 +279,22 @@ where
     }
 }
 
-/// A caching wrapper for a `CommitabilityValidator`.
-pub struct CachedCommitabilityValidator<S> {
+/// A caching wrapper for a `CommittabilityValidator`.
+pub struct CachedCommittabilityValidator<S> {
     store: Arc<RwLock<S>>,
-    commitability_validator: Arc<CommitabilityValidator<S>>,
+    committability_validator: Arc<CommittabilityValidator<S>>,
     pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
 }
 
-impl<S> CachedCommitabilityValidator<S> {
+impl<S> CachedCommittabilityValidator<S> {
     pub fn new(
         store: Arc<RwLock<S>>,
-        commitability_validator: Arc<CommitabilityValidator<S>>,
+        committability_validator: Arc<CommittabilityValidator<S>>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     ) -> Self {
         Self {
             store,
-            commitability_validator,
+            committability_validator,
             pending_transaction_result_cache,
         }
     }
@@ -303,7 +303,7 @@ impl<S> CachedCommitabilityValidator<S> {
         &self,
         transaction: &RawNotarizedTransaction,
     ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
-        self.commitability_validator.prepare_from_raw(transaction)
+        self.committability_validator.prepare_from_raw(transaction)
     }
 
     fn read_record(
@@ -393,13 +393,13 @@ pub enum ForceRecalculation {
     No,
 }
 
-impl<S> CachedCommitabilityValidator<S>
+impl<S> CachedCommittabilityValidator<S>
 where
     S: ReadableStore + QueryableProofStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
 {
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
-    /// `CommitabilityValidator`.
+    /// `CommittabilityValidator`.
     ///
     /// The result is stored in the cache.
     /// If the transaction is freshly rejected, the caller should perform additional cleanup,
@@ -422,11 +422,11 @@ where
 
         let metadata = TransactionMetadata::read_from(&prepared);
 
-        match self.commitability_validator.validate(prepared) {
+        match self.committability_validator.validate(prepared) {
             Ok(validated) => {
                 // Transaction was valid - let's also attempt to execute it
                 let attempt = self
-                    .commitability_validator
+                    .committability_validator
                     .check_for_rejection(&validated, current_time);
                 (
                     self.write_attempt(metadata, attempt),
@@ -449,7 +449,7 @@ where
     }
 
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
-    /// `CommitabilityValidator`.
+    /// `CommittabilityValidator`.
     ///
     /// The result is stored in the cache.
     /// If the transaction is freshly rejected, the caller should perform additional cleanup,
@@ -473,7 +473,7 @@ where
         let metadata = TransactionMetadata::read_from(&validated.prepared);
 
         let attempt = self
-            .commitability_validator
+            .committability_validator
             .check_for_rejection(validated, current_time);
         (
             self.write_attempt(metadata, attempt),

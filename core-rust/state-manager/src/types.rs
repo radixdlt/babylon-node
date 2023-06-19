@@ -74,7 +74,7 @@ use std::num::TryFromIntError;
 use std::ops::Range;
 use transaction::prelude::*;
 
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+use transaction::signing::secp256k1::Secp256k1Signature;
 
 define_wrapped_hash!(SubstateChangeHash);
 
@@ -329,7 +329,7 @@ pub struct RejectedTransaction {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ActiveValidatorInfo {
     pub address: ComponentAddress,
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub stake: Decimal,
 }
 
@@ -341,10 +341,10 @@ pub struct NextEpoch {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
-    pub key: EcdsaSecp256k1PublicKey,
+    pub key: Secp256k1PublicKey,
     pub validator_address: Option<ComponentAddress>,
     pub timestamp_ms: i64,
-    pub signature: EcdsaSecp256k1Signature,
+    pub signature: Secp256k1Signature,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

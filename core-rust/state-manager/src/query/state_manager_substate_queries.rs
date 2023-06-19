@@ -1,7 +1,7 @@
-use radix_engine::track::db_key_mapper::*;
 use radix_engine::types::*;
 
 use radix_engine_queries::typed_substate_layout::ConsensusManagerSubstate;
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_store_interface::interface::SubstateDatabase;
 
 pub trait StateManagerSubstateQueries {
