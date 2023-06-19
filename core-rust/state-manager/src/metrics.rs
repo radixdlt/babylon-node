@@ -62,12 +62,15 @@
  * permissions under this License.
  */
 
+use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
 use prometheus::core::*;
 use prometheus::*;
+use radix_engine_common::types::ComponentAddress;
 
 pub struct LedgerMetrics {
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
+    pub consensus_rounds_committed: IntCounterVec,
     pub last_update_epoch_second: Gauge,
 }
 
@@ -81,19 +84,27 @@ pub struct MempoolMetrics {
 impl LedgerMetrics {
     pub fn new(registry: &Registry) -> Self {
         Self {
+            state_version: IntGauge::with_opts(opts(
+                "ledger_state_version",
+                "Version of the ledger state.",
+            ))
+            .registered_at(registry),
             transactions_committed: IntCounter::with_opts(opts(
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
             .registered_at(registry),
+            consensus_rounds_committed: IntCounterVec::new(
+                opts(
+                    "ledger_consensus_rounds_committed",
+                    "Count of rounds processed by consensus that reached the ledger commit.",
+                ),
+                &["leader_component_address", "round_resolution"],
+            )
+            .registered_at(registry),
             last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
-            ))
-            .registered_at(registry),
-            state_version: IntGauge::with_opts(opts(
-                "ledger_state_version",
-                "Version of the ledger state.",
             ))
             .registered_at(registry),
         }
@@ -224,5 +235,61 @@ impl<T: MetricLabel> MetricLabel for &T {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         T::prometheus_label_name(self)
+    }
+}
+
+// Concrete types used for metric labels:
+
+impl MetricLabel for ComponentAddress {
+    type StringReturnType = String;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        self.to_hex()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConsensusRoundResolution {
+    Successful,
+    MissedByFallback,
+    MissedByGap,
+}
+
+impl MetricLabel for ConsensusRoundResolution {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            ConsensusRoundResolution::Successful => "Successful",
+            ConsensusRoundResolution::MissedByFallback => "MissedByFallback",
+            ConsensusRoundResolution::MissedByGap => "MissedByGap",
+        }
+    }
+}
+
+impl MetricLabel for MempoolAddSource {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            MempoolAddSource::CoreApi => "CoreApi",
+            MempoolAddSource::MempoolSync => "MempoolSync",
+        }
+    }
+}
+
+impl MetricLabel for MempoolAddError {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match self {
+            MempoolAddError::Rejected(rejection) => match &rejection.reason {
+                RejectionReason::FromExecution(_) => "ExecutionError",
+                RejectionReason::ValidationError(_) => "ValidationError",
+                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+            },
+            MempoolAddError::Full { .. } => "MempoolFull",
+            MempoolAddError::Duplicate(_) => "Duplicate",
+        }
     }
 }
