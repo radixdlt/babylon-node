@@ -19,17 +19,18 @@ pub struct FunctionSchema {
     pub input: Box<crate::core_api::generated::models::LocalTypeIndex>,
     #[serde(rename = "output")]
     pub output: Box<crate::core_api::generated::models::LocalTypeIndex>,
-    #[serde(rename = "export_name")]
-    pub export_name: String,
+    /// Name used for export
+    #[serde(rename = "export")]
+    pub export: String,
 }
 
 impl FunctionSchema {
-    pub fn new(input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export_name: String) -> FunctionSchema {
+    pub fn new(input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export: String) -> FunctionSchema {
         FunctionSchema {
             receiver_info: None,
             input: Box::new(input),
             output: Box::new(output),
-            export_name,
+            export,
         }
     }
 }

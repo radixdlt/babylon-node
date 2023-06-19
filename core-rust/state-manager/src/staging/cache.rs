@@ -76,7 +76,7 @@ use im::hashmap::HashMap as ImmutableHashMap;
 
 use im::ordmap::OrdMap as ImmutableOrdMap;
 
-use radix_engine::track::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 
 use crate::staging::substate_overlay_iterator::SubstateOverlayIterator;
 use crate::transaction::{LedgerTransactionHash, TransactionLogic};

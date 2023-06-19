@@ -17,19 +17,13 @@ pub struct PackageFieldInfoSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "package_schema")]
     pub package_schema: Box<crate::core_api::generated::models::PackageSchema>,
-    #[serde(rename = "dependent_resources")]
-    pub dependent_resources: Vec<String>,
-    #[serde(rename = "dependent_components")]
-    pub dependent_components: Vec<String>,
 }
 
 impl PackageFieldInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_schema: crate::core_api::generated::models::PackageSchema, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageFieldInfoSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_schema: crate::core_api::generated::models::PackageSchema) -> PackageFieldInfoSubstate {
         PackageFieldInfoSubstate {
             substate_type,
             package_schema: Box::new(package_schema),
-            dependent_resources,
-            dependent_components,
         }
     }
 }

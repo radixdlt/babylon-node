@@ -66,5 +66,5 @@ package com.radixdlt.mempool;
 
 public interface MempoolReevaluator {
 
-  void reevaluateTransactionCommitability(int maxReevaluatedCount);
+  void reevaluateTransactionCommittability(int maxReevaluatedCount);
 }

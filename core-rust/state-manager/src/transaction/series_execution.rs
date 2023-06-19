@@ -124,7 +124,6 @@ where
     /// the transaction's ledger hash).
     pub fn execute(
         &mut self,
-        config_type: ConfigType,
         transaction: &ValidatedLedgerTransaction,
         description: impl Display,
     ) -> Result<ProcessedCommitResult, RejectResult> {
@@ -132,6 +131,7 @@ where
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
         };
+        let config_type = transaction.config_type();
         let mut execution_cache = self.execution_cache.lock();
         let processed = execution_cache.execute_transaction(
             self.store,

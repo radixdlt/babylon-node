@@ -31,10 +31,14 @@ pub struct BlueprintSchema {
     /// The collection partitions for this blueprint.
     #[serde(rename = "collection_partitions")]
     pub collection_partitions: Vec<crate::core_api::generated::models::BlueprintSchemaCollectionPartition>,
+    #[serde(rename = "dependencies")]
+    pub dependencies: Vec<String>,
+    #[serde(rename = "features")]
+    pub features: Vec<String>,
 }
 
 impl BlueprintSchema {
-    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, virtual_lazy_load_function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::VirtualLazyLoadSchema>, event_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>, collection_partitions: Vec<crate::core_api::generated::models::BlueprintSchemaCollectionPartition>) -> BlueprintSchema {
+    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, virtual_lazy_load_function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::VirtualLazyLoadSchema>, event_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>, collection_partitions: Vec<crate::core_api::generated::models::BlueprintSchemaCollectionPartition>, dependencies: Vec<String>, features: Vec<String>) -> BlueprintSchema {
         BlueprintSchema {
             outer_blueprint: None,
             schema: Box::new(schema),
@@ -43,6 +47,8 @@ impl BlueprintSchema {
             event_schemas,
             field_partition: None,
             collection_partitions,
+            dependencies,
+            features,
         }
     }
 }

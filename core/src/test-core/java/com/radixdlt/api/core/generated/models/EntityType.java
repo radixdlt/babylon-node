@@ -62,7 +62,13 @@ public enum EntityType {
   
   INTERNALACCOUNT("InternalAccount"),
   
-  INTERNALKEYVALUESTORE("InternalKeyValueStore");
+  INTERNALKEYVALUESTORE("InternalKeyValueStore"),
+  
+  GLOBALONERESOURCEPOOL("GlobalOneResourcePool"),
+  
+  GLOBALTWORESOURCEPOOL("GlobalTwoResourcePool"),
+  
+  GLOBALMULTIRESOURCEPOOL("GlobalMultiResourcePool");
 
   private String value;
 

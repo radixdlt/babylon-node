@@ -15,15 +15,12 @@
 pub struct BlueprintAccessRules {
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
-    #[serde(rename = "access_rules")]
-    pub access_rules: Box<crate::core_api::generated::models::NodeAuthorityRules>,
 }
 
 impl BlueprintAccessRules {
-    pub fn new(blueprint_name: String, access_rules: crate::core_api::generated::models::NodeAuthorityRules) -> BlueprintAccessRules {
+    pub fn new(blueprint_name: String) -> BlueprintAccessRules {
         BlueprintAccessRules {
             blueprint_name,
-            access_rules: Box::new(access_rules),
         }
     }
 }

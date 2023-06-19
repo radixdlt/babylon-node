@@ -274,27 +274,25 @@ mod tests {
 
     use radix_engine::types::PublicKey;
     use radix_engine_common::types::Epoch;
-    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-    use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+    use radix_engine_interface::crypto::Secp256k1PublicKey;
     use transaction::model::*;
+    use transaction::signing::secp256k1::Secp256k1Signature;
 
     use crate::mempool::simple_mempool::*;
 
     fn create_fake_pub_key() -> PublicKey {
-        PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
-            [0; EcdsaSecp256k1PublicKey::LENGTH],
-        ))
+        PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]))
     }
 
     fn create_fake_signature() -> NotarySignatureV1 {
-        NotarySignatureV1(SignatureV1::EcdsaSecp256k1(EcdsaSecp256k1Signature(
-            [0; EcdsaSecp256k1Signature::LENGTH],
+        NotarySignatureV1(SignatureV1::Secp256k1(Secp256k1Signature(
+            [0; Secp256k1Signature::LENGTH],
         )))
     }
 
     fn create_fake_signature_with_public_key() -> IntentSignatureV1 {
-        IntentSignatureV1(SignatureWithPublicKeyV1::EcdsaSecp256k1 {
-            signature: EcdsaSecp256k1Signature([0; EcdsaSecp256k1Signature::LENGTH]),
+        IntentSignatureV1(SignatureWithPublicKeyV1::Secp256k1 {
+            signature: Secp256k1Signature([0; Secp256k1Signature::LENGTH]),
         })
     }
 

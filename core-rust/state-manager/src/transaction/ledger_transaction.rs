@@ -3,6 +3,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
 use sbor::*;
 
+use crate::transaction::ConfigType;
 use transaction::define_raw_transaction_payload;
 use transaction::prelude::*;
 
@@ -293,6 +294,16 @@ impl ValidatedLedgerTransaction {
         }
     }
 
+    /// Gets a [`ConfigType`] to be used during regular execution (i.e. not preview, not in-mempool
+    /// committability check).
+    pub fn config_type(&self) -> ConfigType {
+        match &self.inner {
+            ValidatedLedgerTransactionInner::Genesis(_) => ConfigType::Genesis,
+            ValidatedLedgerTransactionInner::UserV1(_) => ConfigType::Regular,
+            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => ConfigType::OtherSystem,
+        }
+    }
+
     pub fn create_identifiers(&self) -> PayloadIdentifiers {
         PayloadIdentifiers {
             ledger_payload_hash: self.ledger_transaction_hash(),
@@ -368,9 +379,9 @@ mod tests {
 
     #[test]
     pub fn v1_ledger_transaction_structure() {
-        let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
-        let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let notarized = TransactionBuilder::new()
             .header(TransactionHeaderV1 {

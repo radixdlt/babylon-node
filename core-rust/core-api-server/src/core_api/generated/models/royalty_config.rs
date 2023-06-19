@@ -16,16 +16,12 @@ pub struct RoyaltyConfig {
     /// The royalty rules by method
     #[serde(rename = "method_rules")]
     pub method_rules: Vec<crate::core_api::generated::models::MethodRoyaltyRule>,
-    /// An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
-    #[serde(rename = "default_rule")]
-    pub default_rule: i64,
 }
 
 impl RoyaltyConfig {
-    pub fn new(method_rules: Vec<crate::core_api::generated::models::MethodRoyaltyRule>, default_rule: i64) -> RoyaltyConfig {
+    pub fn new(method_rules: Vec<crate::core_api::generated::models::MethodRoyaltyRule>) -> RoyaltyConfig {
         RoyaltyConfig {
             method_rules,
-            default_rule,
         }
     }
 }

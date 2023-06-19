@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintSchema;
+import com.radixdlt.api.core.generated.models.BlueprintDefinition;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -35,44 +35,44 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageSchema
  */
 @JsonPropertyOrder({
-  PackageSchema.JSON_PROPERTY_BLUEPRINT_SCHEMAS
+  PackageSchema.JSON_PROPERTY_BLUEPRINT_DEFINITIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageSchema {
-  public static final String JSON_PROPERTY_BLUEPRINT_SCHEMAS = "blueprint_schemas";
-  private Map<String, BlueprintSchema> blueprintSchemas = new HashMap<>();
+  public static final String JSON_PROPERTY_BLUEPRINT_DEFINITIONS = "blueprint_definitions";
+  private Map<String, BlueprintDefinition> blueprintDefinitions = new HashMap<>();
 
   public PackageSchema() { 
   }
 
-  public PackageSchema blueprintSchemas(Map<String, BlueprintSchema> blueprintSchemas) {
-    this.blueprintSchemas = blueprintSchemas;
+  public PackageSchema blueprintDefinitions(Map<String, BlueprintDefinition> blueprintDefinitions) {
+    this.blueprintDefinitions = blueprintDefinitions;
     return this;
   }
 
-  public PackageSchema putBlueprintSchemasItem(String key, BlueprintSchema blueprintSchemasItem) {
-    this.blueprintSchemas.put(key, blueprintSchemasItem);
+  public PackageSchema putBlueprintDefinitionsItem(String key, BlueprintDefinition blueprintDefinitionsItem) {
+    this.blueprintDefinitions.put(key, blueprintDefinitionsItem);
     return this;
   }
 
    /**
-   * A map from the blueprint name to BlueprintSchema
-   * @return blueprintSchemas
+   * A map from the blueprint name to BlueprintDefinition
+   * @return blueprintDefinitions
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the blueprint name to BlueprintSchema")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_SCHEMAS)
+  @ApiModelProperty(required = true, value = "A map from the blueprint name to BlueprintDefinition")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_DEFINITIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, BlueprintSchema> getBlueprintSchemas() {
-    return blueprintSchemas;
+  public Map<String, BlueprintDefinition> getBlueprintDefinitions() {
+    return blueprintDefinitions;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_SCHEMAS)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_DEFINITIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintSchemas(Map<String, BlueprintSchema> blueprintSchemas) {
-    this.blueprintSchemas = blueprintSchemas;
+  public void setBlueprintDefinitions(Map<String, BlueprintDefinition> blueprintDefinitions) {
+    this.blueprintDefinitions = blueprintDefinitions;
   }
 
 
@@ -88,19 +88,19 @@ public class PackageSchema {
       return false;
     }
     PackageSchema packageSchema = (PackageSchema) o;
-    return Objects.equals(this.blueprintSchemas, packageSchema.blueprintSchemas);
+    return Objects.equals(this.blueprintDefinitions, packageSchema.blueprintDefinitions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintSchemas);
+    return Objects.hash(blueprintDefinitions);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageSchema {\n");
-    sb.append("    blueprintSchemas: ").append(toIndentedString(blueprintSchemas)).append("\n");
+    sb.append("    blueprintDefinitions: ").append(toIndentedString(blueprintDefinitions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

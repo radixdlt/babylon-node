@@ -71,7 +71,7 @@ use radix_engine::types::PublicKey;
 use radix_engine_common::types::Epoch;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use transaction::manifest::compile;
+use transaction::manifest::{compile, BlobProvider};
 use transaction::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -101,7 +101,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
             let manifest = compile(
                 &request.manifest,
                 &request.network_definition,
-                request.blobs,
+                BlobProvider::new_with_blobs(request.blobs),
             )?;
 
             let (instructions, blobs) = manifest.for_intent();

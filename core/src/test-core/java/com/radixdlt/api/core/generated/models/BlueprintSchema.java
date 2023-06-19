@@ -47,7 +47,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintSchema.JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS,
   BlueprintSchema.JSON_PROPERTY_EVENT_SCHEMAS,
   BlueprintSchema.JSON_PROPERTY_FIELD_PARTITION,
-  BlueprintSchema.JSON_PROPERTY_COLLECTION_PARTITIONS
+  BlueprintSchema.JSON_PROPERTY_COLLECTION_PARTITIONS,
+  BlueprintSchema.JSON_PROPERTY_DEPENDENCIES,
+  BlueprintSchema.JSON_PROPERTY_FEATURES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchema {
@@ -71,6 +73,12 @@ public class BlueprintSchema {
 
   public static final String JSON_PROPERTY_COLLECTION_PARTITIONS = "collection_partitions";
   private List<BlueprintSchemaCollectionPartition> collectionPartitions = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
+  private List<String> dependencies = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_FEATURES = "features";
+  private List<String> features = new ArrayList<>();
 
   public BlueprintSchema() { 
   }
@@ -277,6 +285,68 @@ public class BlueprintSchema {
   }
 
 
+  public BlueprintSchema dependencies(List<String> dependencies) {
+    this.dependencies = dependencies;
+    return this;
+  }
+
+  public BlueprintSchema addDependenciesItem(String dependenciesItem) {
+    this.dependencies.add(dependenciesItem);
+    return this;
+  }
+
+   /**
+   * Get dependencies
+   * @return dependencies
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getDependencies() {
+    return dependencies;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDependencies(List<String> dependencies) {
+    this.dependencies = dependencies;
+  }
+
+
+  public BlueprintSchema features(List<String> features) {
+    this.features = features;
+    return this;
+  }
+
+  public BlueprintSchema addFeaturesItem(String featuresItem) {
+    this.features.add(featuresItem);
+    return this;
+  }
+
+   /**
+   * Get features
+   * @return features
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FEATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getFeatures() {
+    return features;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFeatures(List<String> features) {
+    this.features = features;
+  }
+
+
   /**
    * Return true if this BlueprintSchema object is equal to o.
    */
@@ -295,12 +365,14 @@ public class BlueprintSchema {
         Objects.equals(this.virtualLazyLoadFunctionSchemas, blueprintSchema.virtualLazyLoadFunctionSchemas) &&
         Objects.equals(this.eventSchemas, blueprintSchema.eventSchemas) &&
         Objects.equals(this.fieldPartition, blueprintSchema.fieldPartition) &&
-        Objects.equals(this.collectionPartitions, blueprintSchema.collectionPartitions);
+        Objects.equals(this.collectionPartitions, blueprintSchema.collectionPartitions) &&
+        Objects.equals(this.dependencies, blueprintSchema.dependencies) &&
+        Objects.equals(this.features, blueprintSchema.features);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(outerBlueprint, schema, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas, fieldPartition, collectionPartitions);
+    return Objects.hash(outerBlueprint, schema, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas, fieldPartition, collectionPartitions, dependencies, features);
   }
 
   @Override
@@ -314,6 +386,8 @@ public class BlueprintSchema {
     sb.append("    eventSchemas: ").append(toIndentedString(eventSchemas)).append("\n");
     sb.append("    fieldPartition: ").append(toIndentedString(fieldPartition)).append("\n");
     sb.append("    collectionPartitions: ").append(toIndentedString(collectionPartitions)).append("\n");
+    sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
+    sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("}");
     return sb.toString();
   }

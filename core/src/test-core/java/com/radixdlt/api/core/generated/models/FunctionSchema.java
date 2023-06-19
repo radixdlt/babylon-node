@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   FunctionSchema.JSON_PROPERTY_RECEIVER_INFO,
   FunctionSchema.JSON_PROPERTY_INPUT,
   FunctionSchema.JSON_PROPERTY_OUTPUT,
-  FunctionSchema.JSON_PROPERTY_EXPORT_NAME
+  FunctionSchema.JSON_PROPERTY_EXPORT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FunctionSchema {
@@ -49,8 +49,8 @@ public class FunctionSchema {
   public static final String JSON_PROPERTY_OUTPUT = "output";
   private LocalTypeIndex output;
 
-  public static final String JSON_PROPERTY_EXPORT_NAME = "export_name";
-  private String exportName;
+  public static final String JSON_PROPERTY_EXPORT = "export";
+  private String export;
 
   public FunctionSchema() { 
   }
@@ -133,29 +133,29 @@ public class FunctionSchema {
   }
 
 
-  public FunctionSchema exportName(String exportName) {
-    this.exportName = exportName;
+  public FunctionSchema export(String export) {
+    this.export = export;
     return this;
   }
 
    /**
-   * Get exportName
-   * @return exportName
+   * Name used for export
+   * @return export
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EXPORT_NAME)
+  @ApiModelProperty(required = true, value = "Name used for export")
+  @JsonProperty(JSON_PROPERTY_EXPORT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getExportName() {
-    return exportName;
+  public String getExport() {
+    return export;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXPORT_NAME)
+  @JsonProperty(JSON_PROPERTY_EXPORT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setExportName(String exportName) {
-    this.exportName = exportName;
+  public void setExport(String export) {
+    this.export = export;
   }
 
 
@@ -174,12 +174,12 @@ public class FunctionSchema {
     return Objects.equals(this.receiverInfo, functionSchema.receiverInfo) &&
         Objects.equals(this.input, functionSchema.input) &&
         Objects.equals(this.output, functionSchema.output) &&
-        Objects.equals(this.exportName, functionSchema.exportName);
+        Objects.equals(this.export, functionSchema.export);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(receiverInfo, input, output, exportName);
+    return Objects.hash(receiverInfo, input, output, export);
   }
 
   @Override
@@ -189,7 +189,7 @@ public class FunctionSchema {
     sb.append("    receiverInfo: ").append(toIndentedString(receiverInfo)).append("\n");
     sb.append("    input: ").append(toIndentedString(input)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");
-    sb.append("    exportName: ").append(toIndentedString(exportName)).append("\n");
+    sb.append("    export: ").append(toIndentedString(export)).append("\n");
     sb.append("}");
     return sb.toString();
   }

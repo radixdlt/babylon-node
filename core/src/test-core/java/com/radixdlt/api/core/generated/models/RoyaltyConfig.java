@@ -34,16 +34,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * RoyaltyConfig
  */
 @JsonPropertyOrder({
-  RoyaltyConfig.JSON_PROPERTY_METHOD_RULES,
-  RoyaltyConfig.JSON_PROPERTY_DEFAULT_RULE
+  RoyaltyConfig.JSON_PROPERTY_METHOD_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RoyaltyConfig {
   public static final String JSON_PROPERTY_METHOD_RULES = "method_rules";
   private List<MethodRoyaltyRule> methodRules = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_DEFAULT_RULE = "default_rule";
-  private Long defaultRule;
 
   public RoyaltyConfig() { 
   }
@@ -79,34 +75,6 @@ public class RoyaltyConfig {
   }
 
 
-  public RoyaltyConfig defaultRule(Long defaultRule) {
-    this.defaultRule = defaultRule;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the number of cost units required to access this method.
-   * minimum: 0
-   * maximum: 4294967295
-   * @return defaultRule
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.")
-  @JsonProperty(JSON_PROPERTY_DEFAULT_RULE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getDefaultRule() {
-    return defaultRule;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DEFAULT_RULE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefaultRule(Long defaultRule) {
-    this.defaultRule = defaultRule;
-  }
-
-
   /**
    * Return true if this RoyaltyConfig object is equal to o.
    */
@@ -119,13 +87,12 @@ public class RoyaltyConfig {
       return false;
     }
     RoyaltyConfig royaltyConfig = (RoyaltyConfig) o;
-    return Objects.equals(this.methodRules, royaltyConfig.methodRules) &&
-        Objects.equals(this.defaultRule, royaltyConfig.defaultRule);
+    return Objects.equals(this.methodRules, royaltyConfig.methodRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(methodRules, defaultRule);
+    return Objects.hash(methodRules);
   }
 
   @Override
@@ -133,7 +100,6 @@ public class RoyaltyConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class RoyaltyConfig {\n");
     sb.append("    methodRules: ").append(toIndentedString(methodRules)).append("\n");
-    sb.append("    defaultRule: ").append(toIndentedString(defaultRule)).append("\n");
     sb.append("}");
     return sb.toString();
   }

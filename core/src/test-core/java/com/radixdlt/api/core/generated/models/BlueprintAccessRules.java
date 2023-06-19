@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.NodeAuthorityRules;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,16 +31,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintAccessRules
  */
 @JsonPropertyOrder({
-  BlueprintAccessRules.JSON_PROPERTY_BLUEPRINT_NAME,
-  BlueprintAccessRules.JSON_PROPERTY_ACCESS_RULES
+  BlueprintAccessRules.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintAccessRules {
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
-
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private NodeAuthorityRules accessRules;
 
   public BlueprintAccessRules() { 
   }
@@ -72,32 +67,6 @@ public class BlueprintAccessRules {
   }
 
 
-  public BlueprintAccessRules accessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
-    return this;
-  }
-
-   /**
-   * Get accessRules
-   * @return accessRules
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public NodeAuthorityRules getAccessRules() {
-    return accessRules;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(NodeAuthorityRules accessRules) {
-    this.accessRules = accessRules;
-  }
-
-
   /**
    * Return true if this BlueprintAccessRules object is equal to o.
    */
@@ -110,13 +79,12 @@ public class BlueprintAccessRules {
       return false;
     }
     BlueprintAccessRules blueprintAccessRules = (BlueprintAccessRules) o;
-    return Objects.equals(this.blueprintName, blueprintAccessRules.blueprintName) &&
-        Objects.equals(this.accessRules, blueprintAccessRules.accessRules);
+    return Objects.equals(this.blueprintName, blueprintAccessRules.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintName, accessRules);
+    return Objects.hash(blueprintName);
   }
 
   @Override
@@ -124,7 +92,6 @@ public class BlueprintAccessRules {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintAccessRules {\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

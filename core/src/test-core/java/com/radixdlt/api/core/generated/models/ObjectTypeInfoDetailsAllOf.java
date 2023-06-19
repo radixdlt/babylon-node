@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.InstanceSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -36,7 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_OUTER_OBJECT,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_INSTANCE_SCHEMA
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_INSTANCE_SCHEMA,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_FEATURES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectTypeInfoDetailsAllOf {
@@ -54,6 +57,9 @@ public class ObjectTypeInfoDetailsAllOf {
 
   public static final String JSON_PROPERTY_INSTANCE_SCHEMA = "instance_schema";
   private InstanceSchema instanceSchema;
+
+  public static final String JSON_PROPERTY_FEATURES = "features";
+  private List<String> features = new ArrayList<>();
 
   public ObjectTypeInfoDetailsAllOf() { 
   }
@@ -188,6 +194,37 @@ public class ObjectTypeInfoDetailsAllOf {
   }
 
 
+  public ObjectTypeInfoDetailsAllOf features(List<String> features) {
+    this.features = features;
+    return this;
+  }
+
+  public ObjectTypeInfoDetailsAllOf addFeaturesItem(String featuresItem) {
+    this.features.add(featuresItem);
+    return this;
+  }
+
+   /**
+   * Get features
+   * @return features
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FEATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getFeatures() {
+    return features;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEATURES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFeatures(List<String> features) {
+    this.features = features;
+  }
+
+
   /**
    * Return true if this ObjectTypeInfoDetails_allOf object is equal to o.
    */
@@ -204,12 +241,13 @@ public class ObjectTypeInfoDetailsAllOf {
         Objects.equals(this.blueprintName, objectTypeInfoDetailsAllOf.blueprintName) &&
         Objects.equals(this.global, objectTypeInfoDetailsAllOf.global) &&
         Objects.equals(this.outerObject, objectTypeInfoDetailsAllOf.outerObject) &&
-        Objects.equals(this.instanceSchema, objectTypeInfoDetailsAllOf.instanceSchema);
+        Objects.equals(this.instanceSchema, objectTypeInfoDetailsAllOf.instanceSchema) &&
+        Objects.equals(this.features, objectTypeInfoDetailsAllOf.features);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema);
+    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema, features);
   }
 
   @Override
@@ -221,6 +259,7 @@ public class ObjectTypeInfoDetailsAllOf {
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");
+    sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("}");
     return sb.toString();
   }

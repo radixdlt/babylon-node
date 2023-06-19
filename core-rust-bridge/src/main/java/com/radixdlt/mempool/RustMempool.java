@@ -98,10 +98,10 @@ public class RustMempool
         Natives.builder(stateManager, RustMempool::getTransactionsToRelay)
             .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsToRelay")))
             .build(new TypeToken<>() {});
-    reevaluateTransactionCommitabilityFunc =
-        Natives.builder(stateManager, RustMempool::reevaluateTransactionCommitability)
+    reevaluateTransactionCommittabilityFunc =
+        Natives.builder(stateManager, RustMempool::reevaluateTransactionCommittability)
             .measure(
-                timer.label(new MethodId(RustMempool.class, "reevaluateTransactionCommitability")))
+                timer.label(new MethodId(RustMempool.class, "reevaluateTransactionCommittability")))
             .build(new TypeToken<>() {});
     getCountFunc =
         Natives.builder(stateManager, RustMempool::getCount)
@@ -161,8 +161,8 @@ public class RustMempool
   }
 
   @Override
-  public void reevaluateTransactionCommitability(int maxReevaluatedCount) {
-    reevaluateTransactionCommitabilityFunc.call(UInt32.fromNonNegativeInt(maxReevaluatedCount));
+  public void reevaluateTransactionCommittability(int maxReevaluatedCount) {
+    reevaluateTransactionCommittabilityFunc.call(UInt32.fromNonNegativeInt(maxReevaluatedCount));
   }
 
   @Override
@@ -185,9 +185,9 @@ public class RustMempool
   private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<PreparedNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
-  private final Natives.Call1<UInt32, Tuple.Tuple0> reevaluateTransactionCommitabilityFunc;
+  private final Natives.Call1<UInt32, Tuple.Tuple0> reevaluateTransactionCommittabilityFunc;
 
-  private static native byte[] reevaluateTransactionCommitability(
+  private static native byte[] reevaluateTransactionCommittability(
       StateManager stateManager, byte[] payload);
 
   private static native byte[] getCount(Object stateManager, byte[] payload);

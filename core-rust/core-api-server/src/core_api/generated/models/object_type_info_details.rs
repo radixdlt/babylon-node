@@ -27,10 +27,12 @@ pub struct ObjectTypeInfoDetails {
     pub outer_object: Option<String>,
     #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
     pub instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
+    #[serde(rename = "features")]
+    pub features: Vec<String>,
 }
 
 impl ObjectTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, package_address: String, blueprint_name: String, global: bool) -> ObjectTypeInfoDetails {
+    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, package_address: String, blueprint_name: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetails {
         ObjectTypeInfoDetails {
             _type,
             package_address,
@@ -38,6 +40,7 @@ impl ObjectTypeInfoDetails {
             global,
             outer_object: None,
             instance_schema: None,
+            features,
         }
     }
 }

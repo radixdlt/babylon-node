@@ -13,16 +13,13 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreInfo {
-    #[serde(rename = "schema")]
-    pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
     #[serde(rename = "kv_store_schema")]
     pub kv_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
 }
 
 impl KeyValueStoreInfo {
-    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, kv_store_schema: crate::core_api::generated::models::KeyValueStoreSchema) -> KeyValueStoreInfo {
+    pub fn new(kv_store_schema: crate::core_api::generated::models::KeyValueStoreSchema) -> KeyValueStoreInfo {
         KeyValueStoreInfo {
-            schema: Box::new(schema),
             kv_store_schema: Box::new(kv_store_schema),
         }
     }

@@ -110,7 +110,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
             pending_transaction_result_cache: state.pending_transaction_result_cache.clone(),
             mempool: state.mempool.clone(),
             mempool_manager: state.mempool_manager.clone(),
-            commitability_validator: state.commitability_validator.clone(),
+            committability_validator: state.committability_validator.clone(),
             transaction_previewer: state.transaction_previewer.clone(),
         },
         running_server: None,

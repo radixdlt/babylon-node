@@ -59,7 +59,7 @@ pub(crate) async fn handle_transaction_callpreview(
             InstructionV1::CallFunction {
                 blueprint_name,
                 function_name,
-                package_address,
+                package_address: package_address.into(),
                 args: args_from_bytes_vec!(args),
             }
         }
@@ -102,7 +102,7 @@ pub(crate) async fn handle_transaction_callpreview(
             flags: PreviewFlags {
                 permit_invalid_header_epoch: true,
                 permit_duplicate_intent_hash: true,
-                unlimited_loan: true,
+                use_free_credit: true,
                 assume_all_signature_proofs: true,
             },
         })

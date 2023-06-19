@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.KeyValueStoreSchema;
-import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,45 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreInfo
  */
 @JsonPropertyOrder({
-  KeyValueStoreInfo.JSON_PROPERTY_SCHEMA,
   KeyValueStoreInfo.JSON_PROPERTY_KV_STORE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreInfo {
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private ScryptoSchema schema;
-
   public static final String JSON_PROPERTY_KV_STORE_SCHEMA = "kv_store_schema";
   private KeyValueStoreSchema kvStoreSchema;
 
   public KeyValueStoreInfo() { 
   }
-
-  public KeyValueStoreInfo schema(ScryptoSchema schema) {
-    this.schema = schema;
-    return this;
-  }
-
-   /**
-   * Get schema
-   * @return schema
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ScryptoSchema getSchema() {
-    return schema;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(ScryptoSchema schema) {
-    this.schema = schema;
-  }
-
 
   public KeyValueStoreInfo kvStoreSchema(KeyValueStoreSchema kvStoreSchema) {
     this.kvStoreSchema = kvStoreSchema;
@@ -111,20 +80,18 @@ public class KeyValueStoreInfo {
       return false;
     }
     KeyValueStoreInfo keyValueStoreInfo = (KeyValueStoreInfo) o;
-    return Objects.equals(this.schema, keyValueStoreInfo.schema) &&
-        Objects.equals(this.kvStoreSchema, keyValueStoreInfo.kvStoreSchema);
+    return Objects.equals(this.kvStoreSchema, keyValueStoreInfo.kvStoreSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, kvStoreSchema);
+    return Objects.hash(kvStoreSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreInfo {\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    kvStoreSchema: ").append(toIndentedString(kvStoreSchema)).append("\n");
     sb.append("}");
     return sb.toString();

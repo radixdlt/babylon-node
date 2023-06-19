@@ -1,11 +1,8 @@
 use crate::core_api::*;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
-use radix_engine::{
-    system::node_modules::type_info::TypeInfoSubstate, track::db_key_mapper::DatabaseKeyMapper,
-    track::db_key_mapper::SpreadPrefixKeyMapper,
-};
-use radix_engine_interface::api::component::*;
 use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
 use std::ops::Deref;
 
@@ -37,7 +34,7 @@ pub(crate) async fn handle_state_component(
     )
     .ok_or_else(|| not_found_error("Component not found".to_string()))?;
 
-    let component_state: ComponentStateSubstate = read_mandatory_main_field_substate(
+    let scrypto_value: ScryptoValue = read_mandatory_main_field_substate(
         database.deref(),
         component_address.as_node_id(),
         &ComponentField::State0.into(),
@@ -74,7 +71,7 @@ pub(crate) async fn handle_state_component(
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         state: Some(to_api_component_state_substate(
             &mapping_context,
-            &component_state,
+            &scrypto_value,
         )?),
         royalty_config: Some(to_api_component_royalty_config_substate(
             &mapping_context,

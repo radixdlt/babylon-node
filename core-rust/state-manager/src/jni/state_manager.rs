@@ -82,7 +82,7 @@ use tokio::runtime::Runtime;
 use crate::mempool_manager::MempoolManager;
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::transaction::{
-    CachedCommitabilityValidator, CommitabilityValidator, ExecutionConfigurator,
+    CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
     TransactionPreviewer,
 };
 use crate::PendingTransactionResultCache;
@@ -143,7 +143,7 @@ pub struct JNIStateManager {
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<SimpleMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
-    pub commitability_validator: Arc<CommitabilityValidator<StateManagerDatabase>>,
+    pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
     pub metric_registry: Registry,
 }
@@ -181,14 +181,14 @@ impl JNIStateManager {
         let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));
-        let commitability_validator = Arc::new(CommitabilityValidator::new(
+        let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
             execution_configurator.clone(),
         ));
-        let cached_commitability_validator = CachedCommitabilityValidator::new(
+        let cached_committability_validator = CachedCommittabilityValidator::new(
             database.clone(),
-            commitability_validator.clone(),
+            committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
@@ -198,7 +198,7 @@ impl JNIStateManager {
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),
             mempool_relay_dispatcher,
-            cached_commitability_validator,
+            cached_committability_validator,
             &metric_registry,
         ));
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
@@ -226,7 +226,7 @@ impl JNIStateManager {
             pending_transaction_result_cache,
             mempool,
             mempool_manager,
-            commitability_validator,
+            committability_validator,
             transaction_previewer,
             metric_registry,
         };

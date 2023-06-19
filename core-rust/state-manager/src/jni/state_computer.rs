@@ -82,7 +82,7 @@ use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
 use radix_engine::system::bootstrap::GenesisDataChunk;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
 //
 // JNI Interface
