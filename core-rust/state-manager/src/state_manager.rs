@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::limits::VertexLimitsTracker;
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
@@ -70,10 +71,10 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::*;
-
 use ::transaction::errors::TransactionValidationError;
 use ::transaction::model::{IntentHash, NotarizedTransactionHash};
 use ::transaction::prelude::*;
+use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::RejectResult;
@@ -115,6 +116,7 @@ pub struct StateManager<S> {
     execution_cache: Mutex<ExecutionCache>,
     ledger_transaction_validator: LedgerTransactionValidator,
     ledger_metrics: LedgerMetrics,
+    vertex_limits_config: VertexLimitsConfig,
     logging_config: StateManagerLoggingConfig,
 }
 
@@ -138,6 +140,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             execution_cache: parking_lot::const_mutex(ExecutionCache::new(transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
+            vertex_limits_config: VertexLimitsConfig::default(),
             ledger_metrics: LedgerMetrics::new(metric_registry),
         }
     }
@@ -287,6 +290,7 @@ where
         //========================================================================================
 
         let mut committable_transactions = Vec::new();
+        let mut vertex_limits_tracker = VertexLimitsTracker::new();
 
         // TODO: Unify this with the proposed payloads execution
         let round_update = RoundUpdateTransactionV1::new(
@@ -299,16 +303,41 @@ where
             .validate_user_or_round_update_from_model(&ledger_round_update)
             .expect("expected to be able to prepare the round update transaction");
 
-        series_executor
+        let raw_ledger_round_update = ledger_round_update
+            .to_raw()
+            .expect("Expected round update to be encodable");
+
+        let transaction_size = raw_ledger_round_update.as_slice().len();
+        vertex_limits_tracker
+            .check_pre_execution(&self.vertex_limits_config, transaction_size)
+            .expect("round update transaction should fit inside of empty vertex");
+
+        let round_update_result = series_executor
             .execute(ConfigType::Regular, &validated_round_update, "round update")
-            .expect("round update rejected")
-            .expect_success("round update");
+            .expect("round update rejected");
+
+        vertex_limits_tracker
+            .check_post_execution(
+                &self.vertex_limits_config,
+                &round_update_result
+                    .local_receipt
+                    .local_execution
+                    .execution_metrics,
+            )
+            .expect("round update transaction should not trigger vertex limits");
+        vertex_limits_tracker.advance(
+            transaction_size,
+            &round_update_result
+                .local_receipt
+                .local_execution
+                .execution_metrics,
+        );
+
+        round_update_result.expect_success("round update");
 
         committable_transactions.push(CommittableTransaction {
             index: None,
-            raw: ledger_round_update
-                .to_raw()
-                .expect("Expected round update to be encodable"),
+            raw: raw_ledger_round_update,
             intent_hash: None,
             notarized_transaction_hash: None,
             ledger_transaction_hash: validated_round_update.ledger_transaction_hash(),
@@ -331,6 +360,22 @@ where
             // Don't process any additional transactions if next epoch has occurred
             if series_executor.next_epoch().is_some() {
                 break;
+            }
+
+            // Don't process any additional transactions if the vertex has been filled
+            // (most probable by transaction count).
+            if vertex_limits_tracker.is_full(&self.vertex_limits_config) {
+                break;
+            }
+
+            let transaction_size = raw_user_transaction.as_slice().len();
+
+            // Skip validating and executing this transaction if it doesn't fit it in the vertex.
+            if vertex_limits_tracker
+                .check_pre_execution(&self.vertex_limits_config, transaction_size)
+                .is_err()
+            {
+                continue;
             }
 
             let prepare_results = LedgerTransaction::from_raw_user(&raw_user_transaction)
@@ -426,21 +471,49 @@ where
             let execute_result =
                 series_executor.execute(ConfigType::Regular, &validated, "newly proposed");
             match execute_result {
-                Ok(_) => {
-                    duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
-                    committable_transactions.push(CommittableTransaction {
-                        index: Some(index as u32),
-                        raw: raw_ledger_transaction,
-                        intent_hash: Some(intent_hash),
-                        notarized_transaction_hash: Some(notarized_transaction_hash),
-                        ledger_transaction_hash,
-                    });
-                    pending_transaction_results.push(PendingTransactionResult {
-                        intent_hash,
-                        notarized_transaction_hash,
-                        invalid_at_epoch,
-                        rejection_reason: None,
-                    });
+                Ok(processed_commit_result) => {
+                    match vertex_limits_tracker.check_post_execution(
+                        &self.vertex_limits_config,
+                        &processed_commit_result
+                            .local_receipt
+                            .local_execution
+                            .execution_metrics,
+                    ) {
+                        Ok(_) => {
+                            vertex_limits_tracker.advance(
+                                transaction_size,
+                                &processed_commit_result
+                                    .local_receipt
+                                    .local_execution
+                                    .execution_metrics,
+                            );
+                            duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
+                            committable_transactions.push(CommittableTransaction {
+                                index: Some(index as u32),
+                                raw: raw_ledger_transaction,
+                                intent_hash: Some(intent_hash),
+                                notarized_transaction_hash: Some(notarized_transaction_hash),
+                                ledger_transaction_hash,
+                            });
+                            pending_transaction_results.push(PendingTransactionResult {
+                                intent_hash,
+                                notarized_transaction_hash,
+                                invalid_at_epoch,
+                                rejection_reason: None,
+                            });
+                        }
+                        Err(error) => {
+                            rejected_transactions.push(RejectedTransaction {
+                                index: index as u32,
+                                intent_hash: Some(intent_hash),
+                                notarized_transaction_hash: Some(notarized_transaction_hash),
+                                ledger_transaction_hash: Some(ledger_transaction_hash),
+                                error: format!("{:?}", &error),
+                            });
+                            // Note: we are not adding this transaction to [`pending_transaction_results`] because
+                            // we don't want to remove it from mempool yet.
+                        }
+                    }
                 }
                 Err(RejectResult { error }) => {
                     rejected_transactions.push(RejectedTransaction {

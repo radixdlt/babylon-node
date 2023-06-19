@@ -5,7 +5,8 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
+    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionExecutionTrace,
+    TransactionOutcome,
 };
 use radix_engine::types::*;
 
@@ -136,6 +137,7 @@ pub struct LedgerTransactionReceipt {
 /// It is not verifiable against ledger, but may still be useful for debugging.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
+    pub execution_metrics: ExecutionMetrics,
     pub outcome: DetailedTransactionOutcome,
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
@@ -175,14 +177,20 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
-    for LocalTransactionReceipt
+impl
+    From<(
+        CommitResult,
+        Vec<SubstateChange>,
+        TransactionExecutionTrace,
+        ExecutionMetrics,
+    )> for LocalTransactionReceipt
 {
     fn from(
-        (commit_result, substate_changes, execution_trace): (
+        (commit_result, substate_changes, execution_trace, execution_metrics): (
             CommitResult,
             Vec<SubstateChange>,
             TransactionExecutionTrace,
+            ExecutionMetrics,
         ),
     ) -> Self {
         let next_epoch = commit_result.next_epoch();
@@ -197,6 +205,7 @@ impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
+                execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
                 fee_payments: commit_result.fee_payments,

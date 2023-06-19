@@ -74,8 +74,8 @@ use crate::{
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
-    TransactionResult,
+    AbortResult, CommitResult, ExecutionMetrics, RejectResult, TransactionExecutionTrace,
+    TransactionReceipt, TransactionResult,
 };
 use radix_engine_interface::prelude::*;
 
@@ -120,6 +120,7 @@ impl ProcessedTransactionReceipt {
                     hash_update_context,
                     commit,
                     transaction_receipt.execution_trace,
+                    transaction_receipt.execution_metrics,
                 ))
             }
             TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
@@ -166,6 +167,7 @@ impl ProcessedCommitResult {
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_trace: TransactionExecutionTrace,
+        execution_metrics: ExecutionMetrics,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -190,8 +192,13 @@ impl ProcessedCommitResult {
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
-        let local_receipt =
-            LocalTransactionReceipt::from((commit_result, substate_changes, execution_trace));
+        let local_receipt = LocalTransactionReceipt::from((
+            commit_result,
+            substate_changes,
+            execution_trace,
+            execution_metrics,
+        ));
+
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
