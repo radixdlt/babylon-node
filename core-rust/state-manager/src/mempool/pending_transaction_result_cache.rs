@@ -2,7 +2,6 @@ use radix_engine_common::types::Epoch;
 use transaction::{errors::TransactionValidationError, model::*};
 
 use crate::{
-    limits::VertexLimitsExceeded,
     transaction::{CheckMetadata, StaticValidation},
     MempoolAddRejection, StateVersion,
 };
@@ -22,7 +21,6 @@ pub enum RejectionReason {
     FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
     IntentHashCommitted,
-    VertexLimit(VertexLimitsExceeded),
 }
 
 impl From<TransactionValidationError> for RejectionReason {
@@ -76,11 +74,6 @@ impl RejectionReason {
                 RejectionError::TransactionEpochNoLongerValid { .. } => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
-            },
-            RejectionReason::VertexLimit(_) => RejectionPermanence::Temporary {
-                retry: RetrySettings::AfterDelay {
-                    base_delay: Duration::from_secs(0),
-                },
             },
             RejectionReason::ValidationError(validation_error) => match validation_error {
                 // The size is a property of the payload, not the intent
@@ -158,9 +151,6 @@ impl fmt::Display for RejectionReason {
                 write!(f, "Validation Error: {validation_error:?}")
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
-            RejectionReason::VertexLimit(vertex_limits_exceeded) => {
-                write!(f, "Vertex Limit: {vertex_limits_exceeded:?}")
-            }
         }
     }
 }

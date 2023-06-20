@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::limits::VertexLimitsTracker;
+use crate::limits::{VertexLimitsAdvanceSuccess, VertexLimitsTracker};
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
@@ -290,7 +290,7 @@ where
         //========================================================================================
 
         let mut committable_transactions = Vec::new();
-        let mut vertex_limits_tracker = VertexLimitsTracker::new();
+        let mut vertex_limits_tracker = VertexLimitsTracker::new(&self.vertex_limits_config);
 
         // TODO: Unify this with the proposed payloads execution
         let round_update = RoundUpdateTransactionV1::new(
@@ -309,7 +309,7 @@ where
 
         let transaction_size = raw_ledger_round_update.as_slice().len();
         vertex_limits_tracker
-            .check_pre_execution(&self.vertex_limits_config, transaction_size)
+            .check_pre_execution(transaction_size)
             .expect("round update transaction should fit inside of empty vertex");
 
         let round_update_result = series_executor
@@ -317,21 +317,14 @@ where
             .expect("round update rejected");
 
         vertex_limits_tracker
-            .check_post_execution(
-                &self.vertex_limits_config,
+            .try_advance(
+                transaction_size,
                 &round_update_result
                     .local_receipt
                     .local_execution
                     .execution_metrics,
             )
             .expect("round update transaction should not trigger vertex limits");
-        vertex_limits_tracker.advance(
-            transaction_size,
-            &round_update_result
-                .local_receipt
-                .local_execution
-                .execution_metrics,
-        );
 
         round_update_result.expect_success("round update");
 
@@ -362,17 +355,11 @@ where
                 break;
             }
 
-            // Don't process any additional transactions if the vertex has been filled
-            // (most probable by transaction count).
-            if vertex_limits_tracker.is_full(&self.vertex_limits_config) {
-                break;
-            }
-
             let transaction_size = raw_user_transaction.as_slice().len();
 
             // Skip validating and executing this transaction if it doesn't fit it in the vertex.
             if vertex_limits_tracker
-                .check_pre_execution(&self.vertex_limits_config, transaction_size)
+                .check_pre_execution(transaction_size)
                 .is_err()
             {
                 continue;
@@ -471,21 +458,14 @@ where
             let execute_result = series_executor.execute(&validated, "newly proposed");
             match execute_result {
                 Ok(processed_commit_result) => {
-                    match vertex_limits_tracker.check_post_execution(
-                        &self.vertex_limits_config,
+                    match vertex_limits_tracker.try_advance(
+                        transaction_size,
                         &processed_commit_result
                             .local_receipt
                             .local_execution
                             .execution_metrics,
                     ) {
-                        Ok(_) => {
-                            vertex_limits_tracker.advance(
-                                transaction_size,
-                                &processed_commit_result
-                                    .local_receipt
-                                    .local_execution
-                                    .execution_metrics,
-                            );
+                        Ok(success) => {
                             duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
@@ -500,6 +480,10 @@ where
                                 invalid_at_epoch,
                                 rejection_reason: None,
                             });
+                            match success {
+                                VertexLimitsAdvanceSuccess::VertexFilled => break,
+                                VertexLimitsAdvanceSuccess::VertexNotFilled => {}
+                            }
                         }
                         Err(error) => {
                             rejected_transactions.push(RejectedTransaction {

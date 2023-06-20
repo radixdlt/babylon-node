@@ -67,8 +67,8 @@ use radix_engine_constants::{
 };
 
 // TODO: revisit & tune before Babylon
-const DEFAULT_MAX_TOTAL_TRANSACTIONS_COUNT: usize = 10;
-const DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
+const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: usize = 10;
+const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
 const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: usize = 200_000_000;
 const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
 const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
@@ -90,8 +90,8 @@ pub struct VertexLimitsConfig {
 impl VertexLimitsConfig {
     pub fn standard() -> Self {
         Self {
-            max_total_transactions_count: DEFAULT_MAX_TOTAL_TRANSACTIONS_COUNT,
-            max_total_transactions_size: DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE,
+            max_total_transactions_count: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT,
+            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
             max_total_execution_cost_units_consumed:
                 DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
             max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,

@@ -137,8 +137,8 @@ pub struct LedgerTransactionReceipt {
 /// It is not verifiable against ledger, but may still be useful for debugging.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
-    pub execution_metrics: ExecutionMetrics,
     pub outcome: DetailedTransactionOutcome,
+    pub execution_metrics: ExecutionMetrics,
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
     // Which vault/s paid the fee

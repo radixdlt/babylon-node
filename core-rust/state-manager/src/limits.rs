@@ -76,104 +76,102 @@ pub enum VertexLimitsExceeded {
     SubstateWriteCount,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VertexLimitsAdvanceSuccess {
+    VertexFilled,
+    VertexNotFilled,
+}
+
 pub struct VertexLimitsTracker {
-    pub total_transactions_count: usize,
-    pub total_transactions_size: usize,
-    pub total_execution_cost_units_consumed: usize,
-    pub total_substate_read_size: usize,
-    pub total_substate_read_count: usize,
-    pub total_substate_write_size: usize,
-    pub total_substate_write_count: usize,
+    pub remaining_transactions_count: usize,
+    pub remaining_transactions_size: usize,
+    pub remaining_execution_cost_units_consumed: usize,
+    pub remaining_substate_read_size: usize,
+    pub remaining_substate_read_count: usize,
+    pub remaining_substate_write_size: usize,
+    pub remaining_substate_write_count: usize,
 }
 
 impl VertexLimitsTracker {
-    pub fn new() -> Self {
+    pub fn new(config: &VertexLimitsConfig) -> Self {
         Self {
-            total_transactions_count: 0,
-            total_transactions_size: 0,
-            total_execution_cost_units_consumed: 0,
-            total_substate_read_size: 0,
-            total_substate_read_count: 0,
-            total_substate_write_size: 0,
-            total_substate_write_count: 0,
+            remaining_transactions_count: config.max_total_transactions_count,
+            remaining_transactions_size: config.max_total_transactions_size,
+            remaining_execution_cost_units_consumed: config.max_total_execution_cost_units_consumed,
+            remaining_substate_read_size: config.max_total_substate_read_size,
+            remaining_substate_read_count: config.max_total_substate_read_count,
+            remaining_substate_write_size: config.max_total_substate_write_size,
+            remaining_substate_write_count: config.max_total_substate_write_count,
         }
     }
 
-    pub fn check_pre_execution(
-        &self,
-        limits_config: &VertexLimitsConfig,
-        transaction_size: usize,
-    ) -> Result<(), VertexLimitsExceeded> {
-        if self.total_transactions_count + 1 > limits_config.max_total_transactions_count {
+    pub fn check_pre_execution(&self, transaction_size: usize) -> Result<(), VertexLimitsExceeded> {
+        if self.remaining_transactions_count < 1 {
             return Err(VertexLimitsExceeded::TransactionsCount);
         }
 
-        if self.total_substate_read_size + transaction_size
-            > limits_config.max_total_transactions_size
-        {
+        if self.remaining_substate_read_size < transaction_size {
             return Err(VertexLimitsExceeded::TransactionsSize);
         }
 
         Ok(())
     }
 
-    pub fn check_post_execution(
+    fn check_post_execution(
         &self,
-        limits_config: &VertexLimitsConfig,
         execution_metrics: &ExecutionMetrics,
     ) -> Result<(), VertexLimitsExceeded> {
-        if self.total_execution_cost_units_consumed
-            + execution_metrics.execution_cost_units_consumed
-            > limits_config.max_total_execution_cost_units_consumed
+        if self.remaining_execution_cost_units_consumed
+            < execution_metrics.execution_cost_units_consumed
         {
             return Err(VertexLimitsExceeded::ExecutionCostUnitsConsumed);
         }
 
-        if self.total_substate_read_size + execution_metrics.substate_read_size
-            > limits_config.max_total_substate_read_size
-        {
+        if self.remaining_substate_read_size < execution_metrics.substate_read_size {
             return Err(VertexLimitsExceeded::SubstateReadSize);
         }
 
-        if self.total_substate_read_count + execution_metrics.substate_read_count
-            > limits_config.max_total_substate_read_count
-        {
+        if self.remaining_substate_read_count < execution_metrics.substate_read_count {
             return Err(VertexLimitsExceeded::SubstateReadCount);
         }
 
-        if self.total_substate_write_size + execution_metrics.substate_write_size
-            > limits_config.max_total_substate_write_size
-        {
+        if self.remaining_substate_write_size < execution_metrics.substate_write_size {
             return Err(VertexLimitsExceeded::SubstateWriteSize);
         }
 
-        if self.total_substate_write_count + execution_metrics.substate_write_count
-            > limits_config.max_total_substate_write_count
-        {
+        if self.remaining_substate_write_count < execution_metrics.substate_write_count {
             return Err(VertexLimitsExceeded::SubstateWriteCount);
         }
 
         Ok(())
     }
 
-    pub fn advance(&mut self, transaction_size: usize, execution_metrics: &ExecutionMetrics) {
-        self.total_transactions_count += 1;
-        self.total_transactions_size += transaction_size;
-        self.total_execution_cost_units_consumed += execution_metrics.execution_cost_units_consumed;
-        self.total_substate_read_count += execution_metrics.substate_read_count;
-        self.total_substate_read_size += execution_metrics.substate_read_size;
-        self.total_substate_write_count += execution_metrics.substate_write_count;
-        self.total_substate_write_size += execution_metrics.substate_write_size;
-    }
+    pub fn try_advance(
+        &mut self,
+        transaction_size: usize,
+        execution_metrics: &ExecutionMetrics,
+    ) -> Result<VertexLimitsAdvanceSuccess, VertexLimitsExceeded> {
+        self.check_post_execution(execution_metrics)?;
 
-    pub fn is_full(&self, limits_config: &VertexLimitsConfig) -> bool {
-        self.total_transactions_count >= limits_config.max_total_transactions_count
-            || self.total_transactions_size >= limits_config.max_total_substate_read_size
-            || self.total_execution_cost_units_consumed
-                >= limits_config.max_total_execution_cost_units_consumed
-            || self.total_substate_read_count >= limits_config.max_total_substate_read_count
-            || self.total_substate_read_size >= limits_config.max_total_substate_read_size
-            || self.total_substate_write_count >= limits_config.max_total_substate_write_count
-            || self.total_substate_write_size >= limits_config.max_total_substate_write_size
+        self.remaining_transactions_count -= 1;
+        self.remaining_transactions_size -= transaction_size;
+        self.remaining_execution_cost_units_consumed -=
+            execution_metrics.execution_cost_units_consumed;
+        self.remaining_substate_read_count -= execution_metrics.substate_read_count;
+        self.remaining_substate_read_size -= execution_metrics.substate_read_size;
+        self.remaining_substate_write_count -= execution_metrics.substate_write_count;
+        self.remaining_substate_write_size -= execution_metrics.substate_write_size;
+
+        if self.remaining_transactions_count == 0
+            || self.remaining_transactions_size == 0
+            || self.remaining_execution_cost_units_consumed == 0
+            || self.remaining_substate_read_count == 0
+            || self.remaining_substate_read_size == 0
+            || self.remaining_substate_write_count == 0
+            || self.remaining_substate_write_size == 0
+        {
+            return Ok(VertexLimitsAdvanceSuccess::VertexFilled);
+        }
+        Ok(VertexLimitsAdvanceSuccess::VertexNotFilled)
     }
 }
