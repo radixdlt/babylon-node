@@ -101,7 +101,7 @@ pub enum DatabaseBackendConfig {
     AccountChangeIndexExtension,
     QueryableTransactionStore,
     CommitStore,
-    SubstateNodeMetadataStore,
+    SubstateNodeAncestryStore,
     IterableAccountChangeIndex,
     IterableTransactionStore
 )]

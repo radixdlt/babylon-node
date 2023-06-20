@@ -67,30 +67,30 @@ use crate::{ChangeAction, SubstateChange};
 
 use radix_engine::types::*;
 
-/// A resolver of [`SubstateNodeMetadata`] for [`SubstateChange`]s.
-pub struct NodeMetadataResolver {
+/// A resolver of [`SubstateNodeAncestryRecord`]s for [`SubstateChange`]s.
+pub struct NodeAncestryResolver {
     /// A map of created Nodes to their parent Substates, extracted from the [`SubstateChange`]s.
-    changed_parent_by_node: NonIterMap<NodeId, SubstateReference>,
-    /// A map of existing Nodes to their root Nodes (i.e. `SubstateNodeMetadata#root`), loaded from
-    /// a [`SubstateNodeMetadataStore`] for each Node that does not have a parent in the
-    /// [`changed_parent_by_node`] map.
-    existing_root_by_node: NonIterMap<NodeId, SubstateReference>,
+    created_node_to_parent: NonIterMap<NodeId, SubstateReference>,
+    /// A map of existing Nodes to their root Nodes (i.e. `SubstateNodeAncestryRecord#root`), loaded
+    /// from a [`SubstateNodeAncestryStore`] for each Node that does not have a parent in the
+    /// [`created_node_to_parent`] map.
+    top_created_node_to_existing_root: NonIterMap<NodeId, SubstateReference>,
 }
 
-impl NodeMetadataResolver {
-    /// Resolves the [`SubstateNodeMetadata`] for all newly-created Nodes found in the [`Create`]d
-    /// and [`Update`]d substates. (within the given [`SubstateChange`]s).
+impl NodeAncestryResolver {
+    /// Resolves the [`SubstateNodeAncestryRecord`] for all newly-created Nodes found in the given
+    /// [`SubstateChange`]s.
     /// The resolution considers the trees (or rather: potentially-incomplete bottom-up tree
     /// fragments) constructed within the given [`SubstateChange`]s, and the top fragments of these
-    /// trees already-existing in the given [`SubstateNodeMetadataStore`].
-    /// API note: the results are grouped by [`SubstateNodeMetadata`] (since it may be shared by
-    /// many [`NodeId`]s).
-    pub fn batch_resolve<S: SubstateNodeMetadataStore>(
-        metadata_store: &S,
+    /// trees already-existing in the given [`SubstateNodeAncestryStore`].
+    /// API note: the results are grouped by [`SubstateNodeAncestryRecord`] (since it may be shared
+    /// by many child [`NodeId`]s).
+    pub fn batch_resolve<S: SubstateNodeAncestryStore>(
+        ancestry_store: &S,
         substate_changes: &[SubstateChange],
-    ) -> impl Iterator<Item = (Vec<NodeId>, SubstateNodeMetadata)> {
+    ) -> impl Iterator<Item = (Vec<NodeId>, SubstateNodeAncestryRecord)> {
         // Index the new Nodes by their parent Substates (using `IndexedScryptoValue`):
-        let changed_nodes_by_parent = substate_changes
+        let parent_to_created_nodes = substate_changes
             .iter()
             .filter_map(|substate_change| match &substate_change.action {
                 ChangeAction::Create(bytes) | ChangeAction::Update(bytes) => {
@@ -110,60 +110,62 @@ impl NodeMetadataResolver {
             .collect::<IndexMap<_, _>>();
 
         // Invert the multimap (to obtain a Node -> parent Substate map):
-        let changed_parent_by_node = changed_nodes_by_parent
+        let created_node_to_parent = parent_to_created_nodes
             .iter()
             .flat_map(|(parent, children)| children.iter().map(|child| (*child, parent.clone())))
             .collect::<NonIterMap<_, _>>();
 
         // Find the parents which do _not_ know their parent within the `SubstateChange`s:
-        let top_level_parent_node_ids = changed_nodes_by_parent
+        let top_level_parent_node_ids = parent_to_created_nodes
             .keys()
-            .filter(|parent| !changed_parent_by_node.contains_key(&parent.0))
+            .filter(|parent| !created_node_to_parent.contains_key(&parent.0))
             .map(|parent| parent.0)
             .collect::<Vec<_>>();
 
-        // Load the missing metadata of these parents from the `SubstateNodeMetadataStore`:
-        let existing_metadatas = metadata_store.batch_get_metadata(&top_level_parent_node_ids);
+        // Load the missing records of these parents from the `SubstateNodeAncestryStore`:
+        let existing_records = ancestry_store.batch_get_ancestry(&top_level_parent_node_ids);
 
-        // Construct a Node -> root map needed for the `NodeMetadataResolver` helper structure:
-        let existing_root_by_node = top_level_parent_node_ids
+        // Construct a Node -> root map needed for the `NodeAncestryResolver` helper structure:
+        let top_created_node_to_existing_root = top_level_parent_node_ids
             .into_iter()
-            .zip(existing_metadatas)
-            .filter_map(|(parent, existing_metadata)| {
-                existing_metadata.map(|metadata| (parent, metadata.root))
+            .zip(existing_records)
+            .filter_map(|(parent, existing_record)| {
+                existing_record.map(|record| (parent, record.root))
             })
             .collect::<NonIterMap<_, _>>();
 
         let resolver = Self {
-            changed_parent_by_node,
-            existing_root_by_node,
+            created_node_to_parent,
+            top_created_node_to_existing_root,
         };
 
-        // Simply query the fully-preloaded `NodeMetadataResolver` for each Node:
-        changed_nodes_by_parent
+        // Simply query the fully-preloaded `NodeAncestryResolver` for each Node:
+        parent_to_created_nodes
             .into_iter()
             .map(move |(parent, child_node_ids)| {
                 let root = resolver.resolve_root(&parent);
-                (child_node_ids, SubstateNodeMetadata { parent, root })
+                (child_node_ids, SubstateNodeAncestryRecord { parent, root })
             })
     }
 
     /// Resolves the root Substate of the given one by traversing the internal maps:
     /// - the given Substate is assumed to originate from the [`SubstateChange`]s, so we first
-    ///   follow the parent links through the [`changed_parent_by_node`];
-    /// - after this walk ends, we check the [`existing_root_by_node`], which may contain a hit
+    ///   follow the parent links through the [`created_node_to_parent`];
+    /// - after this walk ends, we check the [`top_created_node_to_existing_root`], which may contain a hit
     ///   (i.e. when [`SubstateChange`] did _not_ create the entire tree, including root).
+    /// - if there is no hit after the above, then it means that the given Substate is a root, and
+    ///   it will be returned itself.
     pub fn resolve_root(&self, substate: &SubstateReference) -> SubstateReference {
         let mut at_substate = substate;
         loop {
-            let parent = self.changed_parent_by_node.get(&at_substate.0);
+            let parent = self.created_node_to_parent.get(&at_substate.0);
             if let Some(parent) = parent {
                 at_substate = parent;
             } else {
                 break;
             }
         }
-        self.existing_root_by_node
+        self.top_created_node_to_existing_root
             .get(&at_substate.0)
             .unwrap_or(at_substate)
             .clone()
@@ -180,9 +182,9 @@ mod tests {
         // Arrange
         let existing_index_entries = hashmap!(
             // a classic entry, specifying some immediate parent and the root high up:
-            node_id(3) => metadata(substate(2, 17, 29), substate(1, 19, 21)),
+            node_id(3) => record(substate(2, 17, 29), substate(1, 19, 21)),
             // an entry of the "immediate parent" mentioned above (its parent == root):
-            node_id(2) => metadata(substate(1, 11, 25), substate(1, 11, 25)),
+            node_id(2) => record(substate(1, 11, 25), substate(1, 11, 25)),
             // and NO entry for node_id(1), since it is a root
         );
         let substate_changes = [
@@ -204,7 +206,7 @@ mod tests {
 
         // Act
         let new_index_entries =
-            NodeMetadataResolver::batch_resolve(&existing_index_entries, &substate_changes)
+            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
                 .flat_map(|(key_batch, value)| {
                     key_batch.into_iter().map(move |key| (key, value.clone()))
                 })
@@ -214,8 +216,8 @@ mod tests {
         assert_eq!(
             new_index_entries,
             hashmap!(
-                node_id(4) => metadata(substate(3, 12, 23), substate(1, 19, 21)),
-                node_id(5) => metadata(substate(1, 14, 24), substate(1, 14, 24))
+                node_id(4) => record(substate(3, 12, 23), substate(1, 19, 21)),
+                node_id(5) => record(substate(1, 14, 24), substate(1, 14, 24))
             )
         );
     }
@@ -224,7 +226,7 @@ mod tests {
     pub fn newly_created_child_nodes_are_recorded_under_their_newly_created_parents() {
         // Arrange
         let existing_index_entries = hashmap!(
-            node_id(2) => metadata(substate(1, 11, 25), substate(1, 11, 25)),
+            node_id(2) => record(substate(1, 11, 25), substate(1, 11, 25)),
         );
         let substate_changes = [
             // some new grand-grand-child Node ID = 7 (under the new Node ID = 6 seen *below*):
@@ -245,7 +247,7 @@ mod tests {
 
         // Act
         let new_index_entries =
-            NodeMetadataResolver::batch_resolve(&existing_index_entries, &substate_changes)
+            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
                 .flat_map(|(key_batch, value)| {
                     key_batch.into_iter().map(move |key| (key, value.clone()))
                 })
@@ -255,8 +257,8 @@ mod tests {
         assert_eq!(
             new_index_entries,
             hashmap!(
-                node_id(7) => metadata(substate(6, 10, 29), substate(1, 11, 25)),
-                node_id(6) => metadata(substate(2, 14, 24), substate(1, 11, 25))
+                node_id(7) => record(substate(6, 10, 29), substate(1, 11, 25)),
+                node_id(6) => record(substate(2, 14, 24), substate(1, 11, 25))
             )
         );
     }
@@ -266,7 +268,7 @@ mod tests {
         // Arrange
         let existing_index_entries = hashmap!(
             // some unrelated existing entry:
-            node_id(2) => metadata(substate(1, 11, 25), substate(1, 11, 25)),
+            node_id(2) => record(substate(1, 11, 25), substate(1, 11, 25)),
         );
         let substate_changes = [
             // some new root Node ID = 6 (which does not own any other Node):
@@ -275,7 +277,7 @@ mod tests {
 
         // Act
         let new_index_entries =
-            NodeMetadataResolver::batch_resolve(&existing_index_entries, &substate_changes)
+            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
                 .collect::<Vec<_>>();
 
         // Assert
@@ -294,8 +296,8 @@ mod tests {
         )
     }
 
-    fn metadata(parent: SubstateReference, root: SubstateReference) -> SubstateNodeMetadata {
-        SubstateNodeMetadata { parent, root }
+    fn record(parent: SubstateReference, root: SubstateReference) -> SubstateNodeAncestryRecord {
+        SubstateNodeAncestryRecord { parent, root }
     }
 
     fn change(substate: SubstateReference, new_value: impl ScryptoEncode) -> SubstateChange {
@@ -307,8 +309,8 @@ mod tests {
         }
     }
 
-    impl SubstateNodeMetadataStore for HashMap<NodeId, SubstateNodeMetadata> {
-        fn get_metadata(&self, node_id: &NodeId) -> Option<SubstateNodeMetadata> {
+    impl SubstateNodeAncestryStore for HashMap<NodeId, SubstateNodeAncestryRecord> {
+        fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
             self.get(node_id).cloned()
         }
     }

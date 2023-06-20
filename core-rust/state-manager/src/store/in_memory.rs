@@ -75,7 +75,7 @@ use crate::{
 };
 
 use crate::query::TransactionIdentifierLoader;
-use crate::store::parent_map::NodeMetadataResolver;
+use crate::store::node_ancestry_resolver::NodeAncestryResolver;
 use core::ops::Bound::{Included, Unbounded};
 use node_common::utils::IsAccountExt;
 use radix_engine_common::types::{Epoch, GlobalAddress, NodeId};
@@ -102,7 +102,7 @@ pub struct InMemoryStore {
     epoch_proofs: BTreeMap<Epoch, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: InMemorySubstateDatabase,
-    node_metadatas: BTreeMap<NodeId, SubstateNodeMetadata>,
+    node_ancestry_records: BTreeMap<NodeId, SubstateNodeAncestryRecord>,
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
@@ -125,7 +125,7 @@ impl InMemoryStore {
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
             substate_store: InMemorySubstateDatabase::standard(),
-            node_metadatas: BTreeMap::new(),
+            node_ancestry_records: BTreeMap::new(),
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
@@ -166,11 +166,11 @@ impl InMemoryStore {
         self.ledger_payload_hash_lookup
             .insert(identifiers.payload.ledger_payload_hash, state_version);
 
-        for (node_ids, metadata) in
-            NodeMetadataResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
+        for (node_ids, record) in
+            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
         {
             for node_id in node_ids {
-                self.node_metadatas.insert(node_id, metadata.clone());
+                self.node_ancestry_records.insert(node_id, record.clone());
             }
         }
 
@@ -264,9 +264,9 @@ impl SubstateDatabase for InMemoryStore {
     }
 }
 
-impl SubstateNodeMetadataStore for InMemoryStore {
-    fn get_metadata(&self, node_id: &NodeId) -> Option<SubstateNodeMetadata> {
-        self.node_metadatas.get(node_id).cloned()
+impl SubstateNodeAncestryStore for InMemoryStore {
+    fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
+        self.node_ancestry_records.get(node_id).cloned()
     }
 }
 

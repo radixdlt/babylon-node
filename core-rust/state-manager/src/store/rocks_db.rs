@@ -114,10 +114,11 @@ enum RocksDBColumnFamily {
     LedgerProofByEpoch,
     /// Radix Engine state
     Substates,
-    /// Metadata on the [`Substates`] (which is useful and can be computed, but is not provided by
-    /// the Engine itself).
-    /// Schema: `NodeId.0` -> `scrypto_encode(SubstateNodeMetadata)`
-    SubstateNodeMetadatas,
+    /// Ancestor information for the [`Substates`]' RE Nodes (which is useful and can be computed,
+    /// but is not provided by the Engine itself).
+    /// Schema: `NodeId.0` -> `scrypto_encode(SubstateNodeAncestryRecord)`
+    /// Note: we do not persist records of root Nodes (which do not have any ancestor).
+    SubstateNodeAncestryRecords,
     /// Vertex store
     VertexStore,
     /// State hash tree: all nodes + keys of nodes that became stale by the given state version
@@ -134,7 +135,7 @@ enum RocksDBColumnFamily {
     AccountChangeStateVersions,
 }
 
-use crate::store::parent_map::NodeMetadataResolver;
+use crate::store::node_ancestry_resolver::NodeAncestryResolver;
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
@@ -148,7 +149,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
     LedgerProofByStateVersion,
     LedgerProofByEpoch,
     Substates,
-    SubstateNodeMetadatas,
+    SubstateNodeAncestryRecords,
     VertexStore,
     StateHashTreeNodes,
     StaleStateHashTreeNodeKeysByStateVersion,
@@ -173,7 +174,7 @@ impl fmt::Display for RocksDBColumnFamily {
             LedgerProofByStateVersion => "ledger_proof_by_state_version",
             LedgerProofByEpoch => "ledger_proof_by_epoch",
             Substates => "substates",
-            SubstateNodeMetadatas => "substate_node_metadata",
+            SubstateNodeAncestryRecords => "substate_node_ancestry_records",
             VertexStore => "vertex_store",
             StateHashTreeNodes => "state_hash_tree_nodes",
             StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
@@ -340,15 +341,15 @@ impl RocksDBStore {
             scrypto_encode(&receipt.on_ledger).unwrap(),
         );
 
-        for (node_ids, metadata) in
-            NodeMetadataResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
+        for (node_ids, record) in
+            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
         {
-            let encoded_metadata = scrypto_encode(&metadata).unwrap();
+            let encoded_record = scrypto_encode(&record).unwrap();
             for node_id in node_ids {
                 batch.put_cf(
-                    self.cf_handle(&SubstateNodeMetadatas),
+                    self.cf_handle(&SubstateNodeAncestryRecords),
                     node_id.0,
-                    &encoded_metadata,
+                    &encoded_record,
                 );
             }
         }
@@ -964,19 +965,19 @@ impl SubstateDatabase for RocksDBStore {
     }
 }
 
-impl SubstateNodeMetadataStore for RocksDBStore {
-    fn batch_get_metadata(&self, node_ids: &[NodeId]) -> Vec<Option<SubstateNodeMetadata>> {
+impl SubstateNodeAncestryStore for RocksDBStore {
+    fn batch_get_ancestry(&self, node_ids: &[NodeId]) -> Vec<Option<SubstateNodeAncestryRecord>> {
         self.db
             .multi_get_cf(
                 node_ids
                     .iter()
-                    .map(|node_id| (self.cf_handle(&SubstateNodeMetadatas), node_id.0)),
+                    .map(|node_id| (self.cf_handle(&SubstateNodeAncestryRecords), node_id.0)),
             )
             .into_iter()
             .map(|result| {
                 result
                     .unwrap()
-                    .map(|bytes| scrypto_decode::<SubstateNodeMetadata>(&bytes).unwrap())
+                    .map(|bytes| scrypto_decode::<SubstateNodeAncestryRecord>(&bytes).unwrap())
             })
             .collect()
     }

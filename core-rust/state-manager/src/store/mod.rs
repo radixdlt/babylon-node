@@ -64,7 +64,7 @@
 
 mod db;
 mod in_memory;
-mod parent_map;
+mod node_ancestry_resolver;
 mod rocks_db;
 pub mod traits;
 

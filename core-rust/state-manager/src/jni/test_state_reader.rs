@@ -79,7 +79,7 @@ use radix_engine::blueprints::consensus_manager::ValidatorSubstate;
 
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 
-use crate::store::traits::{QueryableTransactionStore, SubstateNodeMetadataStore};
+use crate::store::traits::{QueryableTransactionStore, SubstateNodeAncestryStore};
 use crate::transaction::LedgerTransactionHash;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 
@@ -280,8 +280,10 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getNodeGlobalRoot(
         |internal_address: InternalAddress| -> Option<GlobalAddress> {
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
-            let node_metadata = read_store.get_metadata(internal_address.as_node_id());
-            node_metadata.map(|node_metadata| GlobalAddress::new_or_panic(node_metadata.root.0 .0))
+            let node_ancestry_record = read_store.get_ancestry(internal_address.as_node_id());
+            node_ancestry_record.map(|node_ancestry_record| {
+                GlobalAddress::new_or_panic(node_ancestry_record.root.0 .0)
+            })
         },
     )
 }
