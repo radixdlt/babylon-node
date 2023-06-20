@@ -77,7 +77,7 @@ use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::RejectResult;
+use radix_engine::transaction::{ExecutionMetrics, RejectResult};
 use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
 use radix_engine_common::dec;
 use radix_engine_common::math::Decimal;
@@ -116,6 +116,7 @@ pub struct StateManager<S> {
     execution_cache: Mutex<ExecutionCache>,
     ledger_transaction_validator: LedgerTransactionValidator,
     ledger_metrics: LedgerMetrics,
+    committed_transactions_metrics: CommittedTransactionsMetrics,
     vertex_limits_config: VertexLimitsConfig,
     logging_config: StateManagerLoggingConfig,
 }
@@ -142,6 +143,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             logging_config: logging_config.state_manager_config,
             vertex_limits_config: VertexLimitsConfig::default(),
             ledger_metrics: LedgerMetrics::new(metric_registry),
+            committed_transactions_metrics: CommittedTransactionsMetrics::new(metric_registry),
         }
     }
 }
@@ -569,6 +571,11 @@ where
     }
 }
 
+struct TransactionMetricsData {
+    size: usize,
+    execution: ExecutionMetrics,
+}
+
 impl<S> StateManager<S>
 where
     S: CommitStore,
@@ -774,6 +781,7 @@ where
         }
 
         let mut committed_transaction_bundles = Vec::new();
+        let mut transactions_metrics_data = Vec::new();
         let mut substate_store_update = SubstateStoreUpdate::new();
         let mut state_tree_update = HashTreeUpdate::new();
         let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
@@ -814,6 +822,14 @@ where
             transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
             receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
 
+            transactions_metrics_data.push(TransactionMetricsData {
+                size: raw.0.len(),
+                execution: commit
+                    .local_receipt
+                    .local_execution
+                    .execution_metrics
+                    .clone(),
+            });
             committed_transaction_bundles.push(CommittedTransactionBundle {
                 state_version: series_executor.latest_state_version(),
                 raw,
@@ -871,6 +887,7 @@ where
             commit_state_version,
             round_counters,
         );
+        self.update_committed_transactions_metrics(transactions_metrics_data);
         Ok(())
     }
 
@@ -954,6 +971,42 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
+    }
+
+    fn update_committed_transactions_metrics(
+        &self,
+        transactions_metrics_data: Vec<TransactionMetricsData>,
+    ) {
+        for transaction_metrics_data in transactions_metrics_data {
+            self.committed_transactions_metrics
+                .size
+                .observe(transaction_metrics_data.size as f64);
+            self.committed_transactions_metrics
+                .execution_cost_units_consumed
+                .observe(
+                    transaction_metrics_data
+                        .execution
+                        .execution_cost_units_consumed as f64,
+                );
+            self.committed_transactions_metrics
+                .substate_read_size
+                .observe(transaction_metrics_data.execution.substate_read_size as f64);
+            self.committed_transactions_metrics
+                .substate_read_count
+                .observe(transaction_metrics_data.execution.substate_read_count as f64);
+            self.committed_transactions_metrics
+                .substate_write_size
+                .observe(transaction_metrics_data.execution.substate_write_size as f64);
+            self.committed_transactions_metrics
+                .substate_write_count
+                .observe(transaction_metrics_data.execution.substate_write_count as f64);
+            self.committed_transactions_metrics
+                .max_wasm_memory_used
+                .observe(transaction_metrics_data.execution.max_wasm_memory_used as f64);
+            self.committed_transactions_metrics
+                .max_invoke_payload_size
+                .observe(transaction_metrics_data.execution.max_invoke_payload_size as f64);
+        }
     }
 
     fn find_transaction_root_in_execution_cache(
