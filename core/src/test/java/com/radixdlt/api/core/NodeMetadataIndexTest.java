@@ -62,35 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.api.core;
 
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.google.common.collect.MoreCollectors;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.StateAccountRequest;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.testutil.TestStateReader;
 import java.util.List;
-import java.util.Objects;
+import org.junit.Test;
 
-/** Extra information about an executed transaction currently needed for testing */
-public record TransactionDetails(
-    List<ComponentAddress> newComponentAddresses, List<ResourceAddress> newResourceAddresses) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        TransactionDetails.class,
-        codecs -> StructCodec.fromRecordComponents(TransactionDetails.class, codecs));
-  }
+public class NodeMetadataIndexTest extends DeterministicCoreApiTestBase {
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    TransactionDetails that = (TransactionDetails) o;
-    return Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
-  }
+  @Test
+  public void createdVaultHasItsAccountAsRootInDatabaseIndex() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+      // Set up an account and a vault
+      var accountAddress = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(newComponentAddresses, newResourceAddresses);
+      // Discover the vault's substate node ID
+      var vaultEntity =
+          this.getStateApi()
+              .stateAccountPost(
+                  new StateAccountRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress)))
+              .getVaults()
+              .stream()
+              .collect(MoreCollectors.onlyElement())
+              .getVaultEntity();
+      var vaultNodeId = addressing.decodeInternalVaultNodeId(vaultEntity.getEntityAddress());
+
+      // Query the global root of the vault's node ID
+      var indexedAccountAddress =
+          test.getInstance(0, TestStateReader.class).getNodeGlobalRoot(vaultNodeId);
+
+      // Assert it is the address of the account created at the beginning
+      assertThat(indexedAccountAddress.toOptional())
+          .contains(GlobalAddress.create(accountAddress.value()));
+    }
   }
 }

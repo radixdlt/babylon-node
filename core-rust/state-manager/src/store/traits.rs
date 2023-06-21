@@ -160,9 +160,65 @@ pub mod vertex {
 }
 
 pub mod substate {
+    use super::*;
+    use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+    use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
+    use std::slice;
+
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
+
+    /// A low-level storage of [`SubstateNodeAncestryRecord`].
+    /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
+    /// batch method. Both provide default implementations (which mutually reduce one problem to the
+    /// other). The implementer must choose to implement at least one of the methods, based on its
+    /// nature (though implementing both rarely makes sense).
+    #[enum_dispatch]
+    pub trait SubstateNodeAncestryStore {
+        /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
+        /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
+        /// - or the `node_id` does not exist yet.
+        fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
+            let records = self.batch_get_ancestry(slice::from_ref(node_id));
+            if records.len() != 1 {
+                panic!(
+                    "trait contract violated: expected a single result for {:?}, got {:?}",
+                    node_id, records
+                )
+            }
+            records.into_iter().next().unwrap()
+        }
+
+        /// A batch counterpart of the [`get_ancestry()`].
+        /// The results are returned in the same order as the input `node_ids`.
+        fn batch_get_ancestry<'a>(
+            &self,
+            node_ids: impl IntoIterator<Item = &'a NodeId>,
+        ) -> Vec<Option<SubstateNodeAncestryRecord>> {
+            node_ids
+                .into_iter()
+                .map(|node_id| self.get_ancestry(node_id))
+                .collect()
+        }
+    }
+
+    /// Ancestry information of a RE Node.
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub struct SubstateNodeAncestryRecord {
+        /// A substate owning the Node (i.e. its immediate parent).
+        /// Note: this will always be present, since we do not need ancestry of root RE Nodes.
+        pub parent: SubstateReference,
+        /// A root ancestor of the Node's tree (i.e. the top of its parent chain).
+        /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
+        pub root: SubstateReference,
+    }
+
+    /// A complete ID of Substate.
+    #[derive(
+        Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    )]
+    pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 }
 
 pub mod transactions {

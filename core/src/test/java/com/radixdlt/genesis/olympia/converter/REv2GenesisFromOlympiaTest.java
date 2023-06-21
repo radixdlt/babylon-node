@@ -80,8 +80,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.utils.Compress;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -122,7 +122,7 @@ public final class REv2GenesisFromOlympiaTest {
             olympiaEndState, OlympiaToBabylonConverterConfig.DEFAULT);
     try (var test = createTest(genesisData)) {
       test.startAllNodes();
-      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var stateReader = test.getInstance(0, TestStateReader.class);
       final var xrdIndex =
           OlympiaResourcesConverter.findXrdResourceIndex(olympiaEndState.resources());
       for (var balance : olympiaEndState.balances()) {

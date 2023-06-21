@@ -62,8 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.testutil;
 
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 

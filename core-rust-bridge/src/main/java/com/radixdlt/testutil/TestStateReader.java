@@ -62,107 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.testutil;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.identifiers.Bech32mCoder;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.*;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.testutil.InternalAddress;
-import com.radixdlt.utils.Pair;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.utils.UInt64;
 
-/** Performs Bech32m encoding/decoding. */
-public final class Addressing {
-  private final Network network;
-  private final NetworkDefinition networkDefinition;
-
-  private Addressing(Network network) {
-    this.network = network;
-    this.networkDefinition = NetworkDefinition.from(network);
+public final class TestStateReader {
+  public TestStateReader(StateManager stateManager) {
+    this.getTransactionAtStateVersionFunc =
+        Natives.builder(stateManager, TestStateReader::getTransactionAtStateVersion)
+            .build(new TypeToken<>() {});
+    this.getTransactionDetailsAtStateVersionFunc =
+        Natives.builder(stateManager, TestStateReader::getTransactionDetailsAtStateVersion)
+            .build(new TypeToken<>() {});
+    this.componentXrdAmountFunc =
+        Natives.builder(stateManager, TestStateReader::componentXrdAmount)
+            .build(new TypeToken<>() {});
+    this.validatorInfoFunc =
+        Natives.builder(stateManager, TestStateReader::validatorInfo).build(new TypeToken<>() {});
+    this.epochFunc =
+        Natives.builder(stateManager, TestStateReader::epoch).build(new TypeToken<>() {});
+    this.getNodeGlobalRootFunc =
+        Natives.builder(stateManager, TestStateReader::getNodeGlobalRoot)
+            .build(new TypeToken<>() {});
   }
 
-  public static Addressing ofNetwork(Network network) {
-    return new Addressing(network);
+  public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
+    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public static Addressing ofNetwork(NetworkDefinition networkDefinition) {
-    return new Addressing(networkDefinition.toNetwork());
+  public Option<TransactionDetails> getTransactionDetailsAtStateVersion(long stateVersion) {
+    return this.getTransactionDetailsAtStateVersionFunc.call(
+        UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public static Addressing ofNetworkId(int networkId) {
-    return ofNetwork(Network.ofIdOrThrow(networkId));
+  public Option<GlobalAddress> getNodeGlobalRoot(InternalAddress nodeId) {
+    return this.getNodeGlobalRootFunc.call(nodeId);
   }
 
-  public String encode(PackageAddress address) {
-    return address.encode(this.networkDefinition);
+  private final Natives.Call1<UInt64, Option<TransactionDetails>>
+      getTransactionDetailsAtStateVersionFunc;
+
+  private static native byte[] getTransactionAtStateVersion(
+      StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
+
+  private static native byte[] getTransactionDetailsAtStateVersion(
+      StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
+
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
   }
 
-  public String encode(ComponentAddress address) {
-    return address.encode(this.networkDefinition);
+  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
+
+  public UInt64 getEpoch() {
+    return epochFunc.call(Tuple.tuple());
   }
 
-  public String encode(ResourceAddress address) {
-    return address.encode(this.networkDefinition);
+  private static native byte[] epoch(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
+
+  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
+    return validatorInfoFunc.call(validatorAddress);
   }
 
-  public PackageAddress decodePackageAddress(String address) {
-    return PackageAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getPackageHrp(), address));
-  }
+  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
 
-  public ResourceAddress decodeResourceAddress(String address) {
-    return ResourceAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getResourceHrp(), address));
-  }
+  private final Natives.Call1<InternalAddress, Option<GlobalAddress>> getNodeGlobalRootFunc;
 
-  public ComponentAddress decodeNormalComponentAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getNormalComponentHrp(), address));
-  }
-
-  public ComponentAddress decodeAccountAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
-  }
-
-  public InternalAddress decodeInternalVaultNodeId(String address) {
-    return InternalAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getInternalVaultHrp(), address));
-  }
-
-  public ComponentAddress decodeValidatorAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getValidatorHrp(), address));
-  }
-
-  public String encodeNodeAddress(ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getCompressedBytes());
-  }
-
-  public ECDSASecp256k1PublicKey decodeNodeAddress(String address) throws DeserializeException {
-    try {
-      var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
-      return ECDSASecp256k1PublicKey.fromBytes(pubKeyBytes);
-    } catch (Bech32DecodeException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
-  }
-
-  public static String encodeNodeAddressWithHrp(String hrp, ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(hrp, publicKey.getCompressedBytes());
-  }
-
-  public static Pair<String, ECDSASecp256k1PublicKey> decodeNodeAddressUnknownHrp(String address)
-      throws DeserializeException {
-    try {
-      var hrpAndPubKeyBytes = Bech32mCoder.decode(address);
-      return Pair.of(
-          hrpAndPubKeyBytes.first(), ECDSASecp256k1PublicKey.fromBytes(hrpAndPubKeyBytes.last()));
-    } catch (Bech32DecodeException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
-  }
+  private static native byte[] getNodeGlobalRoot(StateManager stateManager, byte[] payload);
 }

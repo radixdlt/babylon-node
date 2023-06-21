@@ -73,6 +73,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.LedgerTransactionHash;
@@ -139,10 +140,11 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
       test.suppressUnusedWarning();
 
       // Run the setup until 2 epoch proofs are captured
-      var reader = test.getInstance(0, REv2TransactionAndProofStore.class);
+      var store = test.getInstance(0, REv2TransactionAndProofStore.class);
+      var reader = test.getInstance(0, TestStateReader.class);
       test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(epochNumber)), 1000);
-      var previousHeader = reader.getEpochProof(epochNumber - 1).get().ledgerHeader();
-      var epochHeader = reader.getEpochProof(epochNumber).get().ledgerHeader();
+      var previousHeader = store.getEpochProof(epochNumber - 1).get().ledgerHeader();
+      var epochHeader = store.getEpochProof(epochNumber).get().ledgerHeader();
 
       // Capture the transactions between these 2 proofs
       var epochTransactions =
