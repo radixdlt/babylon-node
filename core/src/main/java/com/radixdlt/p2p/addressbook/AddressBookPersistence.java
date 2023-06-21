@@ -66,6 +66,7 @@ package com.radixdlt.p2p.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.p2p.NodeId;
+import java.util.List;
 
 public interface AddressBookPersistence {
   void open();
@@ -79,4 +80,8 @@ public interface AddressBookPersistence {
   boolean removeEntry(NodeId nodeId);
 
   ImmutableList<AddressBookEntry> getAllEntries();
+
+  void storeHighPriorityPeers(List<NodeId> ids);
+
+  List<NodeId> getHighPriorityPeers();
 }

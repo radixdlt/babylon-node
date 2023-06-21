@@ -124,6 +124,9 @@ public interface P2PConfig {
    */
   long pingTimeout();
 
+  /** A maximum number of addresses (URIs) that the address book can hold. */
+  int addressBookMaxSize();
+
   /**
    * Create a configuration from specified {@link RuntimeProperties}.
    *
@@ -198,6 +201,11 @@ public interface P2PConfig {
       @Override
       public long pingTimeout() {
         return properties.get("network.p2p.ping_timeout", 30000);
+      }
+
+      @Override
+      public int addressBookMaxSize() {
+        return properties.get("network.p2p.address_book_max_size", 2000);
       }
     };
   }

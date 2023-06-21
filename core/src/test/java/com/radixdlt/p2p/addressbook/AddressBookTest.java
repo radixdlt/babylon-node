@@ -65,22 +65,48 @@
 package com.radixdlt.p2p.addressbook;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.cli.ParseException;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class AddressBookTest {
+
+  private final Random random = new Random(12345);
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  BerkeleyAddressBookStore addressBookStore;
+
+  @Before
+  public void setup() throws IOException {
+    final var dbEnv = new BerkeleyDatabaseEnvironment(folder.newFolder().getAbsolutePath(), 100000);
+    this.addressBookStore =
+        new BerkeleyAddressBookStore(
+            DefaultSerialization.getInstance(), dbEnv, new MetricsInitializer().initialize());
+  }
 
   @Test
   public void address_book_should_filter_out_peers_with_different_network_hrp() {
@@ -90,17 +116,10 @@ public final class AddressBookTest {
     final var invalidPeer =
         RadixNodeUri.fromPubKeyAndAddress(
             2, ECKeyPair.generateNew().getPublicKey(), "2.2.2.2", 30000);
-
-    final var persistence = new InMemoryAddressBookPersistence();
-    persistence.saveEntry(AddressBookEntry.create(invalidPeer)); // insert directly into storage
-
     final var sut =
-        new AddressBook(self, mock(P2PConfig.class), rmock(EventDispatcher.class), persistence);
-    assertTrue(sut.knownPeers().isEmpty()); // invalid peer should be filtered out at init
-    assertTrue(sut.findById(invalidPeer.getNodeId()).isEmpty());
-
-    sut.addUncheckedPeers(Set.of(invalidPeer)); // add after initial cleanup
-    assertTrue(sut.knownPeers().isEmpty()); // should also be filtered out
+        new AddressBook(self, defaultConfig(), rmock(EventDispatcher.class), addressBookStore);
+    sut.addUncheckedPeers(Set.of(invalidPeer));
+    assertTrue(sut.knownPeers().isEmpty());
   }
 
   @Test
@@ -116,11 +135,7 @@ public final class AddressBookTest {
     final var addr4 = RadixNodeUri.fromPubKeyAndAddress(1, peerKey, "127.0.0.4", 30303);
 
     final var sut =
-        new AddressBook(
-            self,
-            mock(P2PConfig.class),
-            rmock(EventDispatcher.class),
-            new InMemoryAddressBookPersistence());
+        new AddressBook(self, defaultConfig(), rmock(EventDispatcher.class), addressBookStore);
 
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3, addr4));
 
@@ -157,11 +172,7 @@ public final class AddressBookTest {
     final var addr3 = RadixNodeUri.fromPubKeyAndAddress(1, peerKey, "127.0.0.3", 30303);
 
     final var sut =
-        new AddressBook(
-            self,
-            mock(P2PConfig.class),
-            rmock(EventDispatcher.class),
-            new InMemoryAddressBookPersistence());
+        new AddressBook(self, defaultConfig(), rmock(EventDispatcher.class), addressBookStore);
 
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3));
 
@@ -193,18 +204,123 @@ public final class AddressBookTest {
         RadixNodeUri.fromPubKeyAndAddress(
             1, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 30304);
 
-    final var persistence = new InMemoryAddressBookPersistence();
-    final var p2pConfig = mock(P2PConfig.class);
-    when(p2pConfig.broadcastPort()).thenReturn(30303);
-    when(p2pConfig.listenPort()).thenReturn(30303);
-    final var sut = new AddressBook(self, p2pConfig, rmock(EventDispatcher.class), persistence);
+    final var sut =
+        new AddressBook(
+            self, p2pConfig(30303, 30303, 100), rmock(EventDispatcher.class), addressBookStore);
 
     // Self addresses with the same port shouldn't be added
     sut.addUncheckedPeers(ImmutableSet.of(localAddrSamePort, publicAddrSamePort));
-    assertTrue(persistence.getAllEntries().isEmpty());
+    assertTrue(addressBookStore.getAllEntries().isEmpty());
 
     // Self address with a different port should be added
     sut.addUncheckedPeers(ImmutableSet.of(localAddrDifferentPort));
-    assertEquals(1, persistence.getAllEntries().size());
+    assertEquals(1, addressBookStore.getAllEntries().size());
+  }
+
+  @Test
+  public void address_book_should_respect_its_size_limits() throws ParseException {
+    final var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.INTEGRATIONTESTNET.getId(),
+            ECKeyPair.generateNew().getPublicKey(),
+            "127.0.0.1",
+            9000);
+
+    final var sut =
+        new AddressBook(
+            self,
+            P2PConfig.fromRuntimeProperties(
+                RuntimeProperties.defaultWithOverrides(
+                    Map.of("network.p2p.address_book_max_size", "5"))),
+            rmock(EventDispatcher.class),
+            addressBookStore);
+
+    sut.addUncheckedPeers(
+        Stream.generate(this::randomNodeUri).limit(5).collect(Collectors.toSet()));
+
+    final var knownPeers1 = sut.knownPeers().values();
+    assertEquals(knownPeers1.size(), 5);
+
+    sut.addUncheckedPeers(Set.of(randomNodeUri()));
+    final var knownPeers2 = sut.knownPeers().values();
+    assertEquals(knownPeers1, knownPeers2);
+
+    final var failedConnectionPeer = knownPeers2.stream().findFirst().orElseThrow();
+
+    // Now let's simulate a connection failure on one of the nodes
+    sut.addOrUpdatePeerWithFailedConnection(
+        failedConnectionPeer.getKnownAddresses().stream().findFirst().orElseThrow().getUri());
+
+    // We should be able to take the slot of the failed address
+    final var newUri = randomNodeUri();
+    sut.addUncheckedPeers(Set.of(newUri));
+    final var knownPeers3 = sut.knownPeers().values();
+    assertTrue(knownPeers3.stream().anyMatch(e -> e.hasAddress(newUri)));
+    assertTrue(knownPeers3.stream().noneMatch(e -> e.equals(failedConnectionPeer)));
+  }
+
+  @Test
+  public void address_book_should_not_remove_high_priority_peers() throws ParseException {
+    final var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.INTEGRATIONTESTNET.getId(),
+            ECKeyPair.generateNew().getPublicKey(),
+            "127.0.0.1",
+            9000);
+
+    final var sut =
+        new AddressBook(
+            self,
+            P2PConfig.fromRuntimeProperties(
+                RuntimeProperties.defaultWithOverrides(
+                    Map.of("network.p2p.address_book_max_size", "100"))),
+            rmock(EventDispatcher.class),
+            addressBookStore);
+
+    sut.addUncheckedPeers(
+        Stream.generate(this::randomNodeUri).limit(100).collect(Collectors.toSet()));
+
+    final var knownPeers1 = sut.knownPeers().values();
+    assertEquals(knownPeers1.size(), 100);
+
+    // Let's now simulate a failed connection on all peers
+    for (var e : sut.knownPeers().entrySet()) {
+      sut.addOrUpdatePeerWithFailedConnection(
+          e.getValue().getKnownAddresses().stream().findFirst().orElseThrow().getUri());
+    }
+
+    final var knownPeers2 = sut.knownPeers().keySet().stream().toList();
+    final var requestedNode = knownPeers2.get(5);
+    // And explicitly request an address of some node
+    sut.bestKnownAddressesById(requestedNode);
+
+    // Now we try to insert 100 new addresses.
+    // All (failed) addresses but the one that was requested will be replaced.
+    sut.addUncheckedPeers(
+        Stream.generate(this::randomNodeUri).limit(100).collect(Collectors.toSet()));
+
+    final var knownPeers3 = sut.knownPeers().keySet();
+    assertTrue(knownPeers3.contains(requestedNode));
+    assertEquals(knownPeers3.size(), 100);
+  }
+
+  private RadixNodeUri randomNodeUri() {
+    return RadixNodeUri.fromPubKeyAndAddress(
+        Network.INTEGRATIONTESTNET.getId(),
+        ECKeyPair.generateNew().getPublicKey(),
+        "127.0." + random.nextInt(127) + "." + random.nextInt(127),
+        random.nextInt(30000));
+  }
+
+  private P2PConfig defaultConfig() {
+    return p2pConfig(30000, 30000, 1000);
+  }
+
+  private P2PConfig p2pConfig(int broadcastPort, int listenPort, int maxSize) {
+    final var config = mock(P2PConfig.class);
+    when(config.broadcastPort()).thenReturn(broadcastPort);
+    when(config.listenPort()).thenReturn(listenPort);
+    when(config.addressBookMaxSize()).thenReturn(maxSize);
+    return config;
   }
 }

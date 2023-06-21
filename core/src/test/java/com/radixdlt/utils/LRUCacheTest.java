@@ -62,48 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.discovery;
+package com.radixdlt.utils;
 
+import static com.radixdlt.lang.Unit.unit;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import java.io.IOException;
-import org.junit.Before;
+import com.radixdlt.lang.Unit;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class SeedNodesConfigParserTest {
-  private P2PConfig p2pConfig;
+public final class LRUCacheTest {
 
-  @Before
-  public void setUp() throws IOException {
-    p2pConfig = mock(P2PConfig.class);
-    when(p2pConfig.defaultPort()).thenReturn(30000);
-    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
+  @Test
+  public void test_least_recently_accessed_entries_are_removed() {
+    final var cache = new LRUCache<String, Unit>(4);
+    cache.put("1", unit());
+    cache.put("2", unit());
+    cache.put("3", unit());
+    cache.put("4", unit());
+    cache.put("5", unit());
+    assertEquals(List.of("2", "3", "4", "5"), cache.keys());
+    cache.get("2");
+    assertEquals(List.of("3", "4", "5", "2"), cache.keys());
+    cache.put("6", unit());
+    assertEquals(List.of("4", "5", "2", "6"), cache.keys());
   }
 
   @Test
-  public void parse_seeds_from_config() {
-    doReturn(
-            ImmutableList.of(
-                String.format(
-                    "radix://%s@1.1.1.1",
-                    Addressing.encodeNodeAddressWithHrp(
-                        Network.INTEGRATIONTESTNET.getNodeHrp(),
-                        ECKeyPair.generateNew().getPublicKey()))))
-        .when(p2pConfig)
-        .seedNodes();
-    final var testSubject =
-        new SeedNodesConfigParser(
-            p2pConfig,
-            Network.INTEGRATIONTESTNET,
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    assertEquals(1, testSubject.getResolvedSeedNodes().size());
+  public void test_cache_restore() {
+    final var original = new LRUCache<Integer, Unit>(5);
+    IntStream.range(0, 5).forEach(i -> original.put(i, unit()));
+    original.get(2);
+    assertEquals(List.of(0, 1, 3, 4, 2), original.keys());
+
+    final var restored = new LRUCache<Integer, Unit>(5);
+    for (var k : original.keys()) {
+      restored.put(k, unit());
+    }
+    assertEquals(restored.keys(), original.keys());
   }
 }

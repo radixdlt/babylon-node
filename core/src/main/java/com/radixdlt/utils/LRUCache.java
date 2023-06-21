@@ -62,48 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.discovery;
+package com.radixdlt.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.util.*;
+import javax.annotation.concurrent.NotThreadSafe;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import java.io.IOException;
-import org.junit.Before;
-import org.junit.Test;
+/**
+ * A simple LRU cache based on LinkedHashMap (using its access-order mode). This class is not thread
+ * safe.
+ */
+@NotThreadSafe
+public class LRUCache<K, V> {
+  private final LinkedHashMap<K, V> underlyingMap;
 
-public class SeedNodesConfigParserTest {
-  private P2PConfig p2pConfig;
-
-  @Before
-  public void setUp() throws IOException {
-    p2pConfig = mock(P2PConfig.class);
-    when(p2pConfig.defaultPort()).thenReturn(30000);
-    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
+  public LRUCache(int maxSize, int initialCapacity, float loadFactor) {
+    underlyingMap =
+        new LinkedHashMap<>(initialCapacity, loadFactor, true) {
+          @Override
+          protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            return size() > maxSize;
+          }
+        };
   }
 
-  @Test
-  public void parse_seeds_from_config() {
-    doReturn(
-            ImmutableList.of(
-                String.format(
-                    "radix://%s@1.1.1.1",
-                    Addressing.encodeNodeAddressWithHrp(
-                        Network.INTEGRATIONTESTNET.getNodeHrp(),
-                        ECKeyPair.generateNew().getPublicKey()))))
-        .when(p2pConfig)
-        .seedNodes();
-    final var testSubject =
-        new SeedNodesConfigParser(
-            p2pConfig,
-            Network.INTEGRATIONTESTNET,
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    assertEquals(1, testSubject.getResolvedSeedNodes().size());
+  public LRUCache(int maxSize) {
+    this(maxSize, maxSize / 2, 0.75f);
+  }
+
+  public Optional<V> get(K key) {
+    return Optional.ofNullable(underlyingMap.get(key));
+  }
+
+  public boolean contains(K key) {
+    return underlyingMap.containsKey(key);
+  }
+
+  public void put(K key, V value) {
+    underlyingMap.put(key, value);
+  }
+
+  public List<K> keys() {
+    return new ArrayList<>(underlyingMap.keySet());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    return (o instanceof LRUCache)
+        && Objects.equals(underlyingMap, ((LRUCache<?, ?>) o).underlyingMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return underlyingMap.hashCode();
   }
 }

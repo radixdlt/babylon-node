@@ -115,6 +115,8 @@ public abstract class SystemApiTestBase {
 
   @Before
   public void setup() {
+    final var p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
     var injector =
         Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(
@@ -142,7 +144,7 @@ public abstract class SystemApiTestBase {
               @Override
               protected void configure() {
                 bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
-                bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
+                bind(P2PConfig.class).toInstance(p2pConfig);
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =
                     RadixNodeUri.fromPubKeyAndAddress(

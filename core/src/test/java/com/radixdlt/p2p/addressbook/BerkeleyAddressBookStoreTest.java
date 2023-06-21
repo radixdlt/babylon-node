@@ -62,48 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.discovery;
+package com.radixdlt.p2p.addressbook;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import java.io.IOException;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class SeedNodesConfigParserTest {
-  private P2PConfig p2pConfig;
+public final class BerkeleyAddressBookStoreTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  BerkeleyAddressBookStore sut;
+
+  final Random random = new Random(12345);
 
   @Before
-  public void setUp() throws IOException {
-    p2pConfig = mock(P2PConfig.class);
-    when(p2pConfig.defaultPort()).thenReturn(30000);
-    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
+  public void setup() throws IOException {
+    sut =
+        new BerkeleyAddressBookStore(
+            DefaultSerialization.getInstance(),
+            new BerkeleyDatabaseEnvironment(folder.newFolder().getAbsolutePath(), 100000),
+            new MetricsInitializer().initialize());
   }
 
   @Test
-  public void parse_seeds_from_config() {
-    doReturn(
-            ImmutableList.of(
-                String.format(
-                    "radix://%s@1.1.1.1",
-                    Addressing.encodeNodeAddressWithHrp(
-                        Network.INTEGRATIONTESTNET.getNodeHrp(),
-                        ECKeyPair.generateNew().getPublicKey()))))
-        .when(p2pConfig)
-        .seedNodes();
-    final var testSubject =
-        new SeedNodesConfigParser(
-            p2pConfig,
-            Network.INTEGRATIONTESTNET,
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    assertEquals(1, testSubject.getResolvedSeedNodes().size());
+  public void store_should_persist_and_read_high_priority_peers() {
+    assertEquals(List.of(), sut.getHighPriorityPeers());
+    final var ids = Stream.generate(this::randomNodeId).limit(random.nextInt(3000) + 1).toList();
+    sut.storeHighPriorityPeers(ids);
+    assertEquals(ids, sut.getHighPriorityPeers());
+  }
+
+  private NodeId randomNodeId() {
+    return NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
   }
 }

@@ -165,6 +165,10 @@ public final class AddressBookEntry {
     return this.bannedUntil;
   }
 
+  public boolean hasAddress(RadixNodeUri uri) {
+    return knownAddresses.stream().anyMatch(a -> a.getUri().equals(uri));
+  }
+
   public ImmutableSet<PeerAddressEntry> getKnownAddresses() {
     return knownAddresses;
   }
@@ -173,9 +177,24 @@ public final class AddressBookEntry {
     return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
   }
 
-  public AddressBookEntry withReplacedKnownAddresses(
-      ImmutableSet<PeerAddressEntry> knownAddresses) {
-    return new AddressBookEntry(this.nodeId, this.bannedUntil, knownAddresses);
+  public AddressBookEntry removeAddressEntry(PeerAddressEntry addressEntry) {
+    final var newAddresses =
+        knownAddresses.stream()
+            .filter(not(a -> a.equals(addressEntry)))
+            .collect(ImmutableSet.toImmutableSet());
+    return new AddressBookEntry(nodeId, bannedUntil, newAddresses);
+  }
+
+  public AddressBookEntry removeAddressesThatMatchHostAndPort(String host, int port) {
+    final var filtered =
+        knownAddresses.stream()
+            .filter(not(peerAddress -> hasTheSameHostAndPort(peerAddress, host, port)))
+            .collect(ImmutableSet.toImmutableSet());
+    return new AddressBookEntry(nodeId, bannedUntil, filtered);
+  }
+
+  private boolean hasTheSameHostAndPort(PeerAddressEntry peerAddress, String host, int port) {
+    return peerAddress.getUri().getPort() == port && peerAddress.getUri().getHost().equals(host);
   }
 
   public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
@@ -256,7 +275,7 @@ public final class AddressBookEntry {
     }
   }
 
-  public AddressBookEntry cleanupExpiredBlacklsitedUris() {
+  public AddressBookEntry cleanupExpiredBlacklistedUris() {
     final var newKnownAddresses =
         knownAddresses.stream()
             .filter(not(PeerAddressEntry::blacklistExpired))
