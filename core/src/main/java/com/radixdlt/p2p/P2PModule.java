@@ -64,10 +64,7 @@
 
 package com.radixdlt.p2p;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
@@ -75,6 +72,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.addressbook.AddressBook;
@@ -86,10 +84,12 @@ import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
-
   private final RuntimeProperties properties;
 
   public P2PModule(RuntimeProperties properties) {
@@ -109,7 +109,6 @@ public final class P2PModule extends AbstractModule {
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
     bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
-    bind(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
@@ -154,5 +153,18 @@ public final class P2PModule extends AbstractModule {
         hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
     final var port = p2pConfig.broadcastPort();
     return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
+  }
+
+  @Provides
+  @Singleton
+  BerkeleyAddressBookStore addressBookStore(
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation) {
+    return new BerkeleyAddressBookStore(
+        serialization,
+        metrics,
+        nodeStorageLocation,
+        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
   }
 }

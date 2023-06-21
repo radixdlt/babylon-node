@@ -94,8 +94,6 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -202,7 +200,6 @@ public final class P2PTestNetworkRunner {
                 }),
         new DispatcherModule(),
         new PrefixedNodeStorageLocationModule(sharedDbDir.getRoot().getAbsolutePath()),
-        new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -245,7 +242,6 @@ public final class P2PTestNetworkRunner {
     this.nodes.forEach(
         node -> {
           node.injector.getInstance(AddressBookPersistence.class).close();
-          node.injector.getInstance(BerkeleyDatabaseEnvironment.class).stop();
         });
   }
 
