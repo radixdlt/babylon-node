@@ -15,9 +15,9 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateUpdates {
     #[serde(rename = "created_substates")]
-    pub created_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>,
+    pub created_substates: Vec<crate::core_api::generated::models::CreatedSubstate>,
     #[serde(rename = "updated_substates")]
-    pub updated_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>,
+    pub updated_substates: Vec<crate::core_api::generated::models::UpdatedSubstate>,
     #[serde(rename = "deleted_substates")]
     pub deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>,
     #[serde(rename = "new_global_entities")]
@@ -26,7 +26,7 @@ pub struct StateUpdates {
 
 impl StateUpdates {
     /// Transaction state updates (only present if status is Succeeded or Failed)
-    pub fn new(created_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, updated_substates: Vec<crate::core_api::generated::models::CreatedOrUpdatedSubstate>, deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>, new_global_entities: Vec<crate::core_api::generated::models::EntityReference>) -> StateUpdates {
+    pub fn new(created_substates: Vec<crate::core_api::generated::models::CreatedSubstate>, updated_substates: Vec<crate::core_api::generated::models::UpdatedSubstate>, deleted_substates: Vec<crate::core_api::generated::models::DeletedSubstate>, new_global_entities: Vec<crate::core_api::generated::models::EntityReference>) -> StateUpdates {
         StateUpdates {
             created_substates,
             updated_substates,

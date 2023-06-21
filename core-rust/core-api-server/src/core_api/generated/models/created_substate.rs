@@ -12,26 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedOrUpdatedSubstate {
+pub struct CreatedSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    /// The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
-    #[serde(rename = "substate_hex", skip_serializing_if = "Option::is_none")]
-    pub substate_hex: Option<String>,
-    /// The hex-encoded Blake2b-256 hash of the substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).
-    #[serde(rename = "substate_data_hash", skip_serializing_if = "Option::is_none")]
-    pub substate_data_hash: Option<String>,
-    #[serde(rename = "substate_data", skip_serializing_if = "Option::is_none")]
-    pub substate_data: Option<Box<crate::core_api::generated::models::Substate>>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::SubstateValue>,
 }
 
-impl CreatedOrUpdatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId) -> CreatedOrUpdatedSubstate {
-        CreatedOrUpdatedSubstate {
+impl CreatedSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue) -> CreatedSubstate {
+        CreatedSubstate {
             substate_id: Box::new(substate_id),
-            substate_hex: None,
-            substate_data_hash: None,
-            substate_data: None,
+            value: Box::new(value),
         }
     }
 }

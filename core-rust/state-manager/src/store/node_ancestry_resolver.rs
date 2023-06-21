@@ -154,9 +154,9 @@ impl NodeAncestryResolver {
         substate_changes
             .into_iter()
             .filter_map(|substate_change| match &substate_change.action {
-                ChangeAction::Create(bytes) | ChangeAction::Update(bytes) => {
+                ChangeAction::Create(new) | ChangeAction::Update { new, .. } => {
                     let directly_owned_nodes =
-                        IndexedScryptoValue::from_slice(bytes).unwrap().unpack().1;
+                        IndexedScryptoValue::from_slice(new).unwrap().unpack().1;
                     if directly_owned_nodes.is_empty() {
                         return None;
                     }
@@ -509,7 +509,7 @@ mod tests {
             node_id: substate.0,
             partition_number: substate.1,
             substate_key: substate.2,
-            action: ChangeAction::Update(scrypto_encode(&new_value).unwrap()),
+            action: ChangeAction::Create(scrypto_encode(&new_value).unwrap()),
         }
     }
 
