@@ -65,13 +65,12 @@
 use crate::store::traits::*;
 use crate::{ChangeAction, SubstateChange};
 use std::collections::hash_map::Entry;
-use std::iter;
 
 use radix_engine::types::*;
 
 /// A parent Substate and its owned Nodes.
-/// Depending on the context, this structure may be used to represent only directly owned Nodes, or
-/// all transitively owned Nodes (i.e. from all ancestors).
+/// This structure may be used to represent only directly owned Nodes (i.e. all immediate children),
+/// or all transitively owned Nodes (i.e. all descendants: children, grand-children, grand-grand-...).
 type OwnedNodeSet = (SubstateReference, Vec<NodeId>);
 
 /// A static resolver of [`SubstateNodeAncestryRecord`]s for [`SubstateChange`]s.
@@ -113,18 +112,24 @@ impl NodeAncestryResolver {
                 .map(|(parent, _)| parent),
         );
 
-        // Combine the `transitively_owned_parent_sets` (lower parts of the trees, constrcuted from
+        // Combine the `transitively_owned_parent_sets` (lower parts of the trees, constructed from
         // `SubstateChange`s) and `topmost_parent_roots` (roots of the trees, loaded from DB).
         let parent_to_root = transitively_owned_parent_sets
             .iter()
             .zip(topmost_parent_roots)
             .flat_map(|((topmost_parent, transitively_owned_parents), root)| {
-                let root_for_topmost = root.clone();
+                // interesting gotcha: the topmost parent is also "a parent" (which won't be on any child-list)
+                let topmost_parent_entry = if topmost_parent.0 != root.0 {
+                    // so, if it is _not_ a root itself, then we must include its entry in the `parent_to_root` map
+                    vec![(topmost_parent.0, root.clone())]
+                } else {
+                    // ... but if root, we do not include it (although technically such entry would be correct)
+                    vec![]
+                };
                 transitively_owned_parents
                     .iter()
                     .map(move |owned_parent| (*owned_parent, root.clone()))
-                    // interesting gotcha: the topmost parent is also "a parent" (and won't be on any child-list)
-                    .chain(iter::once((topmost_parent.0, root_for_topmost)))
+                    .chain(topmost_parent_entry)
             })
             .collect::<NonIterMap<_, _>>();
 
@@ -195,11 +200,8 @@ impl NodeAncestryResolver {
     fn batch_get_existing_root_or_same_substate<'a, S: SubstateNodeAncestryStore>(
         ancestry_store: &S,
         substates: impl IntoIterator<Item = &'a SubstateReference>,
-    ) -> impl Iterator<Item = SubstateReference> {
-        let substates = substates
-            .into_iter()
-            .cloned()
-            .collect::<Vec<SubstateReference>>();
+    ) -> impl Iterator<Item = SubstateReference> + 'a {
+        let substates = substates.into_iter().collect::<Vec<_>>();
         let unique_nodes = substates
             .iter()
             .map(|substate| substate.0)
@@ -213,8 +215,8 @@ impl NodeAncestryResolver {
         substates.into_iter().map(move |substate| {
             node_to_existing_root
                 .get(&substate.0)
-                .cloned()
                 .unwrap_or(substate)
+                .clone()
         })
     }
 
@@ -389,15 +391,48 @@ mod tests {
         let substate_changes = [
             // some new root Node ID = 6 (which does not own any other Node):
             change(substate(6, 10, 29), ScryptoValue::I16 { value: 666 }),
+            // some new root Node ID = 7 (which owns a leaf Node ID = 8 and a mid-parent Node ID = 9):
+            change(
+                substate(7, 11, 23),
+                Value::Tuple {
+                    fields: vec![
+                        Value::Custom {
+                            value: ScryptoCustomValue::Own(Own(node_id(8))),
+                        },
+                        Value::Custom {
+                            value: ScryptoCustomValue::Own(Own(node_id(9))),
+                        },
+                    ],
+                },
+            ),
+            // an arbitrary parent ID = 9 (just so that root Node ID = 7 can own a non-trivial tree):
+            change(
+                substate(9, 12, 25),
+                Value::Custom {
+                    value: ScryptoCustomValue::Own(Own(node_id(10))),
+                },
+            ),
         ];
 
         // Act
         let new_index_entries =
             NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
-                .collect::<Vec<_>>();
+                .flat_map(|(key_batch, value)| {
+                    key_batch.into_iter().map(move |key| (key, value.clone()))
+                })
+                .collect::<HashMap<_, _>>();
 
         // Assert
-        assert_eq!(new_index_entries, vec![]);
+        assert_eq!(
+            new_index_entries,
+            hashmap!(
+                // entries of new non-roots (all correctly indicating Node ID = 7 as their root)
+                node_id(8) => record(substate(7, 11, 23), substate(7, 11, 23)),
+                node_id(9) => record(substate(7, 11, 23), substate(7, 11, 23)),
+                node_id(10) => record(substate(9, 12, 25), substate(7, 11, 23)),
+                // no entry for root Node ID = 7 (which is a newly created topmost parent, but still a root)
+            )
+        );
     }
 
     #[test]
