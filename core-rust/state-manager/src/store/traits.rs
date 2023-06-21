@@ -192,12 +192,12 @@ pub mod substate {
 
         /// A batch counterpart of the [`get_ancestry()`].
         /// The results are returned in the same order as the input `node_ids`.
-        fn batch_get_ancestry(
+        fn batch_get_ancestry<'a>(
             &self,
-            node_ids: &[NodeId],
+            node_ids: impl IntoIterator<Item = &'a NodeId>,
         ) -> Vec<Option<SubstateNodeAncestryRecord>> {
             node_ids
-                .iter()
+                .into_iter()
                 .map(|node_id| self.get_ancestry(node_id))
                 .collect()
         }

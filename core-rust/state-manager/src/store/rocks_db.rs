@@ -966,11 +966,14 @@ impl SubstateDatabase for RocksDBStore {
 }
 
 impl SubstateNodeAncestryStore for RocksDBStore {
-    fn batch_get_ancestry(&self, node_ids: &[NodeId]) -> Vec<Option<SubstateNodeAncestryRecord>> {
+    fn batch_get_ancestry<'a>(
+        &self,
+        node_ids: impl IntoIterator<Item = &'a NodeId>,
+    ) -> Vec<Option<SubstateNodeAncestryRecord>> {
         self.db
             .multi_get_cf(
                 node_ids
-                    .iter()
+                    .into_iter()
                     .map(|node_id| (self.cf_handle(&SubstateNodeAncestryRecords), node_id.0)),
             )
             .into_iter()
