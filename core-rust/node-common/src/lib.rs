@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+pub mod config;
 pub mod environment;
 pub mod java;
 pub mod jni;
