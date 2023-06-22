@@ -68,12 +68,9 @@ use node_common::config::limits::{
 };
 use prometheus::core::*;
 use prometheus::*;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine_common::types::ComponentAddress;
-use radix_engine_constants::{
-    DEFAULT_COST_UNIT_LIMIT, DEFAULT_MAX_INVOKE_INPUT_SIZE,
-    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION, DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
-    DEFAULT_MAX_TRANSACTION_SIZE, DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
-};
+use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
 
 pub struct LedgerMetrics {
     pub state_version: IntGauge,
@@ -132,7 +129,7 @@ impl LedgerMetrics {
 
 // TODO: update buckets limits when default values are overwritten
 impl CommittedTransactionsMetrics {
-    pub fn new(registry: &Registry) -> Self {
+    pub fn new(registry: &Registry, execution_config: &ExecutionConfig) -> Self {
         Self {
             size: new_histogram(
                 opts(
@@ -147,7 +144,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_execution_cost_units_consumed",
                     "Execution cost units consumed per committed transactions.",
                 ),
-                Self::buckets(DEFAULT_COST_UNIT_LIMIT as usize),
+                Self::buckets(execution_config.cost_unit_limit as usize),
             )
             .registered_at(registry),
             substate_read_size: new_histogram(
@@ -164,7 +161,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_count",
                     "Number of substate reads per committed transactions.",
                 ),
-                Self::buckets(DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION),
+                Self::buckets(execution_config.max_substate_reads_per_transaction),
             )
             .registered_at(registry),
             substate_write_size: new_histogram(
@@ -181,7 +178,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_count",
                     "Number of substate writes per committed transactions.",
                 ),
-                Self::buckets(DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION),
+                Self::buckets(execution_config.max_substate_writes_per_transaction),
             )
             .registered_at(registry),
             max_wasm_memory_used: new_histogram(
@@ -189,7 +186,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_max_wasm_memory_used",
                     "Maximum WASM memory used in bytes per committed transaction.",
                 ),
-                Self::buckets(DEFAULT_MAX_WASM_MEM_PER_TRANSACTION),
+                Self::buckets(execution_config.max_wasm_mem_per_transaction),
             )
             .registered_at(registry),
             max_invoke_payload_size: new_histogram(
@@ -197,13 +194,14 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_max_invoke_payload_size",
                     "Maximum invoke payload size in bytes per committed transaction.",
                 ),
-                Self::buckets(DEFAULT_MAX_INVOKE_INPUT_SIZE),
+                Self::buckets(execution_config.max_invoke_input_size),
             )
             .registered_at(registry),
         }
     }
 
     // Given a limit, builds buckets for a Histogram with higher resolution for lower values.
+    // This gives percentile buckets: 0-2, 2-4, 4-6, 6-8, 8-10, 10-15, 15-20, 20-25, 25-50, 50-75, 75-100
     fn buckets(limit: usize) -> Vec<f64> {
         let limit = limit as f64;
         let mut buckets = equidistant_buckets(5, 0.0, 0.1 * limit);

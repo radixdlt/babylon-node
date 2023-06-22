@@ -133,6 +133,13 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
     ) -> StateManager<S> {
         let transaction_root = store.read().get_top_ledger_hashes().1.transaction_root;
 
+        let regular_execution_config = execution_configurator
+            .execution_configs
+            .get(&ConfigType::Regular)
+            .unwrap();
+        let committed_transactions_metrics =
+            CommittedTransactionsMetrics::new(metric_registry, regular_execution_config);
+
         StateManager {
             store,
             mempool_manager,
@@ -143,7 +150,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             logging_config: logging_config.state_manager_config,
             vertex_limits_config: VertexLimitsConfig::default(),
             ledger_metrics: LedgerMetrics::new(metric_registry),
-            committed_transactions_metrics: CommittedTransactionsMetrics::new(metric_registry),
+            committed_transactions_metrics,
         }
     }
 }
