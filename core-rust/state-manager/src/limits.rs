@@ -146,7 +146,7 @@ impl VertexLimitsTracker {
         Ok(())
     }
 
-    pub fn try_advance(
+    pub fn try_next_transaction(
         &mut self,
         transaction_size: usize,
         execution_metrics: &ExecutionMetrics,
