@@ -2,16 +2,20 @@ use radix_engine::{
     transaction::BalanceChange,
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, RADIX_TOKEN},
 };
+use state_manager::store::traits::SubstateNodeAncestryStore;
+use state_manager::store::StateManagerDatabase;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
     StateVersion, SubstateChange, TransactionTreeHash,
 };
+use std::ops::SubAssign;
 use transaction::prelude::*;
 
 use crate::core_api::*;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
+    database: &StateManagerDatabase,
     context: &MappingContext,
     state_version: StateVersion,
     receipt: LocalTransactionReceipt,
@@ -40,8 +44,9 @@ pub fn to_api_lts_committed_transaction_outcome(
         }),
         status,
         fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
+            database,
             context,
-            total_fee,
+            &receipt.local_execution.fee_payments,
             &receipt.local_execution.state_update_summary.balance_changes,
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
@@ -54,117 +59,59 @@ pub fn to_api_lts_committed_transaction_outcome(
 }
 
 pub fn to_api_lts_fungible_balance_changes(
+    database: &StateManagerDatabase,
     context: &MappingContext,
-    total_fee: Decimal,
+    fee_payments: &IndexMap<NodeId, Decimal>,
     balance_changes: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
 ) -> Result<Vec<models::LtsEntityFungibleBalanceChanges>, MappingError> {
-    // TODO - until we have the proper information from the engine, we need to do some guessing here about which entities
-    // actually paid the fee. Ideally our guessing will align with 99% of transactions - and we can make clear in the docs
-    // it's not fully accurate for now but will be for launch.
-
-    // For now let's assume: The fee is paid by a single entity, and that entity is either:
-    // - The first entity to be debitted the exact fee, or if that doesn't exist:
-    // - The entity with the largest XRD debit.
-
-    let total_fee_balance_change = -total_fee;
-
-    let mut net_xrd_balance_change = Decimal::ZERO;
-    let mut exact_fee_debit = Option::<GlobalAddress>::None;
-    let mut biggest_xrd_debit = Option::<(Decimal, GlobalAddress)>::None;
-
-    for (entity_address, resource_changes) in balance_changes.iter() {
-        for (resource_address, balance_change) in resource_changes {
-            if *resource_address == RADIX_TOKEN {
-                let balance_change = get_fungible_balance(balance_change).unwrap();
-                if balance_change == total_fee_balance_change && exact_fee_debit.is_none() {
-                    exact_fee_debit = Some(*entity_address);
-                }
-                if biggest_xrd_debit.is_none() || balance_change < biggest_xrd_debit.unwrap().0 {
-                    biggest_xrd_debit = Some((balance_change, *entity_address));
-                }
-                net_xrd_balance_change += balance_change;
-            }
-        }
+    let mut fee_balance_changes = index_map_new();
+    let records = database.batch_get_ancestry(fee_payments.keys());
+    for (paid_fee_amount_xrd, ancestry) in fee_payments.values().zip(records) {
+        let ancestry = ancestry.expect("a vault must be owned by an account");
+        let account_address = GlobalAddress::new_or_panic(ancestry.root.0 .0);
+        fee_balance_changes
+            .entry(account_address)
+            .or_insert_with(Decimal::zero)
+            .sub_assign(*paid_fee_amount_xrd);
     }
 
-    let (assumed_fee_payer, assumed_fee_balance_change) = match (
-        exact_fee_debit,
-        biggest_xrd_debit,
-        total_fee_balance_change == net_xrd_balance_change,
-    ) {
-        // If an entity debited the exact fee - it's probably that entity
-        // - This covers the case where entity X paid the fee but didn't otherwise transfer XRD
-        (Some(entity_address), _, true) => (Some(entity_address), total_fee_balance_change),
-        // Else use the entity that debitted the most XRD - who is most likely to be the fee payer
-        // - This is accurate in the case where someone transferred XRD from their account and paid the fee
-        (None, Some((_, entity_address)), true) => (Some(entity_address), total_fee_balance_change),
-        // If there's been no XRD debit, ot it doesn't equal the total fee, then we should be at genesis or in an end of
-        // epoch scenario without a fee payer
-        _ => (None, Decimal::ZERO),
-    };
-
-    balance_changes
-        .iter()
-        .map(|(entity_address, resource_changes)| {
-            let changes = if assumed_fee_payer == Some(*entity_address) {
-                models::LtsEntityFungibleBalanceChanges {
-                    entity_address: to_api_global_address(context, entity_address)?,
-                    fee_balance_change: Some(Box::new(models::LtsFungibleResourceBalanceChange {
-                        resource_address: to_api_resource_address(context, &RADIX_TOKEN)?,
-                        balance_change: to_api_decimal(&assumed_fee_balance_change),
-                    })),
-                    non_fee_balance_changes: resource_changes
-                        .iter()
-                        .filter_map(|(resource_address, balance_change)| {
-                            if *resource_address == RADIX_TOKEN {
-                                let fungible_balance_change =
-                                    get_fungible_balance(balance_change).unwrap();
-                                let non_fee_balance_change =
-                                    fungible_balance_change - assumed_fee_balance_change;
-                                if non_fee_balance_change == Decimal::ZERO {
-                                    return None;
-                                }
-                                return Some(to_api_lts_fungible_resource_balance_change(
+    Ok(balance_changes
+        .into_iter()
+        .map(|(account_address, changes_by_resource)| {
+            let fee_balance_change = fee_balance_changes.get(account_address);
+            Ok(models::LtsEntityFungibleBalanceChanges {
+                entity_address: to_api_global_address(context, account_address)?,
+                fee_balance_change: fee_balance_change
+                    .map(|amount_xrd| {
+                        Ok(Box::new(models::LtsFungibleResourceBalanceChange {
+                            resource_address: to_api_resource_address(context, &RADIX_TOKEN)?,
+                            balance_change: to_api_decimal(amount_xrd),
+                        }))
+                    })
+                    .transpose()?,
+                non_fee_balance_changes: changes_by_resource
+                    .iter()
+                    .filter_map(|(resource_address, balance_change)| {
+                        get_fungible_balance(balance_change)
+                            .map(|balance_change| {
+                                let fee_balance_change = *fee_balance_change
+                                    .filter(|_| resource_address == &RADIX_TOKEN)
+                                    .unwrap_or(&Decimal::ZERO);
+                                balance_change - fee_balance_change
+                            })
+                            .filter(|maybe_zeroed_change| maybe_zeroed_change != &Decimal::ZERO)
+                            .map(|non_fee_balance_change| {
+                                to_api_lts_fungible_resource_balance_change(
                                     context,
                                     resource_address,
                                     &non_fee_balance_change,
-                                ));
-                            }
-                            match balance_change {
-                                BalanceChange::Fungible(balance_change) => {
-                                    Some(to_api_lts_fungible_resource_balance_change(
-                                        context,
-                                        resource_address,
-                                        balance_change,
-                                    ))
-                                }
-                                BalanceChange::NonFungible { .. } => None,
-                            }
-                        })
-                        .collect::<Result<_, MappingError>>()?,
-                }
-            } else {
-                models::LtsEntityFungibleBalanceChanges {
-                    entity_address: to_api_global_address(context, entity_address)?,
-                    fee_balance_change: None,
-                    non_fee_balance_changes: resource_changes
-                        .iter()
-                        .filter_map(|(resource_address, balance_change)| match balance_change {
-                            BalanceChange::Fungible(balance_change) => {
-                                Some(to_api_lts_fungible_resource_balance_change(
-                                    context,
-                                    resource_address,
-                                    balance_change,
-                                ))
-                            }
-                            BalanceChange::NonFungible { .. } => None,
-                        })
-                        .collect::<Result<_, MappingError>>()?,
-                }
-            };
-            Ok(changes)
+                                )
+                            })
+                    })
+                    .collect::<Result<_, MappingError>>()?,
+            })
         })
-        .collect::<Result<Vec<_>, MappingError>>()
+        .collect::<Result<Vec<_>, MappingError>>())?
 }
 
 pub fn to_api_lts_fungible_resource_balance_change(
