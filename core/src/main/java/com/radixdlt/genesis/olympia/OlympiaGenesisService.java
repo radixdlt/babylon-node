@@ -138,7 +138,7 @@ public final class OlympiaGenesisService {
     // Every 1000th request we'll ask for a test payload (in case of a not-ready response).
     // The first request does not include the test payload (check basic connectivity).
     final var includeTestPayload = counter % 1000 == 1;
-    if (counter == 0) {
+    if (counter == 0 || includeTestPayload) {
       log.info(
           "Querying the Olympia node {} for genesis data{} (this may take a few minutes)",
           olympiaGenesisConfig.nodeCoreApiUrl(),
