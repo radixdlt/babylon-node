@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateAccountResponse.JSON_PROPERTY_INFO,
-  StateAccountResponse.JSON_PROPERTY_ACCESS_RULES,
+  StateAccountResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccountResponse.JSON_PROPERTY_STATE,
   StateAccountResponse.JSON_PROPERTY_VAULTS
 })
@@ -45,8 +45,8 @@ public class StateAccountResponse {
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private Substate accessRules;
+  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
+  private Substate ownerRole;
 
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
@@ -83,29 +83,29 @@ public class StateAccountResponse {
   }
 
 
-  public StateAccountResponse accessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public StateAccountResponse ownerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get ownerRole
+   * @return ownerRole
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getAccessRules() {
-    return accessRules;
+  public Substate getOwnerRole() {
+    return ownerRole;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public void setOwnerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
   }
 
 
@@ -179,14 +179,14 @@ public class StateAccountResponse {
     }
     StateAccountResponse stateAccountResponse = (StateAccountResponse) o;
     return Objects.equals(this.info, stateAccountResponse.info) &&
-        Objects.equals(this.accessRules, stateAccountResponse.accessRules) &&
+        Objects.equals(this.ownerRole, stateAccountResponse.ownerRole) &&
         Objects.equals(this.state, stateAccountResponse.state) &&
         Objects.equals(this.vaults, stateAccountResponse.vaults);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, accessRules, state, vaults);
+    return Objects.hash(info, ownerRole, state, vaults);
   }
 
   @Override
@@ -194,7 +194,7 @@ public class StateAccountResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccountResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
     sb.append("}");

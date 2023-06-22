@@ -54,6 +54,8 @@ pub enum EntityType {
     GlobalTwoResourcePool,
     #[serde(rename = "GlobalMultiResourcePool")]
     GlobalMultiResourcePool,
+    #[serde(rename = "GlobalTransactionTracker")]
+    GlobalTransactionTracker,
 
 }
 
@@ -81,6 +83,7 @@ impl ToString for EntityType {
             Self::GlobalOneResourcePool => String::from("GlobalOneResourcePool"),
             Self::GlobalTwoResourcePool => String::from("GlobalTwoResourcePool"),
             Self::GlobalMultiResourcePool => String::from("GlobalMultiResourcePool"),
+            Self::GlobalTransactionTracker => String::from("GlobalTransactionTracker"),
         }
     }
 }

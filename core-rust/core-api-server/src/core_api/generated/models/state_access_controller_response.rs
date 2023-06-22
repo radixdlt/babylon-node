@@ -15,8 +15,8 @@
 pub struct StateAccessControllerResponse {
     #[serde(rename = "state")]
     pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "access_rules")]
-    pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "owner_role")]
+    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
     #[serde(rename = "vaults")]
     pub vaults: Vec<crate::core_api::generated::models::VaultBalance>,
@@ -26,10 +26,10 @@ pub struct StateAccessControllerResponse {
 }
 
 impl StateAccessControllerResponse {
-    pub fn new(state: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateAccessControllerResponse {
+    pub fn new(state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateAccessControllerResponse {
         StateAccessControllerResponse {
             state: Option::Some(state),
-            access_rules: Option::Some(access_rules),
+            owner_role: Option::Some(owner_role),
             vaults,
             descendent_nodes,
         }

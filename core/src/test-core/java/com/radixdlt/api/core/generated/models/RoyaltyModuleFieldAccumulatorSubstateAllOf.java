@@ -51,10 +51,10 @@ public class RoyaltyModuleFieldAccumulatorSubstateAllOf {
    * Get vaultEntity
    * @return vaultEntity
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public EntityReference getVaultEntity() {
     return vaultEntity;
@@ -62,7 +62,7 @@ public class RoyaltyModuleFieldAccumulatorSubstateAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setVaultEntity(EntityReference vaultEntity) {
     this.vaultEntity = vaultEntity;
   }

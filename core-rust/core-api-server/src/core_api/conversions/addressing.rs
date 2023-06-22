@@ -88,6 +88,7 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalOneResourcePool => models::EntityType::GlobalOneResourcePool,
         EntityType::GlobalTwoResourcePool => models::EntityType::GlobalTwoResourcePool,
         EntityType::GlobalMultiResourcePool => models::EntityType::GlobalMultiResourcePool,
+        EntityType::GlobalTransactionTracker => models::EntityType::GlobalTransactionTracker,
     }
 }
 
@@ -108,13 +109,19 @@ pub fn to_api_substate_id(
             SubstateType::TypeInfoModuleFieldTypeInfo,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::AccessRulesModuleField(AccessRulesField::AccessRules) => (
-            SubstateType::AccessRulesModuleFieldAccessRules,
+        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
+            AccessRulesField::OwnerRole,
+        )) => (
+            SubstateType::AccessRulesModuleFieldOwnerRole,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyConfig) => (
-            SubstateType::RoyaltyModuleFieldConfig,
-            models::PartitionKind::Field,
+        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(_)) => (
+            SubstateType::AccessRulesModuleRule,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(_)) => (
+            SubstateType::AccessRulesModuleMutability,
+            models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyAccumulator) => (
             SubstateType::RoyaltyModuleFieldAccumulator,
@@ -125,27 +132,9 @@ pub fn to_api_substate_id(
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
-            PackageField::Info,
-        )) => (SubstateType::PackageFieldCode, models::PartitionKind::Field),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
-            PackageField::CodeType,
-        )) => (
-            SubstateType::PackageFieldCodeType,
-            models::PartitionKind::Field,
-        ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
-            PackageField::Code,
-        )) => (SubstateType::PackageFieldCode, models::PartitionKind::Field),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
             PackageField::Royalty,
         )) => (
-            SubstateType::PackageFieldRoyalty,
-            models::PartitionKind::Field,
-        ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
-            PackageField::FunctionAccessRules,
-        )) => (
-            SubstateType::PackageFieldFunctionAccessRules,
+            SubstateType::PackageFieldRoyaltyAccumulator,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleResourceField(
@@ -310,11 +299,50 @@ pub fn to_api_substate_id(
             SubstateType::MultiResourcePool,
             models::PartitionKind::Field,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(_)) => (
+            SubstateType::PackageBlueprintEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(_),
+        ) => (
+            SubstateType::PackageBlueprintDependenciesEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(_)) => (
+            SubstateType::PackageSchemaEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(_)) => (
+            SubstateType::PackageCodeEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(_)) => (
+            SubstateType::PackageRoyaltyEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(_)) => (
+            SubstateType::PackageAuthTemplateEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerField(_)) => (
+            SubstateType::TransactionTracker,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(_),
+        ) => (
+            SubstateType::TransactionTrackerCollectionEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(_)) => {
+            (SubstateType::ConsensusManager, models::PartitionKind::Field)
+        }
     };
 
     let entity_module = match typed_substate_key {
         TypedSubstateKey::TypeInfoModuleField(_) => models::EntityModule::TypeInfo,
-        TypedSubstateKey::AccessRulesModuleField(_) => models::EntityModule::AccessRules,
+        TypedSubstateKey::AccessRulesModule(_) => models::EntityModule::AccessRules,
         TypedSubstateKey::RoyaltyModuleField(_) => models::EntityModule::Royalty,
         TypedSubstateKey::MetadataModuleEntryKey(_) => models::EntityModule::Metadata,
         TypedSubstateKey::MainModule(_) => models::EntityModule::Main,
@@ -334,9 +362,9 @@ pub fn to_api_substate_id(
 pub fn to_api_substate_key(substate_key: &SubstateKey) -> models::SubstateKey {
     let db_sort_key_hex = to_hex(SpreadPrefixKeyMapper::to_db_sort_key(substate_key).0);
     match substate_key {
-        SubstateKey::Tuple(tuple_key) => models::SubstateKey::FieldSubstateKey {
+        SubstateKey::Field(field_key) => models::SubstateKey::FieldSubstateKey {
             db_sort_key_hex,
-            id: to_api_u8_as_i32(*tuple_key),
+            id: to_api_u8_as_i32(*field_key),
         },
         SubstateKey::Map(map_key) => models::SubstateKey::MapSubstateKey {
             db_sort_key_hex,
@@ -395,16 +423,4 @@ pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::Obj
         ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
         ObjectModuleId::AccessRules => models::ObjectModuleId::AccessRules,
     }
-}
-
-// TODO(after pulling newer Engine): this helper should not be needed (we will always receive `ObjectModuleId` from Engine)
-pub fn resolve_object_module_id(value: u8) -> Result<ObjectModuleId, MappingError> {
-    for object_module_id in ObjectModuleId::iter() {
-        if object_module_id.to_u8() == value {
-            return Ok(object_module_id);
-        }
-    }
-    Err(MappingError::IntegerError {
-        message: format!("invalid object module id: {}", value),
-    })
 }

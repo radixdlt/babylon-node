@@ -18,6 +18,8 @@ pub struct ObjectTypeInfoDetailsAllOf {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
+    #[serde(rename = "blueprint_version")]
+    pub blueprint_version: String,
     #[serde(rename = "global")]
     pub global: bool,
     /// The Bech32m-encoded human readable version of any global address
@@ -30,10 +32,11 @@ pub struct ObjectTypeInfoDetailsAllOf {
 }
 
 impl ObjectTypeInfoDetailsAllOf {
-    pub fn new(package_address: String, blueprint_name: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetailsAllOf {
+    pub fn new(package_address: String, blueprint_name: String, blueprint_version: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetailsAllOf {
         ObjectTypeInfoDetailsAllOf {
             package_address,
             blueprint_name,
+            blueprint_version,
             global,
             outer_object: None,
             instance_schema: None,

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EventEmitterIdentifier;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,15 +35,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @ApiModel(description = "Identifier of a specific event schema.")
 @JsonPropertyOrder({
   EventTypeIdentifier.JSON_PROPERTY_EMITTER,
-  EventTypeIdentifier.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  EventTypeIdentifier.JSON_PROPERTY_TYPE_POINTER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EventTypeIdentifier {
   public static final String JSON_PROPERTY_EMITTER = "emitter";
   private EventEmitterIdentifier emitter;
 
-  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
-  private LocalTypeIndex localTypeIndex;
+  public static final String JSON_PROPERTY_TYPE_POINTER = "type_pointer";
+  private TypePointer typePointer;
 
   public EventTypeIdentifier() { 
   }
@@ -74,29 +74,29 @@ public class EventTypeIdentifier {
   }
 
 
-  public EventTypeIdentifier localTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public EventTypeIdentifier typePointer(TypePointer typePointer) {
+    this.typePointer = typePointer;
     return this;
   }
 
    /**
-   * Get localTypeIndex
-   * @return localTypeIndex
+   * Get typePointer
+   * @return typePointer
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getLocalTypeIndex() {
-    return localTypeIndex;
+  public TypePointer getTypePointer() {
+    return typePointer;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public void setTypePointer(TypePointer typePointer) {
+    this.typePointer = typePointer;
   }
 
 
@@ -113,12 +113,12 @@ public class EventTypeIdentifier {
     }
     EventTypeIdentifier eventTypeIdentifier = (EventTypeIdentifier) o;
     return Objects.equals(this.emitter, eventTypeIdentifier.emitter) &&
-        Objects.equals(this.localTypeIndex, eventTypeIdentifier.localTypeIndex);
+        Objects.equals(this.typePointer, eventTypeIdentifier.typePointer);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(emitter, localTypeIndex);
+    return Objects.hash(emitter, typePointer);
   }
 
   @Override
@@ -126,7 +126,7 @@ public class EventTypeIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class EventTypeIdentifier {\n");
     sb.append("    emitter: ").append(toIndentedString(emitter)).append("\n");
-    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
+    sb.append("    typePointer: ").append(toIndentedString(typePointer)).append("\n");
     sb.append("}");
     return sb.toString();
   }

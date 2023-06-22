@@ -314,7 +314,7 @@ mod tests {
                     },
                     instructions: InstructionsV1(vec![]),
                     blobs: BlobsV1 { blobs: vec![] },
-                    attachments: AttachmentsV1 {},
+                    message: MessageV1::None,
                 },
                 intent_signatures: IntentSignaturesV1 {
                     signatures: vec![0; sigs_count]

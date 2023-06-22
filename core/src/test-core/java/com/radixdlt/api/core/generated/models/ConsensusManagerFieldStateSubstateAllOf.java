@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.ActiveValidatorIndex;
 import com.radixdlt.api.core.generated.models.Instant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH,
   ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_ROUND,
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH_START
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH_START,
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_CURRENT_LEADER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldStateSubstateAllOf {
@@ -46,6 +48,9 @@ public class ConsensusManagerFieldStateSubstateAllOf {
 
   public static final String JSON_PROPERTY_EPOCH_START = "epoch_start";
   private Instant epochStart;
+
+  public static final String JSON_PROPERTY_CURRENT_LEADER = "current_leader";
+  private ActiveValidatorIndex currentLeader;
 
   public ConsensusManagerFieldStateSubstateAllOf() { 
   }
@@ -132,6 +137,32 @@ public class ConsensusManagerFieldStateSubstateAllOf {
   }
 
 
+  public ConsensusManagerFieldStateSubstateAllOf currentLeader(ActiveValidatorIndex currentLeader) {
+    this.currentLeader = currentLeader;
+    return this;
+  }
+
+   /**
+   * Get currentLeader
+   * @return currentLeader
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public ActiveValidatorIndex getCurrentLeader() {
+    return currentLeader;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setCurrentLeader(ActiveValidatorIndex currentLeader) {
+    this.currentLeader = currentLeader;
+  }
+
+
   /**
    * Return true if this ConsensusManagerFieldStateSubstate_allOf object is equal to o.
    */
@@ -146,12 +177,13 @@ public class ConsensusManagerFieldStateSubstateAllOf {
     ConsensusManagerFieldStateSubstateAllOf consensusManagerFieldStateSubstateAllOf = (ConsensusManagerFieldStateSubstateAllOf) o;
     return Objects.equals(this.epoch, consensusManagerFieldStateSubstateAllOf.epoch) &&
         Objects.equals(this.round, consensusManagerFieldStateSubstateAllOf.round) &&
-        Objects.equals(this.epochStart, consensusManagerFieldStateSubstateAllOf.epochStart);
+        Objects.equals(this.epochStart, consensusManagerFieldStateSubstateAllOf.epochStart) &&
+        Objects.equals(this.currentLeader, consensusManagerFieldStateSubstateAllOf.currentLeader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, epochStart);
+    return Objects.hash(epoch, round, epochStart, currentLeader);
   }
 
   @Override
@@ -161,6 +193,7 @@ public class ConsensusManagerFieldStateSubstateAllOf {
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    epochStart: ").append(toIndentedString(epochStart)).append("\n");
+    sb.append("    currentLeader: ").append(toIndentedString(currentLeader)).append("\n");
     sb.append("}");
     return sb.toString();
   }

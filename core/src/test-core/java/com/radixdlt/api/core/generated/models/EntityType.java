@@ -68,7 +68,9 @@ public enum EntityType {
   
   GLOBALTWORESOURCEPOOL("GlobalTwoResourcePool"),
   
-  GLOBALMULTIRESOURCEPOOL("GlobalMultiResourcePool");
+  GLOBALMULTIRESOURCEPOOL("GlobalMultiResourcePool"),
+  
+  GLOBALTRANSACTIONTRACKER("GlobalTransactionTracker");
 
   private String value;
 

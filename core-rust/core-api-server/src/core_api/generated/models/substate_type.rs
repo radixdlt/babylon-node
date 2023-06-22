@@ -14,8 +14,18 @@
 pub enum SubstateType {
     #[serde(rename = "TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfo,
-    #[serde(rename = "AccessRulesModuleFieldAccessRules")]
-    AccessRulesModuleFieldAccessRules,
+    #[serde(rename = "AccessRulesModuleFieldOwnerRole")]
+    AccessRulesModuleFieldOwnerRole,
+    #[serde(rename = "AccessRulesModuleRule")]
+    AccessRulesModuleRule,
+    #[serde(rename = "AccessRulesModuleMutability")]
+    AccessRulesModuleMutability,
+    #[serde(rename = "AccessRuleEntry")]
+    AccessRuleEntry,
+    #[serde(rename = "MutabilityEntry")]
+    MutabilityEntry,
+    #[serde(rename = "OwnerRole")]
+    OwnerRole,
     #[serde(rename = "RoyaltyModuleFieldConfig")]
     RoyaltyModuleFieldConfig,
     #[serde(rename = "RoyaltyModuleFieldAccumulator")]
@@ -24,12 +34,22 @@ pub enum SubstateType {
     MetadataModuleEntry,
     #[serde(rename = "PackageFieldInfo")]
     PackageFieldInfo,
-    #[serde(rename = "PackageFieldCodeType")]
-    PackageFieldCodeType,
-    #[serde(rename = "PackageFieldCode")]
-    PackageFieldCode,
-    #[serde(rename = "PackageFieldRoyalty")]
-    PackageFieldRoyalty,
+    #[serde(rename = "PackageCode")]
+    PackageCode,
+    #[serde(rename = "PackageFieldRoyaltyAccumulator")]
+    PackageFieldRoyaltyAccumulator,
+    #[serde(rename = "PackageSchemaEntry")]
+    PackageSchemaEntry,
+    #[serde(rename = "PackageBlueprintEntry")]
+    PackageBlueprintEntry,
+    #[serde(rename = "PackageBlueprintDependenciesEntry")]
+    PackageBlueprintDependenciesEntry,
+    #[serde(rename = "PackageCodeEntry")]
+    PackageCodeEntry,
+    #[serde(rename = "PackageRoyaltyEntry")]
+    PackageRoyaltyEntry,
+    #[serde(rename = "PackageAuthTemplateEntry")]
+    PackageAuthTemplateEntry,
     #[serde(rename = "PackageFieldFunctionAccessRules")]
     PackageFieldFunctionAccessRules,
     #[serde(rename = "FungibleResourceManagerFieldDivisibility")]
@@ -50,6 +70,8 @@ pub enum SubstateType {
     NonFungibleVaultFieldBalance,
     #[serde(rename = "NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntry,
+    #[serde(rename = "ConsensusManager")]
+    ConsensusManager,
     #[serde(rename = "ConsensusManagerFieldConfig")]
     ConsensusManagerFieldConfig,
     #[serde(rename = "ConsensusManagerFieldState")]
@@ -62,6 +84,8 @@ pub enum SubstateType {
     ConsensusManagerFieldCurrentTimeRoundedToMinutes,
     #[serde(rename = "ConsensusManagerFieldCurrentTime")]
     ConsensusManagerFieldCurrentTime,
+    #[serde(rename = "ConsensusManagerFieldValidatorRewards")]
+    ConsensusManagerFieldValidatorRewards,
     #[serde(rename = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry")]
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
     #[serde(rename = "ValidatorFieldState")]
@@ -84,6 +108,10 @@ pub enum SubstateType {
     TwoResourcePool,
     #[serde(rename = "MultiResourcePool")]
     MultiResourcePool,
+    #[serde(rename = "TransactionTracker")]
+    TransactionTracker,
+    #[serde(rename = "TransactionTrackerCollectionEntry")]
+    TransactionTrackerCollectionEntry,
 
 }
 
@@ -91,14 +119,24 @@ impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
-            Self::AccessRulesModuleFieldAccessRules => String::from("AccessRulesModuleFieldAccessRules"),
+            Self::AccessRulesModuleFieldOwnerRole => String::from("AccessRulesModuleFieldOwnerRole"),
+            Self::AccessRulesModuleRule => String::from("AccessRulesModuleRule"),
+            Self::AccessRulesModuleMutability => String::from("AccessRulesModuleMutability"),
+            Self::AccessRuleEntry => String::from("AccessRuleEntry"),
+            Self::MutabilityEntry => String::from("MutabilityEntry"),
+            Self::OwnerRole => String::from("OwnerRole"),
             Self::RoyaltyModuleFieldConfig => String::from("RoyaltyModuleFieldConfig"),
             Self::RoyaltyModuleFieldAccumulator => String::from("RoyaltyModuleFieldAccumulator"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
             Self::PackageFieldInfo => String::from("PackageFieldInfo"),
-            Self::PackageFieldCodeType => String::from("PackageFieldCodeType"),
-            Self::PackageFieldCode => String::from("PackageFieldCode"),
-            Self::PackageFieldRoyalty => String::from("PackageFieldRoyalty"),
+            Self::PackageCode => String::from("PackageCode"),
+            Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
+            Self::PackageSchemaEntry => String::from("PackageSchemaEntry"),
+            Self::PackageBlueprintEntry => String::from("PackageBlueprintEntry"),
+            Self::PackageBlueprintDependenciesEntry => String::from("PackageBlueprintDependenciesEntry"),
+            Self::PackageCodeEntry => String::from("PackageCodeEntry"),
+            Self::PackageRoyaltyEntry => String::from("PackageRoyaltyEntry"),
+            Self::PackageAuthTemplateEntry => String::from("PackageAuthTemplateEntry"),
             Self::PackageFieldFunctionAccessRules => String::from("PackageFieldFunctionAccessRules"),
             Self::FungibleResourceManagerFieldDivisibility => String::from("FungibleResourceManagerFieldDivisibility"),
             Self::FungibleResourceManagerFieldTotalSupply => String::from("FungibleResourceManagerFieldTotalSupply"),
@@ -109,12 +147,14 @@ impl ToString for SubstateType {
             Self::FungibleVaultFieldBalance => String::from("FungibleVaultFieldBalance"),
             Self::NonFungibleVaultFieldBalance => String::from("NonFungibleVaultFieldBalance"),
             Self::NonFungibleVaultContentsIndexEntry => String::from("NonFungibleVaultContentsIndexEntry"),
+            Self::ConsensusManager => String::from("ConsensusManager"),
             Self::ConsensusManagerFieldConfig => String::from("ConsensusManagerFieldConfig"),
             Self::ConsensusManagerFieldState => String::from("ConsensusManagerFieldState"),
             Self::ConsensusManagerFieldCurrentValidatorSet => String::from("ConsensusManagerFieldCurrentValidatorSet"),
             Self::ConsensusManagerFieldCurrentProposalStatistic => String::from("ConsensusManagerFieldCurrentProposalStatistic"),
             Self::ConsensusManagerFieldCurrentTimeRoundedToMinutes => String::from("ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
             Self::ConsensusManagerFieldCurrentTime => String::from("ConsensusManagerFieldCurrentTime"),
+            Self::ConsensusManagerFieldValidatorRewards => String::from("ConsensusManagerFieldValidatorRewards"),
             Self::ConsensusManagerRegisteredValidatorsByStakeIndexEntry => String::from("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
             Self::ValidatorFieldState => String::from("ValidatorFieldState"),
             Self::AccountFieldState => String::from("AccountFieldState"),
@@ -126,6 +166,8 @@ impl ToString for SubstateType {
             Self::OneResourcePool => String::from("OneResourcePool"),
             Self::TwoResourcePool => String::from("TwoResourcePool"),
             Self::MultiResourcePool => String::from("MultiResourcePool"),
+            Self::TransactionTracker => String::from("TransactionTracker"),
+            Self::TransactionTrackerCollectionEntry => String::from("TransactionTrackerCollectionEntry"),
         }
     }
 }

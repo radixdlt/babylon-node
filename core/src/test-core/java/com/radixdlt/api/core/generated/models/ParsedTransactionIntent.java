@@ -31,7 +31,7 @@ import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntentAllOf;
-import com.radixdlt.api.core.generated.models.ParsedTransactionIntentAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedTransactionIntentIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedTransactionType;
 import com.radixdlt.api.core.generated.models.TransactionIntent;
 import io.swagger.annotations.ApiModel;
@@ -65,7 +65,7 @@ public class ParsedTransactionIntent extends ParsedTransaction {
   private TransactionIntent intent;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedTransactionIntentAllOfIdentifiers identifiers;
+  private ParsedTransactionIntentIdentifiers identifiers;
 
   public ParsedTransactionIntent() { 
   }
@@ -96,7 +96,7 @@ public class ParsedTransactionIntent extends ParsedTransaction {
   }
 
 
-  public ParsedTransactionIntent identifiers(ParsedTransactionIntentAllOfIdentifiers identifiers) {
+  public ParsedTransactionIntent identifiers(ParsedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -110,14 +110,14 @@ public class ParsedTransactionIntent extends ParsedTransaction {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedTransactionIntentAllOfIdentifiers getIdentifiers() {
+  public ParsedTransactionIntentIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedTransactionIntentAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

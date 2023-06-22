@@ -253,9 +253,6 @@ where
             base_committed_state_version: series_executor.latest_state_version(),
         };
 
-        let mut duplicate_intent_hash_detector =
-            DuplicateIntentHashDetector::new(read_store.deref());
-
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
             // and executable creation) by accessing the execution cache in a more clever way.
@@ -263,10 +260,6 @@ where
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
-
-            if let Some(intent_hash) = validated.intent_hash_if_user() {
-                duplicate_intent_hash_detector.record_ancestor(intent_hash);
-            }
 
             series_executor
                 .execute(&validated, "ancestor")
@@ -375,25 +368,6 @@ where
                 .header
                 .inner
                 .end_epoch_exclusive;
-            if let Err(with) = duplicate_intent_hash_detector.check_proposed(&intent_hash) {
-                rejected_transactions.push(RejectedTransaction {
-                    index: index as u32,
-                    intent_hash: Some(intent_hash),
-                    notarized_transaction_hash: Some(notarized_transaction_hash),
-                    ledger_transaction_hash: Some(ledger_transaction_hash),
-                    error: format!(
-                        "Duplicate intent hash: {:?}, state: {:?}",
-                        &intent_hash, with
-                    ),
-                });
-                pending_transaction_results.push(PendingTransactionResult {
-                    intent_hash,
-                    notarized_transaction_hash,
-                    invalid_at_epoch,
-                    rejection_reason: Some(RejectionReason::IntentHashCommitted),
-                });
-                continue;
-            }
 
             // TODO(optimization-only): We could avoid signature verification by re-using the
             // validated transaction from the mempool.
@@ -426,7 +400,6 @@ where
             let execute_result = series_executor.execute(&validated, "newly proposed");
             match execute_result {
                 Ok(_) => {
-                    duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                     committable_transactions.push(CommittableTransaction {
                         index: Some(index as u32),
                         raw: raw_ledger_transaction,
@@ -559,18 +532,39 @@ where
             initial_config,
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
         )
     }
 
-    /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
-    /// data ingestion chunks, and then a wrap-up).
-    pub fn execute_genesis(
+    /// Performs an [`execute_genesis()`] for production purposes.
+    pub fn execute_production_genesis(
         &self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
+    ) -> LedgerProof {
+        self.execute_genesis(
+            genesis_data_chunks,
+            initial_epoch,
+            initial_config,
+            initial_timestamp_ms,
+            genesis_opaque_hash,
+            Decimal::zero(),
+        )
+    }
+
+    /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
+    /// data ingestion chunks, and then a wrap-up).
+    fn execute_genesis(
+        &self,
+        genesis_data_chunks: Vec<GenesisDataChunk>,
+        initial_epoch: Epoch,
+        initial_config: ConsensusManagerConfig,
+        initial_timestamp_ms: i64,
+        genesis_opaque_hash: Hash,
+        faucet_supply: Decimal,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -601,6 +595,10 @@ where
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
+            // TODO(during review): why does the "bootstrap" context allow us to specify the
+            // "current consensus leader"? isn't `None` the only reasonable input here? Or is it me
+            // misinterpreting something?
+            None,
         );
         let prepare_result = self.prepare_genesis(transaction);
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
@@ -621,7 +619,7 @@ where
         }
 
         info!("Committing genesis wrap-up");
-        let transaction = create_genesis_wrap_up_transaction();
+        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
         let prepare_result = self.prepare_genesis(transaction);
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
-import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionIdentifiers;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -42,7 +42,7 @@ public class ParsedLedgerTransactionAllOf {
   private LedgerTransaction ledgerTransaction;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedLedgerTransactionAllOfIdentifiers identifiers;
+  private ParsedLedgerTransactionIdentifiers identifiers;
 
   public ParsedLedgerTransactionAllOf() { 
   }
@@ -73,7 +73,7 @@ public class ParsedLedgerTransactionAllOf {
   }
 
 
-  public ParsedLedgerTransactionAllOf identifiers(ParsedLedgerTransactionAllOfIdentifiers identifiers) {
+  public ParsedLedgerTransactionAllOf identifiers(ParsedLedgerTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -87,14 +87,14 @@ public class ParsedLedgerTransactionAllOf {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedLedgerTransactionAllOfIdentifiers getIdentifiers() {
+  public ParsedLedgerTransactionIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedLedgerTransactionAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedLedgerTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

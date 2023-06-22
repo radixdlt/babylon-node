@@ -19,12 +19,12 @@ pub struct BlueprintSchemaFieldPartition {
     pub partition_offset: i32,
     /// The field substates for this blueprint.
     #[serde(rename = "fields")]
-    pub fields: Vec<crate::core_api::generated::models::BlueprintFieldSchema>,
+    pub fields: Vec<crate::core_api::generated::models::FieldSchema>,
 }
 
 impl BlueprintSchemaFieldPartition {
     /// The fields partition of the blueprint.
-    pub fn new(partition_offset: i32, fields: Vec<crate::core_api::generated::models::BlueprintFieldSchema>) -> BlueprintSchemaFieldPartition {
+    pub fn new(partition_offset: i32, fields: Vec<crate::core_api::generated::models::FieldSchema>) -> BlueprintSchemaFieldPartition {
         BlueprintSchemaFieldPartition {
             partition_offset,
             fields,

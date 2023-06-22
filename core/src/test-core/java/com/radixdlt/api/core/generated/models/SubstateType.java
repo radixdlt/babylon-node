@@ -30,7 +30,17 @@ public enum SubstateType {
   
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
-  ACCESSRULESMODULEFIELDACCESSRULES("AccessRulesModuleFieldAccessRules"),
+  ACCESSRULESMODULEFIELDOWNERROLE("AccessRulesModuleFieldOwnerRole"),
+  
+  ACCESSRULESMODULERULE("AccessRulesModuleRule"),
+  
+  ACCESSRULESMODULEMUTABILITY("AccessRulesModuleMutability"),
+  
+  ACCESSRULEENTRY("AccessRuleEntry"),
+  
+  MUTABILITYENTRY("MutabilityEntry"),
+  
+  OWNERROLE("OwnerRole"),
   
   ROYALTYMODULEFIELDCONFIG("RoyaltyModuleFieldConfig"),
   
@@ -40,11 +50,21 @@ public enum SubstateType {
   
   PACKAGEFIELDINFO("PackageFieldInfo"),
   
-  PACKAGEFIELDCODETYPE("PackageFieldCodeType"),
+  PACKAGECODE("PackageCode"),
   
-  PACKAGEFIELDCODE("PackageFieldCode"),
+  PACKAGEFIELDROYALTYACCUMULATOR("PackageFieldRoyaltyAccumulator"),
   
-  PACKAGEFIELDROYALTY("PackageFieldRoyalty"),
+  PACKAGESCHEMAENTRY("PackageSchemaEntry"),
+  
+  PACKAGEBLUEPRINTENTRY("PackageBlueprintEntry"),
+  
+  PACKAGEBLUEPRINTDEPENDENCIESENTRY("PackageBlueprintDependenciesEntry"),
+  
+  PACKAGECODEENTRY("PackageCodeEntry"),
+  
+  PACKAGEROYALTYENTRY("PackageRoyaltyEntry"),
+  
+  PACKAGEAUTHTEMPLATEENTRY("PackageAuthTemplateEntry"),
   
   PACKAGEFIELDFUNCTIONACCESSRULES("PackageFieldFunctionAccessRules"),
   
@@ -66,6 +86,8 @@ public enum SubstateType {
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
+  CONSENSUSMANAGER("ConsensusManager"),
+  
   CONSENSUSMANAGERFIELDCONFIG("ConsensusManagerFieldConfig"),
   
   CONSENSUSMANAGERFIELDSTATE("ConsensusManagerFieldState"),
@@ -77,6 +99,8 @@ public enum SubstateType {
   CONSENSUSMANAGERFIELDCURRENTTIMEROUNDEDTOMINUTES("ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
   
   CONSENSUSMANAGERFIELDCURRENTTIME("ConsensusManagerFieldCurrentTime"),
+  
+  CONSENSUSMANAGERFIELDVALIDATORREWARDS("ConsensusManagerFieldValidatorRewards"),
   
   CONSENSUSMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   
@@ -98,7 +122,11 @@ public enum SubstateType {
   
   TWORESOURCEPOOL("TwoResourcePool"),
   
-  MULTIRESOURCEPOOL("MultiResourcePool");
+  MULTIRESOURCEPOOL("MultiResourcePool"),
+  
+  TRANSACTIONTRACKER("TransactionTracker"),
+  
+  TRANSACTIONTRACKERCOLLECTIONENTRY("TransactionTrackerCollectionEntry");
 
   private String value;
 

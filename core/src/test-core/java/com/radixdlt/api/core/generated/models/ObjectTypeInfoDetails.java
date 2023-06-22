@@ -47,6 +47,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   ObjectTypeInfoDetails.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetails.JSON_PROPERTY_BLUEPRINT_NAME,
+  ObjectTypeInfoDetails.JSON_PROPERTY_BLUEPRINT_VERSION,
   ObjectTypeInfoDetails.JSON_PROPERTY_GLOBAL,
   ObjectTypeInfoDetails.JSON_PROPERTY_OUTER_OBJECT,
   ObjectTypeInfoDetails.JSON_PROPERTY_INSTANCE_SCHEMA,
@@ -71,6 +72,9 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
@@ -136,6 +140,32 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setBlueprintName(String blueprintName) {
     this.blueprintName = blueprintName;
+  }
+
+
+  public ObjectTypeInfoDetails blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+    return this;
+  }
+
+   /**
+   * Get blueprintVersion
+   * @return blueprintVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintVersion() {
+    return blueprintVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -262,6 +292,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     ObjectTypeInfoDetails objectTypeInfoDetails = (ObjectTypeInfoDetails) o;
     return Objects.equals(this.packageAddress, objectTypeInfoDetails.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetails.blueprintName) &&
+        Objects.equals(this.blueprintVersion, objectTypeInfoDetails.blueprintVersion) &&
         Objects.equals(this.global, objectTypeInfoDetails.global) &&
         Objects.equals(this.outerObject, objectTypeInfoDetails.outerObject) &&
         Objects.equals(this.instanceSchema, objectTypeInfoDetails.instanceSchema) &&
@@ -271,7 +302,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema, features, super.hashCode());
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, global, outerObject, instanceSchema, features, super.hashCode());
   }
 
   @Override
@@ -281,6 +312,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");

@@ -125,7 +125,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
             let genesis_data: JavaGenesisData =
                 scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
             let config = genesis_data.initial_config;
-            state_manager.execute_genesis(
+            state_manager.execute_production_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -237,7 +237,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
             let validator_substate: ValidatorSubstate = read_store
                 .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                     validator_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &ValidatorField::Validator.into(),
                 )
                 .unwrap();

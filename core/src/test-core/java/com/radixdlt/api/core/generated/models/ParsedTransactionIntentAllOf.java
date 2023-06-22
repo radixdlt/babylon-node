@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ParsedTransactionIntentAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedTransactionIntentIdentifiers;
 import com.radixdlt.api.core.generated.models.TransactionIntent;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -42,7 +42,7 @@ public class ParsedTransactionIntentAllOf {
   private TransactionIntent intent;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedTransactionIntentAllOfIdentifiers identifiers;
+  private ParsedTransactionIntentIdentifiers identifiers;
 
   public ParsedTransactionIntentAllOf() { 
   }
@@ -73,7 +73,7 @@ public class ParsedTransactionIntentAllOf {
   }
 
 
-  public ParsedTransactionIntentAllOf identifiers(ParsedTransactionIntentAllOfIdentifiers identifiers) {
+  public ParsedTransactionIntentAllOf identifiers(ParsedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -87,14 +87,14 @@ public class ParsedTransactionIntentAllOf {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedTransactionIntentAllOfIdentifiers getIdentifiers() {
+  public ParsedTransactionIntentIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedTransactionIntentAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

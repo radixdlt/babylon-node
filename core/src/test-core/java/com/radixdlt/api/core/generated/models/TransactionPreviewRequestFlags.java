@@ -33,8 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   TransactionPreviewRequestFlags.JSON_PROPERTY_USE_FREE_CREDIT,
   TransactionPreviewRequestFlags.JSON_PROPERTY_ASSUME_ALL_SIGNATURE_PROOFS,
-  TransactionPreviewRequestFlags.JSON_PROPERTY_PERMIT_DUPLICATE_INTENT_HASH,
-  TransactionPreviewRequestFlags.JSON_PROPERTY_PERMIT_INVALID_HEADER_EPOCH
+  TransactionPreviewRequestFlags.JSON_PROPERTY_SKIP_EPOCH_CHECK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionPreviewRequestFlags {
@@ -44,11 +43,8 @@ public class TransactionPreviewRequestFlags {
   public static final String JSON_PROPERTY_ASSUME_ALL_SIGNATURE_PROOFS = "assume_all_signature_proofs";
   private Boolean assumeAllSignatureProofs;
 
-  public static final String JSON_PROPERTY_PERMIT_DUPLICATE_INTENT_HASH = "permit_duplicate_intent_hash";
-  private Boolean permitDuplicateIntentHash;
-
-  public static final String JSON_PROPERTY_PERMIT_INVALID_HEADER_EPOCH = "permit_invalid_header_epoch";
-  private Boolean permitInvalidHeaderEpoch;
+  public static final String JSON_PROPERTY_SKIP_EPOCH_CHECK = "skip_epoch_check";
+  private Boolean skipEpochCheck;
 
   public TransactionPreviewRequestFlags() { 
   }
@@ -105,55 +101,29 @@ public class TransactionPreviewRequestFlags {
   }
 
 
-  public TransactionPreviewRequestFlags permitDuplicateIntentHash(Boolean permitDuplicateIntentHash) {
-    this.permitDuplicateIntentHash = permitDuplicateIntentHash;
+  public TransactionPreviewRequestFlags skipEpochCheck(Boolean skipEpochCheck) {
+    this.skipEpochCheck = skipEpochCheck;
     return this;
   }
 
    /**
-   * Get permitDuplicateIntentHash
-   * @return permitDuplicateIntentHash
+   * Get skipEpochCheck
+   * @return skipEpochCheck
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PERMIT_DUPLICATE_INTENT_HASH)
+  @JsonProperty(JSON_PROPERTY_SKIP_EPOCH_CHECK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getPermitDuplicateIntentHash() {
-    return permitDuplicateIntentHash;
+  public Boolean getSkipEpochCheck() {
+    return skipEpochCheck;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PERMIT_DUPLICATE_INTENT_HASH)
+  @JsonProperty(JSON_PROPERTY_SKIP_EPOCH_CHECK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPermitDuplicateIntentHash(Boolean permitDuplicateIntentHash) {
-    this.permitDuplicateIntentHash = permitDuplicateIntentHash;
-  }
-
-
-  public TransactionPreviewRequestFlags permitInvalidHeaderEpoch(Boolean permitInvalidHeaderEpoch) {
-    this.permitInvalidHeaderEpoch = permitInvalidHeaderEpoch;
-    return this;
-  }
-
-   /**
-   * Get permitInvalidHeaderEpoch
-   * @return permitInvalidHeaderEpoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PERMIT_INVALID_HEADER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getPermitInvalidHeaderEpoch() {
-    return permitInvalidHeaderEpoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PERMIT_INVALID_HEADER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPermitInvalidHeaderEpoch(Boolean permitInvalidHeaderEpoch) {
-    this.permitInvalidHeaderEpoch = permitInvalidHeaderEpoch;
+  public void setSkipEpochCheck(Boolean skipEpochCheck) {
+    this.skipEpochCheck = skipEpochCheck;
   }
 
 
@@ -171,13 +141,12 @@ public class TransactionPreviewRequestFlags {
     TransactionPreviewRequestFlags transactionPreviewRequestFlags = (TransactionPreviewRequestFlags) o;
     return Objects.equals(this.useFreeCredit, transactionPreviewRequestFlags.useFreeCredit) &&
         Objects.equals(this.assumeAllSignatureProofs, transactionPreviewRequestFlags.assumeAllSignatureProofs) &&
-        Objects.equals(this.permitDuplicateIntentHash, transactionPreviewRequestFlags.permitDuplicateIntentHash) &&
-        Objects.equals(this.permitInvalidHeaderEpoch, transactionPreviewRequestFlags.permitInvalidHeaderEpoch);
+        Objects.equals(this.skipEpochCheck, transactionPreviewRequestFlags.skipEpochCheck);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(useFreeCredit, assumeAllSignatureProofs, permitDuplicateIntentHash, permitInvalidHeaderEpoch);
+    return Objects.hash(useFreeCredit, assumeAllSignatureProofs, skipEpochCheck);
   }
 
   @Override
@@ -186,8 +155,7 @@ public class TransactionPreviewRequestFlags {
     sb.append("class TransactionPreviewRequestFlags {\n");
     sb.append("    useFreeCredit: ").append(toIndentedString(useFreeCredit)).append("\n");
     sb.append("    assumeAllSignatureProofs: ").append(toIndentedString(assumeAllSignatureProofs)).append("\n");
-    sb.append("    permitDuplicateIntentHash: ").append(toIndentedString(permitDuplicateIntentHash)).append("\n");
-    sb.append("    permitInvalidHeaderEpoch: ").append(toIndentedString(permitInvalidHeaderEpoch)).append("\n");
+    sb.append("    skipEpochCheck: ").append(toIndentedString(skipEpochCheck)).append("\n");
     sb.append("}");
     return sb.toString();
   }

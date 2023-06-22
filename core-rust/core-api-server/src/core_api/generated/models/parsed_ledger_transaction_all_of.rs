@@ -16,11 +16,11 @@ pub struct ParsedLedgerTransactionAllOf {
     #[serde(rename = "ledger_transaction", skip_serializing_if = "Option::is_none")]
     pub ledger_transaction: Option<Box<crate::core_api::generated::models::LedgerTransaction>>,
     #[serde(rename = "identifiers")]
-    pub identifiers: Box<crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers>,
+    pub identifiers: Box<crate::core_api::generated::models::ParsedLedgerTransactionIdentifiers>,
 }
 
 impl ParsedLedgerTransactionAllOf {
-    pub fn new(identifiers: crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers) -> ParsedLedgerTransactionAllOf {
+    pub fn new(identifiers: crate::core_api::generated::models::ParsedLedgerTransactionIdentifiers) -> ParsedLedgerTransactionAllOf {
         ParsedLedgerTransactionAllOf {
             ledger_transaction: None,
             identifiers: Box::new(identifiers),

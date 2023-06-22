@@ -18,11 +18,11 @@ pub struct ParsedSignedTransactionIntent {
     #[serde(rename = "signed_intent", skip_serializing_if = "Option::is_none")]
     pub signed_intent: Option<Box<crate::core_api::generated::models::SignedTransactionIntent>>,
     #[serde(rename = "identifiers")]
-    pub identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers>,
+    pub identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentIdentifiers>,
 }
 
 impl ParsedSignedTransactionIntent {
-    pub fn new(_type: crate::core_api::generated::models::ParsedTransactionType, identifiers: crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers) -> ParsedSignedTransactionIntent {
+    pub fn new(_type: crate::core_api::generated::models::ParsedTransactionType, identifiers: crate::core_api::generated::models::ParsedSignedTransactionIntentIdentifiers) -> ParsedSignedTransactionIntent {
         ParsedSignedTransactionIntent {
             _type,
             signed_intent: None,

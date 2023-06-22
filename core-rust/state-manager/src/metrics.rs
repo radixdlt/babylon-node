@@ -286,7 +286,6 @@ impl MetricLabel for MempoolAddError {
             MempoolAddError::Rejected(rejection) => match &rejection.reason {
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
-                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
             },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate(_) => "Duplicate",

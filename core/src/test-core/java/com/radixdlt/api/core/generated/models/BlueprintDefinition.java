@@ -22,10 +22,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintSchema;
-import com.radixdlt.api.core.generated.models.BlueprintTemplate;
+import com.radixdlt.api.core.generated.models.BlueprintInterface;
+import com.radixdlt.api.core.generated.models.PackageExport;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -33,69 +36,109 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintDefinition
  */
 @JsonPropertyOrder({
-  BlueprintDefinition.JSON_PROPERTY_SCHEMA,
-  BlueprintDefinition.JSON_PROPERTY_TEMPLATE
+  BlueprintDefinition.JSON_PROPERTY_INTERFACE,
+  BlueprintDefinition.JSON_PROPERTY_FUNCTION_EXPORTS,
+  BlueprintDefinition.JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintDefinition {
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private BlueprintSchema schema;
+  public static final String JSON_PROPERTY_INTERFACE = "interface";
+  private BlueprintInterface _interface;
 
-  public static final String JSON_PROPERTY_TEMPLATE = "template";
-  private BlueprintTemplate template;
+  public static final String JSON_PROPERTY_FUNCTION_EXPORTS = "function_exports";
+  private Map<String, PackageExport> functionExports = new HashMap<>();
+
+  public static final String JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS = "virtual_lazy_load_functions";
+  private Map<String, PackageExport> virtualLazyLoadFunctions = new HashMap<>();
 
   public BlueprintDefinition() { 
   }
 
-  public BlueprintDefinition schema(BlueprintSchema schema) {
-    this.schema = schema;
+  public BlueprintDefinition _interface(BlueprintInterface _interface) {
+    this._interface = _interface;
     return this;
   }
 
    /**
-   * Get schema
-   * @return schema
+   * Get _interface
+   * @return _interface
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_INTERFACE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintSchema getSchema() {
-    return schema;
+  public BlueprintInterface getInterface() {
+    return _interface;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_INTERFACE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(BlueprintSchema schema) {
-    this.schema = schema;
+  public void setInterface(BlueprintInterface _interface) {
+    this._interface = _interface;
   }
 
 
-  public BlueprintDefinition template(BlueprintTemplate template) {
-    this.template = template;
+  public BlueprintDefinition functionExports(Map<String, PackageExport> functionExports) {
+    this.functionExports = functionExports;
+    return this;
+  }
+
+  public BlueprintDefinition putFunctionExportsItem(String key, PackageExport functionExportsItem) {
+    this.functionExports.put(key, functionExportsItem);
     return this;
   }
 
    /**
-   * Get template
-   * @return template
+   * A map from the function name to its export
+   * @return functionExports
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TEMPLATE)
+  @ApiModelProperty(required = true, value = "A map from the function name to its export")
+  @JsonProperty(JSON_PROPERTY_FUNCTION_EXPORTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintTemplate getTemplate() {
-    return template;
+  public Map<String, PackageExport> getFunctionExports() {
+    return functionExports;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TEMPLATE)
+  @JsonProperty(JSON_PROPERTY_FUNCTION_EXPORTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTemplate(BlueprintTemplate template) {
-    this.template = template;
+  public void setFunctionExports(Map<String, PackageExport> functionExports) {
+    this.functionExports = functionExports;
+  }
+
+
+  public BlueprintDefinition virtualLazyLoadFunctions(Map<String, PackageExport> virtualLazyLoadFunctions) {
+    this.virtualLazyLoadFunctions = virtualLazyLoadFunctions;
+    return this;
+  }
+
+  public BlueprintDefinition putVirtualLazyLoadFunctionsItem(String key, PackageExport virtualLazyLoadFunctionsItem) {
+    this.virtualLazyLoadFunctions.put(key, virtualLazyLoadFunctionsItem);
+    return this;
+  }
+
+   /**
+   * A map from the function ID to its export
+   * @return virtualLazyLoadFunctions
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A map from the function ID to its export")
+  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Map<String, PackageExport> getVirtualLazyLoadFunctions() {
+    return virtualLazyLoadFunctions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVirtualLazyLoadFunctions(Map<String, PackageExport> virtualLazyLoadFunctions) {
+    this.virtualLazyLoadFunctions = virtualLazyLoadFunctions;
   }
 
 
@@ -111,21 +154,23 @@ public class BlueprintDefinition {
       return false;
     }
     BlueprintDefinition blueprintDefinition = (BlueprintDefinition) o;
-    return Objects.equals(this.schema, blueprintDefinition.schema) &&
-        Objects.equals(this.template, blueprintDefinition.template);
+    return Objects.equals(this._interface, blueprintDefinition._interface) &&
+        Objects.equals(this.functionExports, blueprintDefinition.functionExports) &&
+        Objects.equals(this.virtualLazyLoadFunctions, blueprintDefinition.virtualLazyLoadFunctions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, template);
+    return Objects.hash(_interface, functionExports, virtualLazyLoadFunctions);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintDefinition {\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
-    sb.append("    template: ").append(toIndentedString(template)).append("\n");
+    sb.append("    _interface: ").append(toIndentedString(_interface)).append("\n");
+    sb.append("    functionExports: ").append(toIndentedString(functionExports)).append("\n");
+    sb.append("    virtualLazyLoadFunctions: ").append(toIndentedString(virtualLazyLoadFunctions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

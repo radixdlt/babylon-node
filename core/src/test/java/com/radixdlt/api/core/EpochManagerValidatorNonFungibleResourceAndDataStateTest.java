@@ -113,17 +113,10 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
                       .validatorAddress(validatorAddress));
 
       // We extract the "Owner Badge"
-      final var accessRulesSubstate =
-          (AccessRulesModuleFieldAccessRulesSubstate) validatorResponse.getAccessRules();
-      //noinspection OptionalGetWithoutIsPresent
-      final var ownerAccessRule =
-          (ProtectedAccessRule)
-              accessRulesSubstate.getRoles().stream()
-                  .filter(r -> r.getRoleKey().equals("_owner_"))
-                  .findFirst()
-                  .get()
-                  .getAccessRule();
-      final var proofRuleNode = (ProofAccessRuleNode) ownerAccessRule.getAccessRule();
+      final var ownerRoleSubstate = (OwnerRoleSubstate) validatorResponse.getOwnerRole();
+      final var ownerRole = (FixedOwnerRole) ownerRoleSubstate.getOwnerRole();
+      final var accessRule = (ProtectedAccessRule) ownerRole.getAccessRule();
+      final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
       final var requirement = (NonFungibleRequirement) requireProofRule.getRequirement();
       final var nonFungibleResourceAddress = requirement.getNonFungible().getResourceAddress();
@@ -140,7 +133,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
           (StateNonFungibleResourceManager) nonFungibleResourceResponse.getManager();
       final var idTypeSubstate =
           (NonFungibleResourceManagerFieldIdTypeSubstate) nonFungibleManager.getIdType();
-      assertThat(idTypeSubstate.getNonFungibleIdType()).isEqualTo(NonFungibleIdType.UUID);
+      assertThat(idTypeSubstate.getNonFungibleIdType()).isEqualTo(NonFungibleIdType.RUID);
 
       final var nonFungibleDataResponse =
           getStateApi()

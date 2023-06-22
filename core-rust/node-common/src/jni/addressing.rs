@@ -170,7 +170,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_nativeGlobalFungible(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH]| {
+        |address_bytes_without_entity_id: [u8; NodeId::RID_LENGTH]| {
             ResourceAddress::new_or_panic(
                 NodeId::new(
                     EntityType::GlobalFungibleResourceManager as u8,

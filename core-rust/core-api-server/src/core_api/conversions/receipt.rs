@@ -265,7 +265,7 @@ pub fn to_api_event(
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
     let ApplicationEvent {
-        type_id: EventTypeIdentifier(emitter, local_type_index),
+        type_id: EventTypeIdentifier(emitter, type_pointer),
         data,
     } = event;
     Ok(models::Event {
@@ -285,7 +285,7 @@ pub fn to_api_event(
                     }
                 }
             }),
-            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
+            type_pointer: Some(to_api_type_pointer(context, &type_pointer)?),
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })
