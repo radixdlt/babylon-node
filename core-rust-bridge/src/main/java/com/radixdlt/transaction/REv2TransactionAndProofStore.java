@@ -80,21 +80,6 @@ import java.util.Optional;
 public final class REv2TransactionAndProofStore {
   public REv2TransactionAndProofStore(Metrics metrics, StateManager stateManager) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.getTransactionAtStateVersionFunc =
-        Natives.builder(stateManager, REv2TransactionAndProofStore::getTransactionAtStateVersion)
-            .measure(
-                timer.label(
-                    new MethodId(
-                        REv2TransactionAndProofStore.class, "getTransactionAtStateVersion")))
-            .build(new TypeToken<>() {});
-    this.getTransactionDetailsAtStateVersionFunc =
-        Natives.builder(
-                stateManager, REv2TransactionAndProofStore::getTransactionDetailsAtStateVersion)
-            .measure(
-                timer.label(
-                    new MethodId(
-                        REv2TransactionAndProofStore.class, "getTransactionDetailsAtStateVersion")))
-            .build(new TypeToken<>() {});
     this.getTxnsAndProof =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getTxnsAndProof)
             .measure(
@@ -114,15 +99,6 @@ public final class REv2TransactionAndProofStore {
         Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
             .build(new TypeToken<>() {});
-  }
-
-  public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
-    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
-  }
-
-  public Option<TransactionDetails> getTransactionDetailsAtStateVersion(long stateVersion) {
-    return this.getTransactionDetailsAtStateVersionFunc.call(
-        UInt64.fromNonNegativeLong(stateVersion));
   }
 
   public Option<TxnsAndProof> getTxnsAndProof(
@@ -147,17 +123,6 @@ public final class REv2TransactionAndProofStore {
   public Optional<LedgerProof> getEpochProof(long epoch) {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
-
-  private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
-
-  private static native byte[] getTransactionDetailsAtStateVersion(
-      StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<UInt64, Option<TransactionDetails>>
-      getTransactionDetailsAtStateVersionFunc;
-
-  private static native byte[] getTransactionAtStateVersion(
-      StateManager stateManager, byte[] payload);
 
   private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
 

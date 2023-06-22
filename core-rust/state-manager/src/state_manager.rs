@@ -319,7 +319,7 @@ where
             .expect("round update rejected");
 
         vertex_limits_tracker
-            .try_advance(
+            .try_next_transaction(
                 transaction_size,
                 &round_update_result
                     .local_receipt
@@ -460,7 +460,7 @@ where
             let execute_result = series_executor.execute(&validated, "newly proposed");
             match execute_result {
                 Ok(processed_commit_result) => {
-                    match vertex_limits_tracker.try_advance(
+                    match vertex_limits_tracker.try_next_transaction(
                         transaction_size,
                         &processed_commit_result
                             .local_receipt

@@ -69,10 +69,9 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.function.Predicate;
@@ -87,9 +86,9 @@ public class NodePredicate {
     var committedTransaction =
         TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
-      var store = i.getInstance(REv2TransactionAndProofStore.class);
+      var reader = i.getInstance(TestStateReader.class);
       for (long version = 1; true; version++) {
-        var maybeTxn = store.getTransactionAtStateVersion(version);
+        var maybeTxn = reader.getTransactionAtStateVersion(version);
         if (maybeTxn.isEmpty()) {
           break;
         } else {
@@ -120,9 +119,9 @@ public class NodePredicate {
     var committedTransaction =
         TransactionPreparer.rawNotarizedTransactionToRawLedgerTransaction(userTransaction);
     return i -> {
-      var store = i.getInstance(REv2TransactionAndProofStore.class);
+      var reader = i.getInstance(TestStateReader.class);
       for (long version = 1; true; version++) {
-        var maybeTxn = store.getTransactionAtStateVersion(version);
+        var maybeTxn = reader.getTransactionAtStateVersion(version);
         if (maybeTxn.isEmpty()) {
           break;
         } else {
@@ -161,7 +160,8 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> atOrOverEpoch(long epoch) {
-    return i -> i.getInstance(REv2StateReader.class).getEpoch() >= epoch;
+    return i ->
+        i.getInstance(TestStateReader.class).getEpoch().toNonNegativeLong().unwrap() >= epoch;
   }
 
   public static Predicate<Injector> bftAtOrOverRound(Round round) {
