@@ -1121,6 +1121,9 @@ components:
         typed:
           description: Whether to return the typed substate information (default true)
           type: boolean
+        previous:
+          description: Whether to return the previous substate value for updates (default false)
+          type: boolean
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
 ###########################################################
@@ -1465,11 +1468,11 @@ components:
         created_substates:
           type: array
           items:
-            $ref: "#/components/schemas/CreatedOrUpdatedSubstate"
+            $ref: "#/components/schemas/CreatedSubstate"
         updated_substates:
           type: array
           items:
-            $ref: "#/components/schemas/CreatedOrUpdatedSubstate"
+            $ref: "#/components/schemas/UpdatedSubstate"
         deleted_substates:
           type: array
           items:
@@ -1495,13 +1498,34 @@ components:
           items:
             $ref: '#/components/schemas/ActiveValidator'
           description: Active validator set for the new epoch, ordered by stake descending.
-    CreatedOrUpdatedSubstate:
+    CreatedSubstate:
       type: object
       required:
         - substate_id
+        - value
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
+        value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The initial value assigned to the substate.
+    UpdatedSubstate:
+      type: object
+      required:
+        - substate_id
+        - new_value
+      properties:
+        substate_id:
+          $ref: "#/components/schemas/SubstateId"
+        new_value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The new value assigned to the substate.
+        previous_value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
+    SubstateValue:
+      type: object
+      properties:
         substate_hex:
           type: string
           description: The hex-encoded, SBOR-encoded substate data bytes. Only returned if enabled in SubstateFormatOptions on your request (default false).

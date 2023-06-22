@@ -11,6 +11,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
+use radix_engine_store_interface::interface::DbSubstateValue;
 use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
@@ -34,8 +35,11 @@ pub struct SubstateChange {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ChangeAction {
-    Create(Vec<u8>),
-    Update(Vec<u8>),
+    Create(DbSubstateValue),
+    Update {
+        new: DbSubstateValue,
+        previous: DbSubstateValue,
+    },
     Delete,
 }
 

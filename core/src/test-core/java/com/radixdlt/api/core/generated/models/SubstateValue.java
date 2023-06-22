@@ -23,26 +23,21 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.Substate;
-import com.radixdlt.api.core.generated.models.SubstateId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CreatedOrUpdatedSubstate
+ * SubstateValue
  */
 @JsonPropertyOrder({
-  CreatedOrUpdatedSubstate.JSON_PROPERTY_SUBSTATE_ID,
-  CreatedOrUpdatedSubstate.JSON_PROPERTY_SUBSTATE_HEX,
-  CreatedOrUpdatedSubstate.JSON_PROPERTY_SUBSTATE_DATA_HASH,
-  CreatedOrUpdatedSubstate.JSON_PROPERTY_SUBSTATE_DATA
+  SubstateValue.JSON_PROPERTY_SUBSTATE_HEX,
+  SubstateValue.JSON_PROPERTY_SUBSTATE_DATA_HASH,
+  SubstateValue.JSON_PROPERTY_SUBSTATE_DATA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CreatedOrUpdatedSubstate {
-  public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
-  private SubstateId substateId;
-
+public class SubstateValue {
   public static final String JSON_PROPERTY_SUBSTATE_HEX = "substate_hex";
   private String substateHex;
 
@@ -52,36 +47,10 @@ public class CreatedOrUpdatedSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_DATA = "substate_data";
   private Substate substateData;
 
-  public CreatedOrUpdatedSubstate() { 
+  public SubstateValue() { 
   }
 
-  public CreatedOrUpdatedSubstate substateId(SubstateId substateId) {
-    this.substateId = substateId;
-    return this;
-  }
-
-   /**
-   * Get substateId
-   * @return substateId
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateId getSubstateId() {
-    return substateId;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateId(SubstateId substateId) {
-    this.substateId = substateId;
-  }
-
-
-  public CreatedOrUpdatedSubstate substateHex(String substateHex) {
+  public SubstateValue substateHex(String substateHex) {
     this.substateHex = substateHex;
     return this;
   }
@@ -107,7 +76,7 @@ public class CreatedOrUpdatedSubstate {
   }
 
 
-  public CreatedOrUpdatedSubstate substateDataHash(String substateDataHash) {
+  public SubstateValue substateDataHash(String substateDataHash) {
     this.substateDataHash = substateDataHash;
     return this;
   }
@@ -133,7 +102,7 @@ public class CreatedOrUpdatedSubstate {
   }
 
 
-  public CreatedOrUpdatedSubstate substateData(Substate substateData) {
+  public SubstateValue substateData(Substate substateData) {
     this.substateData = substateData;
     return this;
   }
@@ -160,7 +129,7 @@ public class CreatedOrUpdatedSubstate {
 
 
   /**
-   * Return true if this CreatedOrUpdatedSubstate object is equal to o.
+   * Return true if this SubstateValue object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -170,23 +139,21 @@ public class CreatedOrUpdatedSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CreatedOrUpdatedSubstate createdOrUpdatedSubstate = (CreatedOrUpdatedSubstate) o;
-    return Objects.equals(this.substateId, createdOrUpdatedSubstate.substateId) &&
-        Objects.equals(this.substateHex, createdOrUpdatedSubstate.substateHex) &&
-        Objects.equals(this.substateDataHash, createdOrUpdatedSubstate.substateDataHash) &&
-        Objects.equals(this.substateData, createdOrUpdatedSubstate.substateData);
+    SubstateValue substateValue = (SubstateValue) o;
+    return Objects.equals(this.substateHex, substateValue.substateHex) &&
+        Objects.equals(this.substateDataHash, substateValue.substateDataHash) &&
+        Objects.equals(this.substateData, substateValue.substateData);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId, substateHex, substateDataHash, substateData);
+    return Objects.hash(substateHex, substateDataHash, substateData);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CreatedOrUpdatedSubstate {\n");
-    sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
+    sb.append("class SubstateValue {\n");
     sb.append("    substateHex: ").append(toIndentedString(substateHex)).append("\n");
     sb.append("    substateDataHash: ").append(toIndentedString(substateDataHash)).append("\n");
     sb.append("    substateData: ").append(toIndentedString(substateData)).append("\n");

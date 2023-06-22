@@ -257,7 +257,10 @@ impl ProcessedCommitResult {
                 let change_action = match update {
                     DatabaseUpdate::Set(value) => {
                         match store.get_substate(&partition_key, &sort_key) {
-                            Some(_) => ChangeAction::Update(value.clone()),
+                            Some(previous) => ChangeAction::Update {
+                                new: value.clone(),
+                                previous,
+                            },
                             None => ChangeAction::Create(value.clone()),
                         }
                     }

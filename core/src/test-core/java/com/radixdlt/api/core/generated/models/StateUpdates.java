@@ -22,9 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.CreatedOrUpdatedSubstate;
+import com.radixdlt.api.core.generated.models.CreatedSubstate;
 import com.radixdlt.api.core.generated.models.DeletedSubstate;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.UpdatedSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -45,10 +46,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateUpdates {
   public static final String JSON_PROPERTY_CREATED_SUBSTATES = "created_substates";
-  private List<CreatedOrUpdatedSubstate> createdSubstates = new ArrayList<>();
+  private List<CreatedSubstate> createdSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_UPDATED_SUBSTATES = "updated_substates";
-  private List<CreatedOrUpdatedSubstate> updatedSubstates = new ArrayList<>();
+  private List<UpdatedSubstate> updatedSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_DELETED_SUBSTATES = "deleted_substates";
   private List<DeletedSubstate> deletedSubstates = new ArrayList<>();
@@ -59,12 +60,12 @@ public class StateUpdates {
   public StateUpdates() { 
   }
 
-  public StateUpdates createdSubstates(List<CreatedOrUpdatedSubstate> createdSubstates) {
+  public StateUpdates createdSubstates(List<CreatedSubstate> createdSubstates) {
     this.createdSubstates = createdSubstates;
     return this;
   }
 
-  public StateUpdates addCreatedSubstatesItem(CreatedOrUpdatedSubstate createdSubstatesItem) {
+  public StateUpdates addCreatedSubstatesItem(CreatedSubstate createdSubstatesItem) {
     this.createdSubstates.add(createdSubstatesItem);
     return this;
   }
@@ -78,24 +79,24 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_CREATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<CreatedOrUpdatedSubstate> getCreatedSubstates() {
+  public List<CreatedSubstate> getCreatedSubstates() {
     return createdSubstates;
   }
 
 
   @JsonProperty(JSON_PROPERTY_CREATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCreatedSubstates(List<CreatedOrUpdatedSubstate> createdSubstates) {
+  public void setCreatedSubstates(List<CreatedSubstate> createdSubstates) {
     this.createdSubstates = createdSubstates;
   }
 
 
-  public StateUpdates updatedSubstates(List<CreatedOrUpdatedSubstate> updatedSubstates) {
+  public StateUpdates updatedSubstates(List<UpdatedSubstate> updatedSubstates) {
     this.updatedSubstates = updatedSubstates;
     return this;
   }
 
-  public StateUpdates addUpdatedSubstatesItem(CreatedOrUpdatedSubstate updatedSubstatesItem) {
+  public StateUpdates addUpdatedSubstatesItem(UpdatedSubstate updatedSubstatesItem) {
     this.updatedSubstates.add(updatedSubstatesItem);
     return this;
   }
@@ -109,14 +110,14 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_UPDATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<CreatedOrUpdatedSubstate> getUpdatedSubstates() {
+  public List<UpdatedSubstate> getUpdatedSubstates() {
     return updatedSubstates;
   }
 
 
   @JsonProperty(JSON_PROPERTY_UPDATED_SUBSTATES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUpdatedSubstates(List<CreatedOrUpdatedSubstate> updatedSubstates) {
+  public void setUpdatedSubstates(List<UpdatedSubstate> updatedSubstates) {
     this.updatedSubstates = updatedSubstates;
   }
 

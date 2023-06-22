@@ -34,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   SubstateFormatOptions.JSON_PROPERTY_RAW,
   SubstateFormatOptions.JSON_PROPERTY_HASH,
-  SubstateFormatOptions.JSON_PROPERTY_TYPED
+  SubstateFormatOptions.JSON_PROPERTY_TYPED,
+  SubstateFormatOptions.JSON_PROPERTY_PREVIOUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SubstateFormatOptions {
@@ -46,6 +47,9 @@ public class SubstateFormatOptions {
 
   public static final String JSON_PROPERTY_TYPED = "typed";
   private Boolean typed;
+
+  public static final String JSON_PROPERTY_PREVIOUS = "previous";
+  private Boolean previous;
 
   public SubstateFormatOptions() { 
   }
@@ -128,6 +132,32 @@ public class SubstateFormatOptions {
   }
 
 
+  public SubstateFormatOptions previous(Boolean previous) {
+    this.previous = previous;
+    return this;
+  }
+
+   /**
+   * Whether to return the previous substate value for updates (default false)
+   * @return previous
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to return the previous substate value for updates (default false)")
+  @JsonProperty(JSON_PROPERTY_PREVIOUS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getPrevious() {
+    return previous;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PREVIOUS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPrevious(Boolean previous) {
+    this.previous = previous;
+  }
+
+
   /**
    * Return true if this SubstateFormatOptions object is equal to o.
    */
@@ -142,12 +172,13 @@ public class SubstateFormatOptions {
     SubstateFormatOptions substateFormatOptions = (SubstateFormatOptions) o;
     return Objects.equals(this.raw, substateFormatOptions.raw) &&
         Objects.equals(this.hash, substateFormatOptions.hash) &&
-        Objects.equals(this.typed, substateFormatOptions.typed);
+        Objects.equals(this.typed, substateFormatOptions.typed) &&
+        Objects.equals(this.previous, substateFormatOptions.previous);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(raw, hash, typed);
+    return Objects.hash(raw, hash, typed, previous);
   }
 
   @Override
@@ -157,6 +188,7 @@ public class SubstateFormatOptions {
     sb.append("    raw: ").append(toIndentedString(raw)).append("\n");
     sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
     sb.append("    typed: ").append(toIndentedString(typed)).append("\n");
+    sb.append("    previous: ").append(toIndentedString(previous)).append("\n");
     sb.append("}");
     return sb.toString();
   }
