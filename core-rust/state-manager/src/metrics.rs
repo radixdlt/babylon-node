@@ -63,15 +63,31 @@
  */
 
 use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
+use node_common::config::limits::{
+    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+};
 use prometheus::core::*;
 use prometheus::*;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine_common::types::ComponentAddress;
+use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
 
 pub struct LedgerMetrics {
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
     pub consensus_rounds_committed: IntCounterVec,
     pub last_update_epoch_second: Gauge,
+}
+
+pub struct CommittedTransactionsMetrics {
+    pub size: Histogram,
+    pub execution_cost_units_consumed: Histogram,
+    pub substate_read_size: Histogram,
+    pub substate_read_count: Histogram,
+    pub substate_write_size: Histogram,
+    pub substate_write_count: Histogram,
+    pub max_wasm_memory_used: Histogram,
+    pub max_invoke_payload_size: Histogram,
 }
 
 pub struct MempoolMetrics {
@@ -108,6 +124,90 @@ impl LedgerMetrics {
             ))
             .registered_at(registry),
         }
+    }
+}
+
+// TODO: update buckets limits when default values are overwritten
+impl CommittedTransactionsMetrics {
+    pub fn new(registry: &Registry, execution_config: &ExecutionConfig) -> Self {
+        Self {
+            size: new_histogram(
+                opts(
+                    "committed_transactions_size",
+                    "Size in bytes of committed transactions.",
+                ),
+                Self::buckets(DEFAULT_MAX_TRANSACTION_SIZE),
+            )
+            .registered_at(registry),
+            execution_cost_units_consumed: new_histogram(
+                opts(
+                    "committed_transactions_execution_cost_units_consumed",
+                    "Execution cost units consumed per committed transactions.",
+                ),
+                Self::buckets(execution_config.cost_unit_limit as usize),
+            )
+            .registered_at(registry),
+            substate_read_size: new_histogram(
+                opts(
+                    "committed_transactions_substate_read_size",
+                    "Total (per committed transaction) substate read size in bytes.",
+                ),
+                // TODO: update once max substate reads can be limited at execution
+                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE),
+            )
+            .registered_at(registry),
+            substate_read_count: new_histogram(
+                opts(
+                    "committed_transactions_substate_read_count",
+                    "Number of substate reads per committed transactions.",
+                ),
+                Self::buckets(execution_config.max_substate_reads_per_transaction),
+            )
+            .registered_at(registry),
+            substate_write_size: new_histogram(
+                opts(
+                    "committed_transactions_substate_write_size",
+                    "Total (per committed transaction) substate write size in bytes.",
+                ),
+                // TODO: update once max substate writes can be limited at execution
+                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE),
+            )
+            .registered_at(registry),
+            substate_write_count: new_histogram(
+                opts(
+                    "committed_transactions_substate_write_count",
+                    "Number of substate writes per committed transactions.",
+                ),
+                Self::buckets(execution_config.max_substate_writes_per_transaction),
+            )
+            .registered_at(registry),
+            max_wasm_memory_used: new_histogram(
+                opts(
+                    "committed_transactions_max_wasm_memory_used",
+                    "Maximum WASM memory used in bytes per committed transaction.",
+                ),
+                Self::buckets(execution_config.max_wasm_mem_per_transaction),
+            )
+            .registered_at(registry),
+            max_invoke_payload_size: new_histogram(
+                opts(
+                    "committed_transactions_max_invoke_payload_size",
+                    "Maximum invoke payload size in bytes per committed transaction.",
+                ),
+                Self::buckets(execution_config.max_invoke_input_size),
+            )
+            .registered_at(registry),
+        }
+    }
+
+    // Given a limit, builds buckets for a Histogram with higher resolution for lower values.
+    // This gives percentile buckets: 0-2, 2-4, 4-6, 6-8, 8-10, 10-15, 15-20, 20-25, 25-50, 50-75, 75-100
+    fn buckets(limit: usize) -> Vec<f64> {
+        let limit = limit as f64;
+        let mut buckets = equidistant_buckets(5, 0.0, 0.1 * limit);
+        buckets.extend(equidistant_buckets(3, 0.1 * limit, 0.25 * limit));
+        buckets.extend(equidistant_buckets(3, 0.25 * limit, limit));
+        buckets
     }
 }
 
@@ -161,6 +261,21 @@ fn opts(name: &str, help: &str) -> Opts {
     Opts::new(format!("rn_{name}"), help)
 }
 
+fn new_histogram(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
+    Histogram::with_opts(HistogramOpts::from(opts).buckets(buckets))
+}
+
+fn equidistant_buckets(number_of_buckets: usize, min: f64, max: f64) -> Vec<f64> {
+    let range = max - min;
+    (1..number_of_buckets + 1)
+        .map(|bucket| {
+            let bucket = bucket as f64 / number_of_buckets as f64;
+
+            bucket * range + min
+        })
+        .collect()
+}
+
 /// Creates a new `Histogram` tailored to measuring time durations.
 /// The name (found in `Opts`) is expected to be a verb (describing the measured action) and will be
 /// auto-suffixed with a conventional `_seconds` string. The measurements are thus expected to be
@@ -173,7 +288,7 @@ fn new_timer(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
     adjusted_opts.name = format!("{}_seconds", adjusted_opts.name);
     let mut adjusted_buckets = buckets;
     adjusted_buckets.push(f64::INFINITY);
-    Histogram::with_opts(HistogramOpts::from(adjusted_opts).buckets(adjusted_buckets))
+    new_histogram(adjusted_opts, adjusted_buckets)
 }
 
 // TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.
