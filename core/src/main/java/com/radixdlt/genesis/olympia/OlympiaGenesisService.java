@@ -140,7 +140,7 @@ public final class OlympiaGenesisService {
     final var includeTestPayload = counter % 1000 == 1;
     if (counter == 0) {
       log.info(
-          "Querying the Olympia node {} for genesis data{}",
+          "Querying the Olympia node {} for genesis data{} (this may take a few minutes)",
           olympiaGenesisConfig.nodeCoreApiUrl(),
           includeTestPayload ? " (with test payload)" : "");
     }
