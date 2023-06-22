@@ -89,7 +89,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.HashMap;
@@ -144,11 +144,11 @@ public final class RandomValidatorsTest {
       var validators = new HashMap<Integer, ComponentAddress>();
 
       // Iterate over all genesis transactions (data chunks) and collect validator's addresses
-      final var txnStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      final var reader = test.getInstance(0, TestStateReader.class);
       final var componentAddressesBuilder = ImmutableList.<ComponentAddress>builder();
       var stateVersion = 1;
       while (true) {
-        final var nextTxnDetails = txnStore.getTransactionDetailsAtStateVersion(stateVersion);
+        final var nextTxnDetails = reader.getTransactionDetailsAtStateVersion(stateVersion);
         if (nextTxnDetails.isEmpty()) {
           break;
         } else {
@@ -239,7 +239,7 @@ public final class RandomValidatorsTest {
                       .raw();
             }
             case 3 -> {
-              var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
+              var stateReader = test.getInstance(randomValidatorIndex, TestStateReader.class);
               var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
                   TransactionBuilder.forTests()
@@ -251,7 +251,7 @@ public final class RandomValidatorsTest {
                       .raw();
             }
             default -> {
-              var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
+              var stateReader = test.getInstance(randomValidatorIndex, TestStateReader.class);
               var validatorInfo = stateReader.getValidatorInfo(validatorAddress);
               txn =
                   TransactionBuilder.forTests()
