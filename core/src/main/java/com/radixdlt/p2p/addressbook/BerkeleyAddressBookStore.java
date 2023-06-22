@@ -86,10 +86,6 @@ import org.apache.logging.log4j.Logger;
 public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   private static final Logger log = LogManager.getLogger();
 
-  static {
-    System.setProperty("je.disable.java.adler32", "true");
-  }
-
   private final Serialization serialization;
   private final Environment dbEnv;
   private final Metrics metrics;
