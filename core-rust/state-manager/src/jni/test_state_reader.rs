@@ -240,7 +240,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
             let validator_substate: ValidatorSubstate = read_store
                 .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                     validator_address.as_node_id(),
-                    OBJECT_BASE_PARTITION,
+                    MAIN_BASE_PARTITION,
                     &ValidatorField::Validator.into(),
                 )
                 .unwrap();
