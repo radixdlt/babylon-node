@@ -496,7 +496,7 @@ mod tests {
         SubstateReference(
             node_id(node_id_seed),
             PartitionNumber(partition),
-            SubstateKey::Tuple(substate_key_seed),
+            SubstateKey::Field(substate_key_seed),
         )
     }
 

@@ -62,25 +62,48 @@
  * permissions under this License.
  */
 
-extern crate core;
+use radix_engine_constants::{
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION, DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+};
 
-mod accumulator_tree;
-pub mod jni;
-mod limits;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod staging;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+// TODO: revisit & tune before Babylon
+const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: u32 = 10;
+const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
+const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
+const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
+const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION * 10;
+const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
+const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION * 10;
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::staging::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+pub struct VertexLimitsConfig {
+    pub max_total_transactions_count: u32,
+    pub max_total_transactions_size: usize,
+    pub max_total_execution_cost_units_consumed: u32,
+    pub max_total_substate_read_size: usize,
+    pub max_total_substate_read_count: usize,
+    pub max_total_substate_write_size: usize,
+    pub max_total_substate_write_count: usize,
+}
+
+impl VertexLimitsConfig {
+    pub fn standard() -> Self {
+        Self {
+            max_total_transactions_count: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT,
+            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+            max_total_execution_cost_units_consumed:
+                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
+            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
+            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
+            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
+        }
+    }
+}
+
+impl Default for VertexLimitsConfig {
+    fn default() -> Self {
+        VertexLimitsConfig::standard()
+    }
+}

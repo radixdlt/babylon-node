@@ -4,7 +4,9 @@ use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
-use radix_engine::transaction::{CommitResult, StateUpdateSummary, TransactionOutcome};
+use radix_engine::transaction::{
+    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionOutcome,
+};
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
@@ -135,6 +137,7 @@ pub struct LedgerTransactionReceipt {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
+    pub execution_metrics: ExecutionMetrics,
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
     // Which vault/s paid the fee
@@ -187,6 +190,7 @@ impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
+                execution_metrics: commit_result.execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
                 fee_payments: commit_result.fee_payments,
