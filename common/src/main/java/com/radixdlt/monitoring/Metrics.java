@@ -232,7 +232,9 @@ public record Metrics(
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
-      Gauge targetStateVersion) {}
+      Gauge targetStateVersion,
+      Counter staleSyncResponses,
+      Counter unexpectedSyncResponses) {}
 
   public record Mempool(Counter relaysSent) {}
 
