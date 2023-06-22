@@ -76,39 +76,24 @@ pub fn to_api_receipt(
 
         match action {
             ChangeAction::Create(value) => {
-                let typed_substate_value =
-                    to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
-                        |msg| MappingError::SubstateValue {
-                            bytes: value.clone(),
-                            message: msg,
-                        },
-                    )?;
-                created_substates.push(to_api_created_or_updated_substate(
+                created_substates.push(to_api_created_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
-                    &value,
                     &typed_substate_key,
-                    &typed_substate_value,
+                    &ValueRepresentations::new(&typed_substate_key, value)?,
                 )?);
             }
-            ChangeAction::Update(value) => {
-                let typed_substate_value =
-                    to_typed_substate_value(&typed_substate_key, value.as_ref()).map_err(
-                        |msg| MappingError::SubstateValue {
-                            bytes: value.clone(),
-                            message: msg,
-                        },
-                    )?;
-                updated_substates.push(to_api_created_or_updated_substate(
+            ChangeAction::Update { previous, new } => {
+                updated_substates.push(to_api_updated_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
-                    &value,
                     &typed_substate_key,
-                    &typed_substate_value,
+                    &ValueRepresentations::new(&typed_substate_key, new)?,
+                    &ValueRepresentations::new(&typed_substate_key, previous)?,
                 )?);
             }
             ChangeAction::Delete => {
@@ -170,52 +155,115 @@ pub fn to_api_receipt(
     })
 }
 
+pub struct ValueRepresentations {
+    pub typed: TypedSubstateValue,
+    pub raw: Vec<u8>,
+}
+
+impl ValueRepresentations {
+    pub fn new(typed_substate_key: &TypedSubstateKey, raw: Vec<u8>) -> Result<Self, MappingError> {
+        Ok(Self {
+            typed: to_typed_substate_value(typed_substate_key, raw.as_ref()).map_err(|msg| {
+                MappingError::SubstateValue {
+                    bytes: raw.clone(),
+                    message: msg,
+                }
+            })?,
+            raw,
+        })
+    }
+}
 #[tracing::instrument(skip_all)]
-pub fn to_api_created_or_updated_substate(
+pub fn to_api_created_substate(
     context: &MappingContext,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
-    value: &Vec<u8>,
     typed_substate_key: &TypedSubstateKey,
-    typed_substate_value: &TypedSubstateValue,
-) -> Result<models::CreatedOrUpdatedSubstate, MappingError> {
-    let substate_id = to_api_substate_id(
-        context,
-        node_id,
-        partition_number,
-        substate_key,
-        typed_substate_key,
-    )?;
-
-    let substate_hex = if context.substate_options.include_raw {
-        Some(to_hex(value))
-    } else {
-        None
-    };
-
-    let substate_data_hash = if context.substate_options.include_hash {
-        Some(to_hex(hash(value)))
-    } else {
-        None
-    };
-
-    let substate_data = if context.substate_options.include_typed {
-        Some(Box::new(to_api_substate(
+    value_representations: &ValueRepresentations,
+) -> Result<models::CreatedSubstate, MappingError> {
+    Ok(models::CreatedSubstate {
+        substate_id: Box::new(to_api_substate_id(
+            context,
+            node_id,
+            partition_number,
+            substate_key,
+            typed_substate_key,
+        )?),
+        value: Box::new(to_api_substate_value(
             context,
             substate_key,
             typed_substate_key,
-            typed_substate_value,
-        )?))
-    } else {
-        None
-    };
+            value_representations,
+        )?),
+    })
+}
 
-    Ok(models::CreatedOrUpdatedSubstate {
-        substate_id: Box::new(substate_id),
-        substate_hex,
-        substate_data_hash,
-        substate_data,
+#[tracing::instrument(skip_all)]
+pub fn to_api_updated_substate(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+    typed_substate_key: &TypedSubstateKey,
+    new_value_representations: &ValueRepresentations,
+    previous_value_representations: &ValueRepresentations,
+) -> Result<models::UpdatedSubstate, MappingError> {
+    Ok(models::UpdatedSubstate {
+        substate_id: Box::new(to_api_substate_id(
+            context,
+            node_id,
+            partition_number,
+            substate_key,
+            typed_substate_key,
+        )?),
+        new_value: Box::new(to_api_substate_value(
+            context,
+            substate_key,
+            typed_substate_key,
+            new_value_representations,
+        )?),
+        previous_value: if context.substate_options.include_previous {
+            Some(Box::new(to_api_substate_value(
+                context,
+                substate_key,
+                typed_substate_key,
+                previous_value_representations,
+            )?))
+        } else {
+            None
+        },
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_substate_value(
+    context: &MappingContext,
+    substate_key: &SubstateKey,
+    typed_substate_key: &TypedSubstateKey,
+    value_representations: &ValueRepresentations,
+) -> Result<models::SubstateValue, MappingError> {
+    Ok(models::SubstateValue {
+        substate_hex: if context.substate_options.include_raw {
+            Some(to_hex(&value_representations.raw))
+        } else {
+            None
+        },
+        substate_data_hash: if context.substate_options.include_hash {
+            Some(to_hex(hash(&value_representations.raw)))
+        } else {
+            None
+        },
+        substate_data: if context.substate_options.include_typed {
+            Some(Box::new(to_api_substate(
+                context,
+                substate_key,
+                typed_substate_key,
+                &value_representations.typed,
+            )?))
+        } else {
+            None
+        },
     })
 }
 
