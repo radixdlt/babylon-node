@@ -64,66 +64,45 @@
 
 package com.radixdlt.store;
 
-import static com.radixdlt.utils.SerializerTestDataGenerator.randomRound;
-import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static com.sleepycat.je.EnvironmentConfig.*;
+import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.sleepycat.je.*;
-import java.util.Optional;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import com.sleepycat.je.CacheMode;
+import com.sleepycat.je.Durability;
+import com.sleepycat.je.EnvironmentConfig;
+import java.util.concurrent.TimeUnit;
 
-public class BerkeleySafetyStateStoreTest {
+public final class BerkeleyDbDefaults {
+  private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
+  private static final long DEFAULT_MIN_CACHE_SIZE =
+      Math.max(10_000_000L, (long) (MAX_MEMORY * 0.01));
+  private static final long DEFAULT_MAX_CACHE_SIZE = (long) (MAX_MEMORY * 0.05);
+  private static final long DEFAULT_CACHE_SIZE = (long) (MAX_MEMORY * 0.02);
 
-  @Test
-  public void should_be_able_to_restore_committed_state() {
-    final var db = mock(Database.class);
-    final var env = mock(Environment.class);
-    final var dbEnv = mock(BerkeleyDatabaseEnvironment.class);
-    final var tx = mock(com.sleepycat.je.Transaction.class);
-    when(dbEnv.getEnvironment()).thenReturn(env);
-    when(env.openDatabase(any(), any(), any())).thenReturn(db);
+  public static EnvironmentConfig createDefaultEnvConfigFromProperties(
+      RuntimeProperties properties) {
+    final var cacheSize = readCacheSizeFromPropertiesOrDefault(properties);
+    final var config = new EnvironmentConfig();
+    config.setTransactional(true);
+    config.setAllowCreate(true);
+    config.setLockTimeout(30, TimeUnit.SECONDS);
+    config.setDurability(Durability.COMMIT_SYNC);
+    config.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
+    config.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
+    config.setConfigParam(ENV_RUN_CLEANER, "true");
+    config.setConfigParam(ENV_RUN_EVICTOR, "true");
+    config.setConfigParam(ENV_RUN_VERIFIER, "false");
+    config.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
+    config.setCacheSize(cacheSize);
+    config.setCacheMode(CacheMode.EVICT_LN);
+    return config;
+  }
 
-    final var store =
-        new BerkeleySafetyStateStore(
-            dbEnv, DefaultSerialization.getInstance(), new MetricsInitializer().initialize());
-
-    final var safetyState = new SafetyState(randomRound(), Optional.of(randomVote()));
-
-    when(env.beginTransaction(any(), any())).thenReturn(tx);
-
-    when(db.put(any(), any(), any())).thenReturn(OperationStatus.SUCCESS);
-
-    ArgumentCaptor<DatabaseEntry> entryCaptor = ArgumentCaptor.forClass(DatabaseEntry.class);
-
-    store.commitState(safetyState);
-
-    verify(db, times(1)).put(any(), any(), entryCaptor.capture());
-    verify(tx, times(1)).commit();
-    verifyNoMoreInteractions(tx);
-
-    final var cursor = mock(Cursor.class);
-    when(db.openCursor(any(), any())).thenReturn(cursor);
-
-    when(cursor.getLast(any(), any(), any()))
-        .thenAnswer(
-            invocation -> {
-              DatabaseEntry entry = (DatabaseEntry) invocation.getArguments()[1];
-              entry.setData(entryCaptor.getValue().getData());
-              return OperationStatus.SUCCESS;
-            });
-
-    var state = store.get();
-
-    assertTrue(state.isPresent());
-    assertEquals(safetyState, state.get());
+  private static long readCacheSizeFromPropertiesOrDefault(RuntimeProperties properties) {
+    final var minCacheSize = properties.get("db.cache_size.min", DEFAULT_MIN_CACHE_SIZE);
+    final var maxCacheSize = properties.get("db.cache_size.max", DEFAULT_MAX_CACHE_SIZE);
+    final var unrestrictedCacheSize = properties.get("db.cache_size", DEFAULT_CACHE_SIZE);
+    return Math.min(Math.max(unrestrictedCacheSize, minCacheSize), maxCacheSize);
   }
 }

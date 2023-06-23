@@ -93,7 +93,6 @@ import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -207,11 +206,6 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
-
-    // Berkeley storage
-
-    install(
-        new BerkeleyDatabaseModule(BerkeleyDatabaseModule.getCacheSizeFromProperties(properties)));
 
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 50);

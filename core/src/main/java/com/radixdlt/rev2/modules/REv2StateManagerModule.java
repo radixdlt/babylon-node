@@ -176,7 +176,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             DatabaseBackendConfig databaseBackendConfig(
                 @NodeStorageLocation String nodeStorageLocation) {
               return DatabaseBackendConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath());
+                  new File(nodeStorageLocation, "state_manager").getPath());
             }
           });
       case IN_MEMORY -> install(

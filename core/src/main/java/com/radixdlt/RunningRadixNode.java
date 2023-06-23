@@ -80,7 +80,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -168,10 +167,6 @@ public final class RunningRadixNode {
     catchAllAndLogShutdownError(
         "PersistentSafetyStateStore",
         () -> injector.getInstance(PersistentSafetyStateStore.class).close());
-
-    catchAllAndLogShutdownError(
-        "BerkeleyDatabaseEnvironment",
-        () -> injector.getInstance(BerkeleyDatabaseEnvironment.class).stop());
 
     catchAllAndLogShutdownError(
         "PeerServerBootstrap", () -> injector.getInstance(PeerServerBootstrap.class).stop());

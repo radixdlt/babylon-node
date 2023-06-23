@@ -64,14 +64,17 @@
 
 package com.radixdlt.p2p.addressbook;
 
+import static com.sleepycat.je.EnvironmentConfig.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.store.NodeStorageLocation;
 import com.sleepycat.je.*;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -84,17 +87,22 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   private static final Logger log = LogManager.getLogger();
 
   private final Serialization serialization;
-  private final BerkeleyDatabaseEnvironment dbEnv;
+  private final Environment dbEnv;
   private final Metrics metrics;
   private Database entriesDb;
 
   @Inject
   public BerkeleyAddressBookStore(
-      Serialization serialization, BerkeleyDatabaseEnvironment dbEnv, Metrics metrics) {
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation,
+      EnvironmentConfig envConfig) {
     this.serialization = Objects.requireNonNull(serialization);
-    this.dbEnv = Objects.requireNonNull(dbEnv);
     this.metrics = Objects.requireNonNull(metrics);
 
+    final var dbHome = new File(nodeStorageLocation, "address_book");
+    dbHome.mkdirs();
+    this.dbEnv = new Environment(dbHome, envConfig);
     this.open();
   }
 
@@ -104,8 +112,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
     config.setAllowCreate(true);
 
     try {
-      this.entriesDb =
-          this.dbEnv.getEnvironment().openDatabase(null, "address_book_entries", config);
+      this.entriesDb = this.dbEnv.openDatabase(null, "address_book_entries", config);
     } catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
       throw new IllegalStateException("while opening database", ex);
     }
@@ -117,10 +124,8 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
     try {
       transaction =
-          this.dbEnv
-              .getEnvironment()
-              .beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-      this.dbEnv.getEnvironment().truncateDatabase(transaction, "address_book_entries", false);
+          this.dbEnv.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+      this.dbEnv.truncateDatabase(transaction, "address_book_entries", false);
       transaction.commit();
     } catch (DatabaseNotFoundException dsnfex) {
       if (transaction != null) {
@@ -141,6 +146,8 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       this.entriesDb.close();
       this.entriesDb = null;
     }
+
+    dbEnv.close();
   }
 
   @Override
