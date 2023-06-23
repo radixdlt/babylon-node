@@ -70,13 +70,9 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.ValidatorInfo;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -96,18 +92,6 @@ public class RustStateComputer {
     this.commitFunc =
         Natives.builder(stateManager, RustStateComputer::commit)
             .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
-            .build(new TypeToken<>() {});
-    this.componentXrdAmountFunc =
-        Natives.builder(stateManager, RustStateComputer::componentXrdAmount)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "componentXrdAmount")))
-            .build(new TypeToken<>() {});
-    this.validatorInfoFunc =
-        Natives.builder(stateManager, RustStateComputer::validatorInfo)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "validatorInfo")))
-            .build(new TypeToken<>() {});
-    this.epochFunc =
-        Natives.builder(stateManager, RustStateComputer::epoch)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "epoch")))
             .build(new TypeToken<>() {});
   }
 
@@ -135,28 +119,4 @@ public class RustStateComputer {
       commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
-
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
-
-  public UInt64 getEpoch() {
-    return epochFunc.call(Tuple.tuple());
-  }
-
-  private static native byte[] epoch(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
-
-  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
-    return validatorInfoFunc.call(validatorAddress);
-  }
-
-  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
 }

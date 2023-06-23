@@ -79,6 +79,9 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.*;
+import com.radixdlt.testutil.InternalAddress;
+import com.radixdlt.testutil.TransactionDetails;
+import com.radixdlt.testutil.ValidatorInfo;
 import com.radixdlt.transaction.*;
 import com.radixdlt.transactions.*;
 import com.radixdlt.utils.UInt16;
@@ -177,6 +180,7 @@ public final class StateManagerSbor {
     MetadataValue.registerCodec(codecMap);
     NonFungibleLocalId.registerCodec(codecMap);
     NonFungibleGlobalId.registerCodec(codecMap);
+    InternalAddress.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

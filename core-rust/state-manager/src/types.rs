@@ -300,6 +300,7 @@ pub struct RoundHistory {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<CommittableTransaction>,
+    /// Note: this is only used for testing
     pub rejected: Vec<RejectedTransaction>,
     pub next_epoch: Option<NextEpoch>,
     pub ledger_hashes: LedgerHashes,

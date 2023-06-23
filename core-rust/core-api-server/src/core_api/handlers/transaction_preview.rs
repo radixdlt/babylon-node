@@ -136,6 +136,7 @@ fn to_api_response(
                 commit_result,
                 result.substate_changes,
                 receipt.execution_trace,
+                receipt.execution_metrics,
             ));
 
             models::TransactionPreviewResponse {

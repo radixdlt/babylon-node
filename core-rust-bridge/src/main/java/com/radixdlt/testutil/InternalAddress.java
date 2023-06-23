@@ -62,107 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.testutil;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.identifiers.Bech32mCoder;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.*;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.testutil.InternalAddress;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-/** Performs Bech32m encoding/decoding. */
-public final class Addressing {
-  private final Network network;
-  private final NetworkDefinition networkDefinition;
-
-  private Addressing(Network network) {
-    this.network = network;
-    this.networkDefinition = NetworkDefinition.from(network);
+public record InternalAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        InternalAddress.class,
+        codecs ->
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_REFERENCE,
+                BYTE_LENGTH,
+                InternalAddress::value,
+                InternalAddress::new));
   }
 
-  public static Addressing ofNetwork(Network network) {
-    return new Addressing(network);
-  }
+  private static final int BYTE_LENGTH = 30;
 
-  public static Addressing ofNetwork(NetworkDefinition networkDefinition) {
-    return new Addressing(networkDefinition.toNetwork());
-  }
-
-  public static Addressing ofNetworkId(int networkId) {
-    return ofNetwork(Network.ofIdOrThrow(networkId));
-  }
-
-  public String encode(PackageAddress address) {
-    return address.encode(this.networkDefinition);
-  }
-
-  public String encode(ComponentAddress address) {
-    return address.encode(this.networkDefinition);
-  }
-
-  public String encode(ResourceAddress address) {
-    return address.encode(this.networkDefinition);
-  }
-
-  public PackageAddress decodePackageAddress(String address) {
-    return PackageAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getPackageHrp(), address));
-  }
-
-  public ResourceAddress decodeResourceAddress(String address) {
-    return ResourceAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getResourceHrp(), address));
-  }
-
-  public ComponentAddress decodeNormalComponentAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getNormalComponentHrp(), address));
-  }
-
-  public ComponentAddress decodeAccountAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
-  }
-
-  public InternalAddress decodeInternalVaultNodeId(String address) {
-    return InternalAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getInternalVaultHrp(), address));
-  }
-
-  public ComponentAddress decodeValidatorAddress(String address) {
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getValidatorHrp(), address));
-  }
-
-  public String encodeNodeAddress(ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getCompressedBytes());
-  }
-
-  public ECDSASecp256k1PublicKey decodeNodeAddress(String address) throws DeserializeException {
-    try {
-      var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
-      return ECDSASecp256k1PublicKey.fromBytes(pubKeyBytes);
-    } catch (Bech32DecodeException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
+  public static InternalAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid ReNode ID length");
     }
+    return new InternalAddress(addressBytes);
   }
 
-  public static String encodeNodeAddressWithHrp(String hrp, ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(hrp, publicKey.getCompressedBytes());
+  @Override
+  public String toString() {
+    return Hex.toHexString(value);
   }
 
-  public static Pair<String, ECDSASecp256k1PublicKey> decodeNodeAddressUnknownHrp(String address)
-      throws DeserializeException {
-    try {
-      var hrpAndPubKeyBytes = Bech32mCoder.decode(address);
-      return Pair.of(
-          hrpAndPubKeyBytes.first(), ECDSASecp256k1PublicKey.fromBytes(hrpAndPubKeyBytes.last()));
-    } catch (Bech32DecodeException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof InternalAddress other && Arrays.equals(this.value, other.value);
   }
 }

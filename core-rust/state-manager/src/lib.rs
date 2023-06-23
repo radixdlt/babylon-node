@@ -66,6 +66,7 @@ extern crate core;
 
 mod accumulator_tree;
 pub mod jni;
+mod limits;
 pub mod mempool;
 mod metrics;
 pub mod query;

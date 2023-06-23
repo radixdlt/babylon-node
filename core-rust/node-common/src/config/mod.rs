@@ -62,35 +62,4 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
-
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
-import java.util.Objects;
-
-/** Extra information about an executed transaction currently needed for testing */
-public record TransactionDetails(
-    List<ComponentAddress> newComponentAddresses, List<ResourceAddress> newResourceAddresses) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        TransactionDetails.class,
-        codecs -> StructCodec.fromRecordComponents(TransactionDetails.class, codecs));
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    TransactionDetails that = (TransactionDetails) o;
-    return Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(newComponentAddresses, newResourceAddresses);
-  }
-}
+pub mod limits;

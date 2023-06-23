@@ -62,15 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.api.core;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress unstakeResource) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        ValidatorInfo.class,
-        codecs -> StructCodec.fromRecordComponents(ValidatorInfo.class, codecs));
+import com.google.common.collect.MoreCollectors;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.StateAccountRequest;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.testutil.TestStateReader;
+import java.util.List;
+import org.junit.Test;
+
+public class NodeMetadataIndexTest extends DeterministicCoreApiTestBase {
+
+  @Test
+  public void createdVaultHasItsAccountAsRootInDatabaseIndex() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+      // Set up an account and a vault
+      var accountAddress = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
+
+      // Discover the vault's substate node ID
+      var vaultEntity =
+          this.getStateApi()
+              .stateAccountPost(
+                  new StateAccountRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress)))
+              .getVaults()
+              .stream()
+              .collect(MoreCollectors.onlyElement())
+              .getVaultEntity();
+      var vaultNodeId = addressing.decodeInternalVaultNodeId(vaultEntity.getEntityAddress());
+
+      // Query the global root of the vault's node ID
+      var indexedAccountAddress =
+          test.getInstance(0, TestStateReader.class).getNodeGlobalRoot(vaultNodeId);
+
+      // Assert it is the address of the account created at the beginning
+      assertThat(indexedAccountAddress.toOptional())
+          .contains(GlobalAddress.create(accountAddress.value()));
+    }
   }
 }

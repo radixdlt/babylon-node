@@ -76,6 +76,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Optional;
 import javax.net.ssl.*;
 import okhttp3.MediaType;
@@ -167,6 +168,15 @@ public final class OlympiaEndStateApiClient {
     final var builder = new OkHttpClient.Builder();
     builder.sslSocketFactory(sslContext.getSocketFactory(), TRUST_ALL_MANAGER);
     builder.hostnameVerifier((hostname, session) -> true);
+
+    // 10 minutes timeout for the whole call
+    // (incl. DNS resolution, establishing connection and data read/write)
+    builder.callTimeout(Duration.ofMinutes(10));
+    // callTimeout covers all below, so setting to infinite (0)
+    builder.connectTimeout(Duration.ofMinutes(0));
+    builder.writeTimeout(Duration.ofMinutes(0));
+    builder.readTimeout(Duration.ofMinutes(0));
+
     return builder.build();
   }
 

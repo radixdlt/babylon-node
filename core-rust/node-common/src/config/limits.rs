@@ -62,13 +62,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+use radix_engine_constants::{
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION, DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+};
 
-/** Reads REv2 state */
-public interface REv2StateReader {
-  Decimal getComponentXrdAmount(ComponentAddress componentAddress);
+// TODO: revisit & tune before Babylon
+pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: usize = 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: usize = 200_000_000;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION * 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION * 10;
 
-  ValidatorInfo getValidatorInfo(ComponentAddress systemAddress);
+pub struct VertexLimitsConfig {
+    pub max_total_transactions_count: usize,
+    pub max_total_transactions_size: usize,
+    pub max_total_execution_cost_units_consumed: usize,
+    pub max_total_substate_read_size: usize,
+    pub max_total_substate_read_count: usize,
+    pub max_total_substate_write_size: usize,
+    pub max_total_substate_write_count: usize,
+}
 
-  long getEpoch();
+impl VertexLimitsConfig {
+    pub fn standard() -> Self {
+        Self {
+            max_total_transactions_count: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT,
+            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+            max_total_execution_cost_units_consumed:
+                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
+            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
+            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
+            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
+        }
+    }
+}
+
+impl Default for VertexLimitsConfig {
+    fn default() -> Self {
+        VertexLimitsConfig::standard()
+    }
 }
