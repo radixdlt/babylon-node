@@ -4329,7 +4329,6 @@ components:
       type: object
       required:
         - state_version
-        - accumulator_hash
         - state_tree_hash
         - transaction_tree_hash
         - receipt_tree_hash

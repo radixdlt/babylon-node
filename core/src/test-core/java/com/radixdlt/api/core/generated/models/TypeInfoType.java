@@ -30,7 +30,11 @@ public enum TypeInfoType {
   
   OBJECT("Object"),
   
-  KEYVALUESTORE("KeyValueStore");
+  KEYVALUESTORE("KeyValueStore"),
+  
+  GLOBALADDRESSRESERVATION("GlobalAddressReservation"),
+  
+  GLOBALADDRESSPHANTOM("GlobalAddressPhantom");
 
   private String value;
 
