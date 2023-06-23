@@ -145,7 +145,7 @@ public final class REv2GenesisTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidatorsAndXrdBalances(
+                        GenesisBuilder.createTestGenesisWithNumValidatorsAndXrdBalances(
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),

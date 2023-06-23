@@ -121,7 +121,8 @@ public class REv2StateComputerTest {
                     Decimal.of(1),
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
-                    GenesisConsensusManagerConfig.Builder.testDefaults()))),
+                    GenesisConsensusManagerConfig.Builder.testDefaults(),
+                    true))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override

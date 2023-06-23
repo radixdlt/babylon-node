@@ -113,7 +113,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
                       .validatorAddress(validatorAddress));
 
       // We extract the "Owner Badge"
-      final var ownerRoleSubstate = (OwnerRoleSubstate) validatorResponse.getOwnerRole();
+      final var ownerRoleSubstate = (AccessRulesModuleFieldOwnerRoleSubstate) validatorResponse.getOwnerRole();
       final var ownerRole = (FixedOwnerRole) ownerRoleSubstate.getOwnerRole();
       final var accessRule = (ProtectedAccessRule) ownerRole.getAccessRule();
       final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();

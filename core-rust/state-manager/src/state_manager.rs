@@ -564,7 +564,7 @@ where
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_test_genesis(&self) -> LedgerProof {
+    pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
         let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
@@ -607,28 +607,9 @@ where
         )
     }
 
-    /// Performs an [`execute_genesis()`] for production purposes.
-    pub fn execute_production_genesis(
-        &self,
-        genesis_data_chunks: Vec<GenesisDataChunk>,
-        initial_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-        initial_timestamp_ms: i64,
-        genesis_opaque_hash: Hash,
-    ) -> LedgerProof {
-        self.execute_genesis(
-            genesis_data_chunks,
-            initial_epoch,
-            initial_config,
-            initial_timestamp_ms,
-            genesis_opaque_hash,
-            Decimal::zero(),
-        )
-    }
-
     /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
-    fn execute_genesis(
+    pub fn execute_genesis(
         &self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: Epoch,

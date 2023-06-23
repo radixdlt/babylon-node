@@ -116,7 +116,7 @@ public final class REv2MempoolFillAndEmptyTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),

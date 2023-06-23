@@ -89,6 +89,7 @@ pub struct JavaGenesisData {
     pub initial_timestamp_ms: i64,
     pub initial_config: JavaConsensusManagerConfig,
     pub chunks: Vec<GenesisDataChunk>,
+    pub faucet_supply: Decimal,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -120,7 +121,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
             let genesis_data: JavaGenesisData =
                 scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
             let config = genesis_data.initial_config;
-            state_manager.execute_production_genesis(
+            state_manager.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -138,6 +139,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                 },
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
+                genesis_data.faucet_supply,
             )
         },
     )

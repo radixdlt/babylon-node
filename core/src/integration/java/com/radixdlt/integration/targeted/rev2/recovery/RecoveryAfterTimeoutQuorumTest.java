@@ -123,7 +123,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    GenesisBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createTestGenesisWithNumValidators(
                         NUM_VALIDATORS,
                         Decimal.of(1),
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),

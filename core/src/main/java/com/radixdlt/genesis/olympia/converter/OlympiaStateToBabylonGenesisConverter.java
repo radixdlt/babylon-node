@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.genesis.*;
 import com.radixdlt.genesis.olympia.converter.resource.OlympiaResourcesConverter;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.utils.UInt64;
 import java.util.stream.Stream;
 
@@ -95,6 +96,7 @@ public final class OlympiaStateToBabylonGenesisConverter {
     final var resourcesChunks = resourcesAndBalances.resourcesChunks();
     final var nonXrdBalancesChunks = resourcesAndBalances.nonXrdBalancesChunks();
     final var xrdBalancesChunks = resourcesAndBalances.xrdBalancesChunks();
+    final var faucetSupply = Decimal.ZERO;
 
     return new GenesisData(
         UInt64.fromNonNegativeLong(olympiaStateIR.lastEpoch()),
@@ -107,6 +109,7 @@ public final class OlympiaStateToBabylonGenesisConverter {
                 nonXrdBalancesChunks.stream(),
                 xrdBalancesChunks.stream())
             .flatMap(s -> s)
-            .collect(ImmutableList.toImmutableList()));
+            .collect(ImmutableList.toImmutableList()),
+            faucetSupply);
   }
 }

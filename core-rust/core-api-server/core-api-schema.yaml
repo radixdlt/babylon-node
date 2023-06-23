@@ -3007,6 +3007,8 @@ components:
       enum:
         - Object
         - KeyValueStore
+        - GlobalAddressReservation
+        - GlobalAddressPhantom
     TypeInfoDetails:
       type: object
       required:
@@ -4571,7 +4573,6 @@ components:
       type: object
       required:
         - state_version
-        - accumulator_hash
         - state_tree_hash
         - transaction_tree_hash
         - receipt_tree_hash

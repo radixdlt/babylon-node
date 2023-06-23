@@ -162,7 +162,7 @@ public abstract class DeterministicCoreApiTestBase {
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createGenesisWithNumValidators(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
                                 1,
                                 Decimal.of(1),
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
