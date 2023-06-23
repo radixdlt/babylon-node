@@ -211,6 +211,14 @@ public final class AddressBookEntry {
     return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
   }
 
+  /**
+   * Returns true if this address book entry carries no information (i.e. no addresses and no ban
+   * info).
+   */
+  public boolean isMeaningless() {
+    return getKnownAddresses().size() == 0 && !isBanned();
+  }
+
   public Optional<PeerAddressEntry> entryFor(RadixNodeUri uri) {
     return knownAddresses.stream().filter(e -> e.getUri().equals(uri)).findAny();
   }

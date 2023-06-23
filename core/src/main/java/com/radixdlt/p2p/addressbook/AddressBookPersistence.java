@@ -75,7 +75,7 @@ public interface AddressBookPersistence {
 
   void close();
 
-  boolean saveEntry(AddressBookEntry entry);
+  boolean upsertEntry(AddressBookEntry entry);
 
   boolean removeEntry(NodeId nodeId);
 

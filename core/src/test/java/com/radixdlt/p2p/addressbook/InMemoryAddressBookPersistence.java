@@ -92,7 +92,7 @@ public final class InMemoryAddressBookPersistence implements AddressBookPersiste
   }
 
   @Override
-  public boolean saveEntry(AddressBookEntry entry) {
+  public boolean upsertEntry(AddressBookEntry entry) {
     entries.put(entry.getNodeId(), entry);
     return true;
   }

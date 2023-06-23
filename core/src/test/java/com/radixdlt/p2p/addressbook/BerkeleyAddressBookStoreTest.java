@@ -68,7 +68,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import java.io.IOException;
@@ -103,6 +105,25 @@ public final class BerkeleyAddressBookStoreTest {
     final var ids = Stream.generate(this::randomNodeId).limit(random.nextInt(3000) + 1).toList();
     sut.storeHighPriorityPeers(ids);
     assertEquals(ids, sut.getHighPriorityPeers());
+  }
+
+  @Test
+  public void upsert_should_replace_existing_entry() {
+    final var nodeId = randomNodeId();
+    final var initialEntry =
+        AddressBookEntry.create(
+            RadixNodeUri.fromPubKeyAndAddress(
+                Network.INTEGRATIONTESTNET.getId(), nodeId.getPublicKey(), "127.0.0.1", 9000));
+    sut.upsertEntry(initialEntry);
+    assertEquals(initialEntry, sut.getAllEntries().get(0));
+
+    final var updatedEntry =
+        initialEntry.addUriIfNotExists(
+            RadixNodeUri.fromPubKeyAndAddress(
+                Network.INTEGRATIONTESTNET.getId(), nodeId.getPublicKey(), "127.0.0.2", 9002));
+
+    sut.upsertEntry(updatedEntry);
+    assertEquals(updatedEntry, sut.getAllEntries().get(0));
   }
 
   private NodeId randomNodeId() {

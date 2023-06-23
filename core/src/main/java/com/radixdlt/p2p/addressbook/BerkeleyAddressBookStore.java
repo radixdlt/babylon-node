@@ -111,6 +111,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   public void open() {
     final var config = new DatabaseConfig();
     config.setAllowCreate(true);
+    config.setSortedDuplicates(false);
 
     try {
       this.entriesDb =
@@ -164,7 +165,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   }
 
   @Override
-  public boolean saveEntry(AddressBookEntry entry) {
+  public boolean upsertEntry(AddressBookEntry entry) {
     final var start = System.nanoTime();
     try {
       final var key = new DatabaseEntry(entry.getNodeId().getPublicKey().getBytes());

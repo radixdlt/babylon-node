@@ -286,7 +286,9 @@ public final class AddressBook {
    */
   private void cleanKnownPeersAddressesAfterSuccessfulConnection(RadixNodeUri uriToKeep) {
     synchronized (lock) {
-      for (var entry : knownPeers.entrySet()) {
+      final var iter = knownPeers.entrySet().iterator();
+      while (iter.hasNext()) {
+        final var entry = iter.next();
         if (entry.getKey().equals(uriToKeep.getNodeId())) {
           // We're keeping the address that we've just used
           continue;
@@ -295,10 +297,17 @@ public final class AddressBook {
             entry
                 .getValue()
                 .removeAddressesThatMatchHostAndPort(uriToKeep.getHost(), uriToKeep.getPort());
-        if (entry.getValue().getKnownAddresses().size()
-            != updatedEntry.getKnownAddresses().size()) {
-          // Store a new entry if any addresses were filtered out
-          upsertOrRemoveIfEmpty(updatedEntry);
+        final var hasEntryBeenModified =
+            entry.getValue().getKnownAddresses().size() != updatedEntry.getKnownAddresses().size();
+
+        if (hasEntryBeenModified) {
+          if (updatedEntry.isMeaningless()) {
+            iter.remove();
+            this.persistence.removeEntry(updatedEntry.getNodeId());
+          } else {
+            entry.setValue(updatedEntry);
+            this.persistence.upsertEntry(updatedEntry);
+          }
         }
       }
     }
@@ -406,24 +415,17 @@ public final class AddressBook {
         maybePreviousEntry.map(e -> e.getKnownAddresses().size()).orElse(0);
     final var addressesCountDiff = entry.getKnownAddresses().size() - previousAddressesCount;
     this.numStoredAddresses = this.numStoredAddresses + addressesCountDiff;
-
-    if (entry.getKnownAddresses().size() == 0 && !entry.isBanned()) {
-      // Remove the whole entry if there are no more known addresses and there's no ban info
+    if (entry.isMeaningless()) {
       this.knownPeers.remove(entry.getNodeId());
       this.persistence.removeEntry(entry.getNodeId());
     } else {
       this.knownPeers.put(entry.getNodeId(), entry);
-      persistEntry(entry);
+      this.persistence.upsertEntry(entry);
     }
   }
 
   public Stream<RadixNodeUri> bestCandidatesToConnect() {
     return onlyValidUrisSorted(this.knownPeers.values().stream());
-  }
-
-  private void persistEntry(AddressBookEntry entry) {
-    this.persistence.removeEntry(entry.getNodeId());
-    this.persistence.saveEntry(entry);
   }
 
   void banPeer(NodeId nodeId, Duration banDuration) {
