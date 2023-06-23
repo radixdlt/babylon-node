@@ -21,6 +21,22 @@ use radix_engine_queries::typed_substate_layout::*;
 
 use super::MappingError;
 
+trait WrapperMethods {
+    type Content;
+    fn get_present_value(&self) -> Result<&Self::Content, MappingError>;
+}
+
+impl<Content> WrapperMethods for KeyValueEntrySubstate<Content> {
+    type Content = Content;
+
+    fn get_present_value(&self) -> Result<&Self::Content, MappingError> {
+        match self.value.as_ref() {
+            Some(value) => Ok(value),
+            None => Err(MappingError::KeyValueStoreEntryUnexpectedlyAbsent),
+        }
+    }
+}
+
 pub fn to_api_substate(
     context: &MappingContext,
     substate_key: &SubstateKey,
@@ -52,8 +68,8 @@ pub fn to_api_substate(
             to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?
         }
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Code(package_code_substate),
-        )) => to_api_package_code_substate(context, package_code_substate)?,
+            TypedPackageFieldValue::Code(_),
+        )) => panic!("Unused - to be removed in Scrypto"),
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
             TypedPackageFieldValue::Royalty(package_royalty_accumulator_substate),
         )) => to_api_package_royalty_accumulator_substate(
@@ -200,7 +216,7 @@ pub fn to_api_one_resource_pool_substate(
         vault,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::OneResourcePoolSubstate {
+    Ok(models::Substate::OneResourcePoolFieldStateSubstate {
         vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
         pool_unit_resource_address: to_api_resource_address(
             context,
@@ -217,7 +233,7 @@ pub fn to_api_two_resource_pool_substate(
         vaults,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::TwoResourcePoolSubstate {
+    Ok(models::Substate::TwoResourcePoolFieldStateSubstate {
         vaults: vaults
             .iter()
             .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
@@ -237,7 +253,7 @@ pub fn to_api_multi_resource_pool_substate(
         vaults,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::MultiResourcePoolSubstate {
+    Ok(models::Substate::MultiResourcePoolFieldStateSubstate {
         vaults: vaults
             .iter()
             .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
@@ -271,7 +287,7 @@ pub fn to_api_transaction_tracker_substate(
         partition_range_end_inclusive,
         epochs_per_partition,
     } = substate;
-    Ok(models::Substate::TransactionTrackerSubstate {
+    Ok(models::Substate::TransactionTrackerFieldStateSubstate {
         start_epoch: to_api_epoch(context, Epoch::of(*start_epoch))?,
         start_partition: to_api_u8_as_i32(*start_partition),
         partition_range_start_inclusive: to_api_u8_as_i32(*partition_range_start_inclusive),
@@ -342,7 +358,7 @@ pub fn to_api_access_rule_entry(
     let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Module Role Key".to_string() });
     };
-    Ok(models::Substate::AccessRuleEntrySubstate {
+    Ok(models::Substate::AccessRulesModuleRuleEntrySubstate {
         object_module_id: to_api_object_module_id(module),
         role_key: key.key.to_string(),
         access_rule: substate
@@ -363,7 +379,7 @@ pub fn to_api_mutability_entry(
     let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(ModuleRoleKey{ module, key })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Mutability Key".to_string() });
     };
-    Ok(models::Substate::MutabilityEntrySubstate {
+    Ok(models::Substate::AccessRulesModuleMutabilityEntrySubstate {
         object_module_id: to_api_object_module_id(module),
         role_key: key.key.to_string(),
         mutable_role_keys: substate.value.as_ref().map(|role_list| {
@@ -535,7 +551,7 @@ pub fn to_api_owner_role_substate(
     context: &MappingContext,
     owner_role: &OwnerRole,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::OwnerRoleSubstate {
+    Ok(models::Substate::AccessRulesModuleFieldOwnerRoleSubstate {
         owner_role: Box::new(match owner_role {
             OwnerRole::None => models::OwnerRole::NoneOwnerRole {},
             OwnerRole::Fixed(access_rule) => models::OwnerRole::FixedOwnerRole {
@@ -1114,29 +1130,31 @@ pub fn to_api_method_permission(
 }
 
 pub fn to_api_package_code_entry(
-    context: &MappingContext,
+    _context: &MappingContext,
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<PackageCodeSubstate>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Code Key".to_string() });
     };
+
+    // Use compiler to unpack to ensure we map all fields
+    let PackageCodeSubstate { vm_type, code } = substate.get_present_value()?;
+
     Ok(models::Substate::PackageCodeEntrySubstate {
         code_hash: to_api_hash(hash),
-        code: substate
-            .value
-            .as_ref()
-            .map(|code| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_package_code_substate(context, code)?))
-            })
-            .transpose()?,
+        vm_type: match vm_type {
+            VmType::Native => models::VmType::Native,
+            VmType::ScryptoV1 => models::VmType::ScryptoV1,
+        },
+        code_hex: to_hex(code),
     })
 }
 
 pub fn to_api_transaction_tracker_collection_entry(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    _substate: &KeyValueEntrySubstate<ScryptoOwnedRawValue>,
+    substate: &KeyValueEntrySubstate<TransactionStatus>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Transaction Tracker Collection Key".to_string() });
@@ -1144,7 +1162,17 @@ pub fn to_api_transaction_tracker_collection_entry(
     Ok(
         models::Substate::TransactionTrackerCollectionEntrySubstate {
             intent_hash: to_api_hash(hash),
-            // TODO(wip): no idea what to do with `substate` here? What does `ScryptoOwnedRawValue` even represent?
+            status: substate.value.as_ref().map(|status| match status {
+                TransactionStatus::CommittedSuccess => {
+                    models::TransactionTrackerTransactionStatus::CommittedSuccess
+                }
+                TransactionStatus::CommittedFailure => {
+                    models::TransactionTrackerTransactionStatus::CommittedFailure
+                }
+                TransactionStatus::Cancelled => {
+                    models::TransactionTrackerTransactionStatus::Cancelled
+                }
+            }),
         },
     )
 }
@@ -1222,10 +1250,12 @@ pub fn to_api_blueprint_interface(
     } = blueprint_interface;
     Ok(models::BlueprintInterface {
         outer_blueprint: outer_blueprint.clone(),
-        generics: generics
+        generic_type_parameters: generics
             .iter()
             .map(|generic| match generic {
-                Generic::Any => models::GenericType::Any,
+                Generic::Any => models::GenericTypeParameter {
+                    constraints: models::GenericTypeParameterContraints::Any,
+                },
             })
             .collect::<Vec<_>>(),
         features: features.iter().cloned().collect(),
@@ -1426,22 +1456,6 @@ pub fn to_api_scrypto_schema(
 ) -> Result<models::ScryptoSchema, MappingError> {
     Ok(models::ScryptoSchema {
         sbor_data: Box::new(to_api_sbor_data_from_encodable(context, schema)?),
-    })
-}
-
-pub fn to_api_package_code_substate(
-    _context: &MappingContext,
-    substate: &PackageCodeSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let PackageCodeSubstate { vm_type, code } = substate;
-
-    Ok(models::Substate::PackageCodeSubstate {
-        vm_type: match vm_type {
-            VmType::Native => models::VmType::Native,
-            VmType::ScryptoV1 => models::VmType::ScryptoV1,
-        },
-        code_hex: to_hex(code),
     })
 }
 

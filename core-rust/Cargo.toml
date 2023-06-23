@@ -21,16 +21,16 @@ members = [
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-2ec2004b" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "damson-f7c740cea" }
 
 jni = { version = "0.19.0" }
 tracing = { version = "0.1" }

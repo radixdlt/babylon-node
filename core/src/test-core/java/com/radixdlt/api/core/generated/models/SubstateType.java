@@ -32,15 +32,9 @@ public enum SubstateType {
   
   ACCESSRULESMODULEFIELDOWNERROLE("AccessRulesModuleFieldOwnerRole"),
   
-  ACCESSRULESMODULERULE("AccessRulesModuleRule"),
+  ACCESSRULESMODULERULEENTRY("AccessRulesModuleRuleEntry"),
   
-  ACCESSRULESMODULEMUTABILITY("AccessRulesModuleMutability"),
-  
-  ACCESSRULEENTRY("AccessRuleEntry"),
-  
-  MUTABILITYENTRY("MutabilityEntry"),
-  
-  OWNERROLE("OwnerRole"),
+  ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
   
   ROYALTYMODULEFIELDCONFIG("RoyaltyModuleFieldConfig"),
   
@@ -48,19 +42,15 @@ public enum SubstateType {
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   
-  PACKAGEFIELDINFO("PackageFieldInfo"),
-  
-  PACKAGECODE("PackageCode"),
-  
   PACKAGEFIELDROYALTYACCUMULATOR("PackageFieldRoyaltyAccumulator"),
+  
+  PACKAGECODEENTRY("PackageCodeEntry"),
   
   PACKAGESCHEMAENTRY("PackageSchemaEntry"),
   
   PACKAGEBLUEPRINTENTRY("PackageBlueprintEntry"),
   
   PACKAGEBLUEPRINTDEPENDENCIESENTRY("PackageBlueprintDependenciesEntry"),
-  
-  PACKAGECODEENTRY("PackageCodeEntry"),
   
   PACKAGEROYALTYENTRY("PackageRoyaltyEntry"),
   
@@ -118,13 +108,13 @@ public enum SubstateType {
   
   GENERICKEYVALUESTOREENTRY("GenericKeyValueStoreEntry"),
   
-  ONERESOURCEPOOL("OneResourcePool"),
+  ONERESOURCEPOOLFIELDSTATE("OneResourcePoolFieldState"),
   
-  TWORESOURCEPOOL("TwoResourcePool"),
+  TWORESOURCEPOOLFIELDSTATE("TwoResourcePoolFieldState"),
   
-  MULTIRESOURCEPOOL("MultiResourcePool"),
+  MULTIRESOURCEPOOLFIELDSTATE("MultiResourcePoolFieldState"),
   
-  TRANSACTIONTRACKER("TransactionTracker"),
+  TRANSACTIONTRACKERFIELDSTATE("TransactionTrackerFieldState"),
   
   TRANSACTIONTRACKERCOLLECTIONENTRY("TransactionTrackerCollectionEntry");
 

@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageExport {
-    /// The hex-encoded code hash.
+    /// The hex-encoded code hash, capturing the vm-type and the code itself.
     #[serde(rename = "code_hash")]
     pub code_hash: String,
     #[serde(rename = "export_name")]

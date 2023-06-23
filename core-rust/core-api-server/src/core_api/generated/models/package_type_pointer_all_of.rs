@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageTypePointerAllOf {
-    /// The hex-encoded schema hash.
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
     #[serde(rename = "schema_hash")]
     pub schema_hash: String,
     #[serde(rename = "local_type_index")]

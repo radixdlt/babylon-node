@@ -18,7 +18,7 @@ pub struct BlueprintDefinition {
     /// A map from the function name to its export
     #[serde(rename = "function_exports")]
     pub function_exports: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>,
-    /// A map from the function ID to its export
+    /// A map from the engine system's virtualization module's function identifier to the package export of the function.
     #[serde(rename = "virtual_lazy_load_functions")]
     pub virtual_lazy_load_functions: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>,
 }

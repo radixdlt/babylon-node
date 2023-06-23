@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.FunctionSchema;
-import com.radixdlt.api.core.generated.models.GenericType;
+import com.radixdlt.api.core.generated.models.GenericTypeParameter;
 import com.radixdlt.api.core.generated.models.IndexedStateSchema;
 import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   BlueprintInterface.JSON_PROPERTY_OUTER_BLUEPRINT,
-  BlueprintInterface.JSON_PROPERTY_GENERICS,
+  BlueprintInterface.JSON_PROPERTY_GENERIC_TYPE_PARAMETERS,
   BlueprintInterface.JSON_PROPERTY_FEATURES,
   BlueprintInterface.JSON_PROPERTY_STATE,
   BlueprintInterface.JSON_PROPERTY_FUNCTIONS,
@@ -51,8 +51,8 @@ public class BlueprintInterface {
   public static final String JSON_PROPERTY_OUTER_BLUEPRINT = "outer_blueprint";
   private String outerBlueprint;
 
-  public static final String JSON_PROPERTY_GENERICS = "generics";
-  private List<GenericType> generics = new ArrayList<>();
+  public static final String JSON_PROPERTY_GENERIC_TYPE_PARAMETERS = "generic_type_parameters";
+  private List<GenericTypeParameter> genericTypeParameters = new ArrayList<>();
 
   public static final String JSON_PROPERTY_FEATURES = "features";
   private List<String> features = new ArrayList<>();
@@ -95,34 +95,34 @@ public class BlueprintInterface {
   }
 
 
-  public BlueprintInterface generics(List<GenericType> generics) {
-    this.generics = generics;
+  public BlueprintInterface genericTypeParameters(List<GenericTypeParameter> genericTypeParameters) {
+    this.genericTypeParameters = genericTypeParameters;
     return this;
   }
 
-  public BlueprintInterface addGenericsItem(GenericType genericsItem) {
-    this.generics.add(genericsItem);
+  public BlueprintInterface addGenericTypeParametersItem(GenericTypeParameter genericTypeParametersItem) {
+    this.genericTypeParameters.add(genericTypeParametersItem);
     return this;
   }
 
    /**
-   * Get generics
-   * @return generics
+   * Generic (SBOR) type parameters which need to be filled by a concrete instance of this blueprint. 
+   * @return genericTypeParameters
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_GENERICS)
+  @ApiModelProperty(required = true, value = "Generic (SBOR) type parameters which need to be filled by a concrete instance of this blueprint. ")
+  @JsonProperty(JSON_PROPERTY_GENERIC_TYPE_PARAMETERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<GenericType> getGenerics() {
-    return generics;
+  public List<GenericTypeParameter> getGenericTypeParameters() {
+    return genericTypeParameters;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_GENERICS)
+  @JsonProperty(JSON_PROPERTY_GENERIC_TYPE_PARAMETERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setGenerics(List<GenericType> generics) {
-    this.generics = generics;
+  public void setGenericTypeParameters(List<GenericTypeParameter> genericTypeParameters) {
+    this.genericTypeParameters = genericTypeParameters;
   }
 
 
@@ -258,7 +258,7 @@ public class BlueprintInterface {
     }
     BlueprintInterface blueprintInterface = (BlueprintInterface) o;
     return Objects.equals(this.outerBlueprint, blueprintInterface.outerBlueprint) &&
-        Objects.equals(this.generics, blueprintInterface.generics) &&
+        Objects.equals(this.genericTypeParameters, blueprintInterface.genericTypeParameters) &&
         Objects.equals(this.features, blueprintInterface.features) &&
         Objects.equals(this.state, blueprintInterface.state) &&
         Objects.equals(this.functions, blueprintInterface.functions) &&
@@ -267,7 +267,7 @@ public class BlueprintInterface {
 
   @Override
   public int hashCode() {
-    return Objects.hash(outerBlueprint, generics, features, state, functions, events);
+    return Objects.hash(outerBlueprint, genericTypeParameters, features, state, functions, events);
   }
 
   @Override
@@ -275,7 +275,7 @@ public class BlueprintInterface {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintInterface {\n");
     sb.append("    outerBlueprint: ").append(toIndentedString(outerBlueprint)).append("\n");
-    sb.append("    generics: ").append(toIndentedString(generics)).append("\n");
+    sb.append("    genericTypeParameters: ").append(toIndentedString(genericTypeParameters)).append("\n");
     sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    functions: ").append(toIndentedString(functions)).append("\n");

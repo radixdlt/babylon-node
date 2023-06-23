@@ -1952,31 +1952,6 @@ components:
 ##########################################
 # GENERAL / SHARED MODELS - Access Rules #
 ##########################################
-    RoleRule:
-      type: object
-      required:
-        - role_key
-        - access_rule
-      properties:
-        role_key:
-          type: string
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
-    MutabilityRule:
-      type: object
-      required:
-        - role_key
-        - updater_role_keys
-        - updaters_mutable
-      properties:
-        role_key:
-          type: string
-        updater_role_keys:
-          type: array
-          items:
-            type: string
-        updaters_mutable:
-          type: boolean
     AccessRuleType:
       type: string
       enum:
@@ -2456,16 +2431,6 @@ components:
         can_own:
           description: Whether the key value store can own any children.
           type: boolean
-    PackageSchema:
-      type: object
-      required:
-        - blueprint_definitions
-      properties:
-        blueprint_definitions:
-          type: object
-          description: A map from the blueprint name to BlueprintDefinition
-          additionalProperties:
-            $ref: '#/components/schemas/BlueprintDefinition'
     BlueprintDefinition:
       type: object
       required:
@@ -2482,7 +2447,8 @@ components:
             $ref: '#/components/schemas/PackageExport'
         virtual_lazy_load_functions:
           type: object
-          description: A map from the function ID to its export
+          description: A map from the engine system's virtualization module's function identifier
+            to the package export of the function.
           additionalProperties:
             $ref: '#/components/schemas/PackageExport'
     BlueprintDependencies:
@@ -2497,7 +2463,7 @@ components:
     BlueprintInterface:
       type: object
       required:
-        - generics
+        - generic_type_parameters
         - features
         - state
         - functions
@@ -2505,10 +2471,13 @@ components:
       properties:
         outer_blueprint:
           type: string
-        generics:
+        generic_type_parameters:
+          description: |
+            Generic (SBOR) type parameters which need to be filled by a concrete instance
+            of this blueprint.
           type: array
           items:
-            $ref: '#/components/schemas/GenericType'
+            $ref: '#/components/schemas/GenericTypeParameter'
         features:
           type: array
           items:
@@ -2542,12 +2511,19 @@ components:
           format: int32
           minimum: 0
           maximum: 255
-    GenericType:
+    GenericTypeParameter:
+      type: object
+      required:
+        - constraints
+      properties:
+        constraints:
+          $ref: '#/components/schemas/GenericTypeParameterContraints'
+    GenericTypeParameterContraints:
       type: string
       enum:
         - Any
       description: |
-        Generic type descriptor.
+        The constraints on the concrete type provided to fill the generic type parameter.
         Note: currently, we only support the wildcard (i.e. `Any`) generic type.
     TypePointerType:
       type: string
@@ -2605,12 +2581,12 @@ components:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded code hash.
+      description: The hex-encoded code hash, capturing the vm-type and the code itself.
     SchemaHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded schema hash.
+      description: The hex-encoded schema hash, capturing the identity of an SBOR schema.
     AuthConfig:
       type: object
       required:
@@ -2925,25 +2901,20 @@ components:
       discriminator:
         propertyName: substate_type
         mapping:
-          # TODO(wip): clean up those that were deleted
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
-          AccessRulesModuleFieldAccessRules: '#/components/schemas/AccessRulesModuleFieldAccessRulesSubstate'
-          AccessRuleEntry: '#/components/schemas/AccessRuleEntrySubstate'
-          MutabilityEntry: '#/components/schemas/MutabilityEntrySubstate'
-          OwnerRole: '#/components/schemas/OwnerRoleSubstate'
+          AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
+          AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
+          AccessRulesModuleMutabilityEntry: '#/components/schemas/AccessRulesModuleMutabilityEntrySubstate'
           RoyaltyModuleFieldConfig: '#/components/schemas/RoyaltyModuleFieldConfigSubstate'
           RoyaltyModuleFieldAccumulator: '#/components/schemas/RoyaltyModuleFieldAccumulatorSubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
-          PackageFieldInfo: '#/components/schemas/PackageFieldInfoSubstate'
-          PackageCode: '#/components/schemas/PackageCodeSubstate'
+          PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
+          PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
           PackageSchemaEntry: '#/components/schemas/PackageSchemaEntrySubstate'
           PackageBlueprintEntry: '#/components/schemas/PackageBlueprintEntrySubstate'
           PackageBlueprintDependenciesEntry: '#/components/schemas/PackageBlueprintDependenciesEntrySubstate'
-          PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
           PackageRoyaltyEntry: '#/components/schemas/PackageRoyaltyEntrySubstate'
-          PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
           PackageAuthTemplateEntry: '#/components/schemas/PackageAuthTemplateEntrySubstate'
-          PackageFieldFunctionAccessRules: '#/components/schemas/PackageFieldFunctionAccessRulesSubstate'
           FungibleResourceManagerFieldDivisibility: '#/components/schemas/FungibleResourceManagerFieldDivisibilitySubstate'
           FungibleResourceManagerFieldTotalSupply: '#/components/schemas/FungibleResourceManagerFieldTotalSupplySubstate'
           NonFungibleResourceManagerFieldIdType: '#/components/schemas/NonFungibleResourceManagerFieldIdTypeSubstate'
@@ -2968,31 +2939,26 @@ components:
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
-          OneResourcePool: '#/components/schemas/OneResourcePoolSubstate'
-          TwoResourcePool: '#/components/schemas/TwoResourcePoolSubstate'
-          MultiResourcePool: '#/components/schemas/MultiResourcePoolSubstate'
-          TransactionTracker: '#/components/schemas/TransactionTrackerSubstate'
+          OneResourcePoolFieldState: '#/components/schemas/OneResourcePoolFieldStateSubstate'
+          TwoResourcePoolFieldState: '#/components/schemas/TwoResourcePoolFieldStateSubstate'
+          MultiResourcePoolFieldState: '#/components/schemas/MultiResourcePoolFieldStateSubstate'
+          TransactionTrackerFieldState: '#/components/schemas/TransactionTrackerFieldStateSubstate'
           TransactionTrackerCollectionEntry: '#/components/schemas/TransactionTrackerCollectionEntrySubstate'
     SubstateType:
       type: string
       enum:
         - TypeInfoModuleFieldTypeInfo
         - AccessRulesModuleFieldOwnerRole
-        - AccessRulesModuleRule
-        - AccessRulesModuleMutability
-        - AccessRuleEntry
-        - MutabilityEntry
-        - OwnerRole
+        - AccessRulesModuleRuleEntry
+        - AccessRulesModuleMutabilityEntry
         - RoyaltyModuleFieldConfig
         - RoyaltyModuleFieldAccumulator
         - MetadataModuleEntry
-        - PackageFieldInfo
-        - PackageCode
         - PackageFieldRoyaltyAccumulator
+        - PackageCodeEntry
         - PackageSchemaEntry
         - PackageBlueprintEntry
         - PackageBlueprintDependenciesEntry
-        - PackageCodeEntry
         - PackageRoyaltyEntry
         - PackageAuthTemplateEntry
         - PackageFieldFunctionAccessRules
@@ -3021,10 +2987,10 @@ components:
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
-        - OneResourcePool
-        - TwoResourcePool
-        - MultiResourcePool
-        - TransactionTracker
+        - OneResourcePoolFieldState
+        - TwoResourcePoolFieldState
+        - MultiResourcePoolFieldState
+        - TransactionTrackerFieldState
         - TransactionTrackerCollectionEntry
     ### SUBSTATES
     TypeInfoModuleFieldTypeInfoSubstate:
@@ -3120,7 +3086,16 @@ components:
       properties:
         kv_store_schema:
           $ref: '#/components/schemas/KeyValueStoreSchema'
-    AccessRuleEntrySubstate:
+    AccessRulesModuleFieldOwnerRoleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - owner_role
+          properties:
+            owner_role:
+              $ref: "#/components/schemas/OwnerRole"
+    AccessRulesModuleRuleEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3134,7 +3109,7 @@ components:
               type: string
             access_rule:
               $ref: '#/components/schemas/AccessRule'
-    MutabilityEntrySubstate:
+    AccessRulesModuleMutabilityEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3150,38 +3125,6 @@ components:
               type: array
               items:
                 type: string
-    AccessRulesModuleFieldAccessRulesSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - roles
-            - role_mutability
-          properties:
-            roles:
-              type: array
-              items:
-                $ref: '#/components/schemas/RoleRule'
-            role_mutability:
-              type: array
-              items:
-                $ref: '#/components/schemas/MutabilityRule'
-    OwnerRoleSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - owner_role
-          properties:
-            owner_role:
-              $ref: "#/components/schemas/OwnerRole"
-    BlueprintAccessRules:
-      type: object
-      required:
-        - blueprint_name
-      properties:
-        blueprint_name:
-          type: string
     RoyaltyModuleFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3217,7 +3160,7 @@ components:
               $ref: '#/components/schemas/DataStruct'
             is_mutable:
               type: boolean
-    TransactionTrackerSubstate:
+    TransactionTrackerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3262,15 +3205,14 @@ components:
           properties:
             intent_hash:
               $ref: "#/components/schemas/IntentHash"
-    PackageFieldInfoSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - package_schema
-          properties:
-            package_schema:
-              $ref: '#/components/schemas/PackageSchema'
+            status:
+              $ref: "#/components/schemas/TransactionTrackerTransactionStatus"
+    TransactionTrackerTransactionStatus:
+      type: string
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - Cancelled    
     PackageBlueprintEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3310,17 +3252,6 @@ components:
               $ref: '#/components/schemas/SchemaHash'
             schema:
               $ref: '#/components/schemas/ScryptoSchema'
-    PackageCodeEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - code_hash
-          properties:
-            code_hash:
-              $ref: '#/components/schemas/CodeHash'
-            code:
-              $ref: '#/components/schemas/Substate'
     PackageRoyaltyEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3354,19 +3285,23 @@ components:
       enum:
         - Native
         - ScryptoV1
-    PackageCodeSubstate:
+    PackageCodeEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
+            - code_hash
             - vm_type
             - code_hex
           properties:
+            code_hash:
+              $ref: '#/components/schemas/CodeHash'
             vm_type:
               $ref: '#/components/schemas/VmType'
             code_hex:
               type: string
-              description: The hex-encoded package code
+              description: |
+                Either the hex-encoded WASM package code (if Scrypto), or the native package identifier.
     PackageFieldRoyaltyAccumulatorSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3375,29 +3310,6 @@ components:
             vault_entity:
               # This is optional - some early packages during bootstrapping don't have this
               $ref: "#/components/schemas/EntityReference"
-    PackageFieldFunctionAccessRulesSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - function_auth
-          properties:
-            function_auth:
-              items:
-                $ref: '#/components/schemas/PackageFunctionAccessRule'
-    PackageFunctionAccessRule:
-      type: object
-      required:
-        - blueprint
-        - function_name
-        - access_rule
-      properties:
-        blueprint:
-          type: string
-        function_name:
-          type: string
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
     FungibleResourceManagerFieldDivisibilitySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3846,7 +3758,7 @@ components:
               $ref: '#/components/schemas/DataStruct'
             is_mutable:
               type: boolean
-    OneResourcePoolSubstate:
+    OneResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3858,7 +3770,7 @@ components:
               $ref: '#/components/schemas/EntityReference'
             pool_unit_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-    TwoResourcePoolSubstate:
+    TwoResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3874,7 +3786,7 @@ components:
                 $ref: '#/components/schemas/PoolVault'
             pool_unit_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-    MultiResourcePoolSubstate:
+    MultiResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object

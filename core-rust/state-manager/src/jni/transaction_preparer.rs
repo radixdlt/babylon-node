@@ -109,8 +109,6 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
                 header: request.header.into(),
                 instructions,
                 blobs,
-                // TODO(during review): the "message" support seems non-trivial (i.e. involves
-                // "encryption"?); I assume we can impl it later, hence always `None` now...?
                 message: MessageV1::None,
             };
 

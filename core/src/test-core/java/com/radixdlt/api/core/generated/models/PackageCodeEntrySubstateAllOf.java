@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Substate;
+import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,15 +33,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HASH,
-  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE
+  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_VM_TYPE,
+  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageCodeEntrySubstateAllOf {
   public static final String JSON_PROPERTY_CODE_HASH = "code_hash";
   private String codeHash;
 
-  public static final String JSON_PROPERTY_CODE = "code";
-  private Substate code;
+  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
+  private VmType vmType;
+
+  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
+  private String codeHex;
 
   public PackageCodeEntrySubstateAllOf() { 
   }
@@ -52,11 +56,11 @@ public class PackageCodeEntrySubstateAllOf {
   }
 
    /**
-   * The hex-encoded code hash.
+   * The hex-encoded code hash, capturing the vm-type and the code itself.
    * @return codeHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded code hash.")
+  @ApiModelProperty(required = true, value = "The hex-encoded code hash, capturing the vm-type and the code itself.")
   @JsonProperty(JSON_PROPERTY_CODE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -72,29 +76,55 @@ public class PackageCodeEntrySubstateAllOf {
   }
 
 
-  public PackageCodeEntrySubstateAllOf code(Substate code) {
-    this.code = code;
+  public PackageCodeEntrySubstateAllOf vmType(VmType vmType) {
+    this.vmType = vmType;
     return this;
   }
 
    /**
-   * Get code
-   * @return code
+   * Get vmType
+   * @return vmType
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CODE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getCode() {
-    return code;
+  public VmType getVmType() {
+    return vmType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCode(Substate code) {
-    this.code = code;
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVmType(VmType vmType) {
+    this.vmType = vmType;
+  }
+
+
+  public PackageCodeEntrySubstateAllOf codeHex(String codeHex) {
+    this.codeHex = codeHex;
+    return this;
+  }
+
+   /**
+   * Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+   * @return codeHex
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. ")
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getCodeHex() {
+    return codeHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCodeHex(String codeHex) {
+    this.codeHex = codeHex;
   }
 
 
@@ -111,12 +141,13 @@ public class PackageCodeEntrySubstateAllOf {
     }
     PackageCodeEntrySubstateAllOf packageCodeEntrySubstateAllOf = (PackageCodeEntrySubstateAllOf) o;
     return Objects.equals(this.codeHash, packageCodeEntrySubstateAllOf.codeHash) &&
-        Objects.equals(this.code, packageCodeEntrySubstateAllOf.code);
+        Objects.equals(this.vmType, packageCodeEntrySubstateAllOf.vmType) &&
+        Objects.equals(this.codeHex, packageCodeEntrySubstateAllOf.codeHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHash, code);
+    return Objects.hash(codeHash, vmType, codeHex);
   }
 
   @Override
@@ -124,7 +155,8 @@ public class PackageCodeEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageCodeEntrySubstateAllOf {\n");
     sb.append("    codeHash: ").append(toIndentedString(codeHash)).append("\n");
-    sb.append("    code: ").append(toIndentedString(code)).append("\n");
+    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
+    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

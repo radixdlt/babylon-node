@@ -71,11 +71,11 @@ public class PackageTypePointer extends TypePointer {
   }
 
    /**
-   * The hex-encoded schema hash.
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
    * @return schemaHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash.")
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
   @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

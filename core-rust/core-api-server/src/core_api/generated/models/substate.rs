@@ -18,21 +18,28 @@ pub enum Substate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="AccessRuleEntry")]
-    AccessRuleEntrySubstate {
+    #[serde(rename="AccessRulesModuleFieldOwnerRole")]
+    AccessRulesModuleFieldOwnerRoleSubstate {
+        #[serde(rename = "owner_role")]
+        owner_role: Box<crate::core_api::generated::models::OwnerRole>,
+    },
+    #[serde(rename="AccessRulesModuleMutabilityEntry")]
+    AccessRulesModuleMutabilityEntrySubstate {
+        #[serde(rename = "object_module_id")]
+        object_module_id: crate::core_api::generated::models::ObjectModuleId,
+        #[serde(rename = "role_key")]
+        role_key: String,
+        #[serde(rename = "mutable_role_keys", skip_serializing_if = "Option::is_none")]
+        mutable_role_keys: Option<Vec<String>>,
+    },
+    #[serde(rename="AccessRulesModuleRuleEntry")]
+    AccessRulesModuleRuleEntrySubstate {
         #[serde(rename = "object_module_id")]
         object_module_id: crate::core_api::generated::models::ObjectModuleId,
         #[serde(rename = "role_key")]
         role_key: String,
         #[serde(rename = "access_rule", skip_serializing_if = "Option::is_none")]
         access_rule: Option<Box<crate::core_api::generated::models::AccessRule>>,
-    },
-    #[serde(rename="AccessRulesModuleFieldAccessRules")]
-    AccessRulesModuleFieldAccessRulesSubstate {
-        #[serde(rename = "roles")]
-        roles: Vec<crate::core_api::generated::models::RoleRule>,
-        #[serde(rename = "role_mutability")]
-        role_mutability: Vec<crate::core_api::generated::models::MutabilityRule>,
     },
     #[serde(rename="AccountDepositRuleIndexEntry")]
     AccountDepositRuleIndexEntrySubstate {
@@ -169,22 +176,13 @@ pub enum Substate {
         #[serde(rename = "is_mutable")]
         is_mutable: bool,
     },
-    #[serde(rename="MultiResourcePool")]
-    MultiResourcePoolSubstate {
+    #[serde(rename="MultiResourcePoolFieldState")]
+    MultiResourcePoolFieldStateSubstate {
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "pool_unit_resource_address")]
         pool_unit_resource_address: String,
-    },
-    #[serde(rename="MutabilityEntry")]
-    MutabilityEntrySubstate {
-        #[serde(rename = "object_module_id")]
-        object_module_id: crate::core_api::generated::models::ObjectModuleId,
-        #[serde(rename = "role_key")]
-        role_key: String,
-        #[serde(rename = "mutable_role_keys", skip_serializing_if = "Option::is_none")]
-        mutable_role_keys: Option<Vec<String>>,
     },
     #[serde(rename="NonFungibleResourceManagerDataEntry")]
     NonFungibleResourceManagerDataEntrySubstate {
@@ -223,18 +221,13 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
-    #[serde(rename="OneResourcePool")]
-    OneResourcePoolSubstate {
+    #[serde(rename="OneResourcePoolFieldState")]
+    OneResourcePoolFieldStateSubstate {
         #[serde(rename = "vault")]
         vault: Box<crate::core_api::generated::models::EntityReference>,
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "pool_unit_resource_address")]
         pool_unit_resource_address: String,
-    },
-    #[serde(rename="OwnerRole")]
-    OwnerRoleSubstate {
-        #[serde(rename = "owner_role")]
-        owner_role: Box<crate::core_api::generated::models::OwnerRole>,
     },
     #[serde(rename="PackageAuthTemplateEntry")]
     PackageAuthTemplateEntrySubstate {
@@ -263,31 +256,16 @@ pub enum Substate {
         #[serde(rename = "definition", skip_serializing_if = "Option::is_none")]
         definition: Option<Box<crate::core_api::generated::models::BlueprintDefinition>>,
     },
-    #[serde(rename="PackageCode")]
-    PackageCodeSubstate {
-        #[serde(rename = "vm_type")]
-        vm_type: crate::core_api::generated::models::VmType,
-        /// The hex-encoded package code
-        #[serde(rename = "code_hex")]
-        code_hex: String,
-    },
     #[serde(rename="PackageCodeEntry")]
     PackageCodeEntrySubstate {
-        /// The hex-encoded code hash.
+        /// The hex-encoded code hash, capturing the vm-type and the code itself.
         #[serde(rename = "code_hash")]
         code_hash: String,
-        #[serde(rename = "code", skip_serializing_if = "Option::is_none")]
-        code: Option<Box<crate::core_api::generated::models::Substate>>,
-    },
-    #[serde(rename="PackageFieldFunctionAccessRules")]
-    PackageFieldFunctionAccessRulesSubstate {
-        #[serde(rename = "function_auth")]
-        function_auth: Vec<crate::core_api::generated::models::PackageFunctionAccessRule>,
-    },
-    #[serde(rename="PackageFieldInfo")]
-    PackageFieldInfoSubstate {
-        #[serde(rename = "package_schema")]
-        package_schema: Box<crate::core_api::generated::models::PackageSchema>,
+        #[serde(rename = "vm_type")]
+        vm_type: crate::core_api::generated::models::VmType,
+        /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+        #[serde(rename = "code_hex")]
+        code_hex: String,
     },
     #[serde(rename="PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulatorSubstate {
@@ -305,7 +283,7 @@ pub enum Substate {
     },
     #[serde(rename="PackageSchemaEntry")]
     PackageSchemaEntrySubstate {
-        /// The hex-encoded schema hash.
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
         #[serde(rename = "schema_hash")]
         schema_hash: String,
         #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]
@@ -321,8 +299,16 @@ pub enum Substate {
         #[serde(rename = "royalty_config")]
         royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
     },
-    #[serde(rename="TransactionTracker")]
-    TransactionTrackerSubstate {
+    #[serde(rename="TransactionTrackerCollectionEntry")]
+    TransactionTrackerCollectionEntrySubstate {
+        /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
+        #[serde(rename = "intent_hash")]
+        intent_hash: String,
+        #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
+        status: Option<crate::core_api::generated::models::TransactionTrackerTransactionStatus>,
+    },
+    #[serde(rename="TransactionTrackerFieldState")]
+    TransactionTrackerFieldStateSubstate {
         #[serde(rename = "start_epoch")]
         start_epoch: i64,
         #[serde(rename = "start_partition")]
@@ -334,14 +320,8 @@ pub enum Substate {
         #[serde(rename = "epochs_per_partition")]
         epochs_per_partition: i64,
     },
-    #[serde(rename="TransactionTrackerCollectionEntry")]
-    TransactionTrackerCollectionEntrySubstate {
-        /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-        #[serde(rename = "intent_hash")]
-        intent_hash: String,
-    },
-    #[serde(rename="TwoResourcePool")]
-    TwoResourcePoolSubstate {
+    #[serde(rename="TwoResourcePoolFieldState")]
+    TwoResourcePoolFieldStateSubstate {
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
         /// The Bech32m-encoded human readable version of the resource address

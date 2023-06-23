@@ -122,11 +122,11 @@ public class BlueprintDefinition {
   }
 
    /**
-   * A map from the function ID to its export
+   * A map from the engine system&#39;s virtualization module&#39;s function identifier to the package export of the function.
    * @return virtualLazyLoadFunctions
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the function ID to its export")
+  @ApiModelProperty(required = true, value = "A map from the engine system's virtualization module's function identifier to the package export of the function.")
   @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

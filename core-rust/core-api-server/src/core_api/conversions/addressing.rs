@@ -116,11 +116,11 @@ pub fn to_api_substate_id(
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(_)) => (
-            SubstateType::AccessRulesModuleRule,
+            SubstateType::AccessRulesModuleRuleEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(_)) => (
-            SubstateType::AccessRulesModuleMutability,
+            SubstateType::AccessRulesModuleMutabilityEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyAccumulator) => (
@@ -289,14 +289,16 @@ pub fn to_api_substate_id(
             SubstateType::GenericKeyValueStoreEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::OneResourcePoolField(_)) => {
-            (SubstateType::OneResourcePool, models::PartitionKind::Field)
-        }
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TwoResourcePoolField(_)) => {
-            (SubstateType::TwoResourcePool, models::PartitionKind::Field)
-        }
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::OneResourcePoolField(_)) => (
+            SubstateType::OneResourcePoolFieldState,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TwoResourcePoolField(_)) => (
+            SubstateType::TwoResourcePoolFieldState,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::MultiResourcePoolField(_)) => (
-            SubstateType::MultiResourcePool,
+            SubstateType::MultiResourcePoolFieldState,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(_)) => (
@@ -326,7 +328,7 @@ pub fn to_api_substate_id(
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerField(_)) => (
-            SubstateType::TransactionTracker,
+            SubstateType::TransactionTrackerFieldState,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(

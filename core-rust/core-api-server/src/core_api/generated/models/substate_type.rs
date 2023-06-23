@@ -16,36 +16,26 @@ pub enum SubstateType {
     TypeInfoModuleFieldTypeInfo,
     #[serde(rename = "AccessRulesModuleFieldOwnerRole")]
     AccessRulesModuleFieldOwnerRole,
-    #[serde(rename = "AccessRulesModuleRule")]
-    AccessRulesModuleRule,
-    #[serde(rename = "AccessRulesModuleMutability")]
-    AccessRulesModuleMutability,
-    #[serde(rename = "AccessRuleEntry")]
-    AccessRuleEntry,
-    #[serde(rename = "MutabilityEntry")]
-    MutabilityEntry,
-    #[serde(rename = "OwnerRole")]
-    OwnerRole,
+    #[serde(rename = "AccessRulesModuleRuleEntry")]
+    AccessRulesModuleRuleEntry,
+    #[serde(rename = "AccessRulesModuleMutabilityEntry")]
+    AccessRulesModuleMutabilityEntry,
     #[serde(rename = "RoyaltyModuleFieldConfig")]
     RoyaltyModuleFieldConfig,
     #[serde(rename = "RoyaltyModuleFieldAccumulator")]
     RoyaltyModuleFieldAccumulator,
     #[serde(rename = "MetadataModuleEntry")]
     MetadataModuleEntry,
-    #[serde(rename = "PackageFieldInfo")]
-    PackageFieldInfo,
-    #[serde(rename = "PackageCode")]
-    PackageCode,
     #[serde(rename = "PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulator,
+    #[serde(rename = "PackageCodeEntry")]
+    PackageCodeEntry,
     #[serde(rename = "PackageSchemaEntry")]
     PackageSchemaEntry,
     #[serde(rename = "PackageBlueprintEntry")]
     PackageBlueprintEntry,
     #[serde(rename = "PackageBlueprintDependenciesEntry")]
     PackageBlueprintDependenciesEntry,
-    #[serde(rename = "PackageCodeEntry")]
-    PackageCodeEntry,
     #[serde(rename = "PackageRoyaltyEntry")]
     PackageRoyaltyEntry,
     #[serde(rename = "PackageAuthTemplateEntry")]
@@ -102,14 +92,14 @@ pub enum SubstateType {
     GenericScryptoComponentFieldState,
     #[serde(rename = "GenericKeyValueStoreEntry")]
     GenericKeyValueStoreEntry,
-    #[serde(rename = "OneResourcePool")]
-    OneResourcePool,
-    #[serde(rename = "TwoResourcePool")]
-    TwoResourcePool,
-    #[serde(rename = "MultiResourcePool")]
-    MultiResourcePool,
-    #[serde(rename = "TransactionTracker")]
-    TransactionTracker,
+    #[serde(rename = "OneResourcePoolFieldState")]
+    OneResourcePoolFieldState,
+    #[serde(rename = "TwoResourcePoolFieldState")]
+    TwoResourcePoolFieldState,
+    #[serde(rename = "MultiResourcePoolFieldState")]
+    MultiResourcePoolFieldState,
+    #[serde(rename = "TransactionTrackerFieldState")]
+    TransactionTrackerFieldState,
     #[serde(rename = "TransactionTrackerCollectionEntry")]
     TransactionTrackerCollectionEntry,
 
@@ -120,21 +110,16 @@ impl ToString for SubstateType {
         match self {
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
             Self::AccessRulesModuleFieldOwnerRole => String::from("AccessRulesModuleFieldOwnerRole"),
-            Self::AccessRulesModuleRule => String::from("AccessRulesModuleRule"),
-            Self::AccessRulesModuleMutability => String::from("AccessRulesModuleMutability"),
-            Self::AccessRuleEntry => String::from("AccessRuleEntry"),
-            Self::MutabilityEntry => String::from("MutabilityEntry"),
-            Self::OwnerRole => String::from("OwnerRole"),
+            Self::AccessRulesModuleRuleEntry => String::from("AccessRulesModuleRuleEntry"),
+            Self::AccessRulesModuleMutabilityEntry => String::from("AccessRulesModuleMutabilityEntry"),
             Self::RoyaltyModuleFieldConfig => String::from("RoyaltyModuleFieldConfig"),
             Self::RoyaltyModuleFieldAccumulator => String::from("RoyaltyModuleFieldAccumulator"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
-            Self::PackageFieldInfo => String::from("PackageFieldInfo"),
-            Self::PackageCode => String::from("PackageCode"),
             Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
+            Self::PackageCodeEntry => String::from("PackageCodeEntry"),
             Self::PackageSchemaEntry => String::from("PackageSchemaEntry"),
             Self::PackageBlueprintEntry => String::from("PackageBlueprintEntry"),
             Self::PackageBlueprintDependenciesEntry => String::from("PackageBlueprintDependenciesEntry"),
-            Self::PackageCodeEntry => String::from("PackageCodeEntry"),
             Self::PackageRoyaltyEntry => String::from("PackageRoyaltyEntry"),
             Self::PackageAuthTemplateEntry => String::from("PackageAuthTemplateEntry"),
             Self::PackageFieldFunctionAccessRules => String::from("PackageFieldFunctionAccessRules"),
@@ -163,10 +148,10 @@ impl ToString for SubstateType {
             Self::AccessControllerFieldState => String::from("AccessControllerFieldState"),
             Self::GenericScryptoComponentFieldState => String::from("GenericScryptoComponentFieldState"),
             Self::GenericKeyValueStoreEntry => String::from("GenericKeyValueStoreEntry"),
-            Self::OneResourcePool => String::from("OneResourcePool"),
-            Self::TwoResourcePool => String::from("TwoResourcePool"),
-            Self::MultiResourcePool => String::from("MultiResourcePool"),
-            Self::TransactionTracker => String::from("TransactionTracker"),
+            Self::OneResourcePoolFieldState => String::from("OneResourcePoolFieldState"),
+            Self::TwoResourcePoolFieldState => String::from("TwoResourcePoolFieldState"),
+            Self::MultiResourcePoolFieldState => String::from("MultiResourcePoolFieldState"),
+            Self::TransactionTrackerFieldState => String::from("TransactionTrackerFieldState"),
             Self::TransactionTrackerCollectionEntry => String::from("TransactionTrackerCollectionEntry"),
         }
     }

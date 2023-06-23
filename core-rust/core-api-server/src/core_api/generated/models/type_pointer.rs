@@ -20,7 +20,7 @@ pub enum TypePointer {
     },
     #[serde(rename="Package")]
     PackageTypePointer {
-        /// The hex-encoded schema hash.
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
         #[serde(rename = "schema_hash")]
         schema_hash: String,
         #[serde(rename = "local_type_index")]

@@ -15,8 +15,9 @@
 pub struct BlueprintInterface {
     #[serde(rename = "outer_blueprint", skip_serializing_if = "Option::is_none")]
     pub outer_blueprint: Option<String>,
-    #[serde(rename = "generics")]
-    pub generics: Vec<crate::core_api::generated::models::GenericType>,
+    /// Generic (SBOR) type parameters which need to be filled by a concrete instance of this blueprint. 
+    #[serde(rename = "generic_type_parameters")]
+    pub generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>,
     #[serde(rename = "features")]
     pub features: Vec<String>,
     #[serde(rename = "state")]
@@ -30,10 +31,10 @@ pub struct BlueprintInterface {
 }
 
 impl BlueprintInterface {
-    pub fn new(generics: Vec<crate::core_api::generated::models::GenericType>, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::std::collections::HashMap<String, crate::core_api::generated::models::TypePointer>) -> BlueprintInterface {
+    pub fn new(generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::std::collections::HashMap<String, crate::core_api::generated::models::TypePointer>) -> BlueprintInterface {
         BlueprintInterface {
             outer_blueprint: None,
-            generics,
+            generic_type_parameters,
             features,
             state: Box::new(state),
             functions,

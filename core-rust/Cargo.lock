@@ -1060,7 +1060,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
@@ -1394,7 +1394,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "bitflags",
  "colored",
@@ -1423,7 +1423,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "bech32",
  "blake2",
@@ -1445,12 +1445,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1461,7 +1461,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -1480,7 +1480,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-profiling"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "fixedstr",
 ]
@@ -1488,7 +1488,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-queries"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "hex",
  "itertools",
@@ -1504,7 +1504,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-store-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "hex",
  "itertools",
@@ -1518,7 +1518,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "hex",
  "itertools",
@@ -1636,7 +1636,7 @@ checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
 [[package]]
 name = "resources-tracker-macro"
 version = "0.1.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1707,7 +1707,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1721,7 +1721,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1730,7 +1730,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1757,7 +1757,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto-schema"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "bitflags",
  "radix-engine-common",
@@ -2232,7 +2232,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2281,7 +2281,7 @@ checksum = "b15811caf2415fb889178633e7724bad2509101cde276048e013b9def5e51fa0"
 [[package]]
 name = "utils"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-2ec2004b#2ec2004b7f05d6ce4416b5b0443433174b3231a4"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=damson-f7c740cea#f7c740cea5e842d3bdf1ddc68b97e977e597202b"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",

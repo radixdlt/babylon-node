@@ -51,11 +51,11 @@ public class PackageExport {
   }
 
    /**
-   * The hex-encoded code hash.
+   * The hex-encoded code hash, capturing the vm-type and the code itself.
    * @return codeHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded code hash.")
+  @ApiModelProperty(required = true, value = "The hex-encoded code hash, capturing the vm-type and the code itself.")
   @JsonProperty(JSON_PROPERTY_CODE_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

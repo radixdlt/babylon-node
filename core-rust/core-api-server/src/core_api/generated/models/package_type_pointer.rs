@@ -15,7 +15,7 @@
 pub struct PackageTypePointer {
     #[serde(rename = "pointer_type")]
     pub pointer_type: crate::core_api::generated::models::TypePointerType,
-    /// The hex-encoded schema hash.
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
     #[serde(rename = "schema_hash")]
     pub schema_hash: String,
     #[serde(rename = "local_type_index")]

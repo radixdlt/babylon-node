@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TransactionTrackerTransactionStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,12 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionTrackerCollectionEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_INTENT_HASH
+  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_INTENT_HASH,
+  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionTrackerCollectionEntrySubstateAllOf {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
+
+  public static final String JSON_PROPERTY_STATUS = "status";
+  private TransactionTrackerTransactionStatus status;
 
   public TransactionTrackerCollectionEntrySubstateAllOf() { 
   }
@@ -67,6 +72,32 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
   }
 
 
+  public TransactionTrackerCollectionEntrySubstateAllOf status(TransactionTrackerTransactionStatus status) {
+    this.status = status;
+    return this;
+  }
+
+   /**
+   * Get status
+   * @return status
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionTrackerTransactionStatus getStatus() {
+    return status;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setStatus(TransactionTrackerTransactionStatus status) {
+    this.status = status;
+  }
+
+
   /**
    * Return true if this TransactionTrackerCollectionEntrySubstate_allOf object is equal to o.
    */
@@ -79,12 +110,13 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
       return false;
     }
     TransactionTrackerCollectionEntrySubstateAllOf transactionTrackerCollectionEntrySubstateAllOf = (TransactionTrackerCollectionEntrySubstateAllOf) o;
-    return Objects.equals(this.intentHash, transactionTrackerCollectionEntrySubstateAllOf.intentHash);
+    return Objects.equals(this.intentHash, transactionTrackerCollectionEntrySubstateAllOf.intentHash) &&
+        Objects.equals(this.status, transactionTrackerCollectionEntrySubstateAllOf.status);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash);
+    return Objects.hash(intentHash, status);
   }
 
   @Override
@@ -92,6 +124,7 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionTrackerCollectionEntrySubstateAllOf {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("}");
     return sb.toString();
   }

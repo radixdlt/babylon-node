@@ -15,7 +15,7 @@
 pub struct PackageSchemaEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded schema hash.
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
     #[serde(rename = "schema_hash")]
     pub schema_hash: String,
     #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]

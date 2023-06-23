@@ -666,9 +666,7 @@ where
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
-            // TODO(during review): why does the "bootstrap" context allow us to specify the
-            // "current consensus leader"? isn't `None` the only reasonable input here? Or is it me
-            // misinterpreting something?
+            // Leader gets set to None, to be fixed at the first proper round change.
             None,
         );
         let prepare_result = self.prepare_genesis(transaction);

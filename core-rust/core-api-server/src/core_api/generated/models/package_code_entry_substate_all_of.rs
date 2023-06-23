@@ -13,18 +13,22 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageCodeEntrySubstateAllOf {
-    /// The hex-encoded code hash.
+    /// The hex-encoded code hash, capturing the vm-type and the code itself.
     #[serde(rename = "code_hash")]
     pub code_hash: String,
-    #[serde(rename = "code", skip_serializing_if = "Option::is_none")]
-    pub code: Option<Box<crate::core_api::generated::models::Substate>>,
+    #[serde(rename = "vm_type")]
+    pub vm_type: crate::core_api::generated::models::VmType,
+    /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
 impl PackageCodeEntrySubstateAllOf {
-    pub fn new(code_hash: String) -> PackageCodeEntrySubstateAllOf {
+    pub fn new(code_hash: String, vm_type: crate::core_api::generated::models::VmType, code_hex: String) -> PackageCodeEntrySubstateAllOf {
         PackageCodeEntrySubstateAllOf {
             code_hash,
-            code: None,
+            vm_type,
+            code_hex,
         }
     }
 }
