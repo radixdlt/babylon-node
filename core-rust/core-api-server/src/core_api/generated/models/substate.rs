@@ -151,7 +151,7 @@ pub enum Substate {
         #[serde(rename = "is_mutable")]
         is_mutable: bool,
     },
-    #[serde(rename="MultiResourcePoolSubstate")]
+    #[serde(rename="MultiResourcePool")]
     MultiResourcePoolSubstate {
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
@@ -196,7 +196,7 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
-    #[serde(rename="OneResourcePoolSubstate")]
+    #[serde(rename="OneResourcePool")]
     OneResourcePoolSubstate {
         #[serde(rename = "vault")]
         vault: Box<crate::core_api::generated::models::EntityReference>,
@@ -242,7 +242,7 @@ pub enum Substate {
         #[serde(rename = "royalty_config")]
         royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
     },
-    #[serde(rename="TwoResourcePoolSubstate")]
+    #[serde(rename="TwoResourcePool")]
     TwoResourcePoolSubstate {
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
