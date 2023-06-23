@@ -5,11 +5,13 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
+    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionExecutionTrace,
+    TransactionOutcome,
 };
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
+use radix_engine_store_interface::interface::DbSubstateValue;
 use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
@@ -33,8 +35,11 @@ pub struct SubstateChange {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ChangeAction {
-    Create(Vec<u8>),
-    Update(Vec<u8>),
+    Create(DbSubstateValue),
+    Update {
+        new: DbSubstateValue,
+        previous: DbSubstateValue,
+    },
     Delete,
 }
 
@@ -137,6 +142,7 @@ pub struct LedgerTransactionReceipt {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
+    pub execution_metrics: ExecutionMetrics,
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
     // Which vault/s paid the fee
@@ -175,14 +181,20 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
-    for LocalTransactionReceipt
+impl
+    From<(
+        CommitResult,
+        Vec<SubstateChange>,
+        TransactionExecutionTrace,
+        ExecutionMetrics,
+    )> for LocalTransactionReceipt
 {
     fn from(
-        (commit_result, substate_changes, execution_trace): (
+        (commit_result, substate_changes, execution_trace, execution_metrics): (
             CommitResult,
             Vec<SubstateChange>,
             TransactionExecutionTrace,
+            ExecutionMetrics,
         ),
     ) -> Self {
         let next_epoch = commit_result.next_epoch();
@@ -197,6 +209,7 @@ impl From<(CommitResult, Vec<SubstateChange>, TransactionExecutionTrace)>
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
+                execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
                 fee_payments: commit_result.fee_payments,

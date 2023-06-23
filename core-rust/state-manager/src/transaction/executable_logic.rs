@@ -53,7 +53,7 @@ impl ConfigType {
 pub struct ExecutionConfigurator {
     scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
-    execution_configs: HashMap<ConfigType, ExecutionConfig>,
+    pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {

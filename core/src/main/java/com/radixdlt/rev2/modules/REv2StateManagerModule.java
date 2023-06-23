@@ -88,6 +88,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -175,7 +176,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             DatabaseBackendConfig databaseBackendConfig(
                 @NodeStorageLocation String nodeStorageLocation) {
               return DatabaseBackendConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath());
+                  new File(nodeStorageLocation, "state_manager").getPath());
             }
           });
       case IN_MEMORY -> install(
@@ -243,26 +244,8 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
-          REv2StateReader stateReader(RustStateComputer stateComputer) {
-            return new REv2StateReader() {
-              @Override
-              public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-                return stateComputer.getComponentXrdAmount(componentAddress);
-              }
-
-              @Override
-              public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
-                return stateComputer.getValidatorInfo(systemAddress);
-              }
-
-              @Override
-              public long getEpoch() {
-                return stateComputer
-                    .getEpoch()
-                    .toNonNegativeLong()
-                    .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
-              }
-            };
+          TestStateReader testStateReader(StateManager stateManager) {
+            return new TestStateReader(stateManager);
           }
 
           @Provides

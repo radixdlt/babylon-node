@@ -89,7 +89,6 @@ import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.io.File;
 import java.time.Duration;
@@ -309,11 +308,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case NodeStorageConfig.FileStorage fileStorage -> {
         final var tempFolderPath = fileStorage.folder.getAbsolutePath();
         install(new PrefixedNodeStorageLocationModule(tempFolderPath));
-
-        final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;
-        if (needsBerkeleyDb) {
-          install(new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE));
-        }
       }
     }
 

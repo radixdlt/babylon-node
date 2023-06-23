@@ -92,6 +92,9 @@ impl MappingContext {
             if let Some(value) = formats.typed {
                 options.include_typed = value;
             }
+            if let Some(value) = formats.previous {
+                options.include_previous = value;
+            }
         }
         self
     }
@@ -135,6 +138,7 @@ pub struct SubstateOptions {
     pub include_raw: bool,
     pub include_hash: bool,
     pub include_typed: bool,
+    pub include_previous: bool,
 }
 
 impl Default for SubstateOptions {
@@ -143,6 +147,7 @@ impl Default for SubstateOptions {
             include_raw: false,
             include_hash: false,
             include_typed: true,
+            include_previous: false,
         }
     }
 }

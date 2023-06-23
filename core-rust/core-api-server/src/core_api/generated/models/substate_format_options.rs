@@ -23,6 +23,9 @@ pub struct SubstateFormatOptions {
     /// Whether to return the typed substate information (default true)
     #[serde(rename = "typed", skip_serializing_if = "Option::is_none")]
     pub typed: Option<bool>,
+    /// Whether to return the previous substate value for updates (default false)
+    #[serde(rename = "previous", skip_serializing_if = "Option::is_none")]
+    pub previous: Option<bool>,
 }
 
 impl SubstateFormatOptions {
@@ -32,6 +35,7 @@ impl SubstateFormatOptions {
             raw: None,
             hash: None,
             typed: None,
+            previous: None,
         }
     }
 }

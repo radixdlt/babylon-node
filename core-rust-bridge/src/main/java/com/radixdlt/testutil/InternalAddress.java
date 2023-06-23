@@ -62,14 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.testutil;
 
-public class BerkeleyStoreException extends RuntimeException {
-  public BerkeleyStoreException(String message) {
-    super(message);
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
+public record InternalAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        InternalAddress.class,
+        codecs ->
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_REFERENCE,
+                BYTE_LENGTH,
+                InternalAddress::value,
+                InternalAddress::new));
   }
 
-  public BerkeleyStoreException(String message, Throwable cause) {
-    super(message, cause);
+  private static final int BYTE_LENGTH = 30;
+
+  public static InternalAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid ReNode ID length");
+    }
+    return new InternalAddress(addressBytes);
+  }
+
+  @Override
+  public String toString() {
+    return Hex.toHexString(value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof InternalAddress other && Arrays.equals(this.value, other.value);
   }
 }

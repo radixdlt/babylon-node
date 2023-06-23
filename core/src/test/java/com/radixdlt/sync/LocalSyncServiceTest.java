@@ -406,13 +406,36 @@ public class LocalSyncServiceTest {
             .withPendingRequest(peer1, 1L);
     this.setupSyncServiceWithState(syncState);
 
-    final var syncResponse = createValidMockedSyncResponse();
+    final var syncResponse = createValidMockedSyncResponse(19, 20);
 
     this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
     verify(verifiedSyncResponseHandler, times(1)).handleSyncResponse(peer1, syncResponse);
     verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
     verifyNoMoreInteractions(syncRequestDispatcher);
+  }
+
+  @Test
+  public void when_received_an_obsolete_response__then_should_not_verify() {
+    final var currentHeader = createHeaderAtStateVersion(19L);
+    final var targetHeader = createHeaderAtStateVersion(20L);
+
+    final var peer1 = createPeer();
+    setupPeersView(peer1);
+
+    final var syncState =
+        SyncState.SyncingState.init(currentHeader, ImmutableList.of(peer1), targetHeader)
+            .withPendingRequest(peer1, 1L);
+    this.setupSyncServiceWithState(syncState);
+
+    // We're at version 19 and the response ends at version 19 too
+    final var syncResponse = createValidMockedSyncResponse(18, 19);
+
+    this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
+
+    verifyNoInteractions(verifiedSyncResponseHandler);
+    verifyNoInteractions(validatorSetVerifier);
+    verifyNoInteractions(signaturesVerifier);
   }
 
   @Test
@@ -606,24 +629,26 @@ public class LocalSyncServiceTest {
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
     this.localSyncService
         .syncResponseEventProcessor()
-        .process(peer1, createValidMockedSyncResponse());
+        .process(peer1, createValidMockedSyncResponse(19, 20));
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(21L));
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
     this.localSyncService
         .syncResponseEventProcessor()
-        .process(peer2, createValidMockedSyncResponse());
+        .process(peer2, createValidMockedSyncResponse(20, 21));
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(22L));
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer3), any());
     this.localSyncService
         .syncResponseEventProcessor()
-        .process(peer3, createValidMockedSyncResponse());
+        .process(peer3, createValidMockedSyncResponse(22, 23));
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(23L));
     verify(syncRequestDispatcher, times(2)).dispatch(eq(peer1), any());
   }
 
-  private SyncResponse createValidMockedSyncResponse() {
+  private SyncResponse createValidMockedSyncResponse(long headStateVersoin, long tailStateVersion) {
     final var respHeadLedgerHeader = mock(LedgerHeader.class);
+    when(respHeadLedgerHeader.getStateVersion()).thenReturn(headStateVersoin);
     final var respTailLedgerHeader = mock(LedgerHeader.class);
+    when(respTailLedgerHeader.getStateVersion()).thenReturn(tailStateVersion);
     final var respHead = mock(DtoLedgerProof.class);
     when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
     final var respTail = mock(DtoLedgerProof.class);

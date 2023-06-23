@@ -430,8 +430,18 @@ public final class LocalSyncService {
     log.trace("LocalSync: Received sync response from {}", sender);
 
     if (!currentState.waitingForResponseFrom(sender)) {
-      log.warn("LocalSync: Received unexpected sync response from {}", sender);
+      log.trace("LocalSync: Received unexpected sync response from {}", sender);
+      metrics.sync().unexpectedSyncResponses().inc();
       return currentState;
+    }
+
+    final var responseTailStateVersion =
+        syncResponse.getLedgerExtension().getTail().getLedgerHeader().getStateVersion();
+    final var currentStateVersion = currentState.getCurrentHeader().getStateVersion();
+    if (responseTailStateVersion <= currentStateVersion) {
+      log.trace("LocalSync: Received a stale sync response from {}", sender);
+      metrics.sync().staleSyncResponses().inc();
+      return this.processSync(currentState.clearPendingRequest());
     }
 
     if (syncResponse.getLedgerExtension().getTransactions().isEmpty()) {

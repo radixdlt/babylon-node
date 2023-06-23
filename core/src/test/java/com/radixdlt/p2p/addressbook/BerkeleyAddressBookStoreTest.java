@@ -72,11 +72,14 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,12 +94,14 @@ public final class BerkeleyAddressBookStoreTest {
   final Random random = new Random(12345);
 
   @Before
-  public void setup() throws IOException {
+  public void setup() throws IOException, ParseException {
     sut =
         new BerkeleyAddressBookStore(
             DefaultSerialization.getInstance(),
-            new BerkeleyDatabaseEnvironment(folder.newFolder().getAbsolutePath(), 100000),
-            new MetricsInitializer().initialize());
+            new MetricsInitializer().initialize(),
+            folder.newFolder().getAbsolutePath(),
+            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(
+                RuntimeProperties.defaultWithOverrides(Map.of())));
   }
 
   @Test

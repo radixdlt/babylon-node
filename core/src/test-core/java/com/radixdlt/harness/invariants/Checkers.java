@@ -70,8 +70,8 @@ import com.google.inject.Injector;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.HashMap;
@@ -104,9 +104,9 @@ public final class Checkers {
       List<Injector> nodeInjectors, Consumer<ExecutedTransaction> consumer) {
     nodeInjectors.forEach(
         injector -> {
-          var store = injector.getInstance(REv2TransactionAndProofStore.class);
+          var reader = injector.getInstance(TestStateReader.class);
           for (long version = 1; true; version++) {
-            var maybeTxn = store.getTransactionAtStateVersion(version);
+            var maybeTxn = reader.getTransactionAtStateVersion(version);
             if (maybeTxn.isEmpty()) {
               break;
             } else {
@@ -188,16 +188,16 @@ public final class Checkers {
         continue;
       }
 
-      var reader = injector.getInstance(TransactionsAndProofReader.class);
-      reader
+      var reader = injector.getInstance(TestStateReader.class);
+      injector
+          .getInstance(TransactionsAndProofReader.class)
           .getLastProof()
           .ifPresent(
               proof -> {
-                var store = injector.getInstance(REv2TransactionAndProofStore.class);
                 for (long txnStateVersion = 1;
                     txnStateVersion <= proof.getStateVersion();
                     txnStateVersion++) {
-                  var executedTxnOption = store.getTransactionAtStateVersion(txnStateVersion);
+                  var executedTxnOption = reader.getTransactionAtStateVersion(txnStateVersion);
                   assertThat(executedTxnOption.isPresent())
                       .as("Each proved transaction should be in the store")
                       .isTrue();

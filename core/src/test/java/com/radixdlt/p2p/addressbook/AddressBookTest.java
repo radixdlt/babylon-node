@@ -78,7 +78,7 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.time.Duration;
@@ -102,11 +102,14 @@ public final class AddressBookTest {
   BerkeleyAddressBookStore addressBookStore;
 
   @Before
-  public void setup() throws IOException {
-    final var dbEnv = new BerkeleyDatabaseEnvironment(folder.newFolder().getAbsolutePath(), 100000);
+  public void setup() throws IOException, ParseException {
     this.addressBookStore =
         new BerkeleyAddressBookStore(
-            DefaultSerialization.getInstance(), dbEnv, new MetricsInitializer().initialize());
+            DefaultSerialization.getInstance(),
+            new MetricsInitializer().initialize(),
+            folder.newFolder().getAbsolutePath(),
+            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(
+                RuntimeProperties.defaultWithOverrides(Map.of())));
   }
 
   @Test

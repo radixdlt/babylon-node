@@ -71,10 +71,10 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyStoreException;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.*;
+import java.io.File;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,7 +91,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   private static final long UPPER_THRESHOLD = 1000;
   private static final long LOWER_THRESHOLD = 10;
 
-  private final BerkeleyDatabaseEnvironment dbEnv;
+  private final Environment dbEnv;
   private final Database safetyStore;
   private final Metrics metrics;
   private final AtomicLong cleanupCounter = new AtomicLong();
@@ -99,26 +99,27 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   @Inject
   public BerkeleySafetyStateStore(
-      BerkeleyDatabaseEnvironment dbEnv, Serialization serialization, Metrics metrics) {
-    this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation,
+      EnvironmentConfig envConfig) {
     this.serialization = Objects.requireNonNull(serialization);
-
-    this.safetyStore = this.open();
     this.metrics = Objects.requireNonNull(metrics);
 
-    if (Boolean.valueOf(System.getProperty("db.check_integrity", "true"))) {
-      // TODO implement integrity check
-    }
+    final var dbHome = new File(nodeStorageLocation, "consensus_safety_store");
+    dbHome.mkdirs();
+    this.dbEnv = new Environment(dbHome, envConfig);
+    this.safetyStore = this.open();
   }
 
   private void fail(String message) {
     logger.error(message);
-    throw new BerkeleyStoreException(message);
+    throw new BerkeleySafetyStoreException(message);
   }
 
   private void fail(String message, Exception cause) {
     logger.error(message, cause);
-    throw new BerkeleyStoreException(message, cause);
+    throw new BerkeleySafetyStoreException(message, cause);
   }
 
   private Database open() {
@@ -127,13 +128,9 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
     primaryConfig.setTransactional(true);
 
     try {
-      // This SuppressWarnings here is valid, as ownership of the underlying
-      // resource is not changed here, the resource is just accessed.
-      @SuppressWarnings("resource")
-      Environment env = this.dbEnv.getEnvironment();
-      return env.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
+      return this.dbEnv.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
     } catch (Exception e) {
-      throw new BerkeleyStoreException("Error while opening database", e);
+      throw new BerkeleySafetyStoreException("Error while opening database", e);
     }
   }
 
@@ -142,6 +139,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
     if (this.safetyStore != null) {
       this.safetyStore.close();
     }
+
+    this.dbEnv.close();
   }
 
   @Override
@@ -175,7 +174,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   public void commitState(SafetyState safetyState) {
     final var start = System.nanoTime();
 
-    final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+    final var transaction = dbEnv.beginTransaction(null, null);
     try {
       final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);
 
@@ -205,7 +204,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
       return;
     }
 
-    final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+    final var transaction = dbEnv.beginTransaction(null, null);
     try {
       long count = safetyStore.count();
 
@@ -268,5 +267,15 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
     Longs.copyTo(roundNumber, keyBytes, Long.BYTES);
 
     return keyBytes;
+  }
+
+  public static final class BerkeleySafetyStoreException extends RuntimeException {
+    public BerkeleySafetyStoreException(String message) {
+      super(message);
+    }
+
+    public BerkeleySafetyStoreException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 }

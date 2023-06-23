@@ -62,95 +62,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+use radix_engine_constants::{
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION, DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+};
 
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
-import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
-import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
+// TODO: revisit & tune before Babylon
+pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: usize = 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: usize = 200_000_000;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION * 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
+pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
+    DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION * 10;
 
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.sleepycat.je.CacheMode;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Durability;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
-import java.io.File;
-import java.text.StringCharacterIterator;
-import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+pub struct VertexLimitsConfig {
+    pub max_total_transactions_count: usize,
+    pub max_total_transactions_size: usize,
+    pub max_total_execution_cost_units_consumed: usize,
+    pub max_total_substate_read_size: usize,
+    pub max_total_substate_read_count: usize,
+    pub max_total_substate_write_size: usize,
+    pub max_total_substate_write_count: usize,
+}
 
-public final class BerkeleyDatabaseEnvironment implements NodeAutoCloseable {
-  private static final Logger log = LogManager.getLogger();
-
-  private Environment environment;
-
-  public BerkeleyDatabaseEnvironment(String databaseLocation, long cacheSize) {
-    var dbHome = new File(databaseLocation);
-    dbHome.mkdirs();
-
-    System.setProperty("je.disable.java.adler32", "true");
-
-    EnvironmentConfig environmentConfig = new EnvironmentConfig();
-    environmentConfig.setTransactional(true);
-    environmentConfig.setAllowCreate(true);
-    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-    environmentConfig.setDurability(Durability.COMMIT_SYNC);
-    environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
-    environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
-    environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
-    environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
-    environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
-    environmentConfig.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
-    environmentConfig.setCacheSize(cacheSize);
-    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
-
-    environment = new Environment(dbHome, environmentConfig);
-
-    log.info("DB cache size set to {} ({} bytes)", toHumanReadable(cacheSize), cacheSize);
-  }
-
-  public void stop() {
-    try {
-      environment.close();
-    } catch (DatabaseException e) {
-      log.error("Error while closing database. Possible DB corruption.");
+impl VertexLimitsConfig {
+    pub fn standard() -> Self {
+        Self {
+            max_total_transactions_count: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT,
+            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+            max_total_execution_cost_units_consumed:
+                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
+            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
+            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
+            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
+        }
     }
-    environment = null;
-  }
+}
 
-  public Environment getEnvironment() {
-    if (environment == null) {
-      throw new IllegalStateException("environment is not started");
+impl Default for VertexLimitsConfig {
+    fn default() -> Self {
+        VertexLimitsConfig::standard()
     }
-
-    return environment;
-  }
-
-  private static String toHumanReadable(long bytes) {
-    var absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
-
-    if (absB < 1024) {
-      return bytes + " B";
-    }
-
-    var value = absB;
-    var ci = new StringCharacterIterator("KMGTPE");
-
-    for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
-      value >>= 10;
-      ci.next();
-    }
-
-    value *= Long.signum(bytes);
-    return String.format("%.1f %ciB", value / 1024.0, ci.current());
-  }
-
-  @Override
-  public void close() {
-    environment.close();
-  }
 }

@@ -65,6 +65,7 @@
 pub mod mempool;
 pub mod state_computer;
 pub mod state_manager;
+pub mod test_state_reader;
 pub mod transaction_preparer;
 pub mod transaction_store;
 pub mod vertex_store_recovery;

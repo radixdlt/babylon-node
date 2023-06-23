@@ -62,35 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.store;
 
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
-import java.util.Objects;
+import static com.sleepycat.je.EnvironmentConfig.*;
+import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
-/** Extra information about an executed transaction currently needed for testing */
-public record TransactionDetails(
-    List<ComponentAddress> newComponentAddresses, List<ResourceAddress> newResourceAddresses) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        TransactionDetails.class,
-        codecs -> StructCodec.fromRecordComponents(TransactionDetails.class, codecs));
+import com.radixdlt.utils.properties.RuntimeProperties;
+import com.sleepycat.je.CacheMode;
+import com.sleepycat.je.Durability;
+import com.sleepycat.je.EnvironmentConfig;
+import java.util.concurrent.TimeUnit;
+
+public final class BerkeleyDbDefaults {
+  private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
+  private static final long DEFAULT_MIN_CACHE_SIZE =
+      Math.max(10_000_000L, (long) (MAX_MEMORY * 0.01));
+  private static final long DEFAULT_MAX_CACHE_SIZE = (long) (MAX_MEMORY * 0.05);
+  private static final long DEFAULT_CACHE_SIZE = (long) (MAX_MEMORY * 0.02);
+
+  public static EnvironmentConfig createDefaultEnvConfigFromProperties(
+      RuntimeProperties properties) {
+    final var cacheSize = readCacheSizeFromPropertiesOrDefault(properties);
+    final var config = new EnvironmentConfig();
+    config.setTransactional(true);
+    config.setAllowCreate(true);
+    config.setLockTimeout(30, TimeUnit.SECONDS);
+    config.setDurability(Durability.COMMIT_SYNC);
+    config.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
+    config.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
+    config.setConfigParam(ENV_RUN_CLEANER, "true");
+    config.setConfigParam(ENV_RUN_EVICTOR, "true");
+    config.setConfigParam(ENV_RUN_VERIFIER, "false");
+    config.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
+    config.setCacheSize(cacheSize);
+    config.setCacheMode(CacheMode.EVICT_LN);
+    return config;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    TransactionDetails that = (TransactionDetails) o;
-    return Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(newComponentAddresses, newResourceAddresses);
+  private static long readCacheSizeFromPropertiesOrDefault(RuntimeProperties properties) {
+    final var minCacheSize = properties.get("db.cache_size.min", DEFAULT_MIN_CACHE_SIZE);
+    final var maxCacheSize = properties.get("db.cache_size.max", DEFAULT_MAX_CACHE_SIZE);
+    final var unrestrictedCacheSize = properties.get("db.cache_size", DEFAULT_CACHE_SIZE);
+    return Math.min(Math.max(unrestrictedCacheSize, minCacheSize), maxCacheSize);
   }
 }

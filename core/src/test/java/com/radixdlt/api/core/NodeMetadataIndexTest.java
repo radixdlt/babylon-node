@@ -62,39 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.File;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public final class BerkeleyDatabaseModule extends AbstractModule {
-  public static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
-  public static final long MIN_CACHE_SIZE = Math.max(50_000_000L, (long) (MAX_MEMORY * 0.1));
-  public static final long MAX_CACHE_SIZE = (long) (MAX_MEMORY * 0.25);
-  public static final long DEFAULT_CACHE_SIZE = (long) (MAX_MEMORY * 0.125);
+import com.google.common.collect.MoreCollectors;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.StateAccountRequest;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.testutil.TestStateReader;
+import java.util.List;
+import org.junit.Test;
 
-  public static long getCacheSizeFromProperties(RuntimeProperties properties) {
-    var minCacheSize = properties.get("db.cache_size.min", MIN_CACHE_SIZE);
-    var maxCacheSize = properties.get("db.cache_size.max", MAX_CACHE_SIZE);
-    var cacheSize = properties.get("db.cache_size", DEFAULT_CACHE_SIZE);
-    return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
-  }
+public class NodeMetadataIndexTest extends DeterministicCoreApiTestBase {
 
-  private final long cacheSize;
+  @Test
+  public void createdVaultHasItsAccountAsRootInDatabaseIndex() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+      // Set up an account and a vault
+      var accountAddress = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+      submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
-  public BerkeleyDatabaseModule(long cacheSize) {
-    this.cacheSize = cacheSize;
-  }
+      // Discover the vault's substate node ID
+      var vaultEntity =
+          this.getStateApi()
+              .stateAccountPost(
+                  new StateAccountRequest()
+                      .network(networkLogicalName)
+                      .accountAddress(addressing.encode(accountAddress)))
+              .getVaults()
+              .stream()
+              .collect(MoreCollectors.onlyElement())
+              .getVaultEntity();
+      var vaultNodeId = addressing.decodeInternalVaultNodeId(vaultEntity.getEntityAddress());
 
-  @Provides
-  @Singleton
-  BerkeleyDatabaseEnvironment berkeleyDatabaseEnvironment(
-      @NodeStorageLocation String nodeStorageLocation) {
-    final var location = new File(nodeStorageLocation, "berkeley_db").getPath();
-    return new BerkeleyDatabaseEnvironment(location, this.cacheSize);
+      // Query the global root of the vault's node ID
+      var indexedAccountAddress =
+          test.getInstance(0, TestStateReader.class).getNodeGlobalRoot(vaultNodeId);
+
+      // Assert it is the address of the account created at the beginning
+      assertThat(indexedAccountAddress.toOptional())
+          .contains(GlobalAddress.create(accountAddress.value()));
+    }
   }
 }

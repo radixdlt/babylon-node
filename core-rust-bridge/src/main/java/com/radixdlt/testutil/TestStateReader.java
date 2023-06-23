@@ -62,13 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.testutil;
 
-/** Reads REv2 state */
-public interface REv2StateReader {
-  Decimal getComponentXrdAmount(ComponentAddress componentAddress);
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.utils.UInt64;
 
-  ValidatorInfo getValidatorInfo(ComponentAddress systemAddress);
+public final class TestStateReader {
+  public TestStateReader(StateManager stateManager) {
+    this.getTransactionAtStateVersionFunc =
+        Natives.builder(stateManager, TestStateReader::getTransactionAtStateVersion)
+            .build(new TypeToken<>() {});
+    this.getTransactionDetailsAtStateVersionFunc =
+        Natives.builder(stateManager, TestStateReader::getTransactionDetailsAtStateVersion)
+            .build(new TypeToken<>() {});
+    this.componentXrdAmountFunc =
+        Natives.builder(stateManager, TestStateReader::componentXrdAmount)
+            .build(new TypeToken<>() {});
+    this.validatorInfoFunc =
+        Natives.builder(stateManager, TestStateReader::validatorInfo).build(new TypeToken<>() {});
+    this.epochFunc =
+        Natives.builder(stateManager, TestStateReader::epoch).build(new TypeToken<>() {});
+    this.getNodeGlobalRootFunc =
+        Natives.builder(stateManager, TestStateReader::getNodeGlobalRoot)
+            .build(new TypeToken<>() {});
+  }
 
-  long getEpoch();
+  public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
+    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
+  }
+
+  public Option<TransactionDetails> getTransactionDetailsAtStateVersion(long stateVersion) {
+    return this.getTransactionDetailsAtStateVersionFunc.call(
+        UInt64.fromNonNegativeLong(stateVersion));
+  }
+
+  public Option<GlobalAddress> getNodeGlobalRoot(InternalAddress nodeId) {
+    return this.getNodeGlobalRootFunc.call(nodeId);
+  }
+
+  private final Natives.Call1<UInt64, Option<TransactionDetails>>
+      getTransactionDetailsAtStateVersionFunc;
+
+  private static native byte[] getTransactionAtStateVersion(
+      StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
+
+  private static native byte[] getTransactionDetailsAtStateVersion(
+      StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
+
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
+  }
+
+  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
+
+  public UInt64 getEpoch() {
+    return epochFunc.call(Tuple.tuple());
+  }
+
+  private static native byte[] epoch(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
+
+  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
+    return validatorInfoFunc.call(validatorAddress);
+  }
+
+  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
+
+  private final Natives.Call1<InternalAddress, Option<GlobalAddress>> getNodeGlobalRootFunc;
+
+  private static native byte[] getNodeGlobalRoot(StateManager stateManager, byte[] payload);
 }

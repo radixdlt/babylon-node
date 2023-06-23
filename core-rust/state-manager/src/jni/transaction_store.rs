@@ -64,34 +64,13 @@
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::store::traits::*;
-use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
-use crate::{DetailedTransactionOutcome, LedgerProof, LedgerTransactionOutcome, StateVersion};
+use crate::transaction::RawLedgerTransaction;
+use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
 use radix_engine::types::*;
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-struct ExecutedTransaction {
-    ledger_transaction_hash: LedgerTransactionHash,
-    outcome: TransactionOutcomeJava,
-    error_message: Option<String>,
-    consensus_receipt_bytes: Vec<u8>,
-    transaction_bytes: Vec<u8>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-struct TransactionDetails {
-    new_component_addresses: Vec<ComponentAddress>,
-    new_resource_addresses: Vec<ResourceAddress>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum TransactionOutcomeJava {
-    Success,
-    Failure,
-}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TxnsAndProofRequest {
@@ -104,77 +83,6 @@ struct TxnsAndProofRequest {
 struct TxnsAndProof {
     transactions: Vec<RawLedgerTransaction>,
     proof: LedgerProof,
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |state_version_number: u64| -> Option<ExecutedTransaction> {
-            let state_version = StateVersion::of(state_version_number);
-            let database = JNIStateManager::get_database(&env, j_state_manager);
-            let read_database = database.read();
-            let committed_transaction = read_database.get_committed_transaction(state_version)?;
-            let committed_identifiers =
-                read_database.get_committed_transaction_identifiers(state_version)?;
-            let committed_ledger_transaction_receipt =
-                read_database.get_committed_ledger_transaction_receipt(state_version)?;
-            let local_transaction_execution =
-                read_database.get_committed_local_transaction_execution(state_version)?;
-
-            Some(ExecutedTransaction {
-                ledger_transaction_hash: committed_identifiers.payload.ledger_payload_hash,
-                outcome: match committed_ledger_transaction_receipt.outcome {
-                    LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
-                    LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
-                },
-                error_message: match local_transaction_execution.outcome {
-                    DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
-                },
-                consensus_receipt_bytes: scrypto_encode(
-                    &committed_ledger_transaction_receipt.get_consensus_receipt(),
-                )
-                .unwrap(),
-                transaction_bytes: committed_transaction.0,
-            })
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionDetailsAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |state_version_number: u64| -> Option<TransactionDetails> {
-            let state_version = StateVersion::of(state_version_number);
-            let database = JNIStateManager::get_database(&env, j_state_manager);
-            let read_database = database.read();
-            let committed_local_transaction_execution =
-                read_database.get_committed_local_transaction_execution(state_version)?;
-
-            Some(TransactionDetails {
-                new_component_addresses: committed_local_transaction_execution
-                    .state_update_summary
-                    .new_components,
-                new_resource_addresses: committed_local_transaction_execution
-                    .state_update_summary
-                    .new_resources,
-            })
-        },
-    )
 }
 
 #[no_mangle]
