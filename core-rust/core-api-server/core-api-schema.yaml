@@ -2823,9 +2823,9 @@ components:
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
-          OneResourcePoolSubstate: '#/components/schemas/OneResourcePoolSubstate'
-          TwoResourcePoolSubstate: '#/components/schemas/TwoResourcePoolSubstate'
-          MultiResourcePoolSubstate: '#/components/schemas/MultiResourcePoolSubstate'
+          OneResourcePool: '#/components/schemas/OneResourcePoolSubstate'
+          TwoResourcePool: '#/components/schemas/TwoResourcePoolSubstate'
+          MultiResourcePool: '#/components/schemas/MultiResourcePoolSubstate'
     SubstateType:
       type: string
       enum:
@@ -2880,6 +2880,8 @@ components:
       enum:
         - Object
         - KeyValueStore
+        - GlobalAddressReservation
+        - GlobalAddressPhantom
     TypeInfoDetails:
       type: object
       required:
