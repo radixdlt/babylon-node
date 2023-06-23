@@ -243,7 +243,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
         testNetworkRunner.peerManager(0).findOrCreateChannel(uriOfNode(1).getNodeId());
     processAll();
 
-    /* still failing with 3 more attempts (no URIs got blacklisted) */
+    /* still failing with 3 more attempts (no URIs were reported as "failed handshake") */
     assertTrue(channelFuture2.isCompletedExceptionally());
     assertEquals(
         6, testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped);

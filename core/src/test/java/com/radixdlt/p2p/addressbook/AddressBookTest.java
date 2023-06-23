@@ -81,6 +81,7 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -257,6 +258,55 @@ public final class AddressBookTest {
     final var knownPeers3 = sut.knownPeers().values();
     assertTrue(knownPeers3.stream().anyMatch(e -> e.hasAddress(newUri)));
     assertTrue(knownPeers3.stream().noneMatch(e -> e.equals(failedConnectionPeer)));
+  }
+
+  @Test
+  public void address_book_cleanup_should_use_correct_order() throws ParseException {
+    final var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.INTEGRATIONTESTNET.getId(),
+            ECKeyPair.generateNew().getPublicKey(),
+            "127.0.0.1",
+            9000);
+
+    final var sut =
+        new AddressBook(
+            self,
+            P2PConfig.fromRuntimeProperties(
+                RuntimeProperties.defaultWithOverrides(
+                    Map.of("network.p2p.address_book_max_size", "2"))),
+            rmock(EventDispatcher.class),
+            addressBookStore);
+
+    final var uri1 = randomNodeUri();
+    final var uri2 = randomNodeUri();
+    sut.addUncheckedPeers(Set.of(uri1, uri2));
+    assertEquals(sut.knownPeers().size(), 2);
+
+    // Ensure both have been tried (and failed)
+    sut.addOrUpdatePeerWithFailedConnection(uri1);
+    sut.addOrUpdatePeerWithFailedConnection(uri2);
+
+    // One peer has a failed handshake and the other one is banned
+    sut.reportFailedHandshake(uri1);
+    sut.banPeer(uri2.getNodeId(), Duration.ofMillis(1));
+
+    // We want to add another peer to the address book
+    // Banned peer should be retained for longer than
+    // the failed handshake peer (because ban info is more important).
+    final var uri3 = randomNodeUri();
+    sut.addUncheckedPeers(Set.of(uri3));
+    assertTrue(sut.knownPeers().containsKey(uri1.getNodeId()));
+    assertTrue(sut.knownPeers().containsKey(uri3.getNodeId()));
+    assertFalse(sut.knownPeers().containsKey(uri2.getNodeId()));
+
+    // Adding one more fresh peer,
+    // this time it's the failed handshake address that'll be removed
+    final var uri4 = randomNodeUri();
+    sut.addUncheckedPeers(Set.of(uri4));
+    assertTrue(sut.knownPeers().containsKey(uri3.getNodeId()));
+    assertTrue(sut.knownPeers().containsKey(uri4.getNodeId()));
+    assertFalse(sut.knownPeers().containsKey(uri1.getNodeId()));
   }
 
   @Test

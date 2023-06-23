@@ -66,6 +66,7 @@ package com.radixdlt.p2p;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.time.Duration;
 import java.util.Arrays;
 
 /** Static configuration data for P2P layer. */
@@ -126,6 +127,12 @@ public interface P2PConfig {
 
   /** A maximum number of addresses (URIs) that the address book can hold. */
   int addressBookMaxSize();
+
+  /**
+   * A hint (not a strict limit) for the address book specifying how long it should store node
+   * addresses that failed the handshake.
+   */
+  Duration failedHandshakeAddressesRetentionDuration();
 
   /**
    * Create a configuration from specified {@link RuntimeProperties}.
@@ -206,6 +213,15 @@ public interface P2PConfig {
       @Override
       public int addressBookMaxSize() {
         return properties.get("network.p2p.address_book_max_size", 2000);
+      }
+
+      @Override
+      public Duration failedHandshakeAddressesRetentionDuration() {
+        final var valueInMs =
+            properties.get(
+                "network.p2p.address_book_failed_handshake_addresses_retention_duration_ms",
+                1800000L);
+        return Duration.ofMillis(valueInMs);
       }
     };
   }

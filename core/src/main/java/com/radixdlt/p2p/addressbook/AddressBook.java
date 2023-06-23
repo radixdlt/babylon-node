@@ -213,7 +213,7 @@ public final class AddressBook {
     final var newOrUpdatedEntry =
         maybeExistingEntry == null
             ? AddressBookEntry.create(uri)
-            : maybeExistingEntry.cleanupExpiredBlacklistedUris().addUriIfNotExists(uri);
+            : maybeExistingEntry.cleanupExpiredFailedHandshakeUris().addUriIfNotExists(uri);
 
     if (!newOrUpdatedEntry.equals(maybeExistingEntry)) {
       upsertOrRemoveIfEmpty(newOrUpdatedEntry);
@@ -249,7 +249,7 @@ public final class AddressBook {
     return entries
         .filter(not(AddressBookEntry::isBanned))
         .flatMap(e -> e.getKnownAddresses().stream())
-        .filter(not(PeerAddressEntry::blacklisted))
+        .filter(PeerAddressEntry::failedHandshakeIsEmptyOrExpired)
         .filter(addressBookEntry -> this.isPeerIpAddressValid(addressBookEntry.getUri()))
         .sorted(addressEntryComparator)
         .map(AddressBookEntry.PeerAddressEntry::getUri);
@@ -331,7 +331,7 @@ public final class AddressBook {
           maybeExistingEntry
               .map(
                   e ->
-                      e.cleanupExpiredBlacklistedUris()
+                      e.cleanupExpiredFailedHandshakeUris()
                           .withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus))
               .orElseGet(
                   () ->
@@ -369,14 +369,19 @@ public final class AddressBook {
    * that will be kept.
    */
   private void removeLowestQualityAddresses(int maxAddressesToRemove) {
-    // Comparison order:
-    //   ip address invalid -> is peer banned
-    //     -> is address blacklisted -> default comparator (reversed)
+    /* The removal order is as follows:
+    - first, any invalid URIs (just in case there are any)
+    - then the addresses that have failed the handshake
+    - then all banned peers (they come after the failed handshake
+        because ban info is more important)
+    - then the default comparator (based on connection attempts),
+        reversed - from worst to best
+     */
     final var worstAddressesComparator =
         Comparator.<Tuple2<AddressBookEntry, PeerAddressEntry>, Boolean>comparing(
                 e -> !isPeerIpAddressValid(e.last().getUri()))
-            .thenComparing(e -> !e.first().isBanned())
-            .thenComparing(e -> !e.last().blacklisted())
+            .thenComparing(e -> e.last().failedHandshakeIsPresent())
+            .thenComparing(e -> e.first().isBanned())
             .thenComparing((a, b) -> addressEntryComparator.reversed().compare(a.last(), b.last()));
 
     final var addressesToRemove =
@@ -442,7 +447,7 @@ public final class AddressBook {
             existingEntry.bannedUntil().filter(bu -> bu.isAfter(banUntil)).isPresent();
         if (!alreadyBanned) {
           final var updatedEntry =
-              existingEntry.cleanupExpiredBlacklistedUris().withBanUntil(banUntil);
+              existingEntry.cleanupExpiredFailedHandshakeUris().withBanUntil(banUntil);
           upsertOrRemoveIfEmpty(updatedEntry);
           this.peerEventDispatcher.dispatch(new PeerBanned(nodeId));
         }
@@ -458,17 +463,19 @@ public final class AddressBook {
     return ImmutableMap.copyOf(knownPeers);
   }
 
-  public void blacklist(RadixNodeUri uri) {
+  public void reportFailedHandshake(RadixNodeUri uri) {
     synchronized (lock) {
-      final var blacklistUntil = Instant.now().plus(Duration.ofMinutes(30));
+      final var retainUntil =
+          Instant.now().plus(p2pConfig.failedHandshakeAddressesRetentionDuration());
       final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
       final var newOrUpdatedEntry =
           maybeExistingEntry == null
-              ? AddressBookEntry.createBlacklisted(uri, blacklistUntil)
+              ? AddressBookEntry.createWithFailedHandshake(uri, retainUntil)
+                  .withLatestConnectionStatusForUri(uri, LatestConnectionStatus.FAILURE)
               : maybeExistingEntry
-                  .cleanupExpiredBlacklistedUris()
-                  .withBlacklistedUri(uri, blacklistUntil);
-
+                  .cleanupExpiredFailedHandshakeUris()
+                  .withFailedHandshakeUri(uri, retainUntil)
+                  .withLatestConnectionStatusForUri(uri, LatestConnectionStatus.FAILURE);
       upsertOrRemoveIfEmpty(newOrUpdatedEntry);
     }
   }
