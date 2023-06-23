@@ -148,9 +148,8 @@ public final class AddressBook {
       new PeerAddressEntryComparator();
 
   /**
-   * Stores nodes whose addresses were explicitly requested (via `bestKnownAddressesById`). The
-   * addresses of these nodes are considered important (they could be validators, for example), so
-   * we make sure to keep at least one address for each such peer (i.e. they receive special care
+   * Stores nodes that are considered in some way important (validators, for example). Address book
+   * makes sure to keep at least one address for each such peer (i.e. they receive special care
    * during address book clean up).
    */
   private final LRUCache<NodeId, Unit> highPriorityPeers;
@@ -229,13 +228,18 @@ public final class AddressBook {
     return Optional.ofNullable(this.knownPeers.get(nodeId));
   }
 
+  public void reportHighPriorityPeer(NodeId nodeId) {
+    final var currKeys = highPriorityPeers.keys();
+    if (currKeys.size() == 0 || !currKeys.get(currKeys.size() - 1).equals(nodeId)) {
+      highPriorityPeers.put(nodeId, unit());
+      persistence.storeHighPriorityPeers(highPriorityPeers.keys());
+    }
+  }
+
   public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
     final Optional<AddressBookEntry> addressBookEntryOpt;
     synchronized (lock) {
       addressBookEntryOpt = Optional.ofNullable(this.knownPeers.get(nodeId));
-      // Update the LRU cache of requested node addresses
-      highPriorityPeers.put(nodeId, unit());
-      persistence.storeHighPriorityPeers(highPriorityPeers.keys());
     }
     return onlyValidUrisSorted(addressBookEntryOpt.stream())
         .collect(ImmutableList.toImmutableList());

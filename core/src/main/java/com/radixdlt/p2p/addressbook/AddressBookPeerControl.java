@@ -82,8 +82,14 @@ public final class AddressBookPeerControl implements PeerControl {
     this.addressBook = Objects.requireNonNull(addressBook);
   }
 
+  @Override
   public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
     log.info("Banning peer {} for {} because of {}", nodeId, banDuration, reason);
     this.addressBook.banPeer(nodeId, banDuration);
+  }
+
+  @Override
+  public void reportHighPriorityPeer(NodeId nodeId) {
+    addressBook.reportHighPriorityPeer(nodeId);
   }
 }

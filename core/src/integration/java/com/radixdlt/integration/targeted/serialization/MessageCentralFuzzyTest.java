@@ -89,6 +89,7 @@ import com.radixdlt.utils.Compress;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Comparator;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -128,7 +129,8 @@ public class MessageCentralFuzzyTest {
             new MetricsInitializer().initialize(),
             () -> peerControl,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
+            new Capabilities(LedgerSyncCapability.Builder.asDefault().build()),
+            Set.of());
 
     var counter = new AtomicLong(0);
 

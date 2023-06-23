@@ -410,7 +410,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
-    verify(verifiedSyncResponseHandler, times(1)).handleSyncResponse(syncResponse);
+    verify(verifiedSyncResponseHandler, times(1)).handleSyncResponse(peer1, syncResponse);
     verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
     verifyNoMoreInteractions(syncRequestDispatcher);
   }

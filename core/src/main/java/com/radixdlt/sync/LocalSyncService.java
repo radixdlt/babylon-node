@@ -108,7 +108,7 @@ import org.apache.logging.log4j.Logger;
 public final class LocalSyncService {
 
   public interface VerifiedSyncResponseHandler {
-    void handleSyncResponse(SyncResponse syncResponse);
+    void handleSyncResponse(NodeId sender, SyncResponse syncResponse);
   }
 
   public interface InvalidSyncResponseHandler {
@@ -451,7 +451,7 @@ public final class LocalSyncService {
     }
 
     try {
-      this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
+      this.verifiedSyncResponseHandler.handleSyncResponse(sender, syncResponse);
     } catch (InvalidCommitRequestException exception) {
       log.warn(
           "LocalSync: Received invalid commit request ({}) in sync response {} from {}",

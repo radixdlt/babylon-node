@@ -290,9 +290,8 @@ public final class AddressBookTest {
     }
 
     final var knownPeers2 = sut.knownPeers().keySet().stream().toList();
-    final var requestedNode = knownPeers2.get(5);
-    // And explicitly request an address of some node
-    sut.bestKnownAddressesById(requestedNode);
+    final var highPriorityPeer = knownPeers2.get(5);
+    sut.reportHighPriorityPeer(highPriorityPeer);
 
     // Now we try to insert 100 new addresses.
     // All (failed) addresses but the one that was requested will be replaced.
@@ -300,7 +299,7 @@ public final class AddressBookTest {
         Stream.generate(this::randomNodeUri).limit(100).collect(Collectors.toSet()));
 
     final var knownPeers3 = sut.knownPeers().keySet();
-    assertTrue(knownPeers3.contains(requestedNode));
+    assertTrue(knownPeers3.contains(highPriorityPeer));
     assertEquals(knownPeers3.size(), 100);
   }
 
