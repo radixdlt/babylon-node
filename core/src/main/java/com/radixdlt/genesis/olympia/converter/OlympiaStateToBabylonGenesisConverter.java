@@ -110,6 +110,6 @@ public final class OlympiaStateToBabylonGenesisConverter {
                 xrdBalancesChunks.stream())
             .flatMap(s -> s)
             .collect(ImmutableList.toImmutableList()),
-            faucetSupply);
+        faucetSupply);
   }
 }

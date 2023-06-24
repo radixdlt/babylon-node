@@ -46,15 +46,15 @@ pub fn to_api_substate(
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, type_info_substate)?,
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::OwnerRole(substate)) => {
-            to_api_owner_role_substate(context, substate)?
-        }
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(substate)) => {
-            to_api_access_rule_entry(context, typed_substate_key, substate)?
-        }
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Mutability(substate)) => {
-            to_api_mutability_entry(context, typed_substate_key, substate)?
-        }
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::OwnerRole(
+            substate,
+        )) => to_api_owner_role_substate(context, substate)?,
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(
+            substate,
+        )) => to_api_access_rule_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Mutability(
+            substate,
+        )) => to_api_mutability_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::RoyaltyModule(
             TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
                 component_royalty_accumulator_substate,
@@ -73,13 +73,9 @@ pub fn to_api_substate(
             typed_substate_key,
             component_royalty_config_substate,
         )?,
-        TypedSubstateValue::MetadataModule(
-            TypedMetadataModuleSubstateValue::MetadataEntry(
-                metadata_value_substate
-            ),
-        ) => {
-            to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?
-        }
+        TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::MetadataEntry(
+            metadata_value_substate,
+        )) => to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
             TypedPackageFieldValue::Code(_),
         )) => panic!("Unused - to be removed in Scrypto"),
@@ -360,7 +356,7 @@ pub fn to_api_account_deposit_rule_entry(
             ResourceDepositRule::Allowed => models::DepositRule::Allowed,
             ResourceDepositRule::Disallowed => models::DepositRule::Disallowed,
         }),
-        is_locked: !substate.is_mutable()
+        is_locked: !substate.is_mutable(),
     })
 }
 
@@ -965,7 +961,11 @@ pub fn to_api_component_royalty_config_substate(
     Ok(models::Substate::RoyaltyModuleMethodConfigEntrySubstate {
         is_locked: !substate.is_mutable(),
         method_name: method_name.clone(),
-        royalty_amount: substate.value.as_ref().and_then(to_api_royalty_amount).map(Box::new),
+        royalty_amount: substate
+            .value
+            .as_ref()
+            .and_then(to_api_royalty_amount)
+            .map(Box::new),
     })
 }
 

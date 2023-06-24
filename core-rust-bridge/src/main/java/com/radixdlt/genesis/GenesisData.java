@@ -90,6 +90,6 @@ public record GenesisData(
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of(),
-            defaultTestFaucetSupply);
+        defaultTestFaucetSupply);
   }
 }

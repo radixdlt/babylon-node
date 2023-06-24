@@ -122,7 +122,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build(), GenesisData.defaultTestFaucetSupply);
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        chunksBuilder.build(),
+        GenesisData.defaultTestFaucetSupply);
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -149,7 +153,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build(), useFaucet ? GenesisData.defaultTestFaucetSupply : Decimal.ZERO);
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        chunksBuilder.build(),
+        useFaucet ? GenesisData.defaultTestFaucetSupply : Decimal.ZERO);
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

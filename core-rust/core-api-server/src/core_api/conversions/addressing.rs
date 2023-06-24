@@ -105,7 +105,9 @@ pub fn to_api_substate_id(
     let api_substate_key = to_api_substate_key(substate_key);
 
     let (substate_type, partition_kind) = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(TypeInfoField::TypeInfo)) => (
+        TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
+            TypeInfoField::TypeInfo,
+        )) => (
             SubstateType::TypeInfoModuleFieldTypeInfo,
             models::PartitionKind::Field,
         ),
@@ -123,11 +125,15 @@ pub fn to_api_substate_id(
             SubstateType::AccessRulesModuleMutabilityEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(RoyaltyField::RoyaltyAccumulator)) => (
+        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(
+            RoyaltyField::RoyaltyAccumulator,
+        )) => (
             SubstateType::RoyaltyModuleFieldAccumulator,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(_)) => (
+        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(
+            _,
+        )) => (
             SubstateType::RoyaltyModuleMethodConfigEntry,
             models::PartitionKind::KeyValue,
         ),

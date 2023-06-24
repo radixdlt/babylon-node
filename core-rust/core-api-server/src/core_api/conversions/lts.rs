@@ -1,6 +1,7 @@
 use radix_engine::{
+    system::system_modules::costing::{FeeSummary, RoyaltyRecipient},
     transaction::BalanceChange,
-    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, RADIX_TOKEN}, system::system_modules::costing::{FeeSummary, RoyaltyRecipient},
+    types::{Decimal, GlobalAddress, IndexMap, ResourceAddress, RADIX_TOKEN},
 };
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
@@ -89,10 +90,8 @@ pub fn to_api_lts_fungible_balance_changes(
         }
     }
 
-    let (assumed_fee_payer, assumed_fee_balance_change) = match (
-        exact_fee_debit,
-        biggest_xrd_debit,
-    ) {
+    let (assumed_fee_payer, assumed_fee_balance_change) = match (exact_fee_debit, biggest_xrd_debit)
+    {
         // If an entity debited the exact fee - it's probably that entity
         // - This covers the case where entity X paid the fee but didn't otherwise transfer XRD
         (Some(entity_address), _) => (Some(entity_address), total_fee),
@@ -109,7 +108,8 @@ pub fn to_api_lts_fungible_balance_changes(
         assumed_fee_payment_total: assumed_fee_balance_change,
         fee_summary,
         balance_changes,
-    }).resolve_fungible_balance_changes(&context)
+    })
+    .resolve_fungible_balance_changes(context)
 }
 
 struct FeePaymentComputer<'a> {
@@ -126,7 +126,8 @@ struct FeePaymentComputationInputs<'a> {
 
 struct FeePaymentComputation {
     relevant_entities: IndexSet<GlobalAddress>,
-    fee_balance_changes: NonIterMap<GlobalAddress, Vec<(models::LtsFeeFungibleResourceBalanceChangeType, Decimal)>>,
+    fee_balance_changes:
+        NonIterMap<GlobalAddress, Vec<(models::LtsFeeFungibleResourceBalanceChangeType, Decimal)>>,
     non_fee_balance_changes: NonIterMap<GlobalAddress, IndexMap<ResourceAddress, Decimal>>,
 }
 
@@ -138,8 +139,9 @@ impl<'a> FeePaymentComputer<'a> {
                 relevant_entities: Default::default(),
                 fee_balance_changes: Default::default(),
                 non_fee_balance_changes: Default::default(),
-            }
-        }.compute_internal()
+            },
+        }
+        .compute_internal()
     }
 
     fn compute_internal(mut self) -> FeePaymentComputation {
@@ -160,7 +162,7 @@ impl<'a> FeePaymentComputer<'a> {
 
     fn add_initial_ordered_relevant_entities(&mut self) {
         for entity in self.inputs.balance_changes.keys() {
-            self.computation.relevant_entities.insert(entity.clone());
+            self.computation.relevant_entities.insert(*entity);
         }
     }
 
@@ -169,7 +171,7 @@ impl<'a> FeePaymentComputer<'a> {
         if let Some(fee_payer) = self.inputs.assumed_fee_payer {
             self.record_fee_balance_change_if_non_zero(
                 fee_payer,
-                -self.inputs.assumed_fee_payment_total, 
+                -self.inputs.assumed_fee_payment_total,
                 models::LtsFeeFungibleResourceBalanceChangeType::FeePayment,
             );
         }
@@ -181,14 +183,19 @@ impl<'a> FeePaymentComputer<'a> {
         //   has no other fee changes
         // - Once "fee distributed" is on the summary, we can use that directly instead
         let tip_distributed = self.inputs.fee_summary.tips_to_distribute();
-        let consensus_manager_xrd_balance_change = self.inputs
+        let consensus_manager_xrd_balance_change = self
+            .inputs
             .balance_changes
             .get(&GlobalAddress::from(CONSENSUS_MANAGER))
             .and_then(|balance_changes| balance_changes.get(&XRD))
-            .map(|balance_change| get_fungible_balance(balance_change).expect("Expected XRD to be fungible"))
+            .map(|balance_change| {
+                get_fungible_balance(balance_change).expect("Expected XRD to be fungible")
+            })
             .unwrap_or_default();
         let assumed_consensus_manager_non_fee_xrd_balance_change = Decimal::ZERO;
-        let fee_distributed = consensus_manager_xrd_balance_change - assumed_consensus_manager_non_fee_xrd_balance_change - tip_distributed;
+        let fee_distributed = consensus_manager_xrd_balance_change
+            - assumed_consensus_manager_non_fee_xrd_balance_change
+            - tip_distributed;
 
         self.record_fee_balance_change_if_non_zero(
             CONSENSUS_MANAGER.into(),
@@ -205,18 +212,23 @@ impl<'a> FeePaymentComputer<'a> {
     fn track_royalty_distributions(&mut self) {
         for (recipient, (_, amount)) in &self.inputs.fee_summary.royalty_cost_breakdown {
             let recipient: GlobalAddress = match recipient {
-                RoyaltyRecipient::Package(address) => address.clone().into(),
-                RoyaltyRecipient::Component(address) => address.clone().into(),
+                RoyaltyRecipient::Package(address) => (*address).into(),
+                RoyaltyRecipient::Component(address) => (*address).into(),
             };
             self.record_fee_balance_change_if_non_zero(
                 recipient,
-                amount.clone(),
+                *amount,
                 models::LtsFeeFungibleResourceBalanceChangeType::RoyaltyDistributed,
             );
         }
     }
 
-    fn record_fee_balance_change_if_non_zero(&mut self, address: GlobalAddress, balance_change: Decimal, fee_type: models::LtsFeeFungibleResourceBalanceChangeType) {
+    fn record_fee_balance_change_if_non_zero(
+        &mut self,
+        address: GlobalAddress,
+        balance_change: Decimal,
+        fee_type: models::LtsFeeFungibleResourceBalanceChangeType,
+    ) {
         if balance_change == Decimal::ZERO {
             return;
         }
@@ -227,13 +239,14 @@ impl<'a> FeePaymentComputer<'a> {
         self.computation
             .fee_balance_changes
             .entry(address)
-            .or_insert_with(|| Vec::new())
+            .or_insert_with(Vec::new)
             .push((fee_type, balance_change));
     }
 
     fn finalize_non_fee_balance_changes(&mut self) {
         for (entity, changes) in self.inputs.balance_changes {
-            let total_fee_balance_changes: Decimal = self.computation
+            let total_fee_balance_changes: Decimal = self
+                .computation
                 .fee_balance_changes
                 .get(entity)
                 .map(|fee_payments| fee_payments.iter().map(|p| p.1).sum())
@@ -242,8 +255,10 @@ impl<'a> FeePaymentComputer<'a> {
                 .iter()
                 .filter_map(|(resource, balance_change)| {
                     if resource == &XRD {
-                        let total_balance_change = get_fungible_balance(balance_change).expect("Expected XRD to be fungible");
-                        let total_non_fee_balance_change = total_balance_change - total_fee_balance_changes;
+                        let total_balance_change = get_fungible_balance(balance_change)
+                            .expect("Expected XRD to be fungible");
+                        let total_non_fee_balance_change =
+                            total_balance_change - total_fee_balance_changes;
                         if total_non_fee_balance_change == Decimal::ZERO {
                             None
                         } else {
@@ -262,28 +277,32 @@ impl<'a> FeePaymentComputer<'a> {
                 // then there must have been an equal-and-opposite non-fee balance change to offset it
                 non_fee_balance_changes.insert(XRD, -total_fee_balance_changes);
             }
-            self.computation.non_fee_balance_changes.insert(*entity, non_fee_balance_changes);
+            self.computation
+                .non_fee_balance_changes
+                .insert(*entity, non_fee_balance_changes);
         }
     }
 }
 
 impl FeePaymentComputation {
-    fn resolve_fungible_balance_changes(self, context: &MappingContext) -> Result<Vec<models::LtsEntityFungibleBalanceChanges>, MappingError> {
+    fn resolve_fungible_balance_changes(
+        self,
+        context: &MappingContext,
+    ) -> Result<Vec<models::LtsEntityFungibleBalanceChanges>, MappingError> {
         let mut output = Vec::with_capacity(self.relevant_entities.len());
         for entity in self.relevant_entities {
             // First - calculate the deprecated/duplicated total balance change
-            let deprecated_fee_payment_balance_change = self.fee_balance_changes
+            let deprecated_fee_payment_balance_change = self
+                .fee_balance_changes
                 .get(&entity)
                 .map(|fee_changes| {
                     let total_fee_payment_balance_change = fee_changes
                         .iter()
-                        .filter_map(|fee_balance_change| {
-                            match &fee_balance_change.0 {
-                                models::LtsFeeFungibleResourceBalanceChangeType::FeePayment => {
-                                    Some(fee_balance_change.1)
-                                },
-                                _ => None,
+                        .filter_map(|fee_balance_change| match &fee_balance_change.0 {
+                            models::LtsFeeFungibleResourceBalanceChangeType::FeePayment => {
+                                Some(fee_balance_change.1)
                             }
+                            _ => None,
                         })
                         .sum::<Decimal>();
                     let output = if total_fee_payment_balance_change.is_zero() {
@@ -292,7 +311,7 @@ impl FeePaymentComputation {
                         Some(Box::new(to_api_lts_fungible_resource_balance_change(
                             context,
                             &XRD,
-                            &total_fee_payment_balance_change
+                            &total_fee_payment_balance_change,
                         )?))
                     };
                     Ok(output)
@@ -302,27 +321,37 @@ impl FeePaymentComputation {
             output.push(models::LtsEntityFungibleBalanceChanges {
                 entity_address: to_api_global_address(context, &entity)?,
                 fee_balance_change: deprecated_fee_payment_balance_change,
-                fee_balance_changes: self.fee_balance_changes
+                fee_balance_changes: self
+                    .fee_balance_changes
                     .get(&entity)
                     .map(|fee_balance_changes| {
-                        fee_balance_changes.iter()
-                            .map(|(fee_change_type, balance_change)| -> Result<_, MappingError> {
-                                Ok(models::LtsFeeFungibleResourceBalanceChange {
-                                    resource_address: to_api_resource_address(context, &XRD)?,
-                                    balance_change: to_api_decimal(balance_change),
-                                    _type: *fee_change_type,
-                                })
-                            })
+                        fee_balance_changes
+                            .iter()
+                            .map(
+                                |(fee_change_type, balance_change)| -> Result<_, MappingError> {
+                                    Ok(models::LtsFeeFungibleResourceBalanceChange {
+                                        resource_address: to_api_resource_address(context, &XRD)?,
+                                        balance_change: to_api_decimal(balance_change),
+                                        _type: *fee_change_type,
+                                    })
+                                },
+                            )
                             .collect::<Result<_, _>>()
                     })
                     .transpose()?
                     .unwrap_or_default(),
-                non_fee_balance_changes: self.non_fee_balance_changes
+                non_fee_balance_changes: self
+                    .non_fee_balance_changes
                     .get(&entity)
                     .map(|non_fee_balance_changes| {
-                        non_fee_balance_changes.iter()
+                        non_fee_balance_changes
+                            .iter()
                             .map(|(resource_address, amount)| {
-                                to_api_lts_fungible_resource_balance_change(context, resource_address, amount)
+                                to_api_lts_fungible_resource_balance_change(
+                                    context,
+                                    resource_address,
+                                    amount,
+                                )
                             })
                             .collect::<Result<_, _>>()
                     })

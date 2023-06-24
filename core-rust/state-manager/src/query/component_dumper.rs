@@ -83,20 +83,11 @@ pub enum VaultData {
 
 pub type DescendantParentOpt = Option<(NodeId, PartitionNumber, SubstateKey)>;
 
+#[derive(Default)]
 pub struct ComponentStateDump {
     latest_parent: Option<(NodeId, PartitionNumber, SubstateKey)>,
     pub vaults: BTreeMap<NodeId, VaultData>,
     pub descendents: Vec<(DescendantParentOpt, NodeId, u32)>,
-}
-
-impl ComponentStateDump {
-    pub fn new() -> Self {
-        Self {
-            latest_parent: None,
-            vaults: Default::default(),
-            descendents: Default::default(),
-        }
-    }
 }
 
 impl StateTreeVisitor for ComponentStateDump {
@@ -186,7 +177,7 @@ where
     S: SubstateDatabase,
 {
     let node_id = component_address.as_node_id();
-    let mut component_dump = ComponentStateDump::new();
+    let mut component_dump = ComponentStateDump::default();
     let mut state_tree_traverser =
         StateTreeTraverser::new(substate_store, &mut component_dump, 100);
     state_tree_traverser.traverse_all_descendents(None, *node_id);
