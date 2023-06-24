@@ -105,7 +105,7 @@ pub fn to_api_substate_id(
     let api_substate_key = to_api_substate_key(substate_key);
 
     let (substate_type, partition_kind) = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModuleField(TypeInfoField::TypeInfo) => (
+        TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(TypeInfoField::TypeInfo)) => (
             SubstateType::TypeInfoModuleFieldTypeInfo,
             models::PartitionKind::Field,
         ),
@@ -123,11 +123,15 @@ pub fn to_api_substate_id(
             SubstateType::AccessRulesModuleMutabilityEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::RoyaltyModuleField(RoyaltyField::RoyaltyAccumulator) => (
+        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(RoyaltyField::RoyaltyAccumulator)) => (
             SubstateType::RoyaltyModuleFieldAccumulator,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MetadataModuleEntryKey(_) => (
+        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(_)) => (
+            SubstateType::RoyaltyModuleMethodConfigEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(_)) => (
             SubstateType::MetadataModuleEntry,
             models::PartitionKind::KeyValue,
         ),
@@ -343,10 +347,10 @@ pub fn to_api_substate_id(
     };
 
     let entity_module = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModuleField(_) => models::EntityModule::TypeInfo,
+        TypedSubstateKey::TypeInfoModule(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::AccessRulesModule(_) => models::EntityModule::AccessRules,
-        TypedSubstateKey::RoyaltyModuleField(_) => models::EntityModule::Royalty,
-        TypedSubstateKey::MetadataModuleEntryKey(_) => models::EntityModule::Metadata,
+        TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
+        TypedSubstateKey::MetadataModule(_) => models::EntityModule::Metadata,
         TypedSubstateKey::MainModule(_) => models::EntityModule::Main,
     };
 

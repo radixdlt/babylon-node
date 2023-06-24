@@ -21,18 +21,18 @@ pub struct MetadataModuleEntrySubstate {
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
     pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-    #[serde(rename = "is_mutable")]
-    pub is_mutable: bool,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
 }
 
 impl MetadataModuleEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, field_name: String, is_deleted: bool, is_mutable: bool) -> MetadataModuleEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, field_name: String, is_deleted: bool, is_locked: bool) -> MetadataModuleEntrySubstate {
         MetadataModuleEntrySubstate {
             substate_type,
             field_name,
             is_deleted,
             data_struct: None,
-            is_mutable,
+            is_locked,
         }
     }
 }

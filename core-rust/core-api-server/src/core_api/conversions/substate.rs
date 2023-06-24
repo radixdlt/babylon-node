@@ -2,9 +2,8 @@ use radix_engine::blueprints::access_controller::AccessControllerSubstate;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
 
-use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{KeyValueEntrySubstate, SubstateMutability};
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine_interface::blueprints::account::{AccountDefaultDepositRule, ResourceDepositRule};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
@@ -23,13 +22,13 @@ use super::MappingError;
 
 trait WrapperMethods {
     type Content;
-    fn get_present_value(&self) -> Result<&Self::Content, MappingError>;
+    fn get_definitely_present_value(&self) -> Result<&Self::Content, MappingError>;
 }
 
 impl<Content> WrapperMethods for KeyValueEntrySubstate<Content> {
     type Content = Content;
 
-    fn get_present_value(&self) -> Result<&Self::Content, MappingError> {
+    fn get_definitely_present_value(&self) -> Result<&Self::Content, MappingError> {
         match self.value.as_ref() {
             Some(value) => Ok(value),
             None => Err(MappingError::KeyValueStoreEntryUnexpectedlyAbsent),
@@ -44,27 +43,41 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
-        TypedSubstateValue::TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue::TypeInfo(
+        TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, type_info_substate)?,
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::OwnerRole(substate)) => {
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::OwnerRole(substate)) => {
             to_api_owner_role_substate(context, substate)?
         }
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Rule(substate)) => {
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(substate)) => {
             to_api_access_rule_entry(context, typed_substate_key, substate)?
         }
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModule::Mutability(substate)) => {
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Mutability(substate)) => {
             to_api_mutability_entry(context, typed_substate_key, substate)?
         }
-        TypedSubstateValue::RoyaltyModuleFieldValue(
-            TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
                 component_royalty_accumulator_substate,
             ),
         ) => to_api_component_royalty_accumulator_substate(
             context,
             component_royalty_accumulator_substate,
         )?,
-        TypedSubstateValue::MetadataModuleEntryValue(metadata_value_substate) => {
+
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(
+                component_royalty_config_substate,
+            ),
+        ) => to_api_component_royalty_config_substate(
+            context,
+            typed_substate_key,
+            component_royalty_config_substate,
+        )?,
+        TypedSubstateValue::MetadataModule(
+            TypedMetadataModuleSubstateValue::MetadataEntry(
+                metadata_value_substate
+            ),
+        ) => {
             to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?
         }
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
@@ -335,18 +348,19 @@ pub fn to_api_account_vault_entry(
 pub fn to_api_account_deposit_rule_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &Option<ResourceDepositRule>,
+    substate: &KeyValueEntrySubstate<AccountResourceDepositRuleEntry>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
     };
     Ok(models::Substate::AccountDepositRuleIndexEntrySubstate {
         resource_address: to_api_resource_address(context, resource_address)?,
-        deposit_rule: substate.map(|rule| match rule {
+        deposit_rule: substate.value.flatten().map(|rule| match rule {
             ResourceDepositRule::Neither => models::DepositRule::Neither,
             ResourceDepositRule::Allowed => models::DepositRule::Allowed,
             ResourceDepositRule::Disallowed => models::DepositRule::Disallowed,
         }),
+        is_locked: !substate.is_mutable()
     })
 }
 
@@ -407,8 +421,7 @@ pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let KeyValueEntrySubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -417,14 +430,10 @@ pub fn to_api_generic_key_value_store_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(models::Substate::GenericKeyValueStoreEntrySubstate {
         is_deleted,
         data_struct,
-        is_mutable,
+        is_locked: !substate.is_mutable(),
     })
 }
 
@@ -515,7 +524,7 @@ pub fn to_api_proposer_reward(
 pub fn to_api_metadata_value_substate(
     context: &MappingContext,
     substate_key: &SubstateKey,
-    substate: &MetadataValueSubstate,
+    substate: &MetadataEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     let SubstateKey::Map(key_bytes) = substate_key else {
         return Err(MappingError::InvalidMetadataKey { message: "Was not a map key".to_string() });
@@ -524,8 +533,7 @@ pub fn to_api_metadata_value_substate(
         scrypto_decode(key_bytes).map_err(|_| MappingError::InvalidMetadataKey {
             message: "Was not a string".to_string(),
         })?;
-    let MetadataValueSubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(entry) => (
             false,
             Some(Box::new(to_api_data_struct_from_bytes(
@@ -535,15 +543,11 @@ pub fn to_api_metadata_value_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(models::Substate::MetadataModuleEntrySubstate {
         field_name,
         is_deleted,
         data_struct,
-        is_mutable,
+        is_locked: !substate.is_mutable(),
     })
 }
 
@@ -922,8 +926,8 @@ pub fn to_api_royalty_config(royalty_config: &RoyaltyConfig) -> models::RoyaltyC
     }
 }
 
-pub fn to_api_royalty_amount(royalty_rule: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
-    match royalty_rule {
+pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
+    match royalty_amount {
         RoyaltyAmount::Free => None,
         RoyaltyAmount::Xrd(amount) => Some(models::RoyaltyAmount::new(
             to_api_decimal(amount),
@@ -947,6 +951,21 @@ pub fn to_api_component_royalty_accumulator_substate(
             context,
             royalty_vault.0.as_node_id(),
         )?),
+    })
+}
+
+pub fn to_api_component_royalty_config_substate(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &ComponentRoyaltyConfigSubstate,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(method_name)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "RoyaltyConfigEntryKey".to_string() });
+    };
+    Ok(models::Substate::RoyaltyModuleMethodConfigEntrySubstate {
+        is_locked: !substate.is_mutable(),
+        method_name: method_name.clone(),
+        royalty_amount: substate.value.as_ref().and_then(to_api_royalty_amount).map(Box::new),
     })
 }
 
@@ -1139,7 +1158,7 @@ pub fn to_api_package_code_entry(
     };
 
     // Use compiler to unpack to ensure we map all fields
-    let PackageCodeSubstate { vm_type, code } = substate.get_present_value()?;
+    let PackageCodeSubstate { vm_type, code } = substate.get_definitely_present_value()?;
 
     Ok(models::Substate::PackageCodeEntrySubstate {
         code_hash: to_api_hash(hash),
@@ -1156,12 +1175,12 @@ pub fn to_api_transaction_tracker_collection_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<TransactionStatus>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(hash)) = typed_key else {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(intent_hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Transaction Tracker Collection Key".to_string() });
     };
     Ok(
         models::Substate::TransactionTrackerCollectionEntrySubstate {
-            intent_hash: to_api_hash(hash),
+            intent_hash: to_api_hash(intent_hash.as_hash()),
             status: substate.value.as_ref().map(|status| match status {
                 TransactionStatus::CommittedSuccess => {
                     models::TransactionTrackerTransactionStatus::CommittedSuccess
@@ -1777,8 +1796,7 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let KeyValueEntrySubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -1787,15 +1805,11 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(
         models::Substate::NonFungibleResourceManagerDataEntrySubstate {
             is_deleted,
             data_struct,
-            is_mutable,
+            is_locked: !substate.is_mutable(),
         },
     )
 }

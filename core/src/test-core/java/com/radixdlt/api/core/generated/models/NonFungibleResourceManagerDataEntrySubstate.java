@@ -64,7 +64,7 @@ import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubs
 import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldConfigSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodConfigEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,7 +84,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_IS_DELETED,
   NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_DATA_STRUCT,
-  NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_IS_MUTABLE
+  NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_IS_LOCKED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -130,7 +130,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulator"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldConfigSubstate.class, name = "RoyaltyModuleFieldConfig"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodConfigEntrySubstate.class, name = "RoyaltyModuleMethodConfigEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -145,8 +145,8 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
-  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
-  private Boolean isMutable;
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
   public NonFungibleResourceManagerDataEntrySubstate() { 
   }
@@ -203,29 +203,29 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
   }
 
 
-  public NonFungibleResourceManagerDataEntrySubstate isMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
+  public NonFungibleResourceManagerDataEntrySubstate isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
     return this;
   }
 
    /**
-   * Get isMutable
-   * @return isMutable
+   * Get isLocked
+   * @return isLocked
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsMutable() {
-    return isMutable;
+  public Boolean getIsLocked() {
+    return isLocked;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
   }
 
 
@@ -243,13 +243,13 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
     NonFungibleResourceManagerDataEntrySubstate nonFungibleResourceManagerDataEntrySubstate = (NonFungibleResourceManagerDataEntrySubstate) o;
     return Objects.equals(this.isDeleted, nonFungibleResourceManagerDataEntrySubstate.isDeleted) &&
         Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstate.dataStruct) &&
-        Objects.equals(this.isMutable, nonFungibleResourceManagerDataEntrySubstate.isMutable) &&
+        Objects.equals(this.isLocked, nonFungibleResourceManagerDataEntrySubstate.isLocked) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isDeleted, dataStruct, isMutable, super.hashCode());
+    return Objects.hash(isDeleted, dataStruct, isLocked, super.hashCode());
   }
 
   @Override
@@ -259,7 +259,7 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
-    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -315,7 +315,7 @@ static {
   mappings.put("PackageRoyaltyEntry", PackageRoyaltyEntrySubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldAccumulator", RoyaltyModuleFieldAccumulatorSubstate.class);
-  mappings.put("RoyaltyModuleFieldConfig", RoyaltyModuleFieldConfigSubstate.class);
+  mappings.put("RoyaltyModuleMethodConfigEntry", RoyaltyModuleMethodConfigEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

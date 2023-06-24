@@ -2905,8 +2905,8 @@ components:
           AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
           AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
           AccessRulesModuleMutabilityEntry: '#/components/schemas/AccessRulesModuleMutabilityEntrySubstate'
-          RoyaltyModuleFieldConfig: '#/components/schemas/RoyaltyModuleFieldConfigSubstate'
           RoyaltyModuleFieldAccumulator: '#/components/schemas/RoyaltyModuleFieldAccumulatorSubstate'
+          RoyaltyModuleMethodConfigEntry: '#/components/schemas/RoyaltyModuleMethodConfigEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
           PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
           PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
@@ -2951,8 +2951,8 @@ components:
         - AccessRulesModuleFieldOwnerRole
         - AccessRulesModuleRuleEntry
         - AccessRulesModuleMutabilityEntry
-        - RoyaltyModuleFieldConfig
         - RoyaltyModuleFieldAccumulator
+        - RoyaltyModuleMethodConfigEntry
         - MetadataModuleEntry
         - PackageFieldRoyaltyAccumulator
         - PackageCodeEntry
@@ -3127,15 +3127,6 @@ components:
               type: array
               items:
                 type: string
-    RoyaltyModuleFieldConfigSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - royalty_config
-          properties:
-            royalty_config:
-              $ref: '#/components/schemas/RoyaltyConfig'
     RoyaltyModuleFieldAccumulatorSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3145,6 +3136,21 @@ components:
           properties:
             vault_entity:
               $ref: "#/components/schemas/EntityReference"
+    RoyaltyModuleMethodConfigEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - is_locked
+            - method_name
+          properties:
+            is_locked:
+              type: boolean
+            method_name:
+              type: string
+            royalty_amount:
+              description: The component royalty. If missing, it represents a free method.
+              $ref: '#/components/schemas/RoyaltyAmount'
     MetadataModuleEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3152,7 +3158,7 @@ components:
           required:
             - field_name
             - is_deleted
-            - is_mutable
+            - is_locked
           properties:
             field_name:
               type: string
@@ -3160,7 +3166,7 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-            is_mutable:
+            is_locked:
               type: boolean
     TransactionTrackerFieldStateSubstate:
       allOf:
@@ -3375,13 +3381,13 @@ components:
         - type: object
           required:
             - is_deleted
-            - is_mutable
+            - is_locked
           properties:
             is_deleted:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-            is_mutable:
+            is_locked:
               type: boolean
     FungibleVaultFieldBalanceSubstate:
       allOf:
@@ -3717,11 +3723,14 @@ components:
         - type: object
           required:
             - resource_address
+            - is_locked
           properties:
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
             deposit_rule:
               $ref: '#/components/schemas/DepositRule'
+            is_locked:
+              type: boolean
     DepositRule:
       type: string
       enum:
@@ -3752,13 +3761,13 @@ components:
         - type: object
           required:
             - is_deleted
-            - is_mutable
+            - is_locked
           properties:
             is_deleted:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-            is_mutable:
+            is_locked:
               type: boolean
     OneResourcePoolFieldStateSubstate:
       allOf:

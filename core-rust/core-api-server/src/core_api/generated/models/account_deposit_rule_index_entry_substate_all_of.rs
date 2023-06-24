@@ -18,13 +18,16 @@ pub struct AccountDepositRuleIndexEntrySubstateAllOf {
     pub resource_address: String,
     #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
     pub deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
 }
 
 impl AccountDepositRuleIndexEntrySubstateAllOf {
-    pub fn new(resource_address: String) -> AccountDepositRuleIndexEntrySubstateAllOf {
+    pub fn new(resource_address: String, is_locked: bool) -> AccountDepositRuleIndexEntrySubstateAllOf {
         AccountDepositRuleIndexEntrySubstateAllOf {
             resource_address,
             deposit_rule: None,
+            is_locked,
         }
     }
 }

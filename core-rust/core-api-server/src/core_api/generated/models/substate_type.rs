@@ -20,10 +20,10 @@ pub enum SubstateType {
     AccessRulesModuleRuleEntry,
     #[serde(rename = "AccessRulesModuleMutabilityEntry")]
     AccessRulesModuleMutabilityEntry,
-    #[serde(rename = "RoyaltyModuleFieldConfig")]
-    RoyaltyModuleFieldConfig,
     #[serde(rename = "RoyaltyModuleFieldAccumulator")]
     RoyaltyModuleFieldAccumulator,
+    #[serde(rename = "RoyaltyModuleMethodConfigEntry")]
+    RoyaltyModuleMethodConfigEntry,
     #[serde(rename = "MetadataModuleEntry")]
     MetadataModuleEntry,
     #[serde(rename = "PackageFieldRoyaltyAccumulator")]
@@ -112,8 +112,8 @@ impl ToString for SubstateType {
             Self::AccessRulesModuleFieldOwnerRole => String::from("AccessRulesModuleFieldOwnerRole"),
             Self::AccessRulesModuleRuleEntry => String::from("AccessRulesModuleRuleEntry"),
             Self::AccessRulesModuleMutabilityEntry => String::from("AccessRulesModuleMutabilityEntry"),
-            Self::RoyaltyModuleFieldConfig => String::from("RoyaltyModuleFieldConfig"),
             Self::RoyaltyModuleFieldAccumulator => String::from("RoyaltyModuleFieldAccumulator"),
+            Self::RoyaltyModuleMethodConfigEntry => String::from("RoyaltyModuleMethodConfigEntry"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
             Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
             Self::PackageCodeEntry => String::from("PackageCodeEntry"),

@@ -12,15 +12,21 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoyaltyModuleFieldConfigSubstateAllOf {
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+pub struct RoyaltyModuleMethodConfigEntrySubstateAllOf {
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "method_name")]
+    pub method_name: String,
+    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
 }
 
-impl RoyaltyModuleFieldConfigSubstateAllOf {
-    pub fn new(royalty_config: crate::core_api::generated::models::RoyaltyConfig) -> RoyaltyModuleFieldConfigSubstateAllOf {
-        RoyaltyModuleFieldConfigSubstateAllOf {
-            royalty_config: Box::new(royalty_config),
+impl RoyaltyModuleMethodConfigEntrySubstateAllOf {
+    pub fn new(is_locked: bool, method_name: String) -> RoyaltyModuleMethodConfigEntrySubstateAllOf {
+        RoyaltyModuleMethodConfigEntrySubstateAllOf {
+            is_locked,
+            method_name,
+            royalty_amount: None,
         }
     }
 }

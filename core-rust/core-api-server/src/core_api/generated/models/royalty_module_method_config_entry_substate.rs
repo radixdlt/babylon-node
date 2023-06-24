@@ -12,18 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoyaltyModuleFieldConfigSubstate {
+pub struct RoyaltyModuleMethodConfigEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "method_name")]
+    pub method_name: String,
+    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
 }
 
-impl RoyaltyModuleFieldConfigSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, royalty_config: crate::core_api::generated::models::RoyaltyConfig) -> RoyaltyModuleFieldConfigSubstate {
-        RoyaltyModuleFieldConfigSubstate {
+impl RoyaltyModuleMethodConfigEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, method_name: String) -> RoyaltyModuleMethodConfigEntrySubstate {
+        RoyaltyModuleMethodConfigEntrySubstate {
             substate_type,
-            royalty_config: Box::new(royalty_config),
+            is_locked,
+            method_name,
+            royalty_amount: None,
         }
     }
 }

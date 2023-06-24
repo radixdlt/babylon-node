@@ -36,9 +36,9 @@ public enum SubstateType {
   
   ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
   
-  ROYALTYMODULEFIELDCONFIG("RoyaltyModuleFieldConfig"),
-  
   ROYALTYMODULEFIELDACCUMULATOR("RoyaltyModuleFieldAccumulator"),
+  
+  ROYALTYMODULEMETHODCONFIGENTRY("RoyaltyModuleMethodConfigEntry"),
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   

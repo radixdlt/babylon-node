@@ -61,10 +61,10 @@ import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyConfig;
+import com.radixdlt.api.core.generated.models.RoyaltyAmount;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldConfigSubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldConfigSubstateAllOf;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodConfigEntrySubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodConfigEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -79,10 +79,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * RoyaltyModuleFieldConfigSubstate
+ * RoyaltyModuleMethodConfigEntrySubstate
  */
 @JsonPropertyOrder({
-  RoyaltyModuleFieldConfigSubstate.JSON_PROPERTY_ROYALTY_CONFIG
+  RoyaltyModuleMethodConfigEntrySubstate.JSON_PROPERTY_IS_LOCKED,
+  RoyaltyModuleMethodConfigEntrySubstate.JSON_PROPERTY_METHOD_NAME,
+  RoyaltyModuleMethodConfigEntrySubstate.JSON_PROPERTY_ROYALTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -128,7 +130,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulator"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldConfigSubstate.class, name = "RoyaltyModuleFieldConfig"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodConfigEntrySubstate.class, name = "RoyaltyModuleMethodConfigEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -136,41 +138,99 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class RoyaltyModuleFieldConfigSubstate extends Substate {
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private RoyaltyConfig royaltyConfig;
+public class RoyaltyModuleMethodConfigEntrySubstate extends Substate {
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
-  public RoyaltyModuleFieldConfigSubstate() { 
+  public static final String JSON_PROPERTY_METHOD_NAME = "method_name";
+  private String methodName;
+
+  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
+  private RoyaltyAmount royaltyAmount;
+
+  public RoyaltyModuleMethodConfigEntrySubstate() { 
   }
 
-  public RoyaltyModuleFieldConfigSubstate royaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public RoyaltyModuleMethodConfigEntrySubstate isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * Get isLocked
+   * @return isLocked
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public RoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public Boolean getIsLocked() {
+    return isLocked;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+  }
+
+
+  public RoyaltyModuleMethodConfigEntrySubstate methodName(String methodName) {
+    this.methodName = methodName;
+    return this;
+  }
+
+   /**
+   * Get methodName
+   * @return methodName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getMethodName() {
+    return methodName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMethodName(String methodName) {
+    this.methodName = methodName;
+  }
+
+
+  public RoyaltyModuleMethodConfigEntrySubstate royaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
+    return this;
+  }
+
+   /**
+   * Get royaltyAmount
+   * @return royaltyAmount
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public RoyaltyAmount getRoyaltyAmount() {
+    return royaltyAmount;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
   }
 
 
   /**
-   * Return true if this RoyaltyModuleFieldConfigSubstate object is equal to o.
+   * Return true if this RoyaltyModuleMethodConfigEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -180,22 +240,26 @@ public class RoyaltyModuleFieldConfigSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoyaltyModuleFieldConfigSubstate royaltyModuleFieldConfigSubstate = (RoyaltyModuleFieldConfigSubstate) o;
-    return Objects.equals(this.royaltyConfig, royaltyModuleFieldConfigSubstate.royaltyConfig) &&
+    RoyaltyModuleMethodConfigEntrySubstate royaltyModuleMethodConfigEntrySubstate = (RoyaltyModuleMethodConfigEntrySubstate) o;
+    return Objects.equals(this.isLocked, royaltyModuleMethodConfigEntrySubstate.isLocked) &&
+        Objects.equals(this.methodName, royaltyModuleMethodConfigEntrySubstate.methodName) &&
+        Objects.equals(this.royaltyAmount, royaltyModuleMethodConfigEntrySubstate.royaltyAmount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(royaltyConfig, super.hashCode());
+    return Objects.hash(isLocked, methodName, royaltyAmount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoyaltyModuleFieldConfigSubstate {\n");
+    sb.append("class RoyaltyModuleMethodConfigEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
+    sb.append("    methodName: ").append(toIndentedString(methodName)).append("\n");
+    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -251,14 +315,14 @@ static {
   mappings.put("PackageRoyaltyEntry", PackageRoyaltyEntrySubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldAccumulator", RoyaltyModuleFieldAccumulatorSubstate.class);
-  mappings.put("RoyaltyModuleFieldConfig", RoyaltyModuleFieldConfigSubstate.class);
+  mappings.put("RoyaltyModuleMethodConfigEntry", RoyaltyModuleMethodConfigEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("RoyaltyModuleFieldConfigSubstate", RoyaltyModuleFieldConfigSubstate.class);
-  JSON.registerDiscriminator(RoyaltyModuleFieldConfigSubstate.class, "substate_type", mappings);
+  mappings.put("RoyaltyModuleMethodConfigEntrySubstate", RoyaltyModuleMethodConfigEntrySubstate.class);
+  JSON.registerDiscriminator(RoyaltyModuleMethodConfigEntrySubstate.class, "substate_type", mappings);
 }
 }
 

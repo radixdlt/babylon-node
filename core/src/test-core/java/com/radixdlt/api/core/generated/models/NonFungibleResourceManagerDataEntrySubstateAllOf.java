@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
   NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT,
-  NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_IS_MUTABLE
+  NonFungibleResourceManagerDataEntrySubstateAllOf.JSON_PROPERTY_IS_LOCKED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceManagerDataEntrySubstateAllOf {
@@ -44,8 +44,8 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
-  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
-  private Boolean isMutable;
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
   public NonFungibleResourceManagerDataEntrySubstateAllOf() { 
   }
@@ -102,29 +102,29 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
   }
 
 
-  public NonFungibleResourceManagerDataEntrySubstateAllOf isMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
+  public NonFungibleResourceManagerDataEntrySubstateAllOf isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
     return this;
   }
 
    /**
-   * Get isMutable
-   * @return isMutable
+   * Get isLocked
+   * @return isLocked
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsMutable() {
-    return isMutable;
+  public Boolean getIsLocked() {
+    return isLocked;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
   }
 
 
@@ -142,12 +142,12 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
     NonFungibleResourceManagerDataEntrySubstateAllOf nonFungibleResourceManagerDataEntrySubstateAllOf = (NonFungibleResourceManagerDataEntrySubstateAllOf) o;
     return Objects.equals(this.isDeleted, nonFungibleResourceManagerDataEntrySubstateAllOf.isDeleted) &&
         Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstateAllOf.dataStruct) &&
-        Objects.equals(this.isMutable, nonFungibleResourceManagerDataEntrySubstateAllOf.isMutable);
+        Objects.equals(this.isLocked, nonFungibleResourceManagerDataEntrySubstateAllOf.isLocked);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isDeleted, dataStruct, isMutable);
+    return Objects.hash(isDeleted, dataStruct, isLocked);
   }
 
   @Override
@@ -156,7 +156,7 @@ public class NonFungibleResourceManagerDataEntrySubstateAllOf {
     sb.append("class NonFungibleResourceManagerDataEntrySubstateAllOf {\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
-    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -48,6 +48,8 @@ pub enum Substate {
         resource_address: String,
         #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
         deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
     },
     #[serde(rename="AccountFieldState")]
     AccountFieldStateSubstate {
@@ -157,8 +159,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-        #[serde(rename = "is_mutable")]
-        is_mutable: bool,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
     },
     #[serde(rename="GenericScryptoComponentFieldState")]
     GenericScryptoComponentFieldStateSubstate {
@@ -173,8 +175,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-        #[serde(rename = "is_mutable")]
-        is_mutable: bool,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
     },
     #[serde(rename="MultiResourcePoolFieldState")]
     MultiResourcePoolFieldStateSubstate {
@@ -190,8 +192,8 @@ pub enum Substate {
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-        #[serde(rename = "is_mutable")]
-        is_mutable: bool,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
     },
     #[serde(rename="NonFungibleResourceManagerFieldIdType")]
     NonFungibleResourceManagerFieldIdTypeSubstate {
@@ -294,10 +296,14 @@ pub enum Substate {
         #[serde(rename = "vault_entity")]
         vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
-    #[serde(rename="RoyaltyModuleFieldConfig")]
-    RoyaltyModuleFieldConfigSubstate {
-        #[serde(rename = "royalty_config")]
-        royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+    #[serde(rename="RoyaltyModuleMethodConfigEntry")]
+    RoyaltyModuleMethodConfigEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "method_name")]
+        method_name: String,
+        #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+        royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
     },
     #[serde(rename="TransactionTrackerCollectionEntry")]
     TransactionTrackerCollectionEntrySubstate {
