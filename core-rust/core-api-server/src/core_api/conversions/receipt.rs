@@ -352,7 +352,7 @@ pub fn to_api_fee_summary(
         cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
-        xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
+        xrd_total_tipped: to_api_decimal(&fee_summary.tips_to_distribute()),
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_breakdown
             .iter()

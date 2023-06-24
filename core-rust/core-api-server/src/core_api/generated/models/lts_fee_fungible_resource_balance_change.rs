@@ -12,26 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsEntityFungibleBalanceChanges {
-    /// The Bech32m-encoded human readable version of the entity's address
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
-    #[serde(rename = "fee_balance_change", skip_serializing_if = "Option::is_none")]
-    pub fee_balance_change: Option<Box<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>>,
-    /// If present, this field indicates fee-related balance changes, for example:  - Payment of the fee (including tip and royalty) - Distribution of royalties - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant   validator/s at end of epoch  See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how fee payment works at Babylon. 
-    #[serde(rename = "fee_balance_changes")]
-    pub fee_balance_changes: Vec<crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChange>,
-    #[serde(rename = "non_fee_balance_changes")]
-    pub non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
+pub struct LtsFeeFungibleResourceBalanceChange {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChangeType,
+    /// The Bech32m-encoded human readable version of the fungible resource's address 
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
+    /// The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "balance_change")]
+    pub balance_change: String,
 }
 
-impl LtsEntityFungibleBalanceChanges {
-    pub fn new(entity_address: String, fee_balance_changes: Vec<crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChange>, non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
-        LtsEntityFungibleBalanceChanges {
-            entity_address,
-            fee_balance_change: None,
-            fee_balance_changes,
-            non_fee_balance_changes,
+impl LtsFeeFungibleResourceBalanceChange {
+    pub fn new(_type: crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChangeType, resource_address: String, balance_change: String) -> LtsFeeFungibleResourceBalanceChange {
+        LtsFeeFungibleResourceBalanceChange {
+            _type,
+            resource_address,
+            balance_change,
         }
     }
 }

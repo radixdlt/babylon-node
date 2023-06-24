@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LtsFeeFungibleResourceBalanceChange;
 import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   LtsEntityFungibleBalanceChanges.JSON_PROPERTY_ENTITY_ADDRESS,
   LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FEE_BALANCE_CHANGE,
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FEE_BALANCE_CHANGES,
   LtsEntityFungibleBalanceChanges.JSON_PROPERTY_NON_FEE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -45,6 +47,9 @@ public class LtsEntityFungibleBalanceChanges {
 
   public static final String JSON_PROPERTY_FEE_BALANCE_CHANGE = "fee_balance_change";
   private LtsFungibleResourceBalanceChange feeBalanceChange;
+
+  public static final String JSON_PROPERTY_FEE_BALANCE_CHANGES = "fee_balance_changes";
+  private List<LtsFeeFungibleResourceBalanceChange> feeBalanceChanges = new ArrayList<>();
 
   public static final String JSON_PROPERTY_NON_FEE_BALANCE_CHANGES = "non_fee_balance_changes";
   private List<LtsFungibleResourceBalanceChange> nonFeeBalanceChanges = new ArrayList<>();
@@ -104,6 +109,37 @@ public class LtsEntityFungibleBalanceChanges {
   }
 
 
+  public LtsEntityFungibleBalanceChanges feeBalanceChanges(List<LtsFeeFungibleResourceBalanceChange> feeBalanceChanges) {
+    this.feeBalanceChanges = feeBalanceChanges;
+    return this;
+  }
+
+  public LtsEntityFungibleBalanceChanges addFeeBalanceChangesItem(LtsFeeFungibleResourceBalanceChange feeBalanceChangesItem) {
+    this.feeBalanceChanges.add(feeBalanceChangesItem);
+    return this;
+  }
+
+   /**
+   * If present, this field indicates fee-related balance changes, for example:  - Payment of the fee (including tip and royalty) - Distribution of royalties - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant   validator/s at end of epoch  See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how fee payment works at Babylon. 
+   * @return feeBalanceChanges
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "If present, this field indicates fee-related balance changes, for example:  - Payment of the fee (including tip and royalty) - Distribution of royalties - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant   validator/s at end of epoch  See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how fee payment works at Babylon. ")
+  @JsonProperty(JSON_PROPERTY_FEE_BALANCE_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<LtsFeeFungibleResourceBalanceChange> getFeeBalanceChanges() {
+    return feeBalanceChanges;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEE_BALANCE_CHANGES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFeeBalanceChanges(List<LtsFeeFungibleResourceBalanceChange> feeBalanceChanges) {
+    this.feeBalanceChanges = feeBalanceChanges;
+  }
+
+
   public LtsEntityFungibleBalanceChanges nonFeeBalanceChanges(List<LtsFungibleResourceBalanceChange> nonFeeBalanceChanges) {
     this.nonFeeBalanceChanges = nonFeeBalanceChanges;
     return this;
@@ -149,12 +185,13 @@ public class LtsEntityFungibleBalanceChanges {
     LtsEntityFungibleBalanceChanges ltsEntityFungibleBalanceChanges = (LtsEntityFungibleBalanceChanges) o;
     return Objects.equals(this.entityAddress, ltsEntityFungibleBalanceChanges.entityAddress) &&
         Objects.equals(this.feeBalanceChange, ltsEntityFungibleBalanceChanges.feeBalanceChange) &&
+        Objects.equals(this.feeBalanceChanges, ltsEntityFungibleBalanceChanges.feeBalanceChanges) &&
         Objects.equals(this.nonFeeBalanceChanges, ltsEntityFungibleBalanceChanges.nonFeeBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityAddress, feeBalanceChange, nonFeeBalanceChanges);
+    return Objects.hash(entityAddress, feeBalanceChange, feeBalanceChanges, nonFeeBalanceChanges);
   }
 
   @Override
@@ -163,6 +200,7 @@ public class LtsEntityFungibleBalanceChanges {
     sb.append("class LtsEntityFungibleBalanceChanges {\n");
     sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    feeBalanceChange: ").append(toIndentedString(feeBalanceChange)).append("\n");
+    sb.append("    feeBalanceChanges: ").append(toIndentedString(feeBalanceChanges)).append("\n");
     sb.append("    nonFeeBalanceChanges: ").append(toIndentedString(nonFeeBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();

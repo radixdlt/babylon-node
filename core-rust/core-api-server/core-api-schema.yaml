@@ -4249,6 +4249,7 @@ components:
       type: object
       required:
         - entity_address
+        - fee_balance_changes
         - non_fee_balance_changes
       properties:
         entity_address:
@@ -4259,6 +4260,22 @@ components:
           description: |
             If present, this field indicates the entity contributed to the payment of the fee.
             The change in balance will always be negative.
+            NOTE: This property is deprecated but kept for backwards compatibility. This entry is duplicated in 
+            `fee_balance_changes`.
+        fee_balance_changes:
+          type: array
+          description: |
+            If present, this field indicates fee-related balance changes, for example:
+
+            - Payment of the fee (including tip and royalty)
+            - Distribution of royalties
+            - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant
+              validator/s at end of epoch
+
+            See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how
+            fee payment works at Babylon.
+          items:
+            $ref: "#/components/schemas/LtsFeeFungibleResourceBalanceChange"
         non_fee_balance_changes:
           type: array
           items:
@@ -4278,6 +4295,31 @@ components:
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsFeeFungibleResourceBalanceChange:
+      type: object
+      required:
+        - type
+        - resource_address
+        - balance_change
+      properties:
+        type:
+          $ref: "#/components/schemas/LtsFeeFungibleResourceBalanceChangeType"
+        resource_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable version of the fungible resource's address
+        balance_change:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of change for the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsFeeFungibleResourceBalanceChangeType:
+      type: string
+      enum:
+        - FeePayment
+        - FeeDistributed
+        - TipDistributed
+        - RoyaltyDistributed
     LtsResultantAccountFungibleBalances:
       type: object
       required:
