@@ -112,16 +112,16 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(
+    jni_sbor_coded_fallible_call(
         &env,
         request_payload,
-        |raw_genesis_data: Vec<u8>| -> LedgerProof {
+        |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
             let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
             let genesis_data_hash = hash(&raw_genesis_data);
-            let genesis_data: JavaGenesisData =
-                scrypto_decode(&raw_genesis_data).expect("Invalid genesis data");
+            let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
+                .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
             let config = genesis_data.initial_config;
-            state_manager.execute_genesis(
+            let resultant_proof = state_manager.execute_genesis(
                 genesis_data.chunks,
                 genesis_data.initial_epoch,
                 ConsensusManagerConfig {
@@ -140,7 +140,8 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
                 genesis_data.faucet_supply,
-            )
+            );
+            Ok(resultant_proof)
         },
     )
 }

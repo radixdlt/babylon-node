@@ -64,6 +64,7 @@
 
 package com.radixdlt.bootstrap;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -154,7 +155,8 @@ public final class RadixNodeBootstrapperTest {
                 new GenesisFromPropertiesLoader(properties1),
                 new GenesisFileStore(tmpFolder.newFolder()))
             .bootstrapRadixNode();
-    assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
+    assertThat(nodeHandle1)
+        .isInstanceOf(RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved.class);
 
     // This transaction doesn't match the genesis of GENESIS_TEST network
     final var genesisData2 =
