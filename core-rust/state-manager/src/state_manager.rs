@@ -117,6 +117,7 @@ pub struct StateManager<S> {
     ledger_transaction_validator: LedgerTransactionValidator,
     ledger_metrics: LedgerMetrics,
     committed_transactions_metrics: CommittedTransactionsMetrics,
+    vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
     logging_config: StateManagerLoggingConfig,
 }
@@ -148,6 +149,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             execution_cache: parking_lot::const_mutex(ExecutionCache::new(transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
+            vertex_prepare_metrics: VertexPrepareMetrics::new(metric_registry),
             vertex_limits_config: VertexLimitsConfig::default(),
             ledger_metrics: LedgerMetrics::new(metric_registry),
             committed_transactions_metrics,
@@ -353,6 +355,12 @@ where
         let mut rejected_transactions = Vec::new();
         let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
+        let total_proposal_size = prepare_request
+            .proposed_transactions
+            .iter()
+            .fold(0, |total, tx| total + tx.0.len());
+        let mut committed_proposal_size = 0;
+        let mut stop_reason = VertexPrepareStopReason::Normal;
 
         for (index, raw_user_transaction) in prepare_request
             .proposed_transactions
@@ -361,6 +369,7 @@ where
         {
             // Don't process any additional transactions if next epoch has occurred
             if series_executor.next_epoch().is_some() {
+                stop_reason = VertexPrepareStopReason::EpochChange;
                 break;
             }
 
@@ -476,6 +485,7 @@ where
                     ) {
                         Ok(success) => {
                             duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
+                            committed_proposal_size += transaction_size;
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
                                 raw: raw_ledger_transaction,
@@ -490,7 +500,11 @@ where
                                 rejection_reason: None,
                             });
                             match success {
-                                VertexLimitsAdvanceSuccess::VertexFilled => break,
+                                VertexLimitsAdvanceSuccess::VertexFilled(limit_exceeded) => {
+                                    stop_reason =
+                                        VertexPrepareStopReason::LimitExceeded(limit_exceeded);
+                                    break;
+                                }
                                 VertexLimitsAdvanceSuccess::VertexNotFilled => {}
                             }
                         }
@@ -502,6 +516,11 @@ where
                                 ledger_transaction_hash: Some(ledger_transaction_hash),
                                 error: format!("{:?}", &error),
                             });
+                            // In order to mitigate the worst-case scenario where the proposal contains lots of small
+                            // transactions that take maximum amount of time to execute, we stop right after first
+                            // exceeded vertex limit.
+                            stop_reason = VertexPrepareStopReason::LimitExceeded(error);
+                            break;
                             // Note: we are not adding this transaction to [`pending_transaction_results`] because
                             // we don't want to remove it from mempool yet.
                         }
@@ -560,6 +579,17 @@ where
             );
         }
         drop(write_pending_transaction_result_cache);
+
+        self.vertex_prepare_metrics
+            .proposal_transactions_size
+            .set(total_proposal_size as i64);
+        self.vertex_prepare_metrics
+            .wasted_proposal_bandwidth
+            .set((total_proposal_size - committed_proposal_size) as i64);
+        self.vertex_prepare_metrics
+            .stop_reason
+            .with_label(stop_reason)
+            .inc();
 
         PrepareResult {
             committed: committable_transactions,

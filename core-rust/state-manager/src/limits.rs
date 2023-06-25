@@ -65,7 +65,7 @@
 use node_common::config::limits::VertexLimitsConfig;
 use radix_engine::transaction::ExecutionMetrics;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
     TransactionsCount,
     TransactionsSize,
@@ -76,12 +76,13 @@ pub enum VertexLimitsExceeded {
     SubstateWriteCount,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsAdvanceSuccess {
-    VertexFilled,
     VertexNotFilled,
+    VertexFilled(VertexLimitsExceeded),
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct VertexLimitsTracker {
     pub remaining_transactions_count: usize,
     pub remaining_transactions_size: usize,
@@ -110,7 +111,7 @@ impl VertexLimitsTracker {
             return Err(VertexLimitsExceeded::TransactionsCount);
         }
 
-        if self.remaining_substate_read_size < transaction_size {
+        if self.remaining_transactions_size < transaction_size {
             return Err(VertexLimitsExceeded::TransactionsSize);
         }
 
@@ -146,6 +147,18 @@ impl VertexLimitsTracker {
         Ok(())
     }
 
+    fn check_filled(&self) -> VertexLimitsAdvanceSuccess {
+        match self.check_pre_execution(1) {
+            Ok(_) => {}
+            Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
+        }
+        match self.check_post_execution(&ExecutionMetrics::unit()) {
+            Ok(_) => {}
+            Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
+        }
+        VertexLimitsAdvanceSuccess::VertexNotFilled
+    }
+
     pub fn try_next_transaction(
         &mut self,
         transaction_size: usize,
@@ -162,16 +175,24 @@ impl VertexLimitsTracker {
         self.remaining_substate_write_count -= execution_metrics.substate_write_count;
         self.remaining_substate_write_size -= execution_metrics.substate_write_size;
 
-        if self.remaining_transactions_count == 0
-            || self.remaining_transactions_size == 0
-            || self.remaining_execution_cost_units_consumed == 0
-            || self.remaining_substate_read_count == 0
-            || self.remaining_substate_read_size == 0
-            || self.remaining_substate_write_count == 0
-            || self.remaining_substate_write_size == 0
-        {
-            return Ok(VertexLimitsAdvanceSuccess::VertexFilled);
+        Ok(self.check_filled())
+    }
+}
+
+pub trait HasUnit {
+    fn unit() -> Self;
+}
+
+impl HasUnit for ExecutionMetrics {
+    fn unit() -> Self {
+        Self {
+            execution_cost_units_consumed: 1,
+            substate_read_size: 1,
+            substate_read_count: 1,
+            substate_write_size: 1,
+            substate_write_count: 1,
+            max_wasm_memory_used: 1,
+            max_invoke_payload_size: 1,
         }
-        Ok(VertexLimitsAdvanceSuccess::VertexNotFilled)
     }
 }

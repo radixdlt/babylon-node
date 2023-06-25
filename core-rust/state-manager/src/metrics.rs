@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::limits::VertexLimitsExceeded;
 use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
 use node_common::config::limits::{
     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
@@ -88,6 +89,12 @@ pub struct CommittedTransactionsMetrics {
     pub substate_write_count: Histogram,
     pub max_wasm_memory_used: Histogram,
     pub max_invoke_payload_size: Histogram,
+}
+
+pub struct VertexPrepareMetrics {
+    pub proposal_transactions_size: IntGauge,
+    pub wasted_proposal_bandwidth: IntGauge,
+    pub stop_reason: IntCounterVec,
 }
 
 pub struct MempoolMetrics {
@@ -208,6 +215,31 @@ impl CommittedTransactionsMetrics {
         buckets.extend(equidistant_buckets(3, 0.1 * limit, 0.25 * limit));
         buckets.extend(equidistant_buckets(3, 0.25 * limit, limit));
         buckets
+    }
+}
+
+impl VertexPrepareMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            proposal_transactions_size: IntGauge::with_opts(opts(
+                "vertex_prepare_proposal_transactions_size",
+                "Size of all transactions inside proposal.",
+            ))
+            .registered_at(registry),
+            wasted_proposal_bandwidth: IntGauge::with_opts(opts(
+                "vertex_prepare_wasted_proposal_bandwidth",
+                "Size sum of received transactions that were skipped during preparation.",
+            ))
+            .registered_at(registry),
+            stop_reason: IntCounterVec::new(
+                opts(
+                    "vertex_prepare_stop_reason",
+                    "Count of vertex prepare stop reasons by type.",
+                ),
+                &["type"],
+            )
+            .registered_at(registry),
+        }
     }
 }
 
@@ -405,6 +437,33 @@ impl MetricLabel for MempoolAddError {
             },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate(_) => "Duplicate",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VertexPrepareStopReason {
+    Normal,
+    EpochChange,
+    LimitExceeded(VertexLimitsExceeded),
+}
+
+impl MetricLabel for VertexPrepareStopReason {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match self {
+            VertexPrepareStopReason::Normal => "Normal",
+            VertexPrepareStopReason::EpochChange => "EpochChange",
+            VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
+                VertexLimitsExceeded::TransactionsCount => "TransactionsCountExceeded",
+                VertexLimitsExceeded::TransactionsSize => "TransactionsSizeExceeded",
+                VertexLimitsExceeded::ExecutionCostUnitsConsumed => "ExecutionCostUnitsConsumed",
+                VertexLimitsExceeded::SubstateReadSize => "SubstateReadSizeExceeded",
+                VertexLimitsExceeded::SubstateReadCount => "SubstateReadCountExceeded",
+                VertexLimitsExceeded::SubstateWriteSize => "SubstateWriteSizeExceeded",
+                VertexLimitsExceeded::SubstateWriteCount => "SubstateWriteCountExceeded",
+            },
         }
     }
 }
