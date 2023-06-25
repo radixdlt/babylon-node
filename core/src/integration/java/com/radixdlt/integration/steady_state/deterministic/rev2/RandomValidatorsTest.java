@@ -136,8 +136,6 @@ public final class RandomValidatorsTest {
   public void normal_run_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
-
       var random = new Random(12345);
 
       var creatingValidators = new HashMap<Integer, RawNotarizedTransaction>();
