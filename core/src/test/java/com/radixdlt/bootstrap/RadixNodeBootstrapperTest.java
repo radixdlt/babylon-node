@@ -214,7 +214,8 @@ public final class RadixNodeBootstrapperTest {
       throw new RuntimeException("Couldn't write to the genesis data file", e);
     }
     System.out.printf(
-        "The hash is: %s%n", Hex.toHexString(rawDataWithHash.genesisDataHash().asBytes()));
+        "The hash (for updating Network.java) is: %s%n",
+        Hex.toHexString(rawDataWithHash.genesisDataHash().asBytes()));
   }
 
   private GenesisData staticGenesisTestNetworkGenesisData() {
@@ -301,7 +302,7 @@ public final class RadixNodeBootstrapperTest {
                         Decimal.of(1),
                         ImmutableList.of(),
                         Address.virtualAccountAddress(key.getPublicKey()))))),
-        GenesisData.defaultTestFaucetSupply);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   private String encodeToCompressedBase64(GenesisData genesisData) throws IOException {

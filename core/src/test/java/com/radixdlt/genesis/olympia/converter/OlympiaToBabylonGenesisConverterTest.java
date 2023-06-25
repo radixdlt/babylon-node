@@ -79,7 +79,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisDataChunk;
-import com.radixdlt.genesis.GenesisResource;
 import com.radixdlt.genesis.GenesisValidator;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -507,13 +506,9 @@ public final class OlympiaToBabylonGenesisConverterTest {
             .mapToInt(r -> r.allocations().stream().mapToInt(s -> s.last().size()).sum())
             .sum());
 
-    final var babylonResourcesByAddr =
-        resources.stream()
-            .flatMap(r -> r.value().stream())
-            .collect(Collectors.toMap(GenesisResource::address, r -> r));
-
     final var babylonAllocationsByResource =
         new HashMap<ResourceAddress, Map<ComponentAddress, Decimal>>();
+    final var babylonResourceSupplies = new HashMap<ResourceAddress, Decimal>();
     resourceBalances.forEach(
         resourcesChunk -> {
           resourcesChunk
@@ -530,6 +525,10 @@ public final class OlympiaToBabylonGenesisConverterTest {
                               final var acc =
                                   resourcesChunk.accounts().get(alloc.accountIndex().toInt());
                               resourceAllocations.put(acc, alloc.amount());
+                              final var prevBalance =
+                                  babylonResourceSupplies.getOrDefault(resourceAddr, Decimal.ZERO);
+                              babylonResourceSupplies.put(
+                                  resourceAddr, prevBalance.add(alloc.amount()));
                             });
                   });
         });
@@ -538,9 +537,9 @@ public final class OlympiaToBabylonGenesisConverterTest {
         summaryResource -> {
           final var babylonAddress =
               toGlobalFungibleAddr(summaryResource.resourceAddrBytes.asBytes());
-          final var babylonResource = babylonResourcesByAddr.get(babylonAddress);
           assertEquals(
-              summaryResource.expectedScaledTotalSupply(), babylonResource.initialSupply());
+              summaryResource.expectedScaledTotalSupply(),
+              babylonResourceSupplies.get(babylonAddress));
 
           final var babylonBalances =
               babylonAllocationsByResource.get(

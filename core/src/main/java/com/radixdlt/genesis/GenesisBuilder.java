@@ -91,7 +91,7 @@ public final class GenesisBuilder {
         0,
         builder.build(),
         ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
-        GenesisData.defaultTestFaucetSupply);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData createTestGenesisWithNumValidators(
@@ -126,7 +126,7 @@ public final class GenesisBuilder {
         0,
         configBuilder.build(),
         chunksBuilder.build(),
-        GenesisData.defaultTestFaucetSupply);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -157,7 +157,7 @@ public final class GenesisBuilder {
         0,
         configBuilder.build(),
         chunksBuilder.build(),
-        useFaucet ? GenesisData.defaultTestFaucetSupply : Decimal.ZERO);
+        useFaucet ? GenesisData.DEFAULT_TEST_FAUCET_SUPPLY : Decimal.ZERO);
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

@@ -77,7 +77,7 @@ public record GenesisData(
     ImmutableList<GenesisDataChunk> chunks,
     Decimal faucetSupply) {
 
-  public static Decimal defaultTestFaucetSupply = Decimal.of(1_000_000_000);
+  public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -90,6 +90,6 @@ public record GenesisData(
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of(),
-        defaultTestFaucetSupply);
+        DEFAULT_TEST_FAUCET_SUPPLY);
   }
 }

@@ -73,6 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
@@ -174,12 +175,9 @@ public final class REv2GenesisTest {
               .unwrap();
       assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
 
-      final var xrdLeftInFaucet =
-          REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
-
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
-      assertThat(readFaucetAmount).isEqualTo(xrdLeftInFaucet);
+      assertThat(readFaucetAmount).isEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
 
       // Check genesis XRD alloc
       final var allocatedAmount =
