@@ -137,10 +137,9 @@ public record GenesisConsensusManagerConfig(
       var targetEmissionsPerYear = 300L * 1000L * 1000L;
       var totalXrdEmissionPerEpoch = Decimal.fraction(targetEmissionsPerYear, approxEpochsPerYear);
 
-      // Epochs are shorter, hence more variable: lower reliability threshold for emissions from 98%
-      // to 95%
-      // But we also have a linear increase after this cap in Babylon
-      var minReliabilityForEmissions = Decimal.fraction(95, 100);
+      // Epochs are shorter than Olympia, hence we have less to work with.
+      // So we require 100% reliability in these short epochs to get emissions.
+      var minReliabilityForEmissions = Decimal.fraction(100, 100);
 
       var numOwnerStakeUnitsUnlockEpochs = 4 * 7 * approxEpochsPerDay;
       var numFeeIncreaseDelayEpochs = 2 * 7 * approxEpochsPerDay;
@@ -150,8 +149,7 @@ public record GenesisConsensusManagerConfig(
           .maxValidators(100)
           .epochMinRoundCount(minRounds)
           .epochMaxRoundCount(maxRounds)
-          // Subtract a little to try to offset an artificial delay around epoch change
-          .epochTargetDurationMillis(targetEpochLengthSeconds * 1000 - 300)
+          .epochTargetDurationMillis(targetEpochLengthSeconds * 1000)
           .numUnstakeEpochs(unstakeEpochs)
           .totalEmissionXrdPerEpoch(totalXrdEmissionPerEpoch)
           .minValidatorReliability(minReliabilityForEmissions)
