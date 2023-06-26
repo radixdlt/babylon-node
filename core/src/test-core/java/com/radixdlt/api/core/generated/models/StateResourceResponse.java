@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateResourceResponse.JSON_PROPERTY_MANAGER,
-  StateResourceResponse.JSON_PROPERTY_ACCESS_RULES
+  StateResourceResponse.JSON_PROPERTY_OWNER_ROLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateResourceResponse {
   public static final String JSON_PROPERTY_MANAGER = "manager";
   private StateResourceManager manager;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private Substate accessRules;
+  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
+  private Substate ownerRole;
 
   public StateResourceResponse() { 
   }
@@ -73,29 +73,29 @@ public class StateResourceResponse {
   }
 
 
-  public StateResourceResponse accessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public StateResourceResponse ownerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get ownerRole
+   * @return ownerRole
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getAccessRules() {
-    return accessRules;
+  public Substate getOwnerRole() {
+    return ownerRole;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public void setOwnerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
   }
 
 
@@ -112,12 +112,12 @@ public class StateResourceResponse {
     }
     StateResourceResponse stateResourceResponse = (StateResourceResponse) o;
     return Objects.equals(this.manager, stateResourceResponse.manager) &&
-        Objects.equals(this.accessRules, stateResourceResponse.accessRules);
+        Objects.equals(this.ownerRole, stateResourceResponse.ownerRole);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, accessRules);
+    return Objects.hash(manager, ownerRole);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class StateResourceResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateResourceResponse {\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("}");
     return sb.toString();
   }

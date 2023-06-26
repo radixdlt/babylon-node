@@ -14,7 +14,7 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Result<D, ResponseError<()>> {
-    read_mandatory_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
+    read_mandatory_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
@@ -47,7 +47,7 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Option<D> {
-    read_optional_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
+    read_optional_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
@@ -60,7 +60,7 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode + Debug>(
     // Note - the field partition (if it exists) takes the first partition number,
     // the collections go after - so start at offset 1
     // (assuming there is a tuple partition on the node...)
-    let partition_number = OBJECT_BASE_PARTITION
+    let partition_number = MAIN_BASE_PARTITION
         .at_offset(PartitionOffset(1 + collection_index))
         .unwrap();
     read_optional_substate(database, node_id, partition_number, substate_key)

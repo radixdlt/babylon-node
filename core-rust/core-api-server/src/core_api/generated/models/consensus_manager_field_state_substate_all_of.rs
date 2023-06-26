@@ -21,6 +21,8 @@ pub struct ConsensusManagerFieldStateSubstateAllOf {
     pub round: i64,
     #[serde(rename = "epoch_start")]
     pub epoch_start: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "current_leader", skip_serializing_if = "Option::is_none")]
+    pub current_leader: Option<Box<crate::core_api::generated::models::ActiveValidatorIndex>>,
 }
 
 impl ConsensusManagerFieldStateSubstateAllOf {
@@ -29,6 +31,7 @@ impl ConsensusManagerFieldStateSubstateAllOf {
             epoch,
             round,
             epoch_start: Box::new(epoch_start),
+            current_leader: None,
         }
     }
 }

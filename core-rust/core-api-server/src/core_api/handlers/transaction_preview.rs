@@ -77,8 +77,7 @@ fn extract_preview_request(
         flags: PreviewFlags {
             use_free_credit: request.flags.use_free_credit,
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
-            permit_duplicate_intent_hash: request.flags.permit_duplicate_intent_hash,
-            permit_invalid_header_epoch: request.flags.permit_invalid_header_epoch,
+            skip_epoch_check: request.flags.skip_epoch_check,
         },
     })
 }
@@ -90,11 +89,11 @@ fn to_api_response(
     let receipt = result.receipt;
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
-    let response = match receipt.result {
+    let response = match receipt.transaction_result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
 
-            for (index, resource_changes) in &receipt.execution_trace.resource_changes {
+            for (index, resource_changes) in &commit_result.execution_trace.resource_changes {
                 let resource_changes: Vec<models::ResourceChange> = resource_changes
                     .iter()
                     .map(|v| {
@@ -132,12 +131,8 @@ fn to_api_response(
                 )
                 .collect();
 
-            let local_receipt = LocalTransactionReceipt::from((
-                commit_result,
-                result.substate_changes,
-                receipt.execution_trace,
-                receipt.execution_metrics,
-            ));
+            let local_receipt =
+                LocalTransactionReceipt::from((commit_result, result.substate_changes));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,

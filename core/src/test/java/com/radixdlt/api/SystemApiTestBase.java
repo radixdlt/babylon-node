@@ -127,7 +127,7 @@ public abstract class SystemApiTestBase {
                     LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createGenesisWithSingleValidator(
+                            GenesisBuilder.createTestGenesisWithSingleValidator(
                                 TEST_KEY.getPublicKey(),
                                 Decimal.of(1),
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),

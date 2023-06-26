@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateAccessControllerResponse.JSON_PROPERTY_STATE,
-  StateAccessControllerResponse.JSON_PROPERTY_ACCESS_RULES,
+  StateAccessControllerResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccessControllerResponse.JSON_PROPERTY_VAULTS,
   StateAccessControllerResponse.JSON_PROPERTY_DESCENDENT_NODES
 })
@@ -46,8 +46,8 @@ public class StateAccessControllerResponse {
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private Substate accessRules;
+  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
+  private Substate ownerRole;
 
   public static final String JSON_PROPERTY_VAULTS = "vaults";
   private List<VaultBalance> vaults = new ArrayList<>();
@@ -84,29 +84,29 @@ public class StateAccessControllerResponse {
   }
 
 
-  public StateAccessControllerResponse accessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public StateAccessControllerResponse ownerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get ownerRole
+   * @return ownerRole
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getAccessRules() {
-    return accessRules;
+  public Substate getOwnerRole() {
+    return ownerRole;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public void setOwnerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
   }
 
 
@@ -185,14 +185,14 @@ public class StateAccessControllerResponse {
     }
     StateAccessControllerResponse stateAccessControllerResponse = (StateAccessControllerResponse) o;
     return Objects.equals(this.state, stateAccessControllerResponse.state) &&
-        Objects.equals(this.accessRules, stateAccessControllerResponse.accessRules) &&
+        Objects.equals(this.ownerRole, stateAccessControllerResponse.ownerRole) &&
         Objects.equals(this.vaults, stateAccessControllerResponse.vaults) &&
         Objects.equals(this.descendentNodes, stateAccessControllerResponse.descendentNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, accessRules, vaults, descendentNodes);
+    return Objects.hash(state, ownerRole, vaults, descendentNodes);
   }
 
   @Override
@@ -200,7 +200,7 @@ public class StateAccessControllerResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccessControllerResponse {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
     sb.append("    descendentNodes: ").append(toIndentedString(descendentNodes)).append("\n");
     sb.append("}");

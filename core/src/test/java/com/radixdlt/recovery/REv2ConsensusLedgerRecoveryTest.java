@@ -108,7 +108,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             2,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),

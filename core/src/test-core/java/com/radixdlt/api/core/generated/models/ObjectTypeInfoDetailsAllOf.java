@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_VERSION,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_OUTER_OBJECT,
   ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_INSTANCE_SCHEMA,
@@ -48,6 +49,9 @@ public class ObjectTypeInfoDetailsAllOf {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
@@ -113,6 +117,32 @@ public class ObjectTypeInfoDetailsAllOf {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setBlueprintName(String blueprintName) {
     this.blueprintName = blueprintName;
+  }
+
+
+  public ObjectTypeInfoDetailsAllOf blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+    return this;
+  }
+
+   /**
+   * Get blueprintVersion
+   * @return blueprintVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintVersion() {
+    return blueprintVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -239,6 +269,7 @@ public class ObjectTypeInfoDetailsAllOf {
     ObjectTypeInfoDetailsAllOf objectTypeInfoDetailsAllOf = (ObjectTypeInfoDetailsAllOf) o;
     return Objects.equals(this.packageAddress, objectTypeInfoDetailsAllOf.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetailsAllOf.blueprintName) &&
+        Objects.equals(this.blueprintVersion, objectTypeInfoDetailsAllOf.blueprintVersion) &&
         Objects.equals(this.global, objectTypeInfoDetailsAllOf.global) &&
         Objects.equals(this.outerObject, objectTypeInfoDetailsAllOf.outerObject) &&
         Objects.equals(this.instanceSchema, objectTypeInfoDetailsAllOf.instanceSchema) &&
@@ -247,7 +278,7 @@ public class ObjectTypeInfoDetailsAllOf {
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema, features);
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, global, outerObject, instanceSchema, features);
   }
 
   @Override
@@ -256,6 +287,7 @@ public class ObjectTypeInfoDetailsAllOf {
     sb.append("class ObjectTypeInfoDetailsAllOf {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");

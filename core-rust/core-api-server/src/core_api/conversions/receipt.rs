@@ -313,7 +313,7 @@ pub fn to_api_event(
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
     let ApplicationEvent {
-        type_id: EventTypeIdentifier(emitter, local_type_index),
+        type_id: EventTypeIdentifier(emitter, type_pointer),
         data,
     } = event;
     Ok(models::Event {
@@ -333,7 +333,7 @@ pub fn to_api_event(
                     }
                 }
             }),
-            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
+            type_pointer: Some(to_api_type_pointer(context, &type_pointer)?),
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })
@@ -352,7 +352,7 @@ pub fn to_api_fee_summary(
         cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
-        xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
+        xrd_total_tipped: to_api_decimal(&fee_summary.tips_to_distribute()),
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_breakdown
             .iter()

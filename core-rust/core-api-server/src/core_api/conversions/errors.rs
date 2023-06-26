@@ -59,6 +59,7 @@ pub enum MappingError {
         state_version: StateVersion,
         error: DecodeError,
     },
+    KeyValueStoreEntryUnexpectedlyAbsent,
 }
 
 impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {

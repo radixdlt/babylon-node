@@ -38,9 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
-  StateComponentResponse.JSON_PROPERTY_ROYALTY_CONFIG,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
-  StateComponentResponse.JSON_PROPERTY_ACCESS_RULES,
+  StateComponentResponse.JSON_PROPERTY_OWNER_ROLE,
   StateComponentResponse.JSON_PROPERTY_VAULTS,
   StateComponentResponse.JSON_PROPERTY_DESCENDENT_NODES
 })
@@ -52,14 +51,11 @@ public class StateComponentResponse {
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private Substate royaltyConfig;
-
   public static final String JSON_PROPERTY_ROYALTY_ACCUMULATOR = "royalty_accumulator";
   private Substate royaltyAccumulator;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private Substate accessRules;
+  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
+  private Substate ownerRole;
 
   public static final String JSON_PROPERTY_VAULTS = "vaults";
   private List<VaultBalance> vaults = new ArrayList<>();
@@ -122,32 +118,6 @@ public class StateComponentResponse {
   }
 
 
-  public StateComponentResponse royaltyConfig(Substate royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
-    return this;
-  }
-
-   /**
-   * Get royaltyConfig
-   * @return royaltyConfig
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getRoyaltyConfig() {
-    return royaltyConfig;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(Substate royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
-  }
-
-
   public StateComponentResponse royaltyAccumulator(Substate royaltyAccumulator) {
     this.royaltyAccumulator = royaltyAccumulator;
     return this;
@@ -174,29 +144,29 @@ public class StateComponentResponse {
   }
 
 
-  public StateComponentResponse accessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public StateComponentResponse ownerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get ownerRole
+   * @return ownerRole
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getAccessRules() {
-    return accessRules;
+  public Substate getOwnerRole() {
+    return ownerRole;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public void setOwnerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
   }
 
 
@@ -276,16 +246,15 @@ public class StateComponentResponse {
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
     return Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
-        Objects.equals(this.royaltyConfig, stateComponentResponse.royaltyConfig) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
-        Objects.equals(this.accessRules, stateComponentResponse.accessRules) &&
+        Objects.equals(this.ownerRole, stateComponentResponse.ownerRole) &&
         Objects.equals(this.vaults, stateComponentResponse.vaults) &&
         Objects.equals(this.descendentNodes, stateComponentResponse.descendentNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, royaltyConfig, royaltyAccumulator, accessRules, vaults, descendentNodes);
+    return Objects.hash(info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
   }
 
   @Override
@@ -294,9 +263,8 @@ public class StateComponentResponse {
     sb.append("class StateComponentResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
     sb.append("    descendentNodes: ").append(toIndentedString(descendentNodes)).append("\n");
     sb.append("}");

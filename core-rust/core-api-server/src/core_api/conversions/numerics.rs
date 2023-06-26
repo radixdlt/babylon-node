@@ -1,4 +1,5 @@
 use radix_engine_common::math::*;
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
 use state_manager::StateVersion;
 
@@ -45,6 +46,12 @@ pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
     Ok(round.number().try_into().expect("Round too large somehow"))
 }
 
+pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveValidatorIndex {
+    models::ActiveValidatorIndex {
+        index: index as i32,
+    }
+}
+
 #[tracing::instrument(skip_all)]
 pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingError> {
     let state_version_number = state_version.number();
@@ -56,6 +63,16 @@ pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingE
     Ok(state_version_number
         .try_into()
         .expect("State version too large somehow"))
+}
+
+pub fn to_api_blueprint_version(
+    _context: &MappingContext,
+    version: &BlueprintVersion,
+) -> Result<String, MappingError> {
+    Ok(format!(
+        "{}.{}.{}",
+        version.major, version.minor, version.patch
+    ))
 }
 
 #[tracing::instrument(skip_all)]

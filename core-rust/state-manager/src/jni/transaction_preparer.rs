@@ -109,7 +109,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
                 header: request.header.into(),
                 instructions,
                 blobs,
-                attachments: AttachmentsV1 {},
+                message: MessageV1::None,
             };
 
             let prepared_intent = intent.prepare()?;

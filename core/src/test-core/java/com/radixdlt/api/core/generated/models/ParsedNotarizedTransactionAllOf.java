@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.NotarizedTransaction;
-import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOfIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOfValidationError;
+import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionIdentifiers;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -44,7 +44,7 @@ public class ParsedNotarizedTransactionAllOf {
   private NotarizedTransaction notarizedTransaction;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedNotarizedTransactionAllOfIdentifiers identifiers;
+  private ParsedNotarizedTransactionIdentifiers identifiers;
 
   public static final String JSON_PROPERTY_VALIDATION_ERROR = "validation_error";
   private ParsedNotarizedTransactionAllOfValidationError validationError;
@@ -78,7 +78,7 @@ public class ParsedNotarizedTransactionAllOf {
   }
 
 
-  public ParsedNotarizedTransactionAllOf identifiers(ParsedNotarizedTransactionAllOfIdentifiers identifiers) {
+  public ParsedNotarizedTransactionAllOf identifiers(ParsedNotarizedTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -92,14 +92,14 @@ public class ParsedNotarizedTransactionAllOf {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedNotarizedTransactionAllOfIdentifiers getIdentifiers() {
+  public ParsedNotarizedTransactionIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedNotarizedTransactionAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedNotarizedTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

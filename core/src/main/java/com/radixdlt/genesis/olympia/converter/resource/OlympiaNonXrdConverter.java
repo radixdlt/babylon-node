@@ -127,8 +127,6 @@ public final class OlympiaNonXrdConverter {
     final var resourceTotalSuppliesOnOlympia =
         olympiaTotalSupplies(resources, olympiaNonXrdBalances);
 
-    final Decimal[] resourceTotalSuppliesOnBabylon = new Decimal[resources.size()];
-
     final var resourceBalancesChunksBuilder =
         ImmutableList.<GenesisDataChunk.ResourceBalances>builder();
     ImmutableList.Builder<Tuple2<ResourceAddress, ImmutableList<GenesisResourceAllocation>>>
@@ -165,13 +163,6 @@ public final class OlympiaNonXrdConverter {
                 olympiaAmount,
                 totalSupplyOnOlympia,
                 config.maxGenesisResourceUnscaledSupply().toBigIntegerSubunits());
-
-        if (resourceTotalSuppliesOnBabylon[resourceIndex] == null) {
-          resourceTotalSuppliesOnBabylon[resourceIndex] = babylonAmount;
-        } else {
-          resourceTotalSuppliesOnBabylon[resourceIndex] =
-              resourceTotalSuppliesOnBabylon[resourceIndex].add(babylonAmount);
-        }
 
         final var isLast =
             i == olympiaNonXrdBalancesGroupedByResourceIdx.size() - 1 && j == balances.size() - 1;
@@ -225,8 +216,7 @@ public final class OlympiaNonXrdConverter {
     final var resourceBalancesChunks = resourceBalancesChunksBuilder.build();
 
     final var resourcesChunks =
-        prepareResourcesChunks(
-            config, accounts, resources, olympiaXrdResourceIndex, resourceTotalSuppliesOnBabylon);
+        prepareResourcesChunks(config, accounts, resources, olympiaXrdResourceIndex);
 
     return tuple(resourcesChunks, resourceBalancesChunks);
   }
@@ -270,8 +260,7 @@ public final class OlympiaNonXrdConverter {
       OlympiaToBabylonConverterConfig config,
       List<OlympiaStateIR.Account> accounts,
       List<OlympiaStateIR.Resource> resources,
-      int olympiaXrdResourceIndex,
-      Decimal[] resourceTotalSuppliesOnBabylon) {
+      int olympiaXrdResourceIndex) {
     return createChunks(
         resources,
         config.maxResourcesPerChunk(),
@@ -280,19 +269,13 @@ public final class OlympiaNonXrdConverter {
             // skip XRD
             return Optional.empty();
           }
-          final var initialSupply =
-              resourceTotalSuppliesOnBabylon[idx] == null
-                  ? Decimal.ZERO
-                  : resourceTotalSuppliesOnBabylon[idx];
-          return Optional.of(convertResource(accounts, initialSupply, olympiaResource));
+          return Optional.of(convertResource(accounts, olympiaResource));
         },
         GenesisDataChunk.Resources::new);
   }
 
   private static GenesisResource convertResource(
-      List<OlympiaStateIR.Account> accounts,
-      Decimal initialSupply,
-      OlympiaStateIR.Resource resource) {
+      List<OlympiaStateIR.Account> accounts, OlympiaStateIR.Resource resource) {
     final var metadataBuilder = ImmutableList.<Tuple2<String, MetadataValue>>builder();
     metadataBuilder.addAll(
         List.of(
@@ -313,7 +296,7 @@ public final class OlympiaNonXrdConverter {
                 idx -> Address.virtualAccountAddress(accounts.get(idx).publicKeyBytes().asBytes()));
 
     final var address = olympiaToBabylonResourceAddress(resource.addr());
-    return new GenesisResource(address, initialSupply, metadataBuilder.build(), Option.from(owner));
+    return new GenesisResource(address, metadataBuilder.build(), Option.from(owner));
   }
 
   public static REAddr olympiaRriToReAddr(String rri) {

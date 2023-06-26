@@ -1,4 +1,5 @@
 use parking_lot::RwLock;
+use radix_engine::errors::RejectionError;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -216,7 +217,9 @@ where
             read_store.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
         if existing.is_some() {
             return TransactionAttempt {
-                rejection: Some(RejectionReason::IntentHashCommitted),
+                rejection: Some(RejectionReason::FromExecution(Box::new(
+                    RejectionError::IntentHashPreviouslyCommitted,
+                ))),
                 against_state: AtState::Committed {
                     state_version: executed_at_state_version,
                 },
@@ -238,7 +241,7 @@ where
                 }
             };
 
-        let result = match receipt.result {
+        let result = match receipt.transaction_result {
             TransactionResult::Reject(reject_result) => Err(RejectionReason::FromExecution(
                 Box::new(reject_result.error),
             )),

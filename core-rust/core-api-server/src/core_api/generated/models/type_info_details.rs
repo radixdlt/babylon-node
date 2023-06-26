@@ -36,6 +36,8 @@ pub enum TypeInfoDetails {
         package_address: String,
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
+        #[serde(rename = "blueprint_version")]
+        blueprint_version: String,
         #[serde(rename = "global")]
         global: bool,
         /// The Bech32m-encoded human readable version of any global address

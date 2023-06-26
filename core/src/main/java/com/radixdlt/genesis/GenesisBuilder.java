@@ -80,7 +80,7 @@ import java.util.stream.IntStream;
 
 public final class GenesisBuilder {
 
-  public static GenesisData createGenesisWithSingleValidator(
+  public static GenesisData createTestGenesisWithSingleValidator(
       ECDSASecp256k1PublicKey validator,
       Decimal initialStake,
       GenesisConsensusManagerConfig.Builder builder) {
@@ -90,16 +90,17 @@ public final class GenesisBuilder {
         UInt64.fromNonNegativeLong(1),
         0,
         builder.build(),
-        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()));
+        ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
-  public static GenesisData createGenesisWithNumValidators(
+  public static GenesisData createTestGenesisWithNumValidators(
       int numValidators, Decimal initialStake, GenesisConsensusManagerConfig.Builder builder) {
-    return createGenesisWithNumValidatorsAndXrdBalances(
+    return createTestGenesisWithNumValidatorsAndXrdBalances(
         numValidators, initialStake, Map.of(), builder);
   }
 
-  public static GenesisData createGenesisWithNumValidatorsAndXrdBalances(
+  public static GenesisData createTestGenesisWithNumValidatorsAndXrdBalances(
       int numValidators,
       Decimal initialStake,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
@@ -121,7 +122,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        chunksBuilder.build(),
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   public static GenesisData createGenesisWithValidatorsAndXrdBalances(
@@ -129,7 +134,8 @@ public final class GenesisBuilder {
       Decimal initialStake,
       ComponentAddress stakerAddress,
       Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances,
-      GenesisConsensusManagerConfig.Builder configBuilder) {
+      GenesisConsensusManagerConfig.Builder configBuilder,
+      boolean useFaucet) {
     final var chunksBuilder = ImmutableList.<GenesisDataChunk>builder();
 
     if (!xrdBalances.isEmpty()) {
@@ -147,7 +153,11 @@ public final class GenesisBuilder {
     chunksBuilder.add(validatorsAndStakesChunks.last());
 
     return new GenesisData(
-        UInt64.fromNonNegativeLong(1), 0, configBuilder.build(), chunksBuilder.build());
+        UInt64.fromNonNegativeLong(1),
+        0,
+        configBuilder.build(),
+        chunksBuilder.build(),
+        useFaucet ? GenesisData.DEFAULT_TEST_FAUCET_SUPPLY : Decimal.ZERO);
   }
 
   private static GenesisDataChunk.XrdBalances prepareXrdBalancesChunk(

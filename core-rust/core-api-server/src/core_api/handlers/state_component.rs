@@ -40,26 +40,21 @@ pub(crate) async fn handle_state_component(
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_config: ComponentRoyaltyConfigSubstate = read_mandatory_substate(
-        database.deref(),
-        component_address.as_node_id(),
-        ROYALTY_FIELD_PARTITION,
-        &RoyaltyField::RoyaltyConfig.into(),
-    )?;
-
     let component_royalty_accumulator: ComponentRoyaltyAccumulatorSubstate =
         read_mandatory_substate(
             database.deref(),
             component_address.as_node_id(),
-            ROYALTY_FIELD_PARTITION,
+            ROYALTY_BASE_PARTITION
+                .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
             &RoyaltyField::RoyaltyAccumulator.into(),
         )?;
 
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+    let owner_role_substate: OwnerRole = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        ACCESS_RULES_FIELDS_PARTITION,
+        &AccessRulesField::OwnerRole.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), component_address);
@@ -73,17 +68,13 @@ pub(crate) async fn handle_state_component(
             &mapping_context,
             &scrypto_value,
         )?),
-        royalty_config: Some(to_api_component_royalty_config_substate(
-            &mapping_context,
-            &component_royalty_config,
-        )?),
         royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
             &mapping_context,
             &component_royalty_accumulator,
         )?),
-        access_rules: Some(to_api_method_access_rules_substate(
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
         vaults,
         descendent_nodes,
@@ -136,7 +127,7 @@ pub(crate) fn map_to_descendent_id(
 
 pub(crate) fn substate_key_to_hex(substate_key: &SubstateKey) -> String {
     match substate_key {
-        SubstateKey::Tuple(tuple_key) => to_hex([*tuple_key]),
+        SubstateKey::Field(field_key) => to_hex([*field_key]),
         SubstateKey::Map(map_key) => to_hex(map_key),
         SubstateKey::Sorted((sort_key, map_key)) => {
             let mut vec = Vec::with_capacity(2 + map_key.len());

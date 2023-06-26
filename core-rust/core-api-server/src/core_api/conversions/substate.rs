@@ -1,10 +1,9 @@
 use radix_engine::blueprints::access_controller::AccessControllerSubstate;
 use radix_engine::blueprints::consensus_manager::*;
-use radix_engine::blueprints::package::PackageCodeTypeSubstate;
-use radix_engine::system::node_modules::access_rules::*;
-use radix_engine::system::node_modules::metadata::MetadataValueSubstate;
+use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
+
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{KeyValueEntrySubstate, SubstateMutability};
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine_interface::blueprints::account::{AccountDefaultDepositRule, ResourceDepositRule};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
@@ -21,6 +20,22 @@ use radix_engine_queries::typed_substate_layout::*;
 
 use super::MappingError;
 
+trait WrapperMethods {
+    type Content;
+    fn get_definitely_present_value(&self) -> Result<&Self::Content, MappingError>;
+}
+
+impl<Content> WrapperMethods for KeyValueEntrySubstate<Content> {
+    type Content = Content;
+
+    fn get_definitely_present_value(&self) -> Result<&Self::Content, MappingError> {
+        match self.value.as_ref() {
+            Some(value) => Ok(value),
+            None => Err(MappingError::KeyValueStoreEntryUnexpectedlyAbsent),
+        }
+    }
+}
+
 pub fn to_api_substate(
     context: &MappingContext,
     substate_key: &SubstateKey,
@@ -28,43 +43,47 @@ pub fn to_api_substate(
     typed_substate_value: &TypedSubstateValue,
 ) -> Result<models::Substate, MappingError> {
     Ok(match typed_substate_value {
-        TypedSubstateValue::TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue::TypeInfo(
+        TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, type_info_substate)?,
-        TypedSubstateValue::AccessRulesModuleFieldValue(
-            TypedAccessRulesModuleFieldValue::MethodAccessRules(method_access_rules_substate),
-        ) => to_api_method_access_rules_substate(context, method_access_rules_substate)?,
-        TypedSubstateValue::RoyaltyModuleFieldValue(
-            TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(component_royalty_config_substate),
-        ) => to_api_component_royalty_config_substate(context, component_royalty_config_substate)?,
-        TypedSubstateValue::RoyaltyModuleFieldValue(
-            TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::OwnerRole(
+            substate,
+        )) => to_api_owner_role_substate(context, substate)?,
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(
+            substate,
+        )) => to_api_access_rule_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Mutability(
+            substate,
+        )) => to_api_mutability_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
                 component_royalty_accumulator_substate,
             ),
         ) => to_api_component_royalty_accumulator_substate(
             context,
             component_royalty_accumulator_substate,
         )?,
-        TypedSubstateValue::MetadataModuleEntryValue(metadata_value_substate) => {
-            to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?
-        }
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Info(package_info_substate),
-        )) => to_api_package_info_substate(context, package_info_substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::CodeType(package_code_type_substate),
-        )) => to_api_package_code_type_substate(context, package_code_type_substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Code(package_code_substate),
-        )) => to_api_package_code_substate(context, package_code_substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Royalty(package_royalty_substate),
-        )) => to_api_package_royalty_substate(context, package_royalty_substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::FunctionAccessRules(package_function_access_rules_substate),
-        )) => to_api_package_function_access_rules_substate(
+
+        TypedSubstateValue::RoyaltyModule(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(
+                component_royalty_config_substate,
+            ),
+        ) => to_api_component_royalty_config_substate(
             context,
-            package_function_access_rules_substate,
+            typed_substate_key,
+            component_royalty_config_substate,
+        )?,
+        TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::MetadataEntry(
+            metadata_value_substate,
+        )) => to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::Code(_),
+        )) => panic!("Unused - to be removed in Scrypto"),
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
+            TypedPackageFieldValue::Royalty(package_royalty_accumulator_substate),
+        )) => to_api_package_royalty_accumulator_substate(
+            context,
+            package_royalty_accumulator_substate,
         )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
             TypedFungibleResourceManagerFieldValue::Divisibility(
@@ -130,6 +149,9 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
             TypedConsensusManagerFieldValue::CurrentTime(substate),
         )) => to_api_current_time_substate(substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
+            TypedConsensusManagerFieldValue::ValidatorRewards(substate),
+        )) => to_api_validator_rewards_substate(context, substate)?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
                 entry,
@@ -168,6 +190,30 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::MultiResourcePool(
             TypedMultiResourcePoolFieldValue::MultiResourcePool(substate),
         )) => to_api_multi_resource_pool_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageBlueprint(
+            substate,
+        )) => to_api_package_blueprint_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::PackageBlueprintDependencies(substate),
+        ) => to_api_package_blueprint_dependencies_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageSchema(substate)) => {
+            to_api_package_schema_entry(context, typed_substate_key, substate)?
+        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageCode(substate)) => {
+            to_api_package_code_entry(context, typed_substate_key, substate)?
+        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageAuthTemplate(
+            substate,
+        )) => to_api_package_auth_template_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageRoyalty(substate)) => {
+            to_api_package_royalty_entry(context, typed_substate_key, substate)?
+        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::TransactionTracker(
+            TypedTransactionTrackerFieldValue::TransactionTracker(substate),
+        )) => to_api_transaction_tracker_substate(context, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::TransactionTrackerCollectionEntry(substate),
+        ) => to_api_transaction_tracker_collection_entry(context, typed_substate_key, substate)?,
     })
 }
 
@@ -179,7 +225,7 @@ pub fn to_api_one_resource_pool_substate(
         vault,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::OneResourcePoolSubstate {
+    Ok(models::Substate::OneResourcePoolFieldStateSubstate {
         vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
         pool_unit_resource_address: to_api_resource_address(
             context,
@@ -196,7 +242,7 @@ pub fn to_api_two_resource_pool_substate(
         vaults,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::TwoResourcePoolSubstate {
+    Ok(models::Substate::TwoResourcePoolFieldStateSubstate {
         vaults: vaults
             .iter()
             .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
@@ -216,7 +262,7 @@ pub fn to_api_multi_resource_pool_substate(
         vaults,
         pool_unit_resource_manager,
     } = substate;
-    Ok(models::Substate::MultiResourcePoolSubstate {
+    Ok(models::Substate::MultiResourcePoolFieldStateSubstate {
         vaults: vaults
             .iter()
             .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
@@ -236,6 +282,26 @@ pub fn to_api_pool_vault(
     Ok(models::PoolVault {
         vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
         resource_address: to_api_resource_address(context, resource_address)?,
+    })
+}
+
+pub fn to_api_transaction_tracker_substate(
+    context: &MappingContext,
+    substate: &TransactionTrackerSubstate,
+) -> Result<models::Substate, MappingError> {
+    let TransactionTrackerSubstate {
+        start_epoch,
+        start_partition,
+        partition_range_start_inclusive,
+        partition_range_end_inclusive,
+        epochs_per_partition,
+    } = substate;
+    Ok(models::Substate::TransactionTrackerFieldStateSubstate {
+        start_epoch: to_api_epoch(context, Epoch::of(*start_epoch))?,
+        start_partition: to_api_u8_as_i32(*start_partition),
+        partition_range_start_inclusive: to_api_u8_as_i32(*partition_range_start_inclusive),
+        partition_range_end_inclusive: to_api_u8_as_i32(*partition_range_end_inclusive),
+        epochs_per_partition: to_api_epoch(context, Epoch::of(*epochs_per_partition))?,
     })
 }
 
@@ -278,17 +344,60 @@ pub fn to_api_account_vault_entry(
 pub fn to_api_account_deposit_rule_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &Option<ResourceDepositRule>,
+    substate: &KeyValueEntrySubstate<AccountResourceDepositRuleEntry>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
     };
     Ok(models::Substate::AccountDepositRuleIndexEntrySubstate {
         resource_address: to_api_resource_address(context, resource_address)?,
-        deposit_rule: substate.map(|rule| match rule {
+        deposit_rule: substate.value.flatten().map(|rule| match rule {
             ResourceDepositRule::Neither => models::DepositRule::Neither,
             ResourceDepositRule::Allowed => models::DepositRule::Allowed,
             ResourceDepositRule::Disallowed => models::DepositRule::Disallowed,
+        }),
+        is_locked: !substate.is_mutable(),
+    })
+}
+
+pub fn to_api_access_rule_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<AccessRule>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Module Role Key".to_string() });
+    };
+    Ok(models::Substate::AccessRulesModuleRuleEntrySubstate {
+        object_module_id: to_api_object_module_id(module),
+        role_key: key.key.to_string(),
+        access_rule: substate
+            .value
+            .as_ref()
+            .map(|access_rule| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_access_rule(context, access_rule)?))
+            })
+            .transpose()?,
+    })
+}
+
+pub fn to_api_mutability_entry(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<RoleList>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(ModuleRoleKey{ module, key })) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Mutability Key".to_string() });
+    };
+    Ok(models::Substate::AccessRulesModuleMutabilityEntrySubstate {
+        object_module_id: to_api_object_module_id(module),
+        role_key: key.key.to_string(),
+        mutable_role_keys: substate.value.as_ref().map(|role_list| {
+            role_list
+                .list
+                .iter()
+                .map(|key| key.key.to_string())
+                .collect::<Vec<_>>()
         }),
     })
 }
@@ -308,8 +417,7 @@ pub fn to_api_generic_key_value_store_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let KeyValueEntrySubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -318,14 +426,10 @@ pub fn to_api_generic_key_value_store_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(models::Substate::GenericKeyValueStoreEntrySubstate {
         is_deleted,
         data_struct,
-        is_mutable,
+        is_locked: !substate.is_mutable(),
     })
 }
 
@@ -378,10 +482,45 @@ pub fn to_api_current_proposal_statistic_substate(
     )
 }
 
+pub fn to_api_validator_rewards_substate(
+    context: &MappingContext,
+    substate: &ValidatorRewardsSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorRewardsSubstate {
+        proposer_rewards,
+        rewards_vault,
+    } = substate;
+    Ok(
+        models::Substate::ConsensusManagerFieldValidatorRewardsSubstate {
+            proposer_rewards: proposer_rewards
+                .iter()
+                .map(|(validator_index, xrd_amount)| {
+                    to_api_proposer_reward(context, validator_index, xrd_amount)
+                })
+                .collect::<Result<Vec<_>, MappingError>>()?,
+            rewards_vault: Box::new(to_api_entity_reference(
+                context,
+                rewards_vault.0.as_node_id(),
+            )?),
+        },
+    )
+}
+
+pub fn to_api_proposer_reward(
+    _context: &MappingContext,
+    validator_index: &ValidatorIndex,
+    xrd_amount: &Decimal,
+) -> Result<models::ProposerReward, MappingError> {
+    Ok(models::ProposerReward {
+        validator_index: Box::new(to_api_active_validator_index(*validator_index)),
+        xrd_amount: to_api_decimal(xrd_amount),
+    })
+}
+
 pub fn to_api_metadata_value_substate(
     context: &MappingContext,
     substate_key: &SubstateKey,
-    substate: &MetadataValueSubstate,
+    substate: &MetadataEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     let SubstateKey::Map(key_bytes) = substate_key else {
         return Err(MappingError::InvalidMetadataKey { message: "Was not a map key".to_string() });
@@ -390,8 +529,7 @@ pub fn to_api_metadata_value_substate(
         scrypto_decode(key_bytes).map_err(|_| MappingError::InvalidMetadataKey {
             message: "Was not a string".to_string(),
         })?;
-    let MetadataValueSubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(entry) => (
             false,
             Some(Box::new(to_api_data_struct_from_bytes(
@@ -401,54 +539,28 @@ pub fn to_api_metadata_value_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(models::Substate::MetadataModuleEntrySubstate {
         field_name,
         is_deleted,
         data_struct,
-        is_mutable,
+        is_locked: !substate.is_mutable(),
     })
 }
 
-pub fn to_api_method_access_rules_substate(
+pub fn to_api_owner_role_substate(
     context: &MappingContext,
-    substate: &MethodAccessRulesSubstate,
+    owner_role: &OwnerRole,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let MethodAccessRulesSubstate {
-        roles,
-        role_mutability,
-    } = substate;
-
-    Ok(
-        models::Substate::AccessRulesModuleFieldAccessRulesSubstate {
-            roles: to_api_role_rules(context, roles)?,
-            role_mutability: to_api_mutability_rules(context, role_mutability)?,
-        },
-    )
-}
-
-pub fn to_api_package_function_access_rules_substate(
-    context: &MappingContext,
-    substate: &FunctionAccessRulesSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let FunctionAccessRulesSubstate { access_rules } = substate;
-
-    Ok(models::Substate::PackageFieldFunctionAccessRulesSubstate {
-        function_auth: access_rules
-            .iter()
-            .map(|(function_key, access_rule)| {
-                Ok(models::PackageFunctionAccessRule {
-                    blueprint: function_key.blueprint.to_string(),
-                    function_name: function_key.ident.to_string(),
-                    access_rule: Some(to_api_access_rule(context, access_rule)?),
-                })
-            })
-            .collect::<Result<_, _>>()?,
+    Ok(models::Substate::AccessRulesModuleFieldOwnerRoleSubstate {
+        owner_role: Box::new(match owner_role {
+            OwnerRole::None => models::OwnerRole::NoneOwnerRole {},
+            OwnerRole::Fixed(access_rule) => models::OwnerRole::FixedOwnerRole {
+                access_rule: Box::new(to_api_access_rule(context, access_rule)?),
+            },
+            OwnerRole::Updateable(access_rule) => models::OwnerRole::UpdateableOwnerRole {
+                access_rule: Box::new(to_api_access_rule(context, access_rule)?),
+            },
+        }),
     })
 }
 
@@ -457,7 +569,7 @@ pub fn to_api_non_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFu
         NonFungibleIdType::String => models::NonFungibleIdType::String,
         NonFungibleIdType::Integer => models::NonFungibleIdType::Integer,
         NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
-        NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
+        NonFungibleIdType::RUID => models::NonFungibleIdType::RUID,
     }
 }
 
@@ -468,11 +580,12 @@ pub fn to_api_type_info_substate(
     // Use compiler to unpack to ensure we map all fields
     let details = match substate {
         TypeInfoSubstate::Object(ObjectInfo {
-            blueprint:
+            blueprint_id:
                 BlueprintId {
                     package_address,
                     blueprint_name,
                 },
+            version,
             global,
             outer_object,
             instance_schema,
@@ -480,6 +593,7 @@ pub fn to_api_type_info_substate(
         }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
             package_address: to_api_package_address(context, package_address)?,
             blueprint_name: blueprint_name.to_string(),
+            blueprint_version: to_api_blueprint_version(context, version)?,
             global: *global,
             outer_object: outer_object
                 .map(|o| to_api_global_address(context, &o))
@@ -566,50 +680,6 @@ pub fn to_api_key_value_store_schema(
         key_type: Box::new(to_api_local_type_index(context, key)?),
         value_type: Box::new(to_api_local_type_index(context, value)?),
         can_own: *can_own,
-    })
-}
-
-pub fn to_api_role_rules(
-    context: &MappingContext,
-    rules: &BTreeMap<RoleKey, AccessRule>,
-) -> Result<Vec<models::RoleRule>, MappingError> {
-    rules
-        .iter()
-        .map(|(key, rule)| to_api_role_rule(context, key, rule))
-        .collect::<Result<_, _>>()
-}
-
-pub fn to_api_role_rule(
-    context: &MappingContext,
-    key: &RoleKey,
-    rule: &AccessRule,
-) -> Result<models::RoleRule, MappingError> {
-    Ok(models::RoleRule {
-        role_key: key.key.clone(),
-        access_rule: Some(to_api_access_rule(context, rule)?),
-    })
-}
-
-pub fn to_api_mutability_rules(
-    context: &MappingContext,
-    rules: &BTreeMap<RoleKey, (RoleList, bool)>,
-) -> Result<Vec<models::MutabilityRule>, MappingError> {
-    rules
-        .iter()
-        .map(|(key, (updaters, mutable))| to_api_mutability_rule(context, key, updaters, *mutable))
-        .collect::<Result<_, _>>()
-}
-
-pub fn to_api_mutability_rule(
-    _context: &MappingContext,
-    key: &RoleKey,
-    updaters: &RoleList,
-    mutable: bool,
-) -> Result<models::MutabilityRule, MappingError> {
-    Ok(models::MutabilityRule {
-        role_key: key.key.clone(),
-        updater_role_keys: updaters.clone().to_list(),
-        updaters_mutable: mutable,
     })
 }
 
@@ -839,18 +909,6 @@ fn extract_entities(
     })
 }
 
-pub fn to_api_component_royalty_config_substate(
-    _context: &MappingContext,
-    substate: &ComponentRoyaltyConfigSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let ComponentRoyaltyConfigSubstate { royalty_config } = substate;
-
-    Ok(models::Substate::RoyaltyModuleFieldConfigSubstate {
-        royalty_config: Box::new(to_api_royalty_config(royalty_config)),
-    })
-}
-
 pub fn to_api_royalty_config(royalty_config: &RoyaltyConfig) -> models::RoyaltyConfig {
     models::RoyaltyConfig {
         method_rules: royalty_config
@@ -864,8 +922,8 @@ pub fn to_api_royalty_config(royalty_config: &RoyaltyConfig) -> models::RoyaltyC
     }
 }
 
-pub fn to_api_royalty_amount(royalty_rule: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
-    match royalty_rule {
+pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
+    match royalty_amount {
         RoyaltyAmount::Free => None,
         RoyaltyAmount::Xrd(amount) => Some(models::RoyaltyAmount::new(
             to_api_decimal(amount),
@@ -884,129 +942,344 @@ pub fn to_api_component_royalty_accumulator_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let ComponentRoyaltyAccumulatorSubstate { royalty_vault } = substate;
-
-    let vault_id = match royalty_vault {
-        Some(own) => Some(Box::new(to_api_entity_reference(
-            context,
-            own.as_node_id(),
-        )?)),
-        None => None,
-    };
-
     Ok(models::Substate::RoyaltyModuleFieldAccumulatorSubstate {
-        vault_entity: vault_id,
+        vault_entity: Box::new(to_api_entity_reference(
+            context,
+            royalty_vault.0.as_node_id(),
+        )?),
     })
 }
 
-pub fn to_api_package_info_substate(
-    context: &MappingContext,
-    substate: &PackageInfoSubstate,
+pub fn to_api_component_royalty_config_substate(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &ComponentRoyaltyConfigSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let PackageInfoSubstate { schema } = substate;
-
-    Ok(models::Substate::PackageFieldInfoSubstate {
-        package_schema: Box::new(to_api_package_schema(context, schema)?),
+    let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(method_name)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "RoyaltyConfigEntryKey".to_string() });
+    };
+    Ok(models::Substate::RoyaltyModuleMethodConfigEntrySubstate {
+        is_locked: !substate.is_mutable(),
+        method_name: method_name.clone(),
+        royalty_amount: substate
+            .value
+            .as_ref()
+            .and_then(to_api_royalty_amount)
+            .map(Box::new),
     })
 }
 
-pub fn to_api_package_schema(
+pub fn to_api_package_blueprint_entry(
     context: &MappingContext,
-    package_schema: &IndexedPackageSchema,
-) -> Result<models::PackageSchema, MappingError> {
-    let IndexedPackageSchema { blueprints } = package_schema;
-    Ok(models::PackageSchema {
-        blueprint_definitions: blueprints
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<BlueprintDefinition>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(BlueprintVersionKey{ blueprint, version })) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Blueprint Key".to_string() });
+    };
+    Ok(models::Substate::PackageBlueprintEntrySubstate {
+        name: blueprint.to_string(),
+        version: to_api_blueprint_version(context, version)?,
+        definition: substate
+            .value
+            .as_ref()
+            .map(|definition| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_blueprint_definition(context, definition)?))
+            })
+            .transpose()?,
+    })
+}
+
+pub fn to_api_package_blueprint_dependencies_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<BlueprintDependencies>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(BlueprintVersionKey{ blueprint, version })) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Blueprint Key".to_string() });
+    };
+    Ok(
+        models::Substate::PackageBlueprintDependenciesEntrySubstate {
+            name: blueprint.to_string(),
+            version: to_api_blueprint_version(context, version)?,
+            dependencies: substate
+                .value
+                .as_ref()
+                .map(|dependencies| -> Result<_, MappingError> {
+                    Ok(Box::new(to_api_blueprint_dependencies(
+                        context,
+                        dependencies,
+                    )?))
+                })
+                .transpose()?,
+        },
+    )
+}
+
+pub fn to_api_package_schema_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<ScryptoSchema>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Schema Key".to_string() });
+    };
+    Ok(models::Substate::PackageSchemaEntrySubstate {
+        schema_hash: to_api_hash(hash),
+        schema: substate
+            .value
+            .as_ref()
+            .map(|schema| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_scrypto_schema(context, schema)?))
+            })
+            .transpose()?,
+    })
+}
+
+pub fn to_api_package_royalty_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<RoyaltyConfig>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(BlueprintVersionKey{ blueprint, version})) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Royalty Key".to_string() });
+    };
+    Ok(models::Substate::PackageRoyaltyEntrySubstate {
+        name: blueprint.to_string(),
+        version: to_api_blueprint_version(context, version)?,
+        royalty_config: substate
+            .value
+            .as_ref()
+            .map(|config| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_royalty_config(config)))
+            })
+            .transpose()?,
+    })
+}
+
+pub fn to_api_package_auth_template_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<AuthConfig>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(BlueprintVersionKey{ blueprint, version})) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Code Key".to_string() });
+    };
+    Ok(models::Substate::PackageAuthTemplateEntrySubstate {
+        name: blueprint.to_string(),
+        version: to_api_blueprint_version(context, version)?,
+        auth_config: substate
+            .value
+            .as_ref()
+            .map(|config| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_auth_config(context, config)?))
+            })
+            .transpose()?,
+    })
+}
+
+pub fn to_api_auth_config(
+    context: &MappingContext,
+    config: &AuthConfig,
+) -> Result<models::AuthConfig, MappingError> {
+    let AuthConfig {
+        function_auth,
+        method_auth,
+    } = config;
+    let MethodAuthTemplate::Static { auth, outer_auth } = method_auth;
+    Ok(models::AuthConfig {
+        function_auth: function_auth
             .iter()
-            .map(|(blueprint_name, blueprint_definition)| {
+            .map(|(identifier, access_rule)| {
                 Ok((
-                    blueprint_name.to_owned(),
-                    to_api_blueprint_definition(context, blueprint_definition)?,
+                    identifier.to_string(),
+                    to_api_access_rule(context, access_rule)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        method_auth: Box::new(to_api_static_method_auth_template(
+            context, auth, outer_auth,
+        )?),
+    })
+}
+
+pub fn to_api_static_method_auth_template(
+    context: &MappingContext,
+    auth: &BTreeMap<MethodKey, MethodPermission>,
+    outer_auth: &BTreeMap<MethodKey, MethodPermission>,
+) -> Result<models::StaticMethodAuthTemplate, MappingError> {
+    Ok(models::StaticMethodAuthTemplate {
+        auth: auth
+            .iter()
+            .map(|(key, permission)| {
+                Ok((
+                    key.ident.to_string(),
+                    to_api_method_permission(context, permission)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        outer_auth: outer_auth
+            .iter()
+            .map(|(key, permission)| {
+                Ok((
+                    key.ident.to_string(),
+                    to_api_method_permission(context, permission)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
     })
 }
 
+pub fn to_api_method_permission(
+    _context: &MappingContext,
+    permission: &MethodPermission,
+) -> Result<models::MethodPermission, MappingError> {
+    Ok(match permission {
+        MethodPermission::Public => models::MethodPermission::PublicMethodPermission {},
+        MethodPermission::Protected(role_list) => {
+            models::MethodPermission::ProtectedMethodPermission {
+                allowed_role_keys: role_list
+                    .list
+                    .iter()
+                    .map(|key| key.key.to_string())
+                    .collect::<Vec<_>>(),
+            }
+        }
+    })
+}
+
+pub fn to_api_package_code_entry(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<PackageCodeSubstate>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Code Key".to_string() });
+    };
+
+    // Use compiler to unpack to ensure we map all fields
+    let PackageCodeSubstate { vm_type, code } = substate.get_definitely_present_value()?;
+
+    Ok(models::Substate::PackageCodeEntrySubstate {
+        code_hash: to_api_hash(hash),
+        vm_type: match vm_type {
+            VmType::Native => models::VmType::Native,
+            VmType::ScryptoV1 => models::VmType::ScryptoV1,
+        },
+        code_hex: to_hex(code),
+    })
+}
+
+pub fn to_api_transaction_tracker_collection_entry(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<TransactionStatus>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(intent_hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Transaction Tracker Collection Key".to_string() });
+    };
+    Ok(
+        models::Substate::TransactionTrackerCollectionEntrySubstate {
+            intent_hash: to_api_hash(intent_hash.as_hash()),
+            status: substate.value.as_ref().map(|status| match status {
+                TransactionStatus::CommittedSuccess => {
+                    models::TransactionTrackerTransactionStatus::CommittedSuccess
+                }
+                TransactionStatus::CommittedFailure => {
+                    models::TransactionTrackerTransactionStatus::CommittedFailure
+                }
+                TransactionStatus::Cancelled => {
+                    models::TransactionTrackerTransactionStatus::Cancelled
+                }
+            }),
+        },
+    )
+}
+
 pub fn to_api_blueprint_definition(
     context: &MappingContext,
     blueprint_definition: &BlueprintDefinition,
 ) -> Result<models::BlueprintDefinition, MappingError> {
-    let BlueprintDefinition { schema, template } = blueprint_definition;
-    Ok(models::BlueprintDefinition {
-        schema: Box::new(to_api_blueprint_schema(context, schema)?),
-        template: Box::new(to_api_blueprint_template(context, template)?),
-    })
-}
-
-pub fn to_api_blueprint_template(
-    context: &MappingContext,
-    blueprint_template: &BlueprintTemplate,
-) -> Result<models::BlueprintTemplate, MappingError> {
-    let BlueprintTemplate {
-        method_auth_template,
-        outer_method_auth_template,
-    } = blueprint_template;
-    Ok(models::BlueprintTemplate {
-        method_auth_template: to_api_method_auth_template(context, method_auth_template)?,
-        outer_method_auth_template: to_api_method_auth_template(
-            context,
-            outer_method_auth_template,
-        )?,
-    })
-}
-
-pub fn to_api_method_auth_template(
-    context: &MappingContext,
-    method_auth_template: &BTreeMap<SchemaMethodKey, SchemaMethodPermission>,
-) -> Result<Vec<models::MethodAuthTemplateEntry>, MappingError> {
-    method_auth_template
-        .iter()
-        .map(|(key, permission)| to_api_method_auth_template_entry(context, key, permission))
-        .collect::<Result<Vec<_>, _>>()
-}
-
-pub fn to_api_method_auth_template_entry(
-    _context: &MappingContext,
-    key: &SchemaMethodKey,
-    permission: &SchemaMethodPermission,
-) -> Result<models::MethodAuthTemplateEntry, MappingError> {
-    let SchemaMethodKey { module_id, ident } = key;
-    Ok(models::MethodAuthTemplateEntry {
-        key: Box::new(models::MethodKey {
-            object_module_id: to_api_object_module_id(&resolve_object_module_id(*module_id)?),
-            ident: ident.to_owned(),
-        }),
-        permission: Some(match permission {
-            SchemaMethodPermission::Public => models::MethodPermission::PublicMethodPermission {},
-            SchemaMethodPermission::Protected(allowed_role_keys) => {
-                models::MethodPermission::ProtectedMethodPermission {
-                    allowed_role_keys: allowed_role_keys.clone(),
-                }
-            }
-        }),
-    })
-}
-
-pub fn to_api_blueprint_schema(
-    context: &MappingContext,
-    blueprint_schema: &IndexedBlueprintSchema,
-) -> Result<models::BlueprintSchema, MappingError> {
-    let IndexedBlueprintSchema {
-        outer_blueprint,
-        schema,
-        functions,
+    let BlueprintDefinition {
+        interface,
+        function_exports,
         virtual_lazy_load_functions,
-        event_schema,
-        fields,
-        collections,
-        dependencies,
+    } = blueprint_definition;
+    Ok(models::BlueprintDefinition {
+        interface: Box::new(to_api_blueprint_interface(context, interface)?),
+        function_exports: function_exports
+            .iter()
+            .map(|(function_name, package_export)| {
+                Ok((
+                    function_name.to_string(),
+                    to_api_package_export(context, package_export)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        virtual_lazy_load_functions: virtual_lazy_load_functions
+            .iter()
+            .map(|(function_id, package_export)| {
+                Ok((
+                    function_id.to_string(),
+                    to_api_package_export(context, package_export)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_blueprint_dependencies(
+    context: &MappingContext,
+    dependencies: &BlueprintDependencies,
+) -> Result<models::BlueprintDependencies, MappingError> {
+    let BlueprintDependencies { dependencies } = dependencies;
+    Ok(models::BlueprintDependencies {
+        dependencies: dependencies
+            .iter()
+            .map(|address| to_api_global_address(context, address))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_package_export(
+    _context: &MappingContext,
+    package_export: &PackageExport,
+) -> Result<models::PackageExport, MappingError> {
+    let PackageExport {
+        code_hash,
+        export_name,
+    } = package_export;
+    Ok(models::PackageExport {
+        code_hash: to_api_hash(code_hash),
+        export_name: export_name.to_string(),
+    })
+}
+
+pub fn to_api_blueprint_interface(
+    context: &MappingContext,
+    blueprint_interface: &BlueprintInterface,
+) -> Result<models::BlueprintInterface, MappingError> {
+    let BlueprintInterface {
+        outer_blueprint,
+        generics,
+        state,
+        functions,
         features,
-    } = blueprint_schema;
-    Ok(models::BlueprintSchema {
+        events,
+    } = blueprint_interface;
+    Ok(models::BlueprintInterface {
         outer_blueprint: outer_blueprint.clone(),
-        schema: Box::new(to_api_scrypto_schema(context, schema)?),
-        function_schemas: functions
+        generic_type_parameters: generics
+            .iter()
+            .map(|generic| match generic {
+                Generic::Any => models::GenericTypeParameter {
+                    constraints: models::GenericTypeParameterContraints::Any,
+                },
+            })
+            .collect::<Vec<_>>(),
+        features: features.iter().cloned().collect(),
+        state: Box::new(to_api_indexed_state_schema(context, state)?),
+        functions: functions
             .iter()
             .map(|(function_name, function_schema)| {
                 Ok((
@@ -1015,49 +1288,61 @@ pub fn to_api_blueprint_schema(
                 ))
             })
             .collect::<Result<_, _>>()?,
-        virtual_lazy_load_function_schemas: virtual_lazy_load_functions
+        events: events
             .iter()
-            .map(|(system_func_id, virtual_lazy_load_schema)| {
-                Ok((
-                    system_func_id.to_string(),
-                    to_api_virtual_lazy_load_schema(virtual_lazy_load_schema)?,
-                ))
-            })
-            .collect::<Result<_, _>>()?,
-        event_schemas: event_schema
-            .iter()
-            .map(|(event_name, type_index)| {
+            .map(|(event_name, type_pointer)| {
                 Ok((
                     event_name.to_string(),
-                    to_api_local_type_index(context, type_index)?,
+                    to_api_type_pointer(context, type_pointer)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
-        field_partition: fields
+    })
+}
+
+pub fn to_api_indexed_state_schema(
+    context: &MappingContext,
+    indexed_state_schema: &IndexedStateSchema,
+) -> Result<models::IndexedStateSchema, MappingError> {
+    let IndexedStateSchema {
+        fields,
+        collections,
+        num_partitions,
+    } = indexed_state_schema;
+    Ok(models::IndexedStateSchema {
+        fields: fields
             .as_ref()
-            .map(|(partition_offset, field_types)| {
-                Ok(Box::new(to_api_blueprint_schema_fields_partition(
-                    context,
-                    *partition_offset,
-                    field_types,
-                )?))
+            .map(|(partition_offset, fields)| {
+                to_api_blueprint_schema_fields_partition(context, *partition_offset, fields)
             })
-            .transpose()?,
-        collection_partitions: collections
+            .transpose()?
+            .map(Box::new),
+        collections: collections
             .iter()
-            .map(|(partition_offset, blueprint_collection_schema)| {
+            .map(|(partition_offset, collection_schema)| {
                 to_api_blueprint_schema_collection_partition(
                     context,
                     *partition_offset,
-                    blueprint_collection_schema,
+                    collection_schema,
                 )
             })
             .collect::<Result<_, _>>()?,
-        dependencies: dependencies
-            .iter()
-            .map(|dependency| to_api_global_address(context, dependency))
-            .collect::<Result<Vec<_>, _>>()?,
-        features: features.iter().cloned().collect(),
+        num_partitions: to_api_u8_as_i32(*num_partitions),
+    })
+}
+
+pub fn to_api_type_pointer(
+    context: &MappingContext,
+    type_pointer: &TypePointer,
+) -> Result<models::TypePointer, MappingError> {
+    Ok(match type_pointer {
+        TypePointer::Package(hash, local_type_index) => models::TypePointer::PackageTypePointer {
+            schema_hash: to_api_hash(hash),
+            local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+        },
+        TypePointer::Instance(index) => models::TypePointer::InstanceTypePointer {
+            index: to_api_u8_as_i32(*index),
+        },
     })
 }
 
@@ -1091,15 +1376,13 @@ pub fn to_api_function_schema(
         receiver,
         input,
         output,
-        export,
     } = function_schema;
     Ok(models::FunctionSchema {
         receiver_info: receiver
             .as_ref()
             .map(|receiver_info| Box::new(to_api_receiver_info(receiver_info))),
-        input: Box::new(to_api_local_type_index(context, input)?),
-        output: Box::new(to_api_local_type_index(context, output)?),
-        export: export.to_string(),
+        input: Some(to_api_type_pointer(context, input)?),
+        output: Some(to_api_type_pointer(context, output)?),
     })
 }
 
@@ -1121,18 +1404,10 @@ pub fn to_api_receiver_info(receiver_info: &ReceiverInfo) -> models::ReceiverInf
     }
 }
 
-pub fn to_api_virtual_lazy_load_schema(
-    virtual_lazy_load_schema: &VirtualLazyLoadSchema,
-) -> Result<models::VirtualLazyLoadSchema, MappingError> {
-    Ok(models::VirtualLazyLoadSchema {
-        export_name: virtual_lazy_load_schema.export_name.to_string(),
-    })
-}
-
 pub fn to_api_blueprint_schema_fields_partition(
     context: &MappingContext,
     partition_offset: PartitionOffset,
-    fields: &[FieldSchema],
+    fields: &[FieldSchema<TypePointer>],
 ) -> Result<models::BlueprintSchemaFieldPartition, MappingError> {
     Ok(models::BlueprintSchemaFieldPartition {
         partition_offset: to_api_u8_as_i32(partition_offset.0),
@@ -1145,22 +1420,22 @@ pub fn to_api_blueprint_schema_fields_partition(
 
 pub fn to_api_blueprint_field_schema(
     context: &MappingContext,
-    field: &FieldSchema,
-) -> Result<models::BlueprintFieldSchema, MappingError> {
-    let (type_index, feature) = match field {
-        FieldSchema::Normal { value } => (value, None),
-        FieldSchema::Conditional { value, feature } => (value, Some(feature)),
-    };
-    Ok(models::BlueprintFieldSchema {
-        _type: Box::new(to_api_local_type_index(context, type_index)?),
-        feature: feature.cloned(),
+    field_schema: &FieldSchema<TypePointer>,
+) -> Result<models::FieldSchema, MappingError> {
+    let FieldSchema { field, condition } = field_schema;
+    Ok(models::FieldSchema {
+        field_type_pointer: Some(to_api_type_pointer(context, field)?),
+        if_feature: match condition {
+            Condition::Always => None,
+            Condition::IfFeature(feature) => Some(feature.to_owned()),
+        },
     })
 }
 
 pub fn to_api_blueprint_schema_collection_partition(
     context: &MappingContext,
     partition_offset: PartitionOffset,
-    collection_schema: &BlueprintCollectionSchema,
+    collection_schema: &BlueprintCollectionSchema<TypePointer>,
 ) -> Result<models::BlueprintSchemaCollectionPartition, MappingError> {
     Ok(models::BlueprintSchemaCollectionPartition {
         partition_offset: to_api_u8_as_i32(partition_offset.0),
@@ -1173,7 +1448,7 @@ pub fn to_api_blueprint_schema_collection_partition(
 
 pub fn to_api_blueprint_collection_schema(
     context: &MappingContext,
-    collection_schema: &BlueprintCollectionSchema,
+    collection_schema: &BlueprintCollectionSchema<TypePointer>,
 ) -> Result<models::BlueprintCollectionSchema, MappingError> {
     Ok(match collection_schema {
         BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueStoreSchema {
@@ -1181,8 +1456,8 @@ pub fn to_api_blueprint_collection_schema(
             value,
             can_own,
         }) => models::BlueprintCollectionSchema::KeyValueBlueprintCollectionSchema {
-            key_type_reference: Box::new(to_api_blueprint_schema_type_reference(context, key)?),
-            value_type_reference: Box::new(to_api_blueprint_schema_type_reference(context, value)?),
+            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
+            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
             can_own: *can_own,
         },
         BlueprintCollectionSchema::Index(BlueprintIndexSchema {}) => {
@@ -1190,24 +1465,6 @@ pub fn to_api_blueprint_collection_schema(
         }
         BlueprintCollectionSchema::SortedIndex(BlueprintSortedIndexSchema {}) => {
             models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {}
-        }
-    })
-}
-
-pub fn to_api_blueprint_schema_type_reference(
-    context: &MappingContext,
-    type_ref: &TypeRef,
-) -> Result<models::BlueprintTypeReference, MappingError> {
-    Ok(match type_ref {
-        TypeRef::Blueprint(local_type_index) => {
-            models::BlueprintTypeReference::BlueprintSchemaBlueprintTypeReference {
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
-            }
-        }
-        TypeRef::Instance(instance_provided_type_index) => {
-            models::BlueprintTypeReference::InstanceSchemaBlueprintTypeReference {
-                instance_provided_type_index: to_api_u8_as_i32(*instance_provided_type_index),
-            }
         }
     })
 }
@@ -1221,39 +1478,12 @@ pub fn to_api_scrypto_schema(
     })
 }
 
-pub fn to_api_package_code_substate(
-    _context: &MappingContext,
-    substate: &PackageCodeSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let PackageCodeSubstate { code } = substate;
-
-    Ok(models::Substate::PackageFieldCodeSubstate {
-        code_hex: to_hex(code),
-    })
-}
-
-pub fn to_api_package_code_type_substate(
-    _context: &MappingContext,
-    substate: &PackageCodeTypeSubstate,
-) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::PackageFieldCodeTypeSubstate {
-        code_type: match substate {
-            PackageCodeTypeSubstate::Native => models::PackageCodeType::Native,
-            PackageCodeTypeSubstate::Wasm => models::PackageCodeType::Wasm,
-        },
-    })
-}
-
-pub fn to_api_package_royalty_substate(
+pub fn to_api_package_royalty_accumulator_substate(
     context: &MappingContext,
-    substate: &PackageRoyaltySubstate,
+    substate: &PackageRoyaltyAccumulatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let PackageRoyaltySubstate {
-        royalty_vault,
-        blueprint_royalty_configs,
-    } = substate;
+    let PackageRoyaltyAccumulatorSubstate { royalty_vault } = substate;
 
     let vault_entity = royalty_vault
         .map(|royalty_vault| {
@@ -1263,18 +1493,7 @@ pub fn to_api_package_royalty_substate(
             )?))
         })
         .transpose()?;
-    Ok(models::Substate::PackageFieldRoyaltySubstate {
-        vault_entity,
-        blueprint_royalties: blueprint_royalty_configs
-            .iter()
-            .map(
-                |(blueprint_name, royalty_config)| models::BlueprintRoyaltyConfig {
-                    blueprint_name: blueprint_name.to_string(),
-                    royalty_config: Box::new(to_api_royalty_config(royalty_config)),
-                },
-            )
-            .collect(),
-    })
+    Ok(models::Substate::PackageFieldRoyaltyAccumulatorSubstate { vault_entity })
 }
 
 pub fn to_api_validator_substate(
@@ -1361,11 +1580,16 @@ pub fn to_api_consensus_manager_state_substate(
         epoch,
         round,
         epoch_start_milli,
+        current_leader,
     } = substate;
     Ok(models::Substate::ConsensusManagerFieldStateSubstate {
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
         epoch_start: Box::new(to_api_instant_from_safe_timestamp(*epoch_start_milli)?),
+        current_leader: current_leader
+            .as_ref()
+            .map(|validator_index| to_api_active_validator_index(*validator_index))
+            .map(Box::new),
     })
 }
 
@@ -1572,8 +1796,7 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
     context: &MappingContext,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let KeyValueEntrySubstate { value, mutability } = substate;
-    let (is_deleted, data_struct) = match value {
+    let (is_deleted, data_struct) = match &substate.value {
         Some(value) => (
             false,
             Some(Box::new(to_api_data_struct_from_scrypto_raw_value(
@@ -1582,15 +1805,11 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
         ),
         None => (true, None),
     };
-    let is_mutable = match mutability {
-        SubstateMutability::Mutable => true,
-        SubstateMutability::Immutable => false,
-    };
     Ok(
         models::Substate::NonFungibleResourceManagerDataEntrySubstate {
             is_deleted,
             data_struct,
-            is_mutable,
+            is_locked: !substate.is_mutable(),
         },
     )
 }

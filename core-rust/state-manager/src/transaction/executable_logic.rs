@@ -65,7 +65,7 @@ impl ExecutionConfigurator {
                 wasm_instrumenter: WasmInstrumenter::default(),
                 wasm_metering_config: WasmMeteringConfig::default(),
             },
-            fee_reserve_config: FeeReserveConfig::standard(),
+            fee_reserve_config: FeeReserveConfig::default(),
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
