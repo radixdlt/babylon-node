@@ -263,8 +263,8 @@ pub enum Substate {
         name: String,
         #[serde(rename = "version")]
         version: String,
-        #[serde(rename = "definition", skip_serializing_if = "Option::is_none")]
-        definition: Option<Box<crate::core_api::generated::models::BlueprintDefinition>>,
+        #[serde(rename = "definition")]
+        definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
     },
     #[serde(rename="PackageCodeEntry")]
     PackageCodeEntrySubstate {
@@ -296,8 +296,8 @@ pub enum Substate {
         /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
         #[serde(rename = "schema_hash")]
         schema_hash: String,
-        #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]
-        schema: Option<Box<crate::core_api::generated::models::ScryptoSchema>>,
+        #[serde(rename = "schema")]
+        schema: Box<crate::core_api::generated::models::ScryptoSchema>,
     },
     #[serde(rename="RoyaltyMethodRoyaltyEntry")]
     RoyaltyMethodRoyaltyEntrySubstate {

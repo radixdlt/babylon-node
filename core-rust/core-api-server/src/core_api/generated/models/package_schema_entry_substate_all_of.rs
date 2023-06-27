@@ -16,15 +16,15 @@ pub struct PackageSchemaEntrySubstateAllOf {
     /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
     #[serde(rename = "schema_hash")]
     pub schema_hash: String,
-    #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]
-    pub schema: Option<Box<crate::core_api::generated::models::ScryptoSchema>>,
+    #[serde(rename = "schema")]
+    pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
 }
 
 impl PackageSchemaEntrySubstateAllOf {
-    pub fn new(schema_hash: String) -> PackageSchemaEntrySubstateAllOf {
+    pub fn new(schema_hash: String, schema: crate::core_api::generated::models::ScryptoSchema) -> PackageSchemaEntrySubstateAllOf {
         PackageSchemaEntrySubstateAllOf {
             schema_hash,
-            schema: None,
+            schema: Box::new(schema),
         }
     }
 }

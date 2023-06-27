@@ -111,10 +111,10 @@ public class PackageBlueprintEntrySubstateAllOf {
    * Get definition
    * @return definition
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_DEFINITION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public BlueprintDefinition getDefinition() {
     return definition;
@@ -122,7 +122,7 @@ public class PackageBlueprintEntrySubstateAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_DEFINITION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDefinition(BlueprintDefinition definition) {
     this.definition = definition;
   }

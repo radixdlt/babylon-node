@@ -3246,6 +3246,7 @@ components:
           required:
             - name
             - version
+            - definition
           properties:
             name:
               type: string
@@ -3273,6 +3274,7 @@ components:
         - type: object
           required:
             - schema_hash
+            - schema
           properties:
             schema_hash:
               $ref: '#/components/schemas/SchemaHash'

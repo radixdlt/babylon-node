@@ -108,7 +108,7 @@ fn to_api_resource_manager(
                 )?),
                 total_supply: total_supply
                     .as_ref()
-                    .map(to_api_fungible_resource_manager_total_supply_substate)
+                    .map(to_api_non_fungible_resource_manager_total_supply_substate)
                     .transpose()?
                     .map(Box::new),
                 mutable_fields: Box::new(

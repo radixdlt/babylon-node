@@ -19,17 +19,17 @@ pub struct PackageBlueprintEntrySubstate {
     pub name: String,
     #[serde(rename = "version")]
     pub version: String,
-    #[serde(rename = "definition", skip_serializing_if = "Option::is_none")]
-    pub definition: Option<Box<crate::core_api::generated::models::BlueprintDefinition>>,
+    #[serde(rename = "definition")]
+    pub definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
 }
 
 impl PackageBlueprintEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, name: String, version: String) -> PackageBlueprintEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, name: String, version: String, definition: crate::core_api::generated::models::BlueprintDefinition) -> PackageBlueprintEntrySubstate {
         PackageBlueprintEntrySubstate {
             substate_type,
             name,
             version,
-            definition: None,
+            definition: Box::new(definition),
         }
     }
 }

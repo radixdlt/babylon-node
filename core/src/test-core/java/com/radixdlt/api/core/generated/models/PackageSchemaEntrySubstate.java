@@ -186,10 +186,10 @@ public class PackageSchemaEntrySubstate extends Substate {
    * Get schema
    * @return schema
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public ScryptoSchema getSchema() {
     return schema;
@@ -197,7 +197,7 @@ public class PackageSchemaEntrySubstate extends Substate {
 
 
   @JsonProperty(JSON_PROPERTY_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSchema(ScryptoSchema schema) {
     this.schema = schema;
   }

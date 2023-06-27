@@ -950,16 +950,11 @@ pub fn to_api_package_blueprint_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(BlueprintVersionKey{ blueprint, version })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Blueprint Key".to_string() });
     };
+    let definition = substate.get_definitely_present_value()?;
     Ok(models::Substate::PackageBlueprintEntrySubstate {
         name: blueprint.to_string(),
         version: to_api_blueprint_version(context, version)?,
-        definition: substate
-            .value
-            .as_ref()
-            .map(|definition| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_blueprint_definition(context, definition)?))
-            })
-            .transpose()?,
+        definition: Box::new(to_api_blueprint_definition(context, definition)?),
     })
 }
 
@@ -997,15 +992,10 @@ pub fn to_api_package_schema_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Schema Key".to_string() });
     };
+    let schema = substate.get_definitely_present_value()?;
     Ok(models::Substate::PackageSchemaEntrySubstate {
         schema_hash: to_api_hash(hash),
-        schema: substate
-            .value
-            .as_ref()
-            .map(|schema| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_scrypto_schema(context, schema)?))
-            })
-            .transpose()?,
+        schema: Box::new(to_api_scrypto_schema(context, schema)?),
     })
 }
 
