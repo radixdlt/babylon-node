@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 
 use sbor::representations::*;
-use utils::*;
 
 use crate::core_api::*;
 

@@ -35,7 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH,
   ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_ROUND,
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH_START,
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_IS_STARTED,
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EFFECTIVE_EPOCH_START,
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_ACTUAL_EPOCH_START,
   ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_CURRENT_LEADER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -46,8 +48,14 @@ public class ConsensusManagerFieldStateSubstateAllOf {
   public static final String JSON_PROPERTY_ROUND = "round";
   private Long round;
 
-  public static final String JSON_PROPERTY_EPOCH_START = "epoch_start";
-  private Instant epochStart;
+  public static final String JSON_PROPERTY_IS_STARTED = "is_started";
+  private Boolean isStarted;
+
+  public static final String JSON_PROPERTY_EFFECTIVE_EPOCH_START = "effective_epoch_start";
+  private Instant effectiveEpochStart;
+
+  public static final String JSON_PROPERTY_ACTUAL_EPOCH_START = "actual_epoch_start";
+  private Instant actualEpochStart;
 
   public static final String JSON_PROPERTY_CURRENT_LEADER = "current_leader";
   private ActiveValidatorIndex currentLeader;
@@ -111,29 +119,81 @@ public class ConsensusManagerFieldStateSubstateAllOf {
   }
 
 
-  public ConsensusManagerFieldStateSubstateAllOf epochStart(Instant epochStart) {
-    this.epochStart = epochStart;
+  public ConsensusManagerFieldStateSubstateAllOf isStarted(Boolean isStarted) {
+    this.isStarted = isStarted;
     return this;
   }
 
    /**
-   * Get epochStart
-   * @return epochStart
+   * Get isStarted
+   * @return isStarted
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_IS_STARTED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getEpochStart() {
-    return epochStart;
+  public Boolean getIsStarted() {
+    return isStarted;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_IS_STARTED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochStart(Instant epochStart) {
-    this.epochStart = epochStart;
+  public void setIsStarted(Boolean isStarted) {
+    this.isStarted = isStarted;
+  }
+
+
+  public ConsensusManagerFieldStateSubstateAllOf effectiveEpochStart(Instant effectiveEpochStart) {
+    this.effectiveEpochStart = effectiveEpochStart;
+    return this;
+  }
+
+   /**
+   * Get effectiveEpochStart
+   * @return effectiveEpochStart
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Instant getEffectiveEpochStart() {
+    return effectiveEpochStart;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEffectiveEpochStart(Instant effectiveEpochStart) {
+    this.effectiveEpochStart = effectiveEpochStart;
+  }
+
+
+  public ConsensusManagerFieldStateSubstateAllOf actualEpochStart(Instant actualEpochStart) {
+    this.actualEpochStart = actualEpochStart;
+    return this;
+  }
+
+   /**
+   * Get actualEpochStart
+   * @return actualEpochStart
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Instant getActualEpochStart() {
+    return actualEpochStart;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setActualEpochStart(Instant actualEpochStart) {
+    this.actualEpochStart = actualEpochStart;
   }
 
 
@@ -177,13 +237,15 @@ public class ConsensusManagerFieldStateSubstateAllOf {
     ConsensusManagerFieldStateSubstateAllOf consensusManagerFieldStateSubstateAllOf = (ConsensusManagerFieldStateSubstateAllOf) o;
     return Objects.equals(this.epoch, consensusManagerFieldStateSubstateAllOf.epoch) &&
         Objects.equals(this.round, consensusManagerFieldStateSubstateAllOf.round) &&
-        Objects.equals(this.epochStart, consensusManagerFieldStateSubstateAllOf.epochStart) &&
+        Objects.equals(this.isStarted, consensusManagerFieldStateSubstateAllOf.isStarted) &&
+        Objects.equals(this.effectiveEpochStart, consensusManagerFieldStateSubstateAllOf.effectiveEpochStart) &&
+        Objects.equals(this.actualEpochStart, consensusManagerFieldStateSubstateAllOf.actualEpochStart) &&
         Objects.equals(this.currentLeader, consensusManagerFieldStateSubstateAllOf.currentLeader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, epochStart, currentLeader);
+    return Objects.hash(epoch, round, isStarted, effectiveEpochStart, actualEpochStart, currentLeader);
   }
 
   @Override
@@ -192,7 +254,9 @@ public class ConsensusManagerFieldStateSubstateAllOf {
     sb.append("class ConsensusManagerFieldStateSubstateAllOf {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
-    sb.append("    epochStart: ").append(toIndentedString(epochStart)).append("\n");
+    sb.append("    isStarted: ").append(toIndentedString(isStarted)).append("\n");
+    sb.append("    effectiveEpochStart: ").append(toIndentedString(effectiveEpochStart)).append("\n");
+    sb.append("    actualEpochStart: ").append(toIndentedString(actualEpochStart)).append("\n");
     sb.append("    currentLeader: ").append(toIndentedString(currentLeader)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -595,6 +595,7 @@ where
             min_validator_reliability: Decimal::one(),
             num_owner_stake_units_unlock_epochs: 2,
             num_fee_increase_delay_epochs: 1,
+            validator_creation_xrd_cost: Decimal::one(),
         };
         let initial_timestamp_ms = 1;
         self.execute_genesis(

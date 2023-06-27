@@ -52,33 +52,26 @@ pub fn to_api_substate(
         TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(
             substate,
         )) => to_api_access_rule_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Mutability(
-            substate,
-        )) => to_api_mutability_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(
+            TypedRoyaltyModuleSubstateValue::ComponentRoyalty(
                 component_royalty_accumulator_substate,
             ),
-        ) => to_api_component_royalty_accumulator_substate(
+        ) => to_api_component_royalty_substate(
             context,
             component_royalty_accumulator_substate,
         )?,
-
         TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(
-                component_royalty_config_substate,
+            TypedRoyaltyModuleSubstateValue::ComponentMethodRoyalty(
+                substate,
             ),
-        ) => to_api_component_royalty_config_substate(
+        ) => to_api_component_method_royalty_substate(
             context,
             typed_substate_key,
-            component_royalty_config_substate,
+            substate,
         )?,
         TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::MetadataEntry(
             metadata_value_substate,
         )) => to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
-            TypedPackageFieldValue::Code(_),
-        )) => panic!("Unused - to be removed in Scrypto"),
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
             TypedPackageFieldValue::Royalty(package_royalty_accumulator_substate),
         )) => to_api_package_royalty_accumulator_substate(
@@ -122,11 +115,20 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
             TypedFungibleVaultFieldValue::Balance(fungible_vault_balance_substate),
         )) => to_api_fungible_vault_balance_substate(context, fungible_vault_balance_substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
+            TypedFungibleVaultFieldValue::VaultFrozenFlag(substate),
+        )) => to_api_fungible_vault_frozen_status_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
-            TypedNonFungibleVaultFieldValue::Balance(non_fungible_vault_balance_substate),
+            TypedNonFungibleVaultFieldValue::Balance(substate),
         )) => to_api_non_fungible_vault_balance_substate(
             context,
-            non_fungible_vault_balance_substate,
+            substate,
+        )?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
+            TypedNonFungibleVaultFieldValue::VaultFrozenFlag(substate),
+        )) => to_api_non_fungible_vault_frozen_status_substate(
+            context,
+            substate,
         )?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(entry),
@@ -160,6 +162,9 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
             TypedValidatorFieldValue::Validator(validator_substate),
         )) => to_api_validator_substate(context, validator_substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
+            TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(substate),
+        )) => to_api_validator_protocol_update_readiness_signal_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
             TypedAccountFieldValue::Account(substate),
         )) => to_api_account_state_substate(context, substate)?,
@@ -219,9 +224,9 @@ pub fn to_api_substate(
 
 pub fn to_api_one_resource_pool_substate(
     context: &MappingContext,
-    substate: &OneResourcePoolSubstate,
+    substate: &one_resource_pool::OneResourcePoolSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let OneResourcePoolSubstate {
+    let one_resource_pool::OneResourcePoolSubstate {
         vault,
         pool_unit_resource_manager,
     } = substate;
@@ -236,9 +241,9 @@ pub fn to_api_one_resource_pool_substate(
 
 pub fn to_api_two_resource_pool_substate(
     context: &MappingContext,
-    substate: &TwoResourcePoolSubstate,
+    substate: &two_resource_pool::TwoResourcePoolSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TwoResourcePoolSubstate {
+    let two_resource_pool::TwoResourcePoolSubstate {
         vaults,
         pool_unit_resource_manager,
     } = substate;
@@ -256,9 +261,9 @@ pub fn to_api_two_resource_pool_substate(
 
 pub fn to_api_multi_resource_pool_substate(
     context: &MappingContext,
-    substate: &MultiResourcePoolSubstate,
+    substate: &multi_resource_pool::MultiResourcePoolSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let MultiResourcePoolSubstate {
+    let multi_resource_pool::MultiResourcePoolSubstate {
         vaults,
         pool_unit_resource_manager,
     } = substate;
@@ -378,27 +383,6 @@ pub fn to_api_access_rule_entry(
                 Ok(Box::new(to_api_access_rule(context, access_rule)?))
             })
             .transpose()?,
-    })
-}
-
-pub fn to_api_mutability_entry(
-    _context: &MappingContext,
-    typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<RoleList>,
-) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(ModuleRoleKey{ module, key })) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Mutability Key".to_string() });
-    };
-    Ok(models::Substate::AccessRulesModuleMutabilityEntrySubstate {
-        object_module_id: to_api_object_module_id(module),
-        role_key: key.key.to_string(),
-        mutable_role_keys: substate.value.as_ref().map(|role_list| {
-            role_list
-                .list
-                .iter()
-                .map(|key| key.key.to_string())
-                .collect::<Vec<_>>()
-        }),
     })
 }
 
@@ -549,16 +533,16 @@ pub fn to_api_metadata_value_substate(
 
 pub fn to_api_owner_role_substate(
     context: &MappingContext,
-    owner_role: &OwnerRole,
+    substate: &OwnerRoleSubstate,
 ) -> Result<models::Substate, MappingError> {
+    let OwnerRoleSubstate { owner_role_entry } = substate;
     Ok(models::Substate::AccessRulesModuleFieldOwnerRoleSubstate {
-        owner_role: Box::new(match owner_role {
-            OwnerRole::None => models::OwnerRole::NoneOwnerRole {},
-            OwnerRole::Fixed(access_rule) => models::OwnerRole::FixedOwnerRole {
-                access_rule: Box::new(to_api_access_rule(context, access_rule)?),
-            },
-            OwnerRole::Updateable(access_rule) => models::OwnerRole::UpdateableOwnerRole {
-                access_rule: Box::new(to_api_access_rule(context, access_rule)?),
+        owner_role: Box::new(models::OwnerRole {
+            rule: Some(to_api_access_rule(context, &owner_role_entry.rule)?),
+            updater: match owner_role_entry.updater {
+                OwnerRoleUpdater::None => models::OwnerRoleUpdater::None,
+                OwnerRoleUpdater::Owner => models::OwnerRoleUpdater::Owner,
+                OwnerRoleUpdater::Object => models::OwnerRoleUpdater::Object,
             },
         }),
     })
@@ -580,24 +564,27 @@ pub fn to_api_type_info_substate(
     // Use compiler to unpack to ensure we map all fields
     let details = match substate {
         TypeInfoSubstate::Object(ObjectInfo {
+            global,
             blueprint_id:
                 BlueprintId {
                     package_address,
                     blueprint_name,
                 },
+            blueprint_info,
             version,
-            global,
-            outer_object,
-            instance_schema,
             features,
+            instance_schema,
         }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
             package_address: to_api_package_address(context, package_address)?,
             blueprint_name: blueprint_name.to_string(),
             blueprint_version: to_api_blueprint_version(context, version)?,
             global: *global,
-            outer_object: outer_object
-                .map(|o| to_api_global_address(context, &o))
-                .transpose()?,
+            outer_object: match blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => {
+                    Some(to_api_global_address(context, outer_object)?)
+                },
+                ObjectBlueprintInfo::Outer => None,
+            },
             instance_schema: instance_schema
                 .as_ref()
                 .map(|instance_schema| {
@@ -909,16 +896,24 @@ fn extract_entities(
     })
 }
 
-pub fn to_api_royalty_config(royalty_config: &RoyaltyConfig) -> models::RoyaltyConfig {
+pub fn to_api_royalty_config(royalty_config: &ComponentRoyaltyConfig) -> models::RoyaltyConfig {
+    let (is_enabled, rules) = match royalty_config {
+        ComponentRoyaltyConfig::Disabled => (false, None),
+        ComponentRoyaltyConfig::Enabled(rules) => (true, Some(rules)),
+    };
     models::RoyaltyConfig {
-        method_rules: royalty_config
-            .rules
-            .iter()
-            .map(|(method_name, royalty_amount)| models::MethodRoyaltyRule {
-                method_name: method_name.to_owned(),
-                royalty_amount: to_api_royalty_amount(royalty_amount).map(Box::new),
-            })
-            .collect(),
+        is_enabled,
+        method_rules: rules
+            .map(|rules| {
+                rules
+                    .iter()
+                    .map(|(method_name, (royalty_amount, is_locked))| models::MethodRoyalty {
+                        method_name: method_name.to_owned(),
+                        is_locked: *is_locked,
+                        royalty_amount: to_api_royalty_amount(royalty_amount).map(Box::new),
+                    })
+                    .collect()
+            }),
     }
 }
 
@@ -936,13 +931,14 @@ pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::R
     }
 }
 
-pub fn to_api_component_royalty_accumulator_substate(
+pub fn to_api_component_royalty_substate(
     context: &MappingContext,
-    substate: &ComponentRoyaltyAccumulatorSubstate,
+    substate: &ComponentRoyaltySubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ComponentRoyaltyAccumulatorSubstate { royalty_vault } = substate;
-    Ok(models::Substate::RoyaltyModuleFieldAccumulatorSubstate {
+    let ComponentRoyaltySubstate { enabled, royalty_vault } = substate;
+    Ok(models::Substate::RoyaltyModuleFieldStateSubstate {
+        is_enabled: *enabled,
         vault_entity: Box::new(to_api_entity_reference(
             context,
             royalty_vault.0.as_node_id(),
@@ -950,15 +946,15 @@ pub fn to_api_component_royalty_accumulator_substate(
     })
 }
 
-pub fn to_api_component_royalty_config_substate(
+pub fn to_api_component_method_royalty_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &ComponentRoyaltyConfigSubstate,
+    substate: &ComponentMethodRoyaltySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(method_name)) = typed_key else {
+    let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "RoyaltyConfigEntryKey".to_string() });
     };
-    Ok(models::Substate::RoyaltyModuleMethodConfigEntrySubstate {
+    Ok(models::Substate::RoyaltyMethodRoyaltyEntrySubstate {
         is_locked: !substate.is_mutable(),
         method_name: method_name.clone(),
         royalty_amount: substate
@@ -1039,7 +1035,7 @@ pub fn to_api_package_schema_entry(
 pub fn to_api_package_royalty_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<RoyaltyConfig>,
+    substate: &KeyValueEntrySubstate<ComponentRoyaltyConfig>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(BlueprintVersionKey{ blueprint, version})) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Royalty Key".to_string() });
@@ -1086,59 +1082,90 @@ pub fn to_api_auth_config(
         function_auth,
         method_auth,
     } = config;
-    let MethodAuthTemplate::Static { auth, outer_auth } = method_auth;
+    let (function_auth_type, function_access_rules) = match function_auth {
+        FunctionAuth::AllowAll => (models::FunctionAuthType::AllowAll, None),
+        FunctionAuth::AccessRules(access_rules) => {
+            let access_rules = access_rules
+                .iter()
+                .map(|(identifier, access_rule)| {
+                    Ok((
+                        identifier.to_string(),
+                        to_api_access_rule(context, access_rule)?,
+                    ))
+                })
+                .collect::<Result<_, _>>()?;
+            (models::FunctionAuthType::FunctionAccessRules, Some(access_rules))
+        },
+        FunctionAuth::RootOnly => (models::FunctionAuthType::RootOnly, None),
+    };
+    let (method_auth_type, method_roles) = match method_auth {
+        MethodAuthTemplate::AllowAll => (models::MethodAuthType::AllowAll, None),
+        MethodAuthTemplate::StaticRoles(roles) => {
+            let static_roles = to_api_static_roles(context, roles)?;
+            (models::MethodAuthType::StaticRoles, Some(Box::new(static_roles)))
+        },
+    };
     Ok(models::AuthConfig {
-        function_auth: function_auth
-            .iter()
-            .map(|(identifier, access_rule)| {
-                Ok((
-                    identifier.to_string(),
-                    to_api_access_rule(context, access_rule)?,
-                ))
-            })
-            .collect::<Result<_, _>>()?,
-        method_auth: Box::new(to_api_static_method_auth_template(
-            context, auth, outer_auth,
-        )?),
+        function_auth_type,
+        function_access_rules,
+        method_auth_type,
+        method_roles,
     })
 }
 
-pub fn to_api_static_method_auth_template(
+pub fn to_api_static_roles(
     context: &MappingContext,
-    auth: &BTreeMap<MethodKey, MethodPermission>,
-    outer_auth: &BTreeMap<MethodKey, MethodPermission>,
-) -> Result<models::StaticMethodAuthTemplate, MappingError> {
-    Ok(models::StaticMethodAuthTemplate {
-        auth: auth
-            .iter()
-            .map(|(key, permission)| {
-                Ok((
-                    key.ident.to_string(),
-                    to_api_method_permission(context, permission)?,
-                ))
-            })
-            .collect::<Result<_, _>>()?,
-        outer_auth: outer_auth
-            .iter()
-            .map(|(key, permission)| {
-                Ok((
-                    key.ident.to_string(),
-                    to_api_method_permission(context, permission)?,
-                ))
-            })
-            .collect::<Result<_, _>>()?,
+    static_roles: &StaticRoles,
+) -> Result<models::StaticRolesAuthTemplate, MappingError> {
+    let StaticRoles { roles, methods } = static_roles;
+
+    let (role_specification, roles) = match roles {
+        RoleSpecification::Normal(roles) => {
+            let roles = roles
+                .iter()
+                .map(|(identifier, updater_roles)| {
+                    (
+                        identifier.key.to_string(),
+                        models::RoleDetails {
+                            updater_roles: updater_roles
+                                .list
+                                .iter()
+                                .map(|role| role.key.to_owned())
+                                .collect(),
+                        },
+                    )
+                })
+                .collect();
+            (models::RoleSpecification::Normal, Some(roles))
+        },
+        RoleSpecification::UseOuter => (models::RoleSpecification::UseOuter, None),
+    };
+    let method_accessibility_map = methods
+        .iter()
+        .map(|(method_key, method_accessibility)| {
+            Ok((
+                method_key.ident.to_string(),
+                to_api_method_accessibility(context, method_accessibility)?,
+            ))
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(models::StaticRolesAuthTemplate {
+        role_specification,
+        roles,
+        method_accessibility_map,
     })
 }
 
-pub fn to_api_method_permission(
+pub fn to_api_method_accessibility(
     _context: &MappingContext,
-    permission: &MethodPermission,
-) -> Result<models::MethodPermission, MappingError> {
+    permission: &MethodAccessibility,
+) -> Result<models::MethodAccessibility, MappingError> {
     Ok(match permission {
-        MethodPermission::Public => models::MethodPermission::PublicMethodPermission {},
-        MethodPermission::Protected(role_list) => {
-            models::MethodPermission::ProtectedMethodPermission {
-                allowed_role_keys: role_list
+        MethodAccessibility::Public => models::MethodAccessibility::PublicMethodAccessibility { },
+        MethodAccessibility::OuterObjectOnly => models::MethodAccessibility::OuterObjectOnlyMethodAccessibility { },
+        MethodAccessibility::RoleProtected(role_list) => {
+            models::MethodAccessibility::RoleProtectedMethodAccessibility {
+                allowed_roles: role_list
                     .list
                     .iter()
                     .map(|key| key.key.to_string())
@@ -1260,15 +1287,18 @@ pub fn to_api_blueprint_interface(
     blueprint_interface: &BlueprintInterface,
 ) -> Result<models::BlueprintInterface, MappingError> {
     let BlueprintInterface {
-        outer_blueprint,
+        blueprint_type,
         generics,
         state,
         functions,
-        features,
+        feature_set,
         events,
     } = blueprint_interface;
     Ok(models::BlueprintInterface {
-        outer_blueprint: outer_blueprint.clone(),
+        outer_blueprint: match blueprint_type {
+            BlueprintType::Outer => None,
+            BlueprintType::Inner { outer_blueprint } => Some(outer_blueprint.to_string()),
+        },
         generic_type_parameters: generics
             .iter()
             .map(|generic| match generic {
@@ -1277,7 +1307,7 @@ pub fn to_api_blueprint_interface(
                 },
             })
             .collect::<Vec<_>>(),
-        features: features.iter().cloned().collect(),
+        features: feature_set.iter().cloned().collect(),
         state: Box::new(to_api_indexed_state_schema(context, state)?),
         functions: functions
             .iter()
@@ -1425,10 +1455,15 @@ pub fn to_api_blueprint_field_schema(
     let FieldSchema { field, condition } = field_schema;
     Ok(models::FieldSchema {
         field_type_pointer: Some(to_api_type_pointer(context, field)?),
-        if_feature: match condition {
-            Condition::Always => None,
-            Condition::IfFeature(feature) => Some(feature.to_owned()),
-        },
+        condition: Some(Box::new(match condition {
+            Condition::Always => models::FieldSchemaFeatureCondition::FieldSchemaFeatureConditionAlways {},
+            Condition::IfFeature(feature) => models::FieldSchemaFeatureCondition::FieldSchemaFeatureConditionIfOwnFeature {
+                feature_name: feature.to_string(),
+            },
+            Condition::IfOuterFeature(feature) => models::FieldSchemaFeatureCondition::FieldSchemaFeatureConditionIfOuterObjectFeature {
+                feature_name: feature.to_string(),
+            },
+        })),
     })
 }
 
@@ -1485,15 +1520,12 @@ pub fn to_api_package_royalty_accumulator_substate(
     // Use compiler to unpack to ensure we map all fields
     let PackageRoyaltyAccumulatorSubstate { royalty_vault } = substate;
 
-    let vault_entity = royalty_vault
-        .map(|royalty_vault| {
-            Ok(Box::new(to_api_entity_reference(
-                context,
-                royalty_vault.as_node_id(),
-            )?))
-        })
-        .transpose()?;
-    Ok(models::Substate::PackageFieldRoyaltyAccumulatorSubstate { vault_entity })
+    Ok(models::Substate::PackageFieldRoyaltyAccumulatorSubstate {
+        vault_entity: Box::new(to_api_entity_reference(
+            context,
+            royalty_vault.0.as_node_id(),
+        )?)
+    })
 }
 
 pub fn to_api_validator_substate(
@@ -1504,6 +1536,7 @@ pub fn to_api_validator_substate(
         sorted_key,
         key,
         is_registered,
+        accepts_delegated_stake,
         validator_fee_factor,
         validator_fee_change_request,
         stake_unit_resource,
@@ -1525,6 +1558,7 @@ pub fn to_api_validator_substate(
         }),
         public_key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         is_registered: *is_registered,
+        accepts_delegated_stake: *accepts_delegated_stake,
         validator_fee_factor: to_api_decimal(validator_fee_factor),
         validator_fee_change_request: validator_fee_change_request
             .as_ref()
@@ -1572,6 +1606,16 @@ pub fn to_api_validator_substate(
     })
 }
 
+pub fn to_api_validator_protocol_update_readiness_signal_substate(
+    _context: &MappingContext,
+    substate: &ValidatorProtocolUpdateReadinessSignalSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorProtocolUpdateReadinessSignalSubstate { protocol_version_name } = substate;
+    Ok(models::Substate::ValidatorFieldProtocolUpdateReadinessSignalSubstate {
+        protocol_version_name: protocol_version_name.as_ref().map(|name| name.to_string()),
+    })
+}
+
 pub fn to_api_consensus_manager_state_substate(
     context: &MappingContext,
     substate: &ConsensusManagerSubstate,
@@ -1579,13 +1623,17 @@ pub fn to_api_consensus_manager_state_substate(
     let ConsensusManagerSubstate {
         epoch,
         round,
-        epoch_start_milli,
+        started,
+        effective_epoch_start_milli,
+        actual_epoch_start_milli,
         current_leader,
     } = substate;
     Ok(models::Substate::ConsensusManagerFieldStateSubstate {
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
-        epoch_start: Box::new(to_api_instant_from_safe_timestamp(*epoch_start_milli)?),
+        is_started: *started,
+        effective_epoch_start: Box::new(to_api_instant_from_safe_timestamp(*effective_epoch_start_milli)?),
+        actual_epoch_start: Box::new(to_api_instant_from_safe_timestamp(*actual_epoch_start_milli)?),
         current_leader: current_leader
             .as_ref()
             .map(|validator_index| to_api_active_validator_index(*validator_index))
@@ -1606,6 +1654,7 @@ pub fn to_api_consensus_manager_config_substate(
                 min_validator_reliability,
                 num_owner_stake_units_unlock_epochs,
                 num_fee_increase_delay_epochs,
+                validator_creation_xrd_cost,
             },
     } = substate;
     Ok(models::Substate::ConsensusManagerFieldConfigSubstate {
@@ -1628,6 +1677,7 @@ pub fn to_api_consensus_manager_config_substate(
             *num_fee_increase_delay_epochs,
             "num_fee_increase_delay_epochs",
         )?,
+        validator_creation_xrd_cost: to_api_decimal(validator_creation_xrd_cost),
     })
 }
 
@@ -1684,12 +1734,45 @@ pub fn to_api_fungible_vault_balance_substate(
     })
 }
 
+pub fn to_api_fungible_vault_frozen_status_substate(
+    _context: &MappingContext,
+    substate: &VaultFrozenFlag,
+) -> Result<models::Substate, MappingError> {
+    let VaultFrozenFlag { frozen } = substate;
+    Ok(models::Substate::FungibleVaultFrozenStatusSubstate {
+        frozen_status: Box::new(to_api_frozen_status(frozen))
+    })
+}
+
+pub fn to_api_frozen_status(
+    vault_freeze_flags: &VaultFreezeFlags
+) -> models::FrozenStatus {
+    let is_withdraw_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::WITHDRAW);
+    let is_deposit_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::DEPOSIT);
+    let is_burn_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::BURN);
+    models::FrozenStatus {
+        is_withdraw_frozen,
+        is_deposit_frozen,
+        is_burn_frozen,
+    }
+}
+
 pub fn to_api_non_fungible_vault_balance_substate(
     _context: &MappingContext,
     substate: &NonFungibleVaultBalanceSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::NonFungibleVaultFieldBalanceSubstate {
         amount: to_api_decimal(&substate.amount),
+    })
+}
+
+pub fn to_api_non_fungible_vault_frozen_status_substate(
+    _context: &MappingContext,
+    substate: &VaultFrozenFlag,
+) -> Result<models::Substate, MappingError> {
+    let VaultFrozenFlag { frozen } = substate;
+    Ok(models::Substate::FungibleVaultFrozenStatusSubstate {
+        frozen_status: Box::new(to_api_frozen_status(frozen))
     })
 }
 

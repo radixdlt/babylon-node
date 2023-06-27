@@ -13,18 +13,24 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AuthConfig {
-    /// A map from a function identifier to AccessRule
-    #[serde(rename = "function_auth")]
-    pub function_auth: ::std::collections::HashMap<String, crate::core_api::generated::models::AccessRule>,
-    #[serde(rename = "method_auth")]
-    pub method_auth: Box<crate::core_api::generated::models::StaticMethodAuthTemplate>,
+    #[serde(rename = "function_auth_type")]
+    pub function_auth_type: crate::core_api::generated::models::FunctionAuthType,
+    /// A map from a function name to AccessRule. Only exists if `function_auth_type` is set to `FunctionAccessRules`. 
+    #[serde(rename = "function_access_rules", skip_serializing_if = "Option::is_none")]
+    pub function_access_rules: Option<::std::collections::HashMap<String, crate::core_api::generated::models::AccessRule>>,
+    #[serde(rename = "method_auth_type")]
+    pub method_auth_type: crate::core_api::generated::models::MethodAuthType,
+    #[serde(rename = "method_roles", skip_serializing_if = "Option::is_none")]
+    pub method_roles: Option<Box<crate::core_api::generated::models::StaticRolesAuthTemplate>>,
 }
 
 impl AuthConfig {
-    pub fn new(function_auth: ::std::collections::HashMap<String, crate::core_api::generated::models::AccessRule>, method_auth: crate::core_api::generated::models::StaticMethodAuthTemplate) -> AuthConfig {
+    pub fn new(function_auth_type: crate::core_api::generated::models::FunctionAuthType, method_auth_type: crate::core_api::generated::models::MethodAuthType) -> AuthConfig {
         AuthConfig {
-            function_auth,
-            method_auth: Box::new(method_auth),
+            function_auth_type,
+            function_access_rules: None,
+            method_auth_type,
+            method_roles: None,
         }
     }
 }

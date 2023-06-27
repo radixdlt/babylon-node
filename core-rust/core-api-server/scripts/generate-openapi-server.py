@@ -135,6 +135,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "MethodPermission")
         fix_for_enum_not_implementing_default(file_path, "TypePointer")
         fix_for_enum_not_implementing_default(file_path, "OwnerRole")
+        fix_for_enum_not_implementing_default(file_path, "FieldSchemaFeatureCondition")
 
     logging.info("Successfully fixed up rust models.")
 

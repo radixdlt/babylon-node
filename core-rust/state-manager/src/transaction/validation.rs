@@ -274,7 +274,7 @@ where
             .warn_after(
                 UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
                 format!(
-                    "pending intent hash {}, up to fee loan",
+                    "pending intent hash {:?}, up to fee loan",
                     transaction.prepared.intent_hash()
                 ),
             );

@@ -38,7 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_TOTAL_EMISSION_XRD_PER_EPOCH,
   ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY,
   ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS
+  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS,
+  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldConfigSubstateAllOf {
@@ -62,6 +63,9 @@ public class ConsensusManagerFieldConfigSubstateAllOf {
 
   public static final String JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS = "num_fee_increase_delay_epochs";
   private Long numFeeIncreaseDelayEpochs;
+
+  public static final String JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST = "validator_creation_xrd_cost";
+  private String validatorCreationXrdCost;
 
   public ConsensusManagerFieldConfigSubstateAllOf() { 
   }
@@ -256,6 +260,32 @@ public class ConsensusManagerFieldConfigSubstateAllOf {
   }
 
 
+  public ConsensusManagerFieldConfigSubstateAllOf validatorCreationXrdCost(String validatorCreationXrdCost) {
+    this.validatorCreationXrdCost = validatorCreationXrdCost;
+    return this;
+  }
+
+   /**
+   * The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return validatorCreationXrdCost
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getValidatorCreationXrdCost() {
+    return validatorCreationXrdCost;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorCreationXrdCost(String validatorCreationXrdCost) {
+    this.validatorCreationXrdCost = validatorCreationXrdCost;
+  }
+
+
   /**
    * Return true if this ConsensusManagerFieldConfigSubstate_allOf object is equal to o.
    */
@@ -274,12 +304,13 @@ public class ConsensusManagerFieldConfigSubstateAllOf {
         Objects.equals(this.totalEmissionXrdPerEpoch, consensusManagerFieldConfigSubstateAllOf.totalEmissionXrdPerEpoch) &&
         Objects.equals(this.minValidatorReliability, consensusManagerFieldConfigSubstateAllOf.minValidatorReliability) &&
         Objects.equals(this.numOwnerStakeUnitsUnlockEpochs, consensusManagerFieldConfigSubstateAllOf.numOwnerStakeUnitsUnlockEpochs) &&
-        Objects.equals(this.numFeeIncreaseDelayEpochs, consensusManagerFieldConfigSubstateAllOf.numFeeIncreaseDelayEpochs);
+        Objects.equals(this.numFeeIncreaseDelayEpochs, consensusManagerFieldConfigSubstateAllOf.numFeeIncreaseDelayEpochs) &&
+        Objects.equals(this.validatorCreationXrdCost, consensusManagerFieldConfigSubstateAllOf.validatorCreationXrdCost);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxValidators, epochChangeCondition, numUnstakeEpochs, totalEmissionXrdPerEpoch, minValidatorReliability, numOwnerStakeUnitsUnlockEpochs, numFeeIncreaseDelayEpochs);
+    return Objects.hash(maxValidators, epochChangeCondition, numUnstakeEpochs, totalEmissionXrdPerEpoch, minValidatorReliability, numOwnerStakeUnitsUnlockEpochs, numFeeIncreaseDelayEpochs, validatorCreationXrdCost);
   }
 
   @Override
@@ -293,6 +324,7 @@ public class ConsensusManagerFieldConfigSubstateAllOf {
     sb.append("    minValidatorReliability: ").append(toIndentedString(minValidatorReliability)).append("\n");
     sb.append("    numOwnerStakeUnitsUnlockEpochs: ").append(toIndentedString(numOwnerStakeUnitsUnlockEpochs)).append("\n");
     sb.append("    numFeeIncreaseDelayEpochs: ").append(toIndentedString(numFeeIncreaseDelayEpochs)).append("\n");
+    sb.append("    validatorCreationXrdCost: ").append(toIndentedString(validatorCreationXrdCost)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -23,15 +23,6 @@ pub enum Substate {
         #[serde(rename = "owner_role")]
         owner_role: Box<crate::core_api::generated::models::OwnerRole>,
     },
-    #[serde(rename="AccessRulesModuleMutabilityEntry")]
-    AccessRulesModuleMutabilityEntrySubstate {
-        #[serde(rename = "object_module_id")]
-        object_module_id: crate::core_api::generated::models::ObjectModuleId,
-        #[serde(rename = "role_key")]
-        role_key: String,
-        #[serde(rename = "mutable_role_keys", skip_serializing_if = "Option::is_none")]
-        mutable_role_keys: Option<Vec<String>>,
-    },
     #[serde(rename="AccessRulesModuleRuleEntry")]
     AccessRulesModuleRuleEntrySubstate {
         #[serde(rename = "object_module_id")]
@@ -86,6 +77,9 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, specifying the minimum number of epochs before a fee increase takes effect. 
         #[serde(rename = "num_fee_increase_delay_epochs")]
         num_fee_increase_delay_epochs: i64,
+        /// The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "validator_creation_xrd_cost")]
+        validator_creation_xrd_cost: String,
     },
     #[serde(rename="ConsensusManagerFieldCurrentProposalStatistic")]
     ConsensusManagerFieldCurrentProposalStatisticSubstate {
@@ -119,8 +113,12 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, marking the current round in an epoch
         #[serde(rename = "round")]
         round: i64,
-        #[serde(rename = "epoch_start")]
-        epoch_start: Box<crate::core_api::generated::models::Instant>,
+        #[serde(rename = "is_started")]
+        is_started: bool,
+        #[serde(rename = "effective_epoch_start")]
+        effective_epoch_start: Box<crate::core_api::generated::models::Instant>,
+        #[serde(rename = "actual_epoch_start")]
+        actual_epoch_start: Box<crate::core_api::generated::models::Instant>,
         #[serde(rename = "current_leader", skip_serializing_if = "Option::is_none")]
         current_leader: Option<Box<crate::core_api::generated::models::ActiveValidatorIndex>>,
     },
@@ -152,6 +150,11 @@ pub enum Substate {
         /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "amount")]
         amount: String,
+    },
+    #[serde(rename="FungibleVaultFrozenStatus")]
+    FungibleVaultFrozenStatusSubstate {
+        #[serde(rename = "frozen_status")]
+        frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
     },
     #[serde(rename="GenericKeyValueStoreEntry")]
     GenericKeyValueStoreEntrySubstate {
@@ -223,6 +226,11 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
+    #[serde(rename="NonFungibleVaultFrozenStatus")]
+    NonFungibleVaultFrozenStatusSubstate {
+        #[serde(rename = "frozen_status")]
+        frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
+    },
     #[serde(rename="OneResourcePoolFieldState")]
     OneResourcePoolFieldStateSubstate {
         #[serde(rename = "vault")]
@@ -271,8 +279,8 @@ pub enum Substate {
     },
     #[serde(rename="PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulatorSubstate {
-        #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
-        vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="PackageRoyaltyEntry")]
     PackageRoyaltyEntrySubstate {
@@ -291,19 +299,21 @@ pub enum Substate {
         #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]
         schema: Option<Box<crate::core_api::generated::models::ScryptoSchema>>,
     },
-    #[serde(rename="RoyaltyModuleFieldAccumulator")]
-    RoyaltyModuleFieldAccumulatorSubstate {
-        #[serde(rename = "vault_entity")]
-        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
-    },
-    #[serde(rename="RoyaltyModuleMethodConfigEntry")]
-    RoyaltyModuleMethodConfigEntrySubstate {
+    #[serde(rename="RoyaltyMethodRoyaltyEntry")]
+    RoyaltyMethodRoyaltyEntrySubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "method_name")]
         method_name: String,
         #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
         royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+    },
+    #[serde(rename="RoyaltyModuleFieldState")]
+    RoyaltyModuleFieldStateSubstate {
+        #[serde(rename = "is_enabled")]
+        is_enabled: bool,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="TransactionTrackerCollectionEntry")]
     TransactionTrackerCollectionEntrySubstate {
@@ -339,6 +349,12 @@ pub enum Substate {
         #[serde(rename = "details")]
         details: Box<crate::core_api::generated::models::TypeInfoDetails>,
     },
+    #[serde(rename="ValidatorFieldProtocolUpdateReadinessSignal")]
+    ValidatorFieldProtocolUpdateReadinessSignalSubstate {
+        /// If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). 
+        #[serde(rename = "protocol_version_name", skip_serializing_if = "Option::is_none")]
+        protocol_version_name: Option<String>,
+    },
     #[serde(rename="ValidatorFieldState")]
     ValidatorFieldStateSubstate {
         #[serde(rename = "sorted_key", skip_serializing_if = "Option::is_none")]
@@ -347,6 +363,8 @@ pub enum Substate {
         public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
         #[serde(rename = "is_registered")]
         is_registered: bool,
+        #[serde(rename = "accepts_delegated_stake")]
+        accepts_delegated_stake: bool,
         /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "validator_fee_factor")]
         validator_fee_factor: String,

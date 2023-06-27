@@ -13,15 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct RoyaltyConfig {
-    /// The royalty rules by method
-    #[serde(rename = "method_rules")]
-    pub method_rules: Vec<crate::core_api::generated::models::MethodRoyaltyRule>,
+    #[serde(rename = "is_enabled")]
+    pub is_enabled: bool,
+    /// The royalty rules by method. The array is only present if royalties are enabled.
+    #[serde(rename = "method_rules", skip_serializing_if = "Option::is_none")]
+    pub method_rules: Option<Vec<crate::core_api::generated::models::MethodRoyalty>>,
 }
 
 impl RoyaltyConfig {
-    pub fn new(method_rules: Vec<crate::core_api::generated::models::MethodRoyaltyRule>) -> RoyaltyConfig {
+    pub fn new(is_enabled: bool) -> RoyaltyConfig {
         RoyaltyConfig {
-            method_rules,
+            is_enabled,
+            method_rules: None,
         }
     }
 }

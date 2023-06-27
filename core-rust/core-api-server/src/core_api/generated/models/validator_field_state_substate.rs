@@ -21,6 +21,8 @@ pub struct ValidatorFieldStateSubstate {
     pub public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     #[serde(rename = "is_registered")]
     pub is_registered: bool,
+    #[serde(rename = "accepts_delegated_stake")]
+    pub accepts_delegated_stake: bool,
     /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "validator_fee_factor")]
     pub validator_fee_factor: String,
@@ -48,12 +50,13 @@ pub struct ValidatorFieldStateSubstate {
 }
 
 impl ValidatorFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, public_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, is_registered: bool, validator_fee_factor: String, stake_unit_resource_address: String, stake_xrd_vault: crate::core_api::generated::models::EntityReference, unstake_claim_token_resource_address: String, pending_xrd_withdraw_vault: crate::core_api::generated::models::EntityReference, locked_owner_stake_unit_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_unlock_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>, already_unlocked_owner_stake_unit_amount: String) -> ValidatorFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, public_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, is_registered: bool, accepts_delegated_stake: bool, validator_fee_factor: String, stake_unit_resource_address: String, stake_xrd_vault: crate::core_api::generated::models::EntityReference, unstake_claim_token_resource_address: String, pending_xrd_withdraw_vault: crate::core_api::generated::models::EntityReference, locked_owner_stake_unit_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_unlock_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>, already_unlocked_owner_stake_unit_amount: String) -> ValidatorFieldStateSubstate {
         ValidatorFieldStateSubstate {
             substate_type,
             sorted_key: None,
             public_key: Box::new(public_key),
             is_registered,
+            accepts_delegated_stake,
             validator_fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource_address,

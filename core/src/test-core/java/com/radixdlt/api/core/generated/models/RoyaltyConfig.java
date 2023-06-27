@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.MethodRoyaltyRule;
+import com.radixdlt.api.core.generated.models.MethodRoyalty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -34,43 +34,76 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * RoyaltyConfig
  */
 @JsonPropertyOrder({
+  RoyaltyConfig.JSON_PROPERTY_IS_ENABLED,
   RoyaltyConfig.JSON_PROPERTY_METHOD_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RoyaltyConfig {
+  public static final String JSON_PROPERTY_IS_ENABLED = "is_enabled";
+  private Boolean isEnabled;
+
   public static final String JSON_PROPERTY_METHOD_RULES = "method_rules";
-  private List<MethodRoyaltyRule> methodRules = new ArrayList<>();
+  private List<MethodRoyalty> methodRules = null;
 
   public RoyaltyConfig() { 
   }
 
-  public RoyaltyConfig methodRules(List<MethodRoyaltyRule> methodRules) {
+  public RoyaltyConfig isEnabled(Boolean isEnabled) {
+    this.isEnabled = isEnabled;
+    return this;
+  }
+
+   /**
+   * Get isEnabled
+   * @return isEnabled
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsEnabled() {
+    return isEnabled;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsEnabled(Boolean isEnabled) {
+    this.isEnabled = isEnabled;
+  }
+
+
+  public RoyaltyConfig methodRules(List<MethodRoyalty> methodRules) {
     this.methodRules = methodRules;
     return this;
   }
 
-  public RoyaltyConfig addMethodRulesItem(MethodRoyaltyRule methodRulesItem) {
+  public RoyaltyConfig addMethodRulesItem(MethodRoyalty methodRulesItem) {
+    if (this.methodRules == null) {
+      this.methodRules = new ArrayList<>();
+    }
     this.methodRules.add(methodRulesItem);
     return this;
   }
 
    /**
-   * The royalty rules by method
+   * The royalty rules by method. The array is only present if royalties are enabled.
    * @return methodRules
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The royalty rules by method")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The royalty rules by method. The array is only present if royalties are enabled.")
   @JsonProperty(JSON_PROPERTY_METHOD_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public List<MethodRoyaltyRule> getMethodRules() {
+  public List<MethodRoyalty> getMethodRules() {
     return methodRules;
   }
 
 
   @JsonProperty(JSON_PROPERTY_METHOD_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMethodRules(List<MethodRoyaltyRule> methodRules) {
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMethodRules(List<MethodRoyalty> methodRules) {
     this.methodRules = methodRules;
   }
 
@@ -87,18 +120,20 @@ public class RoyaltyConfig {
       return false;
     }
     RoyaltyConfig royaltyConfig = (RoyaltyConfig) o;
-    return Objects.equals(this.methodRules, royaltyConfig.methodRules);
+    return Objects.equals(this.isEnabled, royaltyConfig.isEnabled) &&
+        Objects.equals(this.methodRules, royaltyConfig.methodRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(methodRules);
+    return Objects.hash(isEnabled, methodRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class RoyaltyConfig {\n");
+    sb.append("    isEnabled: ").append(toIndentedString(isEnabled)).append("\n");
     sb.append("    methodRules: ").append(toIndentedString(methodRules)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -2157,48 +2157,22 @@ components:
           properties:
             non_fungible:
               $ref: '#/components/schemas/NonFungibleGlobalId'
-    OwnerRoleType:
-      type: string
-      enum:
-        - None
-        - Fixed
-        - Updateable
     OwnerRole:
       type: object
       required:
-        - type
+        - rule
+        - updater
       properties:
-        type:
-          $ref: '#/components/schemas/OwnerRoleType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match OwnerRoleType options
-          None: '#/components/schemas/NoneOwnerRole'
-          Fixed: '#/components/schemas/FixedOwnerRole'
-          Updateable: '#/components/schemas/UpdateableOwnerRole'
-    NoneOwnerRole:
-      allOf:
-        - $ref: '#/components/schemas/OwnerRole'
-        - type: object
-    FixedOwnerRole:
-      allOf:
-        - $ref: '#/components/schemas/OwnerRole'
-        - type: object
-          required:
-            - access_rule
-          properties:
-            access_rule:
-              $ref: '#/components/schemas/AccessRule'
-    UpdateableOwnerRole:
-      allOf:
-        - $ref: '#/components/schemas/OwnerRole'
-        - type: object
-          required:
-            - access_rule
-          properties:
-            access_rule:
-              $ref: '#/components/schemas/AccessRule'
+        rule:
+          $ref: '#/components/schemas/AccessRule'
+        updater:
+          $ref: '#/components/schemas/OwnerRoleUpdater'
+    OwnerRoleUpdater:
+      type: string
+      enum:
+        - None
+        - Owner
+        - Object
 #######################################
 # GENERAL / SHARED MODELS - Resources #
 #######################################
@@ -2338,20 +2312,25 @@ components:
     RoyaltyConfig:
       type: object
       required:
-        - method_rules
+        - is_enabled
       properties:
+        is_enabled:
+          type: boolean
         method_rules:
-          description: The royalty rules by method
+          description: The royalty rules by method. The array is only present if royalties are enabled.
           type: array
           items:
-            $ref: '#/components/schemas/MethodRoyaltyRule'
-    MethodRoyaltyRule:
+            $ref: '#/components/schemas/MethodRoyalty'
+    MethodRoyalty:
       type: object
       required:
         - method_name
+        - is_locked
       properties:
         method_name:
           type: string
+        is_locked:
+          type: boolean
         royalty_amount:
           description: The due royalty; missing field denotes a free method.
           $ref: '#/components/schemas/RoyaltyAmount'
@@ -2590,61 +2569,101 @@ components:
     AuthConfig:
       type: object
       required:
-        - function_auth
-        - method_auth
+        - function_auth_type
+        - method_auth_type
       properties:
-        function_auth:
+        function_auth_type:
+          $ref: '#/components/schemas/FunctionAuthType'
+        function_access_rules:
           type: object
-          description: A map from a function identifier to AccessRule
+          description: |
+            A map from a function name to AccessRule.
+            Only exists if `function_auth_type` is set to `FunctionAccessRules`.
           additionalProperties:
             $ref: '#/components/schemas/AccessRule'
-        method_auth:
-          $ref: '#/components/schemas/StaticMethodAuthTemplate'
-    StaticMethodAuthTemplate:
+        method_auth_type:
+          $ref: '#/components/schemas/MethodAuthType'
+        method_roles:
+          $ref: '#/components/schemas/StaticRolesAuthTemplate'
+    FunctionAuthType:
+      type: string
+      enum:
+        - AllowAll
+        - FunctionAccessRules
+        - RootOnly
+    MethodAuthType:
+      type: string
+      enum:
+        - AllowAll
+        - StaticRoles
+    StaticRolesAuthTemplate:
       type: object
       required:
-        - auth
-        - outer_auth
+        - role_specification
+        - method_accessibility_map
       properties:
-        auth:
-          $ref: '#/components/schemas/MethodPermissionMap'
-        outer_auth:
-          $ref: '#/components/schemas/MethodPermissionMap'
-    MethodPermissionMap:
+        role_specification:
+          $ref: '#/components/schemas/RoleSpecification'
+        roles:
+          type: object
+          description: A map from role name to role details
+          additionalProperties:
+            $ref: '#/components/schemas/RoleDetails'
+        method_accessibility_map:
+          type: object
+          description: A map from a method identifier to MethodAccessibility
+          additionalProperties:
+            $ref: '#/components/schemas/MethodAccessibility'
+    RoleSpecification:
+      type: string
+      enum:
+        - Normal
+        - UseOuter
+    RoleDetails:
       type: object
-      description: A map from a method identifier to MethodPermission
-      additionalProperties:
-        $ref: '#/components/schemas/MethodPermission'
-    MethodPermissionType:
+      required:
+        - updater_roles
+      properties:
+        updater_roles:
+          type: array
+          items:
+            type: string
+    MethodAccessibilityType:
       type: string
       enum:
         - Public
-        - Protected
-    MethodPermission:
+        - OuterObjectOnly
+        - RoleProtected
+    MethodAccessibility:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/MethodPermissionType'
+          $ref: '#/components/schemas/MethodAccessibilityType'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match MethodPermissionType options above
-          Public: '#/components/schemas/PublicMethodPermission'
-          Protected: '#/components/schemas/ProtectedMethodPermission'
-    PublicMethodPermission:
+          Public: '#/components/schemas/PublicMethodAccessibility'
+          OuterObjectOnly: '#/components/schemas/OuterObjectOnlyMethodAccessibility'
+          RoleProtected: '#/components/schemas/RoleProtectedMethodAccessibility'
+    PublicMethodAccessibility:
       allOf:
-        - $ref: '#/components/schemas/MethodPermission'
+        - $ref: '#/components/schemas/MethodAccessibility'
         - type: object
-    ProtectedMethodPermission:
+    OuterObjectOnlyMethodAccessibility:
       allOf:
-        - $ref: '#/components/schemas/MethodPermission'
+        - $ref: '#/components/schemas/MethodAccessibility'
+        - type: object
+    RoleProtectedMethodAccessibility:
+      allOf:
+        - $ref: '#/components/schemas/MethodAccessibility'
         - type: object
           required:
-            - allowed_role_keys
+            - allowed_roles
           properties:
-            allowed_role_keys:
+            allowed_roles:
               type: array
               items:
                 type: string
@@ -2673,9 +2692,50 @@ components:
       properties:
         field_type_pointer:
           $ref: '#/components/schemas/TypePointer'
-        if_feature:
-          type: string
-          description: A feature required for the field.
+        condition:
+          $ref: '#/components/schemas/FieldSchemaFeatureCondition'
+    FieldSchemaFeatureConditionType:
+      type: string
+      enum:
+        - Always
+        - IfOwnFeature
+        - IfOuterObjectFeature
+    FieldSchemaFeatureCondition:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FieldSchemaFeatureConditionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TypePointerType options
+          Always: '#/components/schemas/FieldSchemaFeatureConditionAlways'
+          IfOwnFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOwnFeature'
+          IfOuterObjectFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOuterObjectFeature'
+    FieldSchemaFeatureConditionAlways:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+    FieldSchemaFeatureConditionIfOwnFeature:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    FieldSchemaFeatureConditionIfOuterObjectFeature:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
     BlueprintSchemaCollectionPartition:
       type: object
       description: The fields partition of the blueprint.
@@ -2904,9 +2964,8 @@ components:
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
           AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
-          AccessRulesModuleMutabilityEntry: '#/components/schemas/AccessRulesModuleMutabilityEntrySubstate'
-          RoyaltyModuleFieldAccumulator: '#/components/schemas/RoyaltyModuleFieldAccumulatorSubstate'
-          RoyaltyModuleMethodConfigEntry: '#/components/schemas/RoyaltyModuleMethodConfigEntrySubstate'
+          RoyaltyModuleFieldState: '#/components/schemas/RoyaltyModuleFieldStateSubstate'
+          RoyaltyMethodRoyaltyEntry: '#/components/schemas/RoyaltyMethodRoyaltyEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
           PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
           PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
@@ -2922,7 +2981,9 @@ components:
           NonFungibleResourceManagerFieldMutableFields: '#/components/schemas/NonFungibleResourceManagerFieldMutableFieldsSubstate'
           NonFungibleResourceManagerDataEntry: '#/components/schemas/NonFungibleResourceManagerDataEntrySubstate'
           FungibleVaultFieldBalance: '#/components/schemas/FungibleVaultFieldBalanceSubstate'
+          FungibleVaultFrozenStatus: '#/components/schemas/FungibleVaultFrozenStatusSubstate'
           NonFungibleVaultFieldBalance: '#/components/schemas/NonFungibleVaultFieldBalanceSubstate'
+          NonFungibleVaultFrozenStatus: '#/components/schemas/NonFungibleVaultFrozenStatusSubstate'
           NonFungibleVaultContentsIndexEntry: '#/components/schemas/NonFungibleVaultContentsIndexEntrySubstate'
           ConsensusManagerFieldConfig: '#/components/schemas/ConsensusManagerFieldConfigSubstate'
           ConsensusManagerFieldState: '#/components/schemas/ConsensusManagerFieldStateSubstate'
@@ -2933,6 +2994,7 @@ components:
           ConsensusManagerFieldValidatorRewards: '#/components/schemas/ConsensusManagerFieldValidatorRewardsSubstate'
           ConsensusManagerRegisteredValidatorsByStakeIndexEntry: '#/components/schemas/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate'
           ValidatorFieldState: '#/components/schemas/ValidatorFieldStateSubstate'
+          ValidatorFieldProtocolUpdateReadinessSignal: '#/components/schemas/ValidatorFieldProtocolUpdateReadinessSignalSubstate'
           AccountFieldState: '#/components/schemas/AccountFieldStateSubstate'
           AccountVaultIndexEntry: '#/components/schemas/AccountVaultIndexEntrySubstate'
           AccountDepositRuleIndexEntry: '#/components/schemas/AccountDepositRuleIndexEntrySubstate'
@@ -2951,8 +3013,8 @@ components:
         - AccessRulesModuleFieldOwnerRole
         - AccessRulesModuleRuleEntry
         - AccessRulesModuleMutabilityEntry
-        - RoyaltyModuleFieldAccumulator
-        - RoyaltyModuleMethodConfigEntry
+        - RoyaltyModuleFieldState
+        - RoyaltyMethodRoyaltyEntry
         - MetadataModuleEntry
         - PackageFieldRoyaltyAccumulator
         - PackageCodeEntry
@@ -2969,7 +3031,9 @@ components:
         - NonFungibleResourceManagerFieldMutableFields
         - NonFungibleResourceManagerDataEntry
         - FungibleVaultFieldBalance
+        - FungibleVaultFrozenStatus
         - NonFungibleVaultFieldBalance
+        - NonFungibleVaultFrozenStatus
         - NonFungibleVaultContentsIndexEntry
         - ConsensusManager
         - ConsensusManagerFieldConfig
@@ -2981,6 +3045,7 @@ components:
         - ConsensusManagerFieldValidatorRewards
         - ConsensusManagerRegisteredValidatorsByStakeIndexEntry
         - ValidatorFieldState
+        - ValidatorFieldProtocolUpdateReadinessSignal
         - AccountFieldState
         - AccountVaultIndexEntry
         - AccountDepositRuleIndexEntry
@@ -3111,32 +3176,19 @@ components:
               type: string
             access_rule:
               $ref: '#/components/schemas/AccessRule'
-    AccessRulesModuleMutabilityEntrySubstate:
+    RoyaltyModuleFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - object_module_id
-            - role_key
-          properties:
-            object_module_id:
-              $ref: "#/components/schemas/ObjectModuleId"
-            role_key:
-              type: string
-            mutable_role_keys:
-              type: array
-              items:
-                type: string
-    RoyaltyModuleFieldAccumulatorSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
+            - is_enabled
             - vault_entity
           properties:
+            is_enabled:
+              type: boolean
             vault_entity:
               $ref: "#/components/schemas/EntityReference"
-    RoyaltyModuleMethodConfigEntrySubstate:
+    RoyaltyMethodRoyaltyEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3314,9 +3366,10 @@ components:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
+          required:
+            - vault_entity
           properties:
             vault_entity:
-              # This is optional - some early packages during bootstrapping don't have this
               $ref: "#/components/schemas/EntityReference"
     FungibleResourceManagerFieldDivisibilitySubstate:
       allOf:
@@ -3401,6 +3454,28 @@ components:
               description: |
                 The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    FungibleVaultFrozenStatusSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - frozen_status
+          properties:
+            frozen_status:
+              $ref: '#/components/schemas/FrozenStatus'
+    FrozenStatus:
+      type: object
+      required:
+        - is_withdraw_frozen
+        - is_deposit_frozen
+        - is_burn_frozen
+      properties:
+        is_withdraw_frozen:
+          type: boolean
+        is_deposit_frozen:
+          type: boolean
+        is_burn_frozen:
+          type: boolean
     NonFungibleVaultFieldBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3413,6 +3488,15 @@ components:
               description: |
                 The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    NonFungibleVaultFrozenStatusSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - frozen_status
+          properties:
+            frozen_status:
+              $ref: '#/components/schemas/FrozenStatus'
     NonFungibleVaultContentsIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3435,6 +3519,7 @@ components:
             - min_validator_reliability
             - num_owner_stake_units_unlock_epochs
             - num_fee_increase_delay_epochs
+            - validator_creation_xrd_cost
           properties:
             max_validators:
               type: integer
@@ -3476,6 +3561,11 @@ components:
               description: |
                 An integer between `0` and `10^10`, specifying the minimum number of epochs
                 before a fee increase takes effect.
+            validator_creation_xrd_cost:
+              type: string
+              description: |
+                The amount of XRD required to be passed in a bucket to create a validator.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     ConsensusManagerFieldValidatorRewardsSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3523,8 +3613,10 @@ components:
         - type: object
           required:
             - epoch
-            - epoch_start
             - round
+            - is_started
+            - effective_epoch_start
+            - actual_epoch_start
           properties:
             epoch:
               type: integer
@@ -3538,7 +3630,18 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current round in an epoch
-            epoch_start:
+            is_started:
+              type: boolean
+            effective_epoch_start:
+              description: |
+                The effective time the epoch started. A drift-free measure, used to work out when the
+                epoch should ideally end. 
+              $ref: '#/components/schemas/Instant'
+            actual_epoch_start:
+              description: |
+                The actual time the epoch started. Not used by any logic, but the difference between
+                this and the effective start gives a measure of the time it took for the end-of-epoch
+                to be noticed.
               $ref: '#/components/schemas/Instant'
             current_leader:
               $ref: '#/components/schemas/ActiveValidatorIndex'
@@ -3617,6 +3720,7 @@ components:
           required:
             - public_key
             - is_registered
+            - accepts_delegated_stake
             - validator_fee_factor
             - stake_unit_resource_address
             - stake_xrd_vault
@@ -3632,6 +3736,8 @@ components:
             public_key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             is_registered:
+              type: boolean
+            accepts_delegated_stake:
               type: boolean
             validator_fee_factor:
               description: The proportion of the emission that the validator owner keeps.
@@ -3686,6 +3792,16 @@ components:
             An integer between `0` and `10^10`, marking the epoch when the stake units are unlocked for withdrawal.
         stake_unit_amount:
           $ref: '#/components/schemas/Decimal'
+    ValidatorFieldProtocolUpdateReadinessSignalSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          properties:
+            protocol_version_name:
+              description: |
+                If present, indicates the validator is currently signalling readiness for the given protocl version.
+                Is validated to be exactly 32 chars long (if it exists).
+              type: string
     AccountFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

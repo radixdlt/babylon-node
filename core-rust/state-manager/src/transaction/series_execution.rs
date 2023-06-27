@@ -190,7 +190,7 @@ struct DescribedTransactionHash<D> {
 
 impl<D: Display> Display for DescribedTransactionHash<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} (ledger hash {})", self.description, self.ledger_hash)
+        write!(f, "{} (ledger hash {:?})", self.description, self.ledger_hash)
     }
 }
 

@@ -118,7 +118,6 @@ pub fn to_api_receipt(
     let api_fee_summary = to_api_fee_summary(
         context,
         &receipt.local_execution.fee_summary,
-        &receipt.local_execution.fee_payments,
     )?;
 
     let api_events = receipt
@@ -343,7 +342,6 @@ pub fn to_api_event(
 pub fn to_api_fee_summary(
     context: &MappingContext,
     fee_summary: &FeeSummary,
-    fee_payments: &IndexMap<NodeId, Decimal>,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
@@ -358,7 +356,8 @@ pub fn to_api_fee_summary(
             .iter()
             .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(*cost_unit_amount)))
             .collect(),
-        xrd_vault_payments: fee_payments
+        xrd_vault_payments: fee_summary
+            .fee_payments
             .iter()
             .map(|(vault_id, xrd_amount)| {
                 Ok(models::VaultPayment {

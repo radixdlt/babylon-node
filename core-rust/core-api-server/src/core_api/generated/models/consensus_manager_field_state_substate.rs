@@ -21,19 +21,25 @@ pub struct ConsensusManagerFieldStateSubstate {
     /// An integer between `0` and `10^10`, marking the current round in an epoch
     #[serde(rename = "round")]
     pub round: i64,
-    #[serde(rename = "epoch_start")]
-    pub epoch_start: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "is_started")]
+    pub is_started: bool,
+    #[serde(rename = "effective_epoch_start")]
+    pub effective_epoch_start: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "actual_epoch_start")]
+    pub actual_epoch_start: Box<crate::core_api::generated::models::Instant>,
     #[serde(rename = "current_leader", skip_serializing_if = "Option::is_none")]
     pub current_leader: Option<Box<crate::core_api::generated::models::ActiveValidatorIndex>>,
 }
 
 impl ConsensusManagerFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64, epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::Instant, actual_epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateSubstate {
         ConsensusManagerFieldStateSubstate {
             substate_type,
             epoch,
             round,
-            epoch_start: Box::new(epoch_start),
+            is_started,
+            effective_epoch_start: Box::new(effective_epoch_start),
+            actual_epoch_start: Box::new(actual_epoch_start),
             current_leader: None,
         }
     }

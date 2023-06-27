@@ -142,13 +142,10 @@ pub struct LedgerTransactionReceipt {
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
     pub execution_metrics: ExecutionMetrics,
-    // The breakdown of the fee
     pub fee_summary: FeeSummary,
-    // Which vault/s paid the fee
-    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
-    // These will be removed once we have the parent_map for the toolkit to use
+    // These can be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<EpochChangeEvent>,
 }
@@ -197,7 +194,6 @@ impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
                 execution_metrics: commit_result.execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
-                fee_payments: commit_result.fee_payments,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
                 resource_changes: commit_result.execution_trace.resource_changes,

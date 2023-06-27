@@ -20,10 +20,10 @@ pub enum SubstateType {
     AccessRulesModuleRuleEntry,
     #[serde(rename = "AccessRulesModuleMutabilityEntry")]
     AccessRulesModuleMutabilityEntry,
-    #[serde(rename = "RoyaltyModuleFieldAccumulator")]
-    RoyaltyModuleFieldAccumulator,
-    #[serde(rename = "RoyaltyModuleMethodConfigEntry")]
-    RoyaltyModuleMethodConfigEntry,
+    #[serde(rename = "RoyaltyModuleFieldState")]
+    RoyaltyModuleFieldState,
+    #[serde(rename = "RoyaltyMethodRoyaltyEntry")]
+    RoyaltyMethodRoyaltyEntry,
     #[serde(rename = "MetadataModuleEntry")]
     MetadataModuleEntry,
     #[serde(rename = "PackageFieldRoyaltyAccumulator")]
@@ -56,8 +56,12 @@ pub enum SubstateType {
     NonFungibleResourceManagerDataEntry,
     #[serde(rename = "FungibleVaultFieldBalance")]
     FungibleVaultFieldBalance,
+    #[serde(rename = "FungibleVaultFrozenStatus")]
+    FungibleVaultFrozenStatus,
     #[serde(rename = "NonFungibleVaultFieldBalance")]
     NonFungibleVaultFieldBalance,
+    #[serde(rename = "NonFungibleVaultFrozenStatus")]
+    NonFungibleVaultFrozenStatus,
     #[serde(rename = "NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntry,
     #[serde(rename = "ConsensusManager")]
@@ -80,6 +84,8 @@ pub enum SubstateType {
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
     #[serde(rename = "ValidatorFieldState")]
     ValidatorFieldState,
+    #[serde(rename = "ValidatorFieldProtocolUpdateReadinessSignal")]
+    ValidatorFieldProtocolUpdateReadinessSignal,
     #[serde(rename = "AccountFieldState")]
     AccountFieldState,
     #[serde(rename = "AccountVaultIndexEntry")]
@@ -112,8 +118,8 @@ impl ToString for SubstateType {
             Self::AccessRulesModuleFieldOwnerRole => String::from("AccessRulesModuleFieldOwnerRole"),
             Self::AccessRulesModuleRuleEntry => String::from("AccessRulesModuleRuleEntry"),
             Self::AccessRulesModuleMutabilityEntry => String::from("AccessRulesModuleMutabilityEntry"),
-            Self::RoyaltyModuleFieldAccumulator => String::from("RoyaltyModuleFieldAccumulator"),
-            Self::RoyaltyModuleMethodConfigEntry => String::from("RoyaltyModuleMethodConfigEntry"),
+            Self::RoyaltyModuleFieldState => String::from("RoyaltyModuleFieldState"),
+            Self::RoyaltyMethodRoyaltyEntry => String::from("RoyaltyMethodRoyaltyEntry"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
             Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
             Self::PackageCodeEntry => String::from("PackageCodeEntry"),
@@ -130,7 +136,9 @@ impl ToString for SubstateType {
             Self::NonFungibleResourceManagerFieldMutableFields => String::from("NonFungibleResourceManagerFieldMutableFields"),
             Self::NonFungibleResourceManagerDataEntry => String::from("NonFungibleResourceManagerDataEntry"),
             Self::FungibleVaultFieldBalance => String::from("FungibleVaultFieldBalance"),
+            Self::FungibleVaultFrozenStatus => String::from("FungibleVaultFrozenStatus"),
             Self::NonFungibleVaultFieldBalance => String::from("NonFungibleVaultFieldBalance"),
+            Self::NonFungibleVaultFrozenStatus => String::from("NonFungibleVaultFrozenStatus"),
             Self::NonFungibleVaultContentsIndexEntry => String::from("NonFungibleVaultContentsIndexEntry"),
             Self::ConsensusManager => String::from("ConsensusManager"),
             Self::ConsensusManagerFieldConfig => String::from("ConsensusManagerFieldConfig"),
@@ -142,6 +150,7 @@ impl ToString for SubstateType {
             Self::ConsensusManagerFieldValidatorRewards => String::from("ConsensusManagerFieldValidatorRewards"),
             Self::ConsensusManagerRegisteredValidatorsByStakeIndexEntry => String::from("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
             Self::ValidatorFieldState => String::from("ValidatorFieldState"),
+            Self::ValidatorFieldProtocolUpdateReadinessSignal => String::from("ValidatorFieldProtocolUpdateReadinessSignal"),
             Self::AccountFieldState => String::from("AccountFieldState"),
             Self::AccountVaultIndexEntry => String::from("AccountVaultIndexEntry"),
             Self::AccountDepositRuleIndexEntry => String::from("AccountDepositRuleIndexEntry"),

@@ -33,10 +33,13 @@ pub struct ConsensusManagerFieldConfigSubstateAllOf {
     /// An integer between `0` and `10^10`, specifying the minimum number of epochs before a fee increase takes effect. 
     #[serde(rename = "num_fee_increase_delay_epochs")]
     pub num_fee_increase_delay_epochs: i64,
+    /// The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "validator_creation_xrd_cost")]
+    pub validator_creation_xrd_cost: String,
 }
 
 impl ConsensusManagerFieldConfigSubstateAllOf {
-    pub fn new(max_validators: i64, epoch_change_condition: crate::core_api::generated::models::EpochChangeCondition, num_unstake_epochs: i64, total_emission_xrd_per_epoch: String, min_validator_reliability: String, num_owner_stake_units_unlock_epochs: i64, num_fee_increase_delay_epochs: i64) -> ConsensusManagerFieldConfigSubstateAllOf {
+    pub fn new(max_validators: i64, epoch_change_condition: crate::core_api::generated::models::EpochChangeCondition, num_unstake_epochs: i64, total_emission_xrd_per_epoch: String, min_validator_reliability: String, num_owner_stake_units_unlock_epochs: i64, num_fee_increase_delay_epochs: i64, validator_creation_xrd_cost: String) -> ConsensusManagerFieldConfigSubstateAllOf {
         ConsensusManagerFieldConfigSubstateAllOf {
             max_validators,
             epoch_change_condition: Box::new(epoch_change_condition),
@@ -45,6 +48,7 @@ impl ConsensusManagerFieldConfigSubstateAllOf {
             min_validator_reliability,
             num_owner_stake_units_unlock_epochs,
             num_fee_increase_delay_epochs,
+            validator_creation_xrd_cost,
         }
     }
 }

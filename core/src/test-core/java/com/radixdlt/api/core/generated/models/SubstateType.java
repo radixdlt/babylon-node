@@ -36,9 +36,9 @@ public enum SubstateType {
   
   ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
   
-  ROYALTYMODULEFIELDACCUMULATOR("RoyaltyModuleFieldAccumulator"),
+  ROYALTYMODULEFIELDSTATE("RoyaltyModuleFieldState"),
   
-  ROYALTYMODULEMETHODCONFIGENTRY("RoyaltyModuleMethodConfigEntry"),
+  ROYALTYMETHODROYALTYENTRY("RoyaltyMethodRoyaltyEntry"),
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   
@@ -72,7 +72,11 @@ public enum SubstateType {
   
   FUNGIBLEVAULTFIELDBALANCE("FungibleVaultFieldBalance"),
   
+  FUNGIBLEVAULTFROZENSTATUS("FungibleVaultFrozenStatus"),
+  
   NONFUNGIBLEVAULTFIELDBALANCE("NonFungibleVaultFieldBalance"),
+  
+  NONFUNGIBLEVAULTFROZENSTATUS("NonFungibleVaultFrozenStatus"),
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
@@ -95,6 +99,8 @@ public enum SubstateType {
   CONSENSUSMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   
   VALIDATORFIELDSTATE("ValidatorFieldState"),
+  
+  VALIDATORFIELDPROTOCOLUPDATEREADINESSSIGNAL("ValidatorFieldProtocolUpdateReadinessSignal"),
   
   ACCOUNTFIELDSTATE("AccountFieldState"),
   

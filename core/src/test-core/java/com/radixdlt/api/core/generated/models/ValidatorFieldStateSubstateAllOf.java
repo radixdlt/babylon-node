@@ -41,6 +41,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_SORTED_KEY,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_PUBLIC_KEY,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_IS_REGISTERED,
+  ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_ACCEPTS_DELEGATED_STAKE,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_VALIDATOR_FEE_FACTOR,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_VALIDATOR_FEE_CHANGE_REQUEST,
   ValidatorFieldStateSubstateAllOf.JSON_PROPERTY_STAKE_UNIT_RESOURCE_ADDRESS,
@@ -62,6 +63,9 @@ public class ValidatorFieldStateSubstateAllOf {
 
   public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
   private Boolean isRegistered;
+
+  public static final String JSON_PROPERTY_ACCEPTS_DELEGATED_STAKE = "accepts_delegated_stake";
+  private Boolean acceptsDelegatedStake;
 
   public static final String JSON_PROPERTY_VALIDATOR_FEE_FACTOR = "validator_fee_factor";
   private String validatorFeeFactor;
@@ -171,6 +175,32 @@ public class ValidatorFieldStateSubstateAllOf {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setIsRegistered(Boolean isRegistered) {
     this.isRegistered = isRegistered;
+  }
+
+
+  public ValidatorFieldStateSubstateAllOf acceptsDelegatedStake(Boolean acceptsDelegatedStake) {
+    this.acceptsDelegatedStake = acceptsDelegatedStake;
+    return this;
+  }
+
+   /**
+   * Get acceptsDelegatedStake
+   * @return acceptsDelegatedStake
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCEPTS_DELEGATED_STAKE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getAcceptsDelegatedStake() {
+    return acceptsDelegatedStake;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCEPTS_DELEGATED_STAKE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAcceptsDelegatedStake(Boolean acceptsDelegatedStake) {
+    this.acceptsDelegatedStake = acceptsDelegatedStake;
   }
 
 
@@ -454,6 +484,7 @@ public class ValidatorFieldStateSubstateAllOf {
     return Objects.equals(this.sortedKey, validatorFieldStateSubstateAllOf.sortedKey) &&
         Objects.equals(this.publicKey, validatorFieldStateSubstateAllOf.publicKey) &&
         Objects.equals(this.isRegistered, validatorFieldStateSubstateAllOf.isRegistered) &&
+        Objects.equals(this.acceptsDelegatedStake, validatorFieldStateSubstateAllOf.acceptsDelegatedStake) &&
         Objects.equals(this.validatorFeeFactor, validatorFieldStateSubstateAllOf.validatorFeeFactor) &&
         Objects.equals(this.validatorFeeChangeRequest, validatorFieldStateSubstateAllOf.validatorFeeChangeRequest) &&
         Objects.equals(this.stakeUnitResourceAddress, validatorFieldStateSubstateAllOf.stakeUnitResourceAddress) &&
@@ -468,7 +499,7 @@ public class ValidatorFieldStateSubstateAllOf {
 
   @Override
   public int hashCode() {
-    return Objects.hash(sortedKey, publicKey, isRegistered, validatorFeeFactor, validatorFeeChangeRequest, stakeUnitResourceAddress, stakeXrdVault, unstakeClaimTokenResourceAddress, pendingXrdWithdrawVault, lockedOwnerStakeUnitVault, pendingOwnerStakeUnitUnlockVault, pendingOwnerStakeUnitWithdrawals, alreadyUnlockedOwnerStakeUnitAmount);
+    return Objects.hash(sortedKey, publicKey, isRegistered, acceptsDelegatedStake, validatorFeeFactor, validatorFeeChangeRequest, stakeUnitResourceAddress, stakeXrdVault, unstakeClaimTokenResourceAddress, pendingXrdWithdrawVault, lockedOwnerStakeUnitVault, pendingOwnerStakeUnitUnlockVault, pendingOwnerStakeUnitWithdrawals, alreadyUnlockedOwnerStakeUnitAmount);
   }
 
   @Override
@@ -478,6 +509,7 @@ public class ValidatorFieldStateSubstateAllOf {
     sb.append("    sortedKey: ").append(toIndentedString(sortedKey)).append("\n");
     sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
+    sb.append("    acceptsDelegatedStake: ").append(toIndentedString(acceptsDelegatedStake)).append("\n");
     sb.append("    validatorFeeFactor: ").append(toIndentedString(validatorFeeFactor)).append("\n");
     sb.append("    validatorFeeChangeRequest: ").append(toIndentedString(validatorFeeChangeRequest)).append("\n");
     sb.append("    stakeUnitResourceAddress: ").append(toIndentedString(stakeUnitResourceAddress)).append("\n");

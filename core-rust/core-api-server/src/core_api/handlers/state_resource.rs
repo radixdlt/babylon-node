@@ -1,7 +1,7 @@
 use crate::core_api::*;
-use radix_engine::blueprints::resource::*;
 
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
 
 use radix_engine_common::types::EntityType;
@@ -67,7 +67,7 @@ pub(crate) async fn handle_state_resource(
         )
     };
 
-    let owner_role_substate: OwnerRole = read_mandatory_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,
