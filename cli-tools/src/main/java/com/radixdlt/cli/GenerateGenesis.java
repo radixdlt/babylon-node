@@ -110,6 +110,8 @@ public final class GenerateGenesis {
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
       Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
 
+  private static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
+
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
@@ -246,7 +248,9 @@ public final class GenerateGenesis {
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
-    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
+    var consensusConfig = PRODUCTION_NETWORKS.contains(network)
+      ? GenesisConsensusManagerConfig.Builder.productionDefaults()
+      : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
 
     final var mustUseProductionEmissions =
         NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);

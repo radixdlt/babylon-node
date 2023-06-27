@@ -161,6 +161,14 @@ public record GenesisConsensusManagerConfig(
           .validatorCreationXrdCost(Decimal.of(1000));
     }
 
+    public static Builder testEnvironmentDefaults() {
+      return productionDefaults()
+          .numUnstakeEpochs(1)
+          .numOwnerStakeUnitsUnlockEpochs(1)
+          .numFeeIncreaseDelayEpochs(1)
+          .validatorCreationXrdCost(Decimal.of(1));
+    }
+
     public static Builder testInfiniteEpochs() {
       return Builder.testDefaults().epochExactRoundCount(Long.MAX_VALUE);
     }
