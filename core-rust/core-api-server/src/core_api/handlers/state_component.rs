@@ -40,15 +40,14 @@ pub(crate) async fn handle_state_component(
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_substate: ComponentRoyaltySubstate =
-        read_mandatory_substate(
-            database.deref(),
-            component_address.as_node_id(),
-            ROYALTY_BASE_PARTITION
-                .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                .unwrap(),
-            &RoyaltyField::RoyaltyAccumulator.into(),
-        )?;
+    let component_royalty_substate: ComponentRoyaltySubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        ROYALTY_BASE_PARTITION
+            .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+            .unwrap(),
+        &RoyaltyField::RoyaltyAccumulator.into(),
+    )?;
 
     let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),

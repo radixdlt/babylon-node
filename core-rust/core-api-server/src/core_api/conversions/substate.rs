@@ -52,23 +52,12 @@ pub fn to_api_substate(
         TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(
             substate,
         )) => to_api_access_rule_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentRoyalty(
-                component_royalty_accumulator_substate,
-            ),
-        ) => to_api_component_royalty_substate(
-            context,
+        TypedSubstateValue::RoyaltyModule(TypedRoyaltyModuleSubstateValue::ComponentRoyalty(
             component_royalty_accumulator_substate,
-        )?,
+        )) => to_api_component_royalty_substate(context, component_royalty_accumulator_substate)?,
         TypedSubstateValue::RoyaltyModule(
-            TypedRoyaltyModuleSubstateValue::ComponentMethodRoyalty(
-                substate,
-            ),
-        ) => to_api_component_method_royalty_substate(
-            context,
-            typed_substate_key,
-            substate,
-        )?,
+            TypedRoyaltyModuleSubstateValue::ComponentMethodRoyalty(substate),
+        ) => to_api_component_method_royalty_substate(context, typed_substate_key, substate)?,
         TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::MetadataEntry(
             metadata_value_substate,
         )) => to_api_metadata_value_substate(context, substate_key, metadata_value_substate)?,
@@ -120,16 +109,10 @@ pub fn to_api_substate(
         )) => to_api_fungible_vault_frozen_status_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
             TypedNonFungibleVaultFieldValue::Balance(substate),
-        )) => to_api_non_fungible_vault_balance_substate(
-            context,
-            substate,
-        )?,
+        )) => to_api_non_fungible_vault_balance_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
             TypedNonFungibleVaultFieldValue::VaultFrozenFlag(substate),
-        )) => to_api_non_fungible_vault_frozen_status_substate(
-            context,
-            substate,
-        )?,
+        )) => to_api_non_fungible_vault_frozen_status_substate(context, substate)?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(entry),
         ) => to_api_non_fungible_vault_contents_entry_substate(context, entry)?,
@@ -582,7 +565,7 @@ pub fn to_api_type_info_substate(
             outer_object: match blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => {
                     Some(to_api_global_address(context, outer_object)?)
-                },
+                }
                 ObjectBlueprintInfo::Outer => None,
             },
             instance_schema: instance_schema
@@ -601,25 +584,15 @@ pub fn to_api_type_info_substate(
                 )?),
             }
         }
-        TypeInfoSubstate::GlobalAddressReservation(global_address) => {
-            models::TypeInfoDetails::GlobalAddressReservationTypeInfoDetails {
-                global_address: to_api_global_address(context, global_address)?,
-            }
+        TypeInfoSubstate::GlobalAddressReservation(_) => {
+            return Err(MappingError::UnexpectedPersistedData {
+                message: "GlobalAddressReservation was persisted".to_string(),
+            })
         }
-        TypeInfoSubstate::GlobalAddressPhantom(global_address_phantom) => {
-            let GlobalAddressPhantom {
-                blueprint_id:
-                    BlueprintId {
-                        package_address,
-                        blueprint_name,
-                    },
-            } = global_address_phantom;
-            models::TypeInfoDetails::GlobalAddressPhantomTypeInfoDetails {
-                global_address_phantom: Box::new(models::GlobalAddressPhantom {
-                    package_address: to_api_package_address(context, package_address)?,
-                    blueprint_name: blueprint_name.to_string(),
-                }),
-            }
+        TypeInfoSubstate::GlobalAddressPhantom(_) => {
+            return Err(MappingError::UnexpectedPersistedData {
+                message: "GlobalAddressPhantom was persisted".to_string(),
+            })
         }
     };
 
@@ -903,17 +876,18 @@ pub fn to_api_royalty_config(royalty_config: &ComponentRoyaltyConfig) -> models:
     };
     models::RoyaltyConfig {
         is_enabled,
-        method_rules: rules
-            .map(|rules| {
-                rules
-                    .iter()
-                    .map(|(method_name, (royalty_amount, is_locked))| models::MethodRoyalty {
+        method_rules: rules.map(|rules| {
+            rules
+                .iter()
+                .map(
+                    |(method_name, (royalty_amount, is_locked))| models::MethodRoyalty {
                         method_name: method_name.to_owned(),
                         is_locked: *is_locked,
                         royalty_amount: to_api_royalty_amount(royalty_amount).map(Box::new),
-                    })
-                    .collect()
-            }),
+                    },
+                )
+                .collect()
+        }),
     }
 }
 
@@ -936,7 +910,10 @@ pub fn to_api_component_royalty_substate(
     substate: &ComponentRoyaltySubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ComponentRoyaltySubstate { enabled, royalty_vault } = substate;
+    let ComponentRoyaltySubstate {
+        enabled,
+        royalty_vault,
+    } = substate;
     Ok(models::Substate::RoyaltyModuleFieldStateSubstate {
         is_enabled: *enabled,
         vault_entity: Box::new(to_api_entity_reference(
@@ -1094,16 +1071,22 @@ pub fn to_api_auth_config(
                     ))
                 })
                 .collect::<Result<_, _>>()?;
-            (models::FunctionAuthType::FunctionAccessRules, Some(access_rules))
-        },
+            (
+                models::FunctionAuthType::FunctionAccessRules,
+                Some(access_rules),
+            )
+        }
         FunctionAuth::RootOnly => (models::FunctionAuthType::RootOnly, None),
     };
     let (method_auth_type, method_roles) = match method_auth {
         MethodAuthTemplate::AllowAll => (models::MethodAuthType::AllowAll, None),
         MethodAuthTemplate::StaticRoles(roles) => {
             let static_roles = to_api_static_roles(context, roles)?;
-            (models::MethodAuthType::StaticRoles, Some(Box::new(static_roles)))
-        },
+            (
+                models::MethodAuthType::StaticRoles,
+                Some(Box::new(static_roles)),
+            )
+        }
     };
     Ok(models::AuthConfig {
         function_auth_type,
@@ -1137,7 +1120,7 @@ pub fn to_api_static_roles(
                 })
                 .collect();
             (models::RoleSpecification::Normal, Some(roles))
-        },
+        }
         RoleSpecification::UseOuter => (models::RoleSpecification::UseOuter, None),
     };
     let method_accessibility_map = methods
@@ -1161,8 +1144,10 @@ pub fn to_api_method_accessibility(
     permission: &MethodAccessibility,
 ) -> Result<models::MethodAccessibility, MappingError> {
     Ok(match permission {
-        MethodAccessibility::Public => models::MethodAccessibility::PublicMethodAccessibility { },
-        MethodAccessibility::OuterObjectOnly => models::MethodAccessibility::OuterObjectOnlyMethodAccessibility { },
+        MethodAccessibility::Public => models::MethodAccessibility::PublicMethodAccessibility {},
+        MethodAccessibility::OuterObjectOnly => {
+            models::MethodAccessibility::OuterObjectOnlyMethodAccessibility {}
+        }
         MethodAccessibility::RoleProtected(role_list) => {
             models::MethodAccessibility::RoleProtectedMethodAccessibility {
                 allowed_roles: role_list
@@ -1524,7 +1509,7 @@ pub fn to_api_package_royalty_accumulator_substate(
         vault_entity: Box::new(to_api_entity_reference(
             context,
             royalty_vault.0.as_node_id(),
-        )?)
+        )?),
     })
 }
 
@@ -1610,10 +1595,14 @@ pub fn to_api_validator_protocol_update_readiness_signal_substate(
     _context: &MappingContext,
     substate: &ValidatorProtocolUpdateReadinessSignalSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let ValidatorProtocolUpdateReadinessSignalSubstate { protocol_version_name } = substate;
-    Ok(models::Substate::ValidatorFieldProtocolUpdateReadinessSignalSubstate {
-        protocol_version_name: protocol_version_name.as_ref().map(|name| name.to_string()),
-    })
+    let ValidatorProtocolUpdateReadinessSignalSubstate {
+        protocol_version_name,
+    } = substate;
+    Ok(
+        models::Substate::ValidatorFieldProtocolUpdateReadinessSignalSubstate {
+            protocol_version_name: protocol_version_name.as_ref().map(|name| name.to_string()),
+        },
+    )
 }
 
 pub fn to_api_consensus_manager_state_substate(
@@ -1632,8 +1621,12 @@ pub fn to_api_consensus_manager_state_substate(
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
         is_started: *started,
-        effective_epoch_start: Box::new(to_api_instant_from_safe_timestamp(*effective_epoch_start_milli)?),
-        actual_epoch_start: Box::new(to_api_instant_from_safe_timestamp(*actual_epoch_start_milli)?),
+        effective_epoch_start: Box::new(to_api_instant_from_safe_timestamp(
+            *effective_epoch_start_milli,
+        )?),
+        actual_epoch_start: Box::new(to_api_instant_from_safe_timestamp(
+            *actual_epoch_start_milli,
+        )?),
         current_leader: current_leader
             .as_ref()
             .map(|validator_index| to_api_active_validator_index(*validator_index))
@@ -1739,14 +1732,12 @@ pub fn to_api_fungible_vault_frozen_status_substate(
     substate: &VaultFrozenFlag,
 ) -> Result<models::Substate, MappingError> {
     let VaultFrozenFlag { frozen } = substate;
-    Ok(models::Substate::FungibleVaultFrozenStatusSubstate {
-        frozen_status: Box::new(to_api_frozen_status(frozen))
+    Ok(models::Substate::FungibleVaultFieldFrozenStatusSubstate {
+        frozen_status: Box::new(to_api_frozen_status(frozen)),
     })
 }
 
-pub fn to_api_frozen_status(
-    vault_freeze_flags: &VaultFreezeFlags
-) -> models::FrozenStatus {
+pub fn to_api_frozen_status(vault_freeze_flags: &VaultFreezeFlags) -> models::FrozenStatus {
     let is_withdraw_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::WITHDRAW);
     let is_deposit_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::DEPOSIT);
     let is_burn_frozen = vault_freeze_flags.intersects(VaultFreezeFlags::BURN);
@@ -1771,8 +1762,8 @@ pub fn to_api_non_fungible_vault_frozen_status_substate(
     substate: &VaultFrozenFlag,
 ) -> Result<models::Substate, MappingError> {
     let VaultFrozenFlag { frozen } = substate;
-    Ok(models::Substate::FungibleVaultFrozenStatusSubstate {
-        frozen_status: Box::new(to_api_frozen_status(frozen))
+    Ok(models::Substate::FungibleVaultFieldFrozenStatusSubstate {
+        frozen_status: Box::new(to_api_frozen_status(frozen)),
     })
 }
 

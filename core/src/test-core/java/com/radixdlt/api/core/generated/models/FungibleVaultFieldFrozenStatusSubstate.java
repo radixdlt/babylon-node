@@ -43,8 +43,8 @@ import com.radixdlt.api.core.generated.models.FrozenStatus;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
-import com.radixdlt.api.core.generated.models.FungibleVaultFrozenStatusSubstate;
-import com.radixdlt.api.core.generated.models.FungibleVaultFrozenStatusSubstateAllOf;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstateAllOf;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
@@ -55,7 +55,7 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMut
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleVaultFrozenStatusSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.PackageAuthTemplateEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
@@ -81,10 +81,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * NonFungibleVaultFrozenStatusSubstate
+ * FungibleVaultFieldFrozenStatusSubstate
  */
 @JsonPropertyOrder({
-  NonFungibleVaultFrozenStatusSubstate.JSON_PROPERTY_FROZEN_STATUS
+  FungibleVaultFieldFrozenStatusSubstate.JSON_PROPERTY_FROZEN_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -110,7 +110,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldDivisibilitySubstate.class, name = "FungibleResourceManagerFieldDivisibility"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldTotalSupplySubstate.class, name = "FungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = FungibleVaultFieldBalanceSubstate.class, name = "FungibleVaultFieldBalance"),
-  @JsonSubTypes.Type(value = FungibleVaultFrozenStatusSubstate.class, name = "FungibleVaultFrozenStatus"),
+  @JsonSubTypes.Type(value = FungibleVaultFieldFrozenStatusSubstate.class, name = "FungibleVaultFieldFrozenStatus"),
   @JsonSubTypes.Type(value = GenericKeyValueStoreEntrySubstate.class, name = "GenericKeyValueStoreEntry"),
   @JsonSubTypes.Type(value = GenericScryptoComponentFieldStateSubstate.class, name = "GenericScryptoComponentFieldState"),
   @JsonSubTypes.Type(value = MetadataModuleEntrySubstate.class, name = "MetadataModuleEntry"),
@@ -121,7 +121,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldTotalSupplySubstate.class, name = "NonFungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = NonFungibleVaultContentsIndexEntrySubstate.class, name = "NonFungibleVaultContentsIndexEntry"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
-  @JsonSubTypes.Type(value = NonFungibleVaultFrozenStatusSubstate.class, name = "NonFungibleVaultFrozenStatus"),
+  @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatus"),
   @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldState"),
   @JsonSubTypes.Type(value = PackageAuthTemplateEntrySubstate.class, name = "PackageAuthTemplateEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
@@ -140,14 +140,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class NonFungibleVaultFrozenStatusSubstate extends Substate {
+public class FungibleVaultFieldFrozenStatusSubstate extends Substate {
   public static final String JSON_PROPERTY_FROZEN_STATUS = "frozen_status";
   private FrozenStatus frozenStatus;
 
-  public NonFungibleVaultFrozenStatusSubstate() { 
+  public FungibleVaultFieldFrozenStatusSubstate() { 
   }
 
-  public NonFungibleVaultFrozenStatusSubstate frozenStatus(FrozenStatus frozenStatus) {
+  public FungibleVaultFieldFrozenStatusSubstate frozenStatus(FrozenStatus frozenStatus) {
     this.frozenStatus = frozenStatus;
     return this;
   }
@@ -174,7 +174,7 @@ public class NonFungibleVaultFrozenStatusSubstate extends Substate {
 
 
   /**
-   * Return true if this NonFungibleVaultFrozenStatusSubstate object is equal to o.
+   * Return true if this FungibleVaultFieldFrozenStatusSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -184,8 +184,8 @@ public class NonFungibleVaultFrozenStatusSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NonFungibleVaultFrozenStatusSubstate nonFungibleVaultFrozenStatusSubstate = (NonFungibleVaultFrozenStatusSubstate) o;
-    return Objects.equals(this.frozenStatus, nonFungibleVaultFrozenStatusSubstate.frozenStatus) &&
+    FungibleVaultFieldFrozenStatusSubstate fungibleVaultFieldFrozenStatusSubstate = (FungibleVaultFieldFrozenStatusSubstate) o;
+    return Objects.equals(this.frozenStatus, fungibleVaultFieldFrozenStatusSubstate.frozenStatus) &&
         super.equals(o);
   }
 
@@ -197,7 +197,7 @@ public class NonFungibleVaultFrozenStatusSubstate extends Substate {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NonFungibleVaultFrozenStatusSubstate {\n");
+    sb.append("class FungibleVaultFieldFrozenStatusSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    frozenStatus: ").append(toIndentedString(frozenStatus)).append("\n");
     sb.append("}");
@@ -235,7 +235,7 @@ static {
   mappings.put("FungibleResourceManagerFieldDivisibility", FungibleResourceManagerFieldDivisibilitySubstate.class);
   mappings.put("FungibleResourceManagerFieldTotalSupply", FungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("FungibleVaultFieldBalance", FungibleVaultFieldBalanceSubstate.class);
-  mappings.put("FungibleVaultFrozenStatus", FungibleVaultFrozenStatusSubstate.class);
+  mappings.put("FungibleVaultFieldFrozenStatus", FungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("GenericKeyValueStoreEntry", GenericKeyValueStoreEntrySubstate.class);
   mappings.put("GenericScryptoComponentFieldState", GenericScryptoComponentFieldStateSubstate.class);
   mappings.put("MetadataModuleEntry", MetadataModuleEntrySubstate.class);
@@ -246,7 +246,7 @@ static {
   mappings.put("NonFungibleResourceManagerFieldTotalSupply", NonFungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("NonFungibleVaultContentsIndexEntry", NonFungibleVaultContentsIndexEntrySubstate.class);
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
-  mappings.put("NonFungibleVaultFrozenStatus", NonFungibleVaultFrozenStatusSubstate.class);
+  mappings.put("NonFungibleVaultFieldFrozenStatus", NonFungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("OneResourcePoolFieldState", OneResourcePoolFieldStateSubstate.class);
   mappings.put("PackageAuthTemplateEntry", PackageAuthTemplateEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
@@ -263,8 +263,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("NonFungibleVaultFrozenStatusSubstate", NonFungibleVaultFrozenStatusSubstate.class);
-  JSON.registerDiscriminator(NonFungibleVaultFrozenStatusSubstate.class, "substate_type", mappings);
+  mappings.put("FungibleVaultFieldFrozenStatusSubstate", FungibleVaultFieldFrozenStatusSubstate.class);
+  JSON.registerDiscriminator(FungibleVaultFieldFrozenStatusSubstate.class, "substate_type", mappings);
 }
 }
 

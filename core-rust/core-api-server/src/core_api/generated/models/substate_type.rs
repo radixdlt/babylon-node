@@ -56,12 +56,12 @@ pub enum SubstateType {
     NonFungibleResourceManagerDataEntry,
     #[serde(rename = "FungibleVaultFieldBalance")]
     FungibleVaultFieldBalance,
-    #[serde(rename = "FungibleVaultFrozenStatus")]
-    FungibleVaultFrozenStatus,
+    #[serde(rename = "FungibleVaultFieldFrozenStatus")]
+    FungibleVaultFieldFrozenStatus,
     #[serde(rename = "NonFungibleVaultFieldBalance")]
     NonFungibleVaultFieldBalance,
-    #[serde(rename = "NonFungibleVaultFrozenStatus")]
-    NonFungibleVaultFrozenStatus,
+    #[serde(rename = "NonFungibleVaultFieldFrozenStatus")]
+    NonFungibleVaultFieldFrozenStatus,
     #[serde(rename = "NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntry,
     #[serde(rename = "ConsensusManager")]
@@ -136,9 +136,9 @@ impl ToString for SubstateType {
             Self::NonFungibleResourceManagerFieldMutableFields => String::from("NonFungibleResourceManagerFieldMutableFields"),
             Self::NonFungibleResourceManagerDataEntry => String::from("NonFungibleResourceManagerDataEntry"),
             Self::FungibleVaultFieldBalance => String::from("FungibleVaultFieldBalance"),
-            Self::FungibleVaultFrozenStatus => String::from("FungibleVaultFrozenStatus"),
+            Self::FungibleVaultFieldFrozenStatus => String::from("FungibleVaultFieldFrozenStatus"),
             Self::NonFungibleVaultFieldBalance => String::from("NonFungibleVaultFieldBalance"),
-            Self::NonFungibleVaultFrozenStatus => String::from("NonFungibleVaultFrozenStatus"),
+            Self::NonFungibleVaultFieldFrozenStatus => String::from("NonFungibleVaultFieldFrozenStatus"),
             Self::NonFungibleVaultContentsIndexEntry => String::from("NonFungibleVaultContentsIndexEntry"),
             Self::ConsensusManager => String::from("ConsensusManager"),
             Self::ConsensusManagerFieldConfig => String::from("ConsensusManagerFieldConfig"),

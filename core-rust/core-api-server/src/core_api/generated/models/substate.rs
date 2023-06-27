@@ -151,8 +151,8 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
-    #[serde(rename="FungibleVaultFrozenStatus")]
-    FungibleVaultFrozenStatusSubstate {
+    #[serde(rename="FungibleVaultFieldFrozenStatus")]
+    FungibleVaultFieldFrozenStatusSubstate {
         #[serde(rename = "frozen_status")]
         frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
     },
@@ -226,8 +226,8 @@ pub enum Substate {
         #[serde(rename = "amount")]
         amount: String,
     },
-    #[serde(rename="NonFungibleVaultFrozenStatus")]
-    NonFungibleVaultFrozenStatusSubstate {
+    #[serde(rename="NonFungibleVaultFieldFrozenStatus")]
+    NonFungibleVaultFieldFrozenStatusSubstate {
         #[serde(rename = "frozen_status")]
         frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
     },

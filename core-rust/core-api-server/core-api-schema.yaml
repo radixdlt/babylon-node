@@ -1703,16 +1703,6 @@ components:
     GlobalAddress:
       type: string
       description: The Bech32m-encoded human readable version of any global address
-    GlobalAddressPhantom:
-      type: object
-      required:
-        - package_address
-        - blueprint_name
-      properties:
-        package_address:
-          $ref: '#/components/schemas/PackageAddress'
-        blueprint_name:
-          type: string
     Instant:
       type: object
       required:
@@ -2981,9 +2971,9 @@ components:
           NonFungibleResourceManagerFieldMutableFields: '#/components/schemas/NonFungibleResourceManagerFieldMutableFieldsSubstate'
           NonFungibleResourceManagerDataEntry: '#/components/schemas/NonFungibleResourceManagerDataEntrySubstate'
           FungibleVaultFieldBalance: '#/components/schemas/FungibleVaultFieldBalanceSubstate'
-          FungibleVaultFrozenStatus: '#/components/schemas/FungibleVaultFrozenStatusSubstate'
+          FungibleVaultFieldFrozenStatus: '#/components/schemas/FungibleVaultFieldFrozenStatusSubstate'
           NonFungibleVaultFieldBalance: '#/components/schemas/NonFungibleVaultFieldBalanceSubstate'
-          NonFungibleVaultFrozenStatus: '#/components/schemas/NonFungibleVaultFrozenStatusSubstate'
+          NonFungibleVaultFieldFrozenStatus: '#/components/schemas/NonFungibleVaultFieldFrozenStatusSubstate'
           NonFungibleVaultContentsIndexEntry: '#/components/schemas/NonFungibleVaultContentsIndexEntrySubstate'
           ConsensusManagerFieldConfig: '#/components/schemas/ConsensusManagerFieldConfigSubstate'
           ConsensusManagerFieldState: '#/components/schemas/ConsensusManagerFieldStateSubstate'
@@ -3031,9 +3021,9 @@ components:
         - NonFungibleResourceManagerFieldMutableFields
         - NonFungibleResourceManagerDataEntry
         - FungibleVaultFieldBalance
-        - FungibleVaultFrozenStatus
+        - FungibleVaultFieldFrozenStatus
         - NonFungibleVaultFieldBalance
-        - NonFungibleVaultFrozenStatus
+        - NonFungibleVaultFieldFrozenStatus
         - NonFungibleVaultContentsIndexEntry
         - ConsensusManager
         - ConsensusManagerFieldConfig
@@ -3072,8 +3062,6 @@ components:
       enum:
         - Object
         - KeyValueStore
-        - GlobalAddressReservation
-        - GlobalAddressPhantom
     TypeInfoDetails:
       type: object
       required:
@@ -3087,8 +3075,6 @@ components:
           # NOTE: These need to match TypeInfoType options above
           Object: '#/components/schemas/ObjectTypeInfoDetails'
           KeyValueStore: '#/components/schemas/KeyValueStoreTypeInfoDetails'
-          GlobalAddressReservation: '#/components/schemas/GlobalAddressReservationTypeInfoDetails'
-          GlobalAddressPhantom: '#/components/schemas/GlobalAddressPhantomTypeInfoDetails'
     ObjectTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -3126,26 +3112,6 @@ components:
             key_value_store_info:
               description: The SBOR schema of the KeyValueStore
               $ref: '#/components/schemas/KeyValueStoreInfo'
-    GlobalAddressReservationTypeInfoDetails:
-      allOf:
-        - $ref: '#/components/schemas/TypeInfoDetails'
-        - type: object
-          description: The owned allocated global address
-          required:
-            - global_address
-          properties:
-            global_address:
-              $ref: '#/components/schemas/GlobalAddress'
-    GlobalAddressPhantomTypeInfoDetails:
-      allOf:
-        - $ref: '#/components/schemas/TypeInfoDetails'
-        - type: object
-          description: A phantom global object which makes the allocated global address usable
-          required:
-            - global_address_phantom
-          properties:
-            global_address_phantom:
-              $ref: '#/components/schemas/GlobalAddressPhantom'
     KeyValueStoreInfo:
       type: object
       required:
@@ -3454,7 +3420,7 @@ components:
               description: |
                 The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    FungibleVaultFrozenStatusSubstate:
+    FungibleVaultFieldFrozenStatusSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3488,7 +3454,7 @@ components:
               description: |
                 The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    NonFungibleVaultFrozenStatusSubstate:
+    NonFungibleVaultFieldFrozenStatusSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object

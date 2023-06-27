@@ -72,11 +72,11 @@ public enum SubstateType {
   
   FUNGIBLEVAULTFIELDBALANCE("FungibleVaultFieldBalance"),
   
-  FUNGIBLEVAULTFROZENSTATUS("FungibleVaultFrozenStatus"),
+  FUNGIBLEVAULTFIELDFROZENSTATUS("FungibleVaultFieldFrozenStatus"),
   
   NONFUNGIBLEVAULTFIELDBALANCE("NonFungibleVaultFieldBalance"),
   
-  NONFUNGIBLEVAULTFROZENSTATUS("NonFungibleVaultFrozenStatus"),
+  NONFUNGIBLEVAULTFIELDFROZENSTATUS("NonFungibleVaultFieldFrozenStatus"),
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   

@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NonFungibleVaultFrozenStatusSubstate {
+pub struct NonFungibleVaultFieldFrozenStatusSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "frozen_status")]
     pub frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
 }
 
-impl NonFungibleVaultFrozenStatusSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, frozen_status: crate::core_api::generated::models::FrozenStatus) -> NonFungibleVaultFrozenStatusSubstate {
-        NonFungibleVaultFrozenStatusSubstate {
+impl NonFungibleVaultFieldFrozenStatusSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, frozen_status: crate::core_api::generated::models::FrozenStatus) -> NonFungibleVaultFieldFrozenStatusSubstate {
+        NonFungibleVaultFieldFrozenStatusSubstate {
             substate_type,
             frozen_status: Box::new(frozen_status),
         }

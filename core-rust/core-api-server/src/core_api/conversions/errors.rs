@@ -21,6 +21,9 @@ pub enum MappingError {
         bytes: Vec<u8>,
         message: String,
     },
+    UnexpectedPersistedData {
+        message: String,
+    },
     InvalidMetadataKey {
         message: String,
     },

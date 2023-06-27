@@ -29,20 +29,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * FungibleVaultFrozenStatusSubstateAllOf
+ * FungibleVaultFieldFrozenStatusSubstateAllOf
  */
 @JsonPropertyOrder({
-  FungibleVaultFrozenStatusSubstateAllOf.JSON_PROPERTY_FROZEN_STATUS
+  FungibleVaultFieldFrozenStatusSubstateAllOf.JSON_PROPERTY_FROZEN_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class FungibleVaultFrozenStatusSubstateAllOf {
+public class FungibleVaultFieldFrozenStatusSubstateAllOf {
   public static final String JSON_PROPERTY_FROZEN_STATUS = "frozen_status";
   private FrozenStatus frozenStatus;
 
-  public FungibleVaultFrozenStatusSubstateAllOf() { 
+  public FungibleVaultFieldFrozenStatusSubstateAllOf() { 
   }
 
-  public FungibleVaultFrozenStatusSubstateAllOf frozenStatus(FrozenStatus frozenStatus) {
+  public FungibleVaultFieldFrozenStatusSubstateAllOf frozenStatus(FrozenStatus frozenStatus) {
     this.frozenStatus = frozenStatus;
     return this;
   }
@@ -69,7 +69,7 @@ public class FungibleVaultFrozenStatusSubstateAllOf {
 
 
   /**
-   * Return true if this FungibleVaultFrozenStatusSubstate_allOf object is equal to o.
+   * Return true if this FungibleVaultFieldFrozenStatusSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class FungibleVaultFrozenStatusSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    FungibleVaultFrozenStatusSubstateAllOf fungibleVaultFrozenStatusSubstateAllOf = (FungibleVaultFrozenStatusSubstateAllOf) o;
-    return Objects.equals(this.frozenStatus, fungibleVaultFrozenStatusSubstateAllOf.frozenStatus);
+    FungibleVaultFieldFrozenStatusSubstateAllOf fungibleVaultFieldFrozenStatusSubstateAllOf = (FungibleVaultFieldFrozenStatusSubstateAllOf) o;
+    return Objects.equals(this.frozenStatus, fungibleVaultFieldFrozenStatusSubstateAllOf.frozenStatus);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class FungibleVaultFrozenStatusSubstateAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class FungibleVaultFrozenStatusSubstateAllOf {\n");
+    sb.append("class FungibleVaultFieldFrozenStatusSubstateAllOf {\n");
     sb.append("    frozenStatus: ").append(toIndentedString(frozenStatus)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -127,9 +127,9 @@ pub fn to_api_substate_id(
             SubstateType::RoyaltyModuleFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(
-            _,
-        )) => (
+        TypedSubstateKey::RoyaltyModule(
+            TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(_),
+        ) => (
             SubstateType::RoyaltyMethodRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
@@ -186,7 +186,7 @@ pub fn to_api_substate_id(
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
             FungibleVaultField::VaultFrozenFlag,
         )) => (
-            SubstateType::FungibleVaultFrozenStatus,
+            SubstateType::FungibleVaultFieldFrozenStatus,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
@@ -208,7 +208,7 @@ pub fn to_api_substate_id(
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
             NonFungibleVaultField::VaultFrozenFlag,
         )) => (
-            SubstateType::NonFungibleVaultFrozenStatus,
+            SubstateType::NonFungibleVaultFieldFrozenStatus,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(

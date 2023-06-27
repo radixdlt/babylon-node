@@ -115,10 +115,7 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(
-        context,
-        &receipt.local_execution.fee_summary,
-    )?;
+    let api_fee_summary = to_api_fee_summary(context, &receipt.local_execution.fee_summary)?;
 
     let api_events = receipt
         .on_ledger

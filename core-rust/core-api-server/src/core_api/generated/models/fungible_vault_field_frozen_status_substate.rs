@@ -12,19 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct GlobalAddressReservationTypeInfoDetails {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::TypeInfoType,
-    /// The Bech32m-encoded human readable version of any global address
-    #[serde(rename = "global_address")]
-    pub global_address: String,
+pub struct FungibleVaultFieldFrozenStatusSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "frozen_status")]
+    pub frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
 }
 
-impl GlobalAddressReservationTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, global_address: String) -> GlobalAddressReservationTypeInfoDetails {
-        GlobalAddressReservationTypeInfoDetails {
-            _type,
-            global_address,
+impl FungibleVaultFieldFrozenStatusSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, frozen_status: crate::core_api::generated::models::FrozenStatus) -> FungibleVaultFieldFrozenStatusSubstate {
+        FungibleVaultFieldFrozenStatusSubstate {
+            substate_type,
+            frozen_status: Box::new(frozen_status),
         }
     }
 }

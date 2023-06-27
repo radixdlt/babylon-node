@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct GlobalAddressPhantomTypeInfoDetails {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::TypeInfoType,
-    #[serde(rename = "global_address_phantom")]
-    pub global_address_phantom: Box<crate::core_api::generated::models::GlobalAddressPhantom>,
+pub struct FungibleVaultFieldFrozenStatusSubstateAllOf {
+    #[serde(rename = "frozen_status")]
+    pub frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
 }
 
-impl GlobalAddressPhantomTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, global_address_phantom: crate::core_api::generated::models::GlobalAddressPhantom) -> GlobalAddressPhantomTypeInfoDetails {
-        GlobalAddressPhantomTypeInfoDetails {
-            _type,
-            global_address_phantom: Box::new(global_address_phantom),
+impl FungibleVaultFieldFrozenStatusSubstateAllOf {
+    pub fn new(frozen_status: crate::core_api::generated::models::FrozenStatus) -> FungibleVaultFieldFrozenStatusSubstateAllOf {
+        FungibleVaultFieldFrozenStatusSubstateAllOf {
+            frozen_status: Box::new(frozen_status),
         }
     }
 }

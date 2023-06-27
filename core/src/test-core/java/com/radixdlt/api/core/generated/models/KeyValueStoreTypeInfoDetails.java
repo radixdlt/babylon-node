@@ -25,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.GlobalAddressPhantomTypeInfoDetails;
-import com.radixdlt.api.core.generated.models.GlobalAddressReservationTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.KeyValueStoreInfo;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetailsAllOf;
@@ -52,8 +50,6 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = GlobalAddressPhantomTypeInfoDetails.class, name = "GlobalAddressPhantom"),
-  @JsonSubTypes.Type(value = GlobalAddressReservationTypeInfoDetails.class, name = "GlobalAddressReservation"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStore"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "Object"),
 })
@@ -136,8 +132,6 @@ public class KeyValueStoreTypeInfoDetails extends TypeInfoDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("GlobalAddressPhantom", GlobalAddressPhantomTypeInfoDetails.class);
-  mappings.put("GlobalAddressReservation", GlobalAddressReservationTypeInfoDetails.class);
   mappings.put("KeyValueStore", KeyValueStoreTypeInfoDetails.class);
   mappings.put("Object", ObjectTypeInfoDetails.class);
   mappings.put("KeyValueStoreTypeInfoDetails", KeyValueStoreTypeInfoDetails.class);
