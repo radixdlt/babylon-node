@@ -239,32 +239,49 @@ pub enum Substate {
         #[serde(rename = "pool_unit_resource_address")]
         pool_unit_resource_address: String,
     },
-    #[serde(rename="PackageAuthTemplateEntry")]
-    PackageAuthTemplateEntrySubstate {
-        #[serde(rename = "name")]
-        name: String,
-        #[serde(rename = "version")]
-        version: String,
-        #[serde(rename = "auth_config", skip_serializing_if = "Option::is_none")]
-        auth_config: Option<Box<crate::core_api::generated::models::AuthConfig>>,
+    #[serde(rename="PackageBlueprintAuthTemplateEntry")]
+    PackageBlueprintAuthTemplateEntrySubstate {
+        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_name")]
+        blueprint_name: String,
+        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_version")]
+        blueprint_version: String,
+        #[serde(rename = "auth_config")]
+        auth_config: Box<crate::core_api::generated::models::AuthConfig>,
+    },
+    #[serde(rename="PackageBlueprintDefinitionEntry")]
+    PackageBlueprintDefinitionEntrySubstate {
+        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_name")]
+        blueprint_name: String,
+        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_version")]
+        blueprint_version: String,
+        #[serde(rename = "definition")]
+        definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
     },
     #[serde(rename="PackageBlueprintDependenciesEntry")]
     PackageBlueprintDependenciesEntrySubstate {
-        #[serde(rename = "name")]
-        name: String,
-        #[serde(rename = "version")]
-        version: String,
-        #[serde(rename = "dependencies", skip_serializing_if = "Option::is_none")]
-        dependencies: Option<Box<crate::core_api::generated::models::BlueprintDependencies>>,
+        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_name")]
+        blueprint_name: String,
+        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_version")]
+        blueprint_version: String,
+        #[serde(rename = "dependencies")]
+        dependencies: Box<crate::core_api::generated::models::BlueprintDependencies>,
     },
-    #[serde(rename="PackageBlueprintEntry")]
-    PackageBlueprintEntrySubstate {
-        #[serde(rename = "name")]
-        name: String,
-        #[serde(rename = "version")]
-        version: String,
-        #[serde(rename = "definition")]
-        definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
+    #[serde(rename="PackageBlueprintRoyaltyEntry")]
+    PackageBlueprintRoyaltyEntrySubstate {
+        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_name")]
+        blueprint_name: String,
+        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+        #[serde(rename = "blueprint_version")]
+        blueprint_version: String,
+        #[serde(rename = "royalty_config")]
+        royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
     },
     #[serde(rename="PackageCodeEntry")]
     PackageCodeEntrySubstate {
@@ -281,15 +298,6 @@ pub enum Substate {
     PackageFieldRoyaltyAccumulatorSubstate {
         #[serde(rename = "vault_entity")]
         vault_entity: Box<crate::core_api::generated::models::EntityReference>,
-    },
-    #[serde(rename="PackageRoyaltyEntry")]
-    PackageRoyaltyEntrySubstate {
-        #[serde(rename = "name")]
-        name: String,
-        #[serde(rename = "version")]
-        version: String,
-        #[serde(rename = "royalty_config", skip_serializing_if = "Option::is_none")]
-        royalty_config: Option<Box<crate::core_api::generated::models::RoyaltyConfig>>,
     },
     #[serde(rename="PackageSchemaEntry")]
     PackageSchemaEntrySubstate {

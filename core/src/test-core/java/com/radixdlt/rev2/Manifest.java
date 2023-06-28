@@ -125,7 +125,7 @@ public class Manifest {
             """
             %s
             CREATE_ACCOUNT_ADVANCED
-                Enum<OwnerRole::Updateable>(
+                Enum<OwnerRole::Updatable>(
                     Enum<AccessRule::AllowAll>()
                 )
             ;
@@ -338,10 +338,10 @@ public class Manifest {
                         Enum<NonFungibleIdType::Integer>()
                         false
                         Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-                        Map<String, Enum>()
+                        Map<String, Tuple>()
                         Map<Enum, Tuple>(
-                            Enum<ResourceMethodAuthKey::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-                            Enum<ResourceMethodAuthKey::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
+                            Enum<ResourceAction::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
+                            Enum<ResourceAction::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
                         );
                     """,
             params.faucetLockFeeLine());

@@ -56,13 +56,13 @@ import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntry
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.PackageAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstateAllOf;
-import com.radixdlt.api.core.generated.models.PackageBlueprintEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -84,8 +84,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageBlueprintDependenciesEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_NAME,
-  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_VERSION,
+  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_BLUEPRINT_NAME,
+  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_BLUEPRINT_VERSION,
   PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_DEPENDENCIES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -125,12 +125,12 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatus"),
   @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldState"),
-  @JsonSubTypes.Type(value = PackageAuthTemplateEntrySubstate.class, name = "PackageAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintAuthTemplateEntrySubstate.class, name = "PackageBlueprintAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
-  @JsonSubTypes.Type(value = PackageBlueprintEntrySubstate.class, name = "PackageBlueprintEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
-  @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
@@ -143,11 +143,11 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageBlueprintDependenciesEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
+  private String blueprintName;
 
-  public static final String JSON_PROPERTY_VERSION = "version";
-  private String version;
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
   private BlueprintDependencies dependencies;
@@ -155,55 +155,55 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
   public PackageBlueprintDependenciesEntrySubstate() { 
   }
 
-  public PackageBlueprintDependenciesEntrySubstate name(String name) {
-    this.name = name;
+  public PackageBlueprintDependenciesEntrySubstate blueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintName
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public String getBlueprintName() {
+    return blueprintName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setBlueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
   }
 
 
-  public PackageBlueprintDependenciesEntrySubstate version(String version) {
-    this.version = version;
+  public PackageBlueprintDependenciesEntrySubstate blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
     return this;
   }
 
    /**
-   * Get version
-   * @return version
+   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VERSION)
+  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getVersion() {
-    return version;
+  public String getBlueprintVersion() {
+    return blueprintVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VERSION)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVersion(String version) {
-    this.version = version;
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -216,10 +216,10 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
    * Get dependencies
    * @return dependencies
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public BlueprintDependencies getDependencies() {
     return dependencies;
@@ -227,7 +227,7 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
 
 
   @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDependencies(BlueprintDependencies dependencies) {
     this.dependencies = dependencies;
   }
@@ -245,15 +245,15 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
       return false;
     }
     PackageBlueprintDependenciesEntrySubstate packageBlueprintDependenciesEntrySubstate = (PackageBlueprintDependenciesEntrySubstate) o;
-    return Objects.equals(this.name, packageBlueprintDependenciesEntrySubstate.name) &&
-        Objects.equals(this.version, packageBlueprintDependenciesEntrySubstate.version) &&
+    return Objects.equals(this.blueprintName, packageBlueprintDependenciesEntrySubstate.blueprintName) &&
+        Objects.equals(this.blueprintVersion, packageBlueprintDependenciesEntrySubstate.blueprintVersion) &&
         Objects.equals(this.dependencies, packageBlueprintDependenciesEntrySubstate.dependencies) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, version, dependencies, super.hashCode());
+    return Objects.hash(blueprintName, blueprintVersion, dependencies, super.hashCode());
   }
 
   @Override
@@ -261,8 +261,8 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintDependenciesEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -312,12 +312,12 @@ static {
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
   mappings.put("NonFungibleVaultFieldFrozenStatus", NonFungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("OneResourcePoolFieldState", OneResourcePoolFieldStateSubstate.class);
-  mappings.put("PackageAuthTemplateEntry", PackageAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintAuthTemplateEntry", PackageBlueprintAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
-  mappings.put("PackageBlueprintEntry", PackageBlueprintEntrySubstate.class);
+  mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
-  mappings.put("PackageRoyaltyEntry", PackageRoyaltyEntrySubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);

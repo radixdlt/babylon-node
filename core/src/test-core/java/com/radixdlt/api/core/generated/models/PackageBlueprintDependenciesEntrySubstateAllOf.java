@@ -32,17 +32,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageBlueprintDependenciesEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_NAME,
-  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_VERSION,
+  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
+  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_VERSION,
   PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_DEPENDENCIES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintDependenciesEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
+  private String blueprintName;
 
-  public static final String JSON_PROPERTY_VERSION = "version";
-  private String version;
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
   private BlueprintDependencies dependencies;
@@ -50,55 +50,55 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
   public PackageBlueprintDependenciesEntrySubstateAllOf() { 
   }
 
-  public PackageBlueprintDependenciesEntrySubstateAllOf name(String name) {
-    this.name = name;
+  public PackageBlueprintDependenciesEntrySubstateAllOf blueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintName
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public String getBlueprintName() {
+    return blueprintName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setBlueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
   }
 
 
-  public PackageBlueprintDependenciesEntrySubstateAllOf version(String version) {
-    this.version = version;
+  public PackageBlueprintDependenciesEntrySubstateAllOf blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
     return this;
   }
 
    /**
-   * Get version
-   * @return version
+   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VERSION)
+  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getVersion() {
-    return version;
+  public String getBlueprintVersion() {
+    return blueprintVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VERSION)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVersion(String version) {
-    this.version = version;
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -111,10 +111,10 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
    * Get dependencies
    * @return dependencies
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public BlueprintDependencies getDependencies() {
     return dependencies;
@@ -122,7 +122,7 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDependencies(BlueprintDependencies dependencies) {
     this.dependencies = dependencies;
   }
@@ -140,22 +140,22 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
       return false;
     }
     PackageBlueprintDependenciesEntrySubstateAllOf packageBlueprintDependenciesEntrySubstateAllOf = (PackageBlueprintDependenciesEntrySubstateAllOf) o;
-    return Objects.equals(this.name, packageBlueprintDependenciesEntrySubstateAllOf.name) &&
-        Objects.equals(this.version, packageBlueprintDependenciesEntrySubstateAllOf.version) &&
+    return Objects.equals(this.blueprintName, packageBlueprintDependenciesEntrySubstateAllOf.blueprintName) &&
+        Objects.equals(this.blueprintVersion, packageBlueprintDependenciesEntrySubstateAllOf.blueprintVersion) &&
         Objects.equals(this.dependencies, packageBlueprintDependenciesEntrySubstateAllOf.dependencies);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, version, dependencies);
+    return Objects.hash(blueprintName, blueprintVersion, dependencies);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintDependenciesEntrySubstateAllOf {\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
     sb.append("}");
     return sb.toString();

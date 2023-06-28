@@ -122,7 +122,7 @@ impl ProcessedTransactionReceipt {
         }
     }
 
-    pub fn expect_commit(&self, description: impl Display) -> &ProcessedCommitResult {
+    pub fn expect_commit(&self, description: &impl Display) -> &ProcessedCommitResult {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => commit,
             ProcessedTransactionReceipt::Reject(reject) => {
@@ -136,7 +136,7 @@ impl ProcessedTransactionReceipt {
 
     pub fn expect_commit_or_reject(
         &self,
-        description: impl Display,
+        description: &impl Display,
     ) -> Result<&ProcessedCommitResult, RejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),

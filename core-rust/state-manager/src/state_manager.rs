@@ -209,10 +209,7 @@ where
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
-    pub fn prepare_genesis(
-        &self,
-        genesis_transaction: SystemTransactionV1,
-    ) -> GenesisPrepareResult {
+    pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> GenesisPrepareResult {
         let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
             .to_raw()
             .expect("Could not encode genesis transaction");
@@ -643,6 +640,11 @@ where
             genesis_opaque_hash,
         };
 
+        info!("Committing system flash");
+        let prepare_result = self.prepare_genesis(GenesisTransaction::Flash);
+        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
+        self.commit_genesis(commit_request);
+
         info!("Committing system bootstrap");
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
@@ -651,7 +653,8 @@ where
             // Leader gets set to None, to be fixed at the first proper round change.
             None,
         );
-        let prepare_result = self.prepare_genesis(transaction);
+        let prepare_result =
+            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         self.commit_genesis(commit_request);
 
@@ -664,14 +667,16 @@ where
             );
             let transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, index);
-            let prepare_result = self.prepare_genesis(transaction);
+            let prepare_result =
+                self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
             let commit_request = genesis_commit_request_factory.create_next(prepare_result);
             self.commit_genesis(commit_request);
         }
 
         info!("Committing genesis wrap-up");
         let transaction = create_genesis_wrap_up_transaction(faucet_supply);
-        let prepare_result = self.prepare_genesis(transaction);
+        let prepare_result =
+            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();
         self.commit_genesis(commit_request);

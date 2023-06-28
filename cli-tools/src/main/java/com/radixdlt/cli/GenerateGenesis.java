@@ -248,9 +248,10 @@ public final class GenerateGenesis {
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
-    var consensusConfig = PRODUCTION_NETWORKS.contains(network)
-      ? GenesisConsensusManagerConfig.Builder.productionDefaults()
-      : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
+    var consensusConfig =
+        PRODUCTION_NETWORKS.contains(network)
+            ? GenesisConsensusManagerConfig.Builder.productionDefaults()
+            : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
 
     final var mustUseProductionEmissions =
         NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);

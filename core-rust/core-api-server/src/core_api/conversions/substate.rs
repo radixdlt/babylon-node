@@ -947,13 +947,13 @@ pub fn to_api_package_blueprint_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<BlueprintDefinition>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(BlueprintVersionKey{ blueprint, version })) = typed_key else {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(BlueprintVersionKey { blueprint, version })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Blueprint Key".to_string() });
     };
     let definition = substate.get_definitely_present_value()?;
-    Ok(models::Substate::PackageBlueprintEntrySubstate {
-        name: blueprint.to_string(),
-        version: to_api_blueprint_version(context, version)?,
+    Ok(models::Substate::PackageBlueprintDefinitionEntrySubstate {
+        blueprint_name: blueprint.to_string(),
+        blueprint_version: to_api_blueprint_version(context, version)?,
         definition: Box::new(to_api_blueprint_definition(context, definition)?),
     })
 }
@@ -963,23 +963,17 @@ pub fn to_api_package_blueprint_dependencies_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<BlueprintDependencies>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(BlueprintVersionKey{ blueprint, version })) = typed_key else {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(BlueprintVersionKey { blueprint, version })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Blueprint Key".to_string() });
     };
     Ok(
         models::Substate::PackageBlueprintDependenciesEntrySubstate {
-            name: blueprint.to_string(),
-            version: to_api_blueprint_version(context, version)?,
-            dependencies: substate
-                .value
-                .as_ref()
-                .map(|dependencies| -> Result<_, MappingError> {
-                    Ok(Box::new(to_api_blueprint_dependencies(
-                        context,
-                        dependencies,
-                    )?))
-                })
-                .transpose()?,
+            blueprint_name: blueprint.to_string(),
+            blueprint_version: to_api_blueprint_version(context, version)?,
+            dependencies: Box::new(to_api_blueprint_dependencies(
+                context,
+                substate.get_definitely_present_value()?,
+            )?),
         },
     )
 }
@@ -1007,16 +1001,12 @@ pub fn to_api_package_royalty_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(BlueprintVersionKey{ blueprint, version})) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Royalty Key".to_string() });
     };
-    Ok(models::Substate::PackageRoyaltyEntrySubstate {
-        name: blueprint.to_string(),
-        version: to_api_blueprint_version(context, version)?,
-        royalty_config: substate
-            .value
-            .as_ref()
-            .map(|config| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_royalty_config(config)))
-            })
-            .transpose()?,
+    Ok(models::Substate::PackageBlueprintRoyaltyEntrySubstate {
+        blueprint_name: blueprint.to_string(),
+        blueprint_version: to_api_blueprint_version(context, version)?,
+        royalty_config: Box::new(to_api_royalty_config(
+            substate.get_definitely_present_value()?,
+        )),
     })
 }
 
@@ -1028,17 +1018,16 @@ pub fn to_api_package_auth_template_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(BlueprintVersionKey{ blueprint, version})) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Code Key".to_string() });
     };
-    Ok(models::Substate::PackageAuthTemplateEntrySubstate {
-        name: blueprint.to_string(),
-        version: to_api_blueprint_version(context, version)?,
-        auth_config: substate
-            .value
-            .as_ref()
-            .map(|config| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_auth_config(context, config)?))
-            })
-            .transpose()?,
-    })
+    Ok(
+        models::Substate::PackageBlueprintAuthTemplateEntrySubstate {
+            blueprint_name: blueprint.to_string(),
+            blueprint_version: to_api_blueprint_version(context, version)?,
+            auth_config: Box::new(to_api_auth_config(
+                context,
+                substate.get_definitely_present_value()?,
+            )?),
+        },
+    )
 }
 
 pub fn to_api_auth_config(

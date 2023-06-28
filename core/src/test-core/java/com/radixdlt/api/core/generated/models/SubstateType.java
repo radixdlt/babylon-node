@@ -48,13 +48,13 @@ public enum SubstateType {
   
   PACKAGESCHEMAENTRY("PackageSchemaEntry"),
   
-  PACKAGEBLUEPRINTENTRY("PackageBlueprintEntry"),
+  PACKAGEBLUEPRINTDEFINITIONENTRY("PackageBlueprintDefinitionEntry"),
   
   PACKAGEBLUEPRINTDEPENDENCIESENTRY("PackageBlueprintDependenciesEntry"),
   
-  PACKAGEROYALTYENTRY("PackageRoyaltyEntry"),
+  PACKAGEBLUEPRINTROYALTYENTRY("PackageBlueprintRoyaltyEntry"),
   
-  PACKAGEAUTHTEMPLATEENTRY("PackageAuthTemplateEntry"),
+  PACKAGEBLUEPRINTAUTHTEMPLATEENTRY("PackageBlueprintAuthTemplateEntry"),
   
   PACKAGEFIELDFUNCTIONACCESSRULES("PackageFieldFunctionAccessRules"),
   

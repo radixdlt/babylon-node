@@ -2,7 +2,7 @@ use parking_lot::RwLock;
 use radix_engine::errors::RejectionError;
 use std::ops::Deref;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use transaction::errors::TransactionValidationError;
 
 use radix_engine::transaction::{AbortReason, TransactionReceipt, TransactionResult};
@@ -12,7 +12,7 @@ use radix_engine_common::network::NetworkDefinition;
 use crate::query::StateManagerSubstateQueries;
 use crate::staging::ReadableStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
-use crate::transaction::{ConfigType, ExecutionConfigurator, TransactionLogic};
+use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
     AtState, PendingTransactionRecord, PendingTransactionResultCache, RejectionReason,
     TransactionAttempt,
@@ -158,8 +158,6 @@ impl From<PrepareError> for LedgerTransactionValidationError {
     }
 }
 
-const UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
-
 /// A validator for `NotarizedTransaction`, deciding whether they would be rejected or not-rejected
 /// (i.e. "committable") at a specific state of the `store`.
 pub struct CommittabilityValidator<S> {
@@ -270,14 +268,7 @@ where
     ) -> Result<TransactionReceipt, RejectionReason> {
         let transaction_logic = self
             .execution_configurator
-            .wrap(transaction.get_executable(), ConfigType::Pending)
-            .warn_after(
-                UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-                format!(
-                    "pending intent hash {:?}, up to fee loan",
-                    transaction.prepared.intent_hash()
-                ),
-            );
+            .wrap_pending_transaction(transaction);
         Ok(transaction_logic.execute_on(root_store))
     }
 }

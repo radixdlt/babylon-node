@@ -326,7 +326,7 @@ pub fn to_api_substate_id(
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(_)) => (
-            SubstateType::PackageBlueprintEntry,
+            SubstateType::PackageBlueprintDefinitionEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(
@@ -344,11 +344,11 @@ pub fn to_api_substate_id(
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(_)) => (
-            SubstateType::PackageRoyaltyEntry,
+            SubstateType::PackageBlueprintRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(_)) => (
-            SubstateType::PackageAuthTemplateEntry,
+            SubstateType::PackageBlueprintAuthTemplateEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerField(_)) => (

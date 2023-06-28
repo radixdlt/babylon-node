@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.BlueprintDefinition;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -55,15 +56,14 @@ import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntry
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.PackageAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageBlueprintEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -81,12 +81,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * PackageRoyaltyEntrySubstate
+ * PackageBlueprintDefinitionEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageRoyaltyEntrySubstate.JSON_PROPERTY_NAME,
-  PackageRoyaltyEntrySubstate.JSON_PROPERTY_VERSION,
-  PackageRoyaltyEntrySubstate.JSON_PROPERTY_ROYALTY_CONFIG
+  PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_BLUEPRINT_NAME,
+  PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_BLUEPRINT_VERSION,
+  PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_DEFINITION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -125,12 +125,12 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatus"),
   @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldState"),
-  @JsonSubTypes.Type(value = PackageAuthTemplateEntrySubstate.class, name = "PackageAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintAuthTemplateEntrySubstate.class, name = "PackageBlueprintAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
-  @JsonSubTypes.Type(value = PackageBlueprintEntrySubstate.class, name = "PackageBlueprintEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
-  @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
@@ -142,99 +142,99 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class PackageRoyaltyEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+public class PackageBlueprintDefinitionEntrySubstate extends Substate {
+  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
+  private String blueprintName;
 
-  public static final String JSON_PROPERTY_VERSION = "version";
-  private String version;
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private RoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_DEFINITION = "definition";
+  private BlueprintDefinition definition;
 
-  public PackageRoyaltyEntrySubstate() { 
+  public PackageBlueprintDefinitionEntrySubstate() { 
   }
 
-  public PackageRoyaltyEntrySubstate name(String name) {
-    this.name = name;
+  public PackageBlueprintDefinitionEntrySubstate blueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintName() {
+    return blueprintName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
+  }
+
+
+  public PackageBlueprintDefinitionEntrySubstate blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+    return this;
+  }
+
+   /**
+   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
+   * @return blueprintVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintVersion() {
+    return blueprintVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+  }
+
+
+  public PackageBlueprintDefinitionEntrySubstate definition(BlueprintDefinition definition) {
+    this.definition = definition;
+    return this;
+  }
+
+   /**
+   * Get definition
+   * @return definition
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_DEFINITION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public BlueprintDefinition getDefinition() {
+    return definition;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_DEFINITION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
-  }
-
-
-  public PackageRoyaltyEntrySubstate version(String version) {
-    this.version = version;
-    return this;
-  }
-
-   /**
-   * Get version
-   * @return version
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getVersion() {
-    return version;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVersion(String version) {
-    this.version = version;
-  }
-
-
-  public PackageRoyaltyEntrySubstate royaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
-    return this;
-  }
-
-   /**
-   * Get royaltyConfig
-   * @return royaltyConfig
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public RoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRoyaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public void setDefinition(BlueprintDefinition definition) {
+    this.definition = definition;
   }
 
 
   /**
-   * Return true if this PackageRoyaltyEntrySubstate object is equal to o.
+   * Return true if this PackageBlueprintDefinitionEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -244,26 +244,26 @@ public class PackageRoyaltyEntrySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageRoyaltyEntrySubstate packageRoyaltyEntrySubstate = (PackageRoyaltyEntrySubstate) o;
-    return Objects.equals(this.name, packageRoyaltyEntrySubstate.name) &&
-        Objects.equals(this.version, packageRoyaltyEntrySubstate.version) &&
-        Objects.equals(this.royaltyConfig, packageRoyaltyEntrySubstate.royaltyConfig) &&
+    PackageBlueprintDefinitionEntrySubstate packageBlueprintDefinitionEntrySubstate = (PackageBlueprintDefinitionEntrySubstate) o;
+    return Objects.equals(this.blueprintName, packageBlueprintDefinitionEntrySubstate.blueprintName) &&
+        Objects.equals(this.blueprintVersion, packageBlueprintDefinitionEntrySubstate.blueprintVersion) &&
+        Objects.equals(this.definition, packageBlueprintDefinitionEntrySubstate.definition) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, version, royaltyConfig, super.hashCode());
+    return Objects.hash(blueprintName, blueprintVersion, definition, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageRoyaltyEntrySubstate {\n");
+    sb.append("class PackageBlueprintDefinitionEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    definition: ").append(toIndentedString(definition)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -312,12 +312,12 @@ static {
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
   mappings.put("NonFungibleVaultFieldFrozenStatus", NonFungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("OneResourcePoolFieldState", OneResourcePoolFieldStateSubstate.class);
-  mappings.put("PackageAuthTemplateEntry", PackageAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintAuthTemplateEntry", PackageBlueprintAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
-  mappings.put("PackageBlueprintEntry", PackageBlueprintEntrySubstate.class);
+  mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
-  mappings.put("PackageRoyaltyEntry", PackageRoyaltyEntrySubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
@@ -327,8 +327,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("PackageRoyaltyEntrySubstate", PackageRoyaltyEntrySubstate.class);
-  JSON.registerDiscriminator(PackageRoyaltyEntrySubstate.class, "substate_type", mappings);
+  mappings.put("PackageBlueprintDefinitionEntrySubstate", PackageBlueprintDefinitionEntrySubstate.class);
+  JSON.registerDiscriminator(PackageBlueprintDefinitionEntrySubstate.class, "substate_type", mappings);
 }
 }
 

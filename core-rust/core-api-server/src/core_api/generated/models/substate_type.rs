@@ -32,14 +32,14 @@ pub enum SubstateType {
     PackageCodeEntry,
     #[serde(rename = "PackageSchemaEntry")]
     PackageSchemaEntry,
-    #[serde(rename = "PackageBlueprintEntry")]
-    PackageBlueprintEntry,
+    #[serde(rename = "PackageBlueprintDefinitionEntry")]
+    PackageBlueprintDefinitionEntry,
     #[serde(rename = "PackageBlueprintDependenciesEntry")]
     PackageBlueprintDependenciesEntry,
-    #[serde(rename = "PackageRoyaltyEntry")]
-    PackageRoyaltyEntry,
-    #[serde(rename = "PackageAuthTemplateEntry")]
-    PackageAuthTemplateEntry,
+    #[serde(rename = "PackageBlueprintRoyaltyEntry")]
+    PackageBlueprintRoyaltyEntry,
+    #[serde(rename = "PackageBlueprintAuthTemplateEntry")]
+    PackageBlueprintAuthTemplateEntry,
     #[serde(rename = "PackageFieldFunctionAccessRules")]
     PackageFieldFunctionAccessRules,
     #[serde(rename = "FungibleResourceManagerFieldDivisibility")]
@@ -124,10 +124,10 @@ impl ToString for SubstateType {
             Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
             Self::PackageCodeEntry => String::from("PackageCodeEntry"),
             Self::PackageSchemaEntry => String::from("PackageSchemaEntry"),
-            Self::PackageBlueprintEntry => String::from("PackageBlueprintEntry"),
+            Self::PackageBlueprintDefinitionEntry => String::from("PackageBlueprintDefinitionEntry"),
             Self::PackageBlueprintDependenciesEntry => String::from("PackageBlueprintDependenciesEntry"),
-            Self::PackageRoyaltyEntry => String::from("PackageRoyaltyEntry"),
-            Self::PackageAuthTemplateEntry => String::from("PackageAuthTemplateEntry"),
+            Self::PackageBlueprintRoyaltyEntry => String::from("PackageBlueprintRoyaltyEntry"),
+            Self::PackageBlueprintAuthTemplateEntry => String::from("PackageBlueprintAuthTemplateEntry"),
             Self::PackageFieldFunctionAccessRules => String::from("PackageFieldFunctionAccessRules"),
             Self::FungibleResourceManagerFieldDivisibility => String::from("FungibleResourceManagerFieldDivisibility"),
             Self::FungibleResourceManagerFieldTotalSupply => String::from("FungibleResourceManagerFieldTotalSupply"),

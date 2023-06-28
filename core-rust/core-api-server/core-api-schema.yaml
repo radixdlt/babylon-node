@@ -2289,16 +2289,6 @@ components:
 #####################################
 # GENERAL / SHARED MODELS - Royalty #
 #####################################
-    BlueprintRoyaltyConfig:
-      type: object
-      required:
-        - blueprint_name
-        - royalty_config
-      properties:
-        blueprint_name:
-          type: string
-        royalty_config:
-          $ref: '#/components/schemas/RoyaltyConfig'
     RoyaltyConfig:
       type: object
       required:
@@ -2960,10 +2950,10 @@ components:
           PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
           PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
           PackageSchemaEntry: '#/components/schemas/PackageSchemaEntrySubstate'
-          PackageBlueprintEntry: '#/components/schemas/PackageBlueprintEntrySubstate'
+          PackageBlueprintDefinitionEntry: '#/components/schemas/PackageBlueprintDefinitionEntrySubstate'
           PackageBlueprintDependenciesEntry: '#/components/schemas/PackageBlueprintDependenciesEntrySubstate'
-          PackageRoyaltyEntry: '#/components/schemas/PackageRoyaltyEntrySubstate'
-          PackageAuthTemplateEntry: '#/components/schemas/PackageAuthTemplateEntrySubstate'
+          PackageBlueprintRoyaltyEntry: '#/components/schemas/PackageBlueprintRoyaltyEntrySubstate'
+          PackageBlueprintAuthTemplateEntry: '#/components/schemas/PackageBlueprintAuthTemplateEntrySubstate'
           FungibleResourceManagerFieldDivisibility: '#/components/schemas/FungibleResourceManagerFieldDivisibilitySubstate'
           FungibleResourceManagerFieldTotalSupply: '#/components/schemas/FungibleResourceManagerFieldTotalSupplySubstate'
           NonFungibleResourceManagerFieldIdType: '#/components/schemas/NonFungibleResourceManagerFieldIdTypeSubstate'
@@ -3009,10 +2999,10 @@ components:
         - PackageFieldRoyaltyAccumulator
         - PackageCodeEntry
         - PackageSchemaEntry
-        - PackageBlueprintEntry
+        - PackageBlueprintDefinitionEntry
         - PackageBlueprintDependenciesEntry
-        - PackageRoyaltyEntry
-        - PackageAuthTemplateEntry
+        - PackageBlueprintRoyaltyEntry
+        - PackageBlueprintAuthTemplateEntry
         - PackageFieldFunctionAccessRules
         - FungibleResourceManagerFieldDivisibility
         - FungibleResourceManagerFieldTotalSupply
@@ -3238,81 +3228,16 @@ components:
       enum:
         - CommittedSuccess
         - CommittedFailure
-        - Cancelled    
-    PackageBlueprintEntrySubstate:
+        - Cancelled
+    PackageFieldRoyaltyAccumulatorSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - name
-            - version
-            - definition
+            - vault_entity
           properties:
-            name:
-              type: string
-            version:
-              type: string
-            definition:
-              $ref: '#/components/schemas/BlueprintDefinition'
-    PackageBlueprintDependenciesEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - name
-            - version
-          properties:
-            name:
-              type: string
-            version:
-              type: string
-            dependencies:
-              $ref: '#/components/schemas/BlueprintDependencies'
-    PackageSchemaEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - schema_hash
-            - schema
-          properties:
-            schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
-            schema:
-              $ref: '#/components/schemas/ScryptoSchema'
-    PackageRoyaltyEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - name
-            - version
-          properties:
-            name:
-              type: string
-            version:
-              type: string
-            royalty_config:
-              $ref: '#/components/schemas/RoyaltyConfig'
-    PackageAuthTemplateEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - name
-            - version
-          properties:
-            name:
-              type: string
-            version:
-              type: string
-            auth_config:
-              $ref: '#/components/schemas/AuthConfig'
-    VmType:
-      type: string
-      enum:
-        - Native
-        - ScryptoV1
+            vault_entity:
+              $ref: "#/components/schemas/EntityReference"
     PackageCodeEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3330,15 +3255,92 @@ components:
               type: string
               description: |
                 Either the hex-encoded WASM package code (if Scrypto), or the native package identifier.
-    PackageFieldRoyaltyAccumulatorSubstate:
+    VmType:
+      type: string
+      enum:
+        - Native
+        - ScryptoV1
+    PackageSchemaEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - vault_entity
+            - schema_hash
+            - schema
           properties:
-            vault_entity:
-              $ref: "#/components/schemas/EntityReference"
+            schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            schema:
+              $ref: '#/components/schemas/ScryptoSchema'
+    PackageBlueprintDefinitionEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - blueprint_name
+            - blueprint_version
+            - definition
+          properties:
+            blueprint_name:
+              type: string
+              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+            blueprint_version:
+              type: string
+              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            definition:
+              $ref: '#/components/schemas/BlueprintDefinition'
+    PackageBlueprintDependenciesEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - blueprint_name
+            - blueprint_version
+            - dependencies
+          properties:
+            blueprint_name:
+              type: string
+              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+            blueprint_version:
+              type: string
+              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            dependencies:
+              $ref: '#/components/schemas/BlueprintDependencies'
+    PackageBlueprintRoyaltyEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - blueprint_name
+            - blueprint_version
+            - royalty_config
+          properties:
+            blueprint_name:
+              type: string
+              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+            blueprint_version:
+              type: string
+              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            royalty_config:
+              $ref: '#/components/schemas/RoyaltyConfig'
+    PackageBlueprintAuthTemplateEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - blueprint_name
+            - blueprint_version
+            - auth_config
+          properties:
+            blueprint_name:
+              type: string
+              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+            blueprint_version:
+              type: string
+              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            auth_config:
+              description: The configuration of the package blueprint.
+              $ref: '#/components/schemas/AuthConfig'
     FungibleResourceManagerFieldDivisibilitySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5469,8 +5471,13 @@ components:
         - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
-            - system_transaction
+            - is_flash
           properties:
+            is_flash:
+              description: |
+                The first genesis "transaction" flashes state into the database to prepare for the bootstrap transaction.
+                Such a transaction does not have an associated `system_transaction`
+              type: boolean
             system_transaction:
               $ref: "#/components/schemas/SystemTransaction"
     UserLedgerTransaction:

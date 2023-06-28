@@ -123,26 +123,32 @@ where
     pub fn execute(
         &mut self,
         transaction: &ValidatedLedgerTransaction,
-        description: impl Display,
+        description: &'static str,
     ) -> Result<ProcessedCommitResult, RejectResult> {
         let description = DescribedTransactionHash {
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
         };
-        let config_type = transaction.config_type();
+        self.execute_wrapped(
+            &description,
+            self.execution_configurator
+                .wrap_ledger_transaction(transaction, &description),
+        )
+    }
+
+    fn execute_wrapped<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
+        &mut self,
+        description: &DescribedTransactionHash,
+        wrapped_executable: T,
+    ) -> Result<ProcessedCommitResult, RejectResult> {
         let mut execution_cache = self.execution_cache.lock();
         let processed = execution_cache.execute_transaction(
             self.store,
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
-            &transaction.ledger_transaction_hash(),
-            self.execution_configurator
-                .wrap(transaction.get_executable(), config_type)
-                .warn_after(
-                    config_type.get_transaction_runtime_warn_threshold(),
-                    &description,
-                ),
+            &description.ledger_hash,
+            wrapped_executable,
         );
         let result = processed.expect_commit_or_reject(&description).cloned();
         if let Ok(commit) = &result {
@@ -183,12 +189,12 @@ where
 }
 
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
-struct DescribedTransactionHash<D> {
+struct DescribedTransactionHash {
     ledger_hash: LedgerTransactionHash,
-    description: D,
+    description: &'static str,
 }
 
-impl<D: Display> Display for DescribedTransactionHash<D> {
+impl Display for DescribedTransactionHash {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,

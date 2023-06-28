@@ -12,21 +12,26 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageRoyaltyEntrySubstateAllOf {
-    #[serde(rename = "name")]
-    pub name: String,
-    #[serde(rename = "version")]
-    pub version: String,
-    #[serde(rename = "royalty_config", skip_serializing_if = "Option::is_none")]
-    pub royalty_config: Option<Box<crate::core_api::generated::models::RoyaltyConfig>>,
+pub struct PackageBlueprintAuthTemplateEntrySubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
+    /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+    #[serde(rename = "blueprint_version")]
+    pub blueprint_version: String,
+    #[serde(rename = "auth_config")]
+    pub auth_config: Box<crate::core_api::generated::models::AuthConfig>,
 }
 
-impl PackageRoyaltyEntrySubstateAllOf {
-    pub fn new(name: String, version: String) -> PackageRoyaltyEntrySubstateAllOf {
-        PackageRoyaltyEntrySubstateAllOf {
-            name,
-            version,
-            royalty_config: None,
+impl PackageBlueprintAuthTemplateEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_name: String, blueprint_version: String, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstate {
+        PackageBlueprintAuthTemplateEntrySubstate {
+            substate_type,
+            blueprint_name,
+            blueprint_version,
+            auth_config: Box::new(auth_config),
         }
     }
 }

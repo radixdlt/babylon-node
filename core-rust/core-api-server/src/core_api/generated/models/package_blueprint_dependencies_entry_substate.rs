@@ -15,21 +15,23 @@
 pub struct PackageBlueprintDependenciesEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "name")]
-    pub name: String,
-    #[serde(rename = "version")]
-    pub version: String,
-    #[serde(rename = "dependencies", skip_serializing_if = "Option::is_none")]
-    pub dependencies: Option<Box<crate::core_api::generated::models::BlueprintDependencies>>,
+    /// The first part of the substate key `(blueprint_name, blueprint_version)`.
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
+    /// The second part of the substate key `(blueprint_name, blueprint_version)`.
+    #[serde(rename = "blueprint_version")]
+    pub blueprint_version: String,
+    #[serde(rename = "dependencies")]
+    pub dependencies: Box<crate::core_api::generated::models::BlueprintDependencies>,
 }
 
 impl PackageBlueprintDependenciesEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, name: String, version: String) -> PackageBlueprintDependenciesEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_name: String, blueprint_version: String, dependencies: crate::core_api::generated::models::BlueprintDependencies) -> PackageBlueprintDependenciesEntrySubstate {
         PackageBlueprintDependenciesEntrySubstate {
             substate_type,
-            name,
-            version,
-            dependencies: None,
+            blueprint_name,
+            blueprint_version,
+            dependencies: Box::new(dependencies),
         }
     }
 }
