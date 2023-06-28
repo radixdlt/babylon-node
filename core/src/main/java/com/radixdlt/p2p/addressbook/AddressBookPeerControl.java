@@ -65,6 +65,7 @@
 package com.radixdlt.p2p.addressbook;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import java.time.Duration;
@@ -75,21 +76,21 @@ import org.apache.logging.log4j.Logger;
 public final class AddressBookPeerControl implements PeerControl {
   private static final Logger log = LogManager.getLogger();
 
-  private final AddressBook addressBook;
+  private final Provider<AddressBook> addressBook;
 
   @Inject
-  public AddressBookPeerControl(AddressBook addressBook) {
+  public AddressBookPeerControl(Provider<AddressBook> addressBook) {
     this.addressBook = Objects.requireNonNull(addressBook);
   }
 
   @Override
   public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
     log.info("Banning peer {} for {} because of {}", nodeId, banDuration, reason);
-    this.addressBook.banPeer(nodeId, banDuration);
+    this.addressBook.get().banPeer(nodeId, banDuration);
   }
 
   @Override
   public void reportHighPriorityPeer(NodeId nodeId) {
-    addressBook.reportHighPriorityPeer(nodeId);
+    addressBook.get().reportHighPriorityPeer(nodeId);
   }
 }
