@@ -292,24 +292,28 @@ public final class AddressBookTest {
 
     // One peer has a failed handshake and the other one is banned
     sut.reportFailedHandshake(uri1);
-    sut.banPeer(uri2.getNodeId(), Duration.ofMillis(1));
+    sut.banPeer(uri2.getNodeId(), Duration.ofHours(1));
 
     // We want to add another peer to the address book
     // Banned peer should be retained for longer than
     // the failed handshake peer (because ban info is more important).
     final var uri3 = randomNodeUri();
     sut.addUncheckedPeers(Set.of(uri3));
-    assertTrue(sut.knownPeers().containsKey(uri1.getNodeId()));
+    assertFalse(sut.knownPeers().containsKey(uri1.getNodeId()));
+    assertTrue(sut.knownPeers().containsKey(uri2.getNodeId()));
     assertTrue(sut.knownPeers().containsKey(uri3.getNodeId()));
-    assertFalse(sut.knownPeers().containsKey(uri2.getNodeId()));
 
     // Adding one more fresh peer,
     // this time it's the failed handshake address that'll be removed
     final var uri4 = randomNodeUri();
     sut.addUncheckedPeers(Set.of(uri4));
+
+    // uri2 is banned, so we're keeping an empty entry for it (without any addresses)
+    assertTrue(sut.knownPeers().containsKey(uri2.getNodeId()));
+    assertFalse(sut.knownPeers().get(uri2.getNodeId()).hasAddress(uri2));
+
     assertTrue(sut.knownPeers().containsKey(uri3.getNodeId()));
     assertTrue(sut.knownPeers().containsKey(uri4.getNodeId()));
-    assertFalse(sut.knownPeers().containsKey(uri1.getNodeId()));
   }
 
   @Test

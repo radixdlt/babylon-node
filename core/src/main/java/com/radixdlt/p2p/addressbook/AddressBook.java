@@ -188,7 +188,6 @@ public final class AddressBook {
                           .filter(e -> e.hasAddress(uri))
                           .isEmpty())
               .collect(ImmutableList.toImmutableList());
-
       final var slotsAvailable = p2pConfig.addressBookMaxSize() - numStoredAddresses;
       if (slotsAvailable < filteredUris.size()) {
         final var additionalSlotsNeededToIngestAllNewUris = filteredUris.size() - slotsAvailable;
@@ -379,9 +378,9 @@ public final class AddressBook {
      */
     final var worstAddressesComparator =
         Comparator.<Tuple2<AddressBookEntry, PeerAddressEntry>, Boolean>comparing(
-                e -> !isPeerIpAddressValid(e.last().getUri()))
-            .thenComparing(e -> e.last().failedHandshakeIsPresent())
-            .thenComparing(e -> e.first().isBanned())
+                e -> isPeerIpAddressValid(e.last().getUri()))
+            .thenComparing(e -> !e.last().failedHandshakeIsPresent())
+            .thenComparing(e -> !e.first().isBanned())
             .thenComparing((a, b) -> addressEntryComparator.reversed().compare(a.last(), b.last()));
 
     final var addressesToRemove =
