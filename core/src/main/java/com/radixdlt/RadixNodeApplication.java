@@ -111,6 +111,7 @@ public final class RadixNodeApplication {
       setupBouncyCastle();
       final var properties = RuntimeProperties.fromCommandLineArgs(args);
       bootstrapRadixNode(properties);
+      log.info("Node bootstrapping completed");
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
@@ -137,22 +138,22 @@ public final class RadixNodeApplication {
     Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
     radixNodeBootstrapperHandle
         .radixNodeFuture()
-        .whenComplete(
-            (unstartedRadixNode, ex) -> {
-              if (ex != null) {
-                log.warn("Radix node couldn't be started", ex);
-                exitWithError();
-              } else {
-                final var startupTime = nodeBootStopwatch.elapsed();
-                final var runningNode = RunningRadixNode.run(unstartedRadixNode);
-                log.info(
-                    "Radix node {} started successfully in {} ms",
-                    runningNode.self(),
-                    startupTime.toMillis());
-                runningNode.reportSelfStartupTime(startupTime);
-                Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
-              }
-            });
+        .thenAccept(
+            (unstartedRadixNode) -> {
+              final var startupTime = nodeBootStopwatch.elapsed();
+              final var runningNode = RunningRadixNode.run(unstartedRadixNode);
+              log.info(
+                  "Radix node {} started successfully in {} ms",
+                  runningNode.self(),
+                  startupTime.toMillis());
+              runningNode.reportSelfStartupTime(startupTime);
+              Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
+            })
+        // Call .join() to block on the future completing, ensuring that errors during
+        // bootstrapping are not swallowed, and propogate to the "Unable to start" handler.
+        // In particular, errors can come from running genesis during guice initiation in
+        // RunningRadixNode.run(..);
+        .join();
   }
 
   private static void exitWithError() {
