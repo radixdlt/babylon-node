@@ -1972,6 +1972,7 @@ dependencies = [
  "tokio",
  "tracing",
  "transaction",
+ "transaction-scenarios",
  "utils",
 ]
 
@@ -2244,6 +2245,23 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "secp256k1",
+ "utils",
+]
+
+[[package]]
+name = "transaction-scenarios"
+version = "0.10.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=elm-f8f5aa00b#f8f5aa00b671cbef5c84854918458b4fe65180ba"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine",
+ "radix-engine-constants",
+ "radix-engine-interface",
+ "radix-engine-store-interface",
+ "radix-engine-stores",
+ "sbor",
+ "transaction",
  "utils",
 ]
 

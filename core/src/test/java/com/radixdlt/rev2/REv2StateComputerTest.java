@@ -75,6 +75,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -122,7 +123,8 @@ public class REv2StateComputerTest {
                     Address.virtualAccountAddress(ONLY_VALIDATOR_ID.getKey()),
                     Map.of(),
                     GenesisConsensusManagerConfig.Builder.testDefaults(),
-                    true))),
+                    true,
+                    GenesisData.NO_SCENARIOS))),
         new REv2LedgerRecoveryModule(),
         new AbstractModule() {
           @Override

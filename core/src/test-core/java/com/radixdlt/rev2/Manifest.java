@@ -226,10 +226,16 @@ public class Manifest {
         String.format(
             """
             %s
-            CREATE_VALIDATOR Bytes("%s") Decimal("0");
+            CALL_METHOD Address("%s") "free";
+            TAKE_FROM_WORKTOP Address("%s") Decimal("1") Bucket("validator_creation_fee");
+            CREATE_VALIDATOR Bytes("%s") Decimal("0") Bucket("validator_creation_fee");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
-            params.faucetLockFeeLine(), key.toHex(), params.encode(ownerAccount));
+            params.faucetLockFeeLine(),
+            params.encode(FAUCET),
+            params.encode(XRD),
+            key.toHex(),
+            params.encode(ownerAccount));
   }
 
   public static Functions.Func1<Parameters, String> registerValidator(
@@ -239,11 +245,13 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "create_proof" Address("%s");
+            CALL_METHOD Address("%s") "update_accept_delegated_stake" true;
             CALL_METHOD Address("%s") "register";
             """,
             params.faucetLockFeeLine(),
             params.encode(ownerAccount),
             params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.encode(validatorAddress),
             params.encode(validatorAddress));
   }
 

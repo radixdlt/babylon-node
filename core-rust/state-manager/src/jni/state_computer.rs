@@ -90,6 +90,7 @@ pub struct JavaGenesisData {
     pub initial_config: JavaConsensusManagerConfig,
     pub chunks: Vec<GenesisDataChunk>,
     pub faucet_supply: Decimal,
+    pub scenarios_to_run: Vec<String>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -142,6 +143,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
                 genesis_data.faucet_supply,
+                genesis_data.scenarios_to_run,
             );
             Ok(resultant_proof)
         },

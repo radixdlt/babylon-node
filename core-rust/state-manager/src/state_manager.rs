@@ -77,8 +77,10 @@ use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::{ExecutionMetrics, RejectResult};
-use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
+use radix_engine::transaction::{ExecutionMetrics, RejectResult, TransactionReceipt};
+use radix_engine::types::{
+    Categorize, ComponentAddress, Decode, Encode, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+};
 use radix_engine_common::dec;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::Epoch;
@@ -109,6 +111,7 @@ pub struct StateManagerLoggingConfig {
 }
 
 pub struct StateManager<S> {
+    network: NetworkDefinition,
     store: Arc<RwLock<S>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
@@ -141,6 +144,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             CommittedTransactionsMetrics::new(metric_registry, regular_execution_config);
 
         StateManager {
+            network: network.clone(),
             store,
             mempool_manager,
             execution_configurator,
@@ -188,6 +192,33 @@ impl GenesisCommitRequestFactory {
             },
         }
     }
+
+    pub fn create_for_scenario(
+        &mut self,
+        result: ScenarioPrepareResult,
+    ) -> Option<GenesisCommitRequest> {
+        let Some(ledger_hashes) = result.committable_ledger_hashes else {
+            return None;
+        };
+        self.state_version = self.state_version.next();
+        Some(GenesisCommitRequest {
+            raw: result.raw,
+            validated: result.validated,
+            proof: LedgerProof {
+                opaque: self.genesis_opaque_hash,
+                ledger_header: LedgerHeader {
+                    epoch: self.epoch,
+                    round: Round::zero(),
+                    state_version: self.state_version,
+                    hashes: ledger_hashes,
+                    consensus_parent_round_timestamp_ms: self.timestamp,
+                    proposer_timestamp_ms: self.timestamp,
+                    next_epoch: None,
+                },
+                timestamped_signatures: vec![],
+            },
+        })
+    }
 }
 
 pub struct GenesisPrepareResult {
@@ -195,6 +226,12 @@ pub struct GenesisPrepareResult {
     validated: ValidatedLedgerTransaction,
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
+}
+
+pub struct ScenarioPrepareResult {
+    raw: RawLedgerTransaction,
+    validated: ValidatedLedgerTransaction,
+    committable_ledger_hashes: Option<LedgerHashes>,
 }
 
 pub struct GenesisCommitRequest {
@@ -231,6 +268,47 @@ where
             ledger_hashes: commit.hash_structures_diff.ledger_hashes,
             next_epoch: commit.next_epoch(),
         }
+    }
+
+    pub fn prepare_scenario_transaction(
+        &self,
+        scenario_name: &str,
+        next: &transaction_scenarios::scenario::NextTransaction,
+    ) -> (ScenarioPrepareResult, TransactionReceipt) {
+        let qualified_name = format!(
+            "{} scenario - {} transaction",
+            scenario_name, &next.logical_name
+        );
+
+        let (raw, prepared_ledger_transaction) = self
+            .try_prepare_ledger_transaction_from_user_transaction(&next.raw_transaction)
+            .unwrap_or_else(|_| panic!("Expected that {} was preparable", qualified_name));
+
+        let validated = self
+            .ledger_transaction_validator
+            .validate_user_or_round_update(prepared_ledger_transaction)
+            .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
+
+        let read_store = self.store.read();
+
+        // Note - we first create a basic receipt - because we need it for later
+        let basic_receipt = self
+            .execution_configurator
+            .wrap_ledger_transaction(&validated, "scenario transaction")
+            .execute_on(read_store.deref());
+        let mut series_executor = self.start_series_execution(read_store.deref());
+
+        let commit = series_executor.execute(&validated, "scenario transaction");
+
+        let prepare_result = ScenarioPrepareResult {
+            raw,
+            validated,
+            committable_ledger_hashes: commit
+                .ok()
+                .map(|commit_result| commit_result.hash_structures_diff.ledger_hashes),
+        };
+
+        (prepare_result, basic_receipt)
     }
 
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
@@ -364,22 +442,10 @@ where
                 continue;
             }
 
-            let prepare_results = LedgerTransaction::from_raw_user(&raw_user_transaction)
-                .map_err(|err| {
-                    TransactionValidationError::PrepareError(PrepareError::DecodeError(err))
-                })
-                .and_then(|ledger_transaction| {
-                    ledger_transaction.to_raw().map_err(|err| {
-                        TransactionValidationError::PrepareError(PrepareError::EncodeError(err))
-                    })
-                })
-                .and_then(|raw_ledger_transaction| {
-                    self.ledger_transaction_validator
-                        .prepare_from_raw(&raw_ledger_transaction)
-                        .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
-                });
+            let try_prepare_result =
+                self.try_prepare_ledger_transaction_from_user_transaction(&raw_user_transaction);
 
-            let (raw_ledger_transaction, prepared_transaction) = match prepare_results {
+            let (raw_ledger_transaction, prepared_transaction) = match try_prepare_result {
                 Ok(results) => results,
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
@@ -539,6 +605,24 @@ where
         }
     }
 
+    fn try_prepare_ledger_transaction_from_user_transaction(
+        &self,
+        raw_user_transaction: &RawNotarizedTransaction,
+    ) -> Result<(RawLedgerTransaction, PreparedLedgerTransaction), TransactionValidationError> {
+        LedgerTransaction::from_raw_user(raw_user_transaction)
+            .map_err(|err| TransactionValidationError::PrepareError(PrepareError::DecodeError(err)))
+            .and_then(|ledger_transaction| {
+                ledger_transaction.to_raw().map_err(|err| {
+                    TransactionValidationError::PrepareError(PrepareError::EncodeError(err))
+                })
+            })
+            .and_then(|raw_ledger_transaction| {
+                self.ledger_transaction_validator
+                    .prepare_from_raw(&raw_ledger_transaction)
+                    .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
+            })
+    }
+
     fn start_series_execution<'s>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S> {
         TransactionSeriesExecutor::new(
             store,
@@ -602,11 +686,13 @@ where
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
             *DEFAULT_TESTING_FAUCET_SUPPLY,
+            vec![],
         )
     }
 
     /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
+    #[allow(clippy::too_many_arguments)]
     pub fn execute_genesis(
         &self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
@@ -615,6 +701,7 @@ where
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
         faucet_supply: Decimal,
+        scenarios_to_run: Vec<String>,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -673,8 +760,59 @@ where
             self.commit_genesis(commit_request);
         }
 
+        info!("Committing genesis faucet transaction");
+        let transaction = create_genesis_faucet_transaction(faucet_supply);
+        let prepare_result =
+            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
+        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
+        self.commit_genesis(commit_request);
+
+        // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
+        // This is a little weird, but should be fine.
+        if !scenarios_to_run.is_empty() {
+            use transaction_scenarios::scenario::*;
+            info!("Running {} scenarios", scenarios_to_run.len());
+            let mut next_nonce: u32 = 0;
+            let epoch = initial_epoch;
+            for scenario_name in scenarios_to_run.iter() {
+                let mut scenario = self
+                    .find_scenario(epoch, next_nonce, scenario_name)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Could not find scenario with logical name: {}",
+                            scenario_name
+                        )
+                    });
+                let mut previous = None;
+                info!("Running scenario: {}", scenario_name);
+                loop {
+                    let next = scenario
+                        .next(previous.as_ref())
+                        .map_err(|err| err.into_full(&scenario))
+                        .unwrap();
+                    match next {
+                        NextAction::Transaction(next) => {
+                            let (prepare_result, basic_receipt) =
+                                self.prepare_scenario_transaction(scenario_name, &next);
+                            if let Some(commit_request) =
+                                genesis_commit_request_factory.create_for_scenario(prepare_result)
+                            {
+                                self.commit_genesis(commit_request);
+                            }
+                            previous = Some(basic_receipt);
+                        }
+                        NextAction::Completed(end_state) => {
+                            next_nonce = end_state.next_unused_nonce;
+                            break;
+                        }
+                    }
+                }
+            }
+            info!("Scenarios finished");
+        }
+
         info!("Committing genesis wrap-up");
-        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
+        let transaction: SystemTransactionV1 = create_genesis_wrap_up_part_two();
         let prepare_result =
             self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
@@ -686,6 +824,24 @@ where
             start_instant.elapsed()
         );
         final_ledger_proof
+    }
+
+    fn find_scenario(
+        &self,
+        epoch: Epoch,
+        next_nonce: u32,
+        scenario_name: &str,
+    ) -> Option<Box<dyn transaction_scenarios::scenario::ScenarioInstance>> {
+        use transaction_scenarios::scenario::*;
+        use transaction_scenarios::scenarios::*;
+        for scenario_builder in get_builder_for_every_scenario() {
+            let scenario =
+                scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
+            if scenario.metadata().logical_name == scenario_name {
+                return Some(scenario);
+            }
+        }
+        None
     }
 
     /// Validates and commits the transactions from the given request (or returns an error in case
@@ -1044,4 +1200,55 @@ struct PendingTransactionResult {
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<RejectionReason>,
+}
+
+pub fn create_genesis_faucet_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
+    let mut id_allocator = ::transaction::validation::ManifestIdAllocator::new();
+    let mut instructions = Vec::new();
+
+    instructions.push(InstructionV1::CallMethod {
+        address: RADIX_TOKEN.into(),
+        method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+        args: manifest_args!(faucet_supply),
+    });
+
+    instructions.push(InstructionV1::TakeAllFromWorktop {
+        resource_address: RADIX_TOKEN,
+    });
+
+    let bucket = id_allocator.new_bucket_id();
+
+    instructions.push(InstructionV1::CallFunction {
+        package_address: FAUCET_PACKAGE.into(),
+        blueprint_name: FAUCET_BLUEPRINT.to_string(),
+        function_name: "new".to_string(),
+        args: manifest_args!(ManifestAddressReservation(0), bucket),
+    });
+
+    SystemTransactionV1 {
+        instructions: InstructionsV1(instructions),
+        pre_allocated_addresses: vec![PreAllocatedAddress {
+            blueprint_id: BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            address: FAUCET.into(),
+        }],
+        blobs: BlobsV1 { blobs: vec![] },
+        hash_for_execution: hash("Genesis Faucet"),
+    }
+}
+
+pub fn create_genesis_wrap_up_part_two() -> SystemTransactionV1 {
+    let mut instructions = Vec::new();
+
+    instructions.push(InstructionV1::CallMethod {
+        address: GENESIS_HELPER.into(),
+        method_name: "wrap_up".to_string(),
+        args: manifest_args!(),
+    });
+
+    SystemTransactionV1 {
+        instructions: InstructionsV1(instructions),
+        pre_allocated_addresses: vec![],
+        blobs: BlobsV1 { blobs: vec![] },
+        hash_for_execution: hash("Genesis Wrap Up"),
+    }
 }

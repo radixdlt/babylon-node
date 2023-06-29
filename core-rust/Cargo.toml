@@ -23,6 +23,7 @@ members = [
 # 
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b", features = ["serde"] }
 transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b" }
+transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b" }
 radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b", features = ["serde"] }
 radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "elm-f8f5aa00b" }

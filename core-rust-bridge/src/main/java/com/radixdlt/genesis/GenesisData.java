@@ -75,9 +75,12 @@ public record GenesisData(
     long initialTimestampMs,
     GenesisConsensusManagerConfig consensusManagerConfig,
     ImmutableList<GenesisDataChunk> chunks,
-    Decimal faucetSupply) {
+    Decimal faucetSupply,
+    ImmutableList<String> scenarios) {
 
   public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
+  public static final ImmutableList<String> ALL_SCENARIOS = ImmutableList.of("transfer_xrd");
+  public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -90,6 +93,17 @@ public record GenesisData(
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
         ImmutableList.of(),
-        DEFAULT_TEST_FAUCET_SUPPLY);
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        NO_SCENARIOS);
+  }
+
+  public static GenesisData testingDefaultEmptyWithScenarios() {
+    return new GenesisData(
+        UInt64.fromNonNegativeLong(1L),
+        0,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
+        ImmutableList.of(),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        ALL_SCENARIOS);
   }
 }
