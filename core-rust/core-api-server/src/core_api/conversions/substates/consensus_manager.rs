@@ -1,5 +1,5 @@
-use super::*;
 use super::super::*;
+use super::*;
 use crate::core_api::models;
 use radix_engine_interface::blueprints::consensus_manager::*;
 
@@ -119,7 +119,6 @@ pub fn to_api_proposer_reward(
         xrd_amount: to_api_decimal(xrd_amount),
     })
 }
-
 
 pub fn to_api_validator_substate(
     context: &MappingContext,

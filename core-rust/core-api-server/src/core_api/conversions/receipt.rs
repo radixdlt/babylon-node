@@ -59,7 +59,8 @@ pub fn to_api_receipt(
         action,
     } in receipt.on_ledger.substate_changes
     {
-        let typed_substate_key = create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
+        let typed_substate_key =
+            create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
@@ -141,17 +142,22 @@ pub fn to_api_receipt(
     })
 }
 
-pub fn create_typed_substate_key(context: &MappingContext, node_id: &NodeId, partition_number: PartitionNumber, substate_key: &SubstateKey) -> Result<TypedSubstateKey, MappingError> {
+pub fn create_typed_substate_key(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<TypedSubstateKey, MappingError> {
     let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
-    Ok(to_typed_substate_key(entity_type, partition_number, &substate_key).map_err(|msg| {
+    to_typed_substate_key(entity_type, partition_number, substate_key).map_err(|msg| {
         MappingError::SubstateKey {
-            entity_address: to_api_entity_address(context, &node_id)
+            entity_address: to_api_entity_address(context, node_id)
                 .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
             partition_number,
-            substate_key: to_api_substate_key(&substate_key),
+            substate_key: to_api_substate_key(substate_key),
             message: msg,
         }
-    })?)
+    })
 }
 
 pub struct ValueRepresentations {

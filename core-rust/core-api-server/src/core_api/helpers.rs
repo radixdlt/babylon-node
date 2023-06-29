@@ -5,7 +5,10 @@ use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
 use std::io::Write;
 
-use super::{MappingError, ResponseError, models, MappingContext, create_typed_substate_key, ValueRepresentations, to_api_substate};
+use super::{
+    create_typed_substate_key, models, to_api_substate, MappingContext, MappingError,
+    ResponseError, ValueRepresentations,
+};
 use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
 
 #[allow(unused)]
@@ -22,14 +25,11 @@ pub(crate) fn read_typed_substate(
     ) else {
         return Ok(None);
     };
-    let typed_substate_key = create_typed_substate_key(
-        context,
-        &node_id,
-        partition_number,
-        substate_key,
-    )?;
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
     let value_representations = ValueRepresentations::new(&typed_substate_key, raw_value)?;
-    let typed_substate = to_api_substate(context, &typed_substate_key, &value_representations.typed)?;
+    let typed_substate =
+        to_api_substate(context, &typed_substate_key, &value_representations.typed)?;
     Ok(Some(typed_substate))
 }
 

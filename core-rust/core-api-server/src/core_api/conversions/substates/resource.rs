@@ -1,5 +1,5 @@
-use super::*;
 use super::super::*;
+use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::*;
@@ -80,7 +80,7 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
         models::LocalNonFungibleKey {
             non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_id)),
         },
-        { }
+        {}
     ))
 }
 

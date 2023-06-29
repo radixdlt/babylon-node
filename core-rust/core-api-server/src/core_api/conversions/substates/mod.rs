@@ -1,37 +1,37 @@
-mod substate;
-mod type_info_module;
+mod access_controller;
 mod access_rules_module;
-mod royalty_module;
+mod account;
+mod consensus_manager;
+mod generic;
 mod metadata_module;
 mod package;
-mod resource;
-mod consensus_manager;
-mod account;
-mod access_controller;
-mod generic;
 mod pools;
+mod resource;
+mod royalty_module;
+mod substate;
 mod transaction_tracker;
+mod type_info_module;
 
-pub use substate::*;
-pub use type_info_module::*;
+pub use access_controller::*;
 pub use access_rules_module::*;
-pub use royalty_module::*;
+pub use account::*;
+pub use consensus_manager::*;
+pub use generic::*;
 pub use metadata_module::*;
 pub use package::*;
-pub use resource::*;
-pub use consensus_manager::*;
-pub use account::*;
-pub use access_controller::*;
-pub use generic::*;
 pub use pools::*;
+pub use resource::*;
+pub use royalty_module::*;
+pub use substate::*;
 pub use transaction_tracker::*;
+pub use type_info_module::*;
 
 //====================================
 // General substate mapping utilities
 //====================================
 
-use radix_engine_queries::typed_substate_layout::KeyValueEntrySubstate;
 use super::MappingError;
+use radix_engine_queries::typed_substate_layout::KeyValueEntrySubstate;
 
 macro_rules! field_substate {
     (

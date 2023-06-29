@@ -5,8 +5,8 @@ use radix_engine::types::*;
 
 use radix_engine_queries::typed_substate_layout::*;
 
-use super::*;
 use super::super::MappingError;
+use super::*;
 
 pub fn to_api_substate(
     context: &MappingContext,
@@ -71,7 +71,11 @@ pub fn to_api_substate(
         )) => to_api_non_fungible_resource_manager_mutable_fields_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResourceData(
             substate,
-        )) => to_api_non_fungible_resource_manager_data_substate(context, typed_substate_key, substate)?,
+        )) => to_api_non_fungible_resource_manager_data_substate(
+            context,
+            typed_substate_key,
+            substate,
+        )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
             TypedFungibleVaultFieldValue::Balance(fungible_vault_balance_substate),
         )) => to_api_fungible_vault_balance_substate(context, fungible_vault_balance_substate)?,
@@ -133,10 +137,7 @@ pub fn to_api_substate(
         )) => to_api_access_controller_substate(context, access_controller_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericScryptoComponent(
             GenericScryptoComponentFieldValue::State(substate),
-        )) => to_api_generic_scrypto_component_state_substate(
-            context,
-            substate,
-        )?,
+        )) => to_api_generic_scrypto_component_state_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericKeyValueStore(
             substate,
         )) => to_api_generic_key_value_store_substate(context, typed_substate_key, substate)?,

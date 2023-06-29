@@ -1,5 +1,5 @@
-use super::*;
 use super::super::*;
+use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::*;
@@ -39,8 +39,7 @@ pub fn to_api_generic_key_value_store_substate(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::GenericKeyValueStoreKey(raw_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "GenericKeyValueStoreKey".to_string() });
     };
-    let key_data_option = to_api_sbor_data_from_bytes(context, &raw_key)
-        .ok();
+    let key_data_option = to_api_sbor_data_from_bytes(context, raw_key).ok();
     Ok(key_value_store_substate!(
         substate,
         GenericKeyValueStoreEntry,
