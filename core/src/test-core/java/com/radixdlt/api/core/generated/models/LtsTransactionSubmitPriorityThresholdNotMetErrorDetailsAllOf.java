@@ -28,49 +28,81 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsTransactionSubmitMempoolFullErrorDetailsAllOf
+ * LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
  */
 @JsonPropertyOrder({
-  LtsTransactionSubmitMempoolFullErrorDetailsAllOf.JSON_PROPERTY_MEMPOOL_CAPACITY
+  LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_TIP_PERCENTAGE,
+  LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
-  public static final String JSON_PROPERTY_MEMPOOL_CAPACITY = "mempool_capacity";
-  private Integer mempoolCapacity;
+public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
+  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
+  private Integer tipPercentage;
 
-  public LtsTransactionSubmitMempoolFullErrorDetailsAllOf() { 
+  public static final String JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED = "min_tip_percentage_required";
+  private Integer minTipPercentageRequired;
+
+  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf() { 
   }
 
-  public LtsTransactionSubmitMempoolFullErrorDetailsAllOf mempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf tipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
-   * Get mempoolCapacity
+   * Get tipPercentage
    * minimum: 0
-   * maximum: 10000
-   * @return mempoolCapacity
+   * maximum: 65535
+   * @return tipPercentage
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMempoolCapacity() {
-    return mempoolCapacity;
+  public Integer getTipPercentage() {
+    return tipPercentage;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public void setTipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
+  }
+
+
+  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf minTipPercentageRequired(Integer minTipPercentageRequired) {
+    this.minTipPercentageRequired = minTipPercentageRequired;
+    return this;
+  }
+
+   /**
+   * Get minTipPercentageRequired
+   * minimum: 0
+   * maximum: 65535
+   * @return minTipPercentageRequired
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getMinTipPercentageRequired() {
+    return minTipPercentageRequired;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
+    this.minTipPercentageRequired = minTipPercentageRequired;
   }
 
 
   /**
-   * Return true if this LtsTransactionSubmitMempoolFullErrorDetails_allOf object is equal to o.
+   * Return true if this LtsTransactionSubmitPriorityThresholdNotMetErrorDetails_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +112,22 @@ public class LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsTransactionSubmitMempoolFullErrorDetailsAllOf ltsTransactionSubmitMempoolFullErrorDetailsAllOf = (LtsTransactionSubmitMempoolFullErrorDetailsAllOf) o;
-    return Objects.equals(this.mempoolCapacity, ltsTransactionSubmitMempoolFullErrorDetailsAllOf.mempoolCapacity);
+    LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf = (LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf) o;
+    return Objects.equals(this.tipPercentage, ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.tipPercentage) &&
+        Objects.equals(this.minTipPercentageRequired, ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.minTipPercentageRequired);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mempoolCapacity);
+    return Objects.hash(tipPercentage, minTipPercentageRequired);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsTransactionSubmitMempoolFullErrorDetailsAllOf {\n");
-    sb.append("    mempoolCapacity: ").append(toIndentedString(mempoolCapacity)).append("\n");
+    sb.append("class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {\n");
+    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
+    sb.append("    minTipPercentageRequired: ").append(toIndentedString(minTipPercentageRequired)).append("\n");
     sb.append("}");
     return sb.toString();
   }

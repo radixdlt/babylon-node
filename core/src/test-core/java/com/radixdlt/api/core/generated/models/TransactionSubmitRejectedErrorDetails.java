@@ -29,7 +29,7 @@ import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
-import com.radixdlt.api.core.generated.models.TransactionSubmitMempoolFullErrorDetails;
+import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -57,7 +57,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionSubmitMempoolFullErrorDetails.class, name = "MempoolFull"),
+  @JsonSubTypes.Type(value = TransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
 
@@ -360,7 +360,7 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("MempoolFull", TransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("PriorityThresholdNotMet", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
   mappings.put("TransactionSubmitRejectedErrorDetails", TransactionSubmitRejectedErrorDetails.class);
   JSON.registerDiscriminator(TransactionSubmitRejectedErrorDetails.class, "type", mappings);

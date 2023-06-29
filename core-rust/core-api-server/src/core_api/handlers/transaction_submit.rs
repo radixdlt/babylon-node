@@ -26,14 +26,18 @@ pub(crate) async fn handle_transaction_submit(
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
-        Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Full { max_size, .. }) => Err(detailed_error(
+        Err(MempoolAddError::PriorityThresholdNotMet {
+            min_tip_percentage_required,
+            tip_percentage,
+        }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
-            "Mempool is full",
-            TransactionSubmitErrorDetails::TransactionSubmitMempoolFullErrorDetails {
-                mempool_capacity: max_size as i32,
+            "Mempool is full and priority threshold not met",
+            TransactionSubmitErrorDetails::TransactionSubmitPriorityThresholdNotMetErrorDetails {
+                tip_percentage: tip_percentage as i32,
+                min_tip_percentage_required: min_tip_percentage_required as i32,
             },
         )),
+        Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Rejected(rejection)) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Transaction was rejected",

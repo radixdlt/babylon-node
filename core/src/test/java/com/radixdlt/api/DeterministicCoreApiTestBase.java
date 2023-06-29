@@ -87,6 +87,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -170,7 +171,10 @@ public abstract class DeterministicCoreApiTestBase {
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.mempool(
-                                50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
+                                50,
+                                50 * 1024 * 1024,
+                                new RustMempoolConfig(100 * 1024 * 1024, 1000),
+                                MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

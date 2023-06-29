@@ -13,10 +13,12 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum TransactionSubmitErrorDetails {
-    #[serde(rename="MempoolFull")]
-    TransactionSubmitMempoolFullErrorDetails {
-        #[serde(rename = "mempool_capacity")]
-        mempool_capacity: i32,
+    #[serde(rename="PriorityThresholdNotMet")]
+    TransactionSubmitPriorityThresholdNotMetErrorDetails {
+        #[serde(rename = "tip_percentage")]
+        tip_percentage: i32,
+        #[serde(rename = "min_tip_percentage_required")]
+        min_tip_percentage_required: i32,
     },
     #[serde(rename="Rejected")]
     TransactionSubmitRejectedErrorDetails {

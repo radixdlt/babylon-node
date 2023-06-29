@@ -77,6 +77,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -152,7 +153,7 @@ public final class REv2GenesisTest {
                             GenesisConsensusManagerConfig.Builder.testDefaults()),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, 0, MempoolRelayConfig.of())))));
+                            0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of())))));
   }
 
   @Test

@@ -80,6 +80,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -120,7 +121,10 @@ public final class REv2LargeTransactionTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
-                            10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),
+                            10,
+                            100 * 1024 * 1024,
+                            new RustMempoolConfig(1024 * 1024, 1),
+                            MempoolRelayConfig.of())),
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 

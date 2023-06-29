@@ -206,10 +206,12 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
-
     // State Computer
-    var mempoolMaxSize = properties.get("mempool.maxSize", 50);
-    var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    var mempoolMaxTotalTransactionsSize =
+        properties.get("mempool.maxTotalTransactionsSize", 100 * 1024 * 1024);
+    var mempoolMaxTransactionCount = properties.get("mempool.maxTransactionCount", 10_000);
+    var mempoolConfig =
+        new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
     var enableLocalTransactionExecutionIndex =
         properties.get("db.local_transaction_execution_index.enable", true);
     var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);

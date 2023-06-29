@@ -122,7 +122,10 @@ public final class REv2MempoolFillAndEmptyTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
+                            50,
+                            50 * 1024 * 1024,
+                            new RustMempoolConfig(100 * 1024 * 1024, 1000),
+                            new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

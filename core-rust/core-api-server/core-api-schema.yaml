@@ -3717,7 +3717,7 @@ components:
     LtsTransactionSubmitErrorDetailsType:
       type: string
       enum:
-        - MempoolFull
+        - PriorityThresholdNotMet
         - Rejected
     LtsTransactionSubmitErrorDetails:
       type: object
@@ -3730,20 +3730,26 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
-          MempoolFull: "#/components/schemas/LtsTransactionSubmitMempoolFullErrorDetails"
+          PriorityThresholdNotMet: "#/components/schemas/LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"
           Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
-    LtsTransactionSubmitMempoolFullErrorDetails:
+    LtsTransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
         - type: object
           required:
-            - mempool_capacity
+            - tip_percentage
+            - min_tip_percentage_required
           properties:
-            mempool_capacity:
+            tip_percentage:
               type: integer
               format: int32
               minimum: 0
-              maximum: 10000
+              maximum: 65535
+            min_tip_percentage_required:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 65535
     LtsTransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
@@ -4623,7 +4629,7 @@ components:
     TransactionSubmitErrorDetailsType:
       type: string
       enum:
-        - MempoolFull
+        - PriorityThresholdNotMet
         - Rejected
     TransactionSubmitErrorDetails:
       type: object
@@ -4636,20 +4642,26 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match TransactionSubmitErrorDetailsType
-          MempoolFull: '#/components/schemas/TransactionSubmitMempoolFullErrorDetails'
+          PriorityThresholdNotMet: '#/components/schemas/TransactionSubmitPriorityThresholdNotMetErrorDetails'
           Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
-    TransactionSubmitMempoolFullErrorDetails:
+    TransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
         - type: object
           required:
-            - mempool_capacity
+            - tip_percentage
+            - min_tip_percentage_required
           properties:
-            mempool_capacity:
+            tip_percentage:
               type: integer
               format: int32
               minimum: 0
-              maximum: 10000
+              maximum: 65535
+            min_tip_percentage_required:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 65535
     TransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"

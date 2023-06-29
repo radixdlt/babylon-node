@@ -25,10 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitMempoolFullErrorDetailsAllOf;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
-import com.radixdlt.api.core.generated.models.TransactionSubmitMempoolFullErrorDetails;
+import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,10 +37,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * TransactionSubmitMempoolFullErrorDetails
+ * TransactionSubmitPriorityThresholdNotMetErrorDetails
  */
 @JsonPropertyOrder({
-  TransactionSubmitMempoolFullErrorDetails.JSON_PROPERTY_MEMPOOL_CAPACITY
+  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_TIP_PERCENTAGE,
+  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -49,47 +50,78 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionSubmitMempoolFullErrorDetails.class, name = "MempoolFull"),
+  @JsonSubTypes.Type(value = TransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
   @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
 
-public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitErrorDetails {
-  public static final String JSON_PROPERTY_MEMPOOL_CAPACITY = "mempool_capacity";
-  private Integer mempoolCapacity;
+public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends TransactionSubmitErrorDetails {
+  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
+  private Integer tipPercentage;
 
-  public TransactionSubmitMempoolFullErrorDetails() { 
+  public static final String JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED = "min_tip_percentage_required";
+  private Integer minTipPercentageRequired;
+
+  public TransactionSubmitPriorityThresholdNotMetErrorDetails() { 
   }
 
-  public TransactionSubmitMempoolFullErrorDetails mempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public TransactionSubmitPriorityThresholdNotMetErrorDetails tipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
-   * Get mempoolCapacity
+   * Get tipPercentage
    * minimum: 0
-   * maximum: 10000
-   * @return mempoolCapacity
+   * maximum: 65535
+   * @return tipPercentage
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMempoolCapacity() {
-    return mempoolCapacity;
+  public Integer getTipPercentage() {
+    return tipPercentage;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public void setTipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
+  }
+
+
+  public TransactionSubmitPriorityThresholdNotMetErrorDetails minTipPercentageRequired(Integer minTipPercentageRequired) {
+    this.minTipPercentageRequired = minTipPercentageRequired;
+    return this;
+  }
+
+   /**
+   * Get minTipPercentageRequired
+   * minimum: 0
+   * maximum: 65535
+   * @return minTipPercentageRequired
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getMinTipPercentageRequired() {
+    return minTipPercentageRequired;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
+    this.minTipPercentageRequired = minTipPercentageRequired;
   }
 
 
   /**
-   * Return true if this TransactionSubmitMempoolFullErrorDetails object is equal to o.
+   * Return true if this TransactionSubmitPriorityThresholdNotMetErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -99,22 +131,24 @@ public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitE
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionSubmitMempoolFullErrorDetails transactionSubmitMempoolFullErrorDetails = (TransactionSubmitMempoolFullErrorDetails) o;
-    return Objects.equals(this.mempoolCapacity, transactionSubmitMempoolFullErrorDetails.mempoolCapacity) &&
+    TransactionSubmitPriorityThresholdNotMetErrorDetails transactionSubmitPriorityThresholdNotMetErrorDetails = (TransactionSubmitPriorityThresholdNotMetErrorDetails) o;
+    return Objects.equals(this.tipPercentage, transactionSubmitPriorityThresholdNotMetErrorDetails.tipPercentage) &&
+        Objects.equals(this.minTipPercentageRequired, transactionSubmitPriorityThresholdNotMetErrorDetails.minTipPercentageRequired) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mempoolCapacity, super.hashCode());
+    return Objects.hash(tipPercentage, minTipPercentageRequired, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionSubmitMempoolFullErrorDetails {\n");
+    sb.append("class TransactionSubmitPriorityThresholdNotMetErrorDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    mempoolCapacity: ").append(toIndentedString(mempoolCapacity)).append("\n");
+    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
+    sb.append("    minTipPercentageRequired: ").append(toIndentedString(minTipPercentageRequired)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -133,10 +167,10 @@ public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitE
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("MempoolFull", TransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("PriorityThresholdNotMet", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
-  mappings.put("TransactionSubmitMempoolFullErrorDetails", TransactionSubmitMempoolFullErrorDetails.class);
-  JSON.registerDiscriminator(TransactionSubmitMempoolFullErrorDetails.class, "type", mappings);
+  mappings.put("TransactionSubmitPriorityThresholdNotMetErrorDetails", TransactionSubmitPriorityThresholdNotMetErrorDetails.class);
+  JSON.registerDiscriminator(TransactionSubmitPriorityThresholdNotMetErrorDetails.class, "type", mappings);
 }
 }
 

@@ -206,7 +206,7 @@ impl From<Arc<MempoolTransaction>> for JavaPreparedNotarizedTransaction {
 
 #[derive(Debug, Categorize, Encode, Decode)]
 enum MempoolAddErrorJava {
-    Full { current_size: u64, max_size: u64 },
+    PriorityThresholdNotMet(i32, i32),
     Duplicate(NotarizedTransactionHash),
     TransactionValidationError(String),
     Rejected(String),
@@ -215,13 +215,13 @@ enum MempoolAddErrorJava {
 impl From<MempoolAddError> for MempoolAddErrorJava {
     fn from(err: MempoolAddError) -> Self {
         match err {
-            MempoolAddError::Full {
-                current_size,
-                max_size,
-            } => MempoolAddErrorJava::Full {
-                current_size,
-                max_size,
-            },
+            MempoolAddError::PriorityThresholdNotMet {
+                min_tip_percentage_required,
+                tip_percentage,
+            } => MempoolAddErrorJava::PriorityThresholdNotMet(
+                min_tip_percentage_required as i32,
+                tip_percentage as i32,
+            ),
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
             MempoolAddError::Rejected(rejection) => {
                 MempoolAddErrorJava::Rejected(rejection.reason.to_string())

@@ -63,7 +63,6 @@
  */
 
 use radix_engine_common::types::Epoch;
-use sbor::*;
 use transaction::{errors::TransactionValidationError, prelude::NotarizedTransactionHash};
 
 use std::string::ToString;
@@ -78,7 +77,10 @@ pub enum MempoolAddSource {
 
 #[derive(Debug)]
 pub enum MempoolAddError {
-    Full { current_size: u64, max_size: u64 },
+    PriorityThresholdNotMet {
+        min_tip_percentage_required: u16,
+        tip_percentage: u16,
+    },
     Duplicate(NotarizedTransactionHash),
     Rejected(MempoolAddRejection),
 }
@@ -133,19 +135,11 @@ impl MempoolAddRejection {
 impl ToString for MempoolAddError {
     fn to_string(&self) -> String {
         match self {
-            MempoolAddError::Full {
-                current_size,
-                max_size,
-            } => format!("Mempool Full [{current_size} - {max_size}]"),
+            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}"),
             MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }
-}
-
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct MempoolConfig {
-    pub max_size: u32,
 }
 
 pub mod mempool_manager;

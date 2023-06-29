@@ -12,15 +12,21 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
-    #[serde(rename = "mempool_capacity")]
-    pub mempool_capacity: i32,
+pub struct TransactionSubmitPriorityThresholdNotMetErrorDetails {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType,
+    #[serde(rename = "tip_percentage")]
+    pub tip_percentage: i32,
+    #[serde(rename = "min_tip_percentage_required")]
+    pub min_tip_percentage_required: i32,
 }
 
-impl LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
-    pub fn new(mempool_capacity: i32) -> LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
-        LtsTransactionSubmitMempoolFullErrorDetailsAllOf {
-            mempool_capacity,
+impl TransactionSubmitPriorityThresholdNotMetErrorDetails {
+    pub fn new(_type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType, tip_percentage: i32, min_tip_percentage_required: i32) -> TransactionSubmitPriorityThresholdNotMetErrorDetails {
+        TransactionSubmitPriorityThresholdNotMetErrorDetails {
+            _type,
+            tip_percentage,
+            min_tip_percentage_required,
         }
     }
 }

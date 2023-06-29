@@ -76,6 +76,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -142,7 +143,10 @@ public final class SanityTest {
                                 roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
+                            10,
+                            10 * 1024 * 1024,
+                            new RustMempoolConfig(100 * 1024 * 1024, 100),
+                            MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

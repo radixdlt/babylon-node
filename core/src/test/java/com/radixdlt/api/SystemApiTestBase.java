@@ -80,6 +80,7 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
@@ -134,7 +135,10 @@ public abstract class SystemApiTestBase {
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),
                             StateComputerConfig.REV2ProposerConfig.mempool(
-                                10, 10 * 1024 * 1024, 10, MempoolRelayConfig.of())),
+                                10,
+                                10 * 1024 * 1024,
+                                new RustMempoolConfig(10 * 1024 * 1024, 10),
+                                MempoolRelayConfig.of())),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
