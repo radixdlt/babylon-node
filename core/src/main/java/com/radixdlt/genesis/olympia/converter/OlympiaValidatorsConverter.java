@@ -75,6 +75,7 @@ import com.radixdlt.genesis.GenesisValidator;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Tuple.Tuple2;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.MetadataValue;
 import java.util.Optional;
 
@@ -109,6 +110,7 @@ public final class OlympiaValidatorsConverter {
         publicKey,
         olympiaValidator.allowsDelegation(),
         olympiaValidator.isRegistered(),
+        Decimal.fraction(olympiaValidator.feeProportionInTenThousandths(), 10000L),
         metadata,
         Address.virtualAccountAddress(owner.publicKeyBytes().asBytes()));
   }

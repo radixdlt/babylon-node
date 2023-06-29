@@ -64,6 +64,7 @@
 
 package com.radixdlt.bootstrap;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -73,6 +74,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.TestSetupUtils;
@@ -153,7 +155,8 @@ public final class RadixNodeBootstrapperTest {
                 new GenesisFromPropertiesLoader(properties1),
                 new GenesisFileStore(tmpFolder.newFolder()))
             .bootstrapRadixNode();
-    assertTrue(nodeHandle1 instanceof RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved);
+    assertThat(nodeHandle1)
+        .isInstanceOf(RadixNodeBootstrapper.RadixNodeBootstrapperHandle.Resolved.class);
 
     // This transaction doesn't match the genesis of GENESIS_TEST network
     final var genesisData2 =
@@ -211,7 +214,8 @@ public final class RadixNodeBootstrapperTest {
       throw new RuntimeException("Couldn't write to the genesis data file", e);
     }
     System.out.printf(
-        "The hash is: %s%n", Hex.toHexString(rawDataWithHash.genesisDataHash().asBytes()));
+        "The hash (for updating Network.java) is: %s%n",
+        Hex.toHexString(rawDataWithHash.genesisDataHash().asBytes()));
   }
 
   private GenesisData staticGenesisTestNetworkGenesisData() {
@@ -295,8 +299,10 @@ public final class RadixNodeBootstrapperTest {
                         key.getPublicKey(),
                         true,
                         true,
+                        Decimal.of(1),
                         ImmutableList.of(),
-                        Address.virtualAccountAddress(key.getPublicKey()))))));
+                        Address.virtualAccountAddress(key.getPublicKey()))))),
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
   }
 
   private String encodeToCompressedBase64(GenesisData genesisData) throws IOException {

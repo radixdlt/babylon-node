@@ -20,7 +20,6 @@ use std::{
 pub enum RejectionReason {
     FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
-    IntentHashCommitted,
 }
 
 impl From<TransactionValidationError> for RejectionReason {
@@ -45,11 +44,10 @@ impl RejectionReason {
                 RejectionError::ErrorBeforeFeeLoanRepaid(_) => false,
                 RejectionError::TransactionEpochNotYetValid { .. } => false,
                 RejectionError::TransactionEpochNoLongerValid { .. } => false,
-                // I've left this match statement all explicitly false because in the future we'll have duplicate Intent Hash here,
-                // and we'll need to mark it true and I want to catch it as a compile error when it's introduced
+                RejectionError::IntentHashPreviouslyCommitted => true,
+                RejectionError::IntentHashPreviouslyCancelled => true,
             },
-            RejectionReason::IntentHashCommitted => true,
-            _ => false,
+            RejectionReason::ValidationError(_) => false,
         }
     }
 
@@ -72,6 +70,12 @@ impl RejectionReason {
                     }
                 }
                 RejectionError::TransactionEpochNoLongerValid { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                RejectionError::IntentHashPreviouslyCommitted => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                RejectionError::IntentHashPreviouslyCancelled => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
@@ -104,10 +108,11 @@ impl RejectionReason {
                 TransactionValidationError::CallDataValidationError(_) => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
+                // This is permanent for the intent - because all intents share the same manifest
+                TransactionValidationError::InvalidMessage(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
             },
-            RejectionReason::IntentHashCommitted => {
-                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-            }
         }
     }
 }
@@ -150,7 +155,6 @@ impl fmt::Display for RejectionReason {
             RejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
             }
-            RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
         }
     }
 }
@@ -469,7 +473,9 @@ impl PendingTransactionResultCache {
                     // We even overwrite the record for transaction which got committed here
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
-                        rejection: Some(RejectionReason::IntentHashCommitted),
+                        rejection: Some(RejectionReason::FromExecution(Box::new(
+                            RejectionError::IntentHashPreviouslyCommitted,
+                        ))),
                         against_state: AtState::Committed { state_version },
                         timestamp: current_timestamp,
                     })
@@ -495,7 +501,9 @@ impl PendingTransactionResultCache {
                 *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(RejectionReason::IntentHashCommitted),
+                    rejection: Some(RejectionReason::FromExecution(Box::new(
+                        RejectionError::IntentHashPreviouslyCommitted,
+                    ))),
                     against_state: AtState::Committed {
                         state_version: *committed_at_state_version,
                     },

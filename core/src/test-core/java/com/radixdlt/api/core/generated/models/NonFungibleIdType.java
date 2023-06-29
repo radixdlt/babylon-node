@@ -34,7 +34,7 @@ public enum NonFungibleIdType {
   
   BYTES("Bytes"),
   
-  UUID("UUID");
+  RUID("RUID");
 
   private String value;
 

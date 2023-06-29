@@ -18,15 +18,19 @@ pub struct LtsEntityFungibleBalanceChanges {
     pub entity_address: String,
     #[serde(rename = "fee_balance_change", skip_serializing_if = "Option::is_none")]
     pub fee_balance_change: Option<Box<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>>,
+    /// If present, this field indicates fee-related balance changes, for example:  - Payment of the fee (including tip and royalty) - Distribution of royalties - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant   validator/s at end of epoch  See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how fee payment works at Babylon. 
+    #[serde(rename = "fee_balance_changes")]
+    pub fee_balance_changes: Vec<crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChange>,
     #[serde(rename = "non_fee_balance_changes")]
     pub non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
 }
 
 impl LtsEntityFungibleBalanceChanges {
-    pub fn new(entity_address: String, non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
+    pub fn new(entity_address: String, fee_balance_changes: Vec<crate::core_api::generated::models::LtsFeeFungibleResourceBalanceChange>, non_fee_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
         LtsEntityFungibleBalanceChanges {
             entity_address,
             fee_balance_change: None,
+            fee_balance_changes,
             non_fee_balance_changes,
         }
     }

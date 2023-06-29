@@ -5,8 +5,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionExecutionTrace,
-    TransactionOutcome,
+    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionOutcome,
 };
 use radix_engine::types::*;
 
@@ -181,22 +180,8 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl
-    From<(
-        CommitResult,
-        Vec<SubstateChange>,
-        TransactionExecutionTrace,
-        ExecutionMetrics,
-    )> for LocalTransactionReceipt
-{
-    fn from(
-        (commit_result, substate_changes, execution_trace, execution_metrics): (
-            CommitResult,
-            Vec<SubstateChange>,
-            TransactionExecutionTrace,
-            ExecutionMetrics,
-        ),
-    ) -> Self {
+impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
+    fn from((commit_result, substate_changes): (CommitResult, Vec<SubstateChange>)) -> Self {
         let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {
@@ -209,13 +194,13 @@ impl
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
-                execution_metrics,
+                execution_metrics: commit_result.execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
                 fee_payments: commit_result.fee_payments,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
-                resource_changes: execution_trace.resource_changes,
+                resource_changes: commit_result.execution_trace.resource_changes,
                 next_epoch,
             },
         }

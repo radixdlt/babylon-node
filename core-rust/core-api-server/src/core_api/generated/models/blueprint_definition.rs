@@ -13,17 +13,22 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintDefinition {
-    #[serde(rename = "schema")]
-    pub schema: Box<crate::core_api::generated::models::BlueprintSchema>,
-    #[serde(rename = "template")]
-    pub template: Box<crate::core_api::generated::models::BlueprintTemplate>,
+    #[serde(rename = "interface")]
+    pub interface: Box<crate::core_api::generated::models::BlueprintInterface>,
+    /// A map from the function name to its export
+    #[serde(rename = "function_exports")]
+    pub function_exports: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>,
+    /// A map from the engine system's virtualization module's function identifier to the package export of the function.
+    #[serde(rename = "virtual_lazy_load_functions")]
+    pub virtual_lazy_load_functions: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>,
 }
 
 impl BlueprintDefinition {
-    pub fn new(schema: crate::core_api::generated::models::BlueprintSchema, template: crate::core_api::generated::models::BlueprintTemplate) -> BlueprintDefinition {
+    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, function_exports: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>, virtual_lazy_load_functions: ::std::collections::HashMap<String, crate::core_api::generated::models::PackageExport>) -> BlueprintDefinition {
         BlueprintDefinition {
-            schema: Box::new(schema),
-            template: Box::new(template),
+            interface: Box::new(interface),
+            function_exports,
+            virtual_lazy_load_functions,
         }
     }
 }

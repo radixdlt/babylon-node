@@ -265,9 +265,6 @@ where
             base_committed_state_version: series_executor.latest_state_version(),
         };
 
-        let mut duplicate_intent_hash_detector =
-            DuplicateIntentHashDetector::new(read_store.deref());
-
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
             // and executable creation) by accessing the execution cache in a more clever way.
@@ -275,10 +272,6 @@ where
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
-
-            if let Some(intent_hash) = validated.intent_hash_if_user() {
-                duplicate_intent_hash_detector.record_ancestor(intent_hash);
-            }
 
             series_executor
                 .execute(&validated, "ancestor")
@@ -416,25 +409,6 @@ where
                 .header
                 .inner
                 .end_epoch_exclusive;
-            if let Err(with) = duplicate_intent_hash_detector.check_proposed(&intent_hash) {
-                rejected_transactions.push(RejectedTransaction {
-                    index: index as u32,
-                    intent_hash: Some(intent_hash),
-                    notarized_transaction_hash: Some(notarized_transaction_hash),
-                    ledger_transaction_hash: Some(ledger_transaction_hash),
-                    error: format!(
-                        "Duplicate intent hash: {:?}, state: {:?}",
-                        &intent_hash, with
-                    ),
-                });
-                pending_transaction_results.push(PendingTransactionResult {
-                    intent_hash,
-                    notarized_transaction_hash,
-                    invalid_at_epoch,
-                    rejection_reason: Some(RejectionReason::IntentHashCommitted),
-                });
-                continue;
-            }
 
             // TODO(optimization-only): We could avoid signature verification by re-using the
             // validated transaction from the mempool.
@@ -475,7 +449,6 @@ where
                             .execution_metrics,
                     ) {
                         Ok(success) => {
-                            duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
                                 raw: raw_ledger_transaction,
@@ -591,7 +564,7 @@ where
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_test_genesis(&self) -> LedgerProof {
+    pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
         let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
@@ -630,6 +603,7 @@ where
             initial_config,
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
         )
     }
 
@@ -642,6 +616,7 @@ where
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
+        faucet_supply: Decimal,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -672,6 +647,8 @@ where
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
+            // Leader gets set to None, to be fixed at the first proper round change.
+            None,
         );
         let prepare_result = self.prepare_genesis(transaction);
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
@@ -692,7 +669,7 @@ where
         }
 
         info!("Committing genesis wrap-up");
-        let transaction = create_genesis_wrap_up_transaction();
+        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
         let prepare_result = self.prepare_genesis(transaction);
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();

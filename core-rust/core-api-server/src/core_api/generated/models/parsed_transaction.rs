@@ -18,14 +18,14 @@ pub enum ParsedTransaction {
         #[serde(rename = "ledger_transaction", skip_serializing_if = "Option::is_none")]
         ledger_transaction: Option<Box<crate::core_api::generated::models::LedgerTransaction>>,
         #[serde(rename = "identifiers")]
-        identifiers: Box<crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers>,
+        identifiers: Box<crate::core_api::generated::models::ParsedLedgerTransactionIdentifiers>,
     },
     #[serde(rename="NotarizedTransaction")]
     ParsedNotarizedTransaction {
         #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
         notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
         #[serde(rename = "identifiers")]
-        identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers>,
+        identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionIdentifiers>,
         #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
         validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
     },
@@ -34,14 +34,14 @@ pub enum ParsedTransaction {
         #[serde(rename = "signed_intent", skip_serializing_if = "Option::is_none")]
         signed_intent: Option<Box<crate::core_api::generated::models::SignedTransactionIntent>>,
         #[serde(rename = "identifiers")]
-        identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers>,
+        identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentIdentifiers>,
     },
     #[serde(rename="TransactionIntent")]
     ParsedTransactionIntent {
         #[serde(rename = "intent", skip_serializing_if = "Option::is_none")]
         intent: Option<Box<crate::core_api::generated::models::TransactionIntent>>,
         #[serde(rename = "identifiers")]
-        identifiers: Box<crate::core_api::generated::models::ParsedTransactionIntentAllOfIdentifiers>,
+        identifiers: Box<crate::core_api::generated::models::ParsedTransactionIntentIdentifiers>,
     },
 }
 

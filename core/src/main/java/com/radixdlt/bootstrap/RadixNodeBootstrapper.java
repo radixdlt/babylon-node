@@ -224,13 +224,13 @@ public final class RadixNodeBootstrapper {
           new RuntimeException(
               String.format(
                   """
-                    Inconsistent genesis configuration. The following genesis sources were read: \n
-                    - properties (network.genesis_data or network.genesis_data_file): %s \n
-                    - network genesis (based on network.id): %s \n
-                    - genesis stored from previous runs: %s \n
+                    Inconsistent genesis configuration. The following genesis sources were read:
+                    - properties genesis hash (based on network.genesis_data or network.genesis_data_file): %s
+                    - expected network genesis hash (based on network.id): %s
+                    - genesis hash stored from previous runs: %s
                     Make sure your configuration is correct (check `network.id` and/or \
                     `network.genesis_data` and/or `network.genesis_data_file`).""",
-                  configuredGenesis, fixedNetworkGenesisHash, storedGenesisHash)));
+                  configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)));
     }
   }
 

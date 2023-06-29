@@ -104,7 +104,7 @@ public final class RandomValidatorsTest {
   private static final int TOTAL_NUM_VALIDATORS = 30;
   private static final int NUM_GENESIS_VALIDATORS = TOTAL_NUM_VALIDATORS / 2;
   private static final GenesisData GENESIS =
-      GenesisBuilder.createGenesisWithNumValidators(
+      GenesisBuilder.createTestGenesisWithNumValidators(
           NUM_GENESIS_VALIDATORS,
           Decimal.of(1000),
           GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10));
@@ -140,8 +140,6 @@ public final class RandomValidatorsTest {
   public void normal_run_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
-      final var faucet = test.faucetAddress();
-
       var random = new Random(12345);
 
       var creatingValidators = new HashMap<Integer, RawNotarizedTransaction>();

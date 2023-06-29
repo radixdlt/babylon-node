@@ -18,8 +18,8 @@ pub enum NonFungibleIdType {
     Integer,
     #[serde(rename = "Bytes")]
     Bytes,
-    #[serde(rename = "UUID")]
-    UUID,
+    #[serde(rename = "RUID")]
+    RUID,
 
 }
 
@@ -29,7 +29,7 @@ impl ToString for NonFungibleIdType {
             Self::String => String::from("String"),
             Self::Integer => String::from("Integer"),
             Self::Bytes => String::from("Bytes"),
-            Self::UUID => String::from("UUID"),
+            Self::RUID => String::from("RUID"),
         }
     }
 }

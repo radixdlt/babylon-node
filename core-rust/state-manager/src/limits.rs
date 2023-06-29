@@ -83,9 +83,9 @@ pub enum VertexLimitsAdvanceSuccess {
 }
 
 pub struct VertexLimitsTracker {
-    pub remaining_transactions_count: usize,
+    pub remaining_transactions_count: u32,
     pub remaining_transactions_size: usize,
-    pub remaining_execution_cost_units_consumed: usize,
+    pub remaining_execution_cost_units_consumed: u32,
     pub remaining_substate_read_size: usize,
     pub remaining_substate_read_count: usize,
     pub remaining_substate_write_size: usize,
@@ -110,7 +110,7 @@ impl VertexLimitsTracker {
             return Err(VertexLimitsExceeded::TransactionsCount);
         }
 
-        if self.remaining_substate_read_size < transaction_size {
+        if self.remaining_transactions_size < transaction_size {
             return Err(VertexLimitsExceeded::TransactionsSize);
         }
 

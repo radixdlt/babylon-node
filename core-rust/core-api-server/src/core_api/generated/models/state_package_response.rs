@@ -13,20 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StatePackageResponse {
-    #[serde(rename = "info")]
-    pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "royalty")]
     pub royalty: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "access_rules")]
-    pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "owner_role")]
+    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StatePackageResponse {
-    pub fn new(info: crate::core_api::generated::models::Substate, royalty: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate) -> StatePackageResponse {
+    pub fn new(royalty: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
         StatePackageResponse {
-            info: Option::Some(info),
             royalty: Option::Some(royalty),
-            access_rules: Option::Some(access_rules),
+            owner_role: Option::Some(owner_role),
         }
     }
 }

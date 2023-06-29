@@ -15,15 +15,15 @@
 pub struct StateResourceResponse {
     #[serde(rename = "manager")]
     pub manager: Option<crate::core_api::generated::models::StateResourceManager>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "access_rules")]
-    pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "owner_role")]
+    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StateResourceResponse {
-    pub fn new(manager: crate::core_api::generated::models::StateResourceManager, access_rules: crate::core_api::generated::models::Substate) -> StateResourceResponse {
+    pub fn new(manager: crate::core_api::generated::models::StateResourceManager, owner_role: crate::core_api::generated::models::Substate) -> StateResourceResponse {
         StateResourceResponse {
             manager: Option::Some(manager),
-            access_rules: Option::Some(access_rules),
+            owner_role: Option::Some(owner_role),
         }
     }
 }

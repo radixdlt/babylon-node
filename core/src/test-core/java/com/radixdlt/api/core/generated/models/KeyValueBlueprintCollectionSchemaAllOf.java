@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintTypeReference;
+import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,17 +32,17 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueBlueprintCollectionSchemaAllOf
  */
 @JsonPropertyOrder({
-  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_KEY_TYPE_REFERENCE,
-  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_VALUE_TYPE_REFERENCE,
+  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_KEY_TYPE_POINTER,
+  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_VALUE_TYPE_POINTER,
   KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_CAN_OWN
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueBlueprintCollectionSchemaAllOf {
-  public static final String JSON_PROPERTY_KEY_TYPE_REFERENCE = "key_type_reference";
-  private BlueprintTypeReference keyTypeReference;
+  public static final String JSON_PROPERTY_KEY_TYPE_POINTER = "key_type_pointer";
+  private TypePointer keyTypePointer;
 
-  public static final String JSON_PROPERTY_VALUE_TYPE_REFERENCE = "value_type_reference";
-  private BlueprintTypeReference valueTypeReference;
+  public static final String JSON_PROPERTY_VALUE_TYPE_POINTER = "value_type_pointer";
+  private TypePointer valueTypePointer;
 
   public static final String JSON_PROPERTY_CAN_OWN = "can_own";
   private Boolean canOwn;
@@ -50,55 +50,55 @@ public class KeyValueBlueprintCollectionSchemaAllOf {
   public KeyValueBlueprintCollectionSchemaAllOf() { 
   }
 
-  public KeyValueBlueprintCollectionSchemaAllOf keyTypeReference(BlueprintTypeReference keyTypeReference) {
-    this.keyTypeReference = keyTypeReference;
+  public KeyValueBlueprintCollectionSchemaAllOf keyTypePointer(TypePointer keyTypePointer) {
+    this.keyTypePointer = keyTypePointer;
     return this;
   }
 
    /**
-   * Get keyTypeReference
-   * @return keyTypeReference
+   * Get keyTypePointer
+   * @return keyTypePointer
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REFERENCE)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintTypeReference getKeyTypeReference() {
-    return keyTypeReference;
+  public TypePointer getKeyTypePointer() {
+    return keyTypePointer;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REFERENCE)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyTypeReference(BlueprintTypeReference keyTypeReference) {
-    this.keyTypeReference = keyTypeReference;
+  public void setKeyTypePointer(TypePointer keyTypePointer) {
+    this.keyTypePointer = keyTypePointer;
   }
 
 
-  public KeyValueBlueprintCollectionSchemaAllOf valueTypeReference(BlueprintTypeReference valueTypeReference) {
-    this.valueTypeReference = valueTypeReference;
+  public KeyValueBlueprintCollectionSchemaAllOf valueTypePointer(TypePointer valueTypePointer) {
+    this.valueTypePointer = valueTypePointer;
     return this;
   }
 
    /**
-   * Get valueTypeReference
-   * @return valueTypeReference
+   * Get valueTypePointer
+   * @return valueTypePointer
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REFERENCE)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintTypeReference getValueTypeReference() {
-    return valueTypeReference;
+  public TypePointer getValueTypePointer() {
+    return valueTypePointer;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REFERENCE)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueTypeReference(BlueprintTypeReference valueTypeReference) {
-    this.valueTypeReference = valueTypeReference;
+  public void setValueTypePointer(TypePointer valueTypePointer) {
+    this.valueTypePointer = valueTypePointer;
   }
 
 
@@ -140,22 +140,22 @@ public class KeyValueBlueprintCollectionSchemaAllOf {
       return false;
     }
     KeyValueBlueprintCollectionSchemaAllOf keyValueBlueprintCollectionSchemaAllOf = (KeyValueBlueprintCollectionSchemaAllOf) o;
-    return Objects.equals(this.keyTypeReference, keyValueBlueprintCollectionSchemaAllOf.keyTypeReference) &&
-        Objects.equals(this.valueTypeReference, keyValueBlueprintCollectionSchemaAllOf.valueTypeReference) &&
+    return Objects.equals(this.keyTypePointer, keyValueBlueprintCollectionSchemaAllOf.keyTypePointer) &&
+        Objects.equals(this.valueTypePointer, keyValueBlueprintCollectionSchemaAllOf.valueTypePointer) &&
         Objects.equals(this.canOwn, keyValueBlueprintCollectionSchemaAllOf.canOwn);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyTypeReference, valueTypeReference, canOwn);
+    return Objects.hash(keyTypePointer, valueTypePointer, canOwn);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueBlueprintCollectionSchemaAllOf {\n");
-    sb.append("    keyTypeReference: ").append(toIndentedString(keyTypeReference)).append("\n");
-    sb.append("    valueTypeReference: ").append(toIndentedString(valueTypeReference)).append("\n");
+    sb.append("    keyTypePointer: ").append(toIndentedString(keyTypePointer)).append("\n");
+    sb.append("    valueTypePointer: ").append(toIndentedString(valueTypePointer)).append("\n");
     sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");
     sb.append("}");
     return sb.toString();

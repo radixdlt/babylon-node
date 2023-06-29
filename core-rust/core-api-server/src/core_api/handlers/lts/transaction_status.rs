@@ -1,3 +1,4 @@
+use radix_engine::errors::RejectionError;
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
@@ -190,13 +191,19 @@ fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
-            let rejection_reason_to_use = transaction_record
+            let error_string_to_use = transaction_record
                 .most_applicable_status()
-                .unwrap_or(&RejectionReason::IntentHashCommitted);
+                .map(|reason| reason.to_string())
+                .unwrap_or_else(|| {
+                    RejectionReason::FromExecution(Box::new(
+                        RejectionError::IntentHashPreviouslyCommitted,
+                    ))
+                    .to_string()
+                });
             models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&payload_hash),
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
-                error_message: Some(rejection_reason_to_use.to_string()),
+                error_message: Some(error_string_to_use),
             }
         })
         .collect::<Vec<_>>()

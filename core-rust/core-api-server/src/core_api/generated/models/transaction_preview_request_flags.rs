@@ -17,19 +17,16 @@ pub struct TransactionPreviewRequestFlags {
     pub use_free_credit: bool,
     #[serde(rename = "assume_all_signature_proofs")]
     pub assume_all_signature_proofs: bool,
-    #[serde(rename = "permit_duplicate_intent_hash")]
-    pub permit_duplicate_intent_hash: bool,
-    #[serde(rename = "permit_invalid_header_epoch")]
-    pub permit_invalid_header_epoch: bool,
+    #[serde(rename = "skip_epoch_check")]
+    pub skip_epoch_check: bool,
 }
 
 impl TransactionPreviewRequestFlags {
-    pub fn new(use_free_credit: bool, assume_all_signature_proofs: bool, permit_duplicate_intent_hash: bool, permit_invalid_header_epoch: bool) -> TransactionPreviewRequestFlags {
+    pub fn new(use_free_credit: bool, assume_all_signature_proofs: bool, skip_epoch_check: bool) -> TransactionPreviewRequestFlags {
         TransactionPreviewRequestFlags {
             use_free_credit,
             assume_all_signature_proofs,
-            permit_duplicate_intent_hash,
-            permit_invalid_header_epoch,
+            skip_epoch_check,
         }
     }
 }

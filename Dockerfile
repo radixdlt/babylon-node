@@ -29,7 +29,7 @@ RUN apt-get update \
     software-properties-common=0.96.20.2-2.1 \
   && add-apt-repository -y ppa:openjdk-r/ppa \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.6+10-1~deb11u1 \
+    openjdk-17-jdk=17.0.7+7-1~deb11u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
   && wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
@@ -224,7 +224,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - gettext-base is needed for envsubst in config_radixdlt.sh
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.6+10-1~deb11u1 \
+    openjdk-17-jre-headless=17.0.7+7-1~deb11u1 \
     unzip=6.0-26+deb11u1 \
     daemontools=1:0.76-7 \
     libssl-dev=1.1.1n-0+deb11u5 \

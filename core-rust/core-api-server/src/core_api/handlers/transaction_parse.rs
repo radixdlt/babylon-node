@@ -1,12 +1,10 @@
 use crate::core_api::*;
-use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
 use std::ops::Deref;
 use std::time::SystemTime;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 
-use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
 
@@ -217,7 +215,7 @@ fn to_api_parsed_notarized_transaction(
 
     Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
         notarized_transaction: model,
-        identifiers: Box::new(ParsedNotarizedTransactionAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedNotarizedTransactionIdentifiers {
             intent_hash: to_api_intent_hash(&intent_hash),
             signed_intent_hash: to_api_signed_intent_hash(&signed_intent_hash),
             payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
@@ -250,7 +248,7 @@ fn to_api_parsed_signed_intent(
     };
     Ok(models::ParsedTransaction::ParsedSignedTransactionIntent {
         signed_intent: model,
-        identifiers: Box::new(ParsedSignedTransactionIntentAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedSignedTransactionIntentIdentifiers {
             intent_hash: to_api_intent_hash(&prepared.intent_hash()),
             signed_intent_hash: to_api_signed_intent_hash(&prepared.signed_intent_hash()),
         }),
@@ -277,7 +275,7 @@ fn to_api_parsed_intent(
     };
     Ok(models::ParsedTransaction::ParsedTransactionIntent {
         intent: model,
-        identifiers: Box::new(models::ParsedTransactionIntentAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedTransactionIntentIdentifiers {
             intent_hash: to_api_intent_hash(&prepared.intent_hash()),
         }),
     })
@@ -319,7 +317,7 @@ fn to_api_parsed_ledger_transaction(
 
     Ok(models::ParsedTransaction::ParsedLedgerTransaction {
         ledger_transaction: model,
-        identifiers: Box::new(models::ParsedLedgerTransactionAllOfIdentifiers {
+        identifiers: Box::new(models::ParsedLedgerTransactionIdentifiers {
             intent_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_intent_hash(hashes.intent_hash)),

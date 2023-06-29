@@ -105,6 +105,8 @@ public final class GenerateGenesis {
           Network.KISHARNET,
           Network.ANSHARNET);
 
+  private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = Set.of(Network.MAINNET);
+
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
       Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
 
@@ -254,8 +256,10 @@ public final class GenerateGenesis {
               GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
     }
 
+    final var useFaucet = !NETWORKS_TO_DISABLE_FAUCET.contains(network);
+
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
+        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig, useFaucet);
   }
 
   private static void usage(Options options) {

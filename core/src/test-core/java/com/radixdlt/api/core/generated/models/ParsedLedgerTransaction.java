@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedLedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionAllOf;
-import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
@@ -65,7 +65,7 @@ public class ParsedLedgerTransaction extends ParsedTransaction {
   private LedgerTransaction ledgerTransaction;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedLedgerTransactionAllOfIdentifiers identifiers;
+  private ParsedLedgerTransactionIdentifiers identifiers;
 
   public ParsedLedgerTransaction() { 
   }
@@ -96,7 +96,7 @@ public class ParsedLedgerTransaction extends ParsedTransaction {
   }
 
 
-  public ParsedLedgerTransaction identifiers(ParsedLedgerTransactionAllOfIdentifiers identifiers) {
+  public ParsedLedgerTransaction identifiers(ParsedLedgerTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -110,14 +110,14 @@ public class ParsedLedgerTransaction extends ParsedTransaction {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedLedgerTransactionAllOfIdentifiers getIdentifiers() {
+  public ParsedLedgerTransactionIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedLedgerTransactionAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedLedgerTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

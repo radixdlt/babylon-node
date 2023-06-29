@@ -100,10 +100,9 @@ pub(crate) async fn handle_transaction_callpreview(
             nonce: 490,
             signer_public_keys: vec![],
             flags: PreviewFlags {
-                permit_invalid_header_epoch: true,
-                permit_duplicate_intent_hash: true,
                 use_free_credit: true,
                 assume_all_signature_proofs: true,
+                skip_epoch_check: true,
             },
         })
         .map_err(|err| match err {
@@ -113,7 +112,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })?;
 
     let (status, output, error) = {
-        match result.receipt.result {
+        match result.receipt.transaction_result {
             TransactionResult::Commit(c) => match c.outcome {
                 TransactionOutcome::Success(data) => {
                     let output = match data

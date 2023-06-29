@@ -29,8 +29,8 @@ import com.radixdlt.api.core.generated.models.NotarizedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedLedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOf;
-import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOfIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionAllOfValidationError;
+import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
@@ -67,7 +67,7 @@ public class ParsedNotarizedTransaction extends ParsedTransaction {
   private NotarizedTransaction notarizedTransaction;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedNotarizedTransactionAllOfIdentifiers identifiers;
+  private ParsedNotarizedTransactionIdentifiers identifiers;
 
   public static final String JSON_PROPERTY_VALIDATION_ERROR = "validation_error";
   private ParsedNotarizedTransactionAllOfValidationError validationError;
@@ -101,7 +101,7 @@ public class ParsedNotarizedTransaction extends ParsedTransaction {
   }
 
 
-  public ParsedNotarizedTransaction identifiers(ParsedNotarizedTransactionAllOfIdentifiers identifiers) {
+  public ParsedNotarizedTransaction identifiers(ParsedNotarizedTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -115,14 +115,14 @@ public class ParsedNotarizedTransaction extends ParsedTransaction {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedNotarizedTransactionAllOfIdentifiers getIdentifiers() {
+  public ParsedNotarizedTransactionIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedNotarizedTransactionAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedNotarizedTransactionIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

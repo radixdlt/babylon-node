@@ -58,7 +58,7 @@ jobs:
           retention-days: 7
       - uses: ./.github/actions/fetch-secrets
         with: 
-          role_name: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
+          role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
           app_name: "babylon-node"
           step_name: "build"
           secret_prefix: "SONAR"

@@ -16,13 +16,13 @@ pub struct ParsedNotarizedTransactionAllOf {
     #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
     pub notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
     #[serde(rename = "identifiers")]
-    pub identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers>,
+    pub identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionIdentifiers>,
     #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
     pub validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
 }
 
 impl ParsedNotarizedTransactionAllOf {
-    pub fn new(identifiers: crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers) -> ParsedNotarizedTransactionAllOf {
+    pub fn new(identifiers: crate::core_api::generated::models::ParsedNotarizedTransactionIdentifiers) -> ParsedNotarizedTransactionAllOf {
         ParsedNotarizedTransactionAllOf {
             notarized_transaction: None,
             identifiers: Box::new(identifiers),

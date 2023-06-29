@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import com.radixdlt.api.core.generated.models.ReceiverInfo;
+import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,8 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   FunctionSchema.JSON_PROPERTY_RECEIVER_INFO,
   FunctionSchema.JSON_PROPERTY_INPUT,
-  FunctionSchema.JSON_PROPERTY_OUTPUT,
-  FunctionSchema.JSON_PROPERTY_EXPORT
+  FunctionSchema.JSON_PROPERTY_OUTPUT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FunctionSchema {
@@ -44,13 +43,10 @@ public class FunctionSchema {
   private ReceiverInfo receiverInfo;
 
   public static final String JSON_PROPERTY_INPUT = "input";
-  private LocalTypeIndex input;
+  private TypePointer input;
 
   public static final String JSON_PROPERTY_OUTPUT = "output";
-  private LocalTypeIndex output;
-
-  public static final String JSON_PROPERTY_EXPORT = "export";
-  private String export;
+  private TypePointer output;
 
   public FunctionSchema() { 
   }
@@ -81,7 +77,7 @@ public class FunctionSchema {
   }
 
 
-  public FunctionSchema input(LocalTypeIndex input) {
+  public FunctionSchema input(TypePointer input) {
     this.input = input;
     return this;
   }
@@ -95,19 +91,19 @@ public class FunctionSchema {
   @JsonProperty(JSON_PROPERTY_INPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getInput() {
+  public TypePointer getInput() {
     return input;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInput(LocalTypeIndex input) {
+  public void setInput(TypePointer input) {
     this.input = input;
   }
 
 
-  public FunctionSchema output(LocalTypeIndex output) {
+  public FunctionSchema output(TypePointer output) {
     this.output = output;
     return this;
   }
@@ -121,41 +117,15 @@ public class FunctionSchema {
   @JsonProperty(JSON_PROPERTY_OUTPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getOutput() {
+  public TypePointer getOutput() {
     return output;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OUTPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOutput(LocalTypeIndex output) {
+  public void setOutput(TypePointer output) {
     this.output = output;
-  }
-
-
-  public FunctionSchema export(String export) {
-    this.export = export;
-    return this;
-  }
-
-   /**
-   * Name used for export
-   * @return export
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Name used for export")
-  @JsonProperty(JSON_PROPERTY_EXPORT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getExport() {
-    return export;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EXPORT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setExport(String export) {
-    this.export = export;
   }
 
 
@@ -173,13 +143,12 @@ public class FunctionSchema {
     FunctionSchema functionSchema = (FunctionSchema) o;
     return Objects.equals(this.receiverInfo, functionSchema.receiverInfo) &&
         Objects.equals(this.input, functionSchema.input) &&
-        Objects.equals(this.output, functionSchema.output) &&
-        Objects.equals(this.export, functionSchema.export);
+        Objects.equals(this.output, functionSchema.output);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(receiverInfo, input, output, export);
+    return Objects.hash(receiverInfo, input, output);
   }
 
   @Override
@@ -189,7 +158,6 @@ public class FunctionSchema {
     sb.append("    receiverInfo: ").append(toIndentedString(receiverInfo)).append("\n");
     sb.append("    input: ").append(toIndentedString(input)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");
-    sb.append("    export: ").append(toIndentedString(export)).append("\n");
     sb.append("}");
     return sb.toString();
   }

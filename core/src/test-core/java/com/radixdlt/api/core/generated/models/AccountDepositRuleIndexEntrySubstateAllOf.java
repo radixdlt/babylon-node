@@ -33,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_RESOURCE_ADDRESS,
-  AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_DEPOSIT_RULE
+  AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_DEPOSIT_RULE,
+  AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_IS_LOCKED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountDepositRuleIndexEntrySubstateAllOf {
@@ -42,6 +43,9 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
 
   public static final String JSON_PROPERTY_DEPOSIT_RULE = "deposit_rule";
   private DepositRule depositRule;
+
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
   public AccountDepositRuleIndexEntrySubstateAllOf() { 
   }
@@ -98,6 +102,32 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
   }
 
 
+  public AccountDepositRuleIndexEntrySubstateAllOf isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+    return this;
+  }
+
+   /**
+   * Get isLocked
+   * @return isLocked
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsLocked() {
+    return isLocked;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+  }
+
+
   /**
    * Return true if this AccountDepositRuleIndexEntrySubstate_allOf object is equal to o.
    */
@@ -111,12 +141,13 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
     }
     AccountDepositRuleIndexEntrySubstateAllOf accountDepositRuleIndexEntrySubstateAllOf = (AccountDepositRuleIndexEntrySubstateAllOf) o;
     return Objects.equals(this.resourceAddress, accountDepositRuleIndexEntrySubstateAllOf.resourceAddress) &&
-        Objects.equals(this.depositRule, accountDepositRuleIndexEntrySubstateAllOf.depositRule);
+        Objects.equals(this.depositRule, accountDepositRuleIndexEntrySubstateAllOf.depositRule) &&
+        Objects.equals(this.isLocked, accountDepositRuleIndexEntrySubstateAllOf.isLocked);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, depositRule);
+    return Objects.hash(resourceAddress, depositRule, isLocked);
   }
 
   @Override
@@ -125,6 +156,7 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
     sb.append("class AccountDepositRuleIndexEntrySubstateAllOf {\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
     sb.append("    depositRule: ").append(toIndentedString(depositRule)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }

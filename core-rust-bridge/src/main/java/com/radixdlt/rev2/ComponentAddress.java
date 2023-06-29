@@ -88,7 +88,7 @@ public record ComponentAddress(byte[] value) {
 
   // See entity_type.rs
 
-  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 130;
+  public static byte VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID = (byte) 131;
   public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 192;
 
   public static ComponentAddress create(byte[] addressBytes) {

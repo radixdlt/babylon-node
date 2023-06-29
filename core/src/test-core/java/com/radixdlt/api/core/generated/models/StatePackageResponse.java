@@ -32,49 +32,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StatePackageResponse
  */
 @JsonPropertyOrder({
-  StatePackageResponse.JSON_PROPERTY_INFO,
   StatePackageResponse.JSON_PROPERTY_ROYALTY,
-  StatePackageResponse.JSON_PROPERTY_ACCESS_RULES
+  StatePackageResponse.JSON_PROPERTY_OWNER_ROLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StatePackageResponse {
-  public static final String JSON_PROPERTY_INFO = "info";
-  private Substate info;
-
   public static final String JSON_PROPERTY_ROYALTY = "royalty";
   private Substate royalty;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
-  private Substate accessRules;
+  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
+  private Substate ownerRole;
 
   public StatePackageResponse() { 
   }
-
-  public StatePackageResponse info(Substate info) {
-    this.info = info;
-    return this;
-  }
-
-   /**
-   * Get info
-   * @return info
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INFO)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getInfo() {
-    return info;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_INFO)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInfo(Substate info) {
-    this.info = info;
-  }
-
 
   public StatePackageResponse royalty(Substate royalty) {
     this.royalty = royalty;
@@ -102,29 +72,29 @@ public class StatePackageResponse {
   }
 
 
-  public StatePackageResponse accessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public StatePackageResponse ownerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
     return this;
   }
 
    /**
-   * Get accessRules
-   * @return accessRules
+   * Get ownerRole
+   * @return ownerRole
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getAccessRules() {
-    return accessRules;
+  public Substate getOwnerRole() {
+    return ownerRole;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRules(Substate accessRules) {
-    this.accessRules = accessRules;
+  public void setOwnerRole(Substate ownerRole) {
+    this.ownerRole = ownerRole;
   }
 
 
@@ -140,23 +110,21 @@ public class StatePackageResponse {
       return false;
     }
     StatePackageResponse statePackageResponse = (StatePackageResponse) o;
-    return Objects.equals(this.info, statePackageResponse.info) &&
-        Objects.equals(this.royalty, statePackageResponse.royalty) &&
-        Objects.equals(this.accessRules, statePackageResponse.accessRules);
+    return Objects.equals(this.royalty, statePackageResponse.royalty) &&
+        Objects.equals(this.ownerRole, statePackageResponse.ownerRole);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, royalty, accessRules);
+    return Objects.hash(royalty, ownerRole);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StatePackageResponse {\n");
-    sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    royalty: ").append(toIndentedString(royalty)).append("\n");
-    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("}");
     return sb.toString();
   }
