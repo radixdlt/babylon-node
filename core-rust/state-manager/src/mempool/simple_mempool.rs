@@ -331,7 +331,6 @@ impl SimpleMempool {
             .iter()
             .flat_map(|payload_hashes| payload_hashes.iter())
             .map(|payload_hash| {
-                println!("{:?}", payload_hash);
                 self.data
                     .get(payload_hash)
                     .expect("Mempool intent hash lookup out of sync on remove by intent hash.")
