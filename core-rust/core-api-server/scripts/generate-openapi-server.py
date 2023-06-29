@@ -105,6 +105,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_broken_discriminator_tag(file_path, "key_type")
         fix_broken_discriminator_tag(file_path, "error_type")
         fix_broken_discriminator_tag(file_path, "type")
+        fix_broken_discriminator_tag(file_path, "pointer_type")
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
         fix_for_enum_not_implementing_default(file_path, "ProofRule")
