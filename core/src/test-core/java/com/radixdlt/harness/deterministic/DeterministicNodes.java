@@ -206,6 +206,7 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
+                bind(DeterministicProcessor.class).in(Scopes.SINGLETON);
               }
 
               @Provides

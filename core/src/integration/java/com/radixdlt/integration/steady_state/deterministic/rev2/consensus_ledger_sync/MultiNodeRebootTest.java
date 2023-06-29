@@ -86,11 +86,11 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,7 +98,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-@Ignore // Ignore all these tests until we can fix them properly
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
   public static Collection<Object[]> numNodes() {
@@ -215,11 +214,15 @@ public final class MultiNodeRebootTest {
                         numValidators,
                         Decimal.of(1),
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                            this.roundsPerEpoch)),
+                                this.roundsPerEpoch)
+                            .totalEmissionXrdPerEpoch(Decimal.of(0))),
                     REv2StateManagerModule.DatabaseType.ROCKS_DB,
+                    new DatabaseFlags(true, false),
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1)),
-                SyncRelayConfig.of(5000, 10, 5000L))));
+                        new REV2TransactionGenerator(), 1),
+                    false,
+                    true),
+                SyncRelayConfig.of(100, 10, 500))));
   }
 
   private void runTest(

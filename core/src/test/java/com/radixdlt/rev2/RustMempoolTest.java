@@ -111,7 +111,8 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
@@ -174,7 +175,8 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
@@ -307,7 +309,8 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
-            LoggingConfig.getDefault());
+            LoggingConfig.getDefault(),
+            false);
     final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {

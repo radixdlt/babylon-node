@@ -86,7 +86,6 @@ import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -171,10 +170,7 @@ public final class BFTSync implements BFTSyncer {
   private final int bftSyncPatienceMillis;
   private final Metrics metrics;
 
-  private LedgerProof currentLedgerHeader;
-
-  // TODO: remove once we figure that out
-  private final Set<String> runOnThreads = Collections.newSetFromMap(new ConcurrentHashMap<>(2));
+  private LedgerHeader currentLedgerHeader;
 
   // FIXME: Remove this once sync is fixed
   private final RateLimiter syncRequestRateLimiter;
@@ -191,7 +187,7 @@ public final class BFTSync implements BFTSyncer {
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
-      LedgerProof currentLedgerHeader,
+      LedgerHeader currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
       Metrics metrics) {
@@ -214,8 +210,6 @@ public final class BFTSync implements BFTSyncer {
 
   public EventProcessor<RoundQuorumResolution> roundQuorumResolutionEventProcessor() {
     return roundQuorumResolution -> {
-      this.runOnThreads.add(Thread.currentThread().getName());
-
       final var highQC =
           switch (roundQuorumResolution.roundQuorum()) {
             case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> this.vertexStore
@@ -240,7 +234,6 @@ public final class BFTSync implements BFTSyncer {
 
   @Override
   public SyncResult syncToQC(HighQC highQC, @Nullable NodeId author, HighQcSource highQcSource) {
-    this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
     if (qc.getProposedHeader().getRound().lt(vertexStore.getRoot().vertex().getRound())) {
@@ -386,8 +379,6 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
-    this.runOnThreads.add(Thread.currentThread().getName());
-
     final var request = highestQCRequest(this.bftSyncing.entrySet());
     var syncRequestState = bftSyncing.remove(request);
 
@@ -419,9 +410,7 @@ public final class BFTSync implements BFTSyncer {
             .append(" Contains=")
             .append(syncing.containsKey(syncId))
             .append(" Thread=")
-            .append(Thread.currentThread().getName())
-            .append(" OtherThreads=")
-            .append(String.join(",", runOnThreads));
+            .append(Thread.currentThread().getName());
         log.error(msg.toString());
         throw new IllegalStateException(
             "Inconsistent sync state, please contact Radix team member on Discord. (" + msg + ")");
@@ -597,8 +586,6 @@ public final class BFTSync implements BFTSyncer {
       return;
     }
 
-    this.runOnThreads.add(Thread.currentThread().getName());
-
     // TODO: check response
     final var request = response.request();
     final var syncRequestState = bftSyncing.get(request);
@@ -640,8 +627,6 @@ public final class BFTSync implements BFTSyncer {
       return;
     }
 
-    this.runOnThreads.add(Thread.currentThread().getName());
-
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
     var firstVertex = response.getVertices().get(0);
@@ -671,11 +656,9 @@ public final class BFTSync implements BFTSyncer {
 
   // TODO: Verify headers match
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.runOnThreads.add(Thread.currentThread().getName());
-
     log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
 
-    this.currentLedgerHeader = ledgerUpdate.getTail();
+    this.currentLedgerHeader = ledgerUpdate.getTail().getHeader();
 
     var listeners = this.ledgerSyncing.headMap(ledgerUpdate.getTail().getHeader(), true).values();
     var listenersIterator = listeners.iterator();

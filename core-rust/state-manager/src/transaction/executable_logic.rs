@@ -57,7 +57,7 @@ pub struct ExecutionConfigurator {
 }
 
 impl ExecutionConfigurator {
-    pub fn new(logging_config: &LoggingConfig) -> Self {
+    pub fn new(logging_config: &LoggingConfig, fee_reserve_config: FeeReserveConfig) -> Self {
         let trace = logging_config.engine_trace;
         Self {
             scrypto_interpreter: ScryptoVm {
@@ -65,7 +65,7 @@ impl ExecutionConfigurator {
                 wasm_instrumenter: WasmInstrumenter::default(),
                 wasm_metering_config: WasmMeteringConfig::default(),
             },
-            fee_reserve_config: FeeReserveConfig::default(),
+            fee_reserve_config,
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,

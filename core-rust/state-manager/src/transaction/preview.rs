@@ -128,6 +128,7 @@ mod tests {
     };
     use parking_lot::RwLock;
     use prometheus::Registry;
+    use radix_engine::transaction::FeeReserveConfig;
     use radix_engine_common::network::NetworkDefinition;
     use radix_engine_common::{dec, manifest_args};
     use radix_engine_interface::constants::FAUCET;
@@ -149,7 +150,10 @@ mod tests {
             InMemoryStore::new(DatabaseFlags::default()),
         )));
         let metric_registry = Registry::new();
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
+        let execution_configurator = Arc::new(ExecutionConfigurator::new(
+            &logging_config,
+            FeeReserveConfig::default(),
+        ));
         let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));
