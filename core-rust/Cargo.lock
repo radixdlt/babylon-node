@@ -319,6 +319,7 @@ dependencies = [
  "jni",
  "node-common",
  "parking_lot",
+ "paste",
  "prometheus",
  "radix-engine",
  "radix-engine-common",

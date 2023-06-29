@@ -59,17 +59,7 @@ pub fn to_api_receipt(
         action,
     } in receipt.on_ledger.substate_changes
     {
-        let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
-        let typed_substate_key =
-            to_typed_substate_key(entity_type, partition_number, &substate_key).map_err(|msg| {
-                MappingError::SubstateKey {
-                    entity_address: to_api_entity_address(context, &node_id)
-                        .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
-                    partition_number,
-                    substate_key: to_api_substate_key(&substate_key),
-                    message: msg,
-                }
-            })?;
+        let typed_substate_key = create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
@@ -151,6 +141,19 @@ pub fn to_api_receipt(
     })
 }
 
+pub fn create_typed_substate_key(context: &MappingContext, node_id: &NodeId, partition_number: PartitionNumber, substate_key: &SubstateKey) -> Result<TypedSubstateKey, MappingError> {
+    let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
+    Ok(to_typed_substate_key(entity_type, partition_number, &substate_key).map_err(|msg| {
+        MappingError::SubstateKey {
+            entity_address: to_api_entity_address(context, &node_id)
+                .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
+            partition_number,
+            substate_key: to_api_substate_key(&substate_key),
+            message: msg,
+        }
+    })?)
+}
+
 pub struct ValueRepresentations {
     pub typed: TypedSubstateValue,
     pub raw: Vec<u8>,
@@ -188,7 +191,6 @@ pub fn to_api_created_substate(
         )?),
         value: Box::new(to_api_substate_value(
             context,
-            substate_key,
             typed_substate_key,
             value_representations,
         )?),
@@ -215,14 +217,12 @@ pub fn to_api_updated_substate(
         )?),
         new_value: Box::new(to_api_substate_value(
             context,
-            substate_key,
             typed_substate_key,
             new_value_representations,
         )?),
         previous_value: if context.substate_options.include_previous {
             Some(Box::new(to_api_substate_value(
                 context,
-                substate_key,
                 typed_substate_key,
                 previous_value_representations,
             )?))
@@ -235,7 +235,6 @@ pub fn to_api_updated_substate(
 #[tracing::instrument(skip_all)]
 pub fn to_api_substate_value(
     context: &MappingContext,
-    substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
     value_representations: &ValueRepresentations,
 ) -> Result<models::SubstateValue, MappingError> {
@@ -253,7 +252,6 @@ pub fn to_api_substate_value(
         substate_data: if context.substate_options.include_typed {
             Some(Box::new(to_api_substate(
                 context,
-                substate_key,
                 typed_substate_key,
                 &value_representations.typed,
             )?))

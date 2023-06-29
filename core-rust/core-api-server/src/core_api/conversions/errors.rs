@@ -24,9 +24,6 @@ pub enum MappingError {
     UnexpectedPersistedData {
         message: String,
     },
-    InvalidMetadataKey {
-        message: String,
-    },
     EntityTypeError,
     ScryptoValueDecode {
         decode_error: DecodeError,

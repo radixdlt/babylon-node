@@ -56,7 +56,7 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTot
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
-import com.radixdlt.api.core.generated.models.ObjectModuleId;
+import com.radixdlt.api.core.generated.models.ObjectRoleKey;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
@@ -65,8 +65,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -85,8 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccessRulesModuleRuleEntrySubstate
  */
 @JsonPropertyOrder({
-  AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_OBJECT_MODULE_ID,
-  AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_ROLE_KEY,
+  AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_KEY,
   AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_ACCESS_RULE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -133,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -144,11 +143,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class AccessRulesModuleRuleEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
-  private ObjectModuleId objectModuleId;
-
-  public static final String JSON_PROPERTY_ROLE_KEY = "role_key";
-  private String roleKey;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ObjectRoleKey key;
 
   public static final String JSON_PROPERTY_ACCESS_RULE = "access_rule";
   private AccessRule accessRule;
@@ -156,55 +152,29 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
   public AccessRulesModuleRuleEntrySubstate() { 
   }
 
-  public AccessRulesModuleRuleEntrySubstate objectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
+  public AccessRulesModuleRuleEntrySubstate key(ObjectRoleKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get objectModuleId
-   * @return objectModuleId
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleId getObjectModuleId() {
-    return objectModuleId;
+  public ObjectRoleKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setObjectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
-  }
-
-
-  public AccessRulesModuleRuleEntrySubstate roleKey(String roleKey) {
-    this.roleKey = roleKey;
-    return this;
-  }
-
-   /**
-   * Get roleKey
-   * @return roleKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROLE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getRoleKey() {
-    return roleKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROLE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoleKey(String roleKey) {
-    this.roleKey = roleKey;
+  public void setKey(ObjectRoleKey key) {
+    this.key = key;
   }
 
 
@@ -246,15 +216,14 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
       return false;
     }
     AccessRulesModuleRuleEntrySubstate accessRulesModuleRuleEntrySubstate = (AccessRulesModuleRuleEntrySubstate) o;
-    return Objects.equals(this.objectModuleId, accessRulesModuleRuleEntrySubstate.objectModuleId) &&
-        Objects.equals(this.roleKey, accessRulesModuleRuleEntrySubstate.roleKey) &&
+    return Objects.equals(this.key, accessRulesModuleRuleEntrySubstate.key) &&
         Objects.equals(this.accessRule, accessRulesModuleRuleEntrySubstate.accessRule) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(objectModuleId, roleKey, accessRule, super.hashCode());
+    return Objects.hash(key, accessRule, super.hashCode());
   }
 
   @Override
@@ -262,8 +231,7 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessRulesModuleRuleEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
-    sb.append("    roleKey: ").append(toIndentedString(roleKey)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    accessRule: ").append(toIndentedString(accessRule)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -320,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

@@ -45,9 +45,9 @@ import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.LocalNonFungibleKey;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleLocalId;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
@@ -64,8 +64,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,7 +84,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleVaultContentsIndexEntrySubstate
  */
 @JsonPropertyOrder({
-  NonFungibleVaultContentsIndexEntrySubstate.JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID
+  NonFungibleVaultContentsIndexEntrySubstate.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -130,8 +130,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -141,35 +141,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID = "non_fungible_local_id";
-  private NonFungibleLocalId nonFungibleLocalId;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private LocalNonFungibleKey key;
 
   public NonFungibleVaultContentsIndexEntrySubstate() { 
   }
 
-  public NonFungibleVaultContentsIndexEntrySubstate nonFungibleLocalId(NonFungibleLocalId nonFungibleLocalId) {
-    this.nonFungibleLocalId = nonFungibleLocalId;
+  public NonFungibleVaultContentsIndexEntrySubstate key(LocalNonFungibleKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get nonFungibleLocalId
-   * @return nonFungibleLocalId
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NonFungibleLocalId getNonFungibleLocalId() {
-    return nonFungibleLocalId;
+  public LocalNonFungibleKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleLocalId(NonFungibleLocalId nonFungibleLocalId) {
-    this.nonFungibleLocalId = nonFungibleLocalId;
+  public void setKey(LocalNonFungibleKey key) {
+    this.key = key;
   }
 
 
@@ -185,13 +185,13 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
       return false;
     }
     NonFungibleVaultContentsIndexEntrySubstate nonFungibleVaultContentsIndexEntrySubstate = (NonFungibleVaultContentsIndexEntrySubstate) o;
-    return Objects.equals(this.nonFungibleLocalId, nonFungibleVaultContentsIndexEntrySubstate.nonFungibleLocalId) &&
+    return Objects.equals(this.key, nonFungibleVaultContentsIndexEntrySubstate.key) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleLocalId, super.hashCode());
+    return Objects.hash(key, super.hashCode());
   }
 
   @Override
@@ -199,7 +199,7 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleVaultContentsIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    nonFungibleLocalId: ").append(toIndentedString(nonFungibleLocalId)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -255,8 +255,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

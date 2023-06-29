@@ -22,114 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.RoyaltyAmount;
+import com.radixdlt.api.core.generated.models.DataStruct;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * RoyaltyMethodRoyaltyEntrySubstateAllOf
+ * GenericKeyValueStoreEntryValue
  */
 @JsonPropertyOrder({
-  RoyaltyMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_IS_LOCKED,
-  RoyaltyMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_METHOD_NAME,
-  RoyaltyMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_AMOUNT
+  GenericKeyValueStoreEntryValue.JSON_PROPERTY_DATA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class RoyaltyMethodRoyaltyEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
-  private Boolean isLocked;
+public class GenericKeyValueStoreEntryValue {
+  public static final String JSON_PROPERTY_DATA = "data";
+  private DataStruct data;
 
-  public static final String JSON_PROPERTY_METHOD_NAME = "method_name";
-  private String methodName;
-
-  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
-  private RoyaltyAmount royaltyAmount;
-
-  public RoyaltyMethodRoyaltyEntrySubstateAllOf() { 
+  public GenericKeyValueStoreEntryValue() { 
   }
 
-  public RoyaltyMethodRoyaltyEntrySubstateAllOf isLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
+  public GenericKeyValueStoreEntryValue data(DataStruct data) {
+    this.data = data;
     return this;
   }
 
    /**
-   * Get isLocked
-   * @return isLocked
+   * Get data
+   * @return data
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsLocked() {
-    return isLocked;
+  public DataStruct getData() {
+    return data;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-  }
-
-
-  public RoyaltyMethodRoyaltyEntrySubstateAllOf methodName(String methodName) {
-    this.methodName = methodName;
-    return this;
-  }
-
-   /**
-   * Get methodName
-   * @return methodName
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getMethodName() {
-    return methodName;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMethodName(String methodName) {
-    this.methodName = methodName;
-  }
-
-
-  public RoyaltyMethodRoyaltyEntrySubstateAllOf royaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
-    return this;
-  }
-
-   /**
-   * Get royaltyAmount
-   * @return royaltyAmount
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public RoyaltyAmount getRoyaltyAmount() {
-    return royaltyAmount;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
+  public void setData(DataStruct data) {
+    this.data = data;
   }
 
 
   /**
-   * Return true if this RoyaltyMethodRoyaltyEntrySubstate_allOf object is equal to o.
+   * Return true if this GenericKeyValueStoreEntryValue object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -139,24 +79,20 @@ public class RoyaltyMethodRoyaltyEntrySubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoyaltyMethodRoyaltyEntrySubstateAllOf royaltyMethodRoyaltyEntrySubstateAllOf = (RoyaltyMethodRoyaltyEntrySubstateAllOf) o;
-    return Objects.equals(this.isLocked, royaltyMethodRoyaltyEntrySubstateAllOf.isLocked) &&
-        Objects.equals(this.methodName, royaltyMethodRoyaltyEntrySubstateAllOf.methodName) &&
-        Objects.equals(this.royaltyAmount, royaltyMethodRoyaltyEntrySubstateAllOf.royaltyAmount);
+    GenericKeyValueStoreEntryValue genericKeyValueStoreEntryValue = (GenericKeyValueStoreEntryValue) o;
+    return Objects.equals(this.data, genericKeyValueStoreEntryValue.data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isLocked, methodName, royaltyAmount);
+    return Objects.hash(data);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoyaltyMethodRoyaltyEntrySubstateAllOf {\n");
-    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
-    sb.append("    methodName: ").append(toIndentedString(methodName)).append("\n");
-    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
+    sb.append("class GenericKeyValueStoreEntryValue {\n");
+    sb.append("    data: ").append(toIndentedString(data)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -2893,9 +2893,9 @@ components:
           type: boolean
         direct_access:
           type: boolean
-#######################################
-# GENERAL / SHARED MODELS - substates #
-#######################################
+#####################################################
+# GENERAL / SHARED MODELS - general substate models #
+#####################################################
     EntityType:
       type: string
       enum:
@@ -2935,17 +2935,41 @@ components:
       type: object
       required:
         - substate_type
+        - is_locked
       properties:
         substate_type:
           $ref: '#/components/schemas/SubstateType'
+        is_locked:
+          type: boolean
       discriminator:
         propertyName: substate_type
         mapping:
+          # NOTE:
+          # There is an important convention to these names, for consistency:
+          # 
+          # For each distinct typed substate, form [SubstateType] = [ModuleSpecifier][SubstateSpecifier][SubstateTypeVersion]
+          # - [ModuleSpecifier] is either [ModuleName]Module for non-main modules, or [EntityType] for main modules
+          # - [SubstateSpecifier] is either:
+          #   - Field[SubstateDescriptor] for Field partitions
+          #   - [SubstateDescriptor]Entry for Collection partitions (KeyValueStore, Index and SortedIndex)
+          # - [SubstateTypeVersion] is empty ("") for V1 substates, but will eg be V2/V3/V4 for newer substate versions
+          #
+          # And then define:
+          # - [SubstateName] = [SubstateType]Substate
+          # - [SubstateValue] = [SubstateType]Value
+          #
+          # Which are used as follows:
+          # - The below mapping has entries of: [SubstateType]: '#/components/schemas/[SubstateName]'
+          # - [SubstateType] MUST match the enum SubstateType type defined below
+          # - [SubstateName] MUST equal the name of a type below. Such a type must have:
+          #   - value - which references the type [SubstateValue]
+          #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
+          #   - is_locked - this is added to all substates via inclusion on the `Substate` object
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
           AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
           RoyaltyModuleFieldState: '#/components/schemas/RoyaltyModuleFieldStateSubstate'
-          RoyaltyMethodRoyaltyEntry: '#/components/schemas/RoyaltyMethodRoyaltyEntrySubstate'
+          RoyaltyModuleMethodRoyaltyEntry: '#/components/schemas/RoyaltyModuleMethodRoyaltyEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
           PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
           PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
@@ -2994,7 +3018,7 @@ components:
         - AccessRulesModuleRuleEntry
         - AccessRulesModuleMutabilityEntry
         - RoyaltyModuleFieldState
-        - RoyaltyMethodRoyaltyEntry
+        - RoyaltyModuleMethodRoyaltyEntry
         - MetadataModuleEntry
         - PackageFieldRoyaltyAccumulator
         - PackageCodeEntry
@@ -3037,7 +3061,105 @@ components:
         - MultiResourcePoolFieldState
         - TransactionTrackerFieldState
         - TransactionTrackerCollectionEntry
-    ### SUBSTATES
+################################################
+# GENERAL / SHARED MODELS - substate key types #
+################################################
+    ObjectRoleKey:
+      type: object
+      required:
+        - object_module_id
+        - role_key
+      properties:
+        object_module_id:
+          $ref: "#/components/schemas/ObjectModuleId"
+        role_key:
+          type: string
+    MainMethodKey:
+      type: object
+      required:
+        - method_name
+      properties:
+        method_name:
+          type: string
+    MetadataKey:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    PackageCodeKey:
+      type: object
+      required:
+        - code_hash
+      properties:
+        code_hash:
+          $ref: '#/components/schemas/CodeHash'
+    SchemaKey:
+      type: object
+      required:
+        - schema_hash
+      properties:
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+    BlueprintVersionKey:
+      type: object
+      required:
+        - blueprint_name
+        - blueprint_version
+      properties:
+        blueprint_name:
+          type: string
+          description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+        blueprint_version:
+          type: string
+          description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+    LocalNonFungibleKey:
+      type: object
+      required:
+        - non_fungible_local_id
+      properties:
+        non_fungible_local_id:
+          $ref: '#/components/schemas/NonFungibleLocalId'
+    ActiveValidatorKey:
+      type: object
+      required:
+        - stake_weighting
+        - validator_address
+      properties:
+        stake_weighting:
+          type: integer
+          description: |
+            The divided stake, giving a weighting for the validator,
+            used as part of the sort key.
+          format: int32
+          minimum: 0
+          maximum: 65535
+        validator_address:
+          $ref: '#/components/schemas/ComponentAddress'
+    ResourceKey:
+      type: object
+      required:
+        - resource_address
+      properties:
+        resource_address:
+          $ref: '#/components/schemas/ComponentAddress'
+    TransactionIdKey:
+      type: object
+      required:
+        - intent_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    GenericKey:
+      type: object
+      properties:
+        key_data:
+          description: If it can be decoded as SBOR, this is the data
+          $ref: '#/components/schemas/SborData'
+################################################
+# GENERAL / SHARED MODELS - specific substates #
+################################################
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3123,13 +3245,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - object_module_id
-            - role_key
+            - key
           properties:
-            object_module_id:
-              $ref: "#/components/schemas/ObjectModuleId"
-            role_key:
-              type: string
+            key:
+              $ref: '#/components/schemas/ObjectRoleKey'
             access_rule:
               $ref: '#/components/schemas/AccessRule'
     RoyaltyModuleFieldStateSubstate:
@@ -3144,18 +3263,15 @@ components:
               type: boolean
             vault_entity:
               $ref: "#/components/schemas/EntityReference"
-    RoyaltyMethodRoyaltyEntrySubstate:
+    RoyaltyModuleMethodRoyaltyEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - is_locked
-            - method_name
+            - key
           properties:
-            is_locked:
-              type: boolean
-            method_name:
-              type: string
+            key:
+              $ref: '#/components/schemas/MainMethodKey'
             royalty_amount:
               description: The component royalty. If missing, it represents a free method.
               $ref: '#/components/schemas/RoyaltyAmount'
@@ -3164,18 +3280,12 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - field_name
-            - is_deleted
-            - is_locked
+            - key
           properties:
-            field_name:
-              type: string
-            is_deleted:
-              type: boolean
+            key:
+              $ref: '#/components/schemas/MetadataKey'
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-            is_locked:
-              type: boolean
     TransactionTrackerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3217,10 +3327,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - intent_hash
+            - key
           properties:
-            intent_hash:
-              $ref: "#/components/schemas/IntentHash"
+            key:
+              $ref: '#/components/schemas/TransactionIdKey'
             status:
               $ref: "#/components/schemas/TransactionTrackerTransactionStatus"
     TransactionTrackerTransactionStatus:
@@ -3243,12 +3353,12 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - code_hash
+            - key
             - vm_type
             - code_hex
           properties:
-            code_hash:
-              $ref: '#/components/schemas/CodeHash'
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
             vm_type:
               $ref: '#/components/schemas/VmType'
             code_hex:
@@ -3265,11 +3375,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - schema_hash
+            - key
             - schema
           properties:
-            schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
+            key:
+              $ref: '#/components/schemas/SchemaKey'
             schema:
               $ref: '#/components/schemas/ScryptoSchema'
     PackageBlueprintDefinitionEntrySubstate:
@@ -3277,16 +3387,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - blueprint_name
-            - blueprint_version
+            - key
             - definition
           properties:
-            blueprint_name:
-              type: string
-              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
-            blueprint_version:
-              type: string
-              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
             definition:
               $ref: '#/components/schemas/BlueprintDefinition'
     PackageBlueprintDependenciesEntrySubstate:
@@ -3294,16 +3399,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - blueprint_name
-            - blueprint_version
+            - key
             - dependencies
           properties:
-            blueprint_name:
-              type: string
-              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
-            blueprint_version:
-              type: string
-              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
             dependencies:
               $ref: '#/components/schemas/BlueprintDependencies'
     PackageBlueprintRoyaltyEntrySubstate:
@@ -3311,16 +3411,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - blueprint_name
-            - blueprint_version
+            - key
             - royalty_config
           properties:
-            blueprint_name:
-              type: string
-              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
-            blueprint_version:
-              type: string
-              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
             royalty_config:
               $ref: '#/components/schemas/RoyaltyConfig'
     PackageBlueprintAuthTemplateEntrySubstate:
@@ -3328,16 +3423,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - blueprint_name
-            - blueprint_version
+            - key
             - auth_config
           properties:
-            blueprint_name:
-              type: string
-              description: The first part of the substate key `(blueprint_name, blueprint_version)`.
-            blueprint_version:
-              type: string
-              description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
             auth_config:
               description: The configuration of the package blueprint.
               $ref: '#/components/schemas/AuthConfig'
@@ -3402,16 +3492,15 @@ components:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
+          description: |
+            If the NF has been burned, the value is deleted and empty.
           required:
-            - is_deleted
-            - is_locked
+            - key
           properties:
-            is_deleted:
-              type: boolean
+            key:
+              $ref: '#/components/schemas/LocalNonFungibleKey'
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-            is_locked:
-              type: boolean
     FungibleVaultFieldBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3472,11 +3561,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - non_fungible_local_id
+            - key
           properties:
-            non_fungible_local_id:
-              description: The NonFungibleLocalId in the vault.
-              $ref: '#/components/schemas/NonFungibleLocalId'
+            key:
+              $ref: '#/components/schemas/LocalNonFungibleKey'
     ConsensusManagerFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3655,8 +3743,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
+            - key
             - active_validator
           properties:
+            key:
+              $ref: '#/components/schemas/ActiveValidatorKey'
             active_validator:
               $ref: "#/components/schemas/ActiveValidator"
     ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate:
@@ -3797,10 +3888,10 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_address
+            - key
           properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
+            key:
+              $ref: '#/components/schemas/ResourceKey'
             vault:
               $ref: '#/components/schemas/EntityReference'
     AccountDepositRuleIndexEntrySubstate:
@@ -3808,15 +3899,12 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_address
-            - is_locked
+            - key
           properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
+            key:
+              $ref: '#/components/schemas/ResourceKey'
             deposit_rule:
               $ref: '#/components/schemas/DepositRule'
-            is_locked:
-              type: boolean
     DepositRule:
       type: string
       enum:
@@ -3846,15 +3934,19 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - is_deleted
-            - is_locked
+            - key
           properties:
-            is_deleted:
-              type: boolean
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-            is_locked:
-              type: boolean
+            key:
+              $ref: '#/components/schemas/GenericKey'
+            value:
+              $ref: '#/components/schemas/GenericKeyValueStoreEntryValue'
+    GenericKeyValueStoreEntryValue:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/DataStruct'
     OneResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

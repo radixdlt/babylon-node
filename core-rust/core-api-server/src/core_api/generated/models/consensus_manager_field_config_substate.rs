@@ -15,6 +15,8 @@
 pub struct ConsensusManagerFieldConfigSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     /// An integer between `0` and `10^10`, specifying the maximum number of validators in the active validator set. 
     #[serde(rename = "max_validators")]
     pub max_validators: i64,
@@ -41,9 +43,10 @@ pub struct ConsensusManagerFieldConfigSubstate {
 }
 
 impl ConsensusManagerFieldConfigSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, max_validators: i64, epoch_change_condition: crate::core_api::generated::models::EpochChangeCondition, num_unstake_epochs: i64, total_emission_xrd_per_epoch: String, min_validator_reliability: String, num_owner_stake_units_unlock_epochs: i64, num_fee_increase_delay_epochs: i64, validator_creation_xrd_cost: String) -> ConsensusManagerFieldConfigSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, max_validators: i64, epoch_change_condition: crate::core_api::generated::models::EpochChangeCondition, num_unstake_epochs: i64, total_emission_xrd_per_epoch: String, min_validator_reliability: String, num_owner_stake_units_unlock_epochs: i64, num_fee_increase_delay_epochs: i64, validator_creation_xrd_cost: String) -> ConsensusManagerFieldConfigSubstate {
         ConsensusManagerFieldConfigSubstate {
             substate_type,
+            is_locked,
             max_validators,
             epoch_change_condition: Box::new(epoch_change_condition),
             num_unstake_epochs,

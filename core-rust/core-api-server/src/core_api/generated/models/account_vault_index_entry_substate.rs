@@ -15,18 +15,20 @@
 pub struct AccountVaultIndexEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::ResourceKey>,
     #[serde(rename = "vault", skip_serializing_if = "Option::is_none")]
     pub vault: Option<Box<crate::core_api::generated::models::EntityReference>>,
 }
 
 impl AccountVaultIndexEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, resource_address: String) -> AccountVaultIndexEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::ResourceKey) -> AccountVaultIndexEntrySubstate {
         AccountVaultIndexEntrySubstate {
             substate_type,
-            resource_address,
+            is_locked,
+            key: Box::new(key),
             vault: None,
         }
     }

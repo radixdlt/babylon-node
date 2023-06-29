@@ -13,13 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::ActiveValidatorKey>,
     #[serde(rename = "active_validator")]
     pub active_validator: Box<crate::core_api::generated::models::ActiveValidator>,
 }
 
 impl ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
-    pub fn new(active_validator: crate::core_api::generated::models::ActiveValidator) -> ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::ActiveValidatorKey, active_validator: crate::core_api::generated::models::ActiveValidator) -> ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
         ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
+            key: Box::new(key),
             active_validator: Box::new(active_validator),
         }
     }

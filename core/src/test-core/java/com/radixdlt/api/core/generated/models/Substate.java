@@ -62,8 +62,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
@@ -81,7 +81,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * Substate
  */
 @JsonPropertyOrder({
-  Substate.JSON_PROPERTY_SUBSTATE_TYPE
+  Substate.JSON_PROPERTY_SUBSTATE_TYPE,
+  Substate.JSON_PROPERTY_IS_LOCKED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -164,10 +165,10 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulatorSubstate"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntrySubstate"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntrySubstate"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldStateSubstate"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntrySubstate"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntrySubstate"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
@@ -185,6 +186,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 public class Substate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
+
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
   public Substate() { 
   }
@@ -215,6 +219,32 @@ public class Substate {
   }
 
 
+  public Substate isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+    return this;
+  }
+
+   /**
+   * Get isLocked
+   * @return isLocked
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsLocked() {
+    return isLocked;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+  }
+
+
   /**
    * Return true if this Substate object is equal to o.
    */
@@ -227,12 +257,13 @@ public class Substate {
       return false;
     }
     Substate substate = (Substate) o;
-    return Objects.equals(this.substateType, substate.substateType);
+    return Objects.equals(this.substateType, substate.substateType) &&
+        Objects.equals(this.isLocked, substate.isLocked);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType);
+    return Objects.hash(substateType, isLocked);
   }
 
   @Override
@@ -240,6 +271,7 @@ public class Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class Substate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -332,10 +364,10 @@ static {
   mappings.put("PackageFieldRoyaltyAccumulatorSubstate", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("PackageSchemaEntrySubstate", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntrySubstate", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
   mappings.put("RoyaltyModuleFieldStateSubstate", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntrySubstate", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntrySubstate", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);

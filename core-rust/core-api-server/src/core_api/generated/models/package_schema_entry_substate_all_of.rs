@@ -13,17 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageSchemaEntrySubstateAllOf {
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::SchemaKey>,
     #[serde(rename = "schema")]
     pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
 }
 
 impl PackageSchemaEntrySubstateAllOf {
-    pub fn new(schema_hash: String, schema: crate::core_api::generated::models::ScryptoSchema) -> PackageSchemaEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::SchemaKey, schema: crate::core_api::generated::models::ScryptoSchema) -> PackageSchemaEntrySubstateAllOf {
         PackageSchemaEntrySubstateAllOf {
-            schema_hash,
+            key: Box::new(key),
             schema: Box::new(schema),
         }
     }

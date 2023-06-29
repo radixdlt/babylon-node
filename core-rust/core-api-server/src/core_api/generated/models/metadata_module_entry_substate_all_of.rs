@@ -13,23 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct MetadataModuleEntrySubstateAllOf {
-    #[serde(rename = "field_name")]
-    pub field_name: String,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::MetadataKey>,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
     pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-    #[serde(rename = "is_locked")]
-    pub is_locked: bool,
 }
 
 impl MetadataModuleEntrySubstateAllOf {
-    pub fn new(field_name: String, is_deleted: bool, is_locked: bool) -> MetadataModuleEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::MetadataKey) -> MetadataModuleEntrySubstateAllOf {
         MetadataModuleEntrySubstateAllOf {
-            field_name,
-            is_deleted,
+            key: Box::new(key),
             data_struct: None,
-            is_locked,
         }
     }
 }

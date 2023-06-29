@@ -15,6 +15,8 @@
 pub struct RoyaltyModuleFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     #[serde(rename = "is_enabled")]
     pub is_enabled: bool,
     #[serde(rename = "vault_entity")]
@@ -22,9 +24,10 @@ pub struct RoyaltyModuleFieldStateSubstate {
 }
 
 impl RoyaltyModuleFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_enabled: bool, vault_entity: crate::core_api::generated::models::EntityReference) -> RoyaltyModuleFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, is_enabled: bool, vault_entity: crate::core_api::generated::models::EntityReference) -> RoyaltyModuleFieldStateSubstate {
         RoyaltyModuleFieldStateSubstate {
             substate_type,
+            is_locked,
             is_enabled,
             vault_entity: Box::new(vault_entity),
         }

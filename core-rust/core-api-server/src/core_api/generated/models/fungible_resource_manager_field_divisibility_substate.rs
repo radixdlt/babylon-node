@@ -15,14 +15,17 @@
 pub struct FungibleResourceManagerFieldDivisibilitySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     #[serde(rename = "divisibility")]
     pub divisibility: i32,
 }
 
 impl FungibleResourceManagerFieldDivisibilitySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, divisibility: i32) -> FungibleResourceManagerFieldDivisibilitySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, divisibility: i32) -> FungibleResourceManagerFieldDivisibilitySubstate {
         FungibleResourceManagerFieldDivisibilitySubstate {
             substate_type,
+            is_locked,
             divisibility,
         }
     }

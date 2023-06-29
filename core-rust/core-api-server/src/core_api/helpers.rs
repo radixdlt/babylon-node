@@ -5,8 +5,33 @@ use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
 use std::io::Write;
 
-use super::{MappingError, ResponseError};
-use radix_engine_store_interface::db_key_mapper::*;
+use super::{MappingError, ResponseError, models, MappingContext, create_typed_substate_key, ValueRepresentations, to_api_substate};
+use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
+
+#[allow(unused)]
+pub(crate) fn read_typed_substate(
+    context: &MappingContext,
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<Option<models::Substate>, MappingError> {
+    let Some(raw_value) = database.get_substate(
+        &SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number),
+        &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
+    ) else {
+        return Ok(None);
+    };
+    let typed_substate_key = create_typed_substate_key(
+        context,
+        &node_id,
+        partition_number,
+        substate_key,
+    )?;
+    let value_representations = ValueRepresentations::new(&typed_substate_key, raw_value)?;
+    let typed_substate = to_api_substate(context, &typed_substate_key, &value_representations.typed)?;
+    Ok(Some(typed_substate))
+}
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(

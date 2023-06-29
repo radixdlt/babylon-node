@@ -130,7 +130,7 @@ pub fn to_api_substate_id(
         TypedSubstateKey::RoyaltyModule(
             TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(_),
         ) => (
-            SubstateType::RoyaltyMethodRoyaltyEntry,
+            SubstateType::RoyaltyModuleMethodRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(_)) => (

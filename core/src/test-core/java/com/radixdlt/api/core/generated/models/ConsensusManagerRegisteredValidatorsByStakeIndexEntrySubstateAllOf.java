@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ActiveValidator;
+import com.radixdlt.api.core.generated.models.ActiveValidatorKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,15 +33,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
+  ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.JSON_PROPERTY_KEY,
   ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.JSON_PROPERTY_ACTIVE_VALIDATOR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ActiveValidatorKey key;
+
   public static final String JSON_PROPERTY_ACTIVE_VALIDATOR = "active_validator";
   private ActiveValidator activeValidator;
 
   public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf() { 
   }
+
+  public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf key(ActiveValidatorKey key) {
+    this.key = key;
+    return this;
+  }
+
+   /**
+   * Get key
+   * @return key
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ActiveValidatorKey getKey() {
+    return key;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKey(ActiveValidatorKey key) {
+    this.key = key;
+  }
+
 
   public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf activeValidator(ActiveValidator activeValidator) {
     this.activeValidator = activeValidator;
@@ -80,18 +111,20 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf 
       return false;
     }
     ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf consensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf = (ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf) o;
-    return Objects.equals(this.activeValidator, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.activeValidator);
+    return Objects.equals(this.key, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.key) &&
+        Objects.equals(this.activeValidator, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf.activeValidator);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(activeValidator);
+    return Objects.hash(key, activeValidator);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf {\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    activeValidator: ").append(toIndentedString(activeValidator)).append("\n");
     sb.append("}");
     return sb.toString();

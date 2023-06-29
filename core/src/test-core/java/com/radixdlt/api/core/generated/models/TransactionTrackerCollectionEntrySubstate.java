@@ -62,10 +62,11 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.TransactionIdKey;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
@@ -84,7 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * TransactionTrackerCollectionEntrySubstate
  */
 @JsonPropertyOrder({
-  TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_INTENT_HASH,
+  TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_KEY,
   TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -131,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -142,8 +143,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class TransactionTrackerCollectionEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
-  private String intentHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private TransactionIdKey key;
 
   public static final String JSON_PROPERTY_STATUS = "status";
   private TransactionTrackerTransactionStatus status;
@@ -151,29 +152,29 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
   public TransactionTrackerCollectionEntrySubstate() { 
   }
 
-  public TransactionTrackerCollectionEntrySubstate intentHash(String intentHash) {
-    this.intentHash = intentHash;
+  public TransactionTrackerCollectionEntrySubstate key(TransactionIdKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-   * @return intentHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
-  @JsonProperty(JSON_PROPERTY_INTENT_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getIntentHash() {
-    return intentHash;
+  public TransactionIdKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INTENT_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIntentHash(String intentHash) {
-    this.intentHash = intentHash;
+  public void setKey(TransactionIdKey key) {
+    this.key = key;
   }
 
 
@@ -215,14 +216,14 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
       return false;
     }
     TransactionTrackerCollectionEntrySubstate transactionTrackerCollectionEntrySubstate = (TransactionTrackerCollectionEntrySubstate) o;
-    return Objects.equals(this.intentHash, transactionTrackerCollectionEntrySubstate.intentHash) &&
+    return Objects.equals(this.key, transactionTrackerCollectionEntrySubstate.key) &&
         Objects.equals(this.status, transactionTrackerCollectionEntrySubstate.status) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, status, super.hashCode());
+    return Objects.hash(key, status, super.hashCode());
   }
 
   @Override
@@ -230,7 +231,7 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionTrackerCollectionEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -287,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

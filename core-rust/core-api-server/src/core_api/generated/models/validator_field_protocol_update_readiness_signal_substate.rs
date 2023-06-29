@@ -15,15 +15,18 @@
 pub struct ValidatorFieldProtocolUpdateReadinessSignalSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     /// If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). 
     #[serde(rename = "protocol_version_name", skip_serializing_if = "Option::is_none")]
     pub protocol_version_name: Option<String>,
 }
 
 impl ValidatorFieldProtocolUpdateReadinessSignalSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> ValidatorFieldProtocolUpdateReadinessSignalSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool) -> ValidatorFieldProtocolUpdateReadinessSignalSubstate {
         ValidatorFieldProtocolUpdateReadinessSignalSubstate {
             substate_type,
+            is_locked,
             protocol_version_name: None,
         }
     }

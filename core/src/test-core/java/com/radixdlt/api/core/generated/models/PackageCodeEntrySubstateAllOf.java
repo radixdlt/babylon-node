@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,14 +33,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageCodeEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HASH,
+  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_KEY,
   PackageCodeEntrySubstateAllOf.JSON_PROPERTY_VM_TYPE,
   PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageCodeEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_CODE_HASH = "code_hash";
-  private String codeHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private PackageCodeKey key;
 
   public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
   private VmType vmType;
@@ -50,29 +51,29 @@ public class PackageCodeEntrySubstateAllOf {
   public PackageCodeEntrySubstateAllOf() { 
   }
 
-  public PackageCodeEntrySubstateAllOf codeHash(String codeHash) {
-    this.codeHash = codeHash;
+  public PackageCodeEntrySubstateAllOf key(PackageCodeKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded code hash, capturing the vm-type and the code itself.
-   * @return codeHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded code hash, capturing the vm-type and the code itself.")
-  @JsonProperty(JSON_PROPERTY_CODE_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHash() {
-    return codeHash;
+  public PackageCodeKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHash(String codeHash) {
-    this.codeHash = codeHash;
+  public void setKey(PackageCodeKey key) {
+    this.key = key;
   }
 
 
@@ -140,21 +141,21 @@ public class PackageCodeEntrySubstateAllOf {
       return false;
     }
     PackageCodeEntrySubstateAllOf packageCodeEntrySubstateAllOf = (PackageCodeEntrySubstateAllOf) o;
-    return Objects.equals(this.codeHash, packageCodeEntrySubstateAllOf.codeHash) &&
+    return Objects.equals(this.key, packageCodeEntrySubstateAllOf.key) &&
         Objects.equals(this.vmType, packageCodeEntrySubstateAllOf.vmType) &&
         Objects.equals(this.codeHex, packageCodeEntrySubstateAllOf.codeHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHash, vmType, codeHex);
+    return Objects.hash(key, vmType, codeHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageCodeEntrySubstateAllOf {\n");
-    sb.append("    codeHash: ").append(toIndentedString(codeHash)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");

@@ -15,14 +15,17 @@
 pub struct NonFungibleResourceManagerFieldIdTypeSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     #[serde(rename = "non_fungible_id_type")]
     pub non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType,
 }
 
 impl NonFungibleResourceManagerFieldIdTypeSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType) -> NonFungibleResourceManagerFieldIdTypeSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType) -> NonFungibleResourceManagerFieldIdTypeSubstate {
         NonFungibleResourceManagerFieldIdTypeSubstate {
             substate_type,
+            is_locked,
             non_fungible_id_type,
         }
     }

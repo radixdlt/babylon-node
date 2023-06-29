@@ -13,21 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageBlueprintAuthTemplateEntrySubstateAllOf {
-    /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_version")]
-    pub blueprint_version: String,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
     #[serde(rename = "auth_config")]
     pub auth_config: Box<crate::core_api::generated::models::AuthConfig>,
 }
 
 impl PackageBlueprintAuthTemplateEntrySubstateAllOf {
-    pub fn new(blueprint_name: String, blueprint_version: String, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstateAllOf {
         PackageBlueprintAuthTemplateEntrySubstateAllOf {
-            blueprint_name,
-            blueprint_version,
+            key: Box::new(key),
             auth_config: Box::new(auth_config),
         }
     }

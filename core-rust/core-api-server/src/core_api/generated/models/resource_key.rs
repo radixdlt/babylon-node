@@ -12,24 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoyaltyMethodRoyaltyEntrySubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "is_locked")]
-    pub is_locked: bool,
-    #[serde(rename = "method_name")]
-    pub method_name: String,
-    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
-    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+pub struct ResourceKey {
+    /// The Bech32m-encoded human readable version of the component address
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
 }
 
-impl RoyaltyMethodRoyaltyEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, method_name: String) -> RoyaltyMethodRoyaltyEntrySubstate {
-        RoyaltyMethodRoyaltyEntrySubstate {
-            substate_type,
-            is_locked,
-            method_name,
-            royalty_amount: None,
+impl ResourceKey {
+    pub fn new(resource_address: String) -> ResourceKey {
+        ResourceKey {
+            resource_address,
         }
     }
 }

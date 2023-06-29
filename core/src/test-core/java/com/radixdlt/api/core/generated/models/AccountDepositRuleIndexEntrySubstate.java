@@ -64,8 +64,9 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
+import com.radixdlt.api.core.generated.models.ResourceKey;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,9 +85,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccountDepositRuleIndexEntrySubstate
  */
 @JsonPropertyOrder({
-  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_RESOURCE_ADDRESS,
-  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_DEPOSIT_RULE,
-  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_IS_LOCKED
+  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_KEY,
+  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_DEPOSIT_RULE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -132,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -143,41 +143,38 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class AccountDepositRuleIndexEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ResourceKey key;
 
   public static final String JSON_PROPERTY_DEPOSIT_RULE = "deposit_rule";
   private DepositRule depositRule;
 
-  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
-  private Boolean isLocked;
-
   public AccountDepositRuleIndexEntrySubstate() { 
   }
 
-  public AccountDepositRuleIndexEntrySubstate resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public AccountDepositRuleIndexEntrySubstate key(ResourceKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return resourceAddress
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public ResourceKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setKey(ResourceKey key) {
+    this.key = key;
   }
 
 
@@ -207,32 +204,6 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
   }
 
 
-  public AccountDepositRuleIndexEntrySubstate isLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-    return this;
-  }
-
-   /**
-   * Get isLocked
-   * @return isLocked
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsLocked() {
-    return isLocked;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-  }
-
-
   /**
    * Return true if this AccountDepositRuleIndexEntrySubstate object is equal to o.
    */
@@ -245,15 +216,14 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
       return false;
     }
     AccountDepositRuleIndexEntrySubstate accountDepositRuleIndexEntrySubstate = (AccountDepositRuleIndexEntrySubstate) o;
-    return Objects.equals(this.resourceAddress, accountDepositRuleIndexEntrySubstate.resourceAddress) &&
+    return Objects.equals(this.key, accountDepositRuleIndexEntrySubstate.key) &&
         Objects.equals(this.depositRule, accountDepositRuleIndexEntrySubstate.depositRule) &&
-        Objects.equals(this.isLocked, accountDepositRuleIndexEntrySubstate.isLocked) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, depositRule, isLocked, super.hashCode());
+    return Objects.hash(key, depositRule, super.hashCode());
   }
 
   @Override
@@ -261,9 +231,8 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountDepositRuleIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    depositRule: ").append(toIndentedString(depositRule)).append("\n");
-    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -319,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

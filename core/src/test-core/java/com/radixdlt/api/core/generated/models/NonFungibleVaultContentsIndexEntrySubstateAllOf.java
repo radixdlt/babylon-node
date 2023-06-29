@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.NonFungibleLocalId;
+import com.radixdlt.api.core.generated.models.LocalNonFungibleKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleVaultContentsIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleVaultContentsIndexEntrySubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID
+  NonFungibleVaultContentsIndexEntrySubstateAllOf.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID = "non_fungible_local_id";
-  private NonFungibleLocalId nonFungibleLocalId;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private LocalNonFungibleKey key;
 
   public NonFungibleVaultContentsIndexEntrySubstateAllOf() { 
   }
 
-  public NonFungibleVaultContentsIndexEntrySubstateAllOf nonFungibleLocalId(NonFungibleLocalId nonFungibleLocalId) {
-    this.nonFungibleLocalId = nonFungibleLocalId;
+  public NonFungibleVaultContentsIndexEntrySubstateAllOf key(LocalNonFungibleKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get nonFungibleLocalId
-   * @return nonFungibleLocalId
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NonFungibleLocalId getNonFungibleLocalId() {
-    return nonFungibleLocalId;
+  public LocalNonFungibleKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleLocalId(NonFungibleLocalId nonFungibleLocalId) {
-    this.nonFungibleLocalId = nonFungibleLocalId;
+  public void setKey(LocalNonFungibleKey key) {
+    this.key = key;
   }
 
 
@@ -80,19 +80,19 @@ public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
       return false;
     }
     NonFungibleVaultContentsIndexEntrySubstateAllOf nonFungibleVaultContentsIndexEntrySubstateAllOf = (NonFungibleVaultContentsIndexEntrySubstateAllOf) o;
-    return Objects.equals(this.nonFungibleLocalId, nonFungibleVaultContentsIndexEntrySubstateAllOf.nonFungibleLocalId);
+    return Objects.equals(this.key, nonFungibleVaultContentsIndexEntrySubstateAllOf.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleLocalId);
+    return Objects.hash(key);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleVaultContentsIndexEntrySubstateAllOf {\n");
-    sb.append("    nonFungibleLocalId: ").append(toIndentedString(nonFungibleLocalId)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

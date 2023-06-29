@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.MetadataKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,77 +33,43 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * MetadataModuleEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_FIELD_NAME,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_LOCKED
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MetadataModuleEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_FIELD_NAME = "field_name";
-  private String fieldName;
-
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private MetadataKey key;
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
 
-  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
-  private Boolean isLocked;
-
   public MetadataModuleEntrySubstateAllOf() { 
   }
 
-  public MetadataModuleEntrySubstateAllOf fieldName(String fieldName) {
-    this.fieldName = fieldName;
+  public MetadataModuleEntrySubstateAllOf key(MetadataKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get fieldName
-   * @return fieldName
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FIELD_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getFieldName() {
-    return fieldName;
+  public MetadataKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FIELD_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFieldName(String fieldName) {
-    this.fieldName = fieldName;
-  }
-
-
-  public MetadataModuleEntrySubstateAllOf isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-    return this;
-  }
-
-   /**
-   * Get isDeleted
-   * @return isDeleted
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsDeleted() {
-    return isDeleted;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public void setKey(MetadataKey key) {
+    this.key = key;
   }
 
 
@@ -132,32 +99,6 @@ public class MetadataModuleEntrySubstateAllOf {
   }
 
 
-  public MetadataModuleEntrySubstateAllOf isLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-    return this;
-  }
-
-   /**
-   * Get isLocked
-   * @return isLocked
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsLocked() {
-    return isLocked;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-  }
-
-
   /**
    * Return true if this MetadataModuleEntrySubstate_allOf object is equal to o.
    */
@@ -170,25 +111,21 @@ public class MetadataModuleEntrySubstateAllOf {
       return false;
     }
     MetadataModuleEntrySubstateAllOf metadataModuleEntrySubstateAllOf = (MetadataModuleEntrySubstateAllOf) o;
-    return Objects.equals(this.fieldName, metadataModuleEntrySubstateAllOf.fieldName) &&
-        Objects.equals(this.isDeleted, metadataModuleEntrySubstateAllOf.isDeleted) &&
-        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct) &&
-        Objects.equals(this.isLocked, metadataModuleEntrySubstateAllOf.isLocked);
+    return Objects.equals(this.key, metadataModuleEntrySubstateAllOf.key) &&
+        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldName, isDeleted, dataStruct, isLocked);
+    return Objects.hash(key, dataStruct);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MetadataModuleEntrySubstateAllOf {\n");
-    sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
-    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }

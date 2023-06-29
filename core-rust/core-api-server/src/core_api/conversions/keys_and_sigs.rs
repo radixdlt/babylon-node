@@ -17,6 +17,15 @@ pub fn to_api_public_key(public_key: &PublicKey) -> models::PublicKey {
     }
 }
 
+pub fn to_api_ecdsa_secp256k1_public_key(
+    key: &Secp256k1PublicKey,
+) -> models::EcdsaSecp256k1PublicKey {
+    models::EcdsaSecp256k1PublicKey {
+        key_type: models::PublicKeyType::EcdsaSecp256k1,
+        key_hex: to_hex(key.0),
+    }
+}
+
 pub fn to_api_signature(signature: &SignatureV1) -> models::Signature {
     match signature {
         SignatureV1::Secp256k1(sig) => models::Signature::EcdsaSecp256k1Signature {

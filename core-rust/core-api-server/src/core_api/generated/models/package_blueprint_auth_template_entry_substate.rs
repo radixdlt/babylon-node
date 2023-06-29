@@ -15,22 +15,20 @@
 pub struct PackageBlueprintAuthTemplateEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_version")]
-    pub blueprint_version: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
     #[serde(rename = "auth_config")]
     pub auth_config: Box<crate::core_api::generated::models::AuthConfig>,
 }
 
 impl PackageBlueprintAuthTemplateEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_name: String, blueprint_version: String, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstate {
         PackageBlueprintAuthTemplateEntrySubstate {
             substate_type,
-            blueprint_name,
-            blueprint_version,
+            is_locked,
+            key: Box::new(key),
             auth_config: Box::new(auth_config),
         }
     }

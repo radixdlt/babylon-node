@@ -32,6 +32,7 @@ import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubsta
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.ActiveValidator;
+import com.radixdlt.api.core.generated.models.ActiveValidatorKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -64,8 +65,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,6 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate
  */
 @JsonPropertyOrder({
+  ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.JSON_PROPERTY_KEY,
   ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.JSON_PROPERTY_ACTIVE_VALIDATOR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -130,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -141,11 +143,40 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate extends Substate {
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ActiveValidatorKey key;
+
   public static final String JSON_PROPERTY_ACTIVE_VALIDATOR = "active_validator";
   private ActiveValidator activeValidator;
 
   public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate() { 
   }
+
+  public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate key(ActiveValidatorKey key) {
+    this.key = key;
+    return this;
+  }
+
+   /**
+   * Get key
+   * @return key
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ActiveValidatorKey getKey() {
+    return key;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKey(ActiveValidatorKey key) {
+    this.key = key;
+  }
+
 
   public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate activeValidator(ActiveValidator activeValidator) {
     this.activeValidator = activeValidator;
@@ -185,13 +216,14 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
       return false;
     }
     ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate = (ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate) o;
-    return Objects.equals(this.activeValidator, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.activeValidator) &&
+    return Objects.equals(this.key, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.key) &&
+        Objects.equals(this.activeValidator, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.activeValidator) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(activeValidator, super.hashCode());
+    return Objects.hash(key, activeValidator, super.hashCode());
   }
 
   @Override
@@ -199,6 +231,7 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    activeValidator: ").append(toIndentedString(activeValidator)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -255,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

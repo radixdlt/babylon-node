@@ -61,10 +61,11 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntryS
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,7 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageCodeEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageCodeEntrySubstate.JSON_PROPERTY_CODE_HASH,
+  PackageCodeEntrySubstate.JSON_PROPERTY_KEY,
   PackageCodeEntrySubstate.JSON_PROPERTY_VM_TYPE,
   PackageCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
 })
@@ -132,8 +133,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -143,8 +144,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageCodeEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_CODE_HASH = "code_hash";
-  private String codeHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private PackageCodeKey key;
 
   public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
   private VmType vmType;
@@ -155,29 +156,29 @@ public class PackageCodeEntrySubstate extends Substate {
   public PackageCodeEntrySubstate() { 
   }
 
-  public PackageCodeEntrySubstate codeHash(String codeHash) {
-    this.codeHash = codeHash;
+  public PackageCodeEntrySubstate key(PackageCodeKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded code hash, capturing the vm-type and the code itself.
-   * @return codeHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded code hash, capturing the vm-type and the code itself.")
-  @JsonProperty(JSON_PROPERTY_CODE_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHash() {
-    return codeHash;
+  public PackageCodeKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHash(String codeHash) {
-    this.codeHash = codeHash;
+  public void setKey(PackageCodeKey key) {
+    this.key = key;
   }
 
 
@@ -245,7 +246,7 @@ public class PackageCodeEntrySubstate extends Substate {
       return false;
     }
     PackageCodeEntrySubstate packageCodeEntrySubstate = (PackageCodeEntrySubstate) o;
-    return Objects.equals(this.codeHash, packageCodeEntrySubstate.codeHash) &&
+    return Objects.equals(this.key, packageCodeEntrySubstate.key) &&
         Objects.equals(this.vmType, packageCodeEntrySubstate.vmType) &&
         Objects.equals(this.codeHex, packageCodeEntrySubstate.codeHex) &&
         super.equals(o);
@@ -253,7 +254,7 @@ public class PackageCodeEntrySubstate extends Substate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHash, vmType, codeHex, super.hashCode());
+    return Objects.hash(key, vmType, codeHex, super.hashCode());
   }
 
   @Override
@@ -261,7 +262,7 @@ public class PackageCodeEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageCodeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    codeHash: ").append(toIndentedString(codeHash)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
@@ -319,8 +320,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

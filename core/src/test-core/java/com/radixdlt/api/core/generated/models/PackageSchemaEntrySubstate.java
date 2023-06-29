@@ -63,8 +63,9 @@ import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstateAllOf;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
+import com.radixdlt.api.core.generated.models.SchemaKey;
 import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -84,7 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageSchemaEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageSchemaEntrySubstate.JSON_PROPERTY_SCHEMA_HASH,
+  PackageSchemaEntrySubstate.JSON_PROPERTY_KEY,
   PackageSchemaEntrySubstate.JSON_PROPERTY_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -131,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -142,8 +143,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageSchemaEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
-  private String schemaHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SchemaKey key;
 
   public static final String JSON_PROPERTY_SCHEMA = "schema";
   private ScryptoSchema schema;
@@ -151,29 +152,29 @@ public class PackageSchemaEntrySubstate extends Substate {
   public PackageSchemaEntrySubstate() { 
   }
 
-  public PackageSchemaEntrySubstate schemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public PackageSchemaEntrySubstate key(SchemaKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return schemaHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSchemaHash() {
-    return schemaHash;
+  public SchemaKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public void setKey(SchemaKey key) {
+    this.key = key;
   }
 
 
@@ -215,14 +216,14 @@ public class PackageSchemaEntrySubstate extends Substate {
       return false;
     }
     PackageSchemaEntrySubstate packageSchemaEntrySubstate = (PackageSchemaEntrySubstate) o;
-    return Objects.equals(this.schemaHash, packageSchemaEntrySubstate.schemaHash) &&
+    return Objects.equals(this.key, packageSchemaEntrySubstate.key) &&
         Objects.equals(this.schema, packageSchemaEntrySubstate.schema) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemaHash, schema, super.hashCode());
+    return Objects.hash(key, schema, super.hashCode());
   }
 
   @Override
@@ -230,7 +231,7 @@ public class PackageSchemaEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageSchemaEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -287,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

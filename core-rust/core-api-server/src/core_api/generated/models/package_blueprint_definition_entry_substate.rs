@@ -15,22 +15,20 @@
 pub struct PackageBlueprintDefinitionEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-    #[serde(rename = "blueprint_version")]
-    pub blueprint_version: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
     #[serde(rename = "definition")]
     pub definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
 }
 
 impl PackageBlueprintDefinitionEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_name: String, blueprint_version: String, definition: crate::core_api::generated::models::BlueprintDefinition) -> PackageBlueprintDefinitionEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, definition: crate::core_api::generated::models::BlueprintDefinition) -> PackageBlueprintDefinitionEntrySubstate {
         PackageBlueprintDefinitionEntrySubstate {
             substate_type,
-            blueprint_name,
-            blueprint_version,
+            is_locked,
+            key: Box::new(key),
             definition: Box::new(definition),
         }
     }

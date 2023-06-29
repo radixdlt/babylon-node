@@ -38,7 +38,7 @@ public enum SubstateType {
   
   ROYALTYMODULEFIELDSTATE("RoyaltyModuleFieldState"),
   
-  ROYALTYMETHODROYALTYENTRY("RoyaltyMethodRoyaltyEntry"),
+  ROYALTYMODULEMETHODROYALTYENTRY("RoyaltyModuleMethodRoyaltyEntry"),
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   

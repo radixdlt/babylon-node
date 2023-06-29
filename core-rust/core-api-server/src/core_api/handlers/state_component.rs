@@ -63,7 +63,7 @@ pub(crate) async fn handle_state_component(
 
     Ok(models::StateComponentResponse {
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: Some(to_api_component_state_substate(
+        state: Some(to_api_generic_scrypto_component_state_substate_from_scrypto_value(
             &mapping_context,
             &scrypto_value,
         )?),

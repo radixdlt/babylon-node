@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SchemaKey;
 import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,13 +33,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageSchemaEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_SCHEMA_HASH,
+  PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_KEY,
   PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageSchemaEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
-  private String schemaHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private SchemaKey key;
 
   public static final String JSON_PROPERTY_SCHEMA = "schema";
   private ScryptoSchema schema;
@@ -46,29 +47,29 @@ public class PackageSchemaEntrySubstateAllOf {
   public PackageSchemaEntrySubstateAllOf() { 
   }
 
-  public PackageSchemaEntrySubstateAllOf schemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public PackageSchemaEntrySubstateAllOf key(SchemaKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return schemaHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSchemaHash() {
-    return schemaHash;
+  public SchemaKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public void setKey(SchemaKey key) {
+    this.key = key;
   }
 
 
@@ -110,20 +111,20 @@ public class PackageSchemaEntrySubstateAllOf {
       return false;
     }
     PackageSchemaEntrySubstateAllOf packageSchemaEntrySubstateAllOf = (PackageSchemaEntrySubstateAllOf) o;
-    return Objects.equals(this.schemaHash, packageSchemaEntrySubstateAllOf.schemaHash) &&
+    return Objects.equals(this.key, packageSchemaEntrySubstateAllOf.key) &&
         Objects.equals(this.schema, packageSchemaEntrySubstateAllOf.schema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemaHash, schema);
+    return Objects.hash(key, schema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageSchemaEntrySubstateAllOf {\n");
-    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("}");
     return sb.toString();

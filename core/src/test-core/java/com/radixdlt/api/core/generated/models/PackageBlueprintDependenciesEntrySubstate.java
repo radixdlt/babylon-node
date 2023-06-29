@@ -32,6 +32,7 @@ import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubsta
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.BlueprintDependencies;
+import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -64,8 +65,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,8 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageBlueprintDependenciesEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_BLUEPRINT_NAME,
-  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_BLUEPRINT_VERSION,
+  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_KEY,
   PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_DEPENDENCIES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -132,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -143,11 +143,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageBlueprintDependenciesEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
-  private String blueprintVersion;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private BlueprintVersionKey key;
 
   public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
   private BlueprintDependencies dependencies;
@@ -155,55 +152,29 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
   public PackageBlueprintDependenciesEntrySubstate() { 
   }
 
-  public PackageBlueprintDependenciesEntrySubstate blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public PackageBlueprintDependenciesEntrySubstate key(BlueprintVersionKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintName
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public BlueprintVersionKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-  }
-
-
-  public PackageBlueprintDependenciesEntrySubstate blueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
-    return this;
-  }
-
-   /**
-   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getBlueprintVersion() {
-    return blueprintVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
+  public void setKey(BlueprintVersionKey key) {
+    this.key = key;
   }
 
 
@@ -245,15 +216,14 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
       return false;
     }
     PackageBlueprintDependenciesEntrySubstate packageBlueprintDependenciesEntrySubstate = (PackageBlueprintDependenciesEntrySubstate) o;
-    return Objects.equals(this.blueprintName, packageBlueprintDependenciesEntrySubstate.blueprintName) &&
-        Objects.equals(this.blueprintVersion, packageBlueprintDependenciesEntrySubstate.blueprintVersion) &&
+    return Objects.equals(this.key, packageBlueprintDependenciesEntrySubstate.key) &&
         Objects.equals(this.dependencies, packageBlueprintDependenciesEntrySubstate.dependencies) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintName, blueprintVersion, dependencies, super.hashCode());
+    return Objects.hash(key, dependencies, super.hashCode());
   }
 
   @Override
@@ -261,8 +231,7 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintDependenciesEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -319,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

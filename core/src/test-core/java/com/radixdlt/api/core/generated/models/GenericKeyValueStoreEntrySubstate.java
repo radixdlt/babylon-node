@@ -39,17 +39,18 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
+import com.radixdlt.api.core.generated.models.GenericKey;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntryValue;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
@@ -64,8 +65,8 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,9 +85,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * GenericKeyValueStoreEntrySubstate
  */
 @JsonPropertyOrder({
-  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_IS_DELETED,
-  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_DATA_STRUCT,
-  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_IS_LOCKED
+  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_KEY,
+  GenericKeyValueStoreEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -132,8 +132,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
-  @JsonSubTypes.Type(value = RoyaltyMethodRoyaltyEntrySubstate.class, name = "RoyaltyMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
@@ -143,93 +143,64 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class GenericKeyValueStoreEntrySubstate extends Substate {
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private GenericKey key;
 
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
-
-  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
-  private Boolean isLocked;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private GenericKeyValueStoreEntryValue value;
 
   public GenericKeyValueStoreEntrySubstate() { 
   }
 
-  public GenericKeyValueStoreEntrySubstate isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public GenericKeyValueStoreEntrySubstate key(GenericKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get isDeleted
-   * @return isDeleted
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsDeleted() {
-    return isDeleted;
+  public GenericKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public void setKey(GenericKey key) {
+    this.key = key;
   }
 
 
-  public GenericKeyValueStoreEntrySubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public GenericKeyValueStoreEntrySubstate value(GenericKeyValueStoreEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public GenericKeyValueStoreEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
-  }
-
-
-  public GenericKeyValueStoreEntrySubstate isLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
-    return this;
-  }
-
-   /**
-   * Get isLocked
-   * @return isLocked
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsLocked() {
-    return isLocked;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsLocked(Boolean isLocked) {
-    this.isLocked = isLocked;
+  public void setValue(GenericKeyValueStoreEntryValue value) {
+    this.value = value;
   }
 
 
@@ -245,15 +216,14 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
       return false;
     }
     GenericKeyValueStoreEntrySubstate genericKeyValueStoreEntrySubstate = (GenericKeyValueStoreEntrySubstate) o;
-    return Objects.equals(this.isDeleted, genericKeyValueStoreEntrySubstate.isDeleted) &&
-        Objects.equals(this.dataStruct, genericKeyValueStoreEntrySubstate.dataStruct) &&
-        Objects.equals(this.isLocked, genericKeyValueStoreEntrySubstate.isLocked) &&
+    return Objects.equals(this.key, genericKeyValueStoreEntrySubstate.key) &&
+        Objects.equals(this.value, genericKeyValueStoreEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isDeleted, dataStruct, isLocked, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -261,9 +231,8 @@ public class GenericKeyValueStoreEntrySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class GenericKeyValueStoreEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
-    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -319,8 +288,8 @@ static {
   mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyMethodRoyaltyEntry", RoyaltyMethodRoyaltyEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
   mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);

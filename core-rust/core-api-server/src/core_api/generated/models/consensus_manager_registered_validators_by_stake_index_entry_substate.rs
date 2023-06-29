@@ -15,14 +15,20 @@
 pub struct ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::ActiveValidatorKey>,
     #[serde(rename = "active_validator")]
     pub active_validator: Box<crate::core_api::generated::models::ActiveValidator>,
 }
 
 impl ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, active_validator: crate::core_api::generated::models::ActiveValidator) -> ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::ActiveValidatorKey, active_validator: crate::core_api::generated::models::ActiveValidator) -> ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
         ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
             substate_type,
+            is_locked,
+            key: Box::new(key),
             active_validator: Box::new(active_validator),
         }
     }

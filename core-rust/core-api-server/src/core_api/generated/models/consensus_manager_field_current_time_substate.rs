@@ -15,14 +15,17 @@
 pub struct ConsensusManagerFieldCurrentTimeSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     #[serde(rename = "proposer_timestamp")]
     pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
 }
 
 impl ConsensusManagerFieldCurrentTimeSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, proposer_timestamp: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldCurrentTimeSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, proposer_timestamp: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldCurrentTimeSubstate {
         ConsensusManagerFieldCurrentTimeSubstate {
             substate_type,
+            is_locked,
             proposer_timestamp: Box::new(proposer_timestamp),
         }
     }

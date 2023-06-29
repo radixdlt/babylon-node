@@ -15,6 +15,8 @@
 pub struct ConsensusManagerFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
@@ -32,9 +34,10 @@ pub struct ConsensusManagerFieldStateSubstate {
 }
 
 impl ConsensusManagerFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::Instant, actual_epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, epoch: i64, round: i64, is_started: bool, effective_epoch_start: crate::core_api::generated::models::Instant, actual_epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateSubstate {
         ConsensusManagerFieldStateSubstate {
             substate_type,
+            is_locked,
             epoch,
             round,
             is_started,

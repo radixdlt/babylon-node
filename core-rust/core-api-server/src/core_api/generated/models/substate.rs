@@ -15,48 +15,56 @@
 pub enum Substate {
     #[serde(rename="AccessControllerFieldState")]
     AccessControllerFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
     #[serde(rename="AccessRulesModuleFieldOwnerRole")]
     AccessRulesModuleFieldOwnerRoleSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "owner_role")]
         owner_role: Box<crate::core_api::generated::models::OwnerRole>,
     },
     #[serde(rename="AccessRulesModuleRuleEntry")]
     AccessRulesModuleRuleEntrySubstate {
-        #[serde(rename = "object_module_id")]
-        object_module_id: crate::core_api::generated::models::ObjectModuleId,
-        #[serde(rename = "role_key")]
-        role_key: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ObjectRoleKey>,
         #[serde(rename = "access_rule", skip_serializing_if = "Option::is_none")]
         access_rule: Option<Box<crate::core_api::generated::models::AccessRule>>,
     },
     #[serde(rename="AccountDepositRuleIndexEntry")]
     AccountDepositRuleIndexEntrySubstate {
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "resource_address")]
-        resource_address: String,
-        #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
-        deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ResourceKey>,
+        #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
+        deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
     },
     #[serde(rename="AccountFieldState")]
     AccountFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "default_deposit_rule")]
         default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule,
     },
     #[serde(rename="AccountVaultIndexEntry")]
     AccountVaultIndexEntrySubstate {
-        /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "resource_address")]
-        resource_address: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ResourceKey>,
         #[serde(rename = "vault", skip_serializing_if = "Option::is_none")]
         vault: Option<Box<crate::core_api::generated::models::EntityReference>>,
     },
     #[serde(rename="ConsensusManagerFieldConfig")]
     ConsensusManagerFieldConfigSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// An integer between `0` and `10^10`, specifying the maximum number of validators in the active validator set. 
         #[serde(rename = "max_validators")]
         max_validators: i64,
@@ -83,6 +91,8 @@ pub enum Substate {
     },
     #[serde(rename="ConsensusManagerFieldCurrentProposalStatistic")]
     ConsensusManagerFieldCurrentProposalStatisticSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
         #[serde(rename = "completed")]
         completed: Vec<i64>,
@@ -92,21 +102,29 @@ pub enum Substate {
     },
     #[serde(rename="ConsensusManagerFieldCurrentTime")]
     ConsensusManagerFieldCurrentTimeSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "proposer_timestamp")]
         proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
     },
     #[serde(rename="ConsensusManagerFieldCurrentTimeRoundedToMinutes")]
     ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "proposer_timestamp_rounded_down_to_minute")]
         proposer_timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
     },
     #[serde(rename="ConsensusManagerFieldCurrentValidatorSet")]
     ConsensusManagerFieldCurrentValidatorSetSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "validator_set")]
         validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
     },
     #[serde(rename="ConsensusManagerFieldState")]
     ConsensusManagerFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,
@@ -124,6 +142,8 @@ pub enum Substate {
     },
     #[serde(rename="ConsensusManagerFieldValidatorRewards")]
     ConsensusManagerFieldValidatorRewardsSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "proposer_rewards")]
         proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>,
         #[serde(rename = "rewards_vault")]
@@ -131,58 +151,72 @@ pub enum Substate {
     },
     #[serde(rename="ConsensusManagerRegisteredValidatorsByStakeIndexEntry")]
     ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ActiveValidatorKey>,
         #[serde(rename = "active_validator")]
         active_validator: Box<crate::core_api::generated::models::ActiveValidator>,
     },
     #[serde(rename="FungibleResourceManagerFieldDivisibility")]
     FungibleResourceManagerFieldDivisibilitySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "divisibility")]
         divisibility: i32,
     },
     #[serde(rename="FungibleResourceManagerFieldTotalSupply")]
     FungibleResourceManagerFieldTotalSupplySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "total_supply")]
         total_supply: String,
     },
     #[serde(rename="FungibleVaultFieldBalance")]
     FungibleVaultFieldBalanceSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "amount")]
         amount: String,
     },
     #[serde(rename="FungibleVaultFieldFrozenStatus")]
     FungibleVaultFieldFrozenStatusSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "frozen_status")]
         frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
     },
     #[serde(rename="GenericKeyValueStoreEntry")]
     GenericKeyValueStoreEntrySubstate {
-        #[serde(rename = "is_deleted")]
-        is_deleted: bool,
-        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::GenericKey>,
+        #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+        value: Option<Box<crate::core_api::generated::models::GenericKeyValueStoreEntryValue>>,
     },
     #[serde(rename="GenericScryptoComponentFieldState")]
     GenericScryptoComponentFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
     #[serde(rename="MetadataModuleEntry")]
     MetadataModuleEntrySubstate {
-        #[serde(rename = "field_name")]
-        field_name: String,
-        #[serde(rename = "is_deleted")]
-        is_deleted: bool,
-        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::MetadataKey>,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="MultiResourcePoolFieldState")]
     MultiResourcePoolFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
         /// The Bech32m-encoded human readable version of the resource address
@@ -191,48 +225,62 @@ pub enum Substate {
     },
     #[serde(rename="NonFungibleResourceManagerDataEntry")]
     NonFungibleResourceManagerDataEntrySubstate {
-        #[serde(rename = "is_deleted")]
-        is_deleted: bool,
-        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="NonFungibleResourceManagerFieldIdType")]
     NonFungibleResourceManagerFieldIdTypeSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "non_fungible_id_type")]
         non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType,
     },
     #[serde(rename="NonFungibleResourceManagerFieldMutableFields")]
     NonFungibleResourceManagerFieldMutableFieldsSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The field names of the NF Metadata which are mutable. 
         #[serde(rename = "mutable_fields")]
         mutable_fields: Vec<String>,
     },
     #[serde(rename="NonFungibleResourceManagerFieldTotalSupply")]
     NonFungibleResourceManagerFieldTotalSupplySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "total_supply")]
         total_supply: String,
     },
     #[serde(rename="NonFungibleVaultContentsIndexEntry")]
     NonFungibleVaultContentsIndexEntrySubstate {
-        #[serde(rename = "non_fungible_local_id")]
-        non_fungible_local_id: Box<crate::core_api::generated::models::NonFungibleLocalId>,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
     },
     #[serde(rename="NonFungibleVaultFieldBalance")]
     NonFungibleVaultFieldBalanceSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "amount")]
         amount: String,
     },
     #[serde(rename="NonFungibleVaultFieldFrozenStatus")]
     NonFungibleVaultFieldFrozenStatusSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "frozen_status")]
         frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
     },
     #[serde(rename="OneResourcePoolFieldState")]
     OneResourcePoolFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "vault")]
         vault: Box<crate::core_api::generated::models::EntityReference>,
         /// The Bech32m-encoded human readable version of the resource address
@@ -241,53 +289,46 @@ pub enum Substate {
     },
     #[serde(rename="PackageBlueprintAuthTemplateEntry")]
     PackageBlueprintAuthTemplateEntrySubstate {
-        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_version")]
-        blueprint_version: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
         #[serde(rename = "auth_config")]
         auth_config: Box<crate::core_api::generated::models::AuthConfig>,
     },
     #[serde(rename="PackageBlueprintDefinitionEntry")]
     PackageBlueprintDefinitionEntrySubstate {
-        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_version")]
-        blueprint_version: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
         #[serde(rename = "definition")]
         definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
     },
     #[serde(rename="PackageBlueprintDependenciesEntry")]
     PackageBlueprintDependenciesEntrySubstate {
-        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_version")]
-        blueprint_version: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
         #[serde(rename = "dependencies")]
         dependencies: Box<crate::core_api::generated::models::BlueprintDependencies>,
     },
     #[serde(rename="PackageBlueprintRoyaltyEntry")]
     PackageBlueprintRoyaltyEntrySubstate {
-        /// The first part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-        /// The second part of the substate key `(blueprint_name, blueprint_version)`.
-        #[serde(rename = "blueprint_version")]
-        blueprint_version: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
         #[serde(rename = "royalty_config")]
         royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
     },
     #[serde(rename="PackageCodeEntry")]
     PackageCodeEntrySubstate {
-        /// The hex-encoded code hash, capturing the vm-type and the code itself.
-        #[serde(rename = "code_hash")]
-        code_hash: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::PackageCodeKey>,
         #[serde(rename = "vm_type")]
         vm_type: crate::core_api::generated::models::VmType,
         /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
@@ -296,43 +337,51 @@ pub enum Substate {
     },
     #[serde(rename="PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulatorSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "vault_entity")]
         vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="PackageSchemaEntry")]
     PackageSchemaEntrySubstate {
-        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-        #[serde(rename = "schema_hash")]
-        schema_hash: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::SchemaKey>,
         #[serde(rename = "schema")]
         schema: Box<crate::core_api::generated::models::ScryptoSchema>,
     },
-    #[serde(rename="RoyaltyMethodRoyaltyEntry")]
-    RoyaltyMethodRoyaltyEntrySubstate {
-        #[serde(rename = "is_locked")]
-        is_locked: bool,
-        #[serde(rename = "method_name")]
-        method_name: String,
-        #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
-        royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
-    },
     #[serde(rename="RoyaltyModuleFieldState")]
     RoyaltyModuleFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "is_enabled")]
         is_enabled: bool,
         #[serde(rename = "vault_entity")]
         vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
+    #[serde(rename="RoyaltyModuleMethodRoyaltyEntry")]
+    RoyaltyModuleMethodRoyaltyEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::MainMethodKey>,
+        #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+        royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+    },
     #[serde(rename="TransactionTrackerCollectionEntry")]
     TransactionTrackerCollectionEntrySubstate {
-        /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-        #[serde(rename = "intent_hash")]
-        intent_hash: String,
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::TransactionIdKey>,
         #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
         status: Option<crate::core_api::generated::models::TransactionTrackerTransactionStatus>,
     },
     #[serde(rename="TransactionTrackerFieldState")]
     TransactionTrackerFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "start_epoch")]
         start_epoch: i64,
         #[serde(rename = "start_partition")]
@@ -346,6 +395,8 @@ pub enum Substate {
     },
     #[serde(rename="TwoResourcePoolFieldState")]
     TwoResourcePoolFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "vaults")]
         vaults: Vec<crate::core_api::generated::models::PoolVault>,
         /// The Bech32m-encoded human readable version of the resource address
@@ -354,17 +405,23 @@ pub enum Substate {
     },
     #[serde(rename="TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfoSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "details")]
         details: Box<crate::core_api::generated::models::TypeInfoDetails>,
     },
     #[serde(rename="ValidatorFieldProtocolUpdateReadinessSignal")]
     ValidatorFieldProtocolUpdateReadinessSignalSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         /// If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). 
         #[serde(rename = "protocol_version_name", skip_serializing_if = "Option::is_none")]
         protocol_version_name: Option<String>,
     },
     #[serde(rename="ValidatorFieldState")]
     ValidatorFieldStateSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
         #[serde(rename = "sorted_key", skip_serializing_if = "Option::is_none")]
         sorted_key: Option<Box<crate::core_api::generated::models::SubstateKey>>,
         #[serde(rename = "public_key")]

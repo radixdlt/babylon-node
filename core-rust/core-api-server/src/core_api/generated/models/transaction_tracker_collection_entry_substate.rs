@@ -15,18 +15,20 @@
 pub struct TransactionTrackerCollectionEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-    #[serde(rename = "intent_hash")]
-    pub intent_hash: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::TransactionIdKey>,
     #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
     pub status: Option<crate::core_api::generated::models::TransactionTrackerTransactionStatus>,
 }
 
 impl TransactionTrackerCollectionEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, intent_hash: String) -> TransactionTrackerCollectionEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::TransactionIdKey) -> TransactionTrackerCollectionEntrySubstate {
         TransactionTrackerCollectionEntrySubstate {
             substate_type,
-            intent_hash,
+            is_locked,
+            key: Box::new(key),
             status: None,
         }
     }

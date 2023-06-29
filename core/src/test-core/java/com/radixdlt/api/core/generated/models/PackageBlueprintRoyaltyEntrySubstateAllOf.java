@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,17 +33,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageBlueprintRoyaltyEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_VERSION,
+  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_KEY,
   PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_CONFIG
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintRoyaltyEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
-  private String blueprintVersion;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private BlueprintVersionKey key;
 
   public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
   private RoyaltyConfig royaltyConfig;
@@ -50,55 +47,29 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
   public PackageBlueprintRoyaltyEntrySubstateAllOf() { 
   }
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public PackageBlueprintRoyaltyEntrySubstateAllOf key(BlueprintVersionKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintName
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public BlueprintVersionKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-  }
-
-
-  public PackageBlueprintRoyaltyEntrySubstateAllOf blueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
-    return this;
-  }
-
-   /**
-   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getBlueprintVersion() {
-    return blueprintVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
+  public void setKey(BlueprintVersionKey key) {
+    this.key = key;
   }
 
 
@@ -140,22 +111,20 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
       return false;
     }
     PackageBlueprintRoyaltyEntrySubstateAllOf packageBlueprintRoyaltyEntrySubstateAllOf = (PackageBlueprintRoyaltyEntrySubstateAllOf) o;
-    return Objects.equals(this.blueprintName, packageBlueprintRoyaltyEntrySubstateAllOf.blueprintName) &&
-        Objects.equals(this.blueprintVersion, packageBlueprintRoyaltyEntrySubstateAllOf.blueprintVersion) &&
+    return Objects.equals(this.key, packageBlueprintRoyaltyEntrySubstateAllOf.key) &&
         Objects.equals(this.royaltyConfig, packageBlueprintRoyaltyEntrySubstateAllOf.royaltyConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintName, blueprintVersion, royaltyConfig);
+    return Objects.hash(key, royaltyConfig);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintRoyaltyEntrySubstateAllOf {\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
     sb.append("}");
     return sb.toString();

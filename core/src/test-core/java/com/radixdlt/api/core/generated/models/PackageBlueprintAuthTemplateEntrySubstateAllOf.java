@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AuthConfig;
+import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,17 +33,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageBlueprintAuthTemplateEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_BLUEPRINT_VERSION,
+  PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_KEY,
   PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_AUTH_CONFIG
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
-  private String blueprintVersion;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private BlueprintVersionKey key;
 
   public static final String JSON_PROPERTY_AUTH_CONFIG = "auth_config";
   private AuthConfig authConfig;
@@ -50,55 +47,29 @@ public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
   public PackageBlueprintAuthTemplateEntrySubstateAllOf() { 
   }
 
-  public PackageBlueprintAuthTemplateEntrySubstateAllOf blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public PackageBlueprintAuthTemplateEntrySubstateAllOf key(BlueprintVersionKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The first part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintName
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The first part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public BlueprintVersionKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-  }
-
-
-  public PackageBlueprintAuthTemplateEntrySubstateAllOf blueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
-    return this;
-  }
-
-   /**
-   * The second part of the substate key &#x60;(blueprint_name, blueprint_version)&#x60;.
-   * @return blueprintVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The second part of the substate key `(blueprint_name, blueprint_version)`.")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getBlueprintVersion() {
-    return blueprintVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
+  public void setKey(BlueprintVersionKey key) {
+    this.key = key;
   }
 
 
@@ -140,22 +111,20 @@ public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
       return false;
     }
     PackageBlueprintAuthTemplateEntrySubstateAllOf packageBlueprintAuthTemplateEntrySubstateAllOf = (PackageBlueprintAuthTemplateEntrySubstateAllOf) o;
-    return Objects.equals(this.blueprintName, packageBlueprintAuthTemplateEntrySubstateAllOf.blueprintName) &&
-        Objects.equals(this.blueprintVersion, packageBlueprintAuthTemplateEntrySubstateAllOf.blueprintVersion) &&
+    return Objects.equals(this.key, packageBlueprintAuthTemplateEntrySubstateAllOf.key) &&
         Objects.equals(this.authConfig, packageBlueprintAuthTemplateEntrySubstateAllOf.authConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintName, blueprintVersion, authConfig);
+    return Objects.hash(key, authConfig);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintAuthTemplateEntrySubstateAllOf {\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    authConfig: ").append(toIndentedString(authConfig)).append("\n");
     sb.append("}");
     return sb.toString();

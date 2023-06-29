@@ -15,9 +15,10 @@
 pub struct PackageCodeEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded code hash, capturing the vm-type and the code itself.
-    #[serde(rename = "code_hash")]
-    pub code_hash: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
     #[serde(rename = "vm_type")]
     pub vm_type: crate::core_api::generated::models::VmType,
     /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
@@ -26,10 +27,11 @@ pub struct PackageCodeEntrySubstate {
 }
 
 impl PackageCodeEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, code_hash: String, vm_type: crate::core_api::generated::models::VmType, code_hex: String) -> PackageCodeEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::PackageCodeKey, vm_type: crate::core_api::generated::models::VmType, code_hex: String) -> PackageCodeEntrySubstate {
         PackageCodeEntrySubstate {
             substate_type,
-            code_hash,
+            is_locked,
+            key: Box::new(key),
             vm_type,
             code_hex,
         }

@@ -15,6 +15,8 @@
 pub struct TransactionTrackerFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
     #[serde(rename = "start_epoch")]
     pub start_epoch: i64,
     #[serde(rename = "start_partition")]
@@ -28,9 +30,10 @@ pub struct TransactionTrackerFieldStateSubstate {
 }
 
 impl TransactionTrackerFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, start_epoch: i64, start_partition: i32, partition_range_start_inclusive: i32, partition_range_end_inclusive: i32, epochs_per_partition: i64) -> TransactionTrackerFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, start_epoch: i64, start_partition: i32, partition_range_start_inclusive: i32, partition_range_end_inclusive: i32, epochs_per_partition: i64) -> TransactionTrackerFieldStateSubstate {
         TransactionTrackerFieldStateSubstate {
             substate_type,
+            is_locked,
             start_epoch,
             start_partition,
             partition_range_start_inclusive,
