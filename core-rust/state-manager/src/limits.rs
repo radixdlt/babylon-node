@@ -63,7 +63,7 @@
  */
 
 use node_common::config::limits::VertexLimitsConfig;
-use radix_engine::transaction::ExecutionMetrics;
+use radix_engine::{system::system_modules::costing::FeeSummary, types::*};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
@@ -82,6 +82,7 @@ pub enum VertexLimitsAdvanceSuccess {
     VertexNotFilled,
 }
 
+// TODO(RCnet-V3): Fix what's tracked here in light of changes upstream
 pub struct VertexLimitsTracker {
     pub remaining_transactions_count: u32,
     pub remaining_transactions_size: usize,
@@ -90,6 +91,33 @@ pub struct VertexLimitsTracker {
     pub remaining_substate_read_count: usize,
     pub remaining_substate_write_size: usize,
     pub remaining_substate_write_count: usize,
+}
+
+// TODO(RCnet-V3): Fix this abstraction in light of changes upstream
+// This class used to be in the engine until being removed shortly before launch, so adding it back in
+// (with faked values) to decrease churn in the Node before RCnet-V2 release
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ExecutionMetrics {
+    pub execution_cost_units_consumed: u32,
+    pub substate_read_size: usize,
+    pub substate_read_count: usize,
+    pub substate_write_size: usize,
+    pub substate_write_count: usize,
+}
+
+impl ExecutionMetrics {
+    pub fn new_from_commit(fee_summary: &FeeSummary) -> Self {
+        // TODO(RCnet-V3): Fix this abstraction in light of changes upstream
+        // This class used to be in the engine until being removed shortly before launch, so adding it back in
+        // (with faked values) to decrease churn in the Node before RCnet-V2 release
+        Self {
+            execution_cost_units_consumed: fee_summary.execution_cost_sum,
+            substate_read_size: 0,
+            substate_read_count: 0,
+            substate_write_size: 0,
+            substate_write_count: 0,
+        }
+    }
 }
 
 impl VertexLimitsTracker {

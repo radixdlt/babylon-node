@@ -59,7 +59,9 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntryS
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -159,8 +161,12 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntrySubstate"),
   @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntrySubstate"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntrySubstate"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulatorSubstate"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
@@ -358,8 +364,12 @@ static {
   mappings.put("PackageBlueprintDependenciesEntrySubstate", PackageBlueprintDependenciesEntrySubstate.class);
   mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
   mappings.put("PackageBlueprintRoyaltyEntrySubstate", PackageBlueprintRoyaltyEntrySubstate.class);
-  mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
-  mappings.put("PackageCodeEntrySubstate", PackageCodeEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntry", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntrySubstate", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntry", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntrySubstate", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntrySubstate", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulatorSubstate", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);

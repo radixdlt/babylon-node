@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -61,10 +62,11 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySub
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstateAllOf;
-import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -129,7 +131,9 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
@@ -147,7 +151,7 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
   private BlueprintVersionKey key;
 
   public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private RoyaltyConfig royaltyConfig;
+  private BlueprintRoyaltyConfig royaltyConfig;
 
   public PackageBlueprintRoyaltyEntrySubstate() { 
   }
@@ -178,7 +182,7 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
   }
 
 
-  public PackageBlueprintRoyaltyEntrySubstate royaltyConfig(RoyaltyConfig royaltyConfig) {
+  public PackageBlueprintRoyaltyEntrySubstate royaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
     this.royaltyConfig = royaltyConfig;
     return this;
   }
@@ -192,14 +196,14 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public RoyaltyConfig getRoyaltyConfig() {
+  public BlueprintRoyaltyConfig getRoyaltyConfig() {
     return royaltyConfig;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(RoyaltyConfig royaltyConfig) {
+  public void setRoyaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
     this.royaltyConfig = royaltyConfig;
   }
 
@@ -285,7 +289,9 @@ static {
   mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
   mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
-  mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntry", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntry", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);

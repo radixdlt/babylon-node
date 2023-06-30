@@ -12,22 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageCodeEntrySubstateAllOf {
+pub struct PackageCodeVmTypeEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
     #[serde(rename = "vm_type")]
     pub vm_type: crate::core_api::generated::models::VmType,
-    /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
 }
 
-impl PackageCodeEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, vm_type: crate::core_api::generated::models::VmType, code_hex: String) -> PackageCodeEntrySubstateAllOf {
-        PackageCodeEntrySubstateAllOf {
+impl PackageCodeVmTypeEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, vm_type: crate::core_api::generated::models::VmType) -> PackageCodeVmTypeEntrySubstateAllOf {
+        PackageCodeVmTypeEntrySubstateAllOf {
             key: Box::new(key),
             vm_type,
-            code_hex,
         }
     }
 }

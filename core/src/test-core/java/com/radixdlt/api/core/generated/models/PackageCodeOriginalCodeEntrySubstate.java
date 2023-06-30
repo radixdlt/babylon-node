@@ -60,15 +60,14 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySub
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
-import com.radixdlt.api.core.generated.models.SchemaKey;
-import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -84,11 +83,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * PackageSchemaEntrySubstate
+ * PackageCodeOriginalCodeEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageSchemaEntrySubstate.JSON_PROPERTY_KEY,
-  PackageSchemaEntrySubstate.JSON_PROPERTY_SCHEMA
+  PackageCodeOriginalCodeEntrySubstate.JSON_PROPERTY_KEY,
+  PackageCodeOriginalCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -146,17 +145,17 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class PackageSchemaEntrySubstate extends Substate {
+public class PackageCodeOriginalCodeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
-  private SchemaKey key;
+  private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private ScryptoSchema schema;
+  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
+  private String codeHex;
 
-  public PackageSchemaEntrySubstate() { 
+  public PackageCodeOriginalCodeEntrySubstate() { 
   }
 
-  public PackageSchemaEntrySubstate key(SchemaKey key) {
+  public PackageCodeOriginalCodeEntrySubstate key(PackageCodeKey key) {
     this.key = key;
     return this;
   }
@@ -170,46 +169,46 @@ public class PackageSchemaEntrySubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SchemaKey getKey() {
+  public PackageCodeKey getKey() {
     return key;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(SchemaKey key) {
+  public void setKey(PackageCodeKey key) {
     this.key = key;
   }
 
 
-  public PackageSchemaEntrySubstate schema(ScryptoSchema schema) {
-    this.schema = schema;
+  public PackageCodeOriginalCodeEntrySubstate codeHex(String codeHex) {
+    this.codeHex = codeHex;
     return this;
   }
 
    /**
-   * Get schema
-   * @return schema
+   * Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+   * @return codeHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @ApiModelProperty(required = true, value = "Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. ")
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ScryptoSchema getSchema() {
-    return schema;
+  public String getCodeHex() {
+    return codeHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(ScryptoSchema schema) {
-    this.schema = schema;
+  public void setCodeHex(String codeHex) {
+    this.codeHex = codeHex;
   }
 
 
   /**
-   * Return true if this PackageSchemaEntrySubstate object is equal to o.
+   * Return true if this PackageCodeOriginalCodeEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -219,24 +218,24 @@ public class PackageSchemaEntrySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageSchemaEntrySubstate packageSchemaEntrySubstate = (PackageSchemaEntrySubstate) o;
-    return Objects.equals(this.key, packageSchemaEntrySubstate.key) &&
-        Objects.equals(this.schema, packageSchemaEntrySubstate.schema) &&
+    PackageCodeOriginalCodeEntrySubstate packageCodeOriginalCodeEntrySubstate = (PackageCodeOriginalCodeEntrySubstate) o;
+    return Objects.equals(this.key, packageCodeOriginalCodeEntrySubstate.key) &&
+        Objects.equals(this.codeHex, packageCodeOriginalCodeEntrySubstate.codeHex) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, schema, super.hashCode());
+    return Objects.hash(key, codeHex, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageSchemaEntrySubstate {\n");
+    sb.append("class PackageCodeOriginalCodeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
+    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -302,8 +301,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("PackageSchemaEntrySubstate", PackageSchemaEntrySubstate.class);
-  JSON.registerDiscriminator(PackageSchemaEntrySubstate.class, "substate_type", mappings);
+  mappings.put("PackageCodeOriginalCodeEntrySubstate", PackageCodeOriginalCodeEntrySubstate.class);
+  JSON.registerDiscriminator(PackageCodeOriginalCodeEntrySubstate.class, "substate_type", mappings);
 }
 }
 

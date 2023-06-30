@@ -22,32 +22,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
-import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageBlueprintRoyaltyEntrySubstateAllOf
+ * PackageCodeInstrumentedCodeEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_CONFIG
+  PackageCodeInstrumentedCodeEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  PackageCodeInstrumentedCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageBlueprintRoyaltyEntrySubstateAllOf {
+public class PackageCodeInstrumentedCodeEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
-  private BlueprintVersionKey key;
+  private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private BlueprintRoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
+  private String codeHex;
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf() { 
+  public PackageCodeInstrumentedCodeEntrySubstateAllOf() { 
   }
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf key(BlueprintVersionKey key) {
+  public PackageCodeInstrumentedCodeEntrySubstateAllOf key(PackageCodeKey key) {
     this.key = key;
     return this;
   }
@@ -61,46 +60,46 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintVersionKey getKey() {
+  public PackageCodeKey getKey() {
     return key;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(BlueprintVersionKey key) {
+  public void setKey(PackageCodeKey key) {
     this.key = key;
   }
 
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf royaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public PackageCodeInstrumentedCodeEntrySubstateAllOf codeHex(String codeHex) {
+    this.codeHex = codeHex;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * The hex-encoded instrumented WASM package code. 
+   * @return codeHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @ApiModelProperty(required = true, value = "The hex-encoded instrumented WASM package code. ")
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintRoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public String getCodeHex() {
+    return codeHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public void setCodeHex(String codeHex) {
+    this.codeHex = codeHex;
   }
 
 
   /**
-   * Return true if this PackageBlueprintRoyaltyEntrySubstate_allOf object is equal to o.
+   * Return true if this PackageCodeInstrumentedCodeEntrySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +109,22 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageBlueprintRoyaltyEntrySubstateAllOf packageBlueprintRoyaltyEntrySubstateAllOf = (PackageBlueprintRoyaltyEntrySubstateAllOf) o;
-    return Objects.equals(this.key, packageBlueprintRoyaltyEntrySubstateAllOf.key) &&
-        Objects.equals(this.royaltyConfig, packageBlueprintRoyaltyEntrySubstateAllOf.royaltyConfig);
+    PackageCodeInstrumentedCodeEntrySubstateAllOf packageCodeInstrumentedCodeEntrySubstateAllOf = (PackageCodeInstrumentedCodeEntrySubstateAllOf) o;
+    return Objects.equals(this.key, packageCodeInstrumentedCodeEntrySubstateAllOf.key) &&
+        Objects.equals(this.codeHex, packageCodeInstrumentedCodeEntrySubstateAllOf.codeHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyConfig);
+    return Objects.hash(key, codeHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageBlueprintRoyaltyEntrySubstateAllOf {\n");
+    sb.append("class PackageCodeInstrumentedCodeEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

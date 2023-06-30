@@ -28,8 +28,12 @@ pub enum SubstateType {
     MetadataModuleEntry,
     #[serde(rename = "PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulator,
-    #[serde(rename = "PackageCodeEntry")]
-    PackageCodeEntry,
+    #[serde(rename = "PackageCodeVmTypeEntry")]
+    PackageCodeVmTypeEntry,
+    #[serde(rename = "PackageCodeOriginalCodeEntry")]
+    PackageCodeOriginalCodeEntry,
+    #[serde(rename = "PackageCodeInstrumentedCodeEntry")]
+    PackageCodeInstrumentedCodeEntry,
     #[serde(rename = "PackageSchemaEntry")]
     PackageSchemaEntry,
     #[serde(rename = "PackageBlueprintDefinitionEntry")]
@@ -122,7 +126,9 @@ impl ToString for SubstateType {
             Self::RoyaltyModuleMethodRoyaltyEntry => String::from("RoyaltyModuleMethodRoyaltyEntry"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
             Self::PackageFieldRoyaltyAccumulator => String::from("PackageFieldRoyaltyAccumulator"),
-            Self::PackageCodeEntry => String::from("PackageCodeEntry"),
+            Self::PackageCodeVmTypeEntry => String::from("PackageCodeVmTypeEntry"),
+            Self::PackageCodeOriginalCodeEntry => String::from("PackageCodeOriginalCodeEntry"),
+            Self::PackageCodeInstrumentedCodeEntry => String::from("PackageCodeInstrumentedCodeEntry"),
             Self::PackageSchemaEntry => String::from("PackageSchemaEntry"),
             Self::PackageBlueprintDefinitionEntry => String::from("PackageBlueprintDefinitionEntry"),
             Self::PackageBlueprintDependenciesEntry => String::from("PackageBlueprintDependenciesEntry"),

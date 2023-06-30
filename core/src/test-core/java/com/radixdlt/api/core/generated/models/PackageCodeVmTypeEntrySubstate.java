@@ -60,15 +60,14 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySub
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
-import com.radixdlt.api.core.generated.models.SchemaKey;
-import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -77,6 +76,7 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -84,11 +84,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * PackageSchemaEntrySubstate
+ * PackageCodeVmTypeEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageSchemaEntrySubstate.JSON_PROPERTY_KEY,
-  PackageSchemaEntrySubstate.JSON_PROPERTY_SCHEMA
+  PackageCodeVmTypeEntrySubstate.JSON_PROPERTY_KEY,
+  PackageCodeVmTypeEntrySubstate.JSON_PROPERTY_VM_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -146,17 +146,17 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class PackageSchemaEntrySubstate extends Substate {
+public class PackageCodeVmTypeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
-  private SchemaKey key;
+  private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private ScryptoSchema schema;
+  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
+  private VmType vmType;
 
-  public PackageSchemaEntrySubstate() { 
+  public PackageCodeVmTypeEntrySubstate() { 
   }
 
-  public PackageSchemaEntrySubstate key(SchemaKey key) {
+  public PackageCodeVmTypeEntrySubstate key(PackageCodeKey key) {
     this.key = key;
     return this;
   }
@@ -170,46 +170,46 @@ public class PackageSchemaEntrySubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SchemaKey getKey() {
+  public PackageCodeKey getKey() {
     return key;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(SchemaKey key) {
+  public void setKey(PackageCodeKey key) {
     this.key = key;
   }
 
 
-  public PackageSchemaEntrySubstate schema(ScryptoSchema schema) {
-    this.schema = schema;
+  public PackageCodeVmTypeEntrySubstate vmType(VmType vmType) {
+    this.vmType = vmType;
     return this;
   }
 
    /**
-   * Get schema
-   * @return schema
+   * Get vmType
+   * @return vmType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ScryptoSchema getSchema() {
-    return schema;
+  public VmType getVmType() {
+    return vmType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(ScryptoSchema schema) {
-    this.schema = schema;
+  public void setVmType(VmType vmType) {
+    this.vmType = vmType;
   }
 
 
   /**
-   * Return true if this PackageSchemaEntrySubstate object is equal to o.
+   * Return true if this PackageCodeVmTypeEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -219,24 +219,24 @@ public class PackageSchemaEntrySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageSchemaEntrySubstate packageSchemaEntrySubstate = (PackageSchemaEntrySubstate) o;
-    return Objects.equals(this.key, packageSchemaEntrySubstate.key) &&
-        Objects.equals(this.schema, packageSchemaEntrySubstate.schema) &&
+    PackageCodeVmTypeEntrySubstate packageCodeVmTypeEntrySubstate = (PackageCodeVmTypeEntrySubstate) o;
+    return Objects.equals(this.key, packageCodeVmTypeEntrySubstate.key) &&
+        Objects.equals(this.vmType, packageCodeVmTypeEntrySubstate.vmType) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, schema, super.hashCode());
+    return Objects.hash(key, vmType, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageSchemaEntrySubstate {\n");
+    sb.append("class PackageCodeVmTypeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
+    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -302,8 +302,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("PackageSchemaEntrySubstate", PackageSchemaEntrySubstate.class);
-  JSON.registerDiscriminator(PackageSchemaEntrySubstate.class, "substate_type", mappings);
+  mappings.put("PackageCodeVmTypeEntrySubstate", PackageCodeVmTypeEntrySubstate.class);
+  JSON.registerDiscriminator(PackageCodeVmTypeEntrySubstate.class, "substate_type", mappings);
 }
 }
 

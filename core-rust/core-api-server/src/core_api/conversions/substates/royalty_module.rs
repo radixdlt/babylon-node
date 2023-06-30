@@ -51,28 +51,6 @@ pub fn to_api_component_method_royalty_substate(
     ))
 }
 
-pub fn to_api_royalty_config(royalty_config: &ComponentRoyaltyConfig) -> models::RoyaltyConfig {
-    let (is_enabled, rules) = match royalty_config {
-        ComponentRoyaltyConfig::Disabled => (false, None),
-        ComponentRoyaltyConfig::Enabled(rules) => (true, Some(rules)),
-    };
-    models::RoyaltyConfig {
-        is_enabled,
-        method_rules: rules.map(|rules| {
-            rules
-                .iter()
-                .map(
-                    |(method_name, (royalty_amount, is_locked))| models::MethodRoyalty {
-                        method_name: method_name.to_owned(),
-                        is_locked: *is_locked,
-                        royalty_amount: to_api_royalty_amount(royalty_amount).map(Box::new),
-                    },
-                )
-                .collect()
-        }),
-    }
-}
-
 pub fn to_api_royalty_amount(royalty_amount: &RoyaltyAmount) -> Option<models::RoyaltyAmount> {
     match royalty_amount {
         RoyaltyAmount::Free => None,

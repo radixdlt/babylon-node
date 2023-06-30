@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::limits::{VertexLimitsAdvanceSuccess, VertexLimitsTracker};
+use crate::limits::{ExecutionMetrics, VertexLimitsAdvanceSuccess, VertexLimitsTracker};
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
@@ -77,18 +77,10 @@ use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::{ExecutionMetrics, RejectResult, TransactionReceipt};
-use radix_engine::types::{
-    Categorize, ComponentAddress, Decode, Encode, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-};
-use radix_engine_common::dec;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::types::Epoch;
+use radix_engine::transaction::{RejectResult, TransactionReceipt};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
-use radix_engine_interface::constants::GENESIS_HELPER;
-use radix_engine_interface::network::NetworkDefinition;
 
 use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
@@ -739,6 +731,7 @@ where
             initial_timestamp_ms,
             // Leader gets set to None, to be fixed at the first proper round change.
             None,
+            faucet_supply,
         );
         let prepare_result =
             self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
@@ -760,18 +753,12 @@ where
             self.commit_genesis(commit_request);
         }
 
-        info!("Committing genesis faucet transaction");
-        let transaction = create_genesis_faucet_transaction(faucet_supply);
-        let prepare_result =
-            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
-        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
-        self.commit_genesis(commit_request);
-
         // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
         // This is a little weird, but should be fine.
         if !scenarios_to_run.is_empty() {
             use transaction_scenarios::scenario::*;
             info!("Running {} scenarios", scenarios_to_run.len());
+            let encoder = AddressBech32Encoder::new(&self.network);
             let mut next_nonce: u32 = 0;
             let epoch = initial_epoch;
             for scenario_name in scenarios_to_run.iter() {
@@ -783,6 +770,7 @@ where
                             scenario_name
                         )
                     });
+                let mut committed_transaction_count = 0;
                 let mut previous = None;
                 info!("Running scenario: {}", scenario_name);
                 loop {
@@ -797,11 +785,33 @@ where
                             if let Some(commit_request) =
                                 genesis_commit_request_factory.create_for_scenario(prepare_result)
                             {
+                                committed_transaction_count += 1;
+                                let resultant_state_version =
+                                    commit_request.proof.ledger_header.state_version;
                                 self.commit_genesis(commit_request);
+                                info!(
+                                    "Committed {} at state_version {}",
+                                    &next.logical_name, resultant_state_version
+                                );
                             }
                             previous = Some(basic_receipt);
                         }
                         NextAction::Completed(end_state) => {
+                            let formatted_addresses = end_state
+                                .interesting_addresses
+                                .0
+                                .iter()
+                                .map(|(descriptor, address)| {
+                                    format!("  - {}: {}", descriptor, address.display(&encoder))
+                                })
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            info!(
+                                "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
+                                committed_transaction_count,
+                                scenario_name,
+                                formatted_addresses
+                            );
                             next_nonce = end_state.next_unused_nonce;
                             break;
                         }
@@ -812,7 +822,7 @@ where
         }
 
         info!("Committing genesis wrap-up");
-        let transaction: SystemTransactionV1 = create_genesis_wrap_up_part_two();
+        let transaction: SystemTransactionV1 = create_genesis_wrap_up_transaction();
         let prepare_result =
             self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
@@ -1146,12 +1156,6 @@ where
             self.committed_transactions_metrics
                 .substate_write_count
                 .observe(transaction_metrics_data.execution.substate_write_count as f64);
-            self.committed_transactions_metrics
-                .max_wasm_memory_used
-                .observe(transaction_metrics_data.execution.max_wasm_memory_used as f64);
-            self.committed_transactions_metrics
-                .max_invoke_payload_size
-                .observe(transaction_metrics_data.execution.max_invoke_payload_size as f64);
         }
     }
 
@@ -1200,55 +1204,4 @@ struct PendingTransactionResult {
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<RejectionReason>,
-}
-
-pub fn create_genesis_faucet_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
-    let mut id_allocator = ::transaction::validation::ManifestIdAllocator::new();
-    let mut instructions = Vec::new();
-
-    instructions.push(InstructionV1::CallMethod {
-        address: RADIX_TOKEN.into(),
-        method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-        args: manifest_args!(faucet_supply),
-    });
-
-    instructions.push(InstructionV1::TakeAllFromWorktop {
-        resource_address: RADIX_TOKEN,
-    });
-
-    let bucket = id_allocator.new_bucket_id();
-
-    instructions.push(InstructionV1::CallFunction {
-        package_address: FAUCET_PACKAGE.into(),
-        blueprint_name: FAUCET_BLUEPRINT.to_string(),
-        function_name: "new".to_string(),
-        args: manifest_args!(ManifestAddressReservation(0), bucket),
-    });
-
-    SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
-        pre_allocated_addresses: vec![PreAllocatedAddress {
-            blueprint_id: BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
-            address: FAUCET.into(),
-        }],
-        blobs: BlobsV1 { blobs: vec![] },
-        hash_for_execution: hash("Genesis Faucet"),
-    }
-}
-
-pub fn create_genesis_wrap_up_part_two() -> SystemTransactionV1 {
-    let mut instructions = Vec::new();
-
-    instructions.push(InstructionV1::CallMethod {
-        address: GENESIS_HELPER.into(),
-        method_name: "wrap_up".to_string(),
-        args: manifest_args!(),
-    });
-
-    SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
-        pre_allocated_addresses: vec![],
-        blobs: BlobsV1 { blobs: vec![] },
-        hash_for_execution: hash("Genesis Wrap Up"),
-    }
 }

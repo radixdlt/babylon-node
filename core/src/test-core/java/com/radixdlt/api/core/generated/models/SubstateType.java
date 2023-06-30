@@ -44,7 +44,11 @@ public enum SubstateType {
   
   PACKAGEFIELDROYALTYACCUMULATOR("PackageFieldRoyaltyAccumulator"),
   
-  PACKAGECODEENTRY("PackageCodeEntry"),
+  PACKAGECODEVMTYPEENTRY("PackageCodeVmTypeEntry"),
+  
+  PACKAGECODEORIGINALCODEENTRY("PackageCodeOriginalCodeEntry"),
+  
+  PACKAGECODEINSTRUMENTEDCODEENTRY("PackageCodeInstrumentedCodeEntry"),
   
   PACKAGESCHEMAENTRY("PackageSchemaEntry"),
   

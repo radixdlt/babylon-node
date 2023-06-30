@@ -321,19 +321,36 @@ pub enum Substate {
         #[serde(rename = "key")]
         key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
         #[serde(rename = "royalty_config")]
-        royalty_config: Box<crate::core_api::generated::models::RoyaltyConfig>,
+        royalty_config: Box<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
     },
-    #[serde(rename="PackageCodeEntry")]
-    PackageCodeEntrySubstate {
+    #[serde(rename="PackageCodeInstrumentedCodeEntry")]
+    PackageCodeInstrumentedCodeEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::PackageCodeKey>,
+        /// The hex-encoded instrumented WASM package code. 
+        #[serde(rename = "code_hex")]
+        code_hex: String,
+    },
+    #[serde(rename="PackageCodeOriginalCodeEntry")]
+    PackageCodeOriginalCodeEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::PackageCodeKey>,
+        /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+        #[serde(rename = "code_hex")]
+        code_hex: String,
+    },
+    #[serde(rename="PackageCodeVmTypeEntry")]
+    PackageCodeVmTypeEntrySubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "key")]
         key: Box<crate::core_api::generated::models::PackageCodeKey>,
         #[serde(rename = "vm_type")]
         vm_type: crate::core_api::generated::models::VmType,
-        /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
-        #[serde(rename = "code_hex")]
-        code_hex: String,
     },
     #[serde(rename="PackageFieldRoyaltyAccumulator")]
     PackageFieldRoyaltyAccumulatorSubstate {

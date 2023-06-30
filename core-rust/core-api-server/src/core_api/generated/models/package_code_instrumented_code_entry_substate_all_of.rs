@@ -12,21 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MethodRoyalty {
-    #[serde(rename = "method_name")]
-    pub method_name: String,
-    #[serde(rename = "is_locked")]
-    pub is_locked: bool,
-    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
-    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+pub struct PackageCodeInstrumentedCodeEntrySubstateAllOf {
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
+    /// The hex-encoded instrumented WASM package code. 
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
-impl MethodRoyalty {
-    pub fn new(method_name: String, is_locked: bool) -> MethodRoyalty {
-        MethodRoyalty {
-            method_name,
-            is_locked,
-            royalty_amount: None,
+impl PackageCodeInstrumentedCodeEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, code_hex: String) -> PackageCodeInstrumentedCodeEntrySubstateAllOf {
+        PackageCodeInstrumentedCodeEntrySubstateAllOf {
+            key: Box::new(key),
+            code_hex,
         }
     }
 }

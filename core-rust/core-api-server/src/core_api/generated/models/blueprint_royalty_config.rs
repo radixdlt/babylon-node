@@ -12,24 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageBlueprintRoyaltyEntrySubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "is_locked")]
-    pub is_locked: bool,
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+pub struct BlueprintRoyaltyConfig {
+    #[serde(rename = "is_enabled")]
+    pub is_enabled: bool,
+    /// The royalty rules by method. The array is only present if royalties are enabled.
+    #[serde(rename = "method_rules", skip_serializing_if = "Option::is_none")]
+    pub method_rules: Option<Vec<crate::core_api::generated::models::BlueprintMethodRoyalty>>,
 }
 
-impl PackageBlueprintRoyaltyEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, royalty_config: crate::core_api::generated::models::BlueprintRoyaltyConfig) -> PackageBlueprintRoyaltyEntrySubstate {
-        PackageBlueprintRoyaltyEntrySubstate {
-            substate_type,
-            is_locked,
-            key: Box::new(key),
-            royalty_config: Box::new(royalty_config),
+impl BlueprintRoyaltyConfig {
+    pub fn new(is_enabled: bool) -> BlueprintRoyaltyConfig {
+        BlueprintRoyaltyConfig {
+            is_enabled,
+            method_rules: None,
         }
     }
 }

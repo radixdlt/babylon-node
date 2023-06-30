@@ -59,9 +59,11 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntryS
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -74,7 +76,6 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -82,12 +83,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * PackageCodeEntrySubstate
+ * PackageCodeInstrumentedCodeEntrySubstate
  */
 @JsonPropertyOrder({
-  PackageCodeEntrySubstate.JSON_PROPERTY_KEY,
-  PackageCodeEntrySubstate.JSON_PROPERTY_VM_TYPE,
-  PackageCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
+  PackageCodeInstrumentedCodeEntrySubstate.JSON_PROPERTY_KEY,
+  PackageCodeInstrumentedCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -130,7 +130,9 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
@@ -143,20 +145,17 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
-public class PackageCodeEntrySubstate extends Substate {
+public class PackageCodeInstrumentedCodeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
-
-  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
-  private VmType vmType;
 
   public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
   private String codeHex;
 
-  public PackageCodeEntrySubstate() { 
+  public PackageCodeInstrumentedCodeEntrySubstate() { 
   }
 
-  public PackageCodeEntrySubstate key(PackageCodeKey key) {
+  public PackageCodeInstrumentedCodeEntrySubstate key(PackageCodeKey key) {
     this.key = key;
     return this;
   }
@@ -182,43 +181,17 @@ public class PackageCodeEntrySubstate extends Substate {
   }
 
 
-  public PackageCodeEntrySubstate vmType(VmType vmType) {
-    this.vmType = vmType;
-    return this;
-  }
-
-   /**
-   * Get vmType
-   * @return vmType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public VmType getVmType() {
-    return vmType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVmType(VmType vmType) {
-    this.vmType = vmType;
-  }
-
-
-  public PackageCodeEntrySubstate codeHex(String codeHex) {
+  public PackageCodeInstrumentedCodeEntrySubstate codeHex(String codeHex) {
     this.codeHex = codeHex;
     return this;
   }
 
    /**
-   * Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+   * The hex-encoded instrumented WASM package code. 
    * @return codeHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. ")
+  @ApiModelProperty(required = true, value = "The hex-encoded instrumented WASM package code. ")
   @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -235,7 +208,7 @@ public class PackageCodeEntrySubstate extends Substate {
 
 
   /**
-   * Return true if this PackageCodeEntrySubstate object is equal to o.
+   * Return true if this PackageCodeInstrumentedCodeEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -245,25 +218,23 @@ public class PackageCodeEntrySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageCodeEntrySubstate packageCodeEntrySubstate = (PackageCodeEntrySubstate) o;
-    return Objects.equals(this.key, packageCodeEntrySubstate.key) &&
-        Objects.equals(this.vmType, packageCodeEntrySubstate.vmType) &&
-        Objects.equals(this.codeHex, packageCodeEntrySubstate.codeHex) &&
+    PackageCodeInstrumentedCodeEntrySubstate packageCodeInstrumentedCodeEntrySubstate = (PackageCodeInstrumentedCodeEntrySubstate) o;
+    return Objects.equals(this.key, packageCodeInstrumentedCodeEntrySubstate.key) &&
+        Objects.equals(this.codeHex, packageCodeInstrumentedCodeEntrySubstate.codeHex) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vmType, codeHex, super.hashCode());
+    return Objects.hash(key, codeHex, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageCodeEntrySubstate {\n");
+    sb.append("class PackageCodeInstrumentedCodeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -317,7 +288,9 @@ static {
   mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
   mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
-  mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntry", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntry", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
@@ -328,8 +301,8 @@ static {
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
-  mappings.put("PackageCodeEntrySubstate", PackageCodeEntrySubstate.class);
-  JSON.registerDiscriminator(PackageCodeEntrySubstate.class, "substate_type", mappings);
+  mappings.put("PackageCodeInstrumentedCodeEntrySubstate", PackageCodeInstrumentedCodeEntrySubstate.class);
+  JSON.registerDiscriminator(PackageCodeInstrumentedCodeEntrySubstate.class, "substate_type", mappings);
 }
 }
 

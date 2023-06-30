@@ -339,10 +339,20 @@ pub fn to_api_substate_id(
             SubstateType::PackageSchemaEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(_)) => (
-            SubstateType::PackageCodeEntry,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(_)) => (
+            SubstateType::PackageCodeVmTypeEntry,
             models::PartitionKind::KeyValue,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageOriginalCodeKey(_)) => (
+            SubstateType::PackageCodeOriginalCodeEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(_)) => {
+            (
+                SubstateType::PackageCodeInstrumentedCodeEntry,
+                models::PartitionKind::KeyValue,
+            )
+        }
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(_)) => (
             SubstateType::PackageBlueprintRoyaltyEntry,
             models::PartitionKind::KeyValue,

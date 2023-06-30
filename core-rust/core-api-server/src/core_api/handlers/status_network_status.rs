@@ -1,5 +1,7 @@
 use crate::core_api::*;
 
+use radix_engine_interface::prelude::*;
+
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
 use state_manager::{LedgerHashes, LedgerProof, StateVersion};
@@ -41,6 +43,20 @@ pub(crate) async fn handle_status_network_status(
                     )?))
                 },
             )
+            .transpose()?,
+        post_genesis_epoch_round: database
+            .get_post_genesis_epoch_proof()
+            .map(|epoch_proof: LedgerProof| -> Result<_, MappingError> {
+                let next_epoch = epoch_proof.ledger_header.next_epoch.ok_or_else(|| {
+                    MappingError::UnexpectedGenesis {
+                        message: "Post-genesis epoch proof didn't contain a next_epoch".to_string(),
+                    }
+                })?;
+                Ok(Box::new(models::EpochRound {
+                    epoch: to_api_epoch(&mapping_context, next_epoch.epoch)?,
+                    round: to_api_round(Round::of(0))?,
+                }))
+            })
             .transpose()?,
         current_state_identifier: Some(Box::new(to_api_committed_state_identifiers(
             current_state_version,

@@ -12,19 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct RoyaltyConfig {
-    #[serde(rename = "is_enabled")]
-    pub is_enabled: bool,
-    /// The royalty rules by method. The array is only present if royalties are enabled.
-    #[serde(rename = "method_rules", skip_serializing_if = "Option::is_none")]
-    pub method_rules: Option<Vec<crate::core_api::generated::models::MethodRoyalty>>,
+pub struct BlueprintMethodRoyalty {
+    #[serde(rename = "method_name")]
+    pub method_name: String,
+    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
+    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
 }
 
-impl RoyaltyConfig {
-    pub fn new(is_enabled: bool) -> RoyaltyConfig {
-        RoyaltyConfig {
-            is_enabled,
-            method_rules: None,
+impl BlueprintMethodRoyalty {
+    pub fn new(method_name: String) -> BlueprintMethodRoyalty {
+        BlueprintMethodRoyalty {
+            method_name,
+            royalty_amount: None,
         }
     }
 }

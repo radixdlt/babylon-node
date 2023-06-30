@@ -22,85 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
-import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.RoyaltyAmount;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageBlueprintRoyaltyEntrySubstateAllOf
+ * BlueprintMethodRoyalty
  */
 @JsonPropertyOrder({
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_CONFIG
+  BlueprintMethodRoyalty.JSON_PROPERTY_METHOD_NAME,
+  BlueprintMethodRoyalty.JSON_PROPERTY_ROYALTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageBlueprintRoyaltyEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private BlueprintVersionKey key;
+public class BlueprintMethodRoyalty {
+  public static final String JSON_PROPERTY_METHOD_NAME = "method_name";
+  private String methodName;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private BlueprintRoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
+  private RoyaltyAmount royaltyAmount;
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf() { 
+  public BlueprintMethodRoyalty() { 
   }
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf key(BlueprintVersionKey key) {
-    this.key = key;
+  public BlueprintMethodRoyalty methodName(String methodName) {
+    this.methodName = methodName;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get methodName
+   * @return methodName
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintVersionKey getKey() {
-    return key;
+  public String getMethodName() {
+    return methodName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_METHOD_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(BlueprintVersionKey key) {
-    this.key = key;
+  public void setMethodName(String methodName) {
+    this.methodName = methodName;
   }
 
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf royaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public BlueprintMethodRoyalty royaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * Get royaltyAmount
+   * @return royaltyAmount
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public BlueprintRoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public RoyaltyAmount getRoyaltyAmount() {
+    return royaltyAmount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
+    this.royaltyAmount = royaltyAmount;
   }
 
 
   /**
-   * Return true if this PackageBlueprintRoyaltyEntrySubstate_allOf object is equal to o.
+   * Return true if this BlueprintMethodRoyalty object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +109,22 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageBlueprintRoyaltyEntrySubstateAllOf packageBlueprintRoyaltyEntrySubstateAllOf = (PackageBlueprintRoyaltyEntrySubstateAllOf) o;
-    return Objects.equals(this.key, packageBlueprintRoyaltyEntrySubstateAllOf.key) &&
-        Objects.equals(this.royaltyConfig, packageBlueprintRoyaltyEntrySubstateAllOf.royaltyConfig);
+    BlueprintMethodRoyalty blueprintMethodRoyalty = (BlueprintMethodRoyalty) o;
+    return Objects.equals(this.methodName, blueprintMethodRoyalty.methodName) &&
+        Objects.equals(this.royaltyAmount, blueprintMethodRoyalty.royaltyAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyConfig);
+    return Objects.hash(methodName, royaltyAmount);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageBlueprintRoyaltyEntrySubstateAllOf {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("class BlueprintMethodRoyalty {\n");
+    sb.append("    methodName: ").append(toIndentedString(methodName)).append("\n");
+    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

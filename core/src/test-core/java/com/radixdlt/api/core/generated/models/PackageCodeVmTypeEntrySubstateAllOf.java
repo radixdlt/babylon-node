@@ -22,94 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.MethodRoyalty;
+import com.radixdlt.api.core.generated.models.PackageCodeKey;
+import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * RoyaltyConfig
+ * PackageCodeVmTypeEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  RoyaltyConfig.JSON_PROPERTY_IS_ENABLED,
-  RoyaltyConfig.JSON_PROPERTY_METHOD_RULES
+  PackageCodeVmTypeEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  PackageCodeVmTypeEntrySubstateAllOf.JSON_PROPERTY_VM_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class RoyaltyConfig {
-  public static final String JSON_PROPERTY_IS_ENABLED = "is_enabled";
-  private Boolean isEnabled;
+public class PackageCodeVmTypeEntrySubstateAllOf {
+  public static final String JSON_PROPERTY_KEY = "key";
+  private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_METHOD_RULES = "method_rules";
-  private List<MethodRoyalty> methodRules = null;
+  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
+  private VmType vmType;
 
-  public RoyaltyConfig() { 
+  public PackageCodeVmTypeEntrySubstateAllOf() { 
   }
 
-  public RoyaltyConfig isEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
+  public PackageCodeVmTypeEntrySubstateAllOf key(PackageCodeKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get isEnabled
-   * @return isEnabled
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsEnabled() {
-    return isEnabled;
+  public PackageCodeKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
+  public void setKey(PackageCodeKey key) {
+    this.key = key;
   }
 
 
-  public RoyaltyConfig methodRules(List<MethodRoyalty> methodRules) {
-    this.methodRules = methodRules;
-    return this;
-  }
-
-  public RoyaltyConfig addMethodRulesItem(MethodRoyalty methodRulesItem) {
-    if (this.methodRules == null) {
-      this.methodRules = new ArrayList<>();
-    }
-    this.methodRules.add(methodRulesItem);
+  public PackageCodeVmTypeEntrySubstateAllOf vmType(VmType vmType) {
+    this.vmType = vmType;
     return this;
   }
 
    /**
-   * The royalty rules by method. The array is only present if royalties are enabled.
-   * @return methodRules
+   * Get vmType
+   * @return vmType
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The royalty rules by method. The array is only present if royalties are enabled.")
-  @JsonProperty(JSON_PROPERTY_METHOD_RULES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<MethodRoyalty> getMethodRules() {
-    return methodRules;
+  public VmType getVmType() {
+    return vmType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METHOD_RULES)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setMethodRules(List<MethodRoyalty> methodRules) {
-    this.methodRules = methodRules;
+  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVmType(VmType vmType) {
+    this.vmType = vmType;
   }
 
 
   /**
-   * Return true if this RoyaltyConfig object is equal to o.
+   * Return true if this PackageCodeVmTypeEntrySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -119,22 +110,22 @@ public class RoyaltyConfig {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RoyaltyConfig royaltyConfig = (RoyaltyConfig) o;
-    return Objects.equals(this.isEnabled, royaltyConfig.isEnabled) &&
-        Objects.equals(this.methodRules, royaltyConfig.methodRules);
+    PackageCodeVmTypeEntrySubstateAllOf packageCodeVmTypeEntrySubstateAllOf = (PackageCodeVmTypeEntrySubstateAllOf) o;
+    return Objects.equals(this.key, packageCodeVmTypeEntrySubstateAllOf.key) &&
+        Objects.equals(this.vmType, packageCodeVmTypeEntrySubstateAllOf.vmType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isEnabled, methodRules);
+    return Objects.hash(key, vmType);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RoyaltyConfig {\n");
-    sb.append("    isEnabled: ").append(toIndentedString(isEnabled)).append("\n");
-    sb.append("    methodRules: ").append(toIndentedString(methodRules)).append("\n");
+    sb.append("class PackageCodeVmTypeEntrySubstateAllOf {\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

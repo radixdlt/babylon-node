@@ -159,9 +159,21 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageSchema(substate)) => {
             to_api_package_schema_entry(context, typed_substate_key, substate)?
         }
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageCode(substate)) => {
-            to_api_package_code_entry(context, typed_substate_key, substate)?
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageVmType(substate)) => {
+            to_api_package_code_vm_type_entry_substate(context, typed_substate_key, substate)?
         }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageOriginalCode(
+            substate,
+        )) => {
+            to_api_package_code_original_code_entry_substate(context, typed_substate_key, substate)?
+        }
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageInstrumentedCode(
+            substate,
+        )) => to_api_package_code_instrumented_code_entry_substate(
+            context,
+            typed_substate_key,
+            substate,
+        )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageAuthTemplate(
             substate,
         )) => to_api_package_auth_template_entry(context, typed_substate_key, substate)?,

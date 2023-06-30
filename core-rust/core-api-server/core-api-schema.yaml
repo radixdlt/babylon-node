@@ -2289,7 +2289,7 @@ components:
 #####################################
 # GENERAL / SHARED MODELS - Royalty #
 #####################################
-    RoyaltyConfig:
+    BlueprintRoyaltyConfig:
       type: object
       required:
         - is_enabled
@@ -2300,17 +2300,14 @@ components:
           description: The royalty rules by method. The array is only present if royalties are enabled.
           type: array
           items:
-            $ref: '#/components/schemas/MethodRoyalty'
-    MethodRoyalty:
+            $ref: '#/components/schemas/BlueprintMethodRoyalty'
+    BlueprintMethodRoyalty:
       type: object
       required:
         - method_name
-        - is_locked
       properties:
         method_name:
           type: string
-        is_locked:
-          type: boolean
         royalty_amount:
           description: The due royalty; missing field denotes a free method.
           $ref: '#/components/schemas/RoyaltyAmount'
@@ -2972,7 +2969,9 @@ components:
           RoyaltyModuleMethodRoyaltyEntry: '#/components/schemas/RoyaltyModuleMethodRoyaltyEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
           PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
-          PackageCodeEntry: '#/components/schemas/PackageCodeEntrySubstate'
+          PackageCodeVmTypeEntry: '#/components/schemas/PackageCodeVmTypeEntrySubstate'
+          PackageCodeOriginalCodeEntry: '#/components/schemas/PackageCodeOriginalCodeEntrySubstate'
+          PackageCodeInstrumentedCodeEntry: '#/components/schemas/PackageCodeInstrumentedCodeEntrySubstate'
           PackageSchemaEntry: '#/components/schemas/PackageSchemaEntrySubstate'
           PackageBlueprintDefinitionEntry: '#/components/schemas/PackageBlueprintDefinitionEntrySubstate'
           PackageBlueprintDependenciesEntry: '#/components/schemas/PackageBlueprintDependenciesEntrySubstate'
@@ -3021,7 +3020,9 @@ components:
         - RoyaltyModuleMethodRoyaltyEntry
         - MetadataModuleEntry
         - PackageFieldRoyaltyAccumulator
-        - PackageCodeEntry
+        - PackageCodeVmTypeEntry
+        - PackageCodeOriginalCodeEntry
+        - PackageCodeInstrumentedCodeEntry
         - PackageSchemaEntry
         - PackageBlueprintDefinitionEntry
         - PackageBlueprintDependenciesEntry
@@ -3348,28 +3349,51 @@ components:
           properties:
             vault_entity:
               $ref: "#/components/schemas/EntityReference"
-    PackageCodeEntrySubstate:
+    PackageCodeVmTypeEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - key
             - vm_type
-            - code_hex
           properties:
             key:
               $ref: '#/components/schemas/PackageCodeKey'
             vm_type:
               $ref: '#/components/schemas/VmType'
-            code_hex:
-              type: string
-              description: |
-                Either the hex-encoded WASM package code (if Scrypto), or the native package identifier.
     VmType:
       type: string
       enum:
         - Native
         - ScryptoV1
+    PackageCodeOriginalCodeEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - code_hex
+          properties:
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
+            code_hex:
+              type: string
+              description: |
+                Either the hex-encoded WASM package code (if Scrypto), or the native package identifier.
+    PackageCodeInstrumentedCodeEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - code_hex
+          properties:
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
+            code_hex:
+              type: string
+              description: |
+                The hex-encoded instrumented WASM package code.
     PackageSchemaEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3417,7 +3441,7 @@ components:
             key:
               $ref: '#/components/schemas/BlueprintVersionKey'
             royalty_config:
-              $ref: '#/components/schemas/RoyaltyConfig'
+              $ref: '#/components/schemas/BlueprintRoyaltyConfig'
     PackageBlueprintAuthTemplateEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4764,6 +4788,10 @@ components:
           description: |
             The ledger state after the genesis transactions have been executed.
             It is not present until genesis has been run.
+        post_genesis_epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+          description: |
+            The post-genesis epoch and round.
         current_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |

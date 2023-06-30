@@ -23,35 +23,30 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
-import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageCodeEntrySubstateAllOf
+ * PackageCodeOriginalCodeEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_VM_TYPE,
-  PackageCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
+  PackageCodeOriginalCodeEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  PackageCodeOriginalCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageCodeEntrySubstateAllOf {
+public class PackageCodeOriginalCodeEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
-
-  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
-  private VmType vmType;
 
   public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
   private String codeHex;
 
-  public PackageCodeEntrySubstateAllOf() { 
+  public PackageCodeOriginalCodeEntrySubstateAllOf() { 
   }
 
-  public PackageCodeEntrySubstateAllOf key(PackageCodeKey key) {
+  public PackageCodeOriginalCodeEntrySubstateAllOf key(PackageCodeKey key) {
     this.key = key;
     return this;
   }
@@ -77,33 +72,7 @@ public class PackageCodeEntrySubstateAllOf {
   }
 
 
-  public PackageCodeEntrySubstateAllOf vmType(VmType vmType) {
-    this.vmType = vmType;
-    return this;
-  }
-
-   /**
-   * Get vmType
-   * @return vmType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public VmType getVmType() {
-    return vmType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVmType(VmType vmType) {
-    this.vmType = vmType;
-  }
-
-
-  public PackageCodeEntrySubstateAllOf codeHex(String codeHex) {
+  public PackageCodeOriginalCodeEntrySubstateAllOf codeHex(String codeHex) {
     this.codeHex = codeHex;
     return this;
   }
@@ -130,7 +99,7 @@ public class PackageCodeEntrySubstateAllOf {
 
 
   /**
-   * Return true if this PackageCodeEntrySubstate_allOf object is equal to o.
+   * Return true if this PackageCodeOriginalCodeEntrySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -140,23 +109,21 @@ public class PackageCodeEntrySubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageCodeEntrySubstateAllOf packageCodeEntrySubstateAllOf = (PackageCodeEntrySubstateAllOf) o;
-    return Objects.equals(this.key, packageCodeEntrySubstateAllOf.key) &&
-        Objects.equals(this.vmType, packageCodeEntrySubstateAllOf.vmType) &&
-        Objects.equals(this.codeHex, packageCodeEntrySubstateAllOf.codeHex);
+    PackageCodeOriginalCodeEntrySubstateAllOf packageCodeOriginalCodeEntrySubstateAllOf = (PackageCodeOriginalCodeEntrySubstateAllOf) o;
+    return Objects.equals(this.key, packageCodeOriginalCodeEntrySubstateAllOf.key) &&
+        Objects.equals(this.codeHex, packageCodeOriginalCodeEntrySubstateAllOf.codeHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vmType, codeHex);
+    return Objects.hash(key, codeHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageCodeEntrySubstateAllOf {\n");
+    sb.append("class PackageCodeOriginalCodeEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
     sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();

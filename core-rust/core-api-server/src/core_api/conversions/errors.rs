@@ -60,6 +60,9 @@ pub enum MappingError {
         error: DecodeError,
     },
     KeyValueStoreEntryUnexpectedlyAbsent,
+    UnexpectedGenesis {
+        message: String,
+    },
 }
 
 impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {

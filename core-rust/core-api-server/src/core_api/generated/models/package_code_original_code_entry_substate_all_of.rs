@@ -12,24 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageBlueprintRoyaltyEntrySubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "is_locked")]
-    pub is_locked: bool,
+pub struct PackageCodeOriginalCodeEntrySubstateAllOf {
     #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+    pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
+    /// Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
-impl PackageBlueprintRoyaltyEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, royalty_config: crate::core_api::generated::models::BlueprintRoyaltyConfig) -> PackageBlueprintRoyaltyEntrySubstate {
-        PackageBlueprintRoyaltyEntrySubstate {
-            substate_type,
-            is_locked,
+impl PackageCodeOriginalCodeEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, code_hex: String) -> PackageCodeOriginalCodeEntrySubstateAllOf {
+        PackageCodeOriginalCodeEntrySubstateAllOf {
             key: Box::new(key),
-            royalty_config: Box::new(royalty_config),
+            code_hex,
         }
     }
 }

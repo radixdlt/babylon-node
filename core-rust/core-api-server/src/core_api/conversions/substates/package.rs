@@ -23,21 +23,20 @@ pub fn to_api_package_royalty_accumulator_substate(
         }
     ))
 }
-
-pub fn to_api_package_code_entry(
+pub fn to_api_package_code_vm_type_entry_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<PackageCodeSubstate>,
+    substate: &KeyValueEntrySubstate<PackageVmTypeSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageCodeKey".to_string() });
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageVmTypeKey".to_string() });
     };
 
-    let PackageCodeSubstate { vm_type, code } = substate.get_definitely_present_value()?;
+    let PackageVmTypeSubstate { vm_type } = substate.get_definitely_present_value()?;
 
     Ok(key_value_store_substate!(
         substate,
-        PackageCodeEntry,
+        PackageCodeVmTypeEntry,
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
@@ -45,7 +44,52 @@ pub fn to_api_package_code_entry(
             vm_type: match vm_type {
                 VmType::Native => models::VmType::Native,
                 VmType::ScryptoV1 => models::VmType::ScryptoV1,
-            },
+            }
+        }
+    ))
+}
+
+pub fn to_api_package_code_original_code_entry_substate(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<PackageOriginalCodeSubstate>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageOriginalCodeKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageOriginalCodeKey".to_string() });
+    };
+
+    let PackageOriginalCodeSubstate { code } = substate.get_definitely_present_value()?;
+
+    Ok(key_value_store_substate!(
+        substate,
+        PackageCodeOriginalCodeEntry,
+        models::PackageCodeKey {
+            code_hash: to_api_hash(hash),
+        },
+        {
+            code_hex: to_hex(code),
+        }
+    ))
+}
+
+pub fn to_api_package_code_instrumented_code_entry_substate(
+    _context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<PackageInstrumentedCodeSubstate>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageInstrumentedCodeKey".to_string() });
+    };
+
+    let PackageInstrumentedCodeSubstate { code } = substate.get_definitely_present_value()?;
+
+    Ok(key_value_store_substate!(
+        substate,
+        PackageCodeInstrumentedCodeEntry,
+        models::PackageCodeKey {
+            code_hash: to_api_hash(hash),
+        },
+        {
             code_hex: to_hex(code),
         }
     ))
@@ -114,7 +158,7 @@ pub fn to_api_package_blueprint_dependencies_entry(
 pub fn to_api_package_blueprint_royalty_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<ComponentRoyaltyConfig>,
+    substate: &KeyValueEntrySubstate<PackageRoyaltyConfig>,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(blueprint_version_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintRoyaltyKey".to_string() });
@@ -124,11 +168,34 @@ pub fn to_api_package_blueprint_royalty_entry(
         PackageBlueprintRoyaltyEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
         {
-            royalty_config: Box::new(to_api_royalty_config(
+            royalty_config: Box::new(to_api_package_blueprint_royalty_config(
                 substate.get_definitely_present_value()?,
             )),
         }
     ))
+}
+
+pub fn to_api_package_blueprint_royalty_config(
+    royalty_config: &PackageRoyaltyConfig,
+) -> models::BlueprintRoyaltyConfig {
+    let (is_enabled, royalties) = match royalty_config {
+        PackageRoyaltyConfig::Disabled => (false, None),
+        PackageRoyaltyConfig::Enabled(rules) => (true, Some(rules)),
+    };
+    models::BlueprintRoyaltyConfig {
+        is_enabled,
+        method_rules: royalties.map(|rules| {
+            rules
+                .iter()
+                .map(
+                    |(method_name, royalty_amount)| models::BlueprintMethodRoyalty {
+                        method_name: method_name.to_owned(),
+                        royalty_amount: to_api_royalty_amount(royalty_amount).map(Box::new),
+                    },
+                )
+                .collect()
+        }),
+    }
 }
 
 pub fn to_api_package_auth_template_entry(

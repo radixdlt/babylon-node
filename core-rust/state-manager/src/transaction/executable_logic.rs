@@ -2,7 +2,7 @@ use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashRe
 use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::ScryptoVm;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -66,11 +66,7 @@ impl ExecutionConfigurator {
     pub fn new(logging_config: &LoggingConfig) -> Self {
         let trace = logging_config.engine_trace;
         Self {
-            scrypto_interpreter: ScryptoVm {
-                wasm_engine: DefaultWasmEngine::default(),
-                wasm_instrumenter: WasmInstrumenter::default(),
-                wasm_metering_config: WasmMeteringConfig::default(),
-            },
+            scrypto_interpreter: ScryptoVm::<DefaultWasmEngine>::default(),
             fee_reserve_config: FeeReserveConfig::default(),
             execution_configs: HashMap::from([
                 (

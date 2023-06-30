@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkStatusResponse.JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER,
   NetworkStatusResponse.JSON_PROPERTY_GENESIS_EPOCH_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_POST_GENESIS_STATE_IDENTIFIER,
+  NetworkStatusResponse.JSON_PROPERTY_POST_GENESIS_EPOCH_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_IDENTIFIER,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_EPOCH_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_PROTOCOL_VERSION
@@ -50,6 +51,9 @@ public class NetworkStatusResponse {
 
   public static final String JSON_PROPERTY_POST_GENESIS_STATE_IDENTIFIER = "post_genesis_state_identifier";
   private CommittedStateIdentifier postGenesisStateIdentifier;
+
+  public static final String JSON_PROPERTY_POST_GENESIS_EPOCH_ROUND = "post_genesis_epoch_round";
+  private EpochRound postGenesisEpochRound;
 
   public static final String JSON_PROPERTY_CURRENT_STATE_IDENTIFIER = "current_state_identifier";
   private CommittedStateIdentifier currentStateIdentifier;
@@ -138,6 +142,32 @@ public class NetworkStatusResponse {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPostGenesisStateIdentifier(CommittedStateIdentifier postGenesisStateIdentifier) {
     this.postGenesisStateIdentifier = postGenesisStateIdentifier;
+  }
+
+
+  public NetworkStatusResponse postGenesisEpochRound(EpochRound postGenesisEpochRound) {
+    this.postGenesisEpochRound = postGenesisEpochRound;
+    return this;
+  }
+
+   /**
+   * Get postGenesisEpochRound
+   * @return postGenesisEpochRound
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_POST_GENESIS_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public EpochRound getPostGenesisEpochRound() {
+    return postGenesisEpochRound;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_POST_GENESIS_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPostGenesisEpochRound(EpochRound postGenesisEpochRound) {
+    this.postGenesisEpochRound = postGenesisEpochRound;
   }
 
 
@@ -234,6 +264,7 @@ public class NetworkStatusResponse {
     return Objects.equals(this.preGenesisStateIdentifier, networkStatusResponse.preGenesisStateIdentifier) &&
         Objects.equals(this.genesisEpochRound, networkStatusResponse.genesisEpochRound) &&
         Objects.equals(this.postGenesisStateIdentifier, networkStatusResponse.postGenesisStateIdentifier) &&
+        Objects.equals(this.postGenesisEpochRound, networkStatusResponse.postGenesisEpochRound) &&
         Objects.equals(this.currentStateIdentifier, networkStatusResponse.currentStateIdentifier) &&
         Objects.equals(this.currentEpochRound, networkStatusResponse.currentEpochRound) &&
         Objects.equals(this.currentProtocolVersion, networkStatusResponse.currentProtocolVersion);
@@ -241,7 +272,7 @@ public class NetworkStatusResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(preGenesisStateIdentifier, genesisEpochRound, postGenesisStateIdentifier, currentStateIdentifier, currentEpochRound, currentProtocolVersion);
+    return Objects.hash(preGenesisStateIdentifier, genesisEpochRound, postGenesisStateIdentifier, postGenesisEpochRound, currentStateIdentifier, currentEpochRound, currentProtocolVersion);
   }
 
   @Override
@@ -251,6 +282,7 @@ public class NetworkStatusResponse {
     sb.append("    preGenesisStateIdentifier: ").append(toIndentedString(preGenesisStateIdentifier)).append("\n");
     sb.append("    genesisEpochRound: ").append(toIndentedString(genesisEpochRound)).append("\n");
     sb.append("    postGenesisStateIdentifier: ").append(toIndentedString(postGenesisStateIdentifier)).append("\n");
+    sb.append("    postGenesisEpochRound: ").append(toIndentedString(postGenesisEpochRound)).append("\n");
     sb.append("    currentStateIdentifier: ").append(toIndentedString(currentStateIdentifier)).append("\n");
     sb.append("    currentEpochRound: ").append(toIndentedString(currentEpochRound)).append("\n");
     sb.append("    currentProtocolVersion: ").append(toIndentedString(currentProtocolVersion)).append("\n");
