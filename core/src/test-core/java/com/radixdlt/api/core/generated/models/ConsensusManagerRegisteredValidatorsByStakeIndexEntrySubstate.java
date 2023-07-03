@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.ActiveValidator;
 import com.radixdlt.api.core.generated.models.ActiveValidatorKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -42,6 +41,7 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.JSON_PROPERTY_KEY,
-  ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.JSON_PROPERTY_ACTIVE_VALIDATOR
+  ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
   public static final String JSON_PROPERTY_KEY = "key";
   private ActiveValidatorKey key;
 
-  public static final String JSON_PROPERTY_ACTIVE_VALIDATOR = "active_validator";
-  private ActiveValidator activeValidator;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue value;
 
   public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
   }
 
 
-  public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate activeValidator(ActiveValidator activeValidator) {
-    this.activeValidator = activeValidator;
+  public ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate value(ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get activeValidator
-   * @return activeValidator
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACTIVE_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ActiveValidator getActiveValidator() {
-    return activeValidator;
+  public ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACTIVE_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setActiveValidator(ActiveValidator activeValidator) {
-    this.activeValidator = activeValidator;
+  public void setValue(ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
     }
     ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate = (ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate) o;
     return Objects.equals(this.key, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.key) &&
-        Objects.equals(this.activeValidator, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.activeValidator) &&
+        Objects.equals(this.value, consensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, activeValidator, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate exten
     sb.append("class ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    activeValidator: ").append(toIndentedString(activeValidator)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

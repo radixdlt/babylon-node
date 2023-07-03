@@ -54,6 +54,7 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMut
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntryValue;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
@@ -86,7 +87,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleVaultContentsIndexEntrySubstate
  */
 @JsonPropertyOrder({
-  NonFungibleVaultContentsIndexEntrySubstate.JSON_PROPERTY_KEY
+  NonFungibleVaultContentsIndexEntrySubstate.JSON_PROPERTY_KEY,
+  NonFungibleVaultContentsIndexEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -148,6 +150,9 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private LocalNonFungibleKey key;
 
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleVaultContentsIndexEntryValue value;
+
   public NonFungibleVaultContentsIndexEntrySubstate() { 
   }
 
@@ -177,6 +182,32 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
   }
 
 
+  public NonFungibleVaultContentsIndexEntrySubstate value(NonFungibleVaultContentsIndexEntryValue value) {
+    this.value = value;
+    return this;
+  }
+
+   /**
+   * Get value
+   * @return value
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public NonFungibleVaultContentsIndexEntryValue getValue() {
+    return value;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(NonFungibleVaultContentsIndexEntryValue value) {
+    this.value = value;
+  }
+
+
   /**
    * Return true if this NonFungibleVaultContentsIndexEntrySubstate object is equal to o.
    */
@@ -190,12 +221,13 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
     }
     NonFungibleVaultContentsIndexEntrySubstate nonFungibleVaultContentsIndexEntrySubstate = (NonFungibleVaultContentsIndexEntrySubstate) o;
     return Objects.equals(this.key, nonFungibleVaultContentsIndexEntrySubstate.key) &&
+        Objects.equals(this.value, nonFungibleVaultContentsIndexEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -204,6 +236,7 @@ public class NonFungibleVaultContentsIndexEntrySubstate extends Substate {
     sb.append("class NonFungibleVaultContentsIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

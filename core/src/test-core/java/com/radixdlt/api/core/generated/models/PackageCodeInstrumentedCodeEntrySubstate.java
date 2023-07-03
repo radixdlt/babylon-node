@@ -61,6 +61,7 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntryS
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntryValue;
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
@@ -87,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageCodeInstrumentedCodeEntrySubstate.JSON_PROPERTY_KEY,
-  PackageCodeInstrumentedCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
+  PackageCodeInstrumentedCodeEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -149,8 +150,8 @@ public class PackageCodeInstrumentedCodeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageCodeInstrumentedCodeEntryValue value;
 
   public PackageCodeInstrumentedCodeEntrySubstate() { 
   }
@@ -181,29 +182,29 @@ public class PackageCodeInstrumentedCodeEntrySubstate extends Substate {
   }
 
 
-  public PackageCodeInstrumentedCodeEntrySubstate codeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public PackageCodeInstrumentedCodeEntrySubstate value(PackageCodeInstrumentedCodeEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The hex-encoded instrumented WASM package code. 
-   * @return codeHex
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded instrumented WASM package code. ")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHex() {
-    return codeHex;
+  public PackageCodeInstrumentedCodeEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public void setValue(PackageCodeInstrumentedCodeEntryValue value) {
+    this.value = value;
   }
 
 
@@ -220,13 +221,13 @@ public class PackageCodeInstrumentedCodeEntrySubstate extends Substate {
     }
     PackageCodeInstrumentedCodeEntrySubstate packageCodeInstrumentedCodeEntrySubstate = (PackageCodeInstrumentedCodeEntrySubstate) o;
     return Objects.equals(this.key, packageCodeInstrumentedCodeEntrySubstate.key) &&
-        Objects.equals(this.codeHex, packageCodeInstrumentedCodeEntrySubstate.codeHex) &&
+        Objects.equals(this.value, packageCodeInstrumentedCodeEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, codeHex, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -235,7 +236,7 @@ public class PackageCodeInstrumentedCodeEntrySubstate extends Substate {
     sb.append("class PackageCodeInstrumentedCodeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AuthConfig;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_AUTH_CONFIG
+  PackageBlueprintAuthTemplateEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_AUTH_CONFIG = "auth_config";
-  private AuthConfig authConfig;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintAuthTemplateEntryValue value;
 
   public PackageBlueprintAuthTemplateEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
   }
 
 
-  public PackageBlueprintAuthTemplateEntrySubstateAllOf authConfig(AuthConfig authConfig) {
-    this.authConfig = authConfig;
+  public PackageBlueprintAuthTemplateEntrySubstateAllOf value(PackageBlueprintAuthTemplateEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get authConfig
-   * @return authConfig
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AUTH_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AuthConfig getAuthConfig() {
-    return authConfig;
+  public PackageBlueprintAuthTemplateEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AUTH_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAuthConfig(AuthConfig authConfig) {
-    this.authConfig = authConfig;
+  public void setValue(PackageBlueprintAuthTemplateEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
     }
     PackageBlueprintAuthTemplateEntrySubstateAllOf packageBlueprintAuthTemplateEntrySubstateAllOf = (PackageBlueprintAuthTemplateEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageBlueprintAuthTemplateEntrySubstateAllOf.key) &&
-        Objects.equals(this.authConfig, packageBlueprintAuthTemplateEntrySubstateAllOf.authConfig);
+        Objects.equals(this.value, packageBlueprintAuthTemplateEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, authConfig);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageBlueprintAuthTemplateEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintAuthTemplateEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    authConfig: ").append(toIndentedString(authConfig)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

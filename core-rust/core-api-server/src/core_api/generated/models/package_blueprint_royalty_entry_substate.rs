@@ -19,17 +19,17 @@ pub struct PackageBlueprintRoyaltyEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintRoyaltyEntryValue>,
 }
 
 impl PackageBlueprintRoyaltyEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, royalty_config: crate::core_api::generated::models::BlueprintRoyaltyConfig) -> PackageBlueprintRoyaltyEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintRoyaltyEntryValue) -> PackageBlueprintRoyaltyEntrySubstate {
         PackageBlueprintRoyaltyEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            royalty_config: Box::new(royalty_config),
+            value: Box::new(value),
         }
     }
 }

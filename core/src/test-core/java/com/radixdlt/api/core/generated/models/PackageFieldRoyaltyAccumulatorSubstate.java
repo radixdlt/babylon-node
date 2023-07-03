@@ -39,7 +39,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -65,6 +64,7 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorValue;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageFieldRoyaltyAccumulatorSubstate
  */
 @JsonPropertyOrder({
-  PackageFieldRoyaltyAccumulatorSubstate.JSON_PROPERTY_VAULT_ENTITY
+  PackageFieldRoyaltyAccumulatorSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class PackageFieldRoyaltyAccumulatorSubstate extends Substate {
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageFieldRoyaltyAccumulatorValue value;
 
   public PackageFieldRoyaltyAccumulatorSubstate() { 
   }
 
-  public PackageFieldRoyaltyAccumulatorSubstate vaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public PackageFieldRoyaltyAccumulatorSubstate value(PackageFieldRoyaltyAccumulatorValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vaultEntity
-   * @return vaultEntity
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVaultEntity() {
-    return vaultEntity;
+  public PackageFieldRoyaltyAccumulatorValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public void setValue(PackageFieldRoyaltyAccumulatorValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class PackageFieldRoyaltyAccumulatorSubstate extends Substate {
       return false;
     }
     PackageFieldRoyaltyAccumulatorSubstate packageFieldRoyaltyAccumulatorSubstate = (PackageFieldRoyaltyAccumulatorSubstate) o;
-    return Objects.equals(this.vaultEntity, packageFieldRoyaltyAccumulatorSubstate.vaultEntity) &&
+    return Objects.equals(this.value, packageFieldRoyaltyAccumulatorSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaultEntity, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class PackageFieldRoyaltyAccumulatorSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageFieldRoyaltyAccumulatorSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

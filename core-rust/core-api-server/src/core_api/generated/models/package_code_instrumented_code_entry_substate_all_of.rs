@@ -15,16 +15,15 @@
 pub struct PackageCodeInstrumentedCodeEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
-    /// The hex-encoded instrumented WASM package code. 
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageCodeInstrumentedCodeEntryValue>,
 }
 
 impl PackageCodeInstrumentedCodeEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, code_hex: String) -> PackageCodeInstrumentedCodeEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, value: crate::core_api::generated::models::PackageCodeInstrumentedCodeEntryValue) -> PackageCodeInstrumentedCodeEntrySubstateAllOf {
         PackageCodeInstrumentedCodeEntrySubstateAllOf {
             key: Box::new(key),
-            code_hex,
+            value: Box::new(value),
         }
     }
 }

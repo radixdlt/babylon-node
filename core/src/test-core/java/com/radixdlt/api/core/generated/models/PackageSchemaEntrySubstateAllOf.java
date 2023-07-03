@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.PackageSchemaEntryValue;
 import com.radixdlt.api.core.generated.models.SchemaKey;
-import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_SCHEMA
+  PackageSchemaEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageSchemaEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private SchemaKey key;
 
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private ScryptoSchema schema;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageSchemaEntryValue value;
 
   public PackageSchemaEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageSchemaEntrySubstateAllOf {
   }
 
 
-  public PackageSchemaEntrySubstateAllOf schema(ScryptoSchema schema) {
-    this.schema = schema;
+  public PackageSchemaEntrySubstateAllOf value(PackageSchemaEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get schema
-   * @return schema
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ScryptoSchema getSchema() {
-    return schema;
+  public PackageSchemaEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(ScryptoSchema schema) {
-    this.schema = schema;
+  public void setValue(PackageSchemaEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageSchemaEntrySubstateAllOf {
     }
     PackageSchemaEntrySubstateAllOf packageSchemaEntrySubstateAllOf = (PackageSchemaEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageSchemaEntrySubstateAllOf.key) &&
-        Objects.equals(this.schema, packageSchemaEntrySubstateAllOf.schema);
+        Objects.equals(this.value, packageSchemaEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, schema);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageSchemaEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageSchemaEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

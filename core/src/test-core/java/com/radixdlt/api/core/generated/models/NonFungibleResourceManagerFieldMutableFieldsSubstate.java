@@ -51,6 +51,7 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntr
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsValue;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
@@ -77,8 +78,6 @@ import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadin
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -87,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleResourceManagerFieldMutableFieldsSubstate
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldMutableFieldsSubstate.JSON_PROPERTY_MUTABLE_FIELDS
+  NonFungibleResourceManagerFieldMutableFieldsSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -146,40 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleResourceManagerFieldMutableFieldsSubstate extends Substate {
-  public static final String JSON_PROPERTY_MUTABLE_FIELDS = "mutable_fields";
-  private List<String> mutableFields = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerFieldMutableFieldsValue value;
 
   public NonFungibleResourceManagerFieldMutableFieldsSubstate() { 
   }
 
-  public NonFungibleResourceManagerFieldMutableFieldsSubstate mutableFields(List<String> mutableFields) {
-    this.mutableFields = mutableFields;
-    return this;
-  }
-
-  public NonFungibleResourceManagerFieldMutableFieldsSubstate addMutableFieldsItem(String mutableFieldsItem) {
-    this.mutableFields.add(mutableFieldsItem);
+  public NonFungibleResourceManagerFieldMutableFieldsSubstate value(NonFungibleResourceManagerFieldMutableFieldsValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The field names of the NF Metadata which are mutable. 
-   * @return mutableFields
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The field names of the NF Metadata which are mutable. ")
-  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getMutableFields() {
-    return mutableFields;
+  public NonFungibleResourceManagerFieldMutableFieldsValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMutableFields(List<String> mutableFields) {
-    this.mutableFields = mutableFields;
+  public void setValue(NonFungibleResourceManagerFieldMutableFieldsValue value) {
+    this.value = value;
   }
 
 
@@ -195,13 +189,13 @@ public class NonFungibleResourceManagerFieldMutableFieldsSubstate extends Substa
       return false;
     }
     NonFungibleResourceManagerFieldMutableFieldsSubstate nonFungibleResourceManagerFieldMutableFieldsSubstate = (NonFungibleResourceManagerFieldMutableFieldsSubstate) o;
-    return Objects.equals(this.mutableFields, nonFungibleResourceManagerFieldMutableFieldsSubstate.mutableFields) &&
+    return Objects.equals(this.value, nonFungibleResourceManagerFieldMutableFieldsSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mutableFields, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -209,7 +203,7 @@ public class NonFungibleResourceManagerFieldMutableFieldsSubstate extends Substa
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerFieldMutableFieldsSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    mutableFields: ").append(toIndentedString(mutableFields)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.ActiveValidatorIndex;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -39,6 +38,7 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSu
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
@@ -47,7 +47,6 @@ import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
@@ -87,12 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ConsensusManagerFieldStateSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_EPOCH,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_ROUND,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_IS_STARTED,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_EFFECTIVE_EPOCH_START,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_ACTUAL_EPOCH_START,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_CURRENT_LEADER
+  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -151,184 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ConsensusManagerFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
-
-  public static final String JSON_PROPERTY_ROUND = "round";
-  private Long round;
-
-  public static final String JSON_PROPERTY_IS_STARTED = "is_started";
-  private Boolean isStarted;
-
-  public static final String JSON_PROPERTY_EFFECTIVE_EPOCH_START = "effective_epoch_start";
-  private Instant effectiveEpochStart;
-
-  public static final String JSON_PROPERTY_ACTUAL_EPOCH_START = "actual_epoch_start";
-  private Instant actualEpochStart;
-
-  public static final String JSON_PROPERTY_CURRENT_LEADER = "current_leader";
-  private ActiveValidatorIndex currentLeader;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldStateValue value;
 
   public ConsensusManagerFieldStateSubstate() { 
   }
 
-  public ConsensusManagerFieldStateSubstate epoch(Long epoch) {
-    this.epoch = epoch;
+  public ConsensusManagerFieldStateSubstate value(ConsensusManagerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getEpoch() {
-    return epoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate round(Long round) {
-    this.round = round;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current round in an epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return round
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current round in an epoch")
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getRound() {
-    return round;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRound(Long round) {
-    this.round = round;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate isStarted(Boolean isStarted) {
-    this.isStarted = isStarted;
-    return this;
-  }
-
-   /**
-   * Get isStarted
-   * @return isStarted
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_STARTED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsStarted() {
-    return isStarted;
+  public ConsensusManagerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_STARTED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsStarted(Boolean isStarted) {
-    this.isStarted = isStarted;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate effectiveEpochStart(Instant effectiveEpochStart) {
-    this.effectiveEpochStart = effectiveEpochStart;
-    return this;
-  }
-
-   /**
-   * Get effectiveEpochStart
-   * @return effectiveEpochStart
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Instant getEffectiveEpochStart() {
-    return effectiveEpochStart;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EFFECTIVE_EPOCH_START)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEffectiveEpochStart(Instant effectiveEpochStart) {
-    this.effectiveEpochStart = effectiveEpochStart;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate actualEpochStart(Instant actualEpochStart) {
-    this.actualEpochStart = actualEpochStart;
-    return this;
-  }
-
-   /**
-   * Get actualEpochStart
-   * @return actualEpochStart
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Instant getActualEpochStart() {
-    return actualEpochStart;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACTUAL_EPOCH_START)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setActualEpochStart(Instant actualEpochStart) {
-    this.actualEpochStart = actualEpochStart;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate currentLeader(ActiveValidatorIndex currentLeader) {
-    this.currentLeader = currentLeader;
-    return this;
-  }
-
-   /**
-   * Get currentLeader
-   * @return currentLeader
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public ActiveValidatorIndex getCurrentLeader() {
-    return currentLeader;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCurrentLeader(ActiveValidatorIndex currentLeader) {
-    this.currentLeader = currentLeader;
+  public void setValue(ConsensusManagerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -344,18 +189,13 @@ public class ConsensusManagerFieldStateSubstate extends Substate {
       return false;
     }
     ConsensusManagerFieldStateSubstate consensusManagerFieldStateSubstate = (ConsensusManagerFieldStateSubstate) o;
-    return Objects.equals(this.epoch, consensusManagerFieldStateSubstate.epoch) &&
-        Objects.equals(this.round, consensusManagerFieldStateSubstate.round) &&
-        Objects.equals(this.isStarted, consensusManagerFieldStateSubstate.isStarted) &&
-        Objects.equals(this.effectiveEpochStart, consensusManagerFieldStateSubstate.effectiveEpochStart) &&
-        Objects.equals(this.actualEpochStart, consensusManagerFieldStateSubstate.actualEpochStart) &&
-        Objects.equals(this.currentLeader, consensusManagerFieldStateSubstate.currentLeader) &&
+    return Objects.equals(this.value, consensusManagerFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, isStarted, effectiveEpochStart, actualEpochStart, currentLeader, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -363,12 +203,7 @@ public class ConsensusManagerFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    round: ").append(toIndentedString(round)).append("\n");
-    sb.append("    isStarted: ").append(toIndentedString(isStarted)).append("\n");
-    sb.append("    effectiveEpochStart: ").append(toIndentedString(effectiveEpochStart)).append("\n");
-    sb.append("    actualEpochStart: ").append(toIndentedString(actualEpochStart)).append("\n");
-    sb.append("    currentLeader: ").append(toIndentedString(currentLeader)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

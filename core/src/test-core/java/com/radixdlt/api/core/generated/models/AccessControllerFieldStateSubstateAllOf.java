@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.AccessControllerFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccessControllerFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  AccessControllerFieldStateSubstateAllOf.JSON_PROPERTY_DATA_STRUCT
+  AccessControllerFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessControllerFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccessControllerFieldStateValue value;
 
   public AccessControllerFieldStateSubstateAllOf() { 
   }
 
-  public AccessControllerFieldStateSubstateAllOf dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public AccessControllerFieldStateSubstateAllOf value(AccessControllerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public AccessControllerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setValue(AccessControllerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class AccessControllerFieldStateSubstateAllOf {
       return false;
     }
     AccessControllerFieldStateSubstateAllOf accessControllerFieldStateSubstateAllOf = (AccessControllerFieldStateSubstateAllOf) o;
-    return Objects.equals(this.dataStruct, accessControllerFieldStateSubstateAllOf.dataStruct);
+    return Objects.equals(this.value, accessControllerFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessControllerFieldStateSubstateAllOf {\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

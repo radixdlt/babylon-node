@@ -42,7 +42,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidato
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
-import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstateAllOf;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
@@ -54,6 +53,8 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMut
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceValue;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
@@ -85,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleVaultFieldBalanceSubstate
  */
 @JsonPropertyOrder({
-  NonFungibleVaultFieldBalanceSubstate.JSON_PROPERTY_AMOUNT
+  NonFungibleVaultFieldBalanceSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -144,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleVaultFieldBalanceSubstate extends Substate {
-  public static final String JSON_PROPERTY_AMOUNT = "amount";
-  private String amount;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleVaultFieldBalanceValue value;
 
   public NonFungibleVaultFieldBalanceSubstate() { 
   }
 
-  public NonFungibleVaultFieldBalanceSubstate amount(String amount) {
-    this.amount = amount;
+  public NonFungibleVaultFieldBalanceSubstate value(NonFungibleVaultFieldBalanceValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return amount
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAmount() {
-    return amount;
+  public NonFungibleVaultFieldBalanceValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAmount(String amount) {
-    this.amount = amount;
+  public void setValue(NonFungibleVaultFieldBalanceValue value) {
+    this.value = value;
   }
 
 
@@ -188,13 +189,13 @@ public class NonFungibleVaultFieldBalanceSubstate extends Substate {
       return false;
     }
     NonFungibleVaultFieldBalanceSubstate nonFungibleVaultFieldBalanceSubstate = (NonFungibleVaultFieldBalanceSubstate) o;
-    return Objects.equals(this.amount, nonFungibleVaultFieldBalanceSubstate.amount) &&
+    return Objects.equals(this.value, nonFungibleVaultFieldBalanceSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(amount, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -202,7 +203,7 @@ public class NonFungibleVaultFieldBalanceSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleVaultFieldBalanceSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

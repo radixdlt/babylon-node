@@ -39,7 +39,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -51,6 +50,7 @@ import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntryValue;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_KEY,
-  NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_DATA_STRUCT
+  NonFungibleResourceManagerDataEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private LocalNonFungibleKey key;
 
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerDataEntryValue value;
 
   public NonFungibleResourceManagerDataEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
   }
 
 
-  public NonFungibleResourceManagerDataEntrySubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public NonFungibleResourceManagerDataEntrySubstate value(NonFungibleResourceManagerDataEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public NonFungibleResourceManagerDataEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setValue(NonFungibleResourceManagerDataEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
     }
     NonFungibleResourceManagerDataEntrySubstate nonFungibleResourceManagerDataEntrySubstate = (NonFungibleResourceManagerDataEntrySubstate) o;
     return Objects.equals(this.key, nonFungibleResourceManagerDataEntrySubstate.key) &&
-        Objects.equals(this.dataStruct, nonFungibleResourceManagerDataEntrySubstate.dataStruct) &&
+        Objects.equals(this.value, nonFungibleResourceManagerDataEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, dataStruct, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class NonFungibleResourceManagerDataEntrySubstate extends Substate {
     sb.append("class NonFungibleResourceManagerDataEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

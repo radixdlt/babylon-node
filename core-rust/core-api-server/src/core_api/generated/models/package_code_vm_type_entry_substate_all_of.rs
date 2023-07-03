@@ -15,15 +15,15 @@
 pub struct PackageCodeVmTypeEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
-    #[serde(rename = "vm_type")]
-    pub vm_type: crate::core_api::generated::models::VmType,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageCodeVmTypeEntryValue>,
 }
 
 impl PackageCodeVmTypeEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, vm_type: crate::core_api::generated::models::VmType) -> PackageCodeVmTypeEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::PackageCodeKey, value: crate::core_api::generated::models::PackageCodeVmTypeEntryValue) -> PackageCodeVmTypeEntrySubstateAllOf {
         PackageCodeVmTypeEntrySubstateAllOf {
             key: Box::new(key),
-            vm_type,
+            value: Box::new(value),
         }
     }
 }

@@ -30,6 +30,7 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSub
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntryValue;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
@@ -40,7 +41,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DepositRule;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_KEY,
-  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_DEPOSIT_RULE
+  AccountDepositRuleIndexEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private ResourceKey key;
 
-  public static final String JSON_PROPERTY_DEPOSIT_RULE = "deposit_rule";
-  private DepositRule depositRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountDepositRuleIndexEntryValue value;
 
   public AccountDepositRuleIndexEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
   }
 
 
-  public AccountDepositRuleIndexEntrySubstate depositRule(DepositRule depositRule) {
-    this.depositRule = depositRule;
+  public AccountDepositRuleIndexEntrySubstate value(AccountDepositRuleIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get depositRule
-   * @return depositRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DepositRule getDepositRule() {
-    return depositRule;
+  public AccountDepositRuleIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDepositRule(DepositRule depositRule) {
-    this.depositRule = depositRule;
+  public void setValue(AccountDepositRuleIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
     }
     AccountDepositRuleIndexEntrySubstate accountDepositRuleIndexEntrySubstate = (AccountDepositRuleIndexEntrySubstate) o;
     return Objects.equals(this.key, accountDepositRuleIndexEntrySubstate.key) &&
-        Objects.equals(this.depositRule, accountDepositRuleIndexEntrySubstate.depositRule) &&
+        Objects.equals(this.value, accountDepositRuleIndexEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, depositRule, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class AccountDepositRuleIndexEntrySubstate extends Substate {
     sb.append("class AccountDepositRuleIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    depositRule: ").append(toIndentedString(depositRule)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

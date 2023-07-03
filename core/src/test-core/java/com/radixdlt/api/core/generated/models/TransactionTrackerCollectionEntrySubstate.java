@@ -71,8 +71,8 @@ import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionIdKey;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntryValue;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.TransactionTrackerTransactionStatus;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_KEY,
-  TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_STATUS
+  TransactionTrackerCollectionEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private TransactionIdKey key;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private TransactionTrackerTransactionStatus status;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TransactionTrackerCollectionEntryValue value;
 
   public TransactionTrackerCollectionEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
   }
 
 
-  public TransactionTrackerCollectionEntrySubstate status(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  public TransactionTrackerCollectionEntrySubstate value(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionTrackerTransactionStatus getStatus() {
-    return status;
+  public TransactionTrackerCollectionEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setStatus(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
     }
     TransactionTrackerCollectionEntrySubstate transactionTrackerCollectionEntrySubstate = (TransactionTrackerCollectionEntrySubstate) o;
     return Objects.equals(this.key, transactionTrackerCollectionEntrySubstate.key) &&
-        Objects.equals(this.status, transactionTrackerCollectionEntrySubstate.status) &&
+        Objects.equals(this.value, transactionTrackerCollectionEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, status, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class TransactionTrackerCollectionEntrySubstate extends Substate {
     sb.append("class TransactionTrackerCollectionEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

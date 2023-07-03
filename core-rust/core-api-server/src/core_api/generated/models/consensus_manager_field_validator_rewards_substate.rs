@@ -17,19 +17,16 @@ pub struct ConsensusManagerFieldValidatorRewardsSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
-    #[serde(rename = "proposer_rewards")]
-    pub proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>,
-    #[serde(rename = "rewards_vault")]
-    pub rewards_vault: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldValidatorRewardsValue>,
 }
 
 impl ConsensusManagerFieldValidatorRewardsSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>, rewards_vault: crate::core_api::generated::models::EntityReference) -> ConsensusManagerFieldValidatorRewardsSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::ConsensusManagerFieldValidatorRewardsValue) -> ConsensusManagerFieldValidatorRewardsSubstate {
         ConsensusManagerFieldValidatorRewardsSubstate {
             substate_type,
             is_locked,
-            proposer_rewards,
-            rewards_vault: Box::new(rewards_vault),
+            value: Box::new(value),
         }
     }
 }

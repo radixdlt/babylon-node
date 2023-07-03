@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_CONFIG
+  PackageBlueprintRoyaltyEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintRoyaltyEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private BlueprintRoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintRoyaltyEntryValue value;
 
   public PackageBlueprintRoyaltyEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
   }
 
 
-  public PackageBlueprintRoyaltyEntrySubstateAllOf royaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public PackageBlueprintRoyaltyEntrySubstateAllOf value(PackageBlueprintRoyaltyEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintRoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public PackageBlueprintRoyaltyEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public void setValue(PackageBlueprintRoyaltyEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
     }
     PackageBlueprintRoyaltyEntrySubstateAllOf packageBlueprintRoyaltyEntrySubstateAllOf = (PackageBlueprintRoyaltyEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageBlueprintRoyaltyEntrySubstateAllOf.key) &&
-        Objects.equals(this.royaltyConfig, packageBlueprintRoyaltyEntrySubstateAllOf.royaltyConfig);
+        Objects.equals(this.value, packageBlueprintRoyaltyEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyConfig);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageBlueprintRoyaltyEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintRoyaltyEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

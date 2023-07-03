@@ -19,17 +19,17 @@ pub struct PackageCodeVmTypeEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
-    #[serde(rename = "vm_type")]
-    pub vm_type: crate::core_api::generated::models::VmType,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageCodeVmTypeEntryValue>,
 }
 
 impl PackageCodeVmTypeEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::PackageCodeKey, vm_type: crate::core_api::generated::models::VmType) -> PackageCodeVmTypeEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::PackageCodeKey, value: crate::core_api::generated::models::PackageCodeVmTypeEntryValue) -> PackageCodeVmTypeEntrySubstate {
         PackageCodeVmTypeEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            vm_type,
+            value: Box::new(value),
         }
     }
 }

@@ -64,7 +64,6 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.PoolVault;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -73,13 +72,12 @@ import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntryS
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateValue;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -88,8 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * TwoResourcePoolFieldStateSubstate
  */
 @JsonPropertyOrder({
-  TwoResourcePoolFieldStateSubstate.JSON_PROPERTY_VAULTS,
-  TwoResourcePoolFieldStateSubstate.JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS
+  TwoResourcePoolFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -148,69 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class TwoResourcePoolFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_VAULTS = "vaults";
-  private List<PoolVault> vaults = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS = "pool_unit_resource_address";
-  private String poolUnitResourceAddress;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TwoResourcePoolFieldStateValue value;
 
   public TwoResourcePoolFieldStateSubstate() { 
   }
 
-  public TwoResourcePoolFieldStateSubstate vaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-    return this;
-  }
-
-  public TwoResourcePoolFieldStateSubstate addVaultsItem(PoolVault vaultsItem) {
-    this.vaults.add(vaultsItem);
+  public TwoResourcePoolFieldStateSubstate value(TwoResourcePoolFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vaults
-   * @return vaults
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<PoolVault> getVaults() {
-    return vaults;
+  public TwoResourcePoolFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-  }
-
-
-  public TwoResourcePoolFieldStateSubstate poolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return poolUnitResourceAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPoolUnitResourceAddress() {
-    return poolUnitResourceAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPoolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
+  public void setValue(TwoResourcePoolFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -226,14 +189,13 @@ public class TwoResourcePoolFieldStateSubstate extends Substate {
       return false;
     }
     TwoResourcePoolFieldStateSubstate twoResourcePoolFieldStateSubstate = (TwoResourcePoolFieldStateSubstate) o;
-    return Objects.equals(this.vaults, twoResourcePoolFieldStateSubstate.vaults) &&
-        Objects.equals(this.poolUnitResourceAddress, twoResourcePoolFieldStateSubstate.poolUnitResourceAddress) &&
+    return Objects.equals(this.value, twoResourcePoolFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaults, poolUnitResourceAddress, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -241,8 +203,7 @@ public class TwoResourcePoolFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class TwoResourcePoolFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
-    sb.append("    poolUnitResourceAddress: ").append(toIndentedString(poolUnitResourceAddress)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

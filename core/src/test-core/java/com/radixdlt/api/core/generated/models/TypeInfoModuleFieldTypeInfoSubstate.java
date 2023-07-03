@@ -71,9 +71,9 @@ import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.TypeInfoDetails;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstateAllOf;
+import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoValue;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * TypeInfoModuleFieldTypeInfoSubstate
  */
 @JsonPropertyOrder({
-  TypeInfoModuleFieldTypeInfoSubstate.JSON_PROPERTY_DETAILS
+  TypeInfoModuleFieldTypeInfoSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class TypeInfoModuleFieldTypeInfoSubstate extends Substate {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private TypeInfoDetails details;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TypeInfoModuleFieldTypeInfoValue value;
 
   public TypeInfoModuleFieldTypeInfoSubstate() { 
   }
 
-  public TypeInfoModuleFieldTypeInfoSubstate details(TypeInfoDetails details) {
-    this.details = details;
+  public TypeInfoModuleFieldTypeInfoSubstate value(TypeInfoModuleFieldTypeInfoValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypeInfoDetails getDetails() {
-    return details;
+  public TypeInfoModuleFieldTypeInfoValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(TypeInfoDetails details) {
-    this.details = details;
+  public void setValue(TypeInfoModuleFieldTypeInfoValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class TypeInfoModuleFieldTypeInfoSubstate extends Substate {
       return false;
     }
     TypeInfoModuleFieldTypeInfoSubstate typeInfoModuleFieldTypeInfoSubstate = (TypeInfoModuleFieldTypeInfoSubstate) o;
-    return Objects.equals(this.details, typeInfoModuleFieldTypeInfoSubstate.details) &&
+    return Objects.equals(this.value, typeInfoModuleFieldTypeInfoSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class TypeInfoModuleFieldTypeInfoSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class TypeInfoModuleFieldTypeInfoSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

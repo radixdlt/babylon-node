@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.MainMethodKey;
-import com.radixdlt.api.core.generated.models.RoyaltyAmount;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   RoyaltyModuleMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  RoyaltyModuleMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_ROYALTY_AMOUNT
+  RoyaltyModuleMethodRoyaltyEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private MainMethodKey key;
 
-  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
-  private RoyaltyAmount royaltyAmount;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private RoyaltyModuleMethodRoyaltyEntryValue value;
 
   public RoyaltyModuleMethodRoyaltyEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
   }
 
 
-  public RoyaltyModuleMethodRoyaltyEntrySubstateAllOf royaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
+  public RoyaltyModuleMethodRoyaltyEntrySubstateAllOf value(RoyaltyModuleMethodRoyaltyEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get royaltyAmount
-   * @return royaltyAmount
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public RoyaltyAmount getRoyaltyAmount() {
-    return royaltyAmount;
+  public RoyaltyModuleMethodRoyaltyEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
+  public void setValue(RoyaltyModuleMethodRoyaltyEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
     }
     RoyaltyModuleMethodRoyaltyEntrySubstateAllOf royaltyModuleMethodRoyaltyEntrySubstateAllOf = (RoyaltyModuleMethodRoyaltyEntrySubstateAllOf) o;
     return Objects.equals(this.key, royaltyModuleMethodRoyaltyEntrySubstateAllOf.key) &&
-        Objects.equals(this.royaltyAmount, royaltyModuleMethodRoyaltyEntrySubstateAllOf.royaltyAmount);
+        Objects.equals(this.value, royaltyModuleMethodRoyaltyEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyAmount);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

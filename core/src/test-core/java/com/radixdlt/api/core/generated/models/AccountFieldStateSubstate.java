@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccountFieldStateValue;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -40,7 +41,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DefaultDepositRule;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccountFieldStateSubstate
  */
 @JsonPropertyOrder({
-  AccountFieldStateSubstate.JSON_PROPERTY_DEFAULT_DEPOSIT_RULE
+  AccountFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class AccountFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_DEFAULT_DEPOSIT_RULE = "default_deposit_rule";
-  private DefaultDepositRule defaultDepositRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountFieldStateValue value;
 
   public AccountFieldStateSubstate() { 
   }
 
-  public AccountFieldStateSubstate defaultDepositRule(DefaultDepositRule defaultDepositRule) {
-    this.defaultDepositRule = defaultDepositRule;
+  public AccountFieldStateSubstate value(AccountFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get defaultDepositRule
-   * @return defaultDepositRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEFAULT_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DefaultDepositRule getDefaultDepositRule() {
-    return defaultDepositRule;
+  public AccountFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEFAULT_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefaultDepositRule(DefaultDepositRule defaultDepositRule) {
-    this.defaultDepositRule = defaultDepositRule;
+  public void setValue(AccountFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class AccountFieldStateSubstate extends Substate {
       return false;
     }
     AccountFieldStateSubstate accountFieldStateSubstate = (AccountFieldStateSubstate) o;
-    return Objects.equals(this.defaultDepositRule, accountFieldStateSubstate.defaultDepositRule) &&
+    return Objects.equals(this.value, accountFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(defaultDepositRule, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class AccountFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    defaultDepositRule: ").append(toIndentedString(defaultDepositRule)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

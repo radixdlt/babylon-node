@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionIdKey;
-import com.radixdlt.api.core.generated.models.TransactionTrackerTransactionStatus;
+import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_STATUS
+  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionTrackerCollectionEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private TransactionIdKey key;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private TransactionTrackerTransactionStatus status;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TransactionTrackerCollectionEntryValue value;
 
   public TransactionTrackerCollectionEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
   }
 
 
-  public TransactionTrackerCollectionEntrySubstateAllOf status(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  public TransactionTrackerCollectionEntrySubstateAllOf value(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionTrackerTransactionStatus getStatus() {
-    return status;
+  public TransactionTrackerCollectionEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setStatus(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
     }
     TransactionTrackerCollectionEntrySubstateAllOf transactionTrackerCollectionEntrySubstateAllOf = (TransactionTrackerCollectionEntrySubstateAllOf) o;
     return Objects.equals(this.key, transactionTrackerCollectionEntrySubstateAllOf.key) &&
-        Objects.equals(this.status, transactionTrackerCollectionEntrySubstateAllOf.status);
+        Objects.equals(this.value, transactionTrackerCollectionEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, status);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionTrackerCollectionEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

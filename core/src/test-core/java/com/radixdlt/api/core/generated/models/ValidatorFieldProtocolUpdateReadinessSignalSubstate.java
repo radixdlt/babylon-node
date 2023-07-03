@@ -74,6 +74,7 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalValue;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -85,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ValidatorFieldProtocolUpdateReadinessSignalSubstate
  */
 @JsonPropertyOrder({
-  ValidatorFieldProtocolUpdateReadinessSignalSubstate.JSON_PROPERTY_PROTOCOL_VERSION_NAME
+  ValidatorFieldProtocolUpdateReadinessSignalSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -144,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ValidatorFieldProtocolUpdateReadinessSignalSubstate extends Substate {
-  public static final String JSON_PROPERTY_PROTOCOL_VERSION_NAME = "protocol_version_name";
-  private String protocolVersionName;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ValidatorFieldProtocolUpdateReadinessSignalValue value;
 
   public ValidatorFieldProtocolUpdateReadinessSignalSubstate() { 
   }
 
-  public ValidatorFieldProtocolUpdateReadinessSignalSubstate protocolVersionName(String protocolVersionName) {
-    this.protocolVersionName = protocolVersionName;
+  public ValidatorFieldProtocolUpdateReadinessSignalSubstate value(ValidatorFieldProtocolUpdateReadinessSignalValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). 
-   * @return protocolVersionName
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). ")
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getProtocolVersionName() {
-    return protocolVersionName;
+  public ValidatorFieldProtocolUpdateReadinessSignalValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setProtocolVersionName(String protocolVersionName) {
-    this.protocolVersionName = protocolVersionName;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(ValidatorFieldProtocolUpdateReadinessSignalValue value) {
+    this.value = value;
   }
 
 
@@ -188,13 +189,13 @@ public class ValidatorFieldProtocolUpdateReadinessSignalSubstate extends Substat
       return false;
     }
     ValidatorFieldProtocolUpdateReadinessSignalSubstate validatorFieldProtocolUpdateReadinessSignalSubstate = (ValidatorFieldProtocolUpdateReadinessSignalSubstate) o;
-    return Objects.equals(this.protocolVersionName, validatorFieldProtocolUpdateReadinessSignalSubstate.protocolVersionName) &&
+    return Objects.equals(this.value, validatorFieldProtocolUpdateReadinessSignalSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(protocolVersionName, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -202,7 +203,7 @@ public class ValidatorFieldProtocolUpdateReadinessSignalSubstate extends Substat
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorFieldProtocolUpdateReadinessSignalSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    protocolVersionName: ").append(toIndentedString(protocolVersionName)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

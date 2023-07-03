@@ -64,6 +64,7 @@ import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntryValue;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -76,7 +77,6 @@ import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.VmType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageCodeVmTypeEntrySubstate.JSON_PROPERTY_KEY,
-  PackageCodeVmTypeEntrySubstate.JSON_PROPERTY_VM_TYPE
+  PackageCodeVmTypeEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageCodeVmTypeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
-  private VmType vmType;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageCodeVmTypeEntryValue value;
 
   public PackageCodeVmTypeEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageCodeVmTypeEntrySubstate extends Substate {
   }
 
 
-  public PackageCodeVmTypeEntrySubstate vmType(VmType vmType) {
-    this.vmType = vmType;
+  public PackageCodeVmTypeEntrySubstate value(PackageCodeVmTypeEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vmType
-   * @return vmType
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public VmType getVmType() {
-    return vmType;
+  public PackageCodeVmTypeEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVmType(VmType vmType) {
-    this.vmType = vmType;
+  public void setValue(PackageCodeVmTypeEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageCodeVmTypeEntrySubstate extends Substate {
     }
     PackageCodeVmTypeEntrySubstate packageCodeVmTypeEntrySubstate = (PackageCodeVmTypeEntrySubstate) o;
     return Objects.equals(this.key, packageCodeVmTypeEntrySubstate.key) &&
-        Objects.equals(this.vmType, packageCodeVmTypeEntrySubstate.vmType) &&
+        Objects.equals(this.value, packageCodeVmTypeEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vmType, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageCodeVmTypeEntrySubstate extends Substate {
     sb.append("class PackageCodeVmTypeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -15,15 +15,15 @@
 pub struct TransactionTrackerCollectionEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::TransactionIdKey>,
-    #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
-    pub status: Option<crate::core_api::generated::models::TransactionTrackerTransactionStatus>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::TransactionTrackerCollectionEntryValue>,
 }
 
 impl TransactionTrackerCollectionEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::TransactionIdKey) -> TransactionTrackerCollectionEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::TransactionIdKey, value: crate::core_api::generated::models::TransactionTrackerCollectionEntryValue) -> TransactionTrackerCollectionEntrySubstateAllOf {
         TransactionTrackerCollectionEntrySubstateAllOf {
             key: Box::new(key),
-            status: None,
+            value: Box::new(value),
         }
     }
 }

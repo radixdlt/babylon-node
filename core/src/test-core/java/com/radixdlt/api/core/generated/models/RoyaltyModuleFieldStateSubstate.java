@@ -39,7 +39,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -67,6 +66,7 @@ import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubs
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateValue;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -86,8 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * RoyaltyModuleFieldStateSubstate
  */
 @JsonPropertyOrder({
-  RoyaltyModuleFieldStateSubstate.JSON_PROPERTY_IS_ENABLED,
-  RoyaltyModuleFieldStateSubstate.JSON_PROPERTY_VAULT_ENTITY
+  RoyaltyModuleFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -146,64 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class RoyaltyModuleFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_IS_ENABLED = "is_enabled";
-  private Boolean isEnabled;
-
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private RoyaltyModuleFieldStateValue value;
 
   public RoyaltyModuleFieldStateSubstate() { 
   }
 
-  public RoyaltyModuleFieldStateSubstate isEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
+  public RoyaltyModuleFieldStateSubstate value(RoyaltyModuleFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get isEnabled
-   * @return isEnabled
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsEnabled() {
-    return isEnabled;
+  public RoyaltyModuleFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
-  }
-
-
-  public RoyaltyModuleFieldStateSubstate vaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
-    return this;
-  }
-
-   /**
-   * Get vaultEntity
-   * @return vaultEntity
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityReference getVaultEntity() {
-    return vaultEntity;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public void setValue(RoyaltyModuleFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -219,14 +189,13 @@ public class RoyaltyModuleFieldStateSubstate extends Substate {
       return false;
     }
     RoyaltyModuleFieldStateSubstate royaltyModuleFieldStateSubstate = (RoyaltyModuleFieldStateSubstate) o;
-    return Objects.equals(this.isEnabled, royaltyModuleFieldStateSubstate.isEnabled) &&
-        Objects.equals(this.vaultEntity, royaltyModuleFieldStateSubstate.vaultEntity) &&
+    return Objects.equals(this.value, royaltyModuleFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isEnabled, vaultEntity, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -234,8 +203,7 @@ public class RoyaltyModuleFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class RoyaltyModuleFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    isEnabled: ").append(toIndentedString(isEnabled)).append("\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

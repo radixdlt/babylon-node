@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.BlueprintDependencies;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -61,6 +60,7 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntryS
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntryValue;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_KEY,
-  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_DEPENDENCIES
+  PackageBlueprintDependenciesEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
-  private BlueprintDependencies dependencies;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintDependenciesEntryValue value;
 
   public PackageBlueprintDependenciesEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
   }
 
 
-  public PackageBlueprintDependenciesEntrySubstate dependencies(BlueprintDependencies dependencies) {
-    this.dependencies = dependencies;
+  public PackageBlueprintDependenciesEntrySubstate value(PackageBlueprintDependenciesEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dependencies
-   * @return dependencies
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintDependencies getDependencies() {
-    return dependencies;
+  public PackageBlueprintDependenciesEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDependencies(BlueprintDependencies dependencies) {
-    this.dependencies = dependencies;
+  public void setValue(PackageBlueprintDependenciesEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
     }
     PackageBlueprintDependenciesEntrySubstate packageBlueprintDependenciesEntrySubstate = (PackageBlueprintDependenciesEntrySubstate) o;
     return Objects.equals(this.key, packageBlueprintDependenciesEntrySubstate.key) &&
-        Objects.equals(this.dependencies, packageBlueprintDependenciesEntrySubstate.dependencies) &&
+        Objects.equals(this.value, packageBlueprintDependenciesEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, dependencies, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageBlueprintDependenciesEntrySubstate extends Substate {
     sb.append("class PackageBlueprintDependenciesEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

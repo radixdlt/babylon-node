@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.BlueprintDefinition;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -60,6 +59,7 @@ import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntryValue;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_KEY,
-  PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_DEFINITION
+  PackageBlueprintDefinitionEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageBlueprintDefinitionEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_DEFINITION = "definition";
-  private BlueprintDefinition definition;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintDefinitionEntryValue value;
 
   public PackageBlueprintDefinitionEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageBlueprintDefinitionEntrySubstate extends Substate {
   }
 
 
-  public PackageBlueprintDefinitionEntrySubstate definition(BlueprintDefinition definition) {
-    this.definition = definition;
+  public PackageBlueprintDefinitionEntrySubstate value(PackageBlueprintDefinitionEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get definition
-   * @return definition
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEFINITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintDefinition getDefinition() {
-    return definition;
+  public PackageBlueprintDefinitionEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEFINITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefinition(BlueprintDefinition definition) {
-    this.definition = definition;
+  public void setValue(PackageBlueprintDefinitionEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageBlueprintDefinitionEntrySubstate extends Substate {
     }
     PackageBlueprintDefinitionEntrySubstate packageBlueprintDefinitionEntrySubstate = (PackageBlueprintDefinitionEntrySubstate) o;
     return Objects.equals(this.key, packageBlueprintDefinitionEntrySubstate.key) &&
-        Objects.equals(this.definition, packageBlueprintDefinitionEntrySubstate.definition) &&
+        Objects.equals(this.value, packageBlueprintDefinitionEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, definition, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageBlueprintDefinitionEntrySubstate extends Substate {
     sb.append("class PackageBlueprintDefinitionEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    definition: ").append(toIndentedString(definition)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

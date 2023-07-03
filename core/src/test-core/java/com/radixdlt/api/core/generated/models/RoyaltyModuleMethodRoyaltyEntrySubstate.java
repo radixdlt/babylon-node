@@ -65,10 +65,10 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyAmount;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntryValue;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   RoyaltyModuleMethodRoyaltyEntrySubstate.JSON_PROPERTY_KEY,
-  RoyaltyModuleMethodRoyaltyEntrySubstate.JSON_PROPERTY_ROYALTY_AMOUNT
+  RoyaltyModuleMethodRoyaltyEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private MainMethodKey key;
 
-  public static final String JSON_PROPERTY_ROYALTY_AMOUNT = "royalty_amount";
-  private RoyaltyAmount royaltyAmount;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private RoyaltyModuleMethodRoyaltyEntryValue value;
 
   public RoyaltyModuleMethodRoyaltyEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstate extends Substate {
   }
 
 
-  public RoyaltyModuleMethodRoyaltyEntrySubstate royaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
+  public RoyaltyModuleMethodRoyaltyEntrySubstate value(RoyaltyModuleMethodRoyaltyEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get royaltyAmount
-   * @return royaltyAmount
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public RoyaltyAmount getRoyaltyAmount() {
-    return royaltyAmount;
+  public RoyaltyModuleMethodRoyaltyEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRoyaltyAmount(RoyaltyAmount royaltyAmount) {
-    this.royaltyAmount = royaltyAmount;
+  public void setValue(RoyaltyModuleMethodRoyaltyEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstate extends Substate {
     }
     RoyaltyModuleMethodRoyaltyEntrySubstate royaltyModuleMethodRoyaltyEntrySubstate = (RoyaltyModuleMethodRoyaltyEntrySubstate) o;
     return Objects.equals(this.key, royaltyModuleMethodRoyaltyEntrySubstate.key) &&
-        Objects.equals(this.royaltyAmount, royaltyModuleMethodRoyaltyEntrySubstate.royaltyAmount) &&
+        Objects.equals(this.value, royaltyModuleMethodRoyaltyEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyAmount, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class RoyaltyModuleMethodRoyaltyEntrySubstate extends Substate {
     sb.append("class RoyaltyModuleMethodRoyaltyEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyAmount: ").append(toIndentedString(royaltyAmount)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

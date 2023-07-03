@@ -15,15 +15,15 @@
 pub struct PackageBlueprintAuthTemplateEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "auth_config")]
-    pub auth_config: Box<crate::core_api::generated::models::AuthConfig>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintAuthTemplateEntryValue>,
 }
 
 impl PackageBlueprintAuthTemplateEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintAuthTemplateEntryValue) -> PackageBlueprintAuthTemplateEntrySubstateAllOf {
         PackageBlueprintAuthTemplateEntrySubstateAllOf {
             key: Box::new(key),
-            auth_config: Box::new(auth_config),
+            value: Box::new(value),
         }
     }
 }

@@ -63,6 +63,7 @@ import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySu
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntryValue;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
@@ -87,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageCodeOriginalCodeEntrySubstate.JSON_PROPERTY_KEY,
-  PackageCodeOriginalCodeEntrySubstate.JSON_PROPERTY_CODE_HEX
+  PackageCodeOriginalCodeEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -149,8 +150,8 @@ public class PackageCodeOriginalCodeEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageCodeOriginalCodeEntryValue value;
 
   public PackageCodeOriginalCodeEntrySubstate() { 
   }
@@ -181,29 +182,29 @@ public class PackageCodeOriginalCodeEntrySubstate extends Substate {
   }
 
 
-  public PackageCodeOriginalCodeEntrySubstate codeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public PackageCodeOriginalCodeEntrySubstate value(PackageCodeOriginalCodeEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. 
-   * @return codeHex
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Either the hex-encoded WASM package code (if Scrypto), or the native package identifier. ")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHex() {
-    return codeHex;
+  public PackageCodeOriginalCodeEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public void setValue(PackageCodeOriginalCodeEntryValue value) {
+    this.value = value;
   }
 
 
@@ -220,13 +221,13 @@ public class PackageCodeOriginalCodeEntrySubstate extends Substate {
     }
     PackageCodeOriginalCodeEntrySubstate packageCodeOriginalCodeEntrySubstate = (PackageCodeOriginalCodeEntrySubstate) o;
     return Objects.equals(this.key, packageCodeOriginalCodeEntrySubstate.key) &&
-        Objects.equals(this.codeHex, packageCodeOriginalCodeEntrySubstate.codeHex) &&
+        Objects.equals(this.value, packageCodeOriginalCodeEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, codeHex, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -235,7 +236,7 @@ public class PackageCodeOriginalCodeEntrySubstate extends Substate {
     sb.append("class PackageCodeOriginalCodeEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

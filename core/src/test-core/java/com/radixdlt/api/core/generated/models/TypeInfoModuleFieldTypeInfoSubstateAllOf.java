@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TypeInfoDetails;
+import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TypeInfoModuleFieldTypeInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  TypeInfoModuleFieldTypeInfoSubstateAllOf.JSON_PROPERTY_DETAILS
+  TypeInfoModuleFieldTypeInfoSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TypeInfoModuleFieldTypeInfoSubstateAllOf {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private TypeInfoDetails details;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TypeInfoModuleFieldTypeInfoValue value;
 
   public TypeInfoModuleFieldTypeInfoSubstateAllOf() { 
   }
 
-  public TypeInfoModuleFieldTypeInfoSubstateAllOf details(TypeInfoDetails details) {
-    this.details = details;
+  public TypeInfoModuleFieldTypeInfoSubstateAllOf value(TypeInfoModuleFieldTypeInfoValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypeInfoDetails getDetails() {
-    return details;
+  public TypeInfoModuleFieldTypeInfoValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(TypeInfoDetails details) {
-    this.details = details;
+  public void setValue(TypeInfoModuleFieldTypeInfoValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class TypeInfoModuleFieldTypeInfoSubstateAllOf {
       return false;
     }
     TypeInfoModuleFieldTypeInfoSubstateAllOf typeInfoModuleFieldTypeInfoSubstateAllOf = (TypeInfoModuleFieldTypeInfoSubstateAllOf) o;
-    return Objects.equals(this.details, typeInfoModuleFieldTypeInfoSubstateAllOf.details);
+    return Objects.equals(this.value, typeInfoModuleFieldTypeInfoSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TypeInfoModuleFieldTypeInfoSubstateAllOf {\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

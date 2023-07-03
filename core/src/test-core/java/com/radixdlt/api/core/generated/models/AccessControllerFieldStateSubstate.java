@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccessControllerFieldStateValue;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
@@ -40,7 +41,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccessControllerFieldStateSubstate
  */
 @JsonPropertyOrder({
-  AccessControllerFieldStateSubstate.JSON_PROPERTY_DATA_STRUCT
+  AccessControllerFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class AccessControllerFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccessControllerFieldStateValue value;
 
   public AccessControllerFieldStateSubstate() { 
   }
 
-  public AccessControllerFieldStateSubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public AccessControllerFieldStateSubstate value(AccessControllerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public AccessControllerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setValue(AccessControllerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class AccessControllerFieldStateSubstate extends Substate {
       return false;
     }
     AccessControllerFieldStateSubstate accessControllerFieldStateSubstate = (AccessControllerFieldStateSubstate) o;
-    return Objects.equals(this.dataStruct, accessControllerFieldStateSubstate.dataStruct) &&
+    return Objects.equals(this.value, accessControllerFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class AccessControllerFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessControllerFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

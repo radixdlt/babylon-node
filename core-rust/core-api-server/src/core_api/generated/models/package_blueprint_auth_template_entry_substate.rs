@@ -19,17 +19,17 @@ pub struct PackageBlueprintAuthTemplateEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "auth_config")]
-    pub auth_config: Box<crate::core_api::generated::models::AuthConfig>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintAuthTemplateEntryValue>,
 }
 
 impl PackageBlueprintAuthTemplateEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, auth_config: crate::core_api::generated::models::AuthConfig) -> PackageBlueprintAuthTemplateEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintAuthTemplateEntryValue) -> PackageBlueprintAuthTemplateEntrySubstate {
         PackageBlueprintAuthTemplateEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            auth_config: Box::new(auth_config),
+            value: Box::new(value),
         }
     }
 }

@@ -22,11 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ActiveValidator;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,44 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldCurrentValidatorSetSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentValidatorSetSubstateAllOf.JSON_PROPERTY_VALIDATOR_SET
+  ConsensusManagerFieldCurrentValidatorSetSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<ActiveValidator> validatorSet = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldCurrentValidatorSetValue value;
 
   public ConsensusManagerFieldCurrentValidatorSetSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldCurrentValidatorSetSubstateAllOf validatorSet(List<ActiveValidator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public ConsensusManagerFieldCurrentValidatorSetSubstateAllOf addValidatorSetItem(ActiveValidator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
+  public ConsensusManagerFieldCurrentValidatorSetSubstateAllOf value(ConsensusManagerFieldCurrentValidatorSetValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get validatorSet
-   * @return validatorSet
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ActiveValidator> getValidatorSet() {
-    return validatorSet;
+  public ConsensusManagerFieldCurrentValidatorSetValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<ActiveValidator> validatorSet) {
-    this.validatorSet = validatorSet;
+  public void setValue(ConsensusManagerFieldCurrentValidatorSetValue value) {
+    this.value = value;
   }
 
 
@@ -87,19 +80,19 @@ public class ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldCurrentValidatorSetSubstateAllOf consensusManagerFieldCurrentValidatorSetSubstateAllOf = (ConsensusManagerFieldCurrentValidatorSetSubstateAllOf) o;
-    return Objects.equals(this.validatorSet, consensusManagerFieldCurrentValidatorSetSubstateAllOf.validatorSet);
+    return Objects.equals(this.value, consensusManagerFieldCurrentValidatorSetSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(validatorSet);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FungibleVaultFieldBalanceSubstateAllOf
  */
 @JsonPropertyOrder({
-  FungibleVaultFieldBalanceSubstateAllOf.JSON_PROPERTY_AMOUNT
+  FungibleVaultFieldBalanceSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FungibleVaultFieldBalanceSubstateAllOf {
-  public static final String JSON_PROPERTY_AMOUNT = "amount";
-  private String amount;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleVaultFieldBalanceValue value;
 
   public FungibleVaultFieldBalanceSubstateAllOf() { 
   }
 
-  public FungibleVaultFieldBalanceSubstateAllOf amount(String amount) {
-    this.amount = amount;
+  public FungibleVaultFieldBalanceSubstateAllOf value(FungibleVaultFieldBalanceValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return amount
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAmount() {
-    return amount;
+  public FungibleVaultFieldBalanceValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAmount(String amount) {
-    this.amount = amount;
+  public void setValue(FungibleVaultFieldBalanceValue value) {
+    this.value = value;
   }
 
 
@@ -79,19 +80,19 @@ public class FungibleVaultFieldBalanceSubstateAllOf {
       return false;
     }
     FungibleVaultFieldBalanceSubstateAllOf fungibleVaultFieldBalanceSubstateAllOf = (FungibleVaultFieldBalanceSubstateAllOf) o;
-    return Objects.equals(this.amount, fungibleVaultFieldBalanceSubstateAllOf.amount);
+    return Objects.equals(this.value, fungibleVaultFieldBalanceSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(amount);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleVaultFieldBalanceSubstateAllOf {\n");
-    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

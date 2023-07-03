@@ -13,17 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct RoyaltyModuleFieldStateSubstateAllOf {
-    #[serde(rename = "is_enabled")]
-    pub is_enabled: bool,
-    #[serde(rename = "vault_entity")]
-    pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::RoyaltyModuleFieldStateValue>,
 }
 
 impl RoyaltyModuleFieldStateSubstateAllOf {
-    pub fn new(is_enabled: bool, vault_entity: crate::core_api::generated::models::EntityReference) -> RoyaltyModuleFieldStateSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::RoyaltyModuleFieldStateValue) -> RoyaltyModuleFieldStateSubstateAllOf {
         RoyaltyModuleFieldStateSubstateAllOf {
-            is_enabled,
-            vault_entity: Box::new(vault_entity),
+            value: Box::new(value),
         }
     }
 }

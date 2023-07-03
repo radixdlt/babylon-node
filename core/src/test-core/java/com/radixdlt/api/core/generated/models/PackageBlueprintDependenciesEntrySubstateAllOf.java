@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintDependencies;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_DEPENDENCIES
+  PackageBlueprintDependenciesEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintDependenciesEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_DEPENDENCIES = "dependencies";
-  private BlueprintDependencies dependencies;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintDependenciesEntryValue value;
 
   public PackageBlueprintDependenciesEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
   }
 
 
-  public PackageBlueprintDependenciesEntrySubstateAllOf dependencies(BlueprintDependencies dependencies) {
-    this.dependencies = dependencies;
+  public PackageBlueprintDependenciesEntrySubstateAllOf value(PackageBlueprintDependenciesEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dependencies
-   * @return dependencies
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintDependencies getDependencies() {
-    return dependencies;
+  public PackageBlueprintDependenciesEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEPENDENCIES)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDependencies(BlueprintDependencies dependencies) {
-    this.dependencies = dependencies;
+  public void setValue(PackageBlueprintDependenciesEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
     }
     PackageBlueprintDependenciesEntrySubstateAllOf packageBlueprintDependenciesEntrySubstateAllOf = (PackageBlueprintDependenciesEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageBlueprintDependenciesEntrySubstateAllOf.key) &&
-        Objects.equals(this.dependencies, packageBlueprintDependenciesEntrySubstateAllOf.dependencies);
+        Objects.equals(this.value, packageBlueprintDependenciesEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, dependencies);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageBlueprintDependenciesEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintDependenciesEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    dependencies: ").append(toIndentedString(dependencies)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

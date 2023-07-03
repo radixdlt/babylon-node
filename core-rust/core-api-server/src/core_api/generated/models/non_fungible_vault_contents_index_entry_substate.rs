@@ -19,14 +19,17 @@ pub struct NonFungibleVaultContentsIndexEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue>,
 }
 
 impl NonFungibleVaultContentsIndexEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::LocalNonFungibleKey) -> NonFungibleVaultContentsIndexEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::LocalNonFungibleKey, value: crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue) -> NonFungibleVaultContentsIndexEntrySubstate {
         NonFungibleVaultContentsIndexEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

@@ -41,7 +41,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewa
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
-import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstateAllOf;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
@@ -52,6 +51,8 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntr
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplyValue;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
@@ -85,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleResourceManagerFieldTotalSupplySubstate
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldTotalSupplySubstate.JSON_PROPERTY_TOTAL_SUPPLY
+  NonFungibleResourceManagerFieldTotalSupplySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -144,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate {
-  public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
-  private String totalSupply;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerFieldTotalSupplyValue value;
 
   public NonFungibleResourceManagerFieldTotalSupplySubstate() { 
   }
 
-  public NonFungibleResourceManagerFieldTotalSupplySubstate totalSupply(String totalSupply) {
-    this.totalSupply = totalSupply;
+  public NonFungibleResourceManagerFieldTotalSupplySubstate value(NonFungibleResourceManagerFieldTotalSupplyValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return totalSupply
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getTotalSupply() {
-    return totalSupply;
+  public NonFungibleResourceManagerFieldTotalSupplyValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTotalSupply(String totalSupply) {
-    this.totalSupply = totalSupply;
+  public void setValue(NonFungibleResourceManagerFieldTotalSupplyValue value) {
+    this.value = value;
   }
 
 
@@ -188,13 +189,13 @@ public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate
       return false;
     }
     NonFungibleResourceManagerFieldTotalSupplySubstate nonFungibleResourceManagerFieldTotalSupplySubstate = (NonFungibleResourceManagerFieldTotalSupplySubstate) o;
-    return Objects.equals(this.totalSupply, nonFungibleResourceManagerFieldTotalSupplySubstate.totalSupply) &&
+    return Objects.equals(this.value, nonFungibleResourceManagerFieldTotalSupplySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalSupply, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -202,7 +203,7 @@ public class NonFungibleResourceManagerFieldTotalSupplySubstate extends Substate
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerFieldTotalSupplySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

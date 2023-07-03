@@ -32,6 +32,7 @@ import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubsta
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccountVaultIndexEntryValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -40,7 +41,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   AccountVaultIndexEntrySubstate.JSON_PROPERTY_KEY,
-  AccountVaultIndexEntrySubstate.JSON_PROPERTY_VAULT
+  AccountVaultIndexEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class AccountVaultIndexEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private ResourceKey key;
 
-  public static final String JSON_PROPERTY_VAULT = "vault";
-  private EntityReference vault;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountVaultIndexEntryValue value;
 
   public AccountVaultIndexEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class AccountVaultIndexEntrySubstate extends Substate {
   }
 
 
-  public AccountVaultIndexEntrySubstate vault(EntityReference vault) {
-    this.vault = vault;
+  public AccountVaultIndexEntrySubstate value(AccountVaultIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vault
-   * @return vault
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVault() {
-    return vault;
+  public AccountVaultIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVault(EntityReference vault) {
-    this.vault = vault;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(AccountVaultIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class AccountVaultIndexEntrySubstate extends Substate {
     }
     AccountVaultIndexEntrySubstate accountVaultIndexEntrySubstate = (AccountVaultIndexEntrySubstate) o;
     return Objects.equals(this.key, accountVaultIndexEntrySubstate.key) &&
-        Objects.equals(this.vault, accountVaultIndexEntrySubstate.vault) &&
+        Objects.equals(this.value, accountVaultIndexEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vault, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class AccountVaultIndexEntrySubstate extends Substate {
     sb.append("class AccountVaultIndexEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vault: ").append(toIndentedString(vault)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

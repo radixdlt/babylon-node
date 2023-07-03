@@ -71,6 +71,7 @@ import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateValue;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
@@ -85,11 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * TransactionTrackerFieldStateSubstate
  */
 @JsonPropertyOrder({
-  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_START_EPOCH,
-  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_START_PARTITION,
-  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_PARTITION_RANGE_START_INCLUSIVE,
-  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_PARTITION_RANGE_END_INCLUSIVE,
-  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_EPOCHS_PER_PARTITION
+  TransactionTrackerFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -148,161 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class TransactionTrackerFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_START_EPOCH = "start_epoch";
-  private Long startEpoch;
-
-  public static final String JSON_PROPERTY_START_PARTITION = "start_partition";
-  private Integer startPartition;
-
-  public static final String JSON_PROPERTY_PARTITION_RANGE_START_INCLUSIVE = "partition_range_start_inclusive";
-  private Integer partitionRangeStartInclusive;
-
-  public static final String JSON_PROPERTY_PARTITION_RANGE_END_INCLUSIVE = "partition_range_end_inclusive";
-  private Integer partitionRangeEndInclusive;
-
-  public static final String JSON_PROPERTY_EPOCHS_PER_PARTITION = "epochs_per_partition";
-  private Long epochsPerPartition;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TransactionTrackerFieldStateValue value;
 
   public TransactionTrackerFieldStateSubstate() { 
   }
 
-  public TransactionTrackerFieldStateSubstate startEpoch(Long startEpoch) {
-    this.startEpoch = startEpoch;
+  public TransactionTrackerFieldStateSubstate value(TransactionTrackerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get startEpoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return startEpoch
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_START_EPOCH)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getStartEpoch() {
-    return startEpoch;
+  public TransactionTrackerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_START_EPOCH)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStartEpoch(Long startEpoch) {
-    this.startEpoch = startEpoch;
-  }
-
-
-  public TransactionTrackerFieldStateSubstate startPartition(Integer startPartition) {
-    this.startPartition = startPartition;
-    return this;
-  }
-
-   /**
-   * Get startPartition
-   * minimum: 0
-   * maximum: 255
-   * @return startPartition
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_START_PARTITION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getStartPartition() {
-    return startPartition;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_START_PARTITION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStartPartition(Integer startPartition) {
-    this.startPartition = startPartition;
-  }
-
-
-  public TransactionTrackerFieldStateSubstate partitionRangeStartInclusive(Integer partitionRangeStartInclusive) {
-    this.partitionRangeStartInclusive = partitionRangeStartInclusive;
-    return this;
-  }
-
-   /**
-   * Get partitionRangeStartInclusive
-   * minimum: 0
-   * maximum: 255
-   * @return partitionRangeStartInclusive
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PARTITION_RANGE_START_INCLUSIVE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getPartitionRangeStartInclusive() {
-    return partitionRangeStartInclusive;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PARTITION_RANGE_START_INCLUSIVE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPartitionRangeStartInclusive(Integer partitionRangeStartInclusive) {
-    this.partitionRangeStartInclusive = partitionRangeStartInclusive;
-  }
-
-
-  public TransactionTrackerFieldStateSubstate partitionRangeEndInclusive(Integer partitionRangeEndInclusive) {
-    this.partitionRangeEndInclusive = partitionRangeEndInclusive;
-    return this;
-  }
-
-   /**
-   * Get partitionRangeEndInclusive
-   * minimum: 0
-   * maximum: 255
-   * @return partitionRangeEndInclusive
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PARTITION_RANGE_END_INCLUSIVE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getPartitionRangeEndInclusive() {
-    return partitionRangeEndInclusive;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PARTITION_RANGE_END_INCLUSIVE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPartitionRangeEndInclusive(Integer partitionRangeEndInclusive) {
-    this.partitionRangeEndInclusive = partitionRangeEndInclusive;
-  }
-
-
-  public TransactionTrackerFieldStateSubstate epochsPerPartition(Long epochsPerPartition) {
-    this.epochsPerPartition = epochsPerPartition;
-    return this;
-  }
-
-   /**
-   * Get epochsPerPartition
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epochsPerPartition
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCHS_PER_PARTITION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getEpochsPerPartition() {
-    return epochsPerPartition;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EPOCHS_PER_PARTITION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochsPerPartition(Long epochsPerPartition) {
-    this.epochsPerPartition = epochsPerPartition;
+  public void setValue(TransactionTrackerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -318,17 +189,13 @@ public class TransactionTrackerFieldStateSubstate extends Substate {
       return false;
     }
     TransactionTrackerFieldStateSubstate transactionTrackerFieldStateSubstate = (TransactionTrackerFieldStateSubstate) o;
-    return Objects.equals(this.startEpoch, transactionTrackerFieldStateSubstate.startEpoch) &&
-        Objects.equals(this.startPartition, transactionTrackerFieldStateSubstate.startPartition) &&
-        Objects.equals(this.partitionRangeStartInclusive, transactionTrackerFieldStateSubstate.partitionRangeStartInclusive) &&
-        Objects.equals(this.partitionRangeEndInclusive, transactionTrackerFieldStateSubstate.partitionRangeEndInclusive) &&
-        Objects.equals(this.epochsPerPartition, transactionTrackerFieldStateSubstate.epochsPerPartition) &&
+    return Objects.equals(this.value, transactionTrackerFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(startEpoch, startPartition, partitionRangeStartInclusive, partitionRangeEndInclusive, epochsPerPartition, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -336,11 +203,7 @@ public class TransactionTrackerFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionTrackerFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    startEpoch: ").append(toIndentedString(startEpoch)).append("\n");
-    sb.append("    startPartition: ").append(toIndentedString(startPartition)).append("\n");
-    sb.append("    partitionRangeStartInclusive: ").append(toIndentedString(partitionRangeStartInclusive)).append("\n");
-    sb.append("    partitionRangeEndInclusive: ").append(toIndentedString(partitionRangeEndInclusive)).append("\n");
-    sb.append("    epochsPerPartition: ").append(toIndentedString(epochsPerPartition)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

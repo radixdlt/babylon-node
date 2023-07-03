@@ -34,6 +34,7 @@ import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
@@ -77,8 +78,6 @@ import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadin
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -87,8 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ConsensusManagerFieldCurrentProposalStatisticSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentProposalStatisticSubstate.JSON_PROPERTY_COMPLETED,
-  ConsensusManagerFieldCurrentProposalStatisticSubstate.JSON_PROPERTY_MISSED
+  ConsensusManagerFieldCurrentProposalStatisticSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -147,74 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ConsensusManagerFieldCurrentProposalStatisticSubstate extends Substate {
-  public static final String JSON_PROPERTY_COMPLETED = "completed";
-  private List<Long> completed = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_MISSED = "missed";
-  private List<Long> missed = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldCurrentProposalStatisticValue value;
 
   public ConsensusManagerFieldCurrentProposalStatisticSubstate() { 
   }
 
-  public ConsensusManagerFieldCurrentProposalStatisticSubstate completed(List<Long> completed) {
-    this.completed = completed;
-    return this;
-  }
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstate addCompletedItem(Long completedItem) {
-    this.completed.add(completedItem);
+  public ConsensusManagerFieldCurrentProposalStatisticSubstate value(ConsensusManagerFieldCurrentProposalStatisticValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
-   * @return completed
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.")
-  @JsonProperty(JSON_PROPERTY_COMPLETED)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Long> getCompleted() {
-    return completed;
+  public ConsensusManagerFieldCurrentProposalStatisticValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COMPLETED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCompleted(List<Long> completed) {
-    this.completed = completed;
-  }
-
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstate missed(List<Long> missed) {
-    this.missed = missed;
-    return this;
-  }
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstate addMissedItem(Long missedItem) {
-    this.missed.add(missedItem);
-    return this;
-  }
-
-   /**
-   * The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
-   * @return missed
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.")
-  @JsonProperty(JSON_PROPERTY_MISSED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<Long> getMissed() {
-    return missed;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MISSED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMissed(List<Long> missed) {
-    this.missed = missed;
+  public void setValue(ConsensusManagerFieldCurrentProposalStatisticValue value) {
+    this.value = value;
   }
 
 
@@ -230,14 +189,13 @@ public class ConsensusManagerFieldCurrentProposalStatisticSubstate extends Subst
       return false;
     }
     ConsensusManagerFieldCurrentProposalStatisticSubstate consensusManagerFieldCurrentProposalStatisticSubstate = (ConsensusManagerFieldCurrentProposalStatisticSubstate) o;
-    return Objects.equals(this.completed, consensusManagerFieldCurrentProposalStatisticSubstate.completed) &&
-        Objects.equals(this.missed, consensusManagerFieldCurrentProposalStatisticSubstate.missed) &&
+    return Objects.equals(this.value, consensusManagerFieldCurrentProposalStatisticSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(completed, missed, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -245,8 +203,7 @@ public class ConsensusManagerFieldCurrentProposalStatisticSubstate extends Subst
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldCurrentProposalStatisticSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
-    sb.append("    missed: ").append(toIndentedString(missed)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

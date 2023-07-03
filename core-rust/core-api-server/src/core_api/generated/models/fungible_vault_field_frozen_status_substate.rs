@@ -17,16 +17,16 @@ pub struct FungibleVaultFieldFrozenStatusSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
-    #[serde(rename = "frozen_status")]
-    pub frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleVaultFieldFrozenStatusValue>,
 }
 
 impl FungibleVaultFieldFrozenStatusSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, frozen_status: crate::core_api::generated::models::FrozenStatus) -> FungibleVaultFieldFrozenStatusSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::FungibleVaultFieldFrozenStatusValue) -> FungibleVaultFieldFrozenStatusSubstate {
         FungibleVaultFieldFrozenStatusSubstate {
             substate_type,
             is_locked,
-            frozen_status: Box::new(frozen_status),
+            value: Box::new(value),
         }
     }
 }

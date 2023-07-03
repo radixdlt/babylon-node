@@ -39,12 +39,12 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.FrozenStatus;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstateAllOf;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusValue;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * FungibleVaultFieldFrozenStatusSubstate
  */
 @JsonPropertyOrder({
-  FungibleVaultFieldFrozenStatusSubstate.JSON_PROPERTY_FROZEN_STATUS
+  FungibleVaultFieldFrozenStatusSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class FungibleVaultFieldFrozenStatusSubstate extends Substate {
-  public static final String JSON_PROPERTY_FROZEN_STATUS = "frozen_status";
-  private FrozenStatus frozenStatus;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleVaultFieldFrozenStatusValue value;
 
   public FungibleVaultFieldFrozenStatusSubstate() { 
   }
 
-  public FungibleVaultFieldFrozenStatusSubstate frozenStatus(FrozenStatus frozenStatus) {
-    this.frozenStatus = frozenStatus;
+  public FungibleVaultFieldFrozenStatusSubstate value(FungibleVaultFieldFrozenStatusValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get frozenStatus
-   * @return frozenStatus
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROZEN_STATUS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FrozenStatus getFrozenStatus() {
-    return frozenStatus;
+  public FungibleVaultFieldFrozenStatusValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROZEN_STATUS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFrozenStatus(FrozenStatus frozenStatus) {
-    this.frozenStatus = frozenStatus;
+  public void setValue(FungibleVaultFieldFrozenStatusValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class FungibleVaultFieldFrozenStatusSubstate extends Substate {
       return false;
     }
     FungibleVaultFieldFrozenStatusSubstate fungibleVaultFieldFrozenStatusSubstate = (FungibleVaultFieldFrozenStatusSubstate) o;
-    return Objects.equals(this.frozenStatus, fungibleVaultFieldFrozenStatusSubstate.frozenStatus) &&
+    return Objects.equals(this.value, fungibleVaultFieldFrozenStatusSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(frozenStatus, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class FungibleVaultFieldFrozenStatusSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleVaultFieldFrozenStatusSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    frozenStatus: ").append(toIndentedString(frozenStatus)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

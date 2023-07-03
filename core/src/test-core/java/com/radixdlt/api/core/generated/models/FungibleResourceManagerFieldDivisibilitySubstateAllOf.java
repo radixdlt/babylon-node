@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilityValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,41 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FungibleResourceManagerFieldDivisibilitySubstateAllOf
  */
 @JsonPropertyOrder({
-  FungibleResourceManagerFieldDivisibilitySubstateAllOf.JSON_PROPERTY_DIVISIBILITY
+  FungibleResourceManagerFieldDivisibilitySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FungibleResourceManagerFieldDivisibilitySubstateAllOf {
-  public static final String JSON_PROPERTY_DIVISIBILITY = "divisibility";
-  private Integer divisibility;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleResourceManagerFieldDivisibilityValue value;
 
   public FungibleResourceManagerFieldDivisibilitySubstateAllOf() { 
   }
 
-  public FungibleResourceManagerFieldDivisibilitySubstateAllOf divisibility(Integer divisibility) {
-    this.divisibility = divisibility;
+  public FungibleResourceManagerFieldDivisibilitySubstateAllOf value(FungibleResourceManagerFieldDivisibilityValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get divisibility
-   * minimum: 0
-   * maximum: 18
-   * @return divisibility
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getDivisibility() {
-    return divisibility;
+  public FungibleResourceManagerFieldDivisibilityValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDivisibility(Integer divisibility) {
-    this.divisibility = divisibility;
+  public void setValue(FungibleResourceManagerFieldDivisibilityValue value) {
+    this.value = value;
   }
 
 
@@ -81,19 +80,19 @@ public class FungibleResourceManagerFieldDivisibilitySubstateAllOf {
       return false;
     }
     FungibleResourceManagerFieldDivisibilitySubstateAllOf fungibleResourceManagerFieldDivisibilitySubstateAllOf = (FungibleResourceManagerFieldDivisibilitySubstateAllOf) o;
-    return Objects.equals(this.divisibility, fungibleResourceManagerFieldDivisibilitySubstateAllOf.divisibility);
+    return Objects.equals(this.value, fungibleResourceManagerFieldDivisibilitySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(divisibility);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleResourceManagerFieldDivisibilitySubstateAllOf {\n");
-    sb.append("    divisibility: ").append(toIndentedString(divisibility)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

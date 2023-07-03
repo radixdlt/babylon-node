@@ -16,8 +16,8 @@
 pub struct NonFungibleResourceManagerDataEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::NonFungibleResourceManagerDataEntryValue>>,
 }
 
 impl NonFungibleResourceManagerDataEntrySubstateAllOf {
@@ -25,7 +25,7 @@ impl NonFungibleResourceManagerDataEntrySubstateAllOf {
     pub fn new(key: crate::core_api::generated::models::LocalNonFungibleKey) -> NonFungibleResourceManagerDataEntrySubstateAllOf {
         NonFungibleResourceManagerDataEntrySubstateAllOf {
             key: Box::new(key),
-            data_struct: None,
+            value: None,
         }
     }
 }

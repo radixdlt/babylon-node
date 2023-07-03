@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FungibleVaultFieldFrozenStatusSubstateAllOf {
-    #[serde(rename = "frozen_status")]
-    pub frozen_status: Box<crate::core_api::generated::models::FrozenStatus>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleVaultFieldFrozenStatusValue>,
 }
 
 impl FungibleVaultFieldFrozenStatusSubstateAllOf {
-    pub fn new(frozen_status: crate::core_api::generated::models::FrozenStatus) -> FungibleVaultFieldFrozenStatusSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::FungibleVaultFieldFrozenStatusValue) -> FungibleVaultFieldFrozenStatusSubstateAllOf {
         FungibleVaultFieldFrozenStatusSubstateAllOf {
-            frozen_status: Box::new(frozen_status),
+            value: Box::new(value),
         }
     }
 }

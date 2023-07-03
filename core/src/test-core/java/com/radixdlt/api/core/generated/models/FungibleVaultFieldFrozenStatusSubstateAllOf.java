@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FrozenStatus;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FungibleVaultFieldFrozenStatusSubstateAllOf
  */
 @JsonPropertyOrder({
-  FungibleVaultFieldFrozenStatusSubstateAllOf.JSON_PROPERTY_FROZEN_STATUS
+  FungibleVaultFieldFrozenStatusSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FungibleVaultFieldFrozenStatusSubstateAllOf {
-  public static final String JSON_PROPERTY_FROZEN_STATUS = "frozen_status";
-  private FrozenStatus frozenStatus;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleVaultFieldFrozenStatusValue value;
 
   public FungibleVaultFieldFrozenStatusSubstateAllOf() { 
   }
 
-  public FungibleVaultFieldFrozenStatusSubstateAllOf frozenStatus(FrozenStatus frozenStatus) {
-    this.frozenStatus = frozenStatus;
+  public FungibleVaultFieldFrozenStatusSubstateAllOf value(FungibleVaultFieldFrozenStatusValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get frozenStatus
-   * @return frozenStatus
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROZEN_STATUS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FrozenStatus getFrozenStatus() {
-    return frozenStatus;
+  public FungibleVaultFieldFrozenStatusValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROZEN_STATUS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFrozenStatus(FrozenStatus frozenStatus) {
-    this.frozenStatus = frozenStatus;
+  public void setValue(FungibleVaultFieldFrozenStatusValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class FungibleVaultFieldFrozenStatusSubstateAllOf {
       return false;
     }
     FungibleVaultFieldFrozenStatusSubstateAllOf fungibleVaultFieldFrozenStatusSubstateAllOf = (FungibleVaultFieldFrozenStatusSubstateAllOf) o;
-    return Objects.equals(this.frozenStatus, fungibleVaultFieldFrozenStatusSubstateAllOf.frozenStatus);
+    return Objects.equals(this.value, fungibleVaultFieldFrozenStatusSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(frozenStatus);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleVaultFieldFrozenStatusSubstateAllOf {\n");
-    sb.append("    frozenStatus: ").append(toIndentedString(frozenStatus)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

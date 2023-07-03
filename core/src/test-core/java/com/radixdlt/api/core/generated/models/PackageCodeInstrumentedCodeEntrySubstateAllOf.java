@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntryValue;
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -33,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageCodeInstrumentedCodeEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageCodeInstrumentedCodeEntrySubstateAllOf.JSON_PROPERTY_CODE_HEX
+  PackageCodeInstrumentedCodeEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageCodeInstrumentedCodeEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageCodeInstrumentedCodeEntryValue value;
 
   public PackageCodeInstrumentedCodeEntrySubstateAllOf() { 
   }
@@ -72,29 +73,29 @@ public class PackageCodeInstrumentedCodeEntrySubstateAllOf {
   }
 
 
-  public PackageCodeInstrumentedCodeEntrySubstateAllOf codeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public PackageCodeInstrumentedCodeEntrySubstateAllOf value(PackageCodeInstrumentedCodeEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The hex-encoded instrumented WASM package code. 
-   * @return codeHex
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded instrumented WASM package code. ")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHex() {
-    return codeHex;
+  public PackageCodeInstrumentedCodeEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public void setValue(PackageCodeInstrumentedCodeEntryValue value) {
+    this.value = value;
   }
 
 
@@ -111,12 +112,12 @@ public class PackageCodeInstrumentedCodeEntrySubstateAllOf {
     }
     PackageCodeInstrumentedCodeEntrySubstateAllOf packageCodeInstrumentedCodeEntrySubstateAllOf = (PackageCodeInstrumentedCodeEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageCodeInstrumentedCodeEntrySubstateAllOf.key) &&
-        Objects.equals(this.codeHex, packageCodeInstrumentedCodeEntrySubstateAllOf.codeHex);
+        Objects.equals(this.value, packageCodeInstrumentedCodeEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, codeHex);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -124,7 +125,7 @@ public class PackageCodeInstrumentedCodeEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageCodeInstrumentedCodeEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -19,8 +19,8 @@ pub struct AccessRulesModuleRuleEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::ObjectRoleKey>,
-    #[serde(rename = "access_rule", skip_serializing_if = "Option::is_none")]
-    pub access_rule: Option<Box<crate::core_api::generated::models::AccessRule>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::AccessRulesModuleRuleEntryValue>>,
 }
 
 impl AccessRulesModuleRuleEntrySubstate {
@@ -29,7 +29,7 @@ impl AccessRulesModuleRuleEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            access_rule: None,
+            value: None,
         }
     }
 }

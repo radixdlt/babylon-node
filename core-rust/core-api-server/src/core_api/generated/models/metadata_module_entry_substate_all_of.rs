@@ -15,15 +15,15 @@
 pub struct MetadataModuleEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::MetadataKey>,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::MetadataModuleEntryValue>>,
 }
 
 impl MetadataModuleEntrySubstateAllOf {
     pub fn new(key: crate::core_api::generated::models::MetadataKey) -> MetadataModuleEntrySubstateAllOf {
         MetadataModuleEntrySubstateAllOf {
             key: Box::new(key),
-            data_struct: None,
+            value: None,
         }
     }
 }

@@ -19,18 +19,17 @@ pub struct PackageCodeInstrumentedCodeEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::PackageCodeKey>,
-    /// The hex-encoded instrumented WASM package code. 
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageCodeInstrumentedCodeEntryValue>,
 }
 
 impl PackageCodeInstrumentedCodeEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::PackageCodeKey, code_hex: String) -> PackageCodeInstrumentedCodeEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::PackageCodeKey, value: crate::core_api::generated::models::PackageCodeInstrumentedCodeEntryValue) -> PackageCodeInstrumentedCodeEntrySubstate {
         PackageCodeInstrumentedCodeEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            code_hex,
+            value: Box::new(value),
         }
     }
 }

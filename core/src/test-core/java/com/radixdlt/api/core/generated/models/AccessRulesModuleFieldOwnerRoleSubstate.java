@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleValue;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
@@ -56,7 +57,6 @@ import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntry
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.OwnerRole;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * AccessRulesModuleFieldOwnerRoleSubstate
  */
 @JsonPropertyOrder({
-  AccessRulesModuleFieldOwnerRoleSubstate.JSON_PROPERTY_OWNER_ROLE
+  AccessRulesModuleFieldOwnerRoleSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class AccessRulesModuleFieldOwnerRoleSubstate extends Substate {
-  public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
-  private OwnerRole ownerRole;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccessRulesModuleFieldOwnerRoleValue value;
 
   public AccessRulesModuleFieldOwnerRoleSubstate() { 
   }
 
-  public AccessRulesModuleFieldOwnerRoleSubstate ownerRole(OwnerRole ownerRole) {
-    this.ownerRole = ownerRole;
+  public AccessRulesModuleFieldOwnerRoleSubstate value(AccessRulesModuleFieldOwnerRoleValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get ownerRole
-   * @return ownerRole
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public OwnerRole getOwnerRole() {
-    return ownerRole;
+  public AccessRulesModuleFieldOwnerRoleValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OWNER_ROLE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOwnerRole(OwnerRole ownerRole) {
-    this.ownerRole = ownerRole;
+  public void setValue(AccessRulesModuleFieldOwnerRoleValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class AccessRulesModuleFieldOwnerRoleSubstate extends Substate {
       return false;
     }
     AccessRulesModuleFieldOwnerRoleSubstate accessRulesModuleFieldOwnerRoleSubstate = (AccessRulesModuleFieldOwnerRoleSubstate) o;
-    return Objects.equals(this.ownerRole, accessRulesModuleFieldOwnerRoleSubstate.ownerRole) &&
+    return Objects.equals(this.value, accessRulesModuleFieldOwnerRoleSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ownerRole, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class AccessRulesModuleFieldOwnerRoleSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessRulesModuleFieldOwnerRoleSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

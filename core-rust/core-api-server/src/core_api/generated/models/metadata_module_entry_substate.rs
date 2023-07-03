@@ -19,8 +19,8 @@ pub struct MetadataModuleEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::MetadataKey>,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::MetadataModuleEntryValue>>,
 }
 
 impl MetadataModuleEntrySubstate {
@@ -29,7 +29,7 @@ impl MetadataModuleEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            data_struct: None,
+            value: None,
         }
     }
 }

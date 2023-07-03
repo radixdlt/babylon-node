@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,69 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * RoyaltyModuleFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  RoyaltyModuleFieldStateSubstateAllOf.JSON_PROPERTY_IS_ENABLED,
-  RoyaltyModuleFieldStateSubstateAllOf.JSON_PROPERTY_VAULT_ENTITY
+  RoyaltyModuleFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class RoyaltyModuleFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_IS_ENABLED = "is_enabled";
-  private Boolean isEnabled;
-
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private RoyaltyModuleFieldStateValue value;
 
   public RoyaltyModuleFieldStateSubstateAllOf() { 
   }
 
-  public RoyaltyModuleFieldStateSubstateAllOf isEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
+  public RoyaltyModuleFieldStateSubstateAllOf value(RoyaltyModuleFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get isEnabled
-   * @return isEnabled
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsEnabled() {
-    return isEnabled;
+  public RoyaltyModuleFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsEnabled(Boolean isEnabled) {
-    this.isEnabled = isEnabled;
-  }
-
-
-  public RoyaltyModuleFieldStateSubstateAllOf vaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
-    return this;
-  }
-
-   /**
-   * Get vaultEntity
-   * @return vaultEntity
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityReference getVaultEntity() {
-    return vaultEntity;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public void setValue(RoyaltyModuleFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -110,21 +80,19 @@ public class RoyaltyModuleFieldStateSubstateAllOf {
       return false;
     }
     RoyaltyModuleFieldStateSubstateAllOf royaltyModuleFieldStateSubstateAllOf = (RoyaltyModuleFieldStateSubstateAllOf) o;
-    return Objects.equals(this.isEnabled, royaltyModuleFieldStateSubstateAllOf.isEnabled) &&
-        Objects.equals(this.vaultEntity, royaltyModuleFieldStateSubstateAllOf.vaultEntity);
+    return Objects.equals(this.value, royaltyModuleFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(isEnabled, vaultEntity);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class RoyaltyModuleFieldStateSubstateAllOf {\n");
-    sb.append("    isEnabled: ").append(toIndentedString(isEnabled)).append("\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

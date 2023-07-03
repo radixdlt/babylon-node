@@ -48,6 +48,7 @@ import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateS
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateValue;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
@@ -65,7 +66,6 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.PoolVault;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -78,8 +78,6 @@ import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadin
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -88,8 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * MultiResourcePoolFieldStateSubstate
  */
 @JsonPropertyOrder({
-  MultiResourcePoolFieldStateSubstate.JSON_PROPERTY_VAULTS,
-  MultiResourcePoolFieldStateSubstate.JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS
+  MultiResourcePoolFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -148,69 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class MultiResourcePoolFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_VAULTS = "vaults";
-  private List<PoolVault> vaults = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS = "pool_unit_resource_address";
-  private String poolUnitResourceAddress;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private MultiResourcePoolFieldStateValue value;
 
   public MultiResourcePoolFieldStateSubstate() { 
   }
 
-  public MultiResourcePoolFieldStateSubstate vaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-    return this;
-  }
-
-  public MultiResourcePoolFieldStateSubstate addVaultsItem(PoolVault vaultsItem) {
-    this.vaults.add(vaultsItem);
+  public MultiResourcePoolFieldStateSubstate value(MultiResourcePoolFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vaults
-   * @return vaults
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<PoolVault> getVaults() {
-    return vaults;
+  public MultiResourcePoolFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-  }
-
-
-  public MultiResourcePoolFieldStateSubstate poolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return poolUnitResourceAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPoolUnitResourceAddress() {
-    return poolUnitResourceAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPoolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
+  public void setValue(MultiResourcePoolFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -226,14 +189,13 @@ public class MultiResourcePoolFieldStateSubstate extends Substate {
       return false;
     }
     MultiResourcePoolFieldStateSubstate multiResourcePoolFieldStateSubstate = (MultiResourcePoolFieldStateSubstate) o;
-    return Objects.equals(this.vaults, multiResourcePoolFieldStateSubstate.vaults) &&
-        Objects.equals(this.poolUnitResourceAddress, multiResourcePoolFieldStateSubstate.poolUnitResourceAddress) &&
+    return Objects.equals(this.value, multiResourcePoolFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaults, poolUnitResourceAddress, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -241,8 +203,7 @@ public class MultiResourcePoolFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class MultiResourcePoolFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
-    sb.append("    poolUnitResourceAddress: ").append(toIndentedString(poolUnitResourceAddress)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

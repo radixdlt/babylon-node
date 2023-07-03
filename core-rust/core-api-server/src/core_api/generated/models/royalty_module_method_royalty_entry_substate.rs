@@ -19,8 +19,8 @@ pub struct RoyaltyModuleMethodRoyaltyEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::MainMethodKey>,
-    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
-    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::RoyaltyModuleMethodRoyaltyEntryValue>>,
 }
 
 impl RoyaltyModuleMethodRoyaltyEntrySubstate {
@@ -29,7 +29,7 @@ impl RoyaltyModuleMethodRoyaltyEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            royalty_amount: None,
+            value: None,
         }
     }
 }

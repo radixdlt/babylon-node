@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DepositRule;
+import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntryValue;
 import com.radixdlt.api.core.generated.models.ResourceKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_DEPOSIT_RULE
+  AccountDepositRuleIndexEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountDepositRuleIndexEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private ResourceKey key;
 
-  public static final String JSON_PROPERTY_DEPOSIT_RULE = "deposit_rule";
-  private DepositRule depositRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountDepositRuleIndexEntryValue value;
 
   public AccountDepositRuleIndexEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
   }
 
 
-  public AccountDepositRuleIndexEntrySubstateAllOf depositRule(DepositRule depositRule) {
-    this.depositRule = depositRule;
+  public AccountDepositRuleIndexEntrySubstateAllOf value(AccountDepositRuleIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get depositRule
-   * @return depositRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DepositRule getDepositRule() {
-    return depositRule;
+  public AccountDepositRuleIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDepositRule(DepositRule depositRule) {
-    this.depositRule = depositRule;
+  public void setValue(AccountDepositRuleIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
     }
     AccountDepositRuleIndexEntrySubstateAllOf accountDepositRuleIndexEntrySubstateAllOf = (AccountDepositRuleIndexEntrySubstateAllOf) o;
     return Objects.equals(this.key, accountDepositRuleIndexEntrySubstateAllOf.key) &&
-        Objects.equals(this.depositRule, accountDepositRuleIndexEntrySubstateAllOf.depositRule);
+        Objects.equals(this.value, accountDepositRuleIndexEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, depositRule);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class AccountDepositRuleIndexEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountDepositRuleIndexEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    depositRule: ").append(toIndentedString(depositRule)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

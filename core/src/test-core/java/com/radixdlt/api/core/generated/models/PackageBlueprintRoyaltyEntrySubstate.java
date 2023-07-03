@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -62,6 +61,7 @@ import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySub
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntryValue;
 import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageBlueprintRoyaltyEntrySubstate.JSON_PROPERTY_KEY,
-  PackageBlueprintRoyaltyEntrySubstate.JSON_PROPERTY_ROYALTY_CONFIG
+  PackageBlueprintRoyaltyEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private BlueprintRoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintRoyaltyEntryValue value;
 
   public PackageBlueprintRoyaltyEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
   }
 
 
-  public PackageBlueprintRoyaltyEntrySubstate royaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public PackageBlueprintRoyaltyEntrySubstate value(PackageBlueprintRoyaltyEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintRoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public PackageBlueprintRoyaltyEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(BlueprintRoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public void setValue(PackageBlueprintRoyaltyEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
     }
     PackageBlueprintRoyaltyEntrySubstate packageBlueprintRoyaltyEntrySubstate = (PackageBlueprintRoyaltyEntrySubstate) o;
     return Objects.equals(this.key, packageBlueprintRoyaltyEntrySubstate.key) &&
-        Objects.equals(this.royaltyConfig, packageBlueprintRoyaltyEntrySubstate.royaltyConfig) &&
+        Objects.equals(this.value, packageBlueprintRoyaltyEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, royaltyConfig, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageBlueprintRoyaltyEntrySubstate extends Substate {
     sb.append("class PackageBlueprintRoyaltyEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

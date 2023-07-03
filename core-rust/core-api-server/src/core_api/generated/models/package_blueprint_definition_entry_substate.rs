@@ -19,17 +19,17 @@ pub struct PackageBlueprintDefinitionEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "definition")]
-    pub definition: Box<crate::core_api::generated::models::BlueprintDefinition>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintDefinitionEntryValue>,
 }
 
 impl PackageBlueprintDefinitionEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, definition: crate::core_api::generated::models::BlueprintDefinition) -> PackageBlueprintDefinitionEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintDefinitionEntryValue) -> PackageBlueprintDefinitionEntrySubstate {
         PackageBlueprintDefinitionEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            definition: Box::new(definition),
+            value: Box::new(value),
         }
     }
 }

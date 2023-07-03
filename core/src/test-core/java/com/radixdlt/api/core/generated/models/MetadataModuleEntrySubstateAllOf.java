@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.MetadataKey;
+import com.radixdlt.api.core.generated.models.MetadataModuleEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MetadataModuleEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private MetadataKey key;
 
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private MetadataModuleEntryValue value;
 
   public MetadataModuleEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class MetadataModuleEntrySubstateAllOf {
   }
 
 
-  public MetadataModuleEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public MetadataModuleEntrySubstateAllOf value(MetadataModuleEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public MetadataModuleEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setValue(MetadataModuleEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class MetadataModuleEntrySubstateAllOf {
     }
     MetadataModuleEntrySubstateAllOf metadataModuleEntrySubstateAllOf = (MetadataModuleEntrySubstateAllOf) o;
     return Objects.equals(this.key, metadataModuleEntrySubstateAllOf.key) &&
-        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct);
+        Objects.equals(this.value, metadataModuleEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, dataStruct);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class MetadataModuleEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class MetadataModuleEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

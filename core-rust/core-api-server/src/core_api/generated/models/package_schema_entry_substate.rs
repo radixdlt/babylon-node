@@ -19,17 +19,17 @@ pub struct PackageSchemaEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::SchemaKey>,
-    #[serde(rename = "schema")]
-    pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageSchemaEntryValue>,
 }
 
 impl PackageSchemaEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::SchemaKey, schema: crate::core_api::generated::models::ScryptoSchema) -> PackageSchemaEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::SchemaKey, value: crate::core_api::generated::models::PackageSchemaEntryValue) -> PackageSchemaEntrySubstate {
         PackageSchemaEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            schema: Box::new(schema),
+            value: Box::new(value),
         }
     }
 }

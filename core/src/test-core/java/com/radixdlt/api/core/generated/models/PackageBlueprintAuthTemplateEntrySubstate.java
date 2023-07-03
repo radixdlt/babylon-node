@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.AuthConfig;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -59,6 +58,7 @@ import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusS
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntryValue;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageBlueprintAuthTemplateEntrySubstate.JSON_PROPERTY_KEY,
-  PackageBlueprintAuthTemplateEntrySubstate.JSON_PROPERTY_AUTH_CONFIG
+  PackageBlueprintAuthTemplateEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageBlueprintAuthTemplateEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_AUTH_CONFIG = "auth_config";
-  private AuthConfig authConfig;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintAuthTemplateEntryValue value;
 
   public PackageBlueprintAuthTemplateEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageBlueprintAuthTemplateEntrySubstate extends Substate {
   }
 
 
-  public PackageBlueprintAuthTemplateEntrySubstate authConfig(AuthConfig authConfig) {
-    this.authConfig = authConfig;
+  public PackageBlueprintAuthTemplateEntrySubstate value(PackageBlueprintAuthTemplateEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get authConfig
-   * @return authConfig
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AUTH_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AuthConfig getAuthConfig() {
-    return authConfig;
+  public PackageBlueprintAuthTemplateEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AUTH_CONFIG)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAuthConfig(AuthConfig authConfig) {
-    this.authConfig = authConfig;
+  public void setValue(PackageBlueprintAuthTemplateEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageBlueprintAuthTemplateEntrySubstate extends Substate {
     }
     PackageBlueprintAuthTemplateEntrySubstate packageBlueprintAuthTemplateEntrySubstate = (PackageBlueprintAuthTemplateEntrySubstate) o;
     return Objects.equals(this.key, packageBlueprintAuthTemplateEntrySubstate.key) &&
-        Objects.equals(this.authConfig, packageBlueprintAuthTemplateEntrySubstate.authConfig) &&
+        Objects.equals(this.value, packageBlueprintAuthTemplateEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, authConfig, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageBlueprintAuthTemplateEntrySubstate extends Substate {
     sb.append("class PackageBlueprintAuthTemplateEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    authConfig: ").append(toIndentedString(authConfig)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

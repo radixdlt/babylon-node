@@ -15,15 +15,15 @@
 pub struct PackageBlueprintDependenciesEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "dependencies")]
-    pub dependencies: Box<crate::core_api::generated::models::BlueprintDependencies>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintDependenciesEntryValue>,
 }
 
 impl PackageBlueprintDependenciesEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, dependencies: crate::core_api::generated::models::BlueprintDependencies) -> PackageBlueprintDependenciesEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintDependenciesEntryValue) -> PackageBlueprintDependenciesEntrySubstateAllOf {
         PackageBlueprintDependenciesEntrySubstateAllOf {
             key: Box::new(key),
-            dependencies: Box::new(dependencies),
+            value: Box::new(value),
         }
     }
 }

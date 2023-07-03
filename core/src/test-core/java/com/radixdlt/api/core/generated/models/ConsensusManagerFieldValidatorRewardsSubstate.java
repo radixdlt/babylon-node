@@ -39,8 +39,8 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsValue;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -66,7 +66,6 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.ProposerReward;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -79,8 +78,6 @@ import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadin
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -89,8 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ConsensusManagerFieldValidatorRewardsSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldValidatorRewardsSubstate.JSON_PROPERTY_PROPOSER_REWARDS,
-  ConsensusManagerFieldValidatorRewardsSubstate.JSON_PROPERTY_REWARDS_VAULT
+  ConsensusManagerFieldValidatorRewardsSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -149,69 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ConsensusManagerFieldValidatorRewardsSubstate extends Substate {
-  public static final String JSON_PROPERTY_PROPOSER_REWARDS = "proposer_rewards";
-  private List<ProposerReward> proposerRewards = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_REWARDS_VAULT = "rewards_vault";
-  private EntityReference rewardsVault;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldValidatorRewardsValue value;
 
   public ConsensusManagerFieldValidatorRewardsSubstate() { 
   }
 
-  public ConsensusManagerFieldValidatorRewardsSubstate proposerRewards(List<ProposerReward> proposerRewards) {
-    this.proposerRewards = proposerRewards;
-    return this;
-  }
-
-  public ConsensusManagerFieldValidatorRewardsSubstate addProposerRewardsItem(ProposerReward proposerRewardsItem) {
-    this.proposerRewards.add(proposerRewardsItem);
+  public ConsensusManagerFieldValidatorRewardsSubstate value(ConsensusManagerFieldValidatorRewardsValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get proposerRewards
-   * @return proposerRewards
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_REWARDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ProposerReward> getProposerRewards() {
-    return proposerRewards;
+  public ConsensusManagerFieldValidatorRewardsValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_REWARDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerRewards(List<ProposerReward> proposerRewards) {
-    this.proposerRewards = proposerRewards;
-  }
-
-
-  public ConsensusManagerFieldValidatorRewardsSubstate rewardsVault(EntityReference rewardsVault) {
-    this.rewardsVault = rewardsVault;
-    return this;
-  }
-
-   /**
-   * Get rewardsVault
-   * @return rewardsVault
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityReference getRewardsVault() {
-    return rewardsVault;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRewardsVault(EntityReference rewardsVault) {
-    this.rewardsVault = rewardsVault;
+  public void setValue(ConsensusManagerFieldValidatorRewardsValue value) {
+    this.value = value;
   }
 
 
@@ -227,14 +189,13 @@ public class ConsensusManagerFieldValidatorRewardsSubstate extends Substate {
       return false;
     }
     ConsensusManagerFieldValidatorRewardsSubstate consensusManagerFieldValidatorRewardsSubstate = (ConsensusManagerFieldValidatorRewardsSubstate) o;
-    return Objects.equals(this.proposerRewards, consensusManagerFieldValidatorRewardsSubstate.proposerRewards) &&
-        Objects.equals(this.rewardsVault, consensusManagerFieldValidatorRewardsSubstate.rewardsVault) &&
+    return Objects.equals(this.value, consensusManagerFieldValidatorRewardsSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerRewards, rewardsVault, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -242,8 +203,7 @@ public class ConsensusManagerFieldValidatorRewardsSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldValidatorRewardsSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    proposerRewards: ").append(toIndentedString(proposerRewards)).append("\n");
-    sb.append("    rewardsVault: ").append(toIndentedString(rewardsVault)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

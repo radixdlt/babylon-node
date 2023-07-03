@@ -41,6 +41,7 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewa
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstateAllOf;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilityValue;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
@@ -85,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * FungibleResourceManagerFieldDivisibilitySubstate
  */
 @JsonPropertyOrder({
-  FungibleResourceManagerFieldDivisibilitySubstate.JSON_PROPERTY_DIVISIBILITY
+  FungibleResourceManagerFieldDivisibilitySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -144,37 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class FungibleResourceManagerFieldDivisibilitySubstate extends Substate {
-  public static final String JSON_PROPERTY_DIVISIBILITY = "divisibility";
-  private Integer divisibility;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleResourceManagerFieldDivisibilityValue value;
 
   public FungibleResourceManagerFieldDivisibilitySubstate() { 
   }
 
-  public FungibleResourceManagerFieldDivisibilitySubstate divisibility(Integer divisibility) {
-    this.divisibility = divisibility;
+  public FungibleResourceManagerFieldDivisibilitySubstate value(FungibleResourceManagerFieldDivisibilityValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get divisibility
-   * minimum: 0
-   * maximum: 18
-   * @return divisibility
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getDivisibility() {
-    return divisibility;
+  public FungibleResourceManagerFieldDivisibilityValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDivisibility(Integer divisibility) {
-    this.divisibility = divisibility;
+  public void setValue(FungibleResourceManagerFieldDivisibilityValue value) {
+    this.value = value;
   }
 
 
@@ -190,13 +189,13 @@ public class FungibleResourceManagerFieldDivisibilitySubstate extends Substate {
       return false;
     }
     FungibleResourceManagerFieldDivisibilitySubstate fungibleResourceManagerFieldDivisibilitySubstate = (FungibleResourceManagerFieldDivisibilitySubstate) o;
-    return Objects.equals(this.divisibility, fungibleResourceManagerFieldDivisibilitySubstate.divisibility) &&
+    return Objects.equals(this.value, fungibleResourceManagerFieldDivisibilitySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(divisibility, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -204,7 +203,7 @@ public class FungibleResourceManagerFieldDivisibilitySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleResourceManagerFieldDivisibilitySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    divisibility: ").append(toIndentedString(divisibility)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

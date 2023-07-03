@@ -22,12 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ProposerReward;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -35,74 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldValidatorRewardsSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldValidatorRewardsSubstateAllOf.JSON_PROPERTY_PROPOSER_REWARDS,
-  ConsensusManagerFieldValidatorRewardsSubstateAllOf.JSON_PROPERTY_REWARDS_VAULT
+  ConsensusManagerFieldValidatorRewardsSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldValidatorRewardsSubstateAllOf {
-  public static final String JSON_PROPERTY_PROPOSER_REWARDS = "proposer_rewards";
-  private List<ProposerReward> proposerRewards = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_REWARDS_VAULT = "rewards_vault";
-  private EntityReference rewardsVault;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldValidatorRewardsValue value;
 
   public ConsensusManagerFieldValidatorRewardsSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldValidatorRewardsSubstateAllOf proposerRewards(List<ProposerReward> proposerRewards) {
-    this.proposerRewards = proposerRewards;
-    return this;
-  }
-
-  public ConsensusManagerFieldValidatorRewardsSubstateAllOf addProposerRewardsItem(ProposerReward proposerRewardsItem) {
-    this.proposerRewards.add(proposerRewardsItem);
+  public ConsensusManagerFieldValidatorRewardsSubstateAllOf value(ConsensusManagerFieldValidatorRewardsValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get proposerRewards
-   * @return proposerRewards
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_REWARDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ProposerReward> getProposerRewards() {
-    return proposerRewards;
+  public ConsensusManagerFieldValidatorRewardsValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_REWARDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerRewards(List<ProposerReward> proposerRewards) {
-    this.proposerRewards = proposerRewards;
-  }
-
-
-  public ConsensusManagerFieldValidatorRewardsSubstateAllOf rewardsVault(EntityReference rewardsVault) {
-    this.rewardsVault = rewardsVault;
-    return this;
-  }
-
-   /**
-   * Get rewardsVault
-   * @return rewardsVault
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityReference getRewardsVault() {
-    return rewardsVault;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRewardsVault(EntityReference rewardsVault) {
-    this.rewardsVault = rewardsVault;
+  public void setValue(ConsensusManagerFieldValidatorRewardsValue value) {
+    this.value = value;
   }
 
 
@@ -118,21 +80,19 @@ public class ConsensusManagerFieldValidatorRewardsSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldValidatorRewardsSubstateAllOf consensusManagerFieldValidatorRewardsSubstateAllOf = (ConsensusManagerFieldValidatorRewardsSubstateAllOf) o;
-    return Objects.equals(this.proposerRewards, consensusManagerFieldValidatorRewardsSubstateAllOf.proposerRewards) &&
-        Objects.equals(this.rewardsVault, consensusManagerFieldValidatorRewardsSubstateAllOf.rewardsVault);
+    return Objects.equals(this.value, consensusManagerFieldValidatorRewardsSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerRewards, rewardsVault);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldValidatorRewardsSubstateAllOf {\n");
-    sb.append("    proposerRewards: ").append(toIndentedString(proposerRewards)).append("\n");
-    sb.append("    rewardsVault: ").append(toIndentedString(rewardsVault)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

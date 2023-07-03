@@ -15,15 +15,15 @@
 pub struct PackageBlueprintRoyaltyEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "royalty_config")]
-    pub royalty_config: Box<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintRoyaltyEntryValue>,
 }
 
 impl PackageBlueprintRoyaltyEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, royalty_config: crate::core_api::generated::models::BlueprintRoyaltyConfig) -> PackageBlueprintRoyaltyEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintRoyaltyEntryValue) -> PackageBlueprintRoyaltyEntrySubstateAllOf {
         PackageBlueprintRoyaltyEntrySubstateAllOf {
             key: Box::new(key),
-            royalty_config: Box::new(royalty_config),
+            value: Box::new(value),
         }
     }
 }

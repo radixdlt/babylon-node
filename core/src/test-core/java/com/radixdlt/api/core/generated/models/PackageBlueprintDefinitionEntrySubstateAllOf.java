@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintDefinition;
 import com.radixdlt.api.core.generated.models.BlueprintVersionKey;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageBlueprintDefinitionEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageBlueprintDefinitionEntrySubstateAllOf.JSON_PROPERTY_DEFINITION
+  PackageBlueprintDefinitionEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageBlueprintDefinitionEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private BlueprintVersionKey key;
 
-  public static final String JSON_PROPERTY_DEFINITION = "definition";
-  private BlueprintDefinition definition;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageBlueprintDefinitionEntryValue value;
 
   public PackageBlueprintDefinitionEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageBlueprintDefinitionEntrySubstateAllOf {
   }
 
 
-  public PackageBlueprintDefinitionEntrySubstateAllOf definition(BlueprintDefinition definition) {
-    this.definition = definition;
+  public PackageBlueprintDefinitionEntrySubstateAllOf value(PackageBlueprintDefinitionEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get definition
-   * @return definition
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEFINITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public BlueprintDefinition getDefinition() {
-    return definition;
+  public PackageBlueprintDefinitionEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEFINITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefinition(BlueprintDefinition definition) {
-    this.definition = definition;
+  public void setValue(PackageBlueprintDefinitionEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageBlueprintDefinitionEntrySubstateAllOf {
     }
     PackageBlueprintDefinitionEntrySubstateAllOf packageBlueprintDefinitionEntrySubstateAllOf = (PackageBlueprintDefinitionEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageBlueprintDefinitionEntrySubstateAllOf.key) &&
-        Objects.equals(this.definition, packageBlueprintDefinitionEntrySubstateAllOf.definition);
+        Objects.equals(this.value, packageBlueprintDefinitionEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, definition);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageBlueprintDefinitionEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageBlueprintDefinitionEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    definition: ").append(toIndentedString(definition)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

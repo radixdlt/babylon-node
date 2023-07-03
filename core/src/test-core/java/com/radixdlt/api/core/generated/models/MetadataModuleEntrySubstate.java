@@ -39,7 +39,6 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValida
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
@@ -49,6 +48,7 @@ import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateS
 import com.radixdlt.api.core.generated.models.MetadataKey;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.MetadataModuleEntryValue;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   MetadataModuleEntrySubstate.JSON_PROPERTY_KEY,
-  MetadataModuleEntrySubstate.JSON_PROPERTY_DATA_STRUCT
+  MetadataModuleEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class MetadataModuleEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private MetadataKey key;
 
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private MetadataModuleEntryValue value;
 
   public MetadataModuleEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class MetadataModuleEntrySubstate extends Substate {
   }
 
 
-  public MetadataModuleEntrySubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public MetadataModuleEntrySubstate value(MetadataModuleEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public MetadataModuleEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setValue(MetadataModuleEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class MetadataModuleEntrySubstate extends Substate {
     }
     MetadataModuleEntrySubstate metadataModuleEntrySubstate = (MetadataModuleEntrySubstate) o;
     return Objects.equals(this.key, metadataModuleEntrySubstate.key) &&
-        Objects.equals(this.dataStruct, metadataModuleEntrySubstate.dataStruct) &&
+        Objects.equals(this.value, metadataModuleEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, dataStruct, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class MetadataModuleEntrySubstate extends Substate {
     sb.append("class MetadataModuleEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -26,10 +26,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.AccessRule;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntryValue;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_KEY,
-  AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_ACCESS_RULE
+  AccessRulesModuleRuleEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private ObjectRoleKey key;
 
-  public static final String JSON_PROPERTY_ACCESS_RULE = "access_rule";
-  private AccessRule accessRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccessRulesModuleRuleEntryValue value;
 
   public AccessRulesModuleRuleEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
   }
 
 
-  public AccessRulesModuleRuleEntrySubstate accessRule(AccessRule accessRule) {
-    this.accessRule = accessRule;
+  public AccessRulesModuleRuleEntrySubstate value(AccessRulesModuleRuleEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get accessRule
-   * @return accessRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public AccessRule getAccessRule() {
-    return accessRule;
+  public AccessRulesModuleRuleEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAccessRule(AccessRule accessRule) {
-    this.accessRule = accessRule;
+  public void setValue(AccessRulesModuleRuleEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
     }
     AccessRulesModuleRuleEntrySubstate accessRulesModuleRuleEntrySubstate = (AccessRulesModuleRuleEntrySubstate) o;
     return Objects.equals(this.key, accessRulesModuleRuleEntrySubstate.key) &&
-        Objects.equals(this.accessRule, accessRulesModuleRuleEntrySubstate.accessRule) &&
+        Objects.equals(this.value, accessRulesModuleRuleEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, accessRule, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class AccessRulesModuleRuleEntrySubstate extends Substate {
     sb.append("class AccessRulesModuleRuleEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    accessRule: ").append(toIndentedString(accessRule)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

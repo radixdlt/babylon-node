@@ -43,6 +43,7 @@ import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisi
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstateAllOf;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceValue;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
@@ -85,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * FungibleVaultFieldBalanceSubstate
  */
 @JsonPropertyOrder({
-  FungibleVaultFieldBalanceSubstate.JSON_PROPERTY_AMOUNT
+  FungibleVaultFieldBalanceSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -144,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class FungibleVaultFieldBalanceSubstate extends Substate {
-  public static final String JSON_PROPERTY_AMOUNT = "amount";
-  private String amount;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleVaultFieldBalanceValue value;
 
   public FungibleVaultFieldBalanceSubstate() { 
   }
 
-  public FungibleVaultFieldBalanceSubstate amount(String amount) {
-    this.amount = amount;
+  public FungibleVaultFieldBalanceSubstate value(FungibleVaultFieldBalanceValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return amount
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAmount() {
-    return amount;
+  public FungibleVaultFieldBalanceValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAmount(String amount) {
-    this.amount = amount;
+  public void setValue(FungibleVaultFieldBalanceValue value) {
+    this.value = value;
   }
 
 
@@ -188,13 +189,13 @@ public class FungibleVaultFieldBalanceSubstate extends Substate {
       return false;
     }
     FungibleVaultFieldBalanceSubstate fungibleVaultFieldBalanceSubstate = (FungibleVaultFieldBalanceSubstate) o;
-    return Objects.equals(this.amount, fungibleVaultFieldBalanceSubstate.amount) &&
+    return Objects.equals(this.value, fungibleVaultFieldBalanceSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(amount, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -202,7 +203,7 @@ public class FungibleVaultFieldBalanceSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleVaultFieldBalanceSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

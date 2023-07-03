@@ -17,16 +17,16 @@ pub struct AccessControllerFieldStateSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
-    #[serde(rename = "data_struct")]
-    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccessControllerFieldStateValue>,
 }
 
 impl AccessControllerFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, data_struct: crate::core_api::generated::models::DataStruct) -> AccessControllerFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::AccessControllerFieldStateValue) -> AccessControllerFieldStateSubstate {
         AccessControllerFieldStateSubstate {
             substate_type,
             is_locked,
-            data_struct: Box::new(data_struct),
+            value: Box::new(value),
         }
     }
 }

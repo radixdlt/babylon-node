@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.PackageCodeKey;
-import com.radixdlt.api.core.generated.models.VmType;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageCodeVmTypeEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  PackageCodeVmTypeEntrySubstateAllOf.JSON_PROPERTY_VM_TYPE
+  PackageCodeVmTypeEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageCodeVmTypeEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private PackageCodeKey key;
 
-  public static final String JSON_PROPERTY_VM_TYPE = "vm_type";
-  private VmType vmType;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageCodeVmTypeEntryValue value;
 
   public PackageCodeVmTypeEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class PackageCodeVmTypeEntrySubstateAllOf {
   }
 
 
-  public PackageCodeVmTypeEntrySubstateAllOf vmType(VmType vmType) {
-    this.vmType = vmType;
+  public PackageCodeVmTypeEntrySubstateAllOf value(PackageCodeVmTypeEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vmType
-   * @return vmType
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public VmType getVmType() {
-    return vmType;
+  public PackageCodeVmTypeEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VM_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVmType(VmType vmType) {
-    this.vmType = vmType;
+  public void setValue(PackageCodeVmTypeEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class PackageCodeVmTypeEntrySubstateAllOf {
     }
     PackageCodeVmTypeEntrySubstateAllOf packageCodeVmTypeEntrySubstateAllOf = (PackageCodeVmTypeEntrySubstateAllOf) o;
     return Objects.equals(this.key, packageCodeVmTypeEntrySubstateAllOf.key) &&
-        Objects.equals(this.vmType, packageCodeVmTypeEntrySubstateAllOf.vmType);
+        Objects.equals(this.value, packageCodeVmTypeEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vmType);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class PackageCodeVmTypeEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageCodeVmTypeEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vmType: ").append(toIndentedString(vmType)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

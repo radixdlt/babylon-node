@@ -19,17 +19,17 @@ pub struct PackageBlueprintDependenciesEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::BlueprintVersionKey>,
-    #[serde(rename = "dependencies")]
-    pub dependencies: Box<crate::core_api::generated::models::BlueprintDependencies>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageBlueprintDependenciesEntryValue>,
 }
 
 impl PackageBlueprintDependenciesEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, dependencies: crate::core_api::generated::models::BlueprintDependencies) -> PackageBlueprintDependenciesEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::BlueprintVersionKey, value: crate::core_api::generated::models::PackageBlueprintDependenciesEntryValue) -> PackageBlueprintDependenciesEntrySubstate {
         PackageBlueprintDependenciesEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            dependencies: Box::new(dependencies),
+            value: Box::new(value),
         }
     }
 }

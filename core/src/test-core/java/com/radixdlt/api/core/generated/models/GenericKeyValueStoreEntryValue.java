@@ -29,8 +29,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * GenericKeyValueStoreEntryValue
+ * If not present, the entry has been deleted.
  */
+@ApiModel(description = "If not present, the entry has been deleted.")
 @JsonPropertyOrder({
   GenericKeyValueStoreEntryValue.JSON_PROPERTY_DATA
 })

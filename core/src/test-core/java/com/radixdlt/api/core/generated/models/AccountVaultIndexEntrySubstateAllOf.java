@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.AccountVaultIndexEntryValue;
 import com.radixdlt.api.core.generated.models.ResourceKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_KEY,
-  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_VAULT
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountVaultIndexEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private ResourceKey key;
 
-  public static final String JSON_PROPERTY_VAULT = "vault";
-  private EntityReference vault;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountVaultIndexEntryValue value;
 
   public AccountVaultIndexEntrySubstateAllOf() { 
   }
@@ -73,29 +73,29 @@ public class AccountVaultIndexEntrySubstateAllOf {
   }
 
 
-  public AccountVaultIndexEntrySubstateAllOf vault(EntityReference vault) {
-    this.vault = vault;
+  public AccountVaultIndexEntrySubstateAllOf value(AccountVaultIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vault
-   * @return vault
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVault() {
-    return vault;
+  public AccountVaultIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVault(EntityReference vault) {
-    this.vault = vault;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(AccountVaultIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -112,12 +112,12 @@ public class AccountVaultIndexEntrySubstateAllOf {
     }
     AccountVaultIndexEntrySubstateAllOf accountVaultIndexEntrySubstateAllOf = (AccountVaultIndexEntrySubstateAllOf) o;
     return Objects.equals(this.key, accountVaultIndexEntrySubstateAllOf.key) &&
-        Objects.equals(this.vault, accountVaultIndexEntrySubstateAllOf.vault);
+        Objects.equals(this.value, accountVaultIndexEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, vault);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class AccountVaultIndexEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountVaultIndexEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    vault: ").append(toIndentedString(vault)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

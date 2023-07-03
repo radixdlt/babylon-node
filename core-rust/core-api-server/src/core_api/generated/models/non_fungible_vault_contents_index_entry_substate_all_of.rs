@@ -15,12 +15,15 @@
 pub struct NonFungibleVaultContentsIndexEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue>,
 }
 
 impl NonFungibleVaultContentsIndexEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::LocalNonFungibleKey) -> NonFungibleVaultContentsIndexEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::LocalNonFungibleKey, value: crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue) -> NonFungibleVaultContentsIndexEntrySubstateAllOf {
         NonFungibleVaultContentsIndexEntrySubstateAllOf {
             key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

@@ -47,10 +47,10 @@ import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleIdType;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeValue;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
@@ -86,7 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * NonFungibleResourceManagerFieldIdTypeSubstate
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldIdTypeSubstate.JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE
+  NonFungibleResourceManagerFieldIdTypeSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -145,35 +145,35 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class NonFungibleResourceManagerFieldIdTypeSubstate extends Substate {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE = "non_fungible_id_type";
-  private NonFungibleIdType nonFungibleIdType;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerFieldIdTypeValue value;
 
   public NonFungibleResourceManagerFieldIdTypeSubstate() { 
   }
 
-  public NonFungibleResourceManagerFieldIdTypeSubstate nonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
+  public NonFungibleResourceManagerFieldIdTypeSubstate value(NonFungibleResourceManagerFieldIdTypeValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get nonFungibleIdType
-   * @return nonFungibleIdType
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NonFungibleIdType getNonFungibleIdType() {
-    return nonFungibleIdType;
+  public NonFungibleResourceManagerFieldIdTypeValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
+  public void setValue(NonFungibleResourceManagerFieldIdTypeValue value) {
+    this.value = value;
   }
 
 
@@ -189,13 +189,13 @@ public class NonFungibleResourceManagerFieldIdTypeSubstate extends Substate {
       return false;
     }
     NonFungibleResourceManagerFieldIdTypeSubstate nonFungibleResourceManagerFieldIdTypeSubstate = (NonFungibleResourceManagerFieldIdTypeSubstate) o;
-    return Objects.equals(this.nonFungibleIdType, nonFungibleResourceManagerFieldIdTypeSubstate.nonFungibleIdType) &&
+    return Objects.equals(this.value, nonFungibleResourceManagerFieldIdTypeSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleIdType, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class NonFungibleResourceManagerFieldIdTypeSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerFieldIdTypeSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    nonFungibleIdType: ").append(toIndentedString(nonFungibleIdType)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

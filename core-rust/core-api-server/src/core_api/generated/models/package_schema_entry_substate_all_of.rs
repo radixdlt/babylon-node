@@ -15,15 +15,15 @@
 pub struct PackageSchemaEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::SchemaKey>,
-    #[serde(rename = "schema")]
-    pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageSchemaEntryValue>,
 }
 
 impl PackageSchemaEntrySubstateAllOf {
-    pub fn new(key: crate::core_api::generated::models::SchemaKey, schema: crate::core_api::generated::models::ScryptoSchema) -> PackageSchemaEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::SchemaKey, value: crate::core_api::generated::models::PackageSchemaEntryValue) -> PackageSchemaEntrySubstateAllOf {
         PackageSchemaEntrySubstateAllOf {
             key: Box::new(key),
-            schema: Box::new(schema),
+            value: Box::new(value),
         }
     }
 }

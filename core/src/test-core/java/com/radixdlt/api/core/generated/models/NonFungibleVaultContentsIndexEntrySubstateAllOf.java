@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LocalNonFungibleKey;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleVaultContentsIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleVaultContentsIndexEntrySubstateAllOf.JSON_PROPERTY_KEY
+  NonFungibleVaultContentsIndexEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  NonFungibleVaultContentsIndexEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY = "key";
   private LocalNonFungibleKey key;
+
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleVaultContentsIndexEntryValue value;
 
   public NonFungibleVaultContentsIndexEntrySubstateAllOf() { 
   }
@@ -68,6 +73,32 @@ public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
   }
 
 
+  public NonFungibleVaultContentsIndexEntrySubstateAllOf value(NonFungibleVaultContentsIndexEntryValue value) {
+    this.value = value;
+    return this;
+  }
+
+   /**
+   * Get value
+   * @return value
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public NonFungibleVaultContentsIndexEntryValue getValue() {
+    return value;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(NonFungibleVaultContentsIndexEntryValue value) {
+    this.value = value;
+  }
+
+
   /**
    * Return true if this NonFungibleVaultContentsIndexEntrySubstate_allOf object is equal to o.
    */
@@ -80,12 +111,13 @@ public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
       return false;
     }
     NonFungibleVaultContentsIndexEntrySubstateAllOf nonFungibleVaultContentsIndexEntrySubstateAllOf = (NonFungibleVaultContentsIndexEntrySubstateAllOf) o;
-    return Objects.equals(this.key, nonFungibleVaultContentsIndexEntrySubstateAllOf.key);
+    return Objects.equals(this.key, nonFungibleVaultContentsIndexEntrySubstateAllOf.key) &&
+        Objects.equals(this.value, nonFungibleVaultContentsIndexEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key);
+    return Objects.hash(key, value);
   }
 
   @Override
@@ -93,6 +125,7 @@ public class NonFungibleVaultContentsIndexEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleVaultContentsIndexEntrySubstateAllOf {\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

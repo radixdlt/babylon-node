@@ -65,10 +65,10 @@ import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.PackageSchemaEntryValue;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.SchemaKey;
-import com.radixdlt.api.core.generated.models.ScryptoSchema;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
@@ -88,7 +88,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   PackageSchemaEntrySubstate.JSON_PROPERTY_KEY,
-  PackageSchemaEntrySubstate.JSON_PROPERTY_SCHEMA
+  PackageSchemaEntrySubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -150,8 +150,8 @@ public class PackageSchemaEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private SchemaKey key;
 
-  public static final String JSON_PROPERTY_SCHEMA = "schema";
-  private ScryptoSchema schema;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageSchemaEntryValue value;
 
   public PackageSchemaEntrySubstate() { 
   }
@@ -182,29 +182,29 @@ public class PackageSchemaEntrySubstate extends Substate {
   }
 
 
-  public PackageSchemaEntrySubstate schema(ScryptoSchema schema) {
-    this.schema = schema;
+  public PackageSchemaEntrySubstate value(PackageSchemaEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get schema
-   * @return schema
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ScryptoSchema getSchema() {
-    return schema;
+  public PackageSchemaEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchema(ScryptoSchema schema) {
-    this.schema = schema;
+  public void setValue(PackageSchemaEntryValue value) {
+    this.value = value;
   }
 
 
@@ -221,13 +221,13 @@ public class PackageSchemaEntrySubstate extends Substate {
     }
     PackageSchemaEntrySubstate packageSchemaEntrySubstate = (PackageSchemaEntrySubstate) o;
     return Objects.equals(this.key, packageSchemaEntrySubstate.key) &&
-        Objects.equals(this.schema, packageSchemaEntrySubstate.schema) &&
+        Objects.equals(this.value, packageSchemaEntrySubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, schema, super.hashCode());
+    return Objects.hash(key, value, super.hashCode());
   }
 
   @Override
@@ -236,7 +236,7 @@ public class PackageSchemaEntrySubstate extends Substate {
     sb.append("class PackageSchemaEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

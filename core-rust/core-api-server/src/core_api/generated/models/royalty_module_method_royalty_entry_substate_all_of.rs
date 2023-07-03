@@ -15,15 +15,15 @@
 pub struct RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::MainMethodKey>,
-    #[serde(rename = "royalty_amount", skip_serializing_if = "Option::is_none")]
-    pub royalty_amount: Option<Box<crate::core_api::generated::models::RoyaltyAmount>>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::RoyaltyModuleMethodRoyaltyEntryValue>>,
 }
 
 impl RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
     pub fn new(key: crate::core_api::generated::models::MainMethodKey) -> RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
         RoyaltyModuleMethodRoyaltyEntrySubstateAllOf {
             key: Box::new(key),
-            royalty_amount: None,
+            value: None,
         }
     }
 }

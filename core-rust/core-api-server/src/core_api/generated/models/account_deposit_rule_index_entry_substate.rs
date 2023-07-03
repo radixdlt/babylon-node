@@ -19,8 +19,8 @@ pub struct AccountDepositRuleIndexEntrySubstate {
     pub is_locked: bool,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::ResourceKey>,
-    #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
-    pub deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::AccountDepositRuleIndexEntryValue>>,
 }
 
 impl AccountDepositRuleIndexEntrySubstate {
@@ -29,7 +29,7 @@ impl AccountDepositRuleIndexEntrySubstate {
             substate_type,
             is_locked,
             key: Box::new(key),
-            deposit_rule: None,
+            value: None,
         }
     }
 }

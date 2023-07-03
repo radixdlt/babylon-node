@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf {
-    /// If present, indicates the validator is currently signalling readiness for the given protocl version. Is validated to be exactly 32 chars long (if it exists). 
-    #[serde(rename = "protocol_version_name", skip_serializing_if = "Option::is_none")]
-    pub protocol_version_name: Option<String>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ValidatorFieldProtocolUpdateReadinessSignalValue>,
 }
 
 impl ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf {
-    pub fn new() -> ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::ValidatorFieldProtocolUpdateReadinessSignalValue) -> ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf {
         ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf {
-            protocol_version_name: None,
+            value: Box::new(value),
         }
     }
 }
