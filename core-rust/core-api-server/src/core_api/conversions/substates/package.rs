@@ -32,15 +32,13 @@ pub fn to_api_package_code_vm_type_entry_substate(
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageVmTypeKey".to_string() });
     };
 
-    let PackageVmTypeSubstate { vm_type } = substate.get_definitely_present_value()?;
-
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageCodeVmTypeEntry,
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        {
+        PackageVmTypeSubstate { vm_type } -> {
             vm_type: match vm_type {
                 VmType::Native => models::VmType::Native,
                 VmType::ScryptoV1 => models::VmType::ScryptoV1,
@@ -58,15 +56,13 @@ pub fn to_api_package_code_original_code_entry_substate(
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageOriginalCodeKey".to_string() });
     };
 
-    let PackageOriginalCodeSubstate { code } = substate.get_definitely_present_value()?;
-
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageCodeOriginalCodeEntry,
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        {
+        PackageOriginalCodeSubstate { code } -> {
             code_hex: to_hex(code),
         }
     ))
@@ -81,15 +77,13 @@ pub fn to_api_package_code_instrumented_code_entry_substate(
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageInstrumentedCodeKey".to_string() });
     };
 
-    let PackageInstrumentedCodeSubstate { code } = substate.get_definitely_present_value()?;
-
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageCodeInstrumentedCodeEntry,
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        {
+        PackageInstrumentedCodeSubstate { code } -> {
             code_hex: to_hex(code),
         }
     ))
@@ -103,14 +97,14 @@ pub fn to_api_package_schema_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Package Schema Key".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageSchemaEntry,
         models::SchemaKey {
             schema_hash: to_api_hash(hash),
         },
-        {
-            schema: Box::new(to_api_scrypto_schema(context, substate.get_definitely_present_value()?)?),
+        value -> {
+            schema: Box::new(to_api_scrypto_schema(context, value)?),
         }
     ))
 }
@@ -123,13 +117,12 @@ pub fn to_api_package_blueprint_definition_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(blueprint_version_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintKey".to_string() });
     };
-    let definition = substate.get_definitely_present_value()?;
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageBlueprintDefinitionEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        {
-            definition: Box::new(to_api_blueprint_definition(context, definition)?),
+        value -> {
+            definition: Box::new(to_api_blueprint_definition(context, value)?),
         }
     ))
 }
@@ -142,14 +135,14 @@ pub fn to_api_package_blueprint_dependencies_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(blueprint_version_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintDependenciesKey".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageBlueprintDependenciesEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        {
+        value -> {
             dependencies: Box::new(to_api_blueprint_dependencies(
                 context,
-                substate.get_definitely_present_value()?,
+                value,
             )?),
         }
     ))
@@ -163,14 +156,12 @@ pub fn to_api_package_blueprint_royalty_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(blueprint_version_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintRoyaltyKey".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageBlueprintRoyaltyEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        {
-            royalty_config: Box::new(to_api_package_blueprint_royalty_config(
-                substate.get_definitely_present_value()?,
-            )),
+        value -> {
+            royalty_config: Box::new(to_api_package_blueprint_royalty_config(value)),
         }
     ))
 }
@@ -206,14 +197,14 @@ pub fn to_api_package_auth_template_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(blueprint_version_key)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintAuthTemplateKey".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         PackageBlueprintAuthTemplateEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        {
+        value -> {
             auth_config: Box::new(to_api_auth_config(
                 context,
-                substate.get_definitely_present_value()?,
+                value,
             )?),
         }
     ))

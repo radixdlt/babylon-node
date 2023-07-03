@@ -34,19 +34,14 @@ pub fn to_api_account_vault_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Vault Key".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         AccountVaultIndexEntry,
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
-        {
-            vault: substate
-                .get_optional_value()
-                .map(|v| -> Result<_, MappingError> {
-                    Ok(Box::new(to_api_entity_reference(context, v.as_node_id())?))
-                })
-                .transpose()?,
+        value -> {
+            vault: Box::new(to_api_entity_reference(context, value.as_node_id())?),
         }
     ))
 }
@@ -59,14 +54,14 @@ pub fn to_api_account_deposit_rule_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_optional_substate!(
         substate,
         AccountDepositRuleIndexEntry,
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
-        {
-            deposit_rule: substate.value.flatten().map(|rule| match rule {
+        value -> {
+            deposit_rule: value.map(|rule| match rule {
                 ResourceDepositRule::Neither => models::DepositRule::Neither,
                 ResourceDepositRule::Allowed => models::DepositRule::Allowed,
                 ResourceDepositRule::Disallowed => models::DepositRule::Disallowed,

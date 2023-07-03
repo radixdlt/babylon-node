@@ -96,11 +96,12 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var stateSubstate =
           (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
-      assertThat(stateSubstate.getEpoch()).isGreaterThanOrEqualTo(0);
+      assertThat(stateSubstate.getValue().getEpoch()).isGreaterThanOrEqualTo(0);
 
       final var validatorAddress =
           ((ConsensusManagerFieldCurrentValidatorSetSubstate)
                   stateConsensusManagerResponse.getCurrentValidatorSet())
+              .getValue()
               .getValidatorSet()
               .get(0)
               .getAddress();
@@ -114,7 +115,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var ownerRoleSubstate =
           (AccessRulesModuleFieldOwnerRoleSubstate) validatorResponse.getOwnerRole();
-      final var ownerRole = ownerRoleSubstate.getOwnerRole();
+      final var ownerRole = ownerRoleSubstate.getValue().getOwnerRole();
       final var accessRule = (ProtectedAccessRule) ownerRole.getRule();
       final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
@@ -135,7 +136,8 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
           (StateNonFungibleResourceManager) nonFungibleResourceResponse.getManager();
       final var idTypeSubstate =
           (NonFungibleResourceManagerFieldIdTypeSubstate) nonFungibleManager.getIdType();
-      assertThat(idTypeSubstate.getNonFungibleIdType()).isEqualTo(NonFungibleIdType.BYTES);
+      assertThat(idTypeSubstate.getValue().getNonFungibleIdType())
+          .isEqualTo(NonFungibleIdType.BYTES);
 
       final var nonFungibleDataResponse =
           getStateApi()
@@ -147,8 +149,8 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var dataSubstate =
           (NonFungibleResourceManagerDataEntrySubstate) nonFungibleDataResponse.getNonFungible();
-      assert dataSubstate.getDataStruct() != null;
-      final var data = dataSubstate.getDataStruct().getStructData();
+      assert dataSubstate.getValue() != null;
+      final var data = dataSubstate.getValue().getDataStruct().getStructData();
       // Data is a tuple
       assertThat(data.getHex()).startsWith("5c21");
     }

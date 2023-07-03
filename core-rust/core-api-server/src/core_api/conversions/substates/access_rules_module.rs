@@ -14,7 +14,7 @@ pub fn to_api_owner_role_substate(
         substate,
         AccessRulesModuleFieldOwnerRole,
         {
-            owner_role: Box::new(models::OwnerRole {
+            owner_role: Some(models::OwnerRole {
                 rule: Some(to_api_access_rule(context, &owner_role_entry.rule)?),
                 updater: match owner_role_entry.updater {
                     OwnerRoleUpdater::None => models::OwnerRoleUpdater::None,
@@ -34,20 +34,15 @@ pub fn to_api_access_rule_entry(
     let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Module Role Key".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_optional_substate!(
         substate,
         AccessRulesModuleRuleEntry,
         models::ObjectRoleKey {
             object_module_id: to_api_object_module_id(module),
             role_key: key.key.to_string(),
         },
-        {
-            access_rule: substate
-                .get_optional_value()
-                .map(|access_rule| -> Result<_, MappingError> {
-                    Ok(Box::new(to_api_access_rule(context, access_rule)?))
-                })
-                .transpose()?,
+        value -> {
+            access_rule: Some(to_api_access_rule(context, value)?),
         }
     ))
 }

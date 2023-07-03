@@ -40,21 +40,14 @@ pub fn to_api_generic_key_value_store_substate(
         return Err(MappingError::MismatchedSubstateKeyType { message: "GenericKeyValueStoreKey".to_string() });
     };
     let key_data_option = to_api_sbor_data_from_bytes(context, raw_key).ok();
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_optional_substate!(
         substate,
         GenericKeyValueStoreEntry,
         models::GenericKey {
             key_data: key_data_option.map(Box::new),
         },
-        {
-            value: substate
-                .get_optional_value()
-                .map(|value| -> Result<_, MappingError> {
-                    Ok(Box::new(models::GenericKeyValueStoreEntryValue {
-                        data: Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?)
-                    }))
-                })
-                .transpose()?,
+        value -> {
+            data: Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?),
         },
     ))
 }

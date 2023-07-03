@@ -35,18 +35,14 @@ pub fn to_api_component_method_royalty_substate(
     let TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "RoyaltyConfigEntryKey".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_optional_substate!(
         substate,
         RoyaltyModuleMethodRoyaltyEntry,
         models::MainMethodKey {
             method_name: method_name.to_string(),
         },
-        {
-            royalty_amount: substate
-                .value
-                .as_ref()
-                .and_then(to_api_royalty_amount)
-                .map(Box::new),
+        value -> {
+            royalty_amount: to_api_royalty_amount(value).map(Box::new),
         }
     ))
 }

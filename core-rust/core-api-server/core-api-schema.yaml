@@ -1365,6 +1365,7 @@ components:
         - cost_units_consumed
         - cost_unit_execution_breakdown
         - xrd_total_execution_cost
+        - xrd_total_state_expansion_cost
         - xrd_total_royalty_cost
         - xrd_total_tipped
         - xrd_vault_payments
@@ -1412,6 +1413,11 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        xrd_total_state_expansion_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
         xrd_total_tipped:
           type: string
@@ -3306,11 +3312,9 @@ components:
     RoyaltyModuleMethodRoyaltyEntryValue:
       type: object
       description: If missing, it represents a free method.
-      required:
-        - royalty_amount
       properties:
         royalty_amount:
-          description: The component royalty.
+          description: The component royalty. If missing, it represents a free method.
           $ref: '#/components/schemas/RoyaltyAmount'
     MetadataModuleEntrySubstate:
       allOf:
@@ -3781,22 +3785,27 @@ components:
         - type: object
           required:
             - key
+            - value
           properties:
             key:
               $ref: '#/components/schemas/LocalNonFungibleKey'
             value:
               $ref: '#/components/schemas/NonFungibleVaultContentsIndexEntryValue'
-            is_present:
-              type: boolean
-              description: |
-                Indicates that the non-fungible is currently in the vault.
-                If false, the non-fungible has been removed from the vault.
     NonFungibleVaultContentsIndexEntryValue:
       type: object
       description: |
-        This object is empty.
-        If present, this means that the non-fungible is currently in the vault.
-        If not present, this means that the non-fungible has been removed from the vault.
+        This object is empty, and always present on this substate.
+        Note that when a non-fungible is withdrawn from the vault, the full substate is deleted, which is marked
+        by a DeletedSubstate action (rather than deletion of the value property in an UpdateSubstate action).
+        This is because this is an Index entry, not a KeyValueStore entry.
+      required:
+        - is_present
+      properties:
+        is_present:
+          description: |
+            This is a dummy property which is always set to true and means nothing.
+            It exists just to ensure this object has a well-defined type in OpenAPI schemas.
+          type: boolean
     ConsensusManagerFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4224,8 +4233,6 @@ components:
               $ref: '#/components/schemas/AccountDepositRuleIndexEntryValue'
     AccountDepositRuleIndexEntryValue:
       type: object
-      required:
-        - deposit_rule
       properties:
         deposit_rule:
           $ref: '#/components/schemas/DepositRule'

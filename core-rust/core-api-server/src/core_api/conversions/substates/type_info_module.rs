@@ -65,7 +65,7 @@ pub fn to_api_type_info_substate(
         substate,
         TypeInfoModuleFieldTypeInfo,
         {
-            details: Box::new(details),
+            details: Some(details),
         }
     ))
 }

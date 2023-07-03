@@ -343,14 +343,19 @@ public class Manifest {
             """
                     %s
                     CREATE_NON_FUNGIBLE_RESOURCE
+                        Enum<0u8>()
                         Enum<NonFungibleIdType::Integer>()
                         false
                         Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-                        Map<String, Tuple>()
                         Map<Enum, Tuple>(
                             Enum<ResourceAction::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
                             Enum<ResourceAction::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
-                        );
+                        )
+                        Tuple(
+                            Map<String, Tuple>(),
+                            Map<String, Tuple>()
+                        )
+                        Enum<0u8>();
                     """,
             params.faucetLockFeeLine());
   }

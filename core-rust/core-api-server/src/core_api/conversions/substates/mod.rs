@@ -41,35 +41,69 @@ macro_rules! field_substate {
             $($value_key:ident$(: $value_value:expr)?),*$(,)?
         }$(,)?
     ) => {
-        paste::paste!{
+        paste::paste! {
             models::Substate::[<$substate_type Substate>] {
                 is_locked: false,
-                $($value_key$(: $value_value)?,)*
+                value: Box::new(models::[<$substate_type Value>] {
+                    $($value_key$(: $value_value)?,)*
+                })
             }
         }
     };
 }
 pub(crate) use field_substate;
 
-macro_rules! key_value_store_substate {
+macro_rules! key_value_store_optional_substate {
     (
         $substate:ident,
         $substate_type:ident,
         $key:expr,
-        {
+        $value_ident:ident $($value_unpacking:block)? -> {
             $($value_key:ident$(: $value_value:expr)?),*$(,)?
         }$(,)?
     ) => {
-        paste::paste!{
+        paste::paste! {
             models::Substate::[<$substate_type Substate>] {
                 is_locked: !$substate.is_mutable(),
                 key: Box::new($key),
-                $($value_key$(: $value_value)?,)*
+                value: $substate
+                    .get_optional_value()
+                    .map(|$value_ident $($value_unpacking)?| -> Result<_, MappingError> {
+                        Ok(Box::new(models::[<$substate_type Value>] {
+                            $($value_key$(: $value_value)?,)*
+                        }))
+                    })
+                    .transpose()?,
             }
         }
     };
 }
-pub(crate) use key_value_store_substate;
+pub(crate) use key_value_store_optional_substate;
+
+macro_rules! key_value_store_mandatory_substate {
+    (
+        $substate:ident,
+        $substate_type:ident,
+        $key:expr,
+        $value_ident:ident $($value_unpacking:block)? -> {
+            $($value_key:ident$(: $value_value:expr)?),*$(,)?
+        }$(,)?
+    ) => {
+        paste::paste! {
+            {
+                let $value_ident $($value_unpacking)? = $substate.get_definitely_present_value()?;
+                models::Substate::[<$substate_type Substate>] {
+                    is_locked: !$substate.is_mutable(),
+                    key: Box::new($key),
+                    value: Box::new(models::[<$substate_type Value>] {
+                        $($value_key$(: $value_value)?,)*
+                    })
+                }
+            }
+        }
+    };
+}
+pub(crate) use key_value_store_mandatory_substate;
 
 macro_rules! index_substate {
     (
@@ -84,7 +118,9 @@ macro_rules! index_substate {
             models::Substate::[<$substate_type Substate>] {
                 is_locked: false,
                 key: Box::new($key),
-                $($value_key$(: $value_value)?,)*
+                value: Box::new(models::[<$substate_type Value>] {
+                    $($value_key$(: $value_value)?,)*
+                })
             }
         }
     };

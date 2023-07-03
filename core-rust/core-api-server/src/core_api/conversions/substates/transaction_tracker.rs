@@ -37,14 +37,14 @@ pub fn to_api_transaction_tracker_collection_entry(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(intent_hash)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Transaction Tracker Collection Key".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_mandatory_substate!(
         substate,
         TransactionTrackerCollectionEntry,
         models::TransactionIdKey {
             intent_hash: to_api_hash(intent_hash.as_hash()),
         },
-        {
-            status: substate.value.as_ref().map(|status| match status {
+        value -> {
+            status: match value {
                 TransactionStatus::CommittedSuccess => {
                     models::TransactionTrackerTransactionStatus::CommittedSuccess
                 }
@@ -54,7 +54,7 @@ pub fn to_api_transaction_tracker_collection_entry(
                 TransactionStatus::Cancelled => {
                     models::TransactionTrackerTransactionStatus::Cancelled
                 }
-            }),
+            },
         }
     ))
 }

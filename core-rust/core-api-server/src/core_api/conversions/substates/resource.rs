@@ -80,7 +80,9 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
         models::LocalNonFungibleKey {
             non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_id)),
         },
-        {}
+        {
+            is_present: true,
+        }
     ))
 }
 
@@ -154,19 +156,14 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(non_fungible_local_id)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "NonFungibleResourceData".to_string() });
     };
-    Ok(key_value_store_substate!(
+    Ok(key_value_store_optional_substate!(
         substate,
         NonFungibleResourceManagerDataEntry,
         models::LocalNonFungibleKey {
             non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_local_id)),
         },
-        {
-            data_struct: substate
-                .get_optional_value()
-                .map(|value| -> Result<_, MappingError> {
-                    Ok(Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?))
-                })
-                .transpose()?,
+        value -> {
+            data_struct: Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?),
         }
     ))
 }

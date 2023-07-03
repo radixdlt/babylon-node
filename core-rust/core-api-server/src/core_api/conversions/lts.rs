@@ -25,7 +25,11 @@ pub fn to_api_lts_committed_transaction_outcome(
 
     let total_fee = receipt.local_execution.fee_summary.total_royalty_cost_xrd
         + receipt.local_execution.fee_summary.total_execution_cost_xrd
-        + receipt.local_execution.fee_summary.tips_to_distribute();
+        + receipt
+            .local_execution
+            .fee_summary
+            .total_state_expansion_cost_xrd
+        + receipt.local_execution.fee_summary.total_tipping_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(state_version)?,
@@ -69,7 +73,8 @@ pub fn to_api_lts_fungible_balance_changes(
 
     let total_fee = fee_summary.total_royalty_cost_xrd
         + fee_summary.total_execution_cost_xrd
-        + fee_summary.tips_to_distribute();
+        + fee_summary.total_state_expansion_cost_xrd
+        + fee_summary.total_tipping_cost_xrd;
 
     let total_fee_balance_change = -total_fee;
 
@@ -182,7 +187,7 @@ impl<'a> FeePaymentComputer<'a> {
         // - Because "fee distributed" isn't on the fee summary, we have to calculate it instead, by assuming the consensus manager
         //   has no other fee changes
         // - Once "fee distributed" is on the summary, we can use that directly instead
-        let tip_distributed = self.inputs.fee_summary.tips_to_distribute();
+        let tip_distributed = self.inputs.fee_summary.total_tipping_cost_xrd;
         let consensus_manager_xrd_balance_change = self
             .inputs
             .balance_changes
