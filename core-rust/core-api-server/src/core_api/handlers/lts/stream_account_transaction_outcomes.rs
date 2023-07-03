@@ -3,6 +3,7 @@ use state_manager::store::traits::{
     extensions::IterableAccountChangeIndex, ConfigurableDatabase, QueryableProofStore,
     QueryableTransactionStore,
 };
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
@@ -75,6 +76,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     let mut current_total_size = response.get_json_size();
     for state_version in state_versions.take(limit) {
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
+            database.deref(),
             &mapping_context,
             state_version,
             database

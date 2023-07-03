@@ -2,6 +2,7 @@ use crate::core_api::*;
 use state_manager::store::traits::{
     CommittedTransactionBundle, ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
 };
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -63,6 +64,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
             ..
         } = bundle;
         let committed_transaction = to_api_lts_committed_transaction_outcome(
+            database.deref(),
             &mapping_context,
             state_version,
             receipt,
