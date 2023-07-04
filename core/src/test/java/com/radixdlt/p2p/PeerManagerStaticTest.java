@@ -96,10 +96,12 @@ public class PeerManagerStaticTest {
   @Test
   public void should_cleanup_existing_entries_from_same_host_port_on_successful_connect() {
     var self = makeNodeUri("10.0.0.1", 30000);
+    final var p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.addressBookMaxSize()).thenReturn(100);
     var addressBook =
         new AddressBook(
             self,
-            mock(P2PConfig.class),
+            p2pConfig,
             cmock(new TypeLiteral<EventDispatcher<PeerEvent>>() {}),
             new InMemoryAddressBookPersistence());
     var peerManager =

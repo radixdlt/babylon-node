@@ -108,7 +108,7 @@ public class AddressBookHandlerTest extends SystemApiTestBase {
                 .addKnownAddressesItem(
                     new Address()
                         .uri(peerUri.toString())
-                        .blacklisted(false)
+                        .failedHandshake(false)
                         .lastConnectionStatus(Address.LastConnectionStatusEnum.UNKNOWN)));
   }
 }

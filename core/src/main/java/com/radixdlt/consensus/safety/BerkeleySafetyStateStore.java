@@ -64,8 +64,6 @@
 
 package com.radixdlt.consensus.safety;
 
-import static com.sleepycat.je.EnvironmentConfig.*;
-
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;

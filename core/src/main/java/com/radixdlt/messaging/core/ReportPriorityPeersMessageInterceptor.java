@@ -62,18 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p;
+package com.radixdlt.messaging.core;
 
-import java.time.Duration;
+import com.google.inject.Inject;
+import com.radixdlt.messaging.consensus.ConsensusEventMessage;
+import com.radixdlt.p2p.PeerControl;
 
-public final class NoOpPeerControl implements PeerControl {
-  @Override
-  public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
-    // no-op
+public final class ReportPriorityPeersMessageInterceptor implements OutboundMessageInterceptor {
+
+  private final PeerControl peerControl;
+
+  @Inject
+  public ReportPriorityPeersMessageInterceptor(PeerControl peerControl) {
+    this.peerControl = peerControl;
   }
 
   @Override
-  public void reportHighPriorityPeer(NodeId nodeId) {
-    // no-op
+  public void intercept(OutboundMessageEvent outboundMessageEvent) {
+    if (outboundMessageEvent.message() instanceof ConsensusEventMessage) {
+      peerControl.reportHighPriorityPeer(outboundMessageEvent.receiver());
+    }
   }
 }

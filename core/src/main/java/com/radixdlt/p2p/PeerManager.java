@@ -363,7 +363,7 @@ public final class PeerManager {
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-    peerHandshakeFailed.channel().getUri().ifPresent(this.addressBook.get()::blacklist);
+    peerHandshakeFailed.channel().getUri().ifPresent(this.addressBook.get()::reportFailedHandshake);
   }
 
   private void updateChannelsCounters() {

@@ -62,18 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p;
+package com.radixdlt.utils;
 
-import java.time.Duration;
+import java.util.*;
+import javax.annotation.concurrent.NotThreadSafe;
 
-public final class NoOpPeerControl implements PeerControl {
-  @Override
-  public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
-    // no-op
+/**
+ * A simple LRU cache based on LinkedHashMap (using its access-order mode). This class is not thread
+ * safe.
+ */
+@NotThreadSafe
+public class LRUCache<K, V> {
+  private final LinkedHashMap<K, V> underlyingMap;
+
+  public LRUCache(int maxSize, int initialCapacity, float loadFactor) {
+    underlyingMap =
+        new LinkedHashMap<>(initialCapacity, loadFactor, true) {
+          @Override
+          protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            return size() > maxSize;
+          }
+        };
+  }
+
+  public LRUCache(int maxSize) {
+    this(maxSize, maxSize / 2, 0.75f);
+  }
+
+  public Optional<V> get(K key) {
+    return Optional.ofNullable(underlyingMap.get(key));
+  }
+
+  public boolean contains(K key) {
+    return underlyingMap.containsKey(key);
+  }
+
+  public void put(K key, V value) {
+    underlyingMap.put(key, value);
+  }
+
+  public List<K> keys() {
+    return new ArrayList<>(underlyingMap.keySet());
   }
 
   @Override
-  public void reportHighPriorityPeer(NodeId nodeId) {
-    // no-op
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    return (o instanceof LRUCache)
+        && Objects.equals(underlyingMap, ((LRUCache<?, ?>) o).underlyingMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return underlyingMap.hashCode();
   }
 }
