@@ -4536,7 +4536,6 @@ components:
         - type: object
           required:
             - tip_percentage
-            - min_tip_percentage_required
           properties:
             tip_percentage:
               type: integer
@@ -4552,7 +4551,7 @@ components:
               maximum: 65535
               description: |
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
-                A value of 0 means there is no tip that can guarantee submission.
+                A missing value means there is no tip that can guarantee submission.
     LtsTransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
@@ -5507,18 +5506,22 @@ components:
         - type: object
           required:
             - tip_percentage
-            - min_tip_percentage_required
           properties:
             tip_percentage:
               type: integer
               format: int32
               minimum: 0
               maximum: 65535
+              description: |
+                Tip percentage of the submitted (and rejected) transaction.
             min_tip_percentage_required:
               type: integer
               format: int32
               minimum: 0
               maximum: 65535
+              description: |
+                A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+                A missing value means there is no tip that can guarantee submission.
     TransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"

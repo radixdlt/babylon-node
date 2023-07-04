@@ -34,7 +34,7 @@ pub(crate) async fn handle_lts_transaction_submit(
             "The mempool is full and the submitted transaction's priority is not sufficient to replace any existing transactions. Try submitting with a larger tip to increase the transaction's priority.",
             LtsTransactionSubmitErrorDetails::LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
                 tip_percentage: tip_percentage as i32,
-                min_tip_percentage_required: min_tip_percentage_required as i32,
+                min_tip_percentage_required: min_tip_percentage_required.map(|x| x as i32),
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),

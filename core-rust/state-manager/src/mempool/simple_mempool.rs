@@ -63,6 +63,7 @@
  */
 
 use node_common::config::MempoolConfig;
+use tracing::warn;
 use transaction::model::*;
 
 use crate::mempool::*;
@@ -220,7 +221,11 @@ impl SimpleMempool {
             match lowest_priority_transaction {
                 None => {
                     // Even with an empty mempool we are not able to fulfill the request.
-                    panic!("Impossible to add new transaction. Mempool max size lower than transaction size!");
+                    warn!("Impossible to add new transaction. Mempool max size lower than transaction size!");
+                    return Err(MempoolAddError::PriorityThresholdNotMet {
+                        min_tip_percentage_required: None,
+                        tip_percentage: transaction_data.transaction.tip_percentage(),
+                    });
                 }
                 Some(order_data) => {
                     total_transaction_size_free_space +=
@@ -237,9 +242,11 @@ impl SimpleMempool {
             if new_order_data
                 < MempoolDataProposalPriorityOrdering((*to_be_removed.last().unwrap()).clone())
             {
-                // Note: overflow back to 0 is the desired outcome. This means there is no minimum tip guaranteed to add the transaction.
-                let min_tip_percentage_required =
-                    best_to_be_removed.transaction.tip_percentage() + 1;
+                // Note: update when DEFAULT_MAX_TIP_PERCENTAGE is changed/overwriten
+                let min_tip_percentage_required = best_to_be_removed
+                    .transaction
+                    .tip_percentage()
+                    .checked_add(1);
                 return Err(MempoolAddError::PriorityThresholdNotMet {
                     min_tip_percentage_required,
                     tip_percentage: transaction_data.transaction.tip_percentage(),
@@ -395,8 +402,8 @@ impl SimpleMempool {
         max_payload_size_bytes: u64,
         user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
     ) -> Vec<Arc<MempoolTransaction>> {
-        const MAX_TRANSACTION_TO_TRY: usize = 1000;
-        let max_transaction_to_try = max(max_count, MAX_TRANSACTION_TO_TRY);
+        const MAX_TRANSACTIONS_TO_TRY: usize = 1000;
+        let max_transactions_to_try = max(max_count, MAX_TRANSACTIONS_TO_TRY);
 
         let mut payload_size_so_far = 0;
         self.proposal_priority_index
@@ -406,7 +413,7 @@ impl SimpleMempool {
             .filter(|candidate| {
                 !user_payload_hashes_to_exclude.contains(&candidate.notarized_transaction_hash())
             })
-            .take(max_transaction_to_try)
+            .take(max_transactions_to_try)
             .filter(|transaction| {
                 let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
                 let fits = increased_payload_size <= max_payload_size_bytes;

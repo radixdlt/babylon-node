@@ -98,15 +98,15 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetails extends Lts
   }
 
    /**
-   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. 
+   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
    * minimum: 0
    * maximum: 65535
    * @return minTipPercentageRequired
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. ")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Integer getMinTipPercentageRequired() {
     return minTipPercentageRequired;
@@ -114,7 +114,7 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetails extends Lts
 
 
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
     this.minTipPercentageRequired = minTipPercentageRequired;
   }

@@ -65,6 +65,7 @@
 package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 
@@ -76,7 +77,7 @@ public sealed interface MempoolError {
         codecs -> EnumCodec.fromPermittedRecordSubclasses(MempoolError.class, codecs));
   }
 
-  record PriorityThresholdNotMet(int minTipPercentageRequired, int tipPercentage)
+  record PriorityThresholdNotMet(int minTipPercentageRequired, Option<Integer> tipPercentage)
       implements MempoolError {}
 
   record Duplicate(HashCode notarizedTransactionHash) implements MempoolError {}

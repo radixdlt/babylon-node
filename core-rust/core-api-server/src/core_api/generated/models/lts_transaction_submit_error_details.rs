@@ -18,9 +18,9 @@ pub enum LtsTransactionSubmitErrorDetails {
         /// Tip percentage of the submitted (and rejected) transaction. 
         #[serde(rename = "tip_percentage")]
         tip_percentage: i32,
-        /// A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. 
-        #[serde(rename = "min_tip_percentage_required")]
-        min_tip_percentage_required: i32,
+        /// A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+        #[serde(rename = "min_tip_percentage_required", skip_serializing_if = "Option::is_none")]
+        min_tip_percentage_required: Option<i32>,
     },
     #[serde(rename="Rejected")]
     LtsTransactionSubmitRejectedErrorDetails {

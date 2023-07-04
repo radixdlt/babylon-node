@@ -78,7 +78,7 @@ pub enum MempoolAddSource {
 #[derive(Debug)]
 pub enum MempoolAddError {
     PriorityThresholdNotMet {
-        min_tip_percentage_required: u16,
+        min_tip_percentage_required: Option<u16>,
         tip_percentage: u16,
     },
     Duplicate(NotarizedTransactionHash),
@@ -135,7 +135,16 @@ impl MempoolAddRejection {
 impl ToString for MempoolAddError {
     fn to_string(&self) -> String {
         match self {
-            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}"),
+            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => {
+                match min_tip_percentage_required {
+                    None => {
+                        "Priority Threshold not met. There is no known tip to guarantee mempool submission.".to_string()
+                    }
+                    Some(min_tip_percentage_required) => {
+                        format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}")
+                    }
+                }
+            },
             MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }

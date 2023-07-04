@@ -25,10 +25,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
 import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetails;
-import com.radixdlt.api.core.generated.models.TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -70,13 +70,13 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   }
 
    /**
-   * Get tipPercentage
+   * Tip percentage of the submitted (and rejected) transaction. 
    * minimum: 0
    * maximum: 65535
    * @return tipPercentage
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "Tip percentage of the submitted (and rejected) transaction. ")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -98,15 +98,15 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   }
 
    /**
-   * Get minTipPercentageRequired
+   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
    * minimum: 0
    * maximum: 65535
    * @return minTipPercentageRequired
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Integer getMinTipPercentageRequired() {
     return minTipPercentageRequired;
@@ -114,7 +114,7 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
 
 
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
     this.minTipPercentageRequired = minTipPercentageRequired;
   }
