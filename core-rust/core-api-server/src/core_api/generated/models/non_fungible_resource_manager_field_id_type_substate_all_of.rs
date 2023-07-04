@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
-    #[serde(rename = "non_fungible_id_type")]
-    pub non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleResourceManagerFieldIdTypeValue>,
 }
 
 impl NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
-    pub fn new(non_fungible_id_type: crate::core_api::generated::models::NonFungibleIdType) -> NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::NonFungibleResourceManagerFieldIdTypeValue) -> NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
         NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
-            non_fungible_id_type,
+            value: Box::new(value),
         }
     }
 }

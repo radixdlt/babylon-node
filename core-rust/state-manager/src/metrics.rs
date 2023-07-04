@@ -86,8 +86,6 @@ pub struct CommittedTransactionsMetrics {
     pub substate_read_count: Histogram,
     pub substate_write_size: Histogram,
     pub substate_write_count: Histogram,
-    pub max_wasm_memory_used: Histogram,
-    pub max_invoke_payload_size: Histogram,
 }
 
 pub struct MempoolMetrics {
@@ -128,7 +126,7 @@ impl LedgerMetrics {
     }
 }
 
-// TODO: update buckets limits when default values are overwritten
+// TODO(RCnet-V3): update buckets limits when default values are overwritten
 impl CommittedTransactionsMetrics {
     pub fn new(registry: &Registry, execution_config: &ExecutionConfig) -> Self {
         Self {
@@ -153,7 +151,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_size",
                     "Total (per committed transaction) substate read size in bytes.",
                 ),
-                // TODO: update once max substate reads can be limited at execution
+                // TODO(RCnet-V3): update once max substate reads can be limited at execution
                 Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE),
             )
             .registered_at(registry),
@@ -162,7 +160,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_count",
                     "Number of substate reads per committed transactions.",
                 ),
-                Self::buckets(execution_config.max_substate_reads_per_transaction),
+                Self::buckets(execution_config.max_number_of_substates_in_track),
             )
             .registered_at(registry),
             substate_write_size: new_histogram(
@@ -170,7 +168,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_size",
                     "Total (per committed transaction) substate write size in bytes.",
                 ),
-                // TODO: update once max substate writes can be limited at execution
+                // TODO(RCnet-V3): update once max substate writes can be limited at execution
                 Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE),
             )
             .registered_at(registry),
@@ -179,23 +177,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_count",
                     "Number of substate writes per committed transactions.",
                 ),
-                Self::buckets(execution_config.max_substate_writes_per_transaction),
-            )
-            .registered_at(registry),
-            max_wasm_memory_used: new_histogram(
-                opts(
-                    "committed_transactions_max_wasm_memory_used",
-                    "Maximum WASM memory used in bytes per committed transaction.",
-                ),
-                Self::buckets(execution_config.max_wasm_mem_per_transaction),
-            )
-            .registered_at(registry),
-            max_invoke_payload_size: new_histogram(
-                opts(
-                    "committed_transactions_max_invoke_payload_size",
-                    "Maximum invoke payload size in bytes per committed transaction.",
-                ),
-                Self::buckets(execution_config.max_invoke_input_size),
+                Self::buckets(execution_config.max_number_of_substates_in_track),
             )
             .registered_at(registry),
         }

@@ -22,10 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -33,79 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf.JSON_PROPERTY_COMPLETED,
-  ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf.JSON_PROPERTY_MISSED
+  ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
-  public static final String JSON_PROPERTY_COMPLETED = "completed";
-  private List<Long> completed = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_MISSED = "missed";
-  private List<Long> missed = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldCurrentProposalStatisticValue value;
 
   public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf completed(List<Long> completed) {
-    this.completed = completed;
-    return this;
-  }
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf addCompletedItem(Long completedItem) {
-    this.completed.add(completedItem);
+  public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf value(ConsensusManagerFieldCurrentProposalStatisticValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
-   * @return completed
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.")
-  @JsonProperty(JSON_PROPERTY_COMPLETED)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Long> getCompleted() {
-    return completed;
+  public ConsensusManagerFieldCurrentProposalStatisticValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COMPLETED)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCompleted(List<Long> completed) {
-    this.completed = completed;
-  }
-
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf missed(List<Long> missed) {
-    this.missed = missed;
-    return this;
-  }
-
-  public ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf addMissedItem(Long missedItem) {
-    this.missed.add(missedItem);
-    return this;
-  }
-
-   /**
-   * The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
-   * @return missed
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.")
-  @JsonProperty(JSON_PROPERTY_MISSED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<Long> getMissed() {
-    return missed;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MISSED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMissed(List<Long> missed) {
-    this.missed = missed;
+  public void setValue(ConsensusManagerFieldCurrentProposalStatisticValue value) {
+    this.value = value;
   }
 
 
@@ -121,21 +80,19 @@ public class ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf consensusManagerFieldCurrentProposalStatisticSubstateAllOf = (ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf) o;
-    return Objects.equals(this.completed, consensusManagerFieldCurrentProposalStatisticSubstateAllOf.completed) &&
-        Objects.equals(this.missed, consensusManagerFieldCurrentProposalStatisticSubstateAllOf.missed);
+    return Objects.equals(this.value, consensusManagerFieldCurrentProposalStatisticSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(completed, missed);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {\n");
-    sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
-    sb.append("    missed: ").append(toIndentedString(missed)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

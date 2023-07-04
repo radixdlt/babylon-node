@@ -13,26 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionTrackerFieldStateSubstateAllOf {
-    #[serde(rename = "start_epoch")]
-    pub start_epoch: i64,
-    #[serde(rename = "start_partition")]
-    pub start_partition: i32,
-    #[serde(rename = "partition_range_start_inclusive")]
-    pub partition_range_start_inclusive: i32,
-    #[serde(rename = "partition_range_end_inclusive")]
-    pub partition_range_end_inclusive: i32,
-    #[serde(rename = "epochs_per_partition")]
-    pub epochs_per_partition: i64,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::TransactionTrackerFieldStateValue>,
 }
 
 impl TransactionTrackerFieldStateSubstateAllOf {
-    pub fn new(start_epoch: i64, start_partition: i32, partition_range_start_inclusive: i32, partition_range_end_inclusive: i32, epochs_per_partition: i64) -> TransactionTrackerFieldStateSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::TransactionTrackerFieldStateValue) -> TransactionTrackerFieldStateSubstateAllOf {
         TransactionTrackerFieldStateSubstateAllOf {
-            start_epoch,
-            start_partition,
-            partition_range_start_inclusive,
-            partition_range_end_inclusive,
-            epochs_per_partition,
+            value: Box::new(value),
         }
     }
 }

@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -83,6 +84,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
@@ -124,19 +126,26 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicCoreApiTestBase() {}
 
   protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(1000000, new DatabaseFlags(true, false));
+    return buildRunningServerTest(
+        1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
+  }
+
+  protected DeterministicTest buildRunningServerTestWithTransactionScenarios() {
+    return buildRunningServerTest(
+        1000000, new DatabaseFlags(true, false), GenesisData.ALL_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
-    return buildRunningServerTest(1000000, databaseFlags);
+    return buildRunningServerTest(1000000, databaseFlags, GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
-    return buildRunningServerTest(roundsPerEpoch, new DatabaseFlags(true, false));
+    return buildRunningServerTest(
+        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
   }
 
   protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch, DatabaseFlags databaseConfig) {
+      int roundsPerEpoch, DatabaseFlags databaseConfig, ImmutableList<String> scenariosToRun) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -165,7 +174,8 @@ public abstract class DeterministicCoreApiTestBase {
                                 1,
                                 Decimal.of(1),
                                 GenesisConsensusManagerConfig.Builder.testDefaults()
-                                    .epochExactRoundCount(roundsPerEpoch)),
+                                    .epochExactRoundCount(roundsPerEpoch),
+                                scenariosToRun),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
                             StateComputerConfig.REV2ProposerConfig.defaultMempool()),

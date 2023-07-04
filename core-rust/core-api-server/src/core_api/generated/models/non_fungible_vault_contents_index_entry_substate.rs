@@ -15,15 +15,21 @@
 pub struct NonFungibleVaultContentsIndexEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "non_fungible_local_id")]
-    pub non_fungible_local_id: Box<crate::core_api::generated::models::NonFungibleLocalId>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue>,
 }
 
 impl NonFungibleVaultContentsIndexEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, non_fungible_local_id: crate::core_api::generated::models::NonFungibleLocalId) -> NonFungibleVaultContentsIndexEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::LocalNonFungibleKey, value: crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue) -> NonFungibleVaultContentsIndexEntrySubstate {
         NonFungibleVaultContentsIndexEntrySubstate {
             substate_type,
-            non_fungible_local_id: Box::new(non_fungible_local_id),
+            is_locked,
+            key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DefaultDepositRule;
+import com.radixdlt.api.core.generated.models.AccountFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccountFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  AccountFieldStateSubstateAllOf.JSON_PROPERTY_DEFAULT_DEPOSIT_RULE
+  AccountFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_DEFAULT_DEPOSIT_RULE = "default_deposit_rule";
-  private DefaultDepositRule defaultDepositRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountFieldStateValue value;
 
   public AccountFieldStateSubstateAllOf() { 
   }
 
-  public AccountFieldStateSubstateAllOf defaultDepositRule(DefaultDepositRule defaultDepositRule) {
-    this.defaultDepositRule = defaultDepositRule;
+  public AccountFieldStateSubstateAllOf value(AccountFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get defaultDepositRule
-   * @return defaultDepositRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DEFAULT_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DefaultDepositRule getDefaultDepositRule() {
-    return defaultDepositRule;
+  public AccountFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DEFAULT_DEPOSIT_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDefaultDepositRule(DefaultDepositRule defaultDepositRule) {
-    this.defaultDepositRule = defaultDepositRule;
+  public void setValue(AccountFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class AccountFieldStateSubstateAllOf {
       return false;
     }
     AccountFieldStateSubstateAllOf accountFieldStateSubstateAllOf = (AccountFieldStateSubstateAllOf) o;
-    return Objects.equals(this.defaultDepositRule, accountFieldStateSubstateAllOf.defaultDepositRule);
+    return Objects.equals(this.value, accountFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(defaultDepositRule);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountFieldStateSubstateAllOf {\n");
-    sb.append("    defaultDepositRule: ").append(toIndentedString(defaultDepositRule)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -13,18 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct OneResourcePoolFieldStateSubstateAllOf {
-    #[serde(rename = "vault")]
-    pub vault: Box<crate::core_api::generated::models::EntityReference>,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "pool_unit_resource_address")]
-    pub pool_unit_resource_address: String,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::OneResourcePoolFieldStateValue>,
 }
 
 impl OneResourcePoolFieldStateSubstateAllOf {
-    pub fn new(vault: crate::core_api::generated::models::EntityReference, pool_unit_resource_address: String) -> OneResourcePoolFieldStateSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::OneResourcePoolFieldStateValue) -> OneResourcePoolFieldStateSubstateAllOf {
         OneResourcePoolFieldStateSubstateAllOf {
-            vault: Box::new(vault),
-            pool_unit_resource_address,
+            value: Box::new(value),
         }
     }
 }

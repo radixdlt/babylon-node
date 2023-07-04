@@ -11,7 +11,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "pointertype")]
+#[serde(tag = "pointer_type")]
 pub enum TypePointer {
     #[serde(rename="Instance")]
     InstanceTypePointer {

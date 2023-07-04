@@ -15,19 +15,18 @@
 pub struct MultiResourcePoolFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "vaults")]
-    pub vaults: Vec<crate::core_api::generated::models::PoolVault>,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "pool_unit_resource_address")]
-    pub pool_unit_resource_address: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::MultiResourcePoolFieldStateValue>,
 }
 
 impl MultiResourcePoolFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, vaults: Vec<crate::core_api::generated::models::PoolVault>, pool_unit_resource_address: String) -> MultiResourcePoolFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::MultiResourcePoolFieldStateValue) -> MultiResourcePoolFieldStateSubstate {
         MultiResourcePoolFieldStateSubstate {
             substate_type,
-            vaults,
-            pool_unit_resource_address,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

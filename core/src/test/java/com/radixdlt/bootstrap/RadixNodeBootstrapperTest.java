@@ -302,7 +302,8 @@ public final class RadixNodeBootstrapperTest {
                         Decimal.of(1),
                         ImmutableList.of(),
                         Address.virtualAccountAddress(key.getPublicKey()))))),
-        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY,
+        GenesisData.NO_SCENARIOS);
   }
 
   private String encodeToCompressedBase64(GenesisData genesisData) throws IOException {

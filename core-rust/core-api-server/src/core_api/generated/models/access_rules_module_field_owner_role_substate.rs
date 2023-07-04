@@ -15,15 +15,18 @@
 pub struct AccessRulesModuleFieldOwnerRoleSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "owner_role")]
-    pub owner_role: Option<crate::core_api::generated::models::OwnerRole>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccessRulesModuleFieldOwnerRoleValue>,
 }
 
 impl AccessRulesModuleFieldOwnerRoleSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, owner_role: crate::core_api::generated::models::OwnerRole) -> AccessRulesModuleFieldOwnerRoleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::AccessRulesModuleFieldOwnerRoleValue) -> AccessRulesModuleFieldOwnerRoleSubstate {
         AccessRulesModuleFieldOwnerRoleSubstate {
             substate_type,
-            owner_role: Option::Some(owner_role),
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

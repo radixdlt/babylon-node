@@ -15,16 +15,18 @@
 pub struct FungibleResourceManagerFieldTotalSupplySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "total_supply")]
-    pub total_supply: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleResourceManagerFieldTotalSupplyValue>,
 }
 
 impl FungibleResourceManagerFieldTotalSupplySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, total_supply: String) -> FungibleResourceManagerFieldTotalSupplySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::FungibleResourceManagerFieldTotalSupplyValue) -> FungibleResourceManagerFieldTotalSupplySubstate {
         FungibleResourceManagerFieldTotalSupplySubstate {
             substate_type,
-            total_supply,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

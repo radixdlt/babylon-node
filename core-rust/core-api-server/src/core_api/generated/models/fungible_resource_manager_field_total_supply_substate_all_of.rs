@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FungibleResourceManagerFieldTotalSupplySubstateAllOf {
-    /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "total_supply")]
-    pub total_supply: String,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleResourceManagerFieldTotalSupplyValue>,
 }
 
 impl FungibleResourceManagerFieldTotalSupplySubstateAllOf {
-    pub fn new(total_supply: String) -> FungibleResourceManagerFieldTotalSupplySubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::FungibleResourceManagerFieldTotalSupplyValue) -> FungibleResourceManagerFieldTotalSupplySubstateAllOf {
         FungibleResourceManagerFieldTotalSupplySubstateAllOf {
-            total_supply,
+            value: Box::new(value),
         }
     }
 }

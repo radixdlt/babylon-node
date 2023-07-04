@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,69 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * OneResourcePoolFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  OneResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_VAULT,
-  OneResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS
+  OneResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class OneResourcePoolFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_VAULT = "vault";
-  private EntityReference vault;
-
-  public static final String JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS = "pool_unit_resource_address";
-  private String poolUnitResourceAddress;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private OneResourcePoolFieldStateValue value;
 
   public OneResourcePoolFieldStateSubstateAllOf() { 
   }
 
-  public OneResourcePoolFieldStateSubstateAllOf vault(EntityReference vault) {
-    this.vault = vault;
+  public OneResourcePoolFieldStateSubstateAllOf value(OneResourcePoolFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vault
-   * @return vault
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVault() {
-    return vault;
+  public OneResourcePoolFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVault(EntityReference vault) {
-    this.vault = vault;
-  }
-
-
-  public OneResourcePoolFieldStateSubstateAllOf poolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return poolUnitResourceAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPoolUnitResourceAddress() {
-    return poolUnitResourceAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPoolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
+  public void setValue(OneResourcePoolFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -110,21 +80,19 @@ public class OneResourcePoolFieldStateSubstateAllOf {
       return false;
     }
     OneResourcePoolFieldStateSubstateAllOf oneResourcePoolFieldStateSubstateAllOf = (OneResourcePoolFieldStateSubstateAllOf) o;
-    return Objects.equals(this.vault, oneResourcePoolFieldStateSubstateAllOf.vault) &&
-        Objects.equals(this.poolUnitResourceAddress, oneResourcePoolFieldStateSubstateAllOf.poolUnitResourceAddress);
+    return Objects.equals(this.value, oneResourcePoolFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vault, poolUnitResourceAddress);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class OneResourcePoolFieldStateSubstateAllOf {\n");
-    sb.append("    vault: ").append(toIndentedString(vault)).append("\n");
-    sb.append("    poolUnitResourceAddress: ").append(toIndentedString(poolUnitResourceAddress)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

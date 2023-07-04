@@ -149,7 +149,8 @@ public final class REv2GenesisTest {
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            GenesisConsensusManagerConfig.Builder.testDefaults()),
+                            GenesisConsensusManagerConfig.Builder.testDefaults(),
+                            GenesisData.ALL_SCENARIOS),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.zeroMempool()))));
   }

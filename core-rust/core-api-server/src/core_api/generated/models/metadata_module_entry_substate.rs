@@ -15,24 +15,21 @@
 pub struct MetadataModuleEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "field_name")]
-    pub field_name: String,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::MetadataKey>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::MetadataModuleEntryValue>>,
 }
 
 impl MetadataModuleEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, field_name: String, is_deleted: bool, is_locked: bool) -> MetadataModuleEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::MetadataKey) -> MetadataModuleEntrySubstate {
         MetadataModuleEntrySubstate {
             substate_type,
-            field_name,
-            is_deleted,
-            data_struct: None,
             is_locked,
+            key: Box::new(key),
+            value: None,
         }
     }
 }

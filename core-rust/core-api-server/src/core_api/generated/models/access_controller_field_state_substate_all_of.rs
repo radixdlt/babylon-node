@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccessControllerFieldStateSubstateAllOf {
-    #[serde(rename = "data_struct")]
-    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccessControllerFieldStateValue>,
 }
 
 impl AccessControllerFieldStateSubstateAllOf {
-    pub fn new(data_struct: crate::core_api::generated::models::DataStruct) -> AccessControllerFieldStateSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::AccessControllerFieldStateValue) -> AccessControllerFieldStateSubstateAllOf {
         AccessControllerFieldStateSubstateAllOf {
-            data_struct: Box::new(data_struct),
+            value: Box::new(value),
         }
     }
 }

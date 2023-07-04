@@ -9,7 +9,7 @@ pub(crate) async fn handle_status_network_configuration(
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     let network = state.network.clone();
 
-    let bech32_encoder = Bech32Encoder::new(&network);
+    let bech32_encoder = AddressBech32Encoder::new(&network);
     let hrp_set: HrpSet = (&network).into();
 
     let address_types = ALL_ENTITY_TYPES

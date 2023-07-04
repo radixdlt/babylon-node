@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.AccountVaultIndexEntryValue;
+import com.radixdlt.api.core.generated.models.ResourceKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,69 +33,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccountVaultIndexEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_RESOURCE_ADDRESS,
-  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_VAULT
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  AccountVaultIndexEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountVaultIndexEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ResourceKey key;
 
-  public static final String JSON_PROPERTY_VAULT = "vault";
-  private EntityReference vault;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccountVaultIndexEntryValue value;
 
   public AccountVaultIndexEntrySubstateAllOf() { 
   }
 
-  public AccountVaultIndexEntrySubstateAllOf resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public AccountVaultIndexEntrySubstateAllOf key(ResourceKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return resourceAddress
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public ResourceKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setKey(ResourceKey key) {
+    this.key = key;
   }
 
 
-  public AccountVaultIndexEntrySubstateAllOf vault(EntityReference vault) {
-    this.vault = vault;
+  public AccountVaultIndexEntrySubstateAllOf value(AccountVaultIndexEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vault
-   * @return vault
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVault() {
-    return vault;
+  public AccountVaultIndexEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVault(EntityReference vault) {
-    this.vault = vault;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(AccountVaultIndexEntryValue value) {
+    this.value = value;
   }
 
 
@@ -110,21 +111,21 @@ public class AccountVaultIndexEntrySubstateAllOf {
       return false;
     }
     AccountVaultIndexEntrySubstateAllOf accountVaultIndexEntrySubstateAllOf = (AccountVaultIndexEntrySubstateAllOf) o;
-    return Objects.equals(this.resourceAddress, accountVaultIndexEntrySubstateAllOf.resourceAddress) &&
-        Objects.equals(this.vault, accountVaultIndexEntrySubstateAllOf.vault);
+    return Objects.equals(this.key, accountVaultIndexEntrySubstateAllOf.key) &&
+        Objects.equals(this.value, accountVaultIndexEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, vault);
+    return Objects.hash(key, value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountVaultIndexEntrySubstateAllOf {\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    vault: ").append(toIndentedString(vault)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

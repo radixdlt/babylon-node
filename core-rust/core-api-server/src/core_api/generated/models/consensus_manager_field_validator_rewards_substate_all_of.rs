@@ -13,17 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerFieldValidatorRewardsSubstateAllOf {
-    #[serde(rename = "proposer_rewards")]
-    pub proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>,
-    #[serde(rename = "rewards_vault")]
-    pub rewards_vault: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldValidatorRewardsValue>,
 }
 
 impl ConsensusManagerFieldValidatorRewardsSubstateAllOf {
-    pub fn new(proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>, rewards_vault: crate::core_api::generated::models::EntityReference) -> ConsensusManagerFieldValidatorRewardsSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::ConsensusManagerFieldValidatorRewardsValue) -> ConsensusManagerFieldValidatorRewardsSubstateAllOf {
         ConsensusManagerFieldValidatorRewardsSubstateAllOf {
-            proposer_rewards,
-            rewards_vault: Box::new(rewards_vault),
+            value: Box::new(value),
         }
     }
 }

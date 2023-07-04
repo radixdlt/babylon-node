@@ -80,7 +80,8 @@ public record GenesisConsensusManagerConfig(
     Decimal totalEmissionXrdPerEpoch,
     Decimal minValidatorReliability,
     UInt64 numOwnerStakeUnitsUnlockEpochs,
-    UInt64 numFeeIncreaseDelayEpochs) {
+    UInt64 numFeeIncreaseDelayEpochs,
+    Decimal validatorCreationXrdCost) {
 
   public GenesisConsensusManagerConfig {
     Objects.requireNonNull(maxValidators);
@@ -92,6 +93,7 @@ public record GenesisConsensusManagerConfig(
     Objects.requireNonNull(minValidatorReliability);
     Objects.requireNonNull(numOwnerStakeUnitsUnlockEpochs);
     Objects.requireNonNull(numFeeIncreaseDelayEpochs);
+    Objects.requireNonNull(validatorCreationXrdCost);
   }
 
   public static void registerCodec(CodecMap codecMap) {
@@ -114,6 +116,7 @@ public record GenesisConsensusManagerConfig(
     Decimal minValidatorReliability;
     UInt64 numOwnerStakeUnitsUnlockEpochs;
     UInt64 numFeeIncreaseDelayEpochs;
+    Decimal validatorCreationXrdCost;
 
     private Builder() {}
 
@@ -154,7 +157,16 @@ public record GenesisConsensusManagerConfig(
           .totalEmissionXrdPerEpoch(totalXrdEmissionPerEpoch)
           .minValidatorReliability(minReliabilityForEmissions)
           .numOwnerStakeUnitsUnlockEpochs(numOwnerStakeUnitsUnlockEpochs)
-          .numFeeIncreaseDelayEpochs(numFeeIncreaseDelayEpochs);
+          .numFeeIncreaseDelayEpochs(numFeeIncreaseDelayEpochs)
+          .validatorCreationXrdCost(Decimal.of(1000));
+    }
+
+    public static Builder testEnvironmentDefaults() {
+      return productionDefaults()
+          .numUnstakeEpochs(1)
+          .numOwnerStakeUnitsUnlockEpochs(1)
+          .numFeeIncreaseDelayEpochs(1)
+          .validatorCreationXrdCost(Decimal.of(1));
     }
 
     public static Builder testInfiniteEpochs() {
@@ -174,7 +186,8 @@ public record GenesisConsensusManagerConfig(
           .totalEmissionXrdPerEpoch(Decimal.of(100))
           .minValidatorReliability(Decimal.fraction(8, 10))
           .numOwnerStakeUnitsUnlockEpochs(100)
-          .numFeeIncreaseDelayEpochs(100);
+          .numFeeIncreaseDelayEpochs(100)
+          .validatorCreationXrdCost(Decimal.of(1));
     }
 
     public GenesisConsensusManagerConfig build() {
@@ -189,7 +202,8 @@ public record GenesisConsensusManagerConfig(
           totalEmissionXrdPerEpoch,
           minValidatorReliability,
           numOwnerStakeUnitsUnlockEpochs,
-          numFeeIncreaseDelayEpochs);
+          numFeeIncreaseDelayEpochs,
+          validatorCreationXrdCost);
     }
 
     public Builder maxValidators(int value) {
@@ -240,6 +254,11 @@ public record GenesisConsensusManagerConfig(
 
     public Builder numFeeIncreaseDelayEpochs(long value) {
       numFeeIncreaseDelayEpochs = UInt64.fromNonNegativeLong(value);
+      return this;
+    }
+
+    public Builder validatorCreationXrdCost(Decimal value) {
+      validatorCreationXrdCost = value;
       return this;
     }
   }
