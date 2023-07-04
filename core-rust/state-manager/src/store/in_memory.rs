@@ -76,6 +76,7 @@ use crate::{
 
 use crate::query::TransactionIdentifierLoader;
 use crate::store::node_ancestry_resolver::NodeAncestryResolver;
+use crate::store::traits::scenario::{ExecutedGenesisScenario, ExecutedGenesisScenarioStore};
 use core::ops::Bound::{Included, Unbounded};
 use node_common::utils::IsAccountExt;
 use radix_engine_common::types::{Epoch, GlobalAddress, NodeId};
@@ -108,6 +109,7 @@ pub struct InMemoryStore {
     receipt_tree_slices: BTreeMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     account_change_index_last_state_version: StateVersion,
     account_change_index_set: HashMap<GlobalAddress, BTreeSet<StateVersion>>,
+    executed_genesis_scenarios: BTreeMap<StateVersion, ExecutedGenesisScenario>,
 }
 
 impl InMemoryStore {
@@ -131,6 +133,7 @@ impl InMemoryStore {
             receipt_tree_slices: BTreeMap::new(),
             account_change_index_last_state_version: StateVersion::pre_genesis(),
             account_change_index_set: HashMap::new(),
+            executed_genesis_scenarios: BTreeMap::new(),
         }
     }
 
@@ -332,6 +335,13 @@ impl CommitStore for InMemoryStore {
             .insert(commit_state_version, commit_bundle.transaction_tree_slice);
         self.receipt_tree_slices
             .insert(commit_state_version, commit_bundle.receipt_tree_slice);
+    }
+}
+
+impl ExecutedGenesisScenarioStore for InMemoryStore {
+    fn put(&mut self, base_version: StateVersion, scenario: ExecutedGenesisScenario) {
+        self.executed_genesis_scenarios
+            .insert(base_version, scenario);
     }
 }
 

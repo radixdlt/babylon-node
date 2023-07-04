@@ -133,12 +133,18 @@ enum RocksDBColumnFamily {
     /// Key: concat(account_address, state_version), value: null
     /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
     AccountChangeStateVersions,
+    /// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
+    /// keyed by state version on top of which they are executed (note: this requires an assumption
+    /// that every Scenario has at least one transaction).
+    /// Schema: `StateVersion` -> `scrypto_encode(ExecutedGenesisScenario)`
+    ExecutedGenesisScenarios,
 }
 
 use crate::store::node_ancestry_resolver::NodeAncestryResolver;
+use crate::store::traits::scenario::{ExecutedGenesisScenario, ExecutedGenesisScenarioStore};
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 19] = [
     TxnByStateVersion,
     TxnIdentifiersByStateVersion,
     LedgerReceiptByStateVersion,
@@ -157,6 +163,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
     ReceiptAccuTreeSliceByStateVersion,
     ExtensionsData,
     AccountChangeStateVersions,
+    ExecutedGenesisScenarios,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -184,6 +191,7 @@ impl fmt::Display for RocksDBColumnFamily {
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
             ExtensionsData => "extensions_data",
             AccountChangeStateVersions => "account_change_state_versions",
+            ExecutedGenesisScenarios => "executed_genesis_scenarios",
         };
         write!(f, "{str}")
     }
@@ -543,6 +551,18 @@ impl CommitStore for RocksDBStore {
         );
 
         self.db.write(batch).expect("Commit failed");
+    }
+}
+
+impl ExecutedGenesisScenarioStore for RocksDBStore {
+    fn put(&mut self, base_version: StateVersion, scenario: ExecutedGenesisScenario) {
+        self.db
+            .put_cf(
+                self.cf_handle(&ExecutedGenesisScenarios),
+                base_version.to_bytes(),
+                scrypto_encode(&scenario).unwrap(),
+            )
+            .expect("Executed scenario write failed");
     }
 }
 
