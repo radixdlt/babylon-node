@@ -397,26 +397,7 @@ public final class BFTSync implements BFTSyncer {
     for (var syncId : syncIds) {
       metrics.bft().sync().requestTimeouts().inc();
       var syncState = syncing.remove(syncId);
-
-      if (syncState == null) {
-        // TODO: remove once we figure this out
-        final var msg = new StringBuilder();
-        msg.append("Got a null value from \"syncing\" map. SyncId=")
-            .append(syncId)
-            .append(" SyncIds=")
-            .append(syncIds)
-            .append(" Map=")
-            .append(syncing)
-            .append(" Contains=")
-            .append(syncing.containsKey(syncId))
-            .append(" Thread=")
-            .append(Thread.currentThread().getName());
-        log.error(msg.toString());
-        throw new IllegalStateException(
-            "Inconsistent sync state, please contact Radix team member on Discord. (" + msg + ")");
-      } else {
-        syncToQC(syncState.highQC, randomFrom(syncRequestState.authors), syncState.highQcSource);
-      }
+      syncToQC(syncState.highQC, randomFrom(syncRequestState.authors), syncState.highQcSource);
     }
   }
 
