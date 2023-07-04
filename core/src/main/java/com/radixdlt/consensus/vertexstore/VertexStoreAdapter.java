@@ -145,7 +145,7 @@ public final class VertexStoreAdapter {
   }
 
   private void dispatchPostQcInsertionEvents(VertexStore.InsertQcResult.Inserted inserted) {
-    // This is a bit of a hack.
+    // This is a bit of an abstraction break.
     // We don't want to persist the vertex store state (via PersistentVertexStore)
     // if the state is already being persisted alongside commit.
     // This implicitly assumes that:
