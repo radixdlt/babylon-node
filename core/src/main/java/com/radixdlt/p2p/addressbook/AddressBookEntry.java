@@ -123,12 +123,12 @@ public final class AddressBookEntry {
     return create(uri, Optional.of(latestConnectionStatus));
   }
 
-  public static AddressBookEntry createBlacklisted(RadixNodeUri uri, Instant blacklistedUntil) {
+  public static AddressBookEntry createWithFailedHandshake(RadixNodeUri uri, Instant retainUntil) {
+    final var failedHandshake = new PeerAddressEntry.FailedHandshake(retainUntil);
     return new AddressBookEntry(
         uri.getNodeId(),
         Optional.empty(),
-        ImmutableSet.of(
-            new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil))));
+        ImmutableSet.of(new PeerAddressEntry(uri, Optional.empty(), Optional.of(failedHandshake))));
   }
 
   public static AddressBookEntry create(
@@ -165,6 +165,10 @@ public final class AddressBookEntry {
     return this.bannedUntil;
   }
 
+  public boolean hasAddress(RadixNodeUri uri) {
+    return knownAddresses.stream().anyMatch(a -> a.getUri().equals(uri));
+  }
+
   public ImmutableSet<PeerAddressEntry> getKnownAddresses() {
     return knownAddresses;
   }
@@ -173,9 +177,24 @@ public final class AddressBookEntry {
     return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
   }
 
-  public AddressBookEntry withReplacedKnownAddresses(
-      ImmutableSet<PeerAddressEntry> knownAddresses) {
-    return new AddressBookEntry(this.nodeId, this.bannedUntil, knownAddresses);
+  public AddressBookEntry removeAddressEntry(PeerAddressEntry addressEntry) {
+    final var newAddresses =
+        knownAddresses.stream()
+            .filter(not(a -> a.equals(addressEntry)))
+            .collect(ImmutableSet.toImmutableSet());
+    return new AddressBookEntry(nodeId, bannedUntil, newAddresses);
+  }
+
+  public AddressBookEntry removeAddressesThatMatchHostAndPort(String host, int port) {
+    final var filtered =
+        knownAddresses.stream()
+            .filter(not(peerAddress -> hasTheSameHostAndPort(peerAddress, host, port)))
+            .collect(ImmutableSet.toImmutableSet());
+    return new AddressBookEntry(nodeId, bannedUntil, filtered);
+  }
+
+  private boolean hasTheSameHostAndPort(PeerAddressEntry peerAddress, String host, int port) {
+    return peerAddress.getUri().getPort() == port && peerAddress.getUri().getHost().equals(host);
   }
 
   public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
@@ -190,6 +209,14 @@ public final class AddressBookEntry {
             .add(newAddressEntry)
             .build();
     return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+  }
+
+  /**
+   * Returns true if this address book entry carries no information (i.e. no addresses and no ban
+   * info).
+   */
+  public boolean isMeaningless() {
+    return getKnownAddresses().size() == 0 && !isBanned();
   }
 
   public Optional<PeerAddressEntry> entryFor(RadixNodeUri uri) {
@@ -228,12 +255,16 @@ public final class AddressBookEntry {
     }
   }
 
-  public AddressBookEntry withBlacklistedUri(RadixNodeUri uri, Instant blacklistedUntil) {
+  public AddressBookEntry withFailedHandshakeUri(
+      RadixNodeUri uri, Instant retainFailedHandshakeUntil) {
+    final var failedHandshake = new PeerAddressEntry.FailedHandshake(retainFailedHandshakeUntil);
+
     final var maybeExistingAddress =
         this.knownAddresses.stream().filter(e -> e.getUri().equals(uri)).findAny();
 
     if (maybeExistingAddress.isPresent()) {
-      final var updatedAddressEntry = maybeExistingAddress.get().blacklistUntil(blacklistedUntil);
+      final var updatedAddressEntry =
+          maybeExistingAddress.get().withFailedHandshake(failedHandshake);
       final var knownAddressesWithoutTheOldOne =
           this.knownAddresses.stream()
               .filter(not(e -> e.getUri().equals(uri)))
@@ -246,7 +277,7 @@ public final class AddressBookEntry {
       return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
     } else {
       final var newAddressEntry =
-          new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil));
+          new PeerAddressEntry(uri, Optional.empty(), Optional.of(failedHandshake));
       final var newKnownAddresses =
           ImmutableSet.<PeerAddressEntry>builder()
               .addAll(this.knownAddresses)
@@ -256,12 +287,12 @@ public final class AddressBookEntry {
     }
   }
 
-  public AddressBookEntry cleanupExpiredBlacklsitedUris() {
-    final var newKnownAddresses =
+  public AddressBookEntry cleanupExpiredFailedHandshakeUris() {
+    final var addressesToKeep =
         knownAddresses.stream()
-            .filter(not(PeerAddressEntry::blacklistExpired))
+            .filter(not(PeerAddressEntry::failedHandshakeIsSetAndExpired))
             .collect(ImmutableSet.toImmutableSet());
-    return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    return new AddressBookEntry(nodeId, bannedUntil, addressesToKeep);
   }
 
   @Override
@@ -295,6 +326,12 @@ public final class AddressBookEntry {
       FAILURE
     }
 
+    public record FailedHandshake(Instant retainUntil) {
+      public boolean isExpired() {
+        return retainUntil.isBefore(Instant.now());
+      }
+    }
+
     // Placeholder for the serializer ID
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(DsonOutput.Output.ALL)
@@ -306,27 +343,30 @@ public final class AddressBookEntry {
 
     private final Optional<LatestConnectionStatus> latestConnectionStatus;
 
-    private final Optional<Instant> blacklistedUntil;
+    private final Optional<FailedHandshake> maybeFailedHandshake;
 
     @JsonCreator
     private static PeerAddressEntry deserialize(
         @JsonProperty("uri") RadixNodeUri uri,
         @JsonProperty("latestConnectionStatus") String rawLatestConnectionStatus,
-        @JsonProperty("blacklistedUntil") Long rawBlacklistedUntil) {
+        @JsonProperty("failedHandshakeRetainUntil") Long rawFailedHandshakeRetainUntil) {
       final var latestConnectionStatus =
           Optional.ofNullable(rawLatestConnectionStatus).map(LatestConnectionStatus::valueOf);
-      final var blacklistedUntil =
-          Optional.ofNullable(rawBlacklistedUntil).map(Instant::ofEpochMilli);
-      return new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
+      final var maybeFailedHandshake =
+          Optional.ofNullable(rawFailedHandshakeRetainUntil)
+              .map(
+                  retainUntilEpochMillis ->
+                      new FailedHandshake(Instant.ofEpochMilli(retainUntilEpochMillis)));
+      return new PeerAddressEntry(uri, latestConnectionStatus, maybeFailedHandshake);
     }
 
     PeerAddressEntry(
         RadixNodeUri uri,
         Optional<LatestConnectionStatus> latestConnectionStatus,
-        Optional<Instant> blacklistedUntil) {
+        Optional<FailedHandshake> maybeFailedHandshake) {
       this.uri = Objects.requireNonNull(uri);
       this.latestConnectionStatus = Objects.requireNonNull(latestConnectionStatus);
-      this.blacklistedUntil = Objects.requireNonNull(blacklistedUntil);
+      this.maybeFailedHandshake = Objects.requireNonNull(maybeFailedHandshake);
     }
 
     public RadixNodeUri getUri() {
@@ -337,12 +377,16 @@ public final class AddressBookEntry {
       return latestConnectionStatus;
     }
 
-    public boolean blacklisted() {
-      return blacklistedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
+    public boolean failedHandshakeIsPresent() {
+      return maybeFailedHandshake.isPresent();
     }
 
-    public boolean blacklistExpired() {
-      return blacklistedUntil.isPresent() && !blacklisted();
+    public boolean failedHandshakeIsSetAndExpired() {
+      return maybeFailedHandshake.isPresent() && maybeFailedHandshake.get().isExpired();
+    }
+
+    public boolean failedHandshakeIsEmptyOrExpired() {
+      return maybeFailedHandshake.isEmpty() || maybeFailedHandshake.get().isExpired();
     }
 
     @JsonProperty("latestConnectionStatus")
@@ -351,26 +395,26 @@ public final class AddressBookEntry {
       return latestConnectionStatus.map(LatestConnectionStatus::toString).orElse(null);
     }
 
-    @JsonProperty("blacklistedUntil")
+    @JsonProperty("failedHandshakeRetainUntil")
     @DsonOutput(DsonOutput.Output.ALL)
-    public Long rawBlacklistedUntilForSerializer() {
-      return this.blacklistedUntil.map(Instant::toEpochMilli).orElse(null);
+    public Long rawFailedHandshakeRetainUntilForSerializer() {
+      return this.maybeFailedHandshake.map(fh -> fh.retainUntil.toEpochMilli()).orElse(null);
     }
 
     public PeerAddressEntry withLatestConnectionStatus(
         LatestConnectionStatus latestConnectionStatus) {
-      return new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), blacklistedUntil);
+      return new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), maybeFailedHandshake);
     }
 
-    public PeerAddressEntry blacklistUntil(Instant blacklistedUntil) {
-      return new PeerAddressEntry(uri, latestConnectionStatus, Optional.of(blacklistedUntil));
+    public PeerAddressEntry withFailedHandshake(FailedHandshake failedHandshake) {
+      return new PeerAddressEntry(uri, latestConnectionStatus, Optional.of(failedHandshake));
     }
 
     @Override
     public String toString() {
       return String.format(
-          "%s[uri=%s, latestConnectionStatus=%s, blacklistedUntil=%s]",
-          getClass().getSimpleName(), uri, latestConnectionStatus, blacklistedUntil);
+          "%s[uri=%s, latestConnectionStatus=%s, failedHandshake=%s]",
+          getClass().getSimpleName(), uri, latestConnectionStatus, maybeFailedHandshake);
     }
 
     @Override
@@ -384,12 +428,12 @@ public final class AddressBookEntry {
       PeerAddressEntry that = (PeerAddressEntry) o;
       return Objects.equals(uri, that.uri)
           && Objects.equals(latestConnectionStatus, that.latestConnectionStatus)
-          && Objects.equals(blacklistedUntil, that.blacklistedUntil);
+          && Objects.equals(maybeFailedHandshake, that.maybeFailedHandshake);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(uri, latestConnectionStatus, blacklistedUntil);
+      return Objects.hash(uri, latestConnectionStatus, maybeFailedHandshake);
     }
   }
 }

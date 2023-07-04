@@ -81,6 +81,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,9 +91,9 @@ public final class MessageCentralImpl implements MessageCentral {
 
   // Dependencies
   private final Metrics metrics;
-  private final TimeSupplier timeSupplier;
 
   // Message dispatching
+  private final Set<OutboundMessageInterceptor> outboundMessageInterceptors;
   private final MessageDispatcher messageDispatcher;
   private final MessagePreprocessor messagePreprocessor;
 
@@ -118,9 +119,9 @@ public final class MessageCentralImpl implements MessageCentral {
       Metrics metrics,
       Provider<PeerControl> peerControl,
       Addressing addressing,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      Set<OutboundMessageInterceptor> outboundMessageInterceptors) {
     this.metrics = Objects.requireNonNull(metrics);
-    this.timeSupplier = Objects.requireNonNull(timeSupplier);
 
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -128,6 +129,8 @@ public final class MessageCentralImpl implements MessageCentral {
 
     Objects.requireNonNull(timeSupplier);
     Objects.requireNonNull(serialization);
+
+    this.outboundMessageInterceptors = outboundMessageInterceptors;
 
     this.messageDispatcher =
         new MessageDispatcher(
@@ -220,6 +223,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private void outboundMessageProcessor(OutboundMessageEvent outbound) {
     this.metrics.messages().outbound().queued().set(outboundQueue.size());
+    outboundMessageInterceptors.forEach(i -> i.intercept(outbound));
     messageDispatcher.send(outbound);
   }
 }

@@ -85,6 +85,7 @@ public class SeedNodesConfigParserTest {
   public void setUp() throws IOException {
     p2pConfig = mock(P2PConfig.class);
     when(p2pConfig.defaultPort()).thenReturn(30000);
+    when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
   }
 
   @Test

@@ -62,18 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p;
+package com.radixdlt.utils;
 
-import java.time.Duration;
+import static com.radixdlt.lang.Unit.unit;
+import static org.junit.Assert.assertEquals;
 
-public final class NoOpPeerControl implements PeerControl {
-  @Override
-  public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
-    // no-op
+import com.radixdlt.lang.Unit;
+import java.util.List;
+import java.util.stream.IntStream;
+import org.junit.Test;
+
+public final class LRUCacheTest {
+
+  @Test
+  public void test_least_recently_accessed_entries_are_removed() {
+    final var cache = new LRUCache<String, Unit>(4);
+    cache.put("1", unit());
+    cache.put("2", unit());
+    cache.put("3", unit());
+    cache.put("4", unit());
+    cache.put("5", unit());
+    assertEquals(List.of("2", "3", "4", "5"), cache.keys());
+    cache.get("2");
+    assertEquals(List.of("3", "4", "5", "2"), cache.keys());
+    cache.put("6", unit());
+    assertEquals(List.of("4", "5", "2", "6"), cache.keys());
   }
 
-  @Override
-  public void reportHighPriorityPeer(NodeId nodeId) {
-    // no-op
+  @Test
+  public void test_cache_restore() {
+    final var original = new LRUCache<Integer, Unit>(5);
+    IntStream.range(0, 5).forEach(i -> original.put(i, unit()));
+    original.get(2);
+    assertEquals(List.of(0, 1, 3, 4, 2), original.keys());
+
+    final var restored = new LRUCache<Integer, Unit>(5);
+    for (var k : original.keys()) {
+      restored.put(k, unit());
+    }
+    assertEquals(restored.keys(), original.keys());
   }
 }

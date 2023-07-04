@@ -66,11 +66,15 @@ package com.radixdlt.p2p.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.p2p.NodeId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryAddressBookPersistence implements AddressBookPersistence {
   private final Map<NodeId, AddressBookEntry> entries = new ConcurrentHashMap<>();
+
+  private List<NodeId> highPriorityPeers = List.of();
 
   @Override
   public void open() {
@@ -88,7 +92,7 @@ public final class InMemoryAddressBookPersistence implements AddressBookPersiste
   }
 
   @Override
-  public boolean saveEntry(AddressBookEntry entry) {
+  public boolean upsertEntry(AddressBookEntry entry) {
     entries.put(entry.getNodeId(), entry);
     return true;
   }
@@ -102,5 +106,15 @@ public final class InMemoryAddressBookPersistence implements AddressBookPersiste
   @Override
   public ImmutableList<AddressBookEntry> getAllEntries() {
     return ImmutableList.copyOf(entries.values());
+  }
+
+  @Override
+  public void storeHighPriorityPeers(List<NodeId> ids) {
+    highPriorityPeers = new ArrayList<>(ids);
+  }
+
+  @Override
+  public List<NodeId> getHighPriorityPeers() {
+    return highPriorityPeers;
   }
 }
