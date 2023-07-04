@@ -123,7 +123,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       this.highPriorityPeersDb =
           this.dbEnv.openDatabase(null, "address_book_high_priority_peers", config);
     } catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
-      throw new IllegalStateException("while opening databa se", ex);
+      throw new IllegalStateException("while opening database", ex);
     }
   }
 
