@@ -89,16 +89,18 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
             : Optional.<Instant>empty();
     final var uri =
         RadixNodeUri.fromPubKeyAndAddress(1, keyPair.getPublicKey(), "127.0.0.1", 30000);
-    final var blacklistedUntil =
+    final Optional<PeerAddressEntry.FailedHandshake> failedHandshake =
         rnd.nextBoolean()
-            ? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
-            : Optional.<Instant>empty();
+            ? Optional.of(
+                new PeerAddressEntry.FailedHandshake(
+                    Instant.ofEpochMilli(Math.abs(rnd.nextLong()))))
+            : Optional.empty();
     final var latestConnectionStatus =
         rnd.nextBoolean()
             ? Optional.of(
                 rnd.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
             : Optional.<LatestConnectionStatus>empty();
-    final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
+    final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, failedHandshake);
     return new AddressBookEntry(
         NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
   }

@@ -62,18 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p;
+package com.radixdlt.p2p.addressbook;
 
-import java.time.Duration;
+import static org.junit.Assert.assertEquals;
 
-public final class NoOpPeerControl implements PeerControl {
-  @Override
-  public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
-    // no-op
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Stream;
+import org.apache.commons.cli.ParseException;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+public final class BerkeleyAddressBookStoreTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  BerkeleyAddressBookStore sut;
+
+  final Random random = new Random(12345);
+
+  @Before
+  public void setup() throws IOException, ParseException {
+    sut =
+        new BerkeleyAddressBookStore(
+            DefaultSerialization.getInstance(),
+            new MetricsInitializer().initialize(),
+            folder.newFolder().getAbsolutePath(),
+            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(
+                RuntimeProperties.defaultWithOverrides(Map.of())));
   }
 
-  @Override
-  public void reportHighPriorityPeer(NodeId nodeId) {
-    // no-op
+  @Test
+  public void store_should_persist_and_read_high_priority_peers() {
+    assertEquals(List.of(), sut.getHighPriorityPeers());
+    final var ids = Stream.generate(this::randomNodeId).limit(random.nextInt(3000) + 1).toList();
+    sut.storeHighPriorityPeers(ids);
+    assertEquals(ids, sut.getHighPriorityPeers());
+  }
+
+  @Test
+  public void upsert_should_replace_existing_entry() {
+    final var nodeId = randomNodeId();
+    final var initialEntry =
+        AddressBookEntry.create(
+            RadixNodeUri.fromPubKeyAndAddress(
+                Network.INTEGRATIONTESTNET.getId(), nodeId.getPublicKey(), "127.0.0.1", 9000));
+    sut.upsertEntry(initialEntry);
+    assertEquals(initialEntry, sut.getAllEntries().get(0));
+
+    final var updatedEntry =
+        initialEntry.addUriIfNotExists(
+            RadixNodeUri.fromPubKeyAndAddress(
+                Network.INTEGRATIONTESTNET.getId(), nodeId.getPublicKey(), "127.0.0.2", 9002));
+
+    sut.upsertEntry(updatedEntry);
+    assertEquals(updatedEntry, sut.getAllEntries().get(0));
+  }
+
+  private NodeId randomNodeId() {
+    return NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
   }
 }
