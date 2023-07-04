@@ -43,7 +43,7 @@ pub fn to_api_transaction_tracker_collection_entry(
         models::TransactionIdKey {
             intent_hash: to_api_hash(intent_hash.as_hash()),
         },
-        value -> {
+        value => {
             status: match value {
                 TransactionStatus::CommittedSuccess => {
                     models::TransactionTrackerTransactionStatus::CommittedSuccess
