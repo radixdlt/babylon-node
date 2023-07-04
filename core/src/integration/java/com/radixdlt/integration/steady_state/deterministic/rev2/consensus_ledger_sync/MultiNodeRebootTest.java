@@ -201,6 +201,10 @@ public final class MultiNodeRebootTest {
       builder.overrideWithIncorrectModule(overrideModule);
     }
 
+    // This test requires a fixed validator set, so we're removing
+    // any fees from transactions (so they don't get any rewards,
+    // which would alter the stake distribution)
+    final var noFees = true;
     return builder.functionalNodeModule(
         new FunctionalRadixNodeModule(
             NodeStorageConfig.tempFolder(folder),
@@ -221,7 +225,10 @@ public final class MultiNodeRebootTest {
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1),
                     false,
-                    true),
+                    noFees),
+                // This test can, in some cases, rely on ledger sync
+                // requests timing out in reasonable time,
+                // so setting the request timeout to 100 ms
                 SyncRelayConfig.of(100, 10, 500))));
   }
 
