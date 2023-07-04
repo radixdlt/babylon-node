@@ -65,18 +65,20 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.LongCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-public record RustMempoolConfig(long maxTotalTransactionsSize, long maxTransactionCount) {
+public record RustMempoolConfig(UInt64 maxTotalTransactionsSize, UInt32 maxTransactionCount) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         RustMempoolConfig.class,
-        codecs ->
-            StructCodec.fromFields(
-                RustMempoolConfig::new,
-                Field.of(RustMempoolConfig::maxTotalTransactionsSize, new LongCodec(false)),
-                Field.of(RustMempoolConfig::maxTransactionCount, new LongCodec(false))));
+        codecs -> StructCodec.fromRecordComponents(RustMempoolConfig.class, codecs));
+  }
+
+  public RustMempoolConfig(long maxTotalTransactionsSize, int maxTransactionCount) {
+    this(
+        UInt64.fromNonNegativeLong(maxTotalTransactionsSize),
+        UInt32.fromNonNegativeInt(maxTransactionCount));
   }
 }

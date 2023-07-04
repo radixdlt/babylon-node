@@ -67,7 +67,7 @@ use transaction::model::*;
 
 use crate::mempool::*;
 
-use std::cmp::Ordering;
+use std::cmp::{max, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
@@ -83,10 +83,16 @@ pub struct MempoolData {
     pub source: MempoolAddSource,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct MempoolTransaction {
     pub validated: Box<ValidatedNotarizedTransactionV1>,
     pub raw: RawNotarizedTransaction,
+}
+
+impl PartialEq for MempoolTransaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.notarized_transaction_hash() == other.notarized_transaction_hash()
+    }
 }
 
 impl MempoolTransaction {
@@ -134,31 +140,23 @@ impl MempoolData {
 }
 
 /// A wrapper around an [`Arc<MempoolData>`] which implements ordering traits for the proposal priority.
-/// The order is such that a normal iteration over a BTreeSet gives the next best proposal transactions,
-/// i.e. if a < b then a is prioritized over b.
-#[derive(Clone, Eq)]
+/// If a > b then a is prioritized over b.
+#[derive(Clone, Eq, PartialEq)]
 pub struct MempoolDataProposalPriorityOrdering(pub Arc<MempoolData>);
 
 impl Ord for MempoolDataProposalPriorityOrdering {
     fn cmp(&self, other: &Self) -> Ordering {
-        match self
-            .0
+        self.0
             .transaction
             .tip_percentage()
             .cmp(&other.0.transaction.tip_percentage())
-        {
-            Ordering::Less => Ordering::Greater,
-            Ordering::Greater => Ordering::Less,
-            Ordering::Equal => match self.0.added_at.cmp(&other.0.added_at) {
-                Ordering::Less => Ordering::Less,
-                Ordering::Greater => Ordering::Greater,
-                Ordering::Equal => self
-                    .0
+            .then_with(|| other.0.added_at.cmp(&self.0.added_at))
+            .then_with(|| {
+                self.0
                     .transaction
                     .notarized_transaction_hash()
-                    .cmp(&other.0.transaction.notarized_transaction_hash()),
-            },
-        }
+                    .cmp(&other.0.transaction.notarized_transaction_hash())
+            })
     }
 }
 
@@ -168,17 +166,10 @@ impl PartialOrd for MempoolDataProposalPriorityOrdering {
     }
 }
 
-impl PartialEq for MempoolDataProposalPriorityOrdering {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.transaction.notarized_transaction_hash()
-            == other.0.transaction.notarized_transaction_hash()
-    }
-}
-
 pub struct SimpleMempool {
-    remaining_transaction_count: usize,
-    remaining_total_transactions_size: usize,
-    pub proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
+    remaining_transaction_count: u32,
+    remaining_total_transactions_size: u64,
+    proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
     data: HashMap<NotarizedTransactionHash, Arc<MempoolData>>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
 }
@@ -196,52 +187,57 @@ impl SimpleMempool {
 }
 
 impl SimpleMempool {
-    /// Tries to add a new transaction into the mempool. Assumes the transaction is not already inside (panics otherwise).
+    /// ASSUMPTION: Mempool does not already contain the transaction (panics otherwise).
+    /// Tries to add a new transaction into the mempool.
     /// Will return either a [`Vec`] of [`MempoolData`] that was evicted in order to fit the new transaction or an error
     /// if the mempool is full and the new transaction proposal priority is not better than what already exists.
     pub fn add_transaction(
         &mut self,
         transaction: Arc<MempoolTransaction>,
         source: MempoolAddSource,
+        added_at: Instant,
     ) -> Result<Vec<Arc<MempoolData>>, MempoolAddError> {
         let payload_hash = transaction.notarized_transaction_hash();
         let intent_hash = transaction.intent_hash();
-        let transaction_size = transaction.raw.0.len();
+        let transaction_size = transaction.raw.0.len() as u64;
 
-        let target_remaining_total_transactions_size = transaction_size;
-        let target_remaining_transaction_count = 1;
-        let transaction_data = Arc::new(MempoolData::create(transaction, Instant::now(), source));
+        let transaction_data = Arc::new(MempoolData::create(transaction, added_at, source));
         let new_order_data = MempoolDataProposalPriorityOrdering(transaction_data.clone());
 
-        let mut remaining_total_transactions_size = self.remaining_total_transactions_size;
-        let mut remaining_transaction_count = self.remaining_transaction_count;
+        let mut total_transaction_size_free_space = self.remaining_total_transactions_size;
+        let mut total_transaction_count_free_space = self.remaining_transaction_count;
         let mut to_be_removed = Vec::new();
         let mut priority_iter = self.proposal_priority_index.iter();
+        // Collect the lowest priority transactions that are required to be evicted in order to add the new one.
         // Note: worst-case scenario is the biggest transaction that will be rejected against a mempool full of smallest
         // possible transactions. This can be mitigated with a dynamic segment tree which can do fast range sum queries,
         // in order to check rejection before actually getting the evicted transactions. With a minimum transaction of
         // 1024 bytes and current max transaction size of 1MB this should not be a problem yet.
-        while remaining_total_transactions_size < target_remaining_total_transactions_size
-            || remaining_transaction_count < target_remaining_transaction_count
+        while total_transaction_size_free_space < transaction_size
+            || total_transaction_count_free_space < 1
         {
-            let order_data = priority_iter.next_back();
-            match order_data {
+            let lowest_priority_transaction = priority_iter.next();
+            match lowest_priority_transaction {
                 None => {
+                    // Even with an empty mempool we are not able to fulfill the request.
                     panic!("Impossible to add new transaction. Mempool max size lower than transaction size!");
                 }
                 Some(order_data) => {
-                    remaining_total_transactions_size += order_data.0.transaction.raw.0.len();
-                    remaining_transaction_count += 1;
+                    total_transaction_size_free_space +=
+                        order_data.0.transaction.raw.0.len() as u64;
+                    total_transaction_count_free_space += 1;
                     to_be_removed.push(order_data.0.clone());
                 }
             }
         }
 
+        // Check the new transaction is better than all to be removed transactions.
         if !to_be_removed.is_empty() {
             let best_to_be_removed = to_be_removed.last().unwrap();
             if new_order_data
-                > MempoolDataProposalPriorityOrdering((*to_be_removed.last().unwrap()).clone())
+                < MempoolDataProposalPriorityOrdering((*to_be_removed.last().unwrap()).clone())
             {
+                // Note: overflow back to 0 is the desired outcome. This means there is no minimum tip guaranteed to add the transaction.
                 let min_tip_percentage_required =
                     best_to_be_removed.transaction.tip_percentage() + 1;
                 return Err(MempoolAddError::PriorityThresholdNotMet {
@@ -251,6 +247,7 @@ impl SimpleMempool {
             }
         }
 
+        // Make room for new transaction
         for data in to_be_removed.iter() {
             self.remove_data(data.clone());
         }
@@ -261,7 +258,7 @@ impl SimpleMempool {
 
         // Add new MempoolData
         if self.data.insert(payload_hash, transaction_data).is_some() {
-            panic!("Transaction already inside mempool");
+            panic!("Broken precondition: Transaction already inside mempool");
         }
 
         // Add proposal priority index
@@ -288,7 +285,7 @@ impl SimpleMempool {
         let intent_hash = &data.transaction.intent_hash();
 
         self.remaining_transaction_count += 1;
-        self.remaining_total_transactions_size += data.transaction.raw.0.len();
+        self.remaining_total_transactions_size += data.transaction.raw.0.len() as u64;
 
         self.data.remove(payload_hash);
 
@@ -388,6 +385,39 @@ impl SimpleMempool {
             })
             .collect()
     }
+
+    /// Picks an subset of transactions to form the proposal.
+    /// Transactions are picked in the order of [`proposal_priority_index`].
+    /// Obeys the given count/size limits and explicit exclusions.
+    pub fn get_proposal_transactions(
+        &self,
+        max_count: usize,
+        max_payload_size_bytes: u64,
+        user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
+    ) -> Vec<Arc<MempoolTransaction>> {
+        const MAX_TRANSACTION_TO_TRY: usize = 1000;
+        let max_transaction_to_try = max(max_count, MAX_TRANSACTION_TO_TRY);
+
+        let mut payload_size_so_far = 0;
+        self.proposal_priority_index
+            .iter()
+            .rev()
+            .map(|mempool_data_order| mempool_data_order.0.transaction.clone())
+            .filter(|candidate| {
+                !user_payload_hashes_to_exclude.contains(&candidate.notarized_transaction_hash())
+            })
+            .take(max_transaction_to_try)
+            .filter(|transaction| {
+                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
+                let fits = increased_payload_size <= max_payload_size_bytes;
+                if fits {
+                    payload_size_so_far = increased_payload_size;
+                }
+                fits
+            })
+            .take(max_count)
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -481,13 +511,13 @@ mod tests {
         assert_eq!(mp.remaining_transaction_count, 5);
         assert_eq!(mp.get_count(), 0);
 
-        mp.add_transaction(mt1.clone(), MempoolAddSource::CoreApi)
+        mp.add_transaction(mt1.clone(), MempoolAddSource::CoreApi, Instant::now())
             .unwrap();
         assert_eq!(mp.remaining_transaction_count, 4);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.contains_transaction(&mt1.notarized_transaction_hash()));
 
-        mp.add_transaction(mt2.clone(), MempoolAddSource::MempoolSync)
+        mp.add_transaction(mt2.clone(), MempoolAddSource::MempoolSync, Instant::now())
             .unwrap();
         assert_eq!(mp.remaining_transaction_count, 3);
         assert_eq!(mp.get_count(), 2);
@@ -527,19 +557,35 @@ mod tests {
             max_total_transactions_size: 2 * 1024 * 1024,
         });
         assert!(mp
-            .add_transaction(intent_1_payload_1.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(
+                intent_1_payload_1.clone(),
+                MempoolAddSource::CoreApi,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(intent_1_payload_2.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(
+                intent_1_payload_2.clone(),
+                MempoolAddSource::CoreApi,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(intent_1_payload_3, MempoolAddSource::MempoolSync)
+            .add_transaction(
+                intent_1_payload_3,
+                MempoolAddSource::MempoolSync,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(intent_2_payload_1.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(
+                intent_2_payload_1.clone(),
+                MempoolAddSource::CoreApi,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
 
@@ -577,7 +623,11 @@ mod tests {
             0
         );
         assert!(mp
-            .add_transaction(intent_2_payload_1, MempoolAddSource::MempoolSync)
+            .add_transaction(
+                intent_2_payload_1,
+                MempoolAddSource::MempoolSync,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
 
@@ -589,7 +639,11 @@ mod tests {
         );
 
         assert!(mp
-            .add_transaction(intent_2_payload_2.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(
+                intent_2_payload_2.clone(),
+                MempoolAddSource::CoreApi,
+                Instant::now()
+            )
             .unwrap()
             .is_empty());
         assert_eq!(
@@ -624,7 +678,7 @@ mod tests {
         // For same tip_percentage, earliest seen transaction is prioritized.
         assert!(
             MempoolDataProposalPriorityOrdering(md1.clone())
-                < MempoolDataProposalPriorityOrdering(md2.clone())
+                > MempoolDataProposalPriorityOrdering(md2.clone())
         );
 
         let md3 = Arc::new(MempoolData {
@@ -636,10 +690,10 @@ mod tests {
         // Highest tip percentage is always prioritized.
         assert!(
             MempoolDataProposalPriorityOrdering(md3.clone())
-                < MempoolDataProposalPriorityOrdering(md1)
+                > MempoolDataProposalPriorityOrdering(md1)
         );
         assert!(
-            MempoolDataProposalPriorityOrdering(md3) < MempoolDataProposalPriorityOrdering(md2)
+            MempoolDataProposalPriorityOrdering(md3) > MempoolDataProposalPriorityOrdering(md2)
         );
     }
 
@@ -655,45 +709,62 @@ mod tests {
         let mt8 = create_fake_pending_transaction(4, 0, 40);
         let mt9 = create_fake_pending_transaction(5, 0, 40);
 
+        let now = Instant::now();
+        let time_point = [
+            now + Duration::from_secs(1),
+            now + Duration::from_secs(2),
+            now + Duration::from_secs(3),
+        ];
+
         let mut mp = SimpleMempool::new(MempoolConfig {
             max_transaction_count: 4,
             max_total_transactions_size: 2 * 1024 * 1024,
         });
 
         assert!(mp
-            .add_transaction(mt4.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(mt4.clone(), MempoolAddSource::CoreApi, time_point[0])
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(mt2.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(mt2.clone(), MempoolAddSource::CoreApi, time_point[1])
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(mt3.clone(), MempoolAddSource::MempoolSync)
+            .add_transaction(mt3.clone(), MempoolAddSource::MempoolSync, time_point[0])
             .unwrap()
             .is_empty());
         assert!(mp
-            .add_transaction(mt1.clone(), MempoolAddSource::CoreApi)
+            .add_transaction(mt1.clone(), MempoolAddSource::CoreApi, time_point[0])
             .unwrap()
             .is_empty());
 
-        let evicted = mp.add_transaction(mt5, MempoolAddSource::CoreApi).unwrap();
+        let evicted = mp
+            .add_transaction(mt5, MempoolAddSource::CoreApi, time_point[1])
+            .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt1);
 
-        // Note: mt2 and mt3 might need reordering whenever hashes change
-        let evicted = mp.add_transaction(mt6, MempoolAddSource::CoreApi).unwrap();
-        assert_eq!(evicted.len(), 1);
-        assert_eq!(evicted[0].transaction, mt3);
-
-        let evicted = mp.add_transaction(mt7, MempoolAddSource::CoreApi).unwrap();
+        // mt2 should be evicted before mt3 because of lower time spent in the mempool
+        let evicted = mp
+            .add_transaction(mt6, MempoolAddSource::CoreApi, time_point[1])
+            .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt2);
 
-        let evicted = mp.add_transaction(mt8, MempoolAddSource::CoreApi).unwrap();
+        let evicted = mp
+            .add_transaction(mt7, MempoolAddSource::CoreApi, time_point[1])
+            .unwrap();
+        assert_eq!(evicted.len(), 1);
+        assert_eq!(evicted[0].transaction, mt3);
+
+        let evicted = mp
+            .add_transaction(mt8, MempoolAddSource::CoreApi, time_point[1])
+            .unwrap();
         assert_eq!(evicted.len(), 1);
         assert_eq!(evicted[0].transaction, mt4);
 
-        assert!(mp.add_transaction(mt9, MempoolAddSource::CoreApi).is_err());
+        assert!(mp
+            .add_transaction(mt9, MempoolAddSource::CoreApi, time_point[2])
+            .is_err());
     }
 }

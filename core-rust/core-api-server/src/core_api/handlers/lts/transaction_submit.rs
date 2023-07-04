@@ -31,7 +31,7 @@ pub(crate) async fn handle_lts_transaction_submit(
         Ok(_) => Ok(models::LtsTransactionSubmitResponse::new(false)),
         Err(MempoolAddError::PriorityThresholdNotMet { min_tip_percentage_required, tip_percentage }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
-            "Mempool is full and priority threshold not met",
+            "The mempool is full and the submitted transaction's priority is not sufficient to replace any existing transactions. Try submitting with a larger tip to increase the transaction's priority.",
             LtsTransactionSubmitErrorDetails::LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
                 tip_percentage: tip_percentage as i32,
                 min_tip_percentage_required: min_tip_percentage_required as i32,

@@ -86,8 +86,6 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -187,8 +185,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                             Network.INTEGRATIONTESTNET.getId(),
                             converted,
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                            StateComputerConfig.REV2ProposerConfig.mempool(
-                                0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of())))))) {
+                            StateComputerConfig.REV2ProposerConfig.zeroMempool()))))) {
       test.startAllNodes();
       final var expectedBalanceEntry =
           stateSummary.xrdBalances.entrySet().stream().findFirst().orElseThrow();

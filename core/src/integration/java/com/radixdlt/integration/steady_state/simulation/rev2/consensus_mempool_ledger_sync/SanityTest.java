@@ -74,8 +74,6 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -115,11 +113,7 @@ public class SanityTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.mempool(
-                            10,
-                            10 * 1024 * 1024,
-                            new RustMempoolConfig(100 * 1024 * 1024, 100),
-                            MempoolRelayConfig.of())),
+                        REV2ProposerConfig.defaultMempool()),
                     SyncRelayConfig.of(5000, 10, 3000L))))
         .addTestModules(
             ConsensusMonitors.safety(),

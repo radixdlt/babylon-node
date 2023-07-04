@@ -71,6 +71,7 @@ use transaction::model::*;
 
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::simple_mempool::SimpleMempool;
@@ -122,8 +123,6 @@ impl MempoolManager {
 }
 
 impl MempoolManager {
-    /// Picks an arbitrary subset of transactions to form the proposal from.
-    /// Obeys the given count/size limits and explicit exclusions.
     pub fn get_proposal_transactions(
         &self,
         max_count: usize,
@@ -132,27 +131,11 @@ impl MempoolManager {
     ) -> Vec<Arc<MempoolTransaction>> {
         let read_mempool = self.mempool.read();
 
-        const MAX_TRANSACTION_TO_TRY: usize = 1000;
-
-        let mut payload_size_so_far = 0;
-        read_mempool
-            .proposal_priority_index
-            .iter()
-            .map(|mempool_data_order| mempool_data_order.0.transaction.clone())
-            .filter(|candidate| {
-                !user_payload_hashes_to_exclude.contains(&candidate.notarized_transaction_hash())
-            })
-            .take(MAX_TRANSACTION_TO_TRY)
-            .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
-                let fits = increased_payload_size <= max_payload_size_bytes;
-                if fits {
-                    payload_size_so_far = increased_payload_size;
-                }
-                fits
-            })
-            .take(max_count)
-            .collect()
+        read_mempool.get_proposal_transactions(
+            max_count,
+            max_payload_size_bytes,
+            user_payload_hashes_to_exclude,
+        )
     }
 
     /// Picks a random subset of transactions to be relayed via a mempool sync.
@@ -301,11 +284,11 @@ impl MempoolManager {
                     validated,
                     raw: raw_transaction,
                 });
-                match self
-                    .mempool
-                    .write()
-                    .add_transaction(mempool_transaction.clone(), source)
-                {
+                match self.mempool.write().add_transaction(
+                    mempool_transaction.clone(),
+                    source,
+                    Instant::now(),
+                ) {
                     Ok(evicted) => {
                         self.metrics.submission_added.with_label(source).inc();
                         self.metrics

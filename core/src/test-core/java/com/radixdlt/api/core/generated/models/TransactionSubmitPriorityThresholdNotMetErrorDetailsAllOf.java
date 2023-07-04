@@ -28,36 +28,36 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
+ * TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
  */
 @JsonPropertyOrder({
-  LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_TIP_PERCENTAGE,
-  LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
+  TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_TIP_PERCENTAGE,
+  TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
+public class TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private Integer tipPercentage;
 
   public static final String JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED = "min_tip_percentage_required";
   private Integer minTipPercentageRequired;
 
-  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf() { 
+  public TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf() { 
   }
 
-  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf tipPercentage(Integer tipPercentage) {
+  public TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf tipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
-   * Tip percentage of the submitted (and rejected) transaction. 
+   * Get tipPercentage
    * minimum: 0
    * maximum: 65535
    * @return tipPercentage
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Tip percentage of the submitted (and rejected) transaction. ")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -73,19 +73,19 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
   }
 
 
-  public LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf minTipPercentageRequired(Integer minTipPercentageRequired) {
+  public TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf minTipPercentageRequired(Integer minTipPercentageRequired) {
     this.minTipPercentageRequired = minTipPercentageRequired;
     return this;
   }
 
    /**
-   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. 
+   * Get minTipPercentageRequired
    * minimum: 0
    * maximum: 65535
    * @return minTipPercentageRequired
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. ")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -102,7 +102,7 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
 
 
   /**
-   * Return true if this LtsTransactionSubmitPriorityThresholdNotMetErrorDetails_allOf object is equal to o.
+   * Return true if this TransactionSubmitPriorityThresholdNotMetErrorDetails_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -112,9 +112,9 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf = (LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf) o;
-    return Objects.equals(this.tipPercentage, ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.tipPercentage) &&
-        Objects.equals(this.minTipPercentageRequired, ltsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.minTipPercentageRequired);
+    TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf transactionSubmitPriorityThresholdNotMetErrorDetailsAllOf = (TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf) o;
+    return Objects.equals(this.tipPercentage, transactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.tipPercentage) &&
+        Objects.equals(this.minTipPercentageRequired, transactionSubmitPriorityThresholdNotMetErrorDetailsAllOf.minTipPercentageRequired);
   }
 
   @Override
@@ -125,7 +125,7 @@ public class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {\n");
+    sb.append("class TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("    minTipPercentageRequired: ").append(toIndentedString(minTipPercentageRequired)).append("\n");
     sb.append("}");

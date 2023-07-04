@@ -77,8 +77,6 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -153,8 +151,7 @@ public final class REv2GenesisTest {
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
                             GenesisConsensusManagerConfig.Builder.testDefaults()),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.zeroMempool()))));
   }
 
   @Test

@@ -12,18 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
-    /// Tip percentage of the submitted (and rejected) transaction. 
+pub struct TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
-    /// A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A value of 0 means there is no tip that can guarantee submission. 
     #[serde(rename = "min_tip_percentage_required")]
     pub min_tip_percentage_required: i32,
 }
 
-impl LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
-    pub fn new(tip_percentage: i32, min_tip_percentage_required: i32) -> LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
-        LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
+impl TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
+    pub fn new(tip_percentage: i32, min_tip_percentage_required: i32) -> TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
+        TransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
             tip_percentage,
             min_tip_percentage_required,
         }
