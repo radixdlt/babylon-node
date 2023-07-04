@@ -393,7 +393,6 @@ public final class BFTSync implements BFTSyncer {
     var syncIds =
         syncRequestState.syncIds.stream().filter(syncing::containsKey).distinct().toList();
 
-    //noinspection UnstableApiUsage
     for (var syncId : syncIds) {
       metrics.bft().sync().requestTimeouts().inc();
       var syncState = syncing.remove(syncId);
