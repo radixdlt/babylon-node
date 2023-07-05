@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FungibleVaultFieldBalanceSubstateAllOf {
-    /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "amount")]
-    pub amount: String,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleVaultFieldBalanceValue>,
 }
 
 impl FungibleVaultFieldBalanceSubstateAllOf {
-    pub fn new(amount: String) -> FungibleVaultFieldBalanceSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::FungibleVaultFieldBalanceValue) -> FungibleVaultFieldBalanceSubstateAllOf {
         FungibleVaultFieldBalanceSubstateAllOf {
-            amount,
+            value: Box::new(value),
         }
     }
 }

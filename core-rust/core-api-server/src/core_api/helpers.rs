@@ -5,8 +5,33 @@ use serde::Serialize;
 use state_manager::store::StateManagerDatabase;
 use std::io::Write;
 
-use super::{MappingError, ResponseError};
-use radix_engine_store_interface::db_key_mapper::*;
+use super::{
+    create_typed_substate_key, models, to_api_substate, MappingContext, MappingError,
+    ResponseError, ValueRepresentations,
+};
+use radix_engine_store_interface::{db_key_mapper::*, interface::SubstateDatabase};
+
+#[allow(unused)]
+pub(crate) fn read_typed_substate(
+    context: &MappingContext,
+    database: &StateManagerDatabase,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<Option<models::Substate>, MappingError> {
+    let Some(raw_value) = database.get_substate(
+        &SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number),
+        &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
+    ) else {
+        return Ok(None);
+    };
+    let typed_substate_key =
+        create_typed_substate_key(context, node_id, partition_number, substate_key)?;
+    let value_representations = ValueRepresentations::new(&typed_substate_key, raw_value)?;
+    let typed_substate =
+        to_api_substate(context, &typed_substate_key, &value_representations.typed)?;
+    Ok(Some(typed_substate))
+}
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
@@ -14,7 +39,7 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Result<D, ResponseError<()>> {
-    read_mandatory_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
+    read_mandatory_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
@@ -47,7 +72,7 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Option<D> {
-    read_optional_substate(database, node_id, OBJECT_BASE_PARTITION, substate_key)
+    read_optional_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]
@@ -60,7 +85,7 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode + Debug>(
     // Note - the field partition (if it exists) takes the first partition number,
     // the collections go after - so start at offset 1
     // (assuming there is a tuple partition on the node...)
-    let partition_number = OBJECT_BASE_PARTITION
+    let partition_number = MAIN_BASE_PARTITION
         .at_offset(PartitionOffset(1 + collection_index))
         .unwrap();
     read_optional_substate(database, node_id, partition_number, substate_key)

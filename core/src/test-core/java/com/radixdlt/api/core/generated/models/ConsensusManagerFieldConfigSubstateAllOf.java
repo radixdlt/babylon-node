@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EpochChangeCondition;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,227 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldConfigSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_MAX_VALIDATORS,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_EPOCH_CHANGE_CONDITION,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_UNSTAKE_EPOCHS,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_TOTAL_EMISSION_XRD_PER_EPOCH,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS,
-  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS
+  ConsensusManagerFieldConfigSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldConfigSubstateAllOf {
-  public static final String JSON_PROPERTY_MAX_VALIDATORS = "max_validators";
-  private Long maxValidators;
-
-  public static final String JSON_PROPERTY_EPOCH_CHANGE_CONDITION = "epoch_change_condition";
-  private EpochChangeCondition epochChangeCondition;
-
-  public static final String JSON_PROPERTY_NUM_UNSTAKE_EPOCHS = "num_unstake_epochs";
-  private Long numUnstakeEpochs;
-
-  public static final String JSON_PROPERTY_TOTAL_EMISSION_XRD_PER_EPOCH = "total_emission_xrd_per_epoch";
-  private String totalEmissionXrdPerEpoch;
-
-  public static final String JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY = "min_validator_reliability";
-  private String minValidatorReliability;
-
-  public static final String JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS = "num_owner_stake_units_unlock_epochs";
-  private Long numOwnerStakeUnitsUnlockEpochs;
-
-  public static final String JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS = "num_fee_increase_delay_epochs";
-  private Long numFeeIncreaseDelayEpochs;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldConfigValue value;
 
   public ConsensusManagerFieldConfigSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldConfigSubstateAllOf maxValidators(Long maxValidators) {
-    this.maxValidators = maxValidators;
+  public ConsensusManagerFieldConfigSubstateAllOf value(ConsensusManagerFieldConfigValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the maximum number of validators in the active validator set. 
-   * minimum: 0
-   * maximum: 10000000000
-   * @return maxValidators
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the maximum number of validators in the active validator set. ")
-  @JsonProperty(JSON_PROPERTY_MAX_VALIDATORS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getMaxValidators() {
-    return maxValidators;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MAX_VALIDATORS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMaxValidators(Long maxValidators) {
-    this.maxValidators = maxValidators;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf epochChangeCondition(EpochChangeCondition epochChangeCondition) {
-    this.epochChangeCondition = epochChangeCondition;
-    return this;
-  }
-
-   /**
-   * Get epochChangeCondition
-   * @return epochChangeCondition
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_CHANGE_CONDITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EpochChangeCondition getEpochChangeCondition() {
-    return epochChangeCondition;
+  public ConsensusManagerFieldConfigValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_CHANGE_CONDITION)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochChangeCondition(EpochChangeCondition epochChangeCondition) {
-    this.epochChangeCondition = epochChangeCondition;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf numUnstakeEpochs(Long numUnstakeEpochs) {
-    this.numUnstakeEpochs = numUnstakeEpochs;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the minimum number of epochs before an unstaker can withdraw their XRD. 
-   * minimum: 0
-   * maximum: 10000000000
-   * @return numUnstakeEpochs
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the minimum number of epochs before an unstaker can withdraw their XRD. ")
-  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getNumUnstakeEpochs() {
-    return numUnstakeEpochs;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNumUnstakeEpochs(Long numUnstakeEpochs) {
-    this.numUnstakeEpochs = numUnstakeEpochs;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf totalEmissionXrdPerEpoch(String totalEmissionXrdPerEpoch) {
-    this.totalEmissionXrdPerEpoch = totalEmissionXrdPerEpoch;
-    return this;
-  }
-
-   /**
-   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return totalEmissionXrdPerEpoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_TOTAL_EMISSION_XRD_PER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getTotalEmissionXrdPerEpoch() {
-    return totalEmissionXrdPerEpoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TOTAL_EMISSION_XRD_PER_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTotalEmissionXrdPerEpoch(String totalEmissionXrdPerEpoch) {
-    this.totalEmissionXrdPerEpoch = totalEmissionXrdPerEpoch;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf minValidatorReliability(String minValidatorReliability) {
-    this.minValidatorReliability = minValidatorReliability;
-    return this;
-  }
-
-   /**
-   * A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return minValidatorReliability
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getMinValidatorReliability() {
-    return minValidatorReliability;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMinValidatorReliability(String minValidatorReliability) {
-    this.minValidatorReliability = minValidatorReliability;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf numOwnerStakeUnitsUnlockEpochs(Long numOwnerStakeUnitsUnlockEpochs) {
-    this.numOwnerStakeUnitsUnlockEpochs = numOwnerStakeUnitsUnlockEpochs;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the minimum number of epochs before an owner can take their stake units after attempting to withdraw them. 
-   * minimum: 0
-   * maximum: 10000000000
-   * @return numOwnerStakeUnitsUnlockEpochs
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the minimum number of epochs before an owner can take their stake units after attempting to withdraw them. ")
-  @JsonProperty(JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getNumOwnerStakeUnitsUnlockEpochs() {
-    return numOwnerStakeUnitsUnlockEpochs;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNumOwnerStakeUnitsUnlockEpochs(Long numOwnerStakeUnitsUnlockEpochs) {
-    this.numOwnerStakeUnitsUnlockEpochs = numOwnerStakeUnitsUnlockEpochs;
-  }
-
-
-  public ConsensusManagerFieldConfigSubstateAllOf numFeeIncreaseDelayEpochs(Long numFeeIncreaseDelayEpochs) {
-    this.numFeeIncreaseDelayEpochs = numFeeIncreaseDelayEpochs;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the minimum number of epochs before a fee increase takes effect. 
-   * minimum: 0
-   * maximum: 10000000000
-   * @return numFeeIncreaseDelayEpochs
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the minimum number of epochs before a fee increase takes effect. ")
-  @JsonProperty(JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getNumFeeIncreaseDelayEpochs() {
-    return numFeeIncreaseDelayEpochs;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNumFeeIncreaseDelayEpochs(Long numFeeIncreaseDelayEpochs) {
-    this.numFeeIncreaseDelayEpochs = numFeeIncreaseDelayEpochs;
+  public void setValue(ConsensusManagerFieldConfigValue value) {
+    this.value = value;
   }
 
 
@@ -268,31 +80,19 @@ public class ConsensusManagerFieldConfigSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldConfigSubstateAllOf consensusManagerFieldConfigSubstateAllOf = (ConsensusManagerFieldConfigSubstateAllOf) o;
-    return Objects.equals(this.maxValidators, consensusManagerFieldConfigSubstateAllOf.maxValidators) &&
-        Objects.equals(this.epochChangeCondition, consensusManagerFieldConfigSubstateAllOf.epochChangeCondition) &&
-        Objects.equals(this.numUnstakeEpochs, consensusManagerFieldConfigSubstateAllOf.numUnstakeEpochs) &&
-        Objects.equals(this.totalEmissionXrdPerEpoch, consensusManagerFieldConfigSubstateAllOf.totalEmissionXrdPerEpoch) &&
-        Objects.equals(this.minValidatorReliability, consensusManagerFieldConfigSubstateAllOf.minValidatorReliability) &&
-        Objects.equals(this.numOwnerStakeUnitsUnlockEpochs, consensusManagerFieldConfigSubstateAllOf.numOwnerStakeUnitsUnlockEpochs) &&
-        Objects.equals(this.numFeeIncreaseDelayEpochs, consensusManagerFieldConfigSubstateAllOf.numFeeIncreaseDelayEpochs);
+    return Objects.equals(this.value, consensusManagerFieldConfigSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxValidators, epochChangeCondition, numUnstakeEpochs, totalEmissionXrdPerEpoch, minValidatorReliability, numOwnerStakeUnitsUnlockEpochs, numFeeIncreaseDelayEpochs);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldConfigSubstateAllOf {\n");
-    sb.append("    maxValidators: ").append(toIndentedString(maxValidators)).append("\n");
-    sb.append("    epochChangeCondition: ").append(toIndentedString(epochChangeCondition)).append("\n");
-    sb.append("    numUnstakeEpochs: ").append(toIndentedString(numUnstakeEpochs)).append("\n");
-    sb.append("    totalEmissionXrdPerEpoch: ").append(toIndentedString(totalEmissionXrdPerEpoch)).append("\n");
-    sb.append("    minValidatorReliability: ").append(toIndentedString(minValidatorReliability)).append("\n");
-    sb.append("    numOwnerStakeUnitsUnlockEpochs: ").append(toIndentedString(numOwnerStakeUnitsUnlockEpochs)).append("\n");
-    sb.append("    numFeeIncreaseDelayEpochs: ").append(toIndentedString(numFeeIncreaseDelayEpochs)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

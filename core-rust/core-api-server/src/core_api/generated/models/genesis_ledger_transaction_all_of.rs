@@ -13,14 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GenesisLedgerTransactionAllOf {
-    #[serde(rename = "system_transaction")]
-    pub system_transaction: Box<crate::core_api::generated::models::SystemTransaction>,
+    /// The first genesis \"transaction\" flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated `system_transaction` 
+    #[serde(rename = "is_flash")]
+    pub is_flash: bool,
+    #[serde(rename = "system_transaction", skip_serializing_if = "Option::is_none")]
+    pub system_transaction: Option<Box<crate::core_api::generated::models::SystemTransaction>>,
 }
 
 impl GenesisLedgerTransactionAllOf {
-    pub fn new(system_transaction: crate::core_api::generated::models::SystemTransaction) -> GenesisLedgerTransactionAllOf {
+    pub fn new(is_flash: bool) -> GenesisLedgerTransactionAllOf {
         GenesisLedgerTransactionAllOf {
-            system_transaction: Box::new(system_transaction),
+            is_flash,
+            system_transaction: None,
         }
     }
 }

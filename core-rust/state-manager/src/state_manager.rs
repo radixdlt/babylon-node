@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::limits::{VertexLimitsAdvanceSuccess, VertexLimitsTracker};
+use crate::limits::{ExecutionMetrics, VertexLimitsAdvanceSuccess, VertexLimitsTracker};
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
@@ -77,16 +77,10 @@ use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::{ExecutionMetrics, RejectResult};
-use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode};
-use radix_engine_common::dec;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::types::Epoch;
+use radix_engine::transaction::{RejectResult, TransactionReceipt};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
-use radix_engine_interface::constants::GENESIS_HELPER;
-use radix_engine_interface::network::NetworkDefinition;
 
 use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
@@ -109,6 +103,7 @@ pub struct StateManagerLoggingConfig {
 }
 
 pub struct StateManager<S> {
+    network: NetworkDefinition,
     store: Arc<RwLock<S>>,
     mempool_manager: Arc<MempoolManager>,
     execution_configurator: Arc<ExecutionConfigurator>,
@@ -142,6 +137,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             CommittedTransactionsMetrics::new(metric_registry, regular_execution_config);
 
         StateManager {
+            network: network.clone(),
             store,
             mempool_manager,
             execution_configurator,
@@ -190,6 +186,33 @@ impl GenesisCommitRequestFactory {
             },
         }
     }
+
+    pub fn create_for_scenario(
+        &mut self,
+        result: ScenarioPrepareResult,
+    ) -> Option<GenesisCommitRequest> {
+        let Some(ledger_hashes) = result.committable_ledger_hashes else {
+            return None;
+        };
+        self.state_version = self.state_version.next();
+        Some(GenesisCommitRequest {
+            raw: result.raw,
+            validated: result.validated,
+            proof: LedgerProof {
+                opaque: self.genesis_opaque_hash,
+                ledger_header: LedgerHeader {
+                    epoch: self.epoch,
+                    round: Round::zero(),
+                    state_version: self.state_version,
+                    hashes: ledger_hashes,
+                    consensus_parent_round_timestamp_ms: self.timestamp,
+                    proposer_timestamp_ms: self.timestamp,
+                    next_epoch: None,
+                },
+                timestamped_signatures: vec![],
+            },
+        })
+    }
 }
 
 pub struct GenesisPrepareResult {
@@ -197,6 +220,12 @@ pub struct GenesisPrepareResult {
     validated: ValidatedLedgerTransaction,
     ledger_hashes: LedgerHashes,
     next_epoch: Option<NextEpoch>,
+}
+
+pub struct ScenarioPrepareResult {
+    raw: RawLedgerTransaction,
+    validated: ValidatedLedgerTransaction,
+    committable_ledger_hashes: Option<LedgerHashes>,
 }
 
 pub struct GenesisCommitRequest {
@@ -211,10 +240,7 @@ where
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
-    pub fn prepare_genesis(
-        &self,
-        genesis_transaction: SystemTransactionV1,
-    ) -> GenesisPrepareResult {
+    pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> GenesisPrepareResult {
         let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
             .to_raw()
             .expect("Could not encode genesis transaction");
@@ -236,6 +262,47 @@ where
             ledger_hashes: commit.hash_structures_diff.ledger_hashes,
             next_epoch: commit.next_epoch(),
         }
+    }
+
+    pub fn prepare_scenario_transaction(
+        &self,
+        scenario_name: &str,
+        next: &transaction_scenarios::scenario::NextTransaction,
+    ) -> (ScenarioPrepareResult, TransactionReceipt) {
+        let qualified_name = format!(
+            "{} scenario - {} transaction",
+            scenario_name, &next.logical_name
+        );
+
+        let (raw, prepared_ledger_transaction) = self
+            .try_prepare_ledger_transaction_from_user_transaction(&next.raw_transaction)
+            .unwrap_or_else(|_| panic!("Expected that {} was preparable", qualified_name));
+
+        let validated = self
+            .ledger_transaction_validator
+            .validate_user_or_round_update(prepared_ledger_transaction)
+            .unwrap_or_else(|_| panic!("Expected that {} was valid", qualified_name));
+
+        let read_store = self.store.read();
+
+        // Note - we first create a basic receipt - because we need it for later
+        let basic_receipt = self
+            .execution_configurator
+            .wrap_ledger_transaction(&validated, "scenario transaction")
+            .execute_on(read_store.deref());
+        let mut series_executor = self.start_series_execution(read_store.deref());
+
+        let commit = series_executor.execute(&validated, "scenario transaction");
+
+        let prepare_result = ScenarioPrepareResult {
+            raw,
+            validated,
+            committable_ledger_hashes: commit
+                .ok()
+                .map(|commit_result| commit_result.hash_structures_diff.ledger_hashes),
+        };
+
+        (prepare_result, basic_receipt)
     }
 
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
@@ -267,9 +334,6 @@ where
             base_committed_state_version: series_executor.latest_state_version(),
         };
 
-        let mut duplicate_intent_hash_detector =
-            DuplicateIntentHashDetector::new(read_store.deref());
-
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
             // and executable creation) by accessing the execution cache in a more clever way.
@@ -277,10 +341,6 @@ where
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
                 .expect("Ancestor transactions should be valid");
-
-            if let Some(intent_hash) = validated.intent_hash_if_user() {
-                duplicate_intent_hash_detector.record_ancestor(intent_hash);
-            }
 
             series_executor
                 .execute(&validated, "ancestor")
@@ -383,22 +443,10 @@ where
                 continue;
             }
 
-            let prepare_results = LedgerTransaction::from_raw_user(&raw_user_transaction)
-                .map_err(|err| {
-                    TransactionValidationError::PrepareError(PrepareError::DecodeError(err))
-                })
-                .and_then(|ledger_transaction| {
-                    ledger_transaction.to_raw().map_err(|err| {
-                        TransactionValidationError::PrepareError(PrepareError::EncodeError(err))
-                    })
-                })
-                .and_then(|raw_ledger_transaction| {
-                    self.ledger_transaction_validator
-                        .prepare_from_raw(&raw_ledger_transaction)
-                        .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
-                });
+            let try_prepare_result =
+                self.try_prepare_ledger_transaction_from_user_transaction(&raw_user_transaction);
 
-            let (raw_ledger_transaction, prepared_transaction) = match prepare_results {
+            let (raw_ledger_transaction, prepared_transaction) = match try_prepare_result {
                 Ok(results) => results,
                 Err(error) => {
                     rejected_transactions.push(RejectedTransaction {
@@ -425,25 +473,6 @@ where
                 .header
                 .inner
                 .end_epoch_exclusive;
-            if let Err(with) = duplicate_intent_hash_detector.check_proposed(&intent_hash) {
-                rejected_transactions.push(RejectedTransaction {
-                    index: index as u32,
-                    intent_hash: Some(intent_hash),
-                    notarized_transaction_hash: Some(notarized_transaction_hash),
-                    ledger_transaction_hash: Some(ledger_transaction_hash),
-                    error: format!(
-                        "Duplicate intent hash: {:?}, state: {:?}",
-                        &intent_hash, with
-                    ),
-                });
-                pending_transaction_results.push(PendingTransactionResult {
-                    intent_hash,
-                    notarized_transaction_hash,
-                    invalid_at_epoch,
-                    rejection_reason: Some(RejectionReason::IntentHashCommitted),
-                });
-                continue;
-            }
 
             // TODO(optimization-only): We could avoid signature verification by re-using the
             // validated transaction from the mempool.
@@ -484,7 +513,6 @@ where
                             .execution_metrics,
                     ) {
                         Ok(success) => {
-                            duplicate_intent_hash_detector.record_committable_proposed(intent_hash);
                             committed_proposal_size += transaction_size;
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
@@ -599,6 +627,24 @@ where
         }
     }
 
+    fn try_prepare_ledger_transaction_from_user_transaction(
+        &self,
+        raw_user_transaction: &RawNotarizedTransaction,
+    ) -> Result<(RawLedgerTransaction, PreparedLedgerTransaction), TransactionValidationError> {
+        LedgerTransaction::from_raw_user(raw_user_transaction)
+            .map_err(|err| TransactionValidationError::PrepareError(PrepareError::DecodeError(err)))
+            .and_then(|ledger_transaction| {
+                ledger_transaction.to_raw().map_err(|err| {
+                    TransactionValidationError::PrepareError(PrepareError::EncodeError(err))
+                })
+            })
+            .and_then(|raw_ledger_transaction| {
+                self.ledger_transaction_validator
+                    .prepare_from_raw(&raw_ledger_transaction)
+                    .map(|prepared_transaction| (raw_ledger_transaction, prepared_transaction))
+            })
+    }
+
     fn start_series_execution<'s>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S> {
         TransactionSeriesExecutor::new(
             store,
@@ -621,7 +667,7 @@ where
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     /// Performs an [`execute_genesis()`] with a hardcoded genesis data meant for test purposes.
-    pub fn execute_test_genesis(&self) -> LedgerProof {
+    pub fn execute_genesis_for_unit_tests(&self) -> LedgerProof {
         // Roughly copied from bootstrap_test_default in scrypto
         let genesis_validator: GenesisValidator = Secp256k1PublicKey([0; 33]).into();
         let genesis_chunks = vec![
@@ -652,6 +698,7 @@ where
             min_validator_reliability: Decimal::one(),
             num_owner_stake_units_unlock_epochs: 2,
             num_fee_increase_delay_epochs: 1,
+            validator_creation_xrd_cost: Decimal::one(),
         };
         let initial_timestamp_ms = 1;
         self.execute_genesis(
@@ -660,11 +707,14 @@ where
             initial_config,
             initial_timestamp_ms,
             Hash([0; Hash::LENGTH]),
+            *DEFAULT_TESTING_FAUCET_SUPPLY,
+            vec![],
         )
     }
 
     /// Creates and commits a series of genesis transactions (i.e. a boostrap, then potentially many
     /// data ingestion chunks, and then a wrap-up).
+    #[allow(clippy::too_many_arguments)]
     pub fn execute_genesis(
         &self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
@@ -672,6 +722,8 @@ where
         initial_config: ConsensusManagerConfig,
         initial_timestamp_ms: i64,
         genesis_opaque_hash: Hash,
+        faucet_supply: Decimal,
+        scenarios_to_run: Vec<String>,
     ) -> LedgerProof {
         let start_instant = Instant::now();
 
@@ -697,13 +749,22 @@ where
             genesis_opaque_hash,
         };
 
+        info!("Committing system flash");
+        let prepare_result = self.prepare_genesis(GenesisTransaction::Flash);
+        let commit_request = genesis_commit_request_factory.create_next(prepare_result);
+        self.commit_genesis(commit_request);
+
         info!("Committing system bootstrap");
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
             initial_config,
             initial_timestamp_ms,
+            // Leader gets set to None, to be fixed at the first proper round change.
+            None,
+            faucet_supply,
         );
-        let prepare_result = self.prepare_genesis(transaction);
+        let prepare_result =
+            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         self.commit_genesis(commit_request);
 
@@ -716,14 +777,84 @@ where
             );
             let transaction =
                 create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, index);
-            let prepare_result = self.prepare_genesis(transaction);
+            let prepare_result =
+                self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
             let commit_request = genesis_commit_request_factory.create_next(prepare_result);
             self.commit_genesis(commit_request);
         }
 
+        // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
+        // This is a little weird, but should be fine.
+        if !scenarios_to_run.is_empty() {
+            use transaction_scenarios::scenario::*;
+            info!("Running {} scenarios", scenarios_to_run.len());
+            let encoder = AddressBech32Encoder::new(&self.network);
+            let mut next_nonce: u32 = 0;
+            let epoch = initial_epoch;
+            for scenario_name in scenarios_to_run.iter() {
+                let mut scenario = self
+                    .find_scenario(epoch, next_nonce, scenario_name)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Could not find scenario with logical name: {}",
+                            scenario_name
+                        )
+                    });
+                let mut committed_transaction_count = 0;
+                let mut previous = None;
+                info!("Running scenario: {}", scenario_name);
+                loop {
+                    let next = scenario
+                        .next(previous.as_ref())
+                        .map_err(|err| err.into_full(&scenario))
+                        .unwrap();
+                    match next {
+                        NextAction::Transaction(next) => {
+                            let (prepare_result, basic_receipt) =
+                                self.prepare_scenario_transaction(scenario_name, &next);
+                            if let Some(commit_request) =
+                                genesis_commit_request_factory.create_for_scenario(prepare_result)
+                            {
+                                committed_transaction_count += 1;
+                                let resultant_state_version =
+                                    commit_request.proof.ledger_header.state_version;
+                                self.commit_genesis(commit_request);
+                                info!(
+                                    "Committed {} at state_version {}",
+                                    &next.logical_name, resultant_state_version
+                                );
+                            }
+                            previous = Some(basic_receipt);
+                        }
+                        NextAction::Completed(end_state) => {
+                            let formatted_addresses = end_state
+                                .interesting_addresses
+                                .0
+                                .iter()
+                                .map(|(descriptor, address)| {
+                                    format!("  - {}: {}", descriptor, address.display(&encoder))
+                                })
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            info!(
+                                "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
+                                committed_transaction_count,
+                                scenario_name,
+                                formatted_addresses
+                            );
+                            next_nonce = end_state.next_unused_nonce;
+                            break;
+                        }
+                    }
+                }
+            }
+            info!("Scenarios finished");
+        }
+
         info!("Committing genesis wrap-up");
-        let transaction = create_genesis_wrap_up_transaction();
-        let prepare_result = self.prepare_genesis(transaction);
+        let transaction: SystemTransactionV1 = create_genesis_wrap_up_transaction();
+        let prepare_result =
+            self.prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
         let commit_request = genesis_commit_request_factory.create_next(prepare_result);
         let final_ledger_proof = commit_request.proof.clone();
         self.commit_genesis(commit_request);
@@ -733,6 +864,24 @@ where
             start_instant.elapsed()
         );
         final_ledger_proof
+    }
+
+    fn find_scenario(
+        &self,
+        epoch: Epoch,
+        next_nonce: u32,
+        scenario_name: &str,
+    ) -> Option<Box<dyn transaction_scenarios::scenario::ScenarioInstance>> {
+        use transaction_scenarios::scenario::*;
+        use transaction_scenarios::scenarios::*;
+        for scenario_builder in get_builder_for_every_scenario() {
+            let scenario =
+                scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
+            if scenario.metadata().logical_name == scenario_name {
+                return Some(scenario);
+            }
+        }
+        None
     }
 
     /// Validates and commits the transactions from the given request (or returns an error in case

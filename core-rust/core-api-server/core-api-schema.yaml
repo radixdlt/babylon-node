@@ -1365,6 +1365,7 @@ components:
         - cost_units_consumed
         - cost_unit_execution_breakdown
         - xrd_total_execution_cost
+        - xrd_total_state_expansion_cost
         - xrd_total_royalty_cost
         - xrd_total_tipped
         - xrd_vault_payments
@@ -1413,6 +1414,11 @@ components:
           description: |
             The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        xrd_total_state_expansion_cost:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
         xrd_total_tipped:
           type: string
           description: |
@@ -1455,6 +1461,19 @@ components:
           type: string
           description: |
             The string-encoded decimal representing the amount of fee in XRD paid as royalty to this receiver.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    ProposerReward:
+      type: object
+      required:
+        - validator_index
+        - xrd_amount
+      properties:
+        validator_index:
+          $ref: "#/components/schemas/ActiveValidatorIndex"
+        xrd_amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of reward in XRD.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     StateUpdates:
       type: object
@@ -1690,16 +1709,6 @@ components:
     GlobalAddress:
       type: string
       description: The Bech32m-encoded human readable version of any global address
-    GlobalAddressPhantom:
-      type: object
-      required:
-        - package_address
-        - blueprint_name
-      properties:
-        package_address:
-          $ref: '#/components/schemas/PackageAddress'
-        blueprint_name:
-          type: string
     Instant:
       type: object
       required:
@@ -1764,13 +1773,13 @@ components:
       type: object
       required:
         - emitter
-        - local_type_index
+        - type_pointer
       properties:
         emitter:
           $ref: "#/components/schemas/EventEmitterIdentifier"
-        local_type_index:
-          $ref: '#/components/schemas/LocalTypeIndex'
-          description: The type index of the event's type in the context of the emitter's SBOR schema.
+        type_pointer:
+          $ref: '#/components/schemas/TypePointer'
+          description: The type pointer of the event's type in the context of the emitter's SBOR schema.
     EventEmitterIdentifierType:
       type: string
       enum:
@@ -1939,31 +1948,6 @@ components:
 ##########################################
 # GENERAL / SHARED MODELS - Access Rules #
 ##########################################
-    RoleRule:
-      type: object
-      required:
-        - role_key
-        - access_rule
-      properties:
-        role_key:
-          type: string
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
-    MutabilityRule:
-      type: object
-      required:
-        - role_key
-        - updater_role_keys
-        - updaters_mutable
-      properties:
-        role_key:
-          type: string
-        updater_role_keys:
-          type: array
-          items:
-            type: string
-        updaters_mutable:
-          type: boolean
     AccessRuleType:
       type: string
       enum:
@@ -2169,6 +2153,22 @@ components:
           properties:
             non_fungible:
               $ref: '#/components/schemas/NonFungibleGlobalId'
+    OwnerRole:
+      type: object
+      required:
+        - rule
+        - updater
+      properties:
+        rule:
+          $ref: '#/components/schemas/AccessRule'
+        updater:
+          $ref: '#/components/schemas/OwnerRoleUpdater'
+    OwnerRoleUpdater:
+      type: string
+      enum:
+        - None
+        - Owner
+        - Object
 #######################################
 # GENERAL / SHARED MODELS - Resources #
 #######################################
@@ -2183,7 +2183,7 @@ components:
         - String
         - Integer
         - Bytes
-        - UUID
+        - RUID
     NonFungibleLocalId:
       type: object
       required:
@@ -2298,24 +2298,16 @@ components:
     BlueprintRoyaltyConfig:
       type: object
       required:
-        - blueprint_name
-        - royalty_config
+        - is_enabled
       properties:
-        blueprint_name:
-          type: string
-        royalty_config:
-          $ref: '#/components/schemas/RoyaltyConfig'
-    RoyaltyConfig:
-      type: object
-      required:
-        - method_rules
-      properties:
+        is_enabled:
+          type: boolean
         method_rules:
-          description: The royalty rules by method
+          description: The royalty rules by method. The array is only present if royalties are enabled.
           type: array
           items:
-            $ref: '#/components/schemas/MethodRoyaltyRule'
-    MethodRoyaltyRule:
+            $ref: '#/components/schemas/BlueprintMethodRoyalty'
+    BlueprintMethodRoyalty:
       type: object
       required:
         - method_name
@@ -2401,136 +2393,260 @@ components:
         can_own:
           description: Whether the key value store can own any children.
           type: boolean
-    PackageSchema:
-      type: object
-      required:
-        - blueprint_definitions
-      properties:
-        blueprint_definitions:
-          type: object
-          description: A map from the blueprint name to BlueprintDefinition
-          additionalProperties:
-            $ref: '#/components/schemas/BlueprintDefinition'
     BlueprintDefinition:
       type: object
       required:
-        - schema
-        - template
+        - interface
+        - function_exports
+        - virtual_lazy_load_functions
       properties:
-        schema:
-          $ref: '#/components/schemas/BlueprintSchema'
-        template:
-          $ref: '#/components/schemas/BlueprintTemplate'
-    BlueprintSchema:
+        interface:
+          $ref: '#/components/schemas/BlueprintInterface'
+        function_exports:
+          type: object
+          description: A map from the function name to its export
+          additionalProperties:
+            $ref: '#/components/schemas/PackageExport'
+        virtual_lazy_load_functions:
+          type: object
+          description: A map from the engine system's virtualization module's function identifier
+            to the package export of the function.
+          additionalProperties:
+            $ref: '#/components/schemas/PackageExport'
+    BlueprintDependencies:
       type: object
       required:
-        - schema
-        - function_schemas
-        - virtual_lazy_load_function_schemas
-        - event_schemas
-        - collection_partitions
         - dependencies
-        - features
       properties:
-        outer_blueprint:
-          type: string
-        schema:
-          $ref: '#/components/schemas/ScryptoSchema'
-          description: The SBOR schema of the blueprint
-        function_schemas:
-          type: object
-          description: A map from the function name to the FunctionSchema
-          additionalProperties:
-            $ref: '#/components/schemas/FunctionSchema'
-        virtual_lazy_load_function_schemas:
-          type: object
-          description: A map from the system function ID to the VirtualLazyLoadSchema
-          additionalProperties:
-            $ref: '#/components/schemas/VirtualLazyLoadSchema'
-        event_schemas:
-          type: object
-          description: A map from the event name to the local type index for the event payload under the blueprint schema.
-          additionalProperties:
-            $ref: '#/components/schemas/LocalTypeIndex'
-        field_partition:
-          $ref: '#/components/schemas/BlueprintSchemaFieldPartition'
-        collection_partitions:
-          type: array
-          description: The collection partitions for this blueprint.
-          items:
-            $ref: '#/components/schemas/BlueprintSchemaCollectionPartition'
         dependencies:
           type: array
           items:
             $ref: '#/components/schemas/GlobalAddress'
+    BlueprintInterface:
+      type: object
+      required:
+        - generic_type_parameters
+        - features
+        - state
+        - functions
+        - events
+      properties:
+        outer_blueprint:
+          type: string
+        generic_type_parameters:
+          description: |
+            Generic (SBOR) type parameters which need to be filled by a concrete instance
+            of this blueprint.
+          type: array
+          items:
+            $ref: '#/components/schemas/GenericTypeParameter'
         features:
           type: array
           items:
             type: string
-    BlueprintTemplate:
+        state:
+          $ref: '#/components/schemas/IndexedStateSchema'
+        functions:
+          type: object
+          description: A map from the function name to the FunctionSchema
+          additionalProperties:
+            $ref: '#/components/schemas/FunctionSchema'
+        events:
+          type: object
+          description: A map from the event name to the local type index for the event payload under the blueprint schema.
+          additionalProperties:
+            $ref: '#/components/schemas/TypePointer'
+    IndexedStateSchema:
       type: object
       required:
-        - method_auth_template
-        - outer_method_auth_template
+        - collections
+        - num_partitions
       properties:
-        method_auth_template:
+        fields:
+          $ref: '#/components/schemas/BlueprintSchemaFieldPartition'
+        collections:
           type: array
           items:
-            $ref: '#/components/schemas/MethodAuthTemplateEntry'
-        outer_method_auth_template:
-          type: array
-          items:
-            $ref: '#/components/schemas/MethodAuthTemplateEntry'
-    MethodAuthTemplateEntry:
+            $ref: '#/components/schemas/BlueprintSchemaCollectionPartition'
+        num_partitions:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+    GenericTypeParameter:
       type: object
       required:
-        - key
-        - permission
+        - constraints
       properties:
-        key:
-          $ref: '#/components/schemas/MethodKey'
-        permission:
-          $ref: '#/components/schemas/MethodPermission'
-    MethodKey:
+        constraints:
+          $ref: '#/components/schemas/GenericTypeParameterContraints'
+    GenericTypeParameterContraints:
+      type: string
+      enum:
+        - Any
+      description: |
+        The constraints on the concrete type provided to fill the generic type parameter.
+        Note: currently, we only support the wildcard (i.e. `Any`) generic type.
+    TypePointerType:
+      type: string
+      enum:
+        - Package
+        - Instance
+    TypePointer:
       type: object
       required:
-        - object_module_id
-        - ident
+        - pointer_type
       properties:
-        object_module_id:
-          $ref: "#/components/schemas/ObjectModuleId"
-        ident:
+        pointer_type:
+          $ref: '#/components/schemas/TypePointerType'
+      discriminator:
+        propertyName: pointer_type
+        mapping:
+          # NOTE: These need to match TypePointerType options
+          Package: '#/components/schemas/PackageTypePointer'
+          Instance: '#/components/schemas/InstanceTypePointer'
+    PackageTypePointer:
+      allOf:
+        - $ref: '#/components/schemas/TypePointer'
+        - type: object
+          required:
+            - schema_hash
+            - local_type_index
+          properties:
+            schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            local_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+    InstanceTypePointer:
+      allOf:
+        - $ref: '#/components/schemas/TypePointer'
+        - type: object
+          required:
+            - index
+          properties:
+            index:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 255
+    PackageExport:
+      type: object
+      required:
+        - code_hash
+        - export_name
+      properties:
+        code_hash:
+          $ref: '#/components/schemas/CodeHash'
+        export_name:
           type: string
-    MethodPermissionType:
+    CodeHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded code hash, capturing the vm-type and the code itself.
+    SchemaHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    AuthConfig:
+      type: object
+      required:
+        - function_auth_type
+        - method_auth_type
+      properties:
+        function_auth_type:
+          $ref: '#/components/schemas/FunctionAuthType'
+        function_access_rules:
+          type: object
+          description: |
+            A map from a function name to AccessRule.
+            Only exists if `function_auth_type` is set to `FunctionAccessRules`.
+          additionalProperties:
+            $ref: '#/components/schemas/AccessRule'
+        method_auth_type:
+          $ref: '#/components/schemas/MethodAuthType'
+        method_roles:
+          $ref: '#/components/schemas/StaticRolesAuthTemplate'
+    FunctionAuthType:
+      type: string
+      enum:
+        - AllowAll
+        - FunctionAccessRules
+        - RootOnly
+    MethodAuthType:
+      type: string
+      enum:
+        - AllowAll
+        - StaticRoles
+    StaticRolesAuthTemplate:
+      type: object
+      required:
+        - role_specification
+        - method_accessibility_map
+      properties:
+        role_specification:
+          $ref: '#/components/schemas/RoleSpecification'
+        roles:
+          type: object
+          description: A map from role name to role details
+          additionalProperties:
+            $ref: '#/components/schemas/RoleDetails'
+        method_accessibility_map:
+          type: object
+          description: A map from a method identifier to MethodAccessibility
+          additionalProperties:
+            $ref: '#/components/schemas/MethodAccessibility'
+    RoleSpecification:
+      type: string
+      enum:
+        - Normal
+        - UseOuter
+    RoleDetails:
+      type: object
+      required:
+        - updater_roles
+      properties:
+        updater_roles:
+          type: array
+          items:
+            type: string
+    MethodAccessibilityType:
       type: string
       enum:
         - Public
-        - Protected
-    MethodPermission:
+        - OuterObjectOnly
+        - RoleProtected
+    MethodAccessibility:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/MethodPermissionType'
+          $ref: '#/components/schemas/MethodAccessibilityType'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match MethodPermissionType options above
-          Public: '#/components/schemas/PublicMethodPermission'
-          Protected: '#/components/schemas/ProtectedMethodPermission'
-    PublicMethodPermission:
+          Public: '#/components/schemas/PublicMethodAccessibility'
+          OuterObjectOnly: '#/components/schemas/OuterObjectOnlyMethodAccessibility'
+          RoleProtected: '#/components/schemas/RoleProtectedMethodAccessibility'
+    PublicMethodAccessibility:
       allOf:
-        - $ref: '#/components/schemas/MethodPermission'
+        - $ref: '#/components/schemas/MethodAccessibility'
         - type: object
-    ProtectedMethodPermission:
+    OuterObjectOnlyMethodAccessibility:
       allOf:
-        - $ref: '#/components/schemas/MethodPermission'
+        - $ref: '#/components/schemas/MethodAccessibility'
+        - type: object
+    RoleProtectedMethodAccessibility:
+      allOf:
+        - $ref: '#/components/schemas/MethodAccessibility'
         - type: object
           required:
-            - allowed_role_keys
+            - allowed_roles
           properties:
-            allowed_role_keys:
+            allowed_roles:
               type: array
               items:
                 type: string
@@ -2551,17 +2667,58 @@ components:
           type: array
           description: The field substates for this blueprint.
           items:
-            $ref: '#/components/schemas/BlueprintFieldSchema'
-    BlueprintFieldSchema:
+            $ref: '#/components/schemas/FieldSchema'
+    FieldSchema:
+      type: object
+      required:
+        - field_type_pointer
+      properties:
+        field_type_pointer:
+          $ref: '#/components/schemas/TypePointer'
+        condition:
+          $ref: '#/components/schemas/FieldSchemaFeatureCondition'
+    FieldSchemaFeatureConditionType:
+      type: string
+      enum:
+        - Always
+        - IfOwnFeature
+        - IfOuterObjectFeature
+    FieldSchemaFeatureCondition:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/LocalTypeIndex'
-        feature:
-          type: string
-          description: A feature required for the field.
+          $ref: '#/components/schemas/FieldSchemaFeatureConditionType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TypePointerType options
+          Always: '#/components/schemas/FieldSchemaFeatureConditionAlways'
+          IfOwnFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOwnFeature'
+          IfOuterObjectFeature: '#/components/schemas/FieldSchemaFeatureConditionIfOuterObjectFeature'
+    FieldSchemaFeatureConditionAlways:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+    FieldSchemaFeatureConditionIfOwnFeature:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
+    FieldSchemaFeatureConditionIfOuterObjectFeature:
+      allOf:
+        - $ref: "#/components/schemas/FieldSchemaFeatureCondition"
+        - type: object
+          required:
+            - feature_name
+          properties:
+            feature_name:
+              type: string
     BlueprintSchemaCollectionPartition:
       type: object
       description: The fields partition of the blueprint.
@@ -2602,14 +2759,14 @@ components:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
           required:
-            - key_type_reference
-            - value_type_reference
+            - key_type_pointer
+            - value_type_pointer
             - can_own
           properties:
-            key_type_reference:
-              $ref: "#/components/schemas/BlueprintTypeReference"
-            value_type_reference:
-              $ref: "#/components/schemas/BlueprintTypeReference"
+            key_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
+            value_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
             can_own:
               type: boolean
               description: Whether the entries of the key-value store are allowed to own child nodes.
@@ -2699,21 +2856,17 @@ components:
       required:
         - input
         - output
-        - export
       properties:
         receiver_info:
           $ref: '#/components/schemas/ReceiverInfo'
         input:
-          $ref: '#/components/schemas/LocalTypeIndex'
+          $ref: '#/components/schemas/TypePointer'
           description: |
-            The type index of the function's parameter struct in the context of the blueprint's SBOR schema.
+            The type pointer of the function's parameter struct in the context of the blueprint's SBOR schema.
         output:
-          $ref: '#/components/schemas/LocalTypeIndex'
+          $ref: '#/components/schemas/TypePointer'
           description: |
-            The type index of the function output in the context of the blueprint's SBOR schema.
-        export:
-          description: Name used for export
-          type: string
+            The type pointer of the function output in the context of the blueprint's SBOR schema.
     ReceiverInfo:
       type: object
       required:
@@ -2743,9 +2896,9 @@ components:
           type: boolean
         direct_access:
           type: boolean
-#######################################
-# GENERAL / SHARED MODELS - substates #
-#######################################
+#####################################################
+# GENERAL / SHARED MODELS - general substate models #
+#####################################################
     EntityType:
       type: string
       enum:
@@ -2770,6 +2923,7 @@ components:
         - GlobalOneResourcePool
         - GlobalTwoResourcePool
         - GlobalMultiResourcePool
+        - GlobalTransactionTracker
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
@@ -2784,22 +2938,51 @@ components:
       type: object
       required:
         - substate_type
+        - is_locked
       properties:
         substate_type:
           $ref: '#/components/schemas/SubstateType'
+        is_locked:
+          type: boolean
       discriminator:
         propertyName: substate_type
         mapping:
+          # NOTE:
+          # There is an important convention to these names, for consistency:
+          # 
+          # For each distinct typed substate, form [SubstateType] = [ModuleSpecifier][SubstateSpecifier][SubstateTypeVersion]
+          # - [ModuleSpecifier] is either [ModuleName]Module for non-main modules, or [EntityType] for main modules
+          # - [SubstateSpecifier] is either:
+          #   - Field[SubstateDescriptor] for Field partitions
+          #   - [SubstateDescriptor]Entry for Collection partitions (KeyValueStore, Index and SortedIndex)
+          # - [SubstateTypeVersion] is empty ("") for V1 substates, but will eg be V2/V3/V4 for newer substate versions
+          #
+          # And then define:
+          # - [SubstateName] = [SubstateType]Substate
+          # - [SubstateValue] = [SubstateType]Value
+          #
+          # Which are used as follows:
+          # - The below mapping has entries of: [SubstateType]: '#/components/schemas/[SubstateName]'
+          # - [SubstateType] MUST match the enum SubstateType type defined below
+          # - [SubstateName] MUST equal the name of a type below. Such a type must have:
+          #   - value - which references the type [SubstateValue]
+          #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
+          #   - is_locked - this is added to all substates via inclusion on the `Substate` object
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
-          AccessRulesModuleFieldAccessRules: '#/components/schemas/AccessRulesModuleFieldAccessRulesSubstate'
-          RoyaltyModuleFieldConfig: '#/components/schemas/RoyaltyModuleFieldConfigSubstate'
-          RoyaltyModuleFieldAccumulator: '#/components/schemas/RoyaltyModuleFieldAccumulatorSubstate'
+          AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
+          AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
+          RoyaltyModuleFieldState: '#/components/schemas/RoyaltyModuleFieldStateSubstate'
+          RoyaltyModuleMethodRoyaltyEntry: '#/components/schemas/RoyaltyModuleMethodRoyaltyEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
-          PackageFieldInfo: '#/components/schemas/PackageFieldInfoSubstate'
-          PackageFieldCodeType: '#/components/schemas/PackageFieldCodeTypeSubstate'
-          PackageFieldCode: '#/components/schemas/PackageFieldCodeSubstate'
-          PackageFieldRoyalty: '#/components/schemas/PackageFieldRoyaltySubstate'
-          PackageFieldFunctionAccessRules: '#/components/schemas/PackageFieldFunctionAccessRulesSubstate'
+          PackageFieldRoyaltyAccumulator: '#/components/schemas/PackageFieldRoyaltyAccumulatorSubstate'
+          PackageCodeVmTypeEntry: '#/components/schemas/PackageCodeVmTypeEntrySubstate'
+          PackageCodeOriginalCodeEntry: '#/components/schemas/PackageCodeOriginalCodeEntrySubstate'
+          PackageCodeInstrumentedCodeEntry: '#/components/schemas/PackageCodeInstrumentedCodeEntrySubstate'
+          PackageSchemaEntry: '#/components/schemas/PackageSchemaEntrySubstate'
+          PackageBlueprintDefinitionEntry: '#/components/schemas/PackageBlueprintDefinitionEntrySubstate'
+          PackageBlueprintDependenciesEntry: '#/components/schemas/PackageBlueprintDependenciesEntrySubstate'
+          PackageBlueprintRoyaltyEntry: '#/components/schemas/PackageBlueprintRoyaltyEntrySubstate'
+          PackageBlueprintAuthTemplateEntry: '#/components/schemas/PackageBlueprintAuthTemplateEntrySubstate'
           FungibleResourceManagerFieldDivisibility: '#/components/schemas/FungibleResourceManagerFieldDivisibilitySubstate'
           FungibleResourceManagerFieldTotalSupply: '#/components/schemas/FungibleResourceManagerFieldTotalSupplySubstate'
           NonFungibleResourceManagerFieldIdType: '#/components/schemas/NonFungibleResourceManagerFieldIdTypeSubstate'
@@ -2807,7 +2990,9 @@ components:
           NonFungibleResourceManagerFieldMutableFields: '#/components/schemas/NonFungibleResourceManagerFieldMutableFieldsSubstate'
           NonFungibleResourceManagerDataEntry: '#/components/schemas/NonFungibleResourceManagerDataEntrySubstate'
           FungibleVaultFieldBalance: '#/components/schemas/FungibleVaultFieldBalanceSubstate'
+          FungibleVaultFieldFrozenStatus: '#/components/schemas/FungibleVaultFieldFrozenStatusSubstate'
           NonFungibleVaultFieldBalance: '#/components/schemas/NonFungibleVaultFieldBalanceSubstate'
+          NonFungibleVaultFieldFrozenStatus: '#/components/schemas/NonFungibleVaultFieldFrozenStatusSubstate'
           NonFungibleVaultContentsIndexEntry: '#/components/schemas/NonFungibleVaultContentsIndexEntrySubstate'
           ConsensusManagerFieldConfig: '#/components/schemas/ConsensusManagerFieldConfigSubstate'
           ConsensusManagerFieldState: '#/components/schemas/ConsensusManagerFieldStateSubstate'
@@ -2815,29 +3000,40 @@ components:
           ConsensusManagerFieldCurrentProposalStatistic: '#/components/schemas/ConsensusManagerFieldCurrentProposalStatisticSubstate'
           ConsensusManagerFieldCurrentTimeRoundedToMinutes: '#/components/schemas/ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate'
           ConsensusManagerFieldCurrentTime: '#/components/schemas/ConsensusManagerFieldCurrentTimeSubstate'
+          ConsensusManagerFieldValidatorRewards: '#/components/schemas/ConsensusManagerFieldValidatorRewardsSubstate'
           ConsensusManagerRegisteredValidatorsByStakeIndexEntry: '#/components/schemas/ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate'
           ValidatorFieldState: '#/components/schemas/ValidatorFieldStateSubstate'
+          ValidatorFieldProtocolUpdateReadinessSignal: '#/components/schemas/ValidatorFieldProtocolUpdateReadinessSignalSubstate'
           AccountFieldState: '#/components/schemas/AccountFieldStateSubstate'
           AccountVaultIndexEntry: '#/components/schemas/AccountVaultIndexEntrySubstate'
           AccountDepositRuleIndexEntry: '#/components/schemas/AccountDepositRuleIndexEntrySubstate'
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
-          OneResourcePool: '#/components/schemas/OneResourcePoolSubstate'
-          TwoResourcePool: '#/components/schemas/TwoResourcePoolSubstate'
-          MultiResourcePool: '#/components/schemas/MultiResourcePoolSubstate'
+          OneResourcePoolFieldState: '#/components/schemas/OneResourcePoolFieldStateSubstate'
+          TwoResourcePoolFieldState: '#/components/schemas/TwoResourcePoolFieldStateSubstate'
+          MultiResourcePoolFieldState: '#/components/schemas/MultiResourcePoolFieldStateSubstate'
+          TransactionTrackerFieldState: '#/components/schemas/TransactionTrackerFieldStateSubstate'
+          TransactionTrackerCollectionEntry: '#/components/schemas/TransactionTrackerCollectionEntrySubstate'
     SubstateType:
       type: string
       enum:
         - TypeInfoModuleFieldTypeInfo
-        - AccessRulesModuleFieldAccessRules
-        - RoyaltyModuleFieldConfig
-        - RoyaltyModuleFieldAccumulator
+        - AccessRulesModuleFieldOwnerRole
+        - AccessRulesModuleRuleEntry
+        - AccessRulesModuleMutabilityEntry
+        - RoyaltyModuleFieldState
+        - RoyaltyModuleMethodRoyaltyEntry
         - MetadataModuleEntry
-        - PackageFieldInfo
-        - PackageFieldCodeType
-        - PackageFieldCode
-        - PackageFieldRoyalty
+        - PackageFieldRoyaltyAccumulator
+        - PackageCodeVmTypeEntry
+        - PackageCodeOriginalCodeEntry
+        - PackageCodeInstrumentedCodeEntry
+        - PackageSchemaEntry
+        - PackageBlueprintDefinitionEntry
+        - PackageBlueprintDependenciesEntry
+        - PackageBlueprintRoyaltyEntry
+        - PackageBlueprintAuthTemplateEntry
         - PackageFieldFunctionAccessRules
         - FungibleResourceManagerFieldDivisibility
         - FungibleResourceManagerFieldTotalSupply
@@ -2846,42 +3042,152 @@ components:
         - NonFungibleResourceManagerFieldMutableFields
         - NonFungibleResourceManagerDataEntry
         - FungibleVaultFieldBalance
+        - FungibleVaultFieldFrozenStatus
         - NonFungibleVaultFieldBalance
+        - NonFungibleVaultFieldFrozenStatus
         - NonFungibleVaultContentsIndexEntry
+        - ConsensusManager
         - ConsensusManagerFieldConfig
         - ConsensusManagerFieldState
         - ConsensusManagerFieldCurrentValidatorSet
         - ConsensusManagerFieldCurrentProposalStatistic
         - ConsensusManagerFieldCurrentTimeRoundedToMinutes
         - ConsensusManagerFieldCurrentTime
+        - ConsensusManagerFieldValidatorRewards
         - ConsensusManagerRegisteredValidatorsByStakeIndexEntry
         - ValidatorFieldState
+        - ValidatorFieldProtocolUpdateReadinessSignal
         - AccountFieldState
         - AccountVaultIndexEntry
         - AccountDepositRuleIndexEntry
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
-        - OneResourcePool
-        - TwoResourcePool
-        - MultiResourcePool
-### SUBSTATES
+        - OneResourcePoolFieldState
+        - TwoResourcePoolFieldState
+        - MultiResourcePoolFieldState
+        - TransactionTrackerFieldState
+        - TransactionTrackerCollectionEntry
+################################################
+# GENERAL / SHARED MODELS - substate key types #
+################################################
+    ObjectRoleKey:
+      type: object
+      required:
+        - object_module_id
+        - role_key
+      properties:
+        object_module_id:
+          $ref: "#/components/schemas/ObjectModuleId"
+        role_key:
+          type: string
+    MainMethodKey:
+      type: object
+      required:
+        - method_name
+      properties:
+        method_name:
+          type: string
+    MetadataKey:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    PackageCodeKey:
+      type: object
+      required:
+        - code_hash
+      properties:
+        code_hash:
+          $ref: '#/components/schemas/CodeHash'
+    SchemaKey:
+      type: object
+      required:
+        - schema_hash
+      properties:
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+    BlueprintVersionKey:
+      type: object
+      required:
+        - blueprint_name
+        - blueprint_version
+      properties:
+        blueprint_name:
+          type: string
+          description: The first part of the substate key `(blueprint_name, blueprint_version)`.
+        blueprint_version:
+          type: string
+          description: The second part of the substate key `(blueprint_name, blueprint_version)`.
+    LocalNonFungibleKey:
+      type: object
+      required:
+        - non_fungible_local_id
+      properties:
+        non_fungible_local_id:
+          $ref: '#/components/schemas/NonFungibleLocalId'
+    ActiveValidatorKey:
+      type: object
+      required:
+        - stake_weighting
+        - validator_address
+      properties:
+        stake_weighting:
+          type: integer
+          description: |
+            The divided stake, giving a weighting for the validator,
+            used as part of the sort key.
+          format: int32
+          minimum: 0
+          maximum: 65535
+        validator_address:
+          $ref: '#/components/schemas/ComponentAddress'
+    ResourceKey:
+      type: object
+      required:
+        - resource_address
+      properties:
+        resource_address:
+          $ref: '#/components/schemas/ComponentAddress'
+    TransactionIdKey:
+      type: object
+      required:
+        - intent_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    GenericKey:
+      type: object
+      properties:
+        key_data:
+          description: If it can be decoded as SBOR, this is the data
+          $ref: '#/components/schemas/SborData'
+################################################
+# GENERAL / SHARED MODELS - specific substates #
+################################################
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - details
+            - value
           properties:
-            details:
-              $ref: '#/components/schemas/TypeInfoDetails'
+            value:
+              $ref: '#/components/schemas/TypeInfoModuleFieldTypeInfoValue'
+    TypeInfoModuleFieldTypeInfoValue:
+      type: object
+      required:
+        - details
+      properties:
+        details:
+          $ref: '#/components/schemas/TypeInfoDetails'
     TypeInfoType:
       type: string
       enum:
         - Object
         - KeyValueStore
-        - GlobalAddressReservation
-        - GlobalAddressPhantom
     TypeInfoDetails:
       type: object
       required:
@@ -2895,8 +3201,6 @@ components:
           # NOTE: These need to match TypeInfoType options above
           Object: '#/components/schemas/ObjectTypeInfoDetails'
           KeyValueStore: '#/components/schemas/KeyValueStoreTypeInfoDetails'
-          GlobalAddressReservation: '#/components/schemas/GlobalAddressReservationTypeInfoDetails'
-          GlobalAddressPhantom: '#/components/schemas/GlobalAddressPhantomTypeInfoDetails'
     ObjectTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -2904,12 +3208,15 @@ components:
           required:
             - package_address
             - blueprint_name
+            - blueprint_version
             - global
             - features
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
+              type: string
+            blueprint_version:
               type: string
             global:
               type: boolean
@@ -2931,26 +3238,6 @@ components:
             key_value_store_info:
               description: The SBOR schema of the KeyValueStore
               $ref: '#/components/schemas/KeyValueStoreInfo'
-    GlobalAddressReservationTypeInfoDetails:
-      allOf:
-        - $ref: '#/components/schemas/TypeInfoDetails'
-        - type: object
-          description: The owned allocated global address
-          required:
-            - global_address
-          properties:
-            global_address:
-              $ref: '#/components/schemas/GlobalAddress'
-    GlobalAddressPhantomTypeInfoDetails:
-      allOf:
-        - $ref: '#/components/schemas/TypeInfoDetails'
-        - type: object
-          description: A phantom global object which makes the allocated global address usable
-          required:
-            - global_address_phantom
-          properties:
-            global_address_phantom:
-              $ref: '#/components/schemas/GlobalAddressPhantom'
     KeyValueStoreInfo:
       type: object
       required:
@@ -2958,290 +3245,654 @@ components:
       properties:
         kv_store_schema:
           $ref: '#/components/schemas/KeyValueStoreSchema'
-    AccessRulesModuleFieldAccessRulesSubstate:
+    AccessRulesModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - roles
-            - role_mutability
+            - value
           properties:
-            roles:
-              type: array
-              items:
-                $ref: '#/components/schemas/RoleRule'
-            role_mutability:
-              type: array
-              items:
-                $ref: '#/components/schemas/MutabilityRule'
-    BlueprintAccessRules:
+            value:
+              $ref: '#/components/schemas/AccessRulesModuleFieldOwnerRoleValue'
+    AccessRulesModuleFieldOwnerRoleValue:
       type: object
       required:
-        - blueprint_name
+        - owner_role
       properties:
-        blueprint_name:
-          type: string
-    RoyaltyModuleFieldConfigSubstate:
+        owner_role:
+          $ref: "#/components/schemas/OwnerRole"
+    AccessRulesModuleRuleEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - royalty_config
+            - key
           properties:
-            royalty_config:
-              $ref: '#/components/schemas/RoyaltyConfig'
-    RoyaltyModuleFieldAccumulatorSubstate:
+            key:
+              $ref: '#/components/schemas/ObjectRoleKey'
+            value:
+              $ref: '#/components/schemas/AccessRulesModuleRuleEntryValue'
+    AccessRulesModuleRuleEntryValue:
+      type: object
+      required:
+        - access_rule
+      properties:
+        access_rule:
+          $ref: '#/components/schemas/AccessRule'
+    RoyaltyModuleFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
+          required:
+            - value
           properties:
-            vault_entity:
-              $ref: "#/components/schemas/EntityReference"
+            value:
+              $ref: '#/components/schemas/RoyaltyModuleFieldStateValue'
+    RoyaltyModuleFieldStateValue:
+      type: object
+      required:
+        - is_enabled
+        - vault_entity
+      properties:
+        is_enabled:
+          type: boolean
+        vault_entity:
+          $ref: "#/components/schemas/EntityReference"
+    RoyaltyModuleMethodRoyaltyEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: '#/components/schemas/MainMethodKey'
+            value:
+              $ref: '#/components/schemas/RoyaltyModuleMethodRoyaltyEntryValue'
+    RoyaltyModuleMethodRoyaltyEntryValue:
+      type: object
+      description: If missing, it represents a free method.
+      properties:
+        royalty_amount:
+          description: The component royalty. If missing, it represents a free method.
+          $ref: '#/components/schemas/RoyaltyAmount'
     MetadataModuleEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - field_name
-            - is_deleted
-            - is_mutable
+            - key
           properties:
-            field_name:
-              type: string
-            is_deleted:
-              type: boolean
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-            is_mutable:
-              type: boolean
-    PackageFieldInfoSubstate:
+            key:
+              $ref: '#/components/schemas/MetadataKey'
+            value:
+              $ref: '#/components/schemas/MetadataModuleEntryValue'
+    MetadataModuleEntryValue:
+      type: object
+      description: If missing, it represents a non-existing or deleted value.
+      required:
+        - data_struct
+      properties:
+        data_struct:
+          $ref: '#/components/schemas/DataStruct'
+    TransactionTrackerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - package_schema
+            - value
           properties:
-            package_schema:
-              $ref: '#/components/schemas/PackageSchema'
-    PackageFieldCodeTypeSubstate:
+            value:
+              $ref: '#/components/schemas/TransactionTrackerFieldStateValue'
+    TransactionTrackerFieldStateValue:
+      type: object
+      required:
+        - start_epoch
+        - start_partition
+        - partition_range_start_inclusive
+        - partition_range_end_inclusive
+        - epochs_per_partition
+      properties:
+        start_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+        start_partition:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        partition_range_start_inclusive:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        partition_range_end_inclusive:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        epochs_per_partition:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+    TransactionTrackerCollectionEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - code_type
+            - key
+            - value
           properties:
-            code_type:
-              $ref: '#/components/schemas/PackageCodeType'
-    PackageCodeType:
+            key:
+              $ref: '#/components/schemas/TransactionIdKey'
+            value:
+              $ref: '#/components/schemas/TransactionTrackerCollectionEntryValue'
+    TransactionTrackerCollectionEntryValue:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/TransactionTrackerTransactionStatus"
+    TransactionTrackerTransactionStatus:
+      type: string
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - Cancelled
+    PackageFieldRoyaltyAccumulatorSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/PackageFieldRoyaltyAccumulatorValue'
+    PackageFieldRoyaltyAccumulatorValue:
+      type: object
+      required:
+        - vault_entity
+      properties:
+        vault_entity:
+          $ref: "#/components/schemas/EntityReference"
+    PackageCodeVmTypeEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
+            value:
+              $ref: '#/components/schemas/PackageCodeVmTypeEntryValue'
+    PackageCodeVmTypeEntryValue:
+      type: object
+      required:
+        - vm_type
+      properties:
+        vm_type:
+          $ref: '#/components/schemas/VmType'
+    VmType:
       type: string
       enum:
         - Native
-        - Wasm
-    PackageFieldCodeSubstate:
+        - ScryptoV1
+    PackageCodeOriginalCodeEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - code_hex
+            - key
+            - value
           properties:
-            code_hex:
-              type: string
-              description: The hex-encoded package code
-    PackageFieldRoyaltySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - blueprint_royalties
-          properties:
-            vault_entity:
-              # This is optional - some early packages during bootstrapping don't have this
-              $ref: "#/components/schemas/EntityReference"
-            blueprint_royalties:
-              type: array
-              items:
-                $ref: '#/components/schemas/BlueprintRoyaltyConfig'
-    PackageFieldFunctionAccessRulesSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - function_auth
-          properties:
-            function_auth:
-              items:
-                $ref: '#/components/schemas/PackageFunctionAccessRule'
-    PackageFunctionAccessRule:
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
+            value:
+              $ref: '#/components/schemas/PackageCodeOriginalCodeEntryValue'
+    PackageCodeOriginalCodeEntryValue:
       type: object
       required:
-        - blueprint
-        - function_name
-        - access_rule
+        - code_hex
       properties:
-        blueprint:
+        code_hex:
           type: string
-        function_name:
+          description: |
+            Either the hex-encoded WASM package code (if Scrypto), or the native package identifier.
+    PackageCodeInstrumentedCodeEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/PackageCodeKey'
+            value:
+              $ref: '#/components/schemas/PackageCodeInstrumentedCodeEntryValue'
+    PackageCodeInstrumentedCodeEntryValue:
+      type: object
+      required:
+        - code_hex
+      properties:
+        code_hex:
           type: string
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
+          description: |
+            The hex-encoded instrumented WASM package code.
+    PackageSchemaEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/SchemaKey'
+            value:
+              $ref: '#/components/schemas/PackageSchemaEntryValue'
+    PackageSchemaEntryValue:
+      type: object
+      required:
+        - schema
+      properties:
+        schema:
+          $ref: '#/components/schemas/ScryptoSchema'
+    PackageBlueprintDefinitionEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
+            value:
+              $ref: '#/components/schemas/PackageBlueprintDefinitionEntryValue'
+    PackageBlueprintDefinitionEntryValue:
+      type: object
+      required:
+        - definition
+      properties:
+        definition:
+          $ref: '#/components/schemas/BlueprintDefinition'
+    PackageBlueprintDependenciesEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
+            value:
+              $ref: '#/components/schemas/PackageBlueprintDependenciesEntryValue'
+    PackageBlueprintDependenciesEntryValue:
+      type: object
+      required:
+        - dependencies
+      properties:
+        dependencies:
+          $ref: '#/components/schemas/BlueprintDependencies'
+    PackageBlueprintRoyaltyEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
+            value:
+              $ref: '#/components/schemas/PackageBlueprintRoyaltyEntryValue'
+    PackageBlueprintRoyaltyEntryValue:
+      type: object
+      required:
+        - royalty_config
+      properties:
+        royalty_config:
+          $ref: '#/components/schemas/BlueprintRoyaltyConfig'
+    PackageBlueprintAuthTemplateEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+            - value
+          properties:
+            key:
+              $ref: '#/components/schemas/BlueprintVersionKey'
+            value:
+              $ref: '#/components/schemas/PackageBlueprintAuthTemplateEntryValue'
+    PackageBlueprintAuthTemplateEntryValue:
+      type: object
+      required:
+        - auth_config
+      properties:
+        auth_config:
+          description: The configuration of the package blueprint.
+          $ref: '#/components/schemas/AuthConfig'
     FungibleResourceManagerFieldDivisibilitySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - divisibility
+            - value
           properties:
-            divisibility:
-              type: integer
-              minimum: 0
-              maximum: 18
+            value:
+              $ref: '#/components/schemas/FungibleResourceManagerFieldDivisibilityValue'
+    FungibleResourceManagerFieldDivisibilityValue:
+      type: object
+      required:
+        - divisibility
+      properties:
+        divisibility:
+          type: integer
+          minimum: 0
+          maximum: 18
     FungibleResourceManagerFieldTotalSupplySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - total_supply
+            - value
           properties:
-            total_supply:
-              type: string
-              description: |
-                The string-encoded decimal representing the total supply of this resource.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            value:
+              $ref: '#/components/schemas/FungibleResourceManagerFieldTotalSupplyValue'
+    FungibleResourceManagerFieldTotalSupplyValue:
+      type: object
+      required:
+        - total_supply
+      properties:
+        total_supply:
+          type: string
+          description: |
+            The string-encoded decimal representing the total supply of this resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     NonFungibleResourceManagerFieldIdTypeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - non_fungible_id_type
+            - value
           properties:
-            non_fungible_id_type:
-              $ref: '#/components/schemas/NonFungibleIdType'
+            value:
+              $ref: '#/components/schemas/NonFungibleResourceManagerFieldIdTypeValue'
+    NonFungibleResourceManagerFieldIdTypeValue:
+      type: object
+      required:
+        - non_fungible_id_type
+      properties:
+        non_fungible_id_type:
+          $ref: '#/components/schemas/NonFungibleIdType'
     NonFungibleResourceManagerFieldTotalSupplySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - total_supply
+            - value
           properties:
-            total_supply:
-              type: string
-              description: |
-                The string-encoded decimal representing the total supply of this resource.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            value:
+              $ref: '#/components/schemas/NonFungibleResourceManagerFieldTotalSupplyValue'
+    NonFungibleResourceManagerFieldTotalSupplyValue:
+      type: object
+      required:
+        - total_supply
+      properties:
+        total_supply:
+          type: string
+          description: |
+            The string-encoded decimal representing the total supply of this resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     NonFungibleResourceManagerFieldMutableFieldsSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - mutable_fields
+            - value
           properties:
-            mutable_fields:
-              type: array
-              description: |
-                The field names of the NF Metadata which are mutable.
-              items:
-                type: string
+            value:
+              $ref: '#/components/schemas/NonFungibleResourceManagerFieldMutableFieldsValue'
+    NonFungibleResourceManagerFieldMutableFieldsValue:
+      type: object
+      required:
+        - mutable_fields
+      properties:
+        mutable_fields:
+          type: array
+          description: |
+            The field names of the NF Metadata which are mutable.
+          items:
+            type: string
     NonFungibleResourceManagerDataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
+          description: |
+            If the NF has been burned, the value is deleted and empty.
           required:
-            - is_deleted
-            - is_mutable
+            - key
           properties:
-            is_deleted:
-              type: boolean
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-            is_mutable:
-              type: boolean
+            key:
+              $ref: '#/components/schemas/LocalNonFungibleKey'
+            value:
+              $ref: '#/components/schemas/NonFungibleResourceManagerDataEntryValue'
+    NonFungibleResourceManagerDataEntryValue:
+      type: object
+      description: |
+        If missing, it represents a burned Non-Fungible.
+        A Non-Fungible with that local id cannot be minted again - the id is not re-usable.
+      required:
+        - data_struct
+      properties:
+        data_struct:
+          $ref: '#/components/schemas/DataStruct'
     FungibleVaultFieldBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - amount
+            - value
           properties:
-            amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the token amount in the vault.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            value:
+              $ref: '#/components/schemas/FungibleVaultFieldBalanceValue'
+    FungibleVaultFieldBalanceValue:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the token amount in the vault.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    FungibleVaultFieldFrozenStatusSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/FungibleVaultFieldFrozenStatusValue'
+    FungibleVaultFieldFrozenStatusValue:
+      type: object
+      required:
+        - frozen_status
+      properties:
+        frozen_status:
+          $ref: '#/components/schemas/FrozenStatus'
+    FrozenStatus:
+      type: object
+      required:
+        - is_withdraw_frozen
+        - is_deposit_frozen
+        - is_burn_frozen
+      properties:
+        is_withdraw_frozen:
+          type: boolean
+        is_deposit_frozen:
+          type: boolean
+        is_burn_frozen:
+          type: boolean
     NonFungibleVaultFieldBalanceSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - amount
+            - value
           properties:
-            amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the token amount in the vault.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            value:
+              $ref: '#/components/schemas/NonFungibleVaultFieldBalanceValue'
+    NonFungibleVaultFieldBalanceValue:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the token amount in the vault.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    NonFungibleVaultFieldFrozenStatusSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/NonFungibleVaultFieldFrozenStatusValue'
+    NonFungibleVaultFieldFrozenStatusValue:
+      type: object
+      required:
+        - frozen_status
+      properties:
+        frozen_status:
+          $ref: '#/components/schemas/FrozenStatus'
     NonFungibleVaultContentsIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - non_fungible_local_id
+            - key
+            - value
           properties:
-            non_fungible_local_id:
-              description: The NonFungibleLocalId in the vault.
-              $ref: '#/components/schemas/NonFungibleLocalId'
+            key:
+              $ref: '#/components/schemas/LocalNonFungibleKey'
+            value:
+              $ref: '#/components/schemas/NonFungibleVaultContentsIndexEntryValue'
+    NonFungibleVaultContentsIndexEntryValue:
+      type: object
+      description: |
+        This object is empty, and always present on this substate.
+        Note that when a non-fungible is withdrawn from the vault, the full substate is deleted, which is marked
+        by a DeletedSubstate action (rather than deletion of the value property in an UpdateSubstate action).
+        This is because this is an Index entry, not a KeyValueStore entry.
+      required:
+        - is_present
+      properties:
+        is_present:
+          description: |
+            This is a dummy property which is always set to true and means nothing.
+            It exists just to ensure this object has a well-defined type in OpenAPI schemas.
+          type: boolean
     ConsensusManagerFieldConfigSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - max_validators
-            - epoch_change_condition
-            - num_unstake_epochs
-            - total_emission_xrd_per_epoch
-            - min_validator_reliability
-            - num_owner_stake_units_unlock_epochs
-            - num_fee_increase_delay_epochs
+            - value
           properties:
-            max_validators:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, specifying the maximum number of validators
-                in the active validator set.
-            epoch_change_condition:
-              $ref: '#/components/schemas/EpochChangeCondition'
-            num_unstake_epochs:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, specifying the minimum number of epochs
-                before an unstaker can withdraw their XRD.
-            total_emission_xrd_per_epoch:
-              $ref: '#/components/schemas/Decimal'
-            min_validator_reliability:
-              description: |
-                A proportion (between 0 and 1) which a validator needs to exceed to get emissions in an epoch.
-              $ref: '#/components/schemas/Decimal'
-            num_owner_stake_units_unlock_epochs:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, specifying the minimum number of epochs
-                before an owner can take their stake units after attempting to withdraw them.
-            num_fee_increase_delay_epochs:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, specifying the minimum number of epochs
-                before a fee increase takes effect.
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldConfigValue'
+    ConsensusManagerFieldConfigValue:
+      type: object
+      required:
+        - max_validators
+        - epoch_change_condition
+        - num_unstake_epochs
+        - total_emission_xrd_per_epoch
+        - min_validator_reliability
+        - num_owner_stake_units_unlock_epochs
+        - num_fee_increase_delay_epochs
+        - validator_creation_xrd_cost
+      properties:
+        max_validators:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, specifying the maximum number of validators
+            in the active validator set.
+        epoch_change_condition:
+          $ref: '#/components/schemas/EpochChangeCondition'
+        num_unstake_epochs:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, specifying the minimum number of epochs
+            before an unstaker can withdraw their XRD.
+        total_emission_xrd_per_epoch:
+          $ref: '#/components/schemas/Decimal'
+        min_validator_reliability:
+          description: |
+            A proportion (between 0 and 1) which a validator needs to exceed to get emissions in an epoch.
+          $ref: '#/components/schemas/Decimal'
+        num_owner_stake_units_unlock_epochs:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, specifying the minimum number of epochs
+            before an owner can take their stake units after attempting to withdraw them.
+        num_fee_increase_delay_epochs:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, specifying the minimum number of epochs
+            before a fee increase takes effect.
+        validator_creation_xrd_cost:
+          type: string
+          description: |
+            The amount of XRD required to be passed in a bucket to create a validator.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    ConsensusManagerFieldValidatorRewardsSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldValidatorRewardsValue'
+    ConsensusManagerFieldValidatorRewardsValue:
+      type: object
+      required:
+        - proposer_rewards
+        - rewards_vault
+      properties:
+        proposer_rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposerReward'
+        rewards_vault:
+          $ref: '#/components/schemas/EntityReference'
     EpochChangeCondition:
       type: object
       required:
@@ -3274,138 +3925,208 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - epoch
-            - epoch_start
-            - round
+            - value
           properties:
-            epoch:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: An integer between `0` and `10^10`, marking the current epoch
-            round:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: An integer between `0` and `10^10`, marking the current round in an epoch
-            epoch_start:
-              $ref: '#/components/schemas/Instant'
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldStateValue'
+    ConsensusManagerFieldStateValue:
+      type: object
+      required:
+        - epoch
+        - round
+        - is_started
+        - effective_epoch_start
+        - actual_epoch_start
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current epoch
+        round:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current round in an epoch
+        is_started:
+          type: boolean
+        effective_epoch_start:
+          description: |
+            The effective time the epoch started. A drift-free measure, used to work out when the
+            epoch should ideally end. 
+          $ref: '#/components/schemas/Instant'
+        actual_epoch_start:
+          description: |
+            The actual time the epoch started. Not used by any logic, but the difference between
+            this and the effective start gives a measure of the time it took for the end-of-epoch
+            to be noticed.
+          $ref: '#/components/schemas/Instant'
+        current_leader:
+          $ref: '#/components/schemas/ActiveValidatorIndex'
     ConsensusManagerFieldCurrentProposalStatisticSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - completed
-            - missed
+            - value
           properties:
-            completed:
-              type: array
-              description: The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
-              items:
-                type: integer
-                format: int64
-                minimum: 0
-                maximum: 10000000000
-            missed:
-              type: array
-              description: The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
-              items:
-                type: integer
-                format: int64
-                minimum: 0
-                maximum: 10000000000
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldCurrentProposalStatisticValue'
+    ConsensusManagerFieldCurrentProposalStatisticValue:
+      type: object
+      required:
+        - completed
+        - missed
+      properties:
+        completed:
+          type: array
+          description: The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
+          items:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 10000000000
+        missed:
+          type: array
+          description: The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
+          items:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 10000000000
     ConsensusManagerFieldCurrentValidatorSetSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - validator_set
+            - value
           properties:
-            validator_set:
-              type: array
-              items:
-                $ref: '#/components/schemas/ActiveValidator'
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldCurrentValidatorSetValue'
+    ConsensusManagerFieldCurrentValidatorSetValue:
+      type: object
+      required:
+        - validator_set
+      properties:
+        validator_set:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveValidator'
     ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - active_validator
+            - key
+            - value
           properties:
-            active_validator:
-              $ref: "#/components/schemas/ActiveValidator"
+            key:
+              $ref: '#/components/schemas/ActiveValidatorKey'
+            value:
+              $ref: '#/components/schemas/ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue'
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntryValue:
+      type: object
+      required:
+        - active_validator
+      properties:
+        active_validator:
+          $ref: "#/components/schemas/ActiveValidator"
     ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - proposer_timestamp_rounded_down_to_minute
+            - value
           properties:
-            proposer_timestamp_rounded_down_to_minute:
-              $ref: '#/components/schemas/Instant'
-              description: |
-                The latest round proposer's timestamp (rounded down to the current minute).
-                An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldCurrentTimeRoundedToMinutesValue'
+    ConsensusManagerFieldCurrentTimeRoundedToMinutesValue:
+      type: object
+      required:
+        - proposer_timestamp_rounded_down_to_minute
+      properties:
+        proposer_timestamp_rounded_down_to_minute:
+          $ref: '#/components/schemas/Instant'
+          description: |
+            The latest round proposer's timestamp (rounded down to the current minute).
+            An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
     ConsensusManagerFieldCurrentTimeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - proposer_timestamp
+            - value
           properties:
-            proposer_timestamp:
-              $ref: '#/components/schemas/Instant'
-              description: |
-                The latest round proposer's timestamp.
-                An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
+            value:
+              $ref: '#/components/schemas/ConsensusManagerFieldCurrentTimeValue'
+    ConsensusManagerFieldCurrentTimeValue:
+      type: object
+      required:
+        - proposer_timestamp
+      properties:
+        proposer_timestamp:
+          $ref: '#/components/schemas/Instant'
+          description: |
+            The latest round proposer's timestamp.
+            An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
     ValidatorFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - public_key
-            - is_registered
-            - validator_fee_factor
-            - stake_unit_resource_address
-            - stake_xrd_vault
-            - unstake_claim_token_resource_address
-            - pending_xrd_withdraw_vault
-            - locked_owner_stake_unit_vault
-            - pending_owner_stake_unit_unlock_vault
-            - pending_owner_stake_unit_withdrawals
-            - already_unlocked_owner_stake_unit_amount
+            - value
           properties:
-            sorted_key:
-              $ref: '#/components/schemas/SubstateKey'
-            public_key:
-              $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
-            is_registered:
-              type: boolean
-            validator_fee_factor:
-              description: The proportion of the emission that the validator owner keeps.
-              $ref: '#/components/schemas/Decimal'
-            validator_fee_change_request:
-              $ref: '#/components/schemas/ValidatorFeeChangeRequest'
-            stake_unit_resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            stake_xrd_vault:
-              $ref: '#/components/schemas/EntityReference'
-            unstake_claim_token_resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            pending_xrd_withdraw_vault:
-              $ref: '#/components/schemas/EntityReference'
-            locked_owner_stake_unit_vault:
-              $ref: '#/components/schemas/EntityReference'
-            pending_owner_stake_unit_unlock_vault:
-              $ref: '#/components/schemas/EntityReference'
-            pending_owner_stake_unit_withdrawals:
-              type: array
-              items:
-                $ref: '#/components/schemas/PendingOwnerStakeWithdrawal'
-            already_unlocked_owner_stake_unit_amount:
-              $ref: '#/components/schemas/Decimal'
+            value:
+              $ref: '#/components/schemas/ValidatorFieldStateValue'
+    ValidatorFieldStateValue:
+      type: object
+      required:
+        - public_key
+        - is_registered
+        - accepts_delegated_stake
+        - validator_fee_factor
+        - stake_unit_resource_address
+        - stake_xrd_vault
+        - unstake_claim_token_resource_address
+        - pending_xrd_withdraw_vault
+        - locked_owner_stake_unit_vault
+        - pending_owner_stake_unit_unlock_vault
+        - pending_owner_stake_unit_withdrawals
+        - already_unlocked_owner_stake_unit_amount
+      properties:
+        sorted_key:
+          $ref: '#/components/schemas/SubstateKey'
+        public_key:
+          $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+        is_registered:
+          type: boolean
+        accepts_delegated_stake:
+          type: boolean
+        validator_fee_factor:
+          description: The proportion of the emission that the validator owner keeps.
+          $ref: '#/components/schemas/Decimal'
+        validator_fee_change_request:
+          $ref: '#/components/schemas/ValidatorFeeChangeRequest'
+        stake_unit_resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+        stake_xrd_vault:
+          $ref: '#/components/schemas/EntityReference'
+        unstake_claim_token_resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+        pending_xrd_withdraw_vault:
+          $ref: '#/components/schemas/EntityReference'
+        locked_owner_stake_unit_vault:
+          $ref: '#/components/schemas/EntityReference'
+        pending_owner_stake_unit_unlock_vault:
+          $ref: '#/components/schemas/EntityReference'
+        pending_owner_stake_unit_withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingOwnerStakeWithdrawal'
+        already_unlocked_owner_stake_unit_amount:
+          $ref: '#/components/schemas/Decimal'
     ValidatorFeeChangeRequest:
       type: object
       required:
@@ -3436,15 +4157,39 @@ components:
             An integer between `0` and `10^10`, marking the epoch when the stake units are unlocked for withdrawal.
         stake_unit_amount:
           $ref: '#/components/schemas/Decimal'
+    ValidatorFieldProtocolUpdateReadinessSignalSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              $ref: '#/components/schemas/ValidatorFieldProtocolUpdateReadinessSignalValue'
+    ValidatorFieldProtocolUpdateReadinessSignalValue:
+      type: object
+      properties:
+        protocol_version_name:
+          description: |
+            If present, indicates the validator is currently signalling readiness for the given protocol version.
+            Is validated to be exactly 32 chars long (if it exists).
+          type: string
     AccountFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - default_deposit_rule
+            - value
           properties:
-            default_deposit_rule:
-              $ref: '#/components/schemas/DefaultDepositRule'
+            value:
+              $ref: '#/components/schemas/AccountFieldStateValue'
+    AccountFieldStateValue:
+      type: object
+      required:
+        - default_deposit_rule
+      properties:
+        default_deposit_rule:
+          $ref: '#/components/schemas/DefaultDepositRule'
     DefaultDepositRule:
       type: string
       description: |
@@ -3461,23 +4206,36 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_address
+            - key
+            - value
           properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            vault:
-              $ref: '#/components/schemas/EntityReference'
+            key:
+              $ref: '#/components/schemas/ResourceKey'
+            value:
+              $ref: '#/components/schemas/AccountVaultIndexEntryValue'
+    AccountVaultIndexEntryValue:
+      type: object
+      required:
+        - vault
+      properties:
+        vault:
+          $ref: '#/components/schemas/EntityReference'
     AccountDepositRuleIndexEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_address
+            - key
           properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            deposit_rule:
-              $ref: '#/components/schemas/DepositRule'
+            key:
+              $ref: '#/components/schemas/ResourceKey'
+            value:
+              $ref: '#/components/schemas/AccountDepositRuleIndexEntryValue'
+    AccountDepositRuleIndexEntryValue:
+      type: object
+      properties:
+        deposit_rule:
+          $ref: '#/components/schemas/DepositRule'
     DepositRule:
       type: string
       enum:
@@ -3489,76 +4247,116 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - data_struct
+            - value
           properties:
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
+            value:
+              $ref: '#/components/schemas/AccessControllerFieldStateValue'
+    AccessControllerFieldStateValue:
+      type: object
+      required:
+        - data_struct
+      properties:
+        data_struct:
+          $ref: '#/components/schemas/DataStruct'
     GenericScryptoComponentFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - data_struct
+            - value
           properties:
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
+            value:
+              $ref: '#/components/schemas/GenericScryptoComponentFieldStateValue'
+    GenericScryptoComponentFieldStateValue:
+      type: object
+      required:
+        - data_struct
+      properties:
+        data_struct:
+          $ref: '#/components/schemas/DataStruct'
     GenericKeyValueStoreEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - is_deleted
-            - is_mutable
+            - key
           properties:
-            is_deleted:
-              type: boolean
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-            is_mutable:
-              type: boolean
-    OneResourcePoolSubstate:
+            key:
+              $ref: '#/components/schemas/GenericKey'
+            value:
+              $ref: '#/components/schemas/GenericKeyValueStoreEntryValue'
+    GenericKeyValueStoreEntryValue:
+      type: object
+      description: If not present, the entry has been deleted.
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/DataStruct'
+    OneResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - vault
-            - pool_unit_resource_address
+            - value
           properties:
-            vault:
-              $ref: '#/components/schemas/EntityReference'
-            pool_unit_resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-    TwoResourcePoolSubstate:
+            value:
+              $ref: '#/components/schemas/OneResourcePoolFieldStateValue'
+    OneResourcePoolFieldStateValue:
+      type: object
+      required:
+        - vault
+        - pool_unit_resource_address
+      properties:
+        vault:
+          $ref: '#/components/schemas/EntityReference'
+        pool_unit_resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+    TwoResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - vaults
-            - pool_unit_resource_address
+            - value
           properties:
-            vaults:
-              type: array
-              minItems: 2
-              maxItems: 2
-              items:
-                $ref: '#/components/schemas/PoolVault'
-            pool_unit_resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-    MultiResourcePoolSubstate:
+            value:
+              $ref: '#/components/schemas/TwoResourcePoolFieldStateValue'
+    TwoResourcePoolFieldStateValue:
+      type: object
+      required:
+        - vaults
+        - pool_unit_resource_address
+      properties:
+        vaults:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/PoolVault'
+        pool_unit_resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
+    MultiResourcePoolFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - vaults
-            - pool_unit_resource_address
+            - value
           properties:
-            vaults:
-              type: array
-              minItems: 3
-              items:
-                $ref: '#/components/schemas/PoolVault'
-            pool_unit_resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
+            value:
+              $ref: '#/components/schemas/MultiResourcePoolFieldStateValue'
+    MultiResourcePoolFieldStateValue:
+      type: object
+      required:
+        - vaults
+        - pool_unit_resource_address
+      properties:
+        vaults:
+          type: array
+          minItems: 3
+          items:
+            $ref: '#/components/schemas/PoolVault'
+        pool_unit_resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
     PoolVault:
       type: object
       required:
@@ -4005,6 +4803,7 @@ components:
       type: object
       required:
         - entity_address
+        - fee_balance_changes
         - non_fee_balance_changes
       properties:
         entity_address:
@@ -4015,6 +4814,22 @@ components:
           description: |
             If present, this field indicates the entity contributed to the payment of the fee.
             The change in balance will always be negative.
+            NOTE: This property is deprecated but kept for backwards compatibility. This entry is duplicated in 
+            `fee_balance_changes`.
+        fee_balance_changes:
+          type: array
+          description: |
+            If present, this field indicates fee-related balance changes, for example:
+
+            - Payment of the fee (including tip and royalty)
+            - Distribution of royalties
+            - Distribution of the fee and tip to the consensus-manager, for distributing to the relevant
+              validator/s at end of epoch
+
+            See https://www.radixdlt.com/blog/how-fees-work-in-babylon for further information on how
+            fee payment works at Babylon.
+          items:
+            $ref: "#/components/schemas/LtsFeeFungibleResourceBalanceChange"
         non_fee_balance_changes:
           type: array
           items:
@@ -4034,6 +4849,31 @@ components:
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsFeeFungibleResourceBalanceChange:
+      type: object
+      required:
+        - type
+        - resource_address
+        - balance_change
+      properties:
+        type:
+          $ref: "#/components/schemas/LtsFeeFungibleResourceBalanceChangeType"
+        resource_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable version of the fungible resource's address
+        balance_change:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of change for the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsFeeFungibleResourceBalanceChangeType:
+      type: string
+      enum:
+        - FeePayment
+        - FeeDistributed
+        - TipDistributed
+        - RoyaltyDistributed
     LtsResultantAccountFungibleBalances:
       type: object
       required:
@@ -4291,6 +5131,10 @@ components:
           description: |
             The ledger state after the genesis transactions have been executed.
             It is not present until genesis has been run.
+        post_genesis_epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+          description: |
+            The post-genesis epoch and round.
         current_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
@@ -4496,21 +5340,7 @@ components:
             notarized_transaction:
               $ref: "#/components/schemas/NotarizedTransaction"
             identifiers:
-              type: object
-              required:
-                - intent_hash
-                - signed_intent_hash
-                - payload_hash
-                - ledger_hash
-              properties:
-                intent_hash:
-                  $ref: "#/components/schemas/IntentHash"
-                signed_intent_hash:
-                  $ref: "#/components/schemas/SignedIntentHash"
-                payload_hash:
-                  $ref: "#/components/schemas/NotarizedTransactionHash"
-                ledger_hash:
-                  $ref: "#/components/schemas/LedgerPayloadHash"
+              $ref: "#/components/schemas/ParsedNotarizedTransactionIdentifiers"
             validation_error:
               type: object
               description: |
@@ -4531,6 +5361,22 @@ components:
                   description: |
                     Whether the error is known to be permanent, or not.
                     This relates to whether the transaction would be rejected permanently or temporarily if submitted.
+    ParsedNotarizedTransactionIdentifiers:
+      type: object
+      required:
+        - intent_hash
+        - signed_intent_hash
+        - payload_hash
+        - ledger_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+        signed_intent_hash:
+          $ref: "#/components/schemas/SignedIntentHash"
+        payload_hash:
+          $ref: "#/components/schemas/NotarizedTransactionHash"
+        ledger_hash:
+          $ref: "#/components/schemas/LedgerPayloadHash"
     ParsedSignedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -4541,15 +5387,17 @@ components:
             signed_intent:
               $ref: "#/components/schemas/SignedTransactionIntent"
             identifiers:
-              type: object
-              required:
-                - intent_hash
-                - signed_intent_hash
-              properties:
-                intent_hash:
-                  $ref: "#/components/schemas/IntentHash"
-                signed_intent_hash:
-                  $ref: "#/components/schemas/SignedIntentHash"
+              $ref: "#/components/schemas/ParsedSignedTransactionIntentIdentifiers"
+    ParsedSignedTransactionIntentIdentifiers:
+      type: object
+      required:
+        - intent_hash
+        - signed_intent_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+        signed_intent_hash:
+          $ref: "#/components/schemas/SignedIntentHash"
     ParsedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -4560,12 +5408,14 @@ components:
             intent:
               $ref: "#/components/schemas/TransactionIntent"
             identifiers:
-              type: object
-              required:
-                - intent_hash
-              properties:
-                intent_hash:
-                  $ref: "#/components/schemas/IntentHash"
+              $ref: "#/components/schemas/ParsedTransactionIntentIdentifiers"
+    ParsedTransactionIntentIdentifiers:
+      type: object
+      required:
+        - intent_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
     ParsedLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -4576,18 +5426,20 @@ components:
             ledger_transaction:
               $ref: "#/components/schemas/LedgerTransaction"
             identifiers:
-              type: object
-              required:
-                - ledger_hash
-              properties:
-                intent_hash:
-                  $ref: "#/components/schemas/IntentHash"
-                signed_intent_hash:
-                  $ref: "#/components/schemas/SignedIntentHash"
-                payload_hash:
-                  $ref: "#/components/schemas/NotarizedTransactionHash"
-                ledger_hash:
-                  $ref: "#/components/schemas/LedgerPayloadHash"
+              $ref: "#/components/schemas/ParsedLedgerTransactionIdentifiers"
+    ParsedLedgerTransactionIdentifiers:
+      type: object
+      required:
+        - ledger_hash
+      properties:
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+        signed_intent_hash:
+          $ref: "#/components/schemas/SignedIntentHash"
+        payload_hash:
+          $ref: "#/components/schemas/NotarizedTransactionHash"
+        ledger_hash:
+          $ref: "#/components/schemas/LedgerPayloadHash"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -4941,16 +5793,13 @@ components:
           required:
             - use_free_credit
             - assume_all_signature_proofs
-            - permit_duplicate_intent_hash
-            - permit_invalid_header_epoch
+            - skip_epoch_check
           properties:
             use_free_credit:
               type: boolean
             assume_all_signature_proofs:
               type: boolean
-            permit_duplicate_intent_hash:
-              type: boolean
-            permit_invalid_header_epoch:
+            skip_epoch_check:
               type: boolean
     TransactionPreviewResponse:
       type: object
@@ -5085,8 +5934,13 @@ components:
         - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
-            - system_transaction
+            - is_flash
           properties:
+            is_flash:
+              description: |
+                The first genesis "transaction" flashes state into the database to prepare for the bootstrap transaction.
+                Such a transaction does not have an associated `system_transaction`
+              type: boolean
             system_transaction:
               $ref: "#/components/schemas/SystemTransaction"
     UserLedgerTransaction:
@@ -5219,13 +6073,13 @@ components:
       type: object
       required:
         - info
-        - access_rules
+        - owner_role
         - state
         - vaults
       properties:
         info:
           $ref: "#/components/schemas/Substate"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"
         state:
           $ref: "#/components/schemas/Substate"
@@ -5263,9 +6117,8 @@ components:
       required:
         - info
         - state
-        - royalty_config
         - royalty_accumulator
-        - access_rules
+        - owner_role
         - vaults
         - descendent_nodes
       properties:
@@ -5273,11 +6126,9 @@ components:
           $ref: "#/components/schemas/Substate"
         state:
           $ref: "#/components/schemas/Substate"
-        royalty_config:
-          $ref: "#/components/schemas/Substate"
         royalty_accumulator:
           $ref: "#/components/schemas/Substate"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"
         vaults:
           type: array
@@ -5338,7 +6189,7 @@ components:
       required:
         - address
         - state
-        - access_rules
+        - owner_role
         - vaults
         - descendent_nodes
       properties:
@@ -5346,7 +6197,7 @@ components:
           $ref: '#/components/schemas/ComponentAddress'
         state:
           $ref: "#/components/schemas/Substate"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"
         vaults:
           type: array
@@ -5375,13 +6226,13 @@ components:
       type: object
       required:
         - state
-        - access_rules
+        - owner_role
         - vaults
         - descendent_nodes
       properties:
         state:
           $ref: "#/components/schemas/Substate"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"
         vaults:
           type: array
@@ -5411,11 +6262,11 @@ components:
       type: object
       required:
         - manager
-        - access_rules
+        - owner_role
       properties:
         manager:
           $ref: "#/components/schemas/StateResourceManager"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"
     StateResourceManager:
       type: object
@@ -5496,13 +6347,10 @@ components:
     StatePackageResponse:
       type: object
       required:
-        - info
         - royalty
-        - access_rules
+        - owner_role
       properties:
-        info:
-          $ref: "#/components/schemas/Substate"
         royalty:
           $ref: "#/components/schemas/Substate"
-        access_rules:
+        owner_role:
           $ref: "#/components/schemas/Substate"

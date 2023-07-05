@@ -93,7 +93,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public final class GenerateGenesis {
 
   // Genesis parameters for XRD allocation for testnets
-  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
+  private static final Set<Network> NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
       Set.of(
           Network.GILGANET,
           Network.ENKINET,
@@ -104,6 +104,10 @@ public final class GenerateGenesis {
           Network.NEBUNET,
           Network.KISHARNET,
           Network.ANSHARNET);
+
+  private static final Set<Network> PRODUCTION_NETWORKS = Set.of(Network.MAINNET);
+  private static final Set<Network> NETWORKS_TO_DISABLE_FAUCET = PRODUCTION_NETWORKS;
+  private static final Set<Network> NETWORKS_TO_DISABLE_SCENARIOS = NETWORKS_TO_DISABLE_FAUCET;
 
   private static final Set<Network> NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS =
       Set.of(Network.KISHARNET, Network.ANSHARNET, Network.STOKENET, Network.MAINNET);
@@ -225,7 +229,7 @@ public final class GenerateGenesis {
   private static GenesisData createGenesisData(
       Network network, ImmutableList<ECDSASecp256k1PublicKey> validators) {
     final var usePowerfulStakingAccount =
-        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
+        NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
     final var stakeAmount =
         usePowerfulStakingAccount
@@ -244,7 +248,10 @@ public final class GenerateGenesis {
                 GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
-    var consensusConfig = GenesisConsensusManagerConfig.Builder.productionDefaults();
+    var consensusConfig =
+        PRODUCTION_NETWORKS.contains(network)
+            ? GenesisConsensusManagerConfig.Builder.productionDefaults()
+            : GenesisConsensusManagerConfig.Builder.testEnvironmentDefaults();
 
     final var mustUseProductionEmissions =
         NETWORKS_TO_ENSURE_PRODUCTION_EMISSIONS.contains(network);
@@ -254,8 +261,20 @@ public final class GenerateGenesis {
               GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR.divide(10000));
     }
 
+    final var useFaucet = !NETWORKS_TO_DISABLE_FAUCET.contains(network);
+    final var scenariosToRun =
+        NETWORKS_TO_DISABLE_SCENARIOS.contains(network)
+            ? GenesisData.NO_SCENARIOS
+            : GenesisData.ALL_SCENARIOS;
+
     return GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(
-        validators, stakeAmount, stakingAccount, xrdBalances, consensusConfig);
+        validators,
+        stakeAmount,
+        stakingAccount,
+        xrdBalances,
+        consensusConfig,
+        useFaucet,
+        scenariosToRun);
   }
 
   private static void usage(Options options) {

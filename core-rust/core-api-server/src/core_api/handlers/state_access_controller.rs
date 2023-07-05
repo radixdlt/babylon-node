@@ -1,7 +1,8 @@
 use crate::core_api::*;
 use radix_engine::blueprints::access_controller::*;
-use radix_engine::system::node_modules::access_rules::*;
+
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::OwnerRoleSubstate;
 use state_manager::query::dump_component_state;
 use std::ops::Deref;
 
@@ -33,11 +34,11 @@ pub(crate) async fn handle_state_access_controller(
     )
     .ok_or_else(|| not_found_error("Access controller not found".to_string()))?;
 
-    let method_access_rules_substate: MethodAccessRulesSubstate = read_mandatory_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         controller_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        ACCESS_RULES_FIELDS_PARTITION,
+        &AccessRulesField::OwnerRole.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), controller_address);
@@ -49,9 +50,9 @@ pub(crate) async fn handle_state_access_controller(
             &mapping_context,
             &access_controller_substate,
         )?),
-        access_rules: Some(to_api_method_access_rules_substate(
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
         vaults,
         descendent_nodes,

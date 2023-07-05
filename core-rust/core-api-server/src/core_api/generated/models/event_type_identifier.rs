@@ -16,16 +16,16 @@
 pub struct EventTypeIdentifier {
     #[serde(rename = "emitter")]
     pub emitter: Option<crate::core_api::generated::models::EventEmitterIdentifier>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "type_pointer")]
+    pub type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl EventTypeIdentifier {
     /// Identifier of a specific event schema.
-    pub fn new(emitter: crate::core_api::generated::models::EventEmitterIdentifier, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> EventTypeIdentifier {
+    pub fn new(emitter: crate::core_api::generated::models::EventEmitterIdentifier, type_pointer: crate::core_api::generated::models::TypePointer) -> EventTypeIdentifier {
         EventTypeIdentifier {
             emitter: Option::Some(emitter),
-            local_type_index: Box::new(local_type_index),
+            type_pointer: Option::Some(type_pointer),
         }
     }
 }

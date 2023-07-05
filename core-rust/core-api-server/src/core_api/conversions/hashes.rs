@@ -32,6 +32,10 @@ pub fn to_api_receipt_tree_hash(receipt_tree_hash: &ReceiptTreeHash) -> String {
     to_hex(receipt_tree_hash)
 }
 
+pub fn to_api_hash(hash: &Hash) -> String {
+    to_hex(hash)
+}
+
 pub fn extract_intent_hash(hash_str: String) -> Result<IntentHash, ExtractionError> {
     Ok(IntentHash::from_hash(Hash(
         from_hex(hash_str)?

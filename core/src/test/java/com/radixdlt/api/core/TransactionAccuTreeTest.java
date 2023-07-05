@@ -88,7 +88,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
   @Test
   public void stateManagerMaintainsCorrectTransactionMerkleTree() {
     // Run and capture an example epoch
-    CapturedEpoch epoch = captureEpoch(2);
+    CapturedEpoch epoch = captureEpoch(3);
 
     // Collect the transaction hashes (note: we can no longer easily compute them from payload bytes
     // on Java side)
@@ -114,7 +114,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
   @Test
   public void stateManagerMaintainsCorrectReceiptMerkleTree() {
     // Run and capture an example epoch
-    CapturedEpoch epoch = captureEpoch(2);
+    CapturedEpoch epoch = captureEpoch(3);
 
     // Compute the ledger receipt hashes
     var receiptHashes =

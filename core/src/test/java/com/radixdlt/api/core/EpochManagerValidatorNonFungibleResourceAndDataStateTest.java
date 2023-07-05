@@ -96,11 +96,12 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var stateSubstate =
           (ConsensusManagerFieldStateSubstate) stateConsensusManagerResponse.getState();
-      assertThat(stateSubstate.getEpoch()).isGreaterThanOrEqualTo(0);
+      assertThat(stateSubstate.getValue().getEpoch()).isGreaterThanOrEqualTo(0);
 
       final var validatorAddress =
           ((ConsensusManagerFieldCurrentValidatorSetSubstate)
                   stateConsensusManagerResponse.getCurrentValidatorSet())
+              .getValue()
               .getValidatorSet()
               .get(0)
               .getAddress();
@@ -112,22 +113,17 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
                       .network(networkLogicalName)
                       .validatorAddress(validatorAddress));
 
-      // We extract the "Owner Badge"
-      final var accessRulesSubstate =
-          (AccessRulesModuleFieldAccessRulesSubstate) validatorResponse.getAccessRules();
-      //noinspection OptionalGetWithoutIsPresent
-      final var ownerAccessRule =
-          (ProtectedAccessRule)
-              accessRulesSubstate.getRoles().stream()
-                  .filter(r -> r.getRoleKey().equals("_owner_"))
-                  .findFirst()
-                  .get()
-                  .getAccessRule();
-      final var proofRuleNode = (ProofAccessRuleNode) ownerAccessRule.getAccessRule();
+      final var ownerRoleSubstate =
+          (AccessRulesModuleFieldOwnerRoleSubstate) validatorResponse.getOwnerRole();
+      final var ownerRole = ownerRoleSubstate.getValue().getOwnerRole();
+      final var accessRule = (ProtectedAccessRule) ownerRole.getRule();
+      final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();
       final var requireProofRule = (RequireProofRule) proofRuleNode.getProofRule();
       final var requirement = (NonFungibleRequirement) requireProofRule.getRequirement();
       final var nonFungibleResourceAddress = requirement.getNonFungible().getResourceAddress();
       final var nonFungibleLocalId = requirement.getNonFungible().getLocalId();
+      assertThat(nonFungibleLocalId.getSimpleRep())
+          .isEqualTo("[" + addressing.decodeValidatorAddress(validatorAddress).toHexString() + "]");
 
       final var nonFungibleResourceResponse =
           getStateApi()
@@ -140,7 +136,8 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
           (StateNonFungibleResourceManager) nonFungibleResourceResponse.getManager();
       final var idTypeSubstate =
           (NonFungibleResourceManagerFieldIdTypeSubstate) nonFungibleManager.getIdType();
-      assertThat(idTypeSubstate.getNonFungibleIdType()).isEqualTo(NonFungibleIdType.UUID);
+      assertThat(idTypeSubstate.getValue().getNonFungibleIdType())
+          .isEqualTo(NonFungibleIdType.BYTES);
 
       final var nonFungibleDataResponse =
           getStateApi()
@@ -152,9 +149,10 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
 
       final var dataSubstate =
           (NonFungibleResourceManagerDataEntrySubstate) nonFungibleDataResponse.getNonFungible();
-      assert dataSubstate.getDataStruct() != null;
-      // Unit tuple
-      assertThat(dataSubstate.getDataStruct().getStructData().getHex()).isEqualTo("5c2100");
+      assert dataSubstate.getValue() != null;
+      final var data = dataSubstate.getValue().getDataStruct().getStructData();
+      // Data is a tuple
+      assertThat(data.getHex()).startsWith("5c21");
     }
   }
 }

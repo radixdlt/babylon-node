@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntentAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntentIdentifiers;
 import com.radixdlt.api.core.generated.models.SignedTransactionIntent;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -42,7 +42,7 @@ public class ParsedSignedTransactionIntentAllOf {
   private SignedTransactionIntent signedIntent;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedSignedTransactionIntentAllOfIdentifiers identifiers;
+  private ParsedSignedTransactionIntentIdentifiers identifiers;
 
   public ParsedSignedTransactionIntentAllOf() { 
   }
@@ -73,7 +73,7 @@ public class ParsedSignedTransactionIntentAllOf {
   }
 
 
-  public ParsedSignedTransactionIntentAllOf identifiers(ParsedSignedTransactionIntentAllOfIdentifiers identifiers) {
+  public ParsedSignedTransactionIntentAllOf identifiers(ParsedSignedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -87,14 +87,14 @@ public class ParsedSignedTransactionIntentAllOf {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedSignedTransactionIntentAllOfIdentifiers getIdentifiers() {
+  public ParsedSignedTransactionIntentIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedSignedTransactionIntentAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedSignedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

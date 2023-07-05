@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::OwnerRoleSubstate;
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
@@ -29,11 +30,11 @@ pub(crate) async fn handle_state_account(
     )
     .ok_or_else(|| not_found_error("Account not found".to_string()))?;
 
-    let method_access_rules_substate = read_mandatory_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        ACCESS_RULES_FIELDS_PARTITION,
+        &AccessRulesField::OwnerRole.into(),
     )?;
 
     let state_substate = read_mandatory_main_field_substate(
@@ -52,9 +53,9 @@ pub(crate) async fn handle_state_account(
 
     Ok(models::StateAccountResponse {
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        access_rules: Some(to_api_method_access_rules_substate(
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
         state: Some(to_api_account_state_substate(
             &mapping_context,

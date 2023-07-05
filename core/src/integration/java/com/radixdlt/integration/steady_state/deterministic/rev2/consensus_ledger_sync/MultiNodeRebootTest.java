@@ -211,7 +211,7 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    GenesisBuilder.createGenesisWithNumValidators(
+                    GenesisBuilder.createTestGenesisWithNumValidators(
                         numValidators,
                         Decimal.of(1),
                         GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(

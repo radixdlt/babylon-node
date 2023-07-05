@@ -42,6 +42,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * GenesisLedgerTransaction
  */
 @JsonPropertyOrder({
+  GenesisLedgerTransaction.JSON_PROPERTY_IS_FLASH,
   GenesisLedgerTransaction.JSON_PROPERTY_SYSTEM_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -57,11 +58,40 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class GenesisLedgerTransaction extends LedgerTransaction {
+  public static final String JSON_PROPERTY_IS_FLASH = "is_flash";
+  private Boolean isFlash;
+
   public static final String JSON_PROPERTY_SYSTEM_TRANSACTION = "system_transaction";
   private SystemTransaction systemTransaction;
 
   public GenesisLedgerTransaction() { 
   }
+
+  public GenesisLedgerTransaction isFlash(Boolean isFlash) {
+    this.isFlash = isFlash;
+    return this;
+  }
+
+   /**
+   * The first genesis \&quot;transaction\&quot; flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated &#x60;system_transaction&#x60; 
+   * @return isFlash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The first genesis \"transaction\" flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated `system_transaction` ")
+  @JsonProperty(JSON_PROPERTY_IS_FLASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsFlash() {
+    return isFlash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_FLASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsFlash(Boolean isFlash) {
+    this.isFlash = isFlash;
+  }
+
 
   public GenesisLedgerTransaction systemTransaction(SystemTransaction systemTransaction) {
     this.systemTransaction = systemTransaction;
@@ -72,10 +102,10 @@ public class GenesisLedgerTransaction extends LedgerTransaction {
    * Get systemTransaction
    * @return systemTransaction
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public SystemTransaction getSystemTransaction() {
     return systemTransaction;
@@ -83,7 +113,7 @@ public class GenesisLedgerTransaction extends LedgerTransaction {
 
 
   @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSystemTransaction(SystemTransaction systemTransaction) {
     this.systemTransaction = systemTransaction;
   }
@@ -101,13 +131,14 @@ public class GenesisLedgerTransaction extends LedgerTransaction {
       return false;
     }
     GenesisLedgerTransaction genesisLedgerTransaction = (GenesisLedgerTransaction) o;
-    return Objects.equals(this.systemTransaction, genesisLedgerTransaction.systemTransaction) &&
+    return Objects.equals(this.isFlash, genesisLedgerTransaction.isFlash) &&
+        Objects.equals(this.systemTransaction, genesisLedgerTransaction.systemTransaction) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(systemTransaction, super.hashCode());
+    return Objects.hash(isFlash, systemTransaction, super.hashCode());
   }
 
   @Override
@@ -115,6 +146,7 @@ public class GenesisLedgerTransaction extends LedgerTransaction {
     StringBuilder sb = new StringBuilder();
     sb.append("class GenesisLedgerTransaction {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    isFlash: ").append(toIndentedString(isFlash)).append("\n");
     sb.append("    systemTransaction: ").append(toIndentedString(systemTransaction)).append("\n");
     sb.append("}");
     return sb.toString();

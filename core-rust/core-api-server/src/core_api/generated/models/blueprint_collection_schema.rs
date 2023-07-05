@@ -18,10 +18,10 @@ pub enum BlueprintCollectionSchema {
     },
     #[serde(rename="KeyValue")]
     KeyValueBlueprintCollectionSchema {
-        #[serde(rename = "key_type_reference")]
-        key_type_reference: Box<crate::core_api::generated::models::BlueprintTypeReference>,
-        #[serde(rename = "value_type_reference")]
-        value_type_reference: Box<crate::core_api::generated::models::BlueprintTypeReference>,
+        #[serde(rename = "key_type_pointer")]
+        key_type_pointer: Box<crate::core_api::generated::models::TypePointer>,
+        #[serde(rename = "value_type_pointer")]
+        value_type_pointer: Box<crate::core_api::generated::models::TypePointer>,
         /// Whether the entries of the key-value store are allowed to own child nodes.
         #[serde(rename = "can_own")]
         can_own: bool,

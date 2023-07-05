@@ -13,7 +13,7 @@ impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
         let substate = self
             .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
                 CONSENSUS_MANAGER.as_node_id(),
-                OBJECT_BASE_PARTITION,
+                MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();

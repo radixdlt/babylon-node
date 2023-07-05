@@ -73,6 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
@@ -145,11 +146,12 @@ public final class REv2GenesisTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidatorsAndXrdBalances(
+                        GenesisBuilder.createTestGenesisWithNumValidatorsAndXrdBalances(
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            GenesisConsensusManagerConfig.Builder.testDefaults()),
+                            GenesisConsensusManagerConfig.Builder.testDefaults(),
+                            GenesisData.ALL_SCENARIOS),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, 0, MempoolRelayConfig.of())))));
@@ -174,12 +176,9 @@ public final class REv2GenesisTest {
               .unwrap();
       assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
 
-      final var xrdLeftInFaucet =
-          REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
-
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
-      assertThat(readFaucetAmount).isEqualTo(xrdLeftInFaucet);
+      assertThat(readFaucetAmount).isEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
 
       // Check genesis XRD alloc
       final var allocatedAmount =

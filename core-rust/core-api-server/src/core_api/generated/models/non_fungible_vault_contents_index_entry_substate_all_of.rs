@@ -13,14 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleVaultContentsIndexEntrySubstateAllOf {
-    #[serde(rename = "non_fungible_local_id")]
-    pub non_fungible_local_id: Box<crate::core_api::generated::models::NonFungibleLocalId>,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::LocalNonFungibleKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue>,
 }
 
 impl NonFungibleVaultContentsIndexEntrySubstateAllOf {
-    pub fn new(non_fungible_local_id: crate::core_api::generated::models::NonFungibleLocalId) -> NonFungibleVaultContentsIndexEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::LocalNonFungibleKey, value: crate::core_api::generated::models::NonFungibleVaultContentsIndexEntryValue) -> NonFungibleVaultContentsIndexEntrySubstateAllOf {
         NonFungibleVaultContentsIndexEntrySubstateAllOf {
-            non_fungible_local_id: Box::new(non_fungible_local_id),
+            key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

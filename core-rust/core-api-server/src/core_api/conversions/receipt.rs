@@ -59,17 +59,8 @@ pub fn to_api_receipt(
         action,
     } in receipt.on_ledger.substate_changes
     {
-        let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
         let typed_substate_key =
-            to_typed_substate_key(entity_type, partition_number, &substate_key).map_err(|msg| {
-                MappingError::SubstateKey {
-                    entity_address: to_api_entity_address(context, &node_id)
-                        .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
-                    partition_number,
-                    substate_key: to_api_substate_key(&substate_key),
-                    message: msg,
-                }
-            })?;
+            create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
@@ -115,11 +106,7 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(
-        context,
-        &receipt.local_execution.fee_summary,
-        &receipt.local_execution.fee_payments,
-    )?;
+    let api_fee_summary = to_api_fee_summary(context, &receipt.local_execution.fee_summary)?;
 
     let api_events = receipt
         .on_ledger
@@ -152,6 +139,24 @@ pub fn to_api_receipt(
         output: api_output,
         next_epoch,
         error_message,
+    })
+}
+
+pub fn create_typed_substate_key(
+    context: &MappingContext,
+    node_id: &NodeId,
+    partition_number: PartitionNumber,
+    substate_key: &SubstateKey,
+) -> Result<TypedSubstateKey, MappingError> {
+    let entity_type = node_id.entity_type().ok_or(MappingError::EntityTypeError)?;
+    to_typed_substate_key(entity_type, partition_number, substate_key).map_err(|msg| {
+        MappingError::SubstateKey {
+            entity_address: to_api_entity_address(context, node_id)
+                .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
+            partition_number,
+            substate_key: to_api_substate_key(substate_key),
+            message: msg,
+        }
     })
 }
 
@@ -192,7 +197,6 @@ pub fn to_api_created_substate(
         )?),
         value: Box::new(to_api_substate_value(
             context,
-            substate_key,
             typed_substate_key,
             value_representations,
         )?),
@@ -219,14 +223,12 @@ pub fn to_api_updated_substate(
         )?),
         new_value: Box::new(to_api_substate_value(
             context,
-            substate_key,
             typed_substate_key,
             new_value_representations,
         )?),
         previous_value: if context.substate_options.include_previous {
             Some(Box::new(to_api_substate_value(
                 context,
-                substate_key,
                 typed_substate_key,
                 previous_value_representations,
             )?))
@@ -239,7 +241,6 @@ pub fn to_api_updated_substate(
 #[tracing::instrument(skip_all)]
 pub fn to_api_substate_value(
     context: &MappingContext,
-    substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
     value_representations: &ValueRepresentations,
 ) -> Result<models::SubstateValue, MappingError> {
@@ -257,7 +258,6 @@ pub fn to_api_substate_value(
         substate_data: if context.substate_options.include_typed {
             Some(Box::new(to_api_substate(
                 context,
-                substate_key,
                 typed_substate_key,
                 &value_representations.typed,
             )?))
@@ -313,7 +313,7 @@ pub fn to_api_event(
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
     let ApplicationEvent {
-        type_id: EventTypeIdentifier(emitter, local_type_index),
+        type_id: EventTypeIdentifier(emitter, type_pointer),
         data,
     } = event;
     Ok(models::Event {
@@ -333,7 +333,7 @@ pub fn to_api_event(
                     }
                 }
             }),
-            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
+            type_pointer: Some(to_api_type_pointer(context, &type_pointer)?),
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })
@@ -343,7 +343,6 @@ pub fn to_api_event(
 pub fn to_api_fee_summary(
     context: &MappingContext,
     fee_summary: &FeeSummary,
-    fee_payments: &IndexMap<NodeId, Decimal>,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
@@ -351,14 +350,16 @@ pub fn to_api_fee_summary(
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
+        xrd_total_state_expansion_cost: to_api_decimal(&fee_summary.total_state_expansion_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
-        xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
+        xrd_total_tipped: to_api_decimal(&fee_summary.total_tipping_cost_xrd),
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_breakdown
             .iter()
             .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(*cost_unit_amount)))
             .collect(),
-        xrd_vault_payments: fee_payments
+        xrd_vault_payments: fee_summary
+            .fee_payments
             .iter()
             .map(|(vault_id, xrd_amount)| {
                 Ok(models::VaultPayment {

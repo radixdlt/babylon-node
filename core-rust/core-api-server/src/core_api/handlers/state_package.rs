@@ -16,38 +16,28 @@ pub(crate) async fn handle_state_package(
 
     let database = state.database.read();
 
-    let package_info: PackageInfoSubstate = read_optional_main_field_substate(
-        database.deref(),
-        package_address.as_node_id(),
-        &PackageField::Info.into(),
-    )
-    .ok_or_else(|| not_found_error("Package not found".to_string()))?;
+    let package_royalty_accumulator: PackageRoyaltyAccumulatorSubstate =
+        read_mandatory_main_field_substate(
+            database.deref(),
+            package_address.as_node_id(),
+            &PackageField::Royalty.into(),
+        )?;
 
-    let package_royalty: PackageRoyaltySubstate = read_mandatory_main_field_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         package_address.as_node_id(),
-        &PackageField::Royalty.into(),
-    )?;
-
-    let method_access_rules_substate = read_mandatory_substate(
-        database.deref(),
-        package_address.as_node_id(),
-        ACCESS_RULES_FIELD_PARTITION,
-        &AccessRulesField::AccessRules.into(),
+        ACCESS_RULES_FIELDS_PARTITION,
+        &AccessRulesField::OwnerRole.into(),
     )?;
 
     Ok(models::StatePackageResponse {
-        info: Some(to_api_package_info_substate(
+        royalty: Some(to_api_package_royalty_accumulator_substate(
             &mapping_context,
-            &package_info,
+            &package_royalty_accumulator,
         )?),
-        royalty: Some(to_api_package_royalty_substate(
+        owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
-            &package_royalty,
-        )?),
-        access_rules: Some(to_api_method_access_rules_substate(
-            &mapping_context,
-            &method_access_rules_substate,
+            &owner_role_substate,
         )?),
     })
     .map(Json)

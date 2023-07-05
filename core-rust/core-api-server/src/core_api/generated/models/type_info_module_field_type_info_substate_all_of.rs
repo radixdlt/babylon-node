@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TypeInfoModuleFieldTypeInfoSubstateAllOf {
-    #[serde(rename = "details")]
-    pub details: Option<crate::core_api::generated::models::TypeInfoDetails>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::TypeInfoModuleFieldTypeInfoValue>,
 }
 
 impl TypeInfoModuleFieldTypeInfoSubstateAllOf {
-    pub fn new(details: crate::core_api::generated::models::TypeInfoDetails) -> TypeInfoModuleFieldTypeInfoSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::TypeInfoModuleFieldTypeInfoValue) -> TypeInfoModuleFieldTypeInfoSubstateAllOf {
         TypeInfoModuleFieldTypeInfoSubstateAllOf {
-            details: Option::Some(details),
+            value: Box::new(value),
         }
     }
 }

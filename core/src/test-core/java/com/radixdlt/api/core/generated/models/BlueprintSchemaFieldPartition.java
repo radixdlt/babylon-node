@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintFieldSchema;
+import com.radixdlt.api.core.generated.models.FieldSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class BlueprintSchemaFieldPartition {
   private Integer partitionOffset;
 
   public static final String JSON_PROPERTY_FIELDS = "fields";
-  private List<BlueprintFieldSchema> fields = new ArrayList<>();
+  private List<FieldSchema> fields = new ArrayList<>();
 
   public BlueprintSchemaFieldPartition() { 
   }
@@ -77,12 +77,12 @@ public class BlueprintSchemaFieldPartition {
   }
 
 
-  public BlueprintSchemaFieldPartition fields(List<BlueprintFieldSchema> fields) {
+  public BlueprintSchemaFieldPartition fields(List<FieldSchema> fields) {
     this.fields = fields;
     return this;
   }
 
-  public BlueprintSchemaFieldPartition addFieldsItem(BlueprintFieldSchema fieldsItem) {
+  public BlueprintSchemaFieldPartition addFieldsItem(FieldSchema fieldsItem) {
     this.fields.add(fieldsItem);
     return this;
   }
@@ -96,14 +96,14 @@ public class BlueprintSchemaFieldPartition {
   @JsonProperty(JSON_PROPERTY_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintFieldSchema> getFields() {
+  public List<FieldSchema> getFields() {
     return fields;
   }
 
 
   @JsonProperty(JSON_PROPERTY_FIELDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFields(List<BlueprintFieldSchema> fields) {
+  public void setFields(List<FieldSchema> fields) {
     this.fields = fields;
   }
 

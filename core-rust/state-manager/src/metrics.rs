@@ -65,7 +65,8 @@
 use crate::limits::VertexLimitsExceeded;
 use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
 use node_common::config::limits::{
-    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
+    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
 };
 use prometheus::core::*;
 use prometheus::*;
@@ -168,7 +169,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_count",
                     "Number of substate reads per committed transactions.",
                 ),
-                Self::buckets(execution_config.max_substate_reads_per_transaction),
+                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT),
             )
             .registered_at(registry),
             substate_write_size: new_histogram(
@@ -185,7 +186,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_count",
                     "Number of substate writes per committed transactions.",
                 ),
-                Self::buckets(execution_config.max_substate_writes_per_transaction),
+                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT),
             )
             .registered_at(registry),
             max_wasm_memory_used: new_histogram(
@@ -193,7 +194,8 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_max_wasm_memory_used",
                     "Maximum WASM memory used in bytes per committed transaction.",
                 ),
-                Self::buckets(execution_config.max_wasm_mem_per_transaction),
+                // Just a placeholder until we figure out ExecutionMetrics.
+                Self::buckets(10 * 1024 * 1024),
             )
             .registered_at(registry),
             max_invoke_payload_size: new_histogram(
@@ -433,7 +435,6 @@ impl MetricLabel for MempoolAddError {
             MempoolAddError::Rejected(rejection) => match &rejection.reason {
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
-                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
             },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate(_) => "Duplicate",

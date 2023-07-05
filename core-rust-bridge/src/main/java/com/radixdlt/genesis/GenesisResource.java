@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.MetadataValue;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -76,7 +75,6 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 public record GenesisResource(
     ResourceAddress address,
-    Decimal initialSupply,
     ImmutableList<Tuple2<String, MetadataValue>> metadata,
     Option<ComponentAddress> owner) {
   public static void registerCodec(CodecMap codecMap) {

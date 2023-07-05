@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.MetadataKey;
+import com.radixdlt.api.core.generated.models.MetadataModuleEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,129 +33,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * MetadataModuleEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_FIELD_NAME,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT,
-  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_IS_MUTABLE
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  MetadataModuleEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MetadataModuleEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_FIELD_NAME = "field_name";
-  private String fieldName;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private MetadataKey key;
 
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
-
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
-
-  public static final String JSON_PROPERTY_IS_MUTABLE = "is_mutable";
-  private Boolean isMutable;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private MetadataModuleEntryValue value;
 
   public MetadataModuleEntrySubstateAllOf() { 
   }
 
-  public MetadataModuleEntrySubstateAllOf fieldName(String fieldName) {
-    this.fieldName = fieldName;
+  public MetadataModuleEntrySubstateAllOf key(MetadataKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get fieldName
-   * @return fieldName
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FIELD_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getFieldName() {
-    return fieldName;
+  public MetadataKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FIELD_NAME)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFieldName(String fieldName) {
-    this.fieldName = fieldName;
+  public void setKey(MetadataKey key) {
+    this.key = key;
   }
 
 
-  public MetadataModuleEntrySubstateAllOf isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public MetadataModuleEntrySubstateAllOf value(MetadataModuleEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get isDeleted
-   * @return isDeleted
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsDeleted() {
-    return isDeleted;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-  }
-
-
-  public MetadataModuleEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
-    return this;
-  }
-
-   /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public MetadataModuleEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
-  }
-
-
-  public MetadataModuleEntrySubstateAllOf isMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
-    return this;
-  }
-
-   /**
-   * Get isMutable
-   * @return isMutable
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsMutable() {
-    return isMutable;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_MUTABLE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsMutable(Boolean isMutable) {
-    this.isMutable = isMutable;
+  public void setValue(MetadataModuleEntryValue value) {
+    this.value = value;
   }
 
 
@@ -170,25 +111,21 @@ public class MetadataModuleEntrySubstateAllOf {
       return false;
     }
     MetadataModuleEntrySubstateAllOf metadataModuleEntrySubstateAllOf = (MetadataModuleEntrySubstateAllOf) o;
-    return Objects.equals(this.fieldName, metadataModuleEntrySubstateAllOf.fieldName) &&
-        Objects.equals(this.isDeleted, metadataModuleEntrySubstateAllOf.isDeleted) &&
-        Objects.equals(this.dataStruct, metadataModuleEntrySubstateAllOf.dataStruct) &&
-        Objects.equals(this.isMutable, metadataModuleEntrySubstateAllOf.isMutable);
+    return Objects.equals(this.key, metadataModuleEntrySubstateAllOf.key) &&
+        Objects.equals(this.value, metadataModuleEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldName, isDeleted, dataStruct, isMutable);
+    return Objects.hash(key, value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MetadataModuleEntrySubstateAllOf {\n");
-    sb.append("    fieldName: ").append(toIndentedString(fieldName)).append("\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
-    sb.append("    isMutable: ").append(toIndentedString(isMutable)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -126,7 +126,7 @@ public final class REv2RejectedTransactionTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(

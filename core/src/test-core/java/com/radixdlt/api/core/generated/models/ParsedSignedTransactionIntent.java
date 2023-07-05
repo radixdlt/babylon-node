@@ -29,7 +29,7 @@ import com.radixdlt.api.core.generated.models.ParsedLedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntentAllOf;
-import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntentAllOfIdentifiers;
+import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntentIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransactionType;
@@ -65,7 +65,7 @@ public class ParsedSignedTransactionIntent extends ParsedTransaction {
   private SignedTransactionIntent signedIntent;
 
   public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
-  private ParsedSignedTransactionIntentAllOfIdentifiers identifiers;
+  private ParsedSignedTransactionIntentIdentifiers identifiers;
 
   public ParsedSignedTransactionIntent() { 
   }
@@ -96,7 +96,7 @@ public class ParsedSignedTransactionIntent extends ParsedTransaction {
   }
 
 
-  public ParsedSignedTransactionIntent identifiers(ParsedSignedTransactionIntentAllOfIdentifiers identifiers) {
+  public ParsedSignedTransactionIntent identifiers(ParsedSignedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
     return this;
   }
@@ -110,14 +110,14 @@ public class ParsedSignedTransactionIntent extends ParsedTransaction {
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ParsedSignedTransactionIntentAllOfIdentifiers getIdentifiers() {
+  public ParsedSignedTransactionIntentIdentifiers getIdentifiers() {
     return identifiers;
   }
 
 
   @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIdentifiers(ParsedSignedTransactionIntentAllOfIdentifiers identifiers) {
+  public void setIdentifiers(ParsedSignedTransactionIntentIdentifiers identifiers) {
     this.identifiers = identifiers;
   }
 

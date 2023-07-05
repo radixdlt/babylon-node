@@ -70,14 +70,17 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisDataChunk;
 import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.utils.*;
 import java.math.BigInteger;
 import java.security.Security;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
@@ -126,12 +129,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     // There are two balance entries: 10000 and 2001 (12k + 1 total), and the maximum supply is 6k.
     // The balances should be scaled by (6000/12001) and one of them rounded down.
     // The new total supply should then be 5999.
-    final var resourcesChunk = converted.chunks().get(0);
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
-
-    assertEquals(
-        Decimal.fromBigIntegerSubunits(BigInteger.valueOf(5999L)),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
 
     assertEquals(
         Decimal.fromBigIntegerSubunits(BigInteger.valueOf(4999L)),
@@ -172,12 +170,12 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
         new OlympiaToBabylonConverterConfig(10, 10, 10, 10, 10, Decimal.from(UInt256.MAX_VALUE));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
-    final var resourcesChunk = converted.chunks().get(0);
+    final var resourcesChunk = (GenesisDataChunk.Resources) converted.chunks().get(0);
+    final var resourceAddress = resourcesChunk.value().get(0).address();
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
     assertEquals(
-        Decimal.from(UInt256.MAX_VALUE),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
+        Decimal.from(UInt256.MAX_VALUE), getBabylonTotalSupplyNonXrd(converted, resourceAddress));
 
     assertEquals(
         Decimal.from(UInt256.MAX_VALUE),
@@ -221,7 +219,8 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             10, 10, 10, 10, 10, Decimal.fromBigIntegerSubunits(maxSupply));
     final var converted = OlympiaStateToBabylonGenesisConverter.toGenesisData(olympiaState, config);
 
-    final var resourcesChunk = converted.chunks().get(0);
+    final var resourcesChunk = (GenesisDataChunk.Resources) converted.chunks().get(0);
+    final var resourceAddress = resourcesChunk.value().get(0).address();
     final var resourceBalancesChunk = (GenesisDataChunk.ResourceBalances) converted.chunks().get(1);
 
     // Max supply is 1461501637330902918203684832716283019655932542976 (2^160)
@@ -229,7 +228,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
     assertEquals(
         Decimal.fromBigIntegerSubunits(
             new BigInteger("1461501637330902918203684832716283019655932542975")),
-        ((GenesisDataChunk.Resources) resourcesChunk).value().get(0).initialSupply());
+        getBabylonTotalSupplyNonXrd(converted, resourceAddress));
 
     // One account receives 4/5 of total supply (rounded down), and the other one 1/5
     assertEquals(
@@ -241,5 +240,25 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
         Decimal.fromBigIntegerSubunits(
             new BigInteger("292300327466180583640736966543256603931186508595")),
         resourceBalancesChunk.allocations().get(0).last().get(1).amount());
+  }
+
+  private Decimal getBabylonTotalSupplyNonXrd(
+      GenesisData genesisData, ResourceAddress resourceAddress) {
+    AtomicReference<Decimal> totalSupply = new AtomicReference<>(Decimal.ZERO);
+    genesisData.chunks().stream()
+        .filter(c -> c.getClass() == GenesisDataChunk.ResourceBalances.class)
+        .forEach(
+            chunk ->
+                ((GenesisDataChunk.ResourceBalances) chunk)
+                    .allocations().stream()
+                        .filter(t -> t.first().equals(resourceAddress))
+                        .forEach(
+                            t ->
+                                t.last()
+                                    .forEach(
+                                        alloc ->
+                                            totalSupply.set(
+                                                totalSupply.get().add(alloc.amount())))));
+    return totalSupply.get();
   }
 }

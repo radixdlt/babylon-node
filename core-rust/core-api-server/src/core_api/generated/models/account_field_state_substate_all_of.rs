@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountFieldStateSubstateAllOf {
-    #[serde(rename = "default_deposit_rule")]
-    pub default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccountFieldStateValue>,
 }
 
 impl AccountFieldStateSubstateAllOf {
-    pub fn new(default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule) -> AccountFieldStateSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::AccountFieldStateValue) -> AccountFieldStateSubstateAllOf {
         AccountFieldStateSubstateAllOf {
-            default_deposit_rule,
+            value: Box::new(value),
         }
     }
 }

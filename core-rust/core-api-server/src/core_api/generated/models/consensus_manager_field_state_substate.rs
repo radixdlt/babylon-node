@@ -15,23 +15,18 @@
 pub struct ConsensusManagerFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
-    /// An integer between `0` and `10^10`, marking the current round in an epoch
-    #[serde(rename = "round")]
-    pub round: i64,
-    #[serde(rename = "epoch_start")]
-    pub epoch_start: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldStateValue>,
 }
 
 impl ConsensusManagerFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64, epoch_start: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::ConsensusManagerFieldStateValue) -> ConsensusManagerFieldStateSubstate {
         ConsensusManagerFieldStateSubstate {
             substate_type,
-            epoch,
-            round,
-            epoch_start: Box::new(epoch_start),
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

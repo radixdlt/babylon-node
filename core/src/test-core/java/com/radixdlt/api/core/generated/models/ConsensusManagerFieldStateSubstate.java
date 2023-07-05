@@ -26,7 +26,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldAccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
@@ -37,33 +38,43 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeSu
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateValue;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldValidatorRewardsSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
-import com.radixdlt.api.core.generated.models.MultiResourcePoolSubstate;
+import com.radixdlt.api.core.generated.models.MultiResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerDataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
-import com.radixdlt.api.core.generated.models.OneResourcePoolSubstate;
-import com.radixdlt.api.core.generated.models.PackageFieldCodeSubstate;
-import com.radixdlt.api.core.generated.models.PackageFieldCodeTypeSubstate;
-import com.radixdlt.api.core.generated.models.PackageFieldFunctionAccessRulesSubstate;
-import com.radixdlt.api.core.generated.models.PackageFieldInfoSubstate;
-import com.radixdlt.api.core.generated.models.PackageFieldRoyaltySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldConfigSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
+import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
+import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.TwoResourcePoolSubstate;
+import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
+import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
+import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -75,9 +86,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ConsensusManagerFieldStateSubstate
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_EPOCH,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_ROUND,
-  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_EPOCH_START
+  ConsensusManagerFieldStateSubstate.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -87,7 +96,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldState"),
-  @JsonSubTypes.Type(value = AccessRulesModuleFieldAccessRulesSubstate.class, name = "AccessRulesModuleFieldAccessRules"),
+  @JsonSubTypes.Type(value = AccessRulesModuleFieldOwnerRoleSubstate.class, name = "AccessRulesModuleFieldOwnerRole"),
+  @JsonSubTypes.Type(value = AccessRulesModuleRuleEntrySubstate.class, name = "AccessRulesModuleRuleEntry"),
   @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntry"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
   @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntry"),
@@ -97,125 +107,73 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate.class, name = "ConsensusManagerFieldCurrentTimeRoundedToMinutes"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentValidatorSetSubstate.class, name = "ConsensusManagerFieldCurrentValidatorSet"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldStateSubstate.class, name = "ConsensusManagerFieldState"),
+  @JsonSubTypes.Type(value = ConsensusManagerFieldValidatorRewardsSubstate.class, name = "ConsensusManagerFieldValidatorRewards"),
   @JsonSubTypes.Type(value = ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class, name = "ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldDivisibilitySubstate.class, name = "FungibleResourceManagerFieldDivisibility"),
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldTotalSupplySubstate.class, name = "FungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = FungibleVaultFieldBalanceSubstate.class, name = "FungibleVaultFieldBalance"),
+  @JsonSubTypes.Type(value = FungibleVaultFieldFrozenStatusSubstate.class, name = "FungibleVaultFieldFrozenStatus"),
   @JsonSubTypes.Type(value = GenericKeyValueStoreEntrySubstate.class, name = "GenericKeyValueStoreEntry"),
   @JsonSubTypes.Type(value = GenericScryptoComponentFieldStateSubstate.class, name = "GenericScryptoComponentFieldState"),
   @JsonSubTypes.Type(value = MetadataModuleEntrySubstate.class, name = "MetadataModuleEntry"),
-  @JsonSubTypes.Type(value = MultiResourcePoolSubstate.class, name = "MultiResourcePool"),
+  @JsonSubTypes.Type(value = MultiResourcePoolFieldStateSubstate.class, name = "MultiResourcePoolFieldState"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerDataEntrySubstate.class, name = "NonFungibleResourceManagerDataEntry"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldIdTypeSubstate.class, name = "NonFungibleResourceManagerFieldIdType"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldMutableFieldsSubstate.class, name = "NonFungibleResourceManagerFieldMutableFields"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerFieldTotalSupplySubstate.class, name = "NonFungibleResourceManagerFieldTotalSupply"),
   @JsonSubTypes.Type(value = NonFungibleVaultContentsIndexEntrySubstate.class, name = "NonFungibleVaultContentsIndexEntry"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
-  @JsonSubTypes.Type(value = OneResourcePoolSubstate.class, name = "OneResourcePool"),
-  @JsonSubTypes.Type(value = PackageFieldCodeSubstate.class, name = "PackageFieldCode"),
-  @JsonSubTypes.Type(value = PackageFieldCodeTypeSubstate.class, name = "PackageFieldCodeType"),
-  @JsonSubTypes.Type(value = PackageFieldFunctionAccessRulesSubstate.class, name = "PackageFieldFunctionAccessRules"),
-  @JsonSubTypes.Type(value = PackageFieldInfoSubstate.class, name = "PackageFieldInfo"),
-  @JsonSubTypes.Type(value = PackageFieldRoyaltySubstate.class, name = "PackageFieldRoyalty"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulator"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldConfigSubstate.class, name = "RoyaltyModuleFieldConfig"),
-  @JsonSubTypes.Type(value = TwoResourcePoolSubstate.class, name = "TwoResourcePool"),
+  @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatus"),
+  @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldState"),
+  @JsonSubTypes.Type(value = PackageBlueprintAuthTemplateEntrySubstate.class, name = "PackageBlueprintAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
+  @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
+  @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
+  @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
+  @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
+  @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
+  @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldState"),
   @JsonSubTypes.Type(value = TypeInfoModuleFieldTypeInfoSubstate.class, name = "TypeInfoModuleFieldTypeInfo"),
+  @JsonSubTypes.Type(value = ValidatorFieldProtocolUpdateReadinessSignalSubstate.class, name = "ValidatorFieldProtocolUpdateReadinessSignal"),
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
 })
 
 public class ConsensusManagerFieldStateSubstate extends Substate {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
-
-  public static final String JSON_PROPERTY_ROUND = "round";
-  private Long round;
-
-  public static final String JSON_PROPERTY_EPOCH_START = "epoch_start";
-  private Instant epochStart;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldStateValue value;
 
   public ConsensusManagerFieldStateSubstate() { 
   }
 
-  public ConsensusManagerFieldStateSubstate epoch(Long epoch) {
-    this.epoch = epoch;
+  public ConsensusManagerFieldStateSubstate value(ConsensusManagerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getEpoch() {
-    return epoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate round(Long round) {
-    this.round = round;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current round in an epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return round
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current round in an epoch")
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getRound() {
-    return round;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRound(Long round) {
-    this.round = round;
-  }
-
-
-  public ConsensusManagerFieldStateSubstate epochStart(Instant epochStart) {
-    this.epochStart = epochStart;
-    return this;
-  }
-
-   /**
-   * Get epochStart
-   * @return epochStart
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getEpochStart() {
-    return epochStart;
+  public ConsensusManagerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochStart(Instant epochStart) {
-    this.epochStart = epochStart;
+  public void setValue(ConsensusManagerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -231,15 +189,13 @@ public class ConsensusManagerFieldStateSubstate extends Substate {
       return false;
     }
     ConsensusManagerFieldStateSubstate consensusManagerFieldStateSubstate = (ConsensusManagerFieldStateSubstate) o;
-    return Objects.equals(this.epoch, consensusManagerFieldStateSubstate.epoch) &&
-        Objects.equals(this.round, consensusManagerFieldStateSubstate.round) &&
-        Objects.equals(this.epochStart, consensusManagerFieldStateSubstate.epochStart) &&
+    return Objects.equals(this.value, consensusManagerFieldStateSubstate.value) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, epochStart, super.hashCode());
+    return Objects.hash(value, super.hashCode());
   }
 
   @Override
@@ -247,9 +203,7 @@ public class ConsensusManagerFieldStateSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldStateSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    round: ").append(toIndentedString(round)).append("\n");
-    sb.append("    epochStart: ").append(toIndentedString(epochStart)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -269,7 +223,8 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessControllerFieldState", AccessControllerFieldStateSubstate.class);
-  mappings.put("AccessRulesModuleFieldAccessRules", AccessRulesModuleFieldAccessRulesSubstate.class);
+  mappings.put("AccessRulesModuleFieldOwnerRole", AccessRulesModuleFieldOwnerRoleSubstate.class);
+  mappings.put("AccessRulesModuleRuleEntry", AccessRulesModuleRuleEntrySubstate.class);
   mappings.put("AccountDepositRuleIndexEntry", AccountDepositRuleIndexEntrySubstate.class);
   mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
   mappings.put("AccountVaultIndexEntry", AccountVaultIndexEntrySubstate.class);
@@ -279,30 +234,40 @@ static {
   mappings.put("ConsensusManagerFieldCurrentTimeRoundedToMinutes", ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentValidatorSet", ConsensusManagerFieldCurrentValidatorSetSubstate.class);
   mappings.put("ConsensusManagerFieldState", ConsensusManagerFieldStateSubstate.class);
+  mappings.put("ConsensusManagerFieldValidatorRewards", ConsensusManagerFieldValidatorRewardsSubstate.class);
   mappings.put("ConsensusManagerRegisteredValidatorsByStakeIndexEntry", ConsensusManagerRegisteredValidatorsByStakeIndexEntrySubstate.class);
   mappings.put("FungibleResourceManagerFieldDivisibility", FungibleResourceManagerFieldDivisibilitySubstate.class);
   mappings.put("FungibleResourceManagerFieldTotalSupply", FungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("FungibleVaultFieldBalance", FungibleVaultFieldBalanceSubstate.class);
+  mappings.put("FungibleVaultFieldFrozenStatus", FungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("GenericKeyValueStoreEntry", GenericKeyValueStoreEntrySubstate.class);
   mappings.put("GenericScryptoComponentFieldState", GenericScryptoComponentFieldStateSubstate.class);
   mappings.put("MetadataModuleEntry", MetadataModuleEntrySubstate.class);
-  mappings.put("MultiResourcePool", MultiResourcePoolSubstate.class);
+  mappings.put("MultiResourcePoolFieldState", MultiResourcePoolFieldStateSubstate.class);
   mappings.put("NonFungibleResourceManagerDataEntry", NonFungibleResourceManagerDataEntrySubstate.class);
   mappings.put("NonFungibleResourceManagerFieldIdType", NonFungibleResourceManagerFieldIdTypeSubstate.class);
   mappings.put("NonFungibleResourceManagerFieldMutableFields", NonFungibleResourceManagerFieldMutableFieldsSubstate.class);
   mappings.put("NonFungibleResourceManagerFieldTotalSupply", NonFungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("NonFungibleVaultContentsIndexEntry", NonFungibleVaultContentsIndexEntrySubstate.class);
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
-  mappings.put("OneResourcePool", OneResourcePoolSubstate.class);
-  mappings.put("PackageFieldCode", PackageFieldCodeSubstate.class);
-  mappings.put("PackageFieldCodeType", PackageFieldCodeTypeSubstate.class);
-  mappings.put("PackageFieldFunctionAccessRules", PackageFieldFunctionAccessRulesSubstate.class);
-  mappings.put("PackageFieldInfo", PackageFieldInfoSubstate.class);
-  mappings.put("PackageFieldRoyalty", PackageFieldRoyaltySubstate.class);
-  mappings.put("RoyaltyModuleFieldAccumulator", RoyaltyModuleFieldAccumulatorSubstate.class);
-  mappings.put("RoyaltyModuleFieldConfig", RoyaltyModuleFieldConfigSubstate.class);
-  mappings.put("TwoResourcePool", TwoResourcePoolSubstate.class);
+  mappings.put("NonFungibleVaultFieldFrozenStatus", NonFungibleVaultFieldFrozenStatusSubstate.class);
+  mappings.put("OneResourcePoolFieldState", OneResourcePoolFieldStateSubstate.class);
+  mappings.put("PackageBlueprintAuthTemplateEntry", PackageBlueprintAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
+  mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
+  mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntry", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntry", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
+  mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
+  mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
+  mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
+  mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
+  mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
+  mappings.put("TwoResourcePoolFieldState", TwoResourcePoolFieldStateSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
+  mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
   mappings.put("ConsensusManagerFieldStateSubstate", ConsensusManagerFieldStateSubstate.class);
   JSON.registerDiscriminator(ConsensusManagerFieldStateSubstate.class, "substate_type", mappings);

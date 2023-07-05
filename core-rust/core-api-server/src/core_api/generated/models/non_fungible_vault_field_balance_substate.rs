@@ -15,16 +15,18 @@
 pub struct NonFungibleVaultFieldBalanceSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "amount")]
-    pub amount: String,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleVaultFieldBalanceValue>,
 }
 
 impl NonFungibleVaultFieldBalanceSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, amount: String) -> NonFungibleVaultFieldBalanceSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::NonFungibleVaultFieldBalanceValue) -> NonFungibleVaultFieldBalanceSubstate {
         NonFungibleVaultFieldBalanceSubstate {
             substate_type,
-            amount,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

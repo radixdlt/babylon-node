@@ -75,8 +75,12 @@ import org.junit.Test;
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
-  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+  public void test_core_api_can_submit_and_commit_transaction_after_running_all_scenarios()
+      throws Exception {
+    // This test checks that the transaction stream doesn't return errors when mapping genesis and
+    // the
+    // scenarios
+    try (var test = buildRunningServerTestWithTransactionScenarios()) {
       test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 

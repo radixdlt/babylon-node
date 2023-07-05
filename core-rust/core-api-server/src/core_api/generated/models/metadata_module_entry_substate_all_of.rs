@@ -13,23 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct MetadataModuleEntrySubstateAllOf {
-    #[serde(rename = "field_name")]
-    pub field_name: String,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
-    #[serde(rename = "is_mutable")]
-    pub is_mutable: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::MetadataKey>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::MetadataModuleEntryValue>>,
 }
 
 impl MetadataModuleEntrySubstateAllOf {
-    pub fn new(field_name: String, is_deleted: bool, is_mutable: bool) -> MetadataModuleEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::MetadataKey) -> MetadataModuleEntrySubstateAllOf {
         MetadataModuleEntrySubstateAllOf {
-            field_name,
-            is_deleted,
-            data_struct: None,
-            is_mutable,
+            key: Box::new(key),
+            value: None,
         }
     }
 }

@@ -20,6 +20,8 @@ pub struct ObjectTypeInfoDetails {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
+    #[serde(rename = "blueprint_version")]
+    pub blueprint_version: String,
     #[serde(rename = "global")]
     pub global: bool,
     /// The Bech32m-encoded human readable version of any global address
@@ -32,11 +34,12 @@ pub struct ObjectTypeInfoDetails {
 }
 
 impl ObjectTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, package_address: String, blueprint_name: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetails {
+    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, package_address: String, blueprint_name: String, blueprint_version: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetails {
         ObjectTypeInfoDetails {
             _type,
             package_address,
             blueprint_name,
+            blueprint_version,
             global,
             outer_object: None,
             instance_schema: None,

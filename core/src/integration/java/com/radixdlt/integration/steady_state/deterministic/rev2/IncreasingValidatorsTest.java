@@ -118,7 +118,7 @@ public final class IncreasingValidatorsTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             1,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
@@ -179,14 +179,18 @@ public final class IncreasingValidatorsTest {
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
+        mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+        test.runUntilState(
+            nodeAt(0, NodePredicate.committedUserTransaction(registerValidatorTxn, true, true)));
         var stakeValidatorTxn =
             TransactionBuilder.forTests()
                 .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
                 .signatories(List.of(key))
                 .prepare()
                 .raw();
-        mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
         mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
+        test.runUntilState(
+            nodeAt(0, NodePredicate.committedUserTransaction(stakeValidatorTxn, true, true)));
       }
 
       test.runUntilState(

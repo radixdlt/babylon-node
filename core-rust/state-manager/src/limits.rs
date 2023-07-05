@@ -63,7 +63,7 @@
  */
 
 use node_common::config::limits::VertexLimitsConfig;
-use radix_engine::transaction::ExecutionMetrics;
+use radix_engine::{system::system_modules::costing::FeeSummary, types::*};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
@@ -82,15 +82,61 @@ pub enum VertexLimitsAdvanceSuccess {
     VertexFilled(VertexLimitsExceeded),
 }
 
+// TODO(RCnet-V3): Fix what's tracked here in light of changes upstream
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct VertexLimitsTracker {
-    pub remaining_transactions_count: usize,
+    pub remaining_transactions_count: u32,
     pub remaining_transactions_size: usize,
-    pub remaining_execution_cost_units_consumed: usize,
+    pub remaining_execution_cost_units_consumed: u32,
     pub remaining_substate_read_size: usize,
     pub remaining_substate_read_count: usize,
     pub remaining_substate_write_size: usize,
     pub remaining_substate_write_count: usize,
+}
+
+// TODO(RCnet-V3): Fix this abstraction in light of changes upstream
+// This class used to be in the engine until being removed shortly before launch, so adding it back in
+// (with faked values) to decrease churn in the Node before RCnet-V2 release
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+pub struct ExecutionMetrics {
+    pub execution_cost_units_consumed: u32,
+    pub substate_read_size: usize,
+    pub substate_read_count: usize,
+    pub substate_write_size: usize,
+    pub substate_write_count: usize,
+    pub max_wasm_memory_used: usize,
+    pub max_invoke_payload_size: usize,
+}
+
+impl ExecutionMetrics {
+    fn minimum_for_transaction() -> Self {
+        Self {
+            execution_cost_units_consumed: 1,
+            substate_read_size: 1,
+            substate_read_count: 1,
+            substate_write_size: 1,
+            substate_write_count: 1,
+            max_wasm_memory_used: 0,
+            max_invoke_payload_size: 0,
+        }
+    }
+}
+
+impl ExecutionMetrics {
+    pub fn new_from_commit(fee_summary: &FeeSummary) -> Self {
+        // TODO(RCnet-V3): Fix this abstraction in light of changes upstream
+        // This class used to be in the engine until being removed shortly before launch, so adding it back in
+        // (with faked values) to decrease churn in the Node before RCnet-V2 release
+        Self {
+            execution_cost_units_consumed: fee_summary.execution_cost_sum,
+            substate_read_size: 0,
+            substate_read_count: 0,
+            substate_write_size: 0,
+            substate_write_count: 0,
+            max_wasm_memory_used: 0,
+            max_invoke_payload_size: 0,
+        }
+    }
 }
 
 impl VertexLimitsTracker {
@@ -152,7 +198,7 @@ impl VertexLimitsTracker {
             Ok(_) => {}
             Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
         }
-        match self.check_post_execution(&ExecutionMetrics::unit()) {
+        match self.check_post_execution(&ExecutionMetrics::minimum_for_transaction()) {
             Ok(_) => {}
             Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
         }
@@ -176,23 +222,5 @@ impl VertexLimitsTracker {
         self.remaining_substate_write_size -= execution_metrics.substate_write_size;
 
         Ok(self.check_filled())
-    }
-}
-
-pub trait HasUnit {
-    fn unit() -> Self;
-}
-
-impl HasUnit for ExecutionMetrics {
-    fn unit() -> Self {
-        Self {
-            execution_cost_units_consumed: 1,
-            substate_read_size: 1,
-            substate_read_count: 1,
-            substate_write_size: 1,
-            substate_write_count: 1,
-            max_wasm_memory_used: 1,
-            max_invoke_payload_size: 1,
-        }
     }
 }

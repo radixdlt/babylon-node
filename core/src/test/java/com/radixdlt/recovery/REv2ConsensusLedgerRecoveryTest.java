@@ -91,7 +91,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class REv2ConsensusLedgerRecoveryTest {
-  private static final long INITIAL_VERSION = 10L;
+  private static final long INITIAL_VERSION = 11L;
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
@@ -108,7 +108,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             2,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testInfiniteEpochs()),
@@ -124,6 +124,9 @@ public final class REv2ConsensusLedgerRecoveryTest {
       test.startAllNodes();
 
       // Arrange: Situation where behindNode has consensus behind ledger
+      // NOTE - this test is currently super sensitive to requiring INITIAL_VERSION = state version
+      // at start of ledger. To make this test less fragile, consider reading INITIAL_VERSION
+      // from the DB instead of hard-coding it as a constant
       test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
       test.runUntilState(anyAtOrOverStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
       var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));

@@ -32,15 +32,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * GenesisLedgerTransactionAllOf
  */
 @JsonPropertyOrder({
+  GenesisLedgerTransactionAllOf.JSON_PROPERTY_IS_FLASH,
   GenesisLedgerTransactionAllOf.JSON_PROPERTY_SYSTEM_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class GenesisLedgerTransactionAllOf {
+  public static final String JSON_PROPERTY_IS_FLASH = "is_flash";
+  private Boolean isFlash;
+
   public static final String JSON_PROPERTY_SYSTEM_TRANSACTION = "system_transaction";
   private SystemTransaction systemTransaction;
 
   public GenesisLedgerTransactionAllOf() { 
   }
+
+  public GenesisLedgerTransactionAllOf isFlash(Boolean isFlash) {
+    this.isFlash = isFlash;
+    return this;
+  }
+
+   /**
+   * The first genesis \&quot;transaction\&quot; flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated &#x60;system_transaction&#x60; 
+   * @return isFlash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The first genesis \"transaction\" flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated `system_transaction` ")
+  @JsonProperty(JSON_PROPERTY_IS_FLASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsFlash() {
+    return isFlash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_FLASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsFlash(Boolean isFlash) {
+    this.isFlash = isFlash;
+  }
+
 
   public GenesisLedgerTransactionAllOf systemTransaction(SystemTransaction systemTransaction) {
     this.systemTransaction = systemTransaction;
@@ -51,10 +81,10 @@ public class GenesisLedgerTransactionAllOf {
    * Get systemTransaction
    * @return systemTransaction
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public SystemTransaction getSystemTransaction() {
     return systemTransaction;
@@ -62,7 +92,7 @@ public class GenesisLedgerTransactionAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSystemTransaction(SystemTransaction systemTransaction) {
     this.systemTransaction = systemTransaction;
   }
@@ -80,18 +110,20 @@ public class GenesisLedgerTransactionAllOf {
       return false;
     }
     GenesisLedgerTransactionAllOf genesisLedgerTransactionAllOf = (GenesisLedgerTransactionAllOf) o;
-    return Objects.equals(this.systemTransaction, genesisLedgerTransactionAllOf.systemTransaction);
+    return Objects.equals(this.isFlash, genesisLedgerTransactionAllOf.isFlash) &&
+        Objects.equals(this.systemTransaction, genesisLedgerTransactionAllOf.systemTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(systemTransaction);
+    return Objects.hash(isFlash, systemTransaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class GenesisLedgerTransactionAllOf {\n");
+    sb.append("    isFlash: ").append(toIndentedString(isFlash)).append("\n");
     sb.append("    systemTransaction: ").append(toIndentedString(systemTransaction)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -62,25 +62,23 @@
  * permissions under this License.
  */
 
-use radix_engine_constants::{
-    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION, DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
-};
+use radix_engine_constants::DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
 
 // TODO: revisit & tune before Babylon
-pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: usize = 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_COUNT: u32 = 10;
 pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: usize = 200_000_000;
+pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
 pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
 pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION * 10;
+    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
 pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
 pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION * 10;
+    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
 
 pub struct VertexLimitsConfig {
-    pub max_total_transactions_count: usize,
+    pub max_total_transactions_count: u32,
     pub max_total_transactions_size: usize,
-    pub max_total_execution_cost_units_consumed: usize,
+    pub max_total_execution_cost_units_consumed: u32,
     pub max_total_substate_read_size: usize,
     pub max_total_substate_read_count: usize,
     pub max_total_substate_write_size: usize,

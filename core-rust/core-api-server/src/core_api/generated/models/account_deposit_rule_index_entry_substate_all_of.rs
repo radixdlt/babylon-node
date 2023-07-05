@@ -13,18 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountDepositRuleIndexEntrySubstateAllOf {
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
-    #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
-    pub deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::ResourceKey>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::AccountDepositRuleIndexEntryValue>>,
 }
 
 impl AccountDepositRuleIndexEntrySubstateAllOf {
-    pub fn new(resource_address: String) -> AccountDepositRuleIndexEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::ResourceKey) -> AccountDepositRuleIndexEntrySubstateAllOf {
         AccountDepositRuleIndexEntrySubstateAllOf {
-            resource_address,
-            deposit_rule: None,
+            key: Box::new(key),
+            value: None,
         }
     }
 }

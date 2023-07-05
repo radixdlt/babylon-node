@@ -25,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.GlobalAddressPhantomTypeInfoDetails;
-import com.radixdlt.api.core.generated.models.GlobalAddressReservationTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.InstanceSchema;
 import com.radixdlt.api.core.generated.models.KeyValueStoreTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetails;
@@ -47,6 +45,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   ObjectTypeInfoDetails.JSON_PROPERTY_PACKAGE_ADDRESS,
   ObjectTypeInfoDetails.JSON_PROPERTY_BLUEPRINT_NAME,
+  ObjectTypeInfoDetails.JSON_PROPERTY_BLUEPRINT_VERSION,
   ObjectTypeInfoDetails.JSON_PROPERTY_GLOBAL,
   ObjectTypeInfoDetails.JSON_PROPERTY_OUTER_OBJECT,
   ObjectTypeInfoDetails.JSON_PROPERTY_INSTANCE_SCHEMA,
@@ -59,8 +58,6 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = GlobalAddressPhantomTypeInfoDetails.class, name = "GlobalAddressPhantom"),
-  @JsonSubTypes.Type(value = GlobalAddressReservationTypeInfoDetails.class, name = "GlobalAddressReservation"),
   @JsonSubTypes.Type(value = KeyValueStoreTypeInfoDetails.class, name = "KeyValueStore"),
   @JsonSubTypes.Type(value = ObjectTypeInfoDetails.class, name = "Object"),
 })
@@ -71,6 +68,9 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
@@ -136,6 +136,32 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setBlueprintName(String blueprintName) {
     this.blueprintName = blueprintName;
+  }
+
+
+  public ObjectTypeInfoDetails blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+    return this;
+  }
+
+   /**
+   * Get blueprintVersion
+   * @return blueprintVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintVersion() {
+    return blueprintVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -262,6 +288,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     ObjectTypeInfoDetails objectTypeInfoDetails = (ObjectTypeInfoDetails) o;
     return Objects.equals(this.packageAddress, objectTypeInfoDetails.packageAddress) &&
         Objects.equals(this.blueprintName, objectTypeInfoDetails.blueprintName) &&
+        Objects.equals(this.blueprintVersion, objectTypeInfoDetails.blueprintVersion) &&
         Objects.equals(this.global, objectTypeInfoDetails.global) &&
         Objects.equals(this.outerObject, objectTypeInfoDetails.outerObject) &&
         Objects.equals(this.instanceSchema, objectTypeInfoDetails.instanceSchema) &&
@@ -271,7 +298,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global, outerObject, instanceSchema, features, super.hashCode());
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, global, outerObject, instanceSchema, features, super.hashCode());
   }
 
   @Override
@@ -281,6 +308,7 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");
@@ -303,8 +331,6 @@ public class ObjectTypeInfoDetails extends TypeInfoDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("GlobalAddressPhantom", GlobalAddressPhantomTypeInfoDetails.class);
-  mappings.put("GlobalAddressReservation", GlobalAddressReservationTypeInfoDetails.class);
   mappings.put("KeyValueStore", KeyValueStoreTypeInfoDetails.class);
   mappings.put("Object", ObjectTypeInfoDetails.class);
   mappings.put("ObjectTypeInfoDetails", ObjectTypeInfoDetails.class);

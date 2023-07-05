@@ -78,6 +78,12 @@ use transaction::signing::secp256k1::Secp256k1Signature;
 
 define_wrapped_hash!(SubstateChangeHash);
 
+impl Display for SubstateChangeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl SubstateChangeHash {
     pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
         SubstateChangeHash(hash(scrypto_encode(&substate_change).unwrap()))
@@ -87,6 +93,12 @@ impl SubstateChangeHash {
 impl IsMerklizableHash for SubstateChangeHash {}
 
 define_wrapped_hash!(EventHash);
+
+impl Display for EventHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 impl IsMerklizableHash for EventHash {}
 
@@ -120,12 +132,30 @@ define_wrapped_hash! {
     LedgerReceiptHash
 }
 
+impl Display for LedgerReceiptHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 define_wrapped_hash! {
     StateHash
 }
 
+impl Display for StateHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 define_wrapped_hash! {
     TransactionTreeHash
+}
+
+impl Display for TransactionTreeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl From<LedgerTransactionHash> for TransactionTreeHash {
@@ -138,6 +168,12 @@ impl IsMerklizableHash for TransactionTreeHash {}
 
 define_wrapped_hash! {
     ReceiptTreeHash
+}
+
+impl Display for ReceiptTreeHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl From<LedgerReceiptHash> for ReceiptTreeHash {

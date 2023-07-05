@@ -15,20 +15,18 @@
 pub struct ConsensusManagerFieldCurrentProposalStatisticSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
-    #[serde(rename = "completed")]
-    pub completed: Vec<i64>,
-    /// The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
-    #[serde(rename = "missed")]
-    pub missed: Vec<i64>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldCurrentProposalStatisticValue>,
 }
 
 impl ConsensusManagerFieldCurrentProposalStatisticSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, completed: Vec<i64>, missed: Vec<i64>) -> ConsensusManagerFieldCurrentProposalStatisticSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::ConsensusManagerFieldCurrentProposalStatisticValue) -> ConsensusManagerFieldCurrentProposalStatisticSubstate {
         ConsensusManagerFieldCurrentProposalStatisticSubstate {
             substate_type,
-            completed,
-            missed,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

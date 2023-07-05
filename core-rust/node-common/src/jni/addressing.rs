@@ -68,7 +68,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::ComponentAddress;
-use radix_engine_common::prelude::{Bech32Encoder, NetworkDefinition};
+use radix_engine_common::prelude::{AddressBech32Encoder, NetworkDefinition};
 use radix_engine_common::types::{EntityType, NodeId, ResourceAddress};
 use radix_engine_interface::crypto::Secp256k1PublicKey;
 
@@ -86,7 +86,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeAddress(
                 return Err(format!("Raw address length must be {}", NodeId::LENGTH));
             }
 
-            Bech32Encoder::new(&network_definition).encode(&address_data)
+            AddressBech32Encoder::new(&network_definition).encode(&address_data)
                 .map_err(|err| format!("{err:?}"))
         },
     )
@@ -170,7 +170,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_nativeGlobalFungible(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |address_bytes_without_entity_id: [u8; NodeId::UUID_LENGTH]| {
+        |address_bytes_without_entity_id: [u8; NodeId::RID_LENGTH]| {
             ResourceAddress::new_or_panic(
                 NodeId::new(
                     EntityType::GlobalFungibleResourceManager as u8,

@@ -4,10 +4,7 @@ use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
-use radix_engine::transaction::{
-    CommitResult, ExecutionMetrics, StateUpdateSummary, TransactionExecutionTrace,
-    TransactionOutcome,
-};
+use radix_engine::transaction::{CommitResult, StateUpdateSummary, TransactionOutcome};
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
@@ -16,6 +13,7 @@ use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
+use crate::limits::ExecutionMetrics;
 use crate::transaction::PayloadIdentifiers;
 use crate::{ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash};
 
@@ -143,13 +141,10 @@ pub struct LedgerTransactionReceipt {
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
     pub execution_metrics: ExecutionMetrics,
-    // The breakdown of the fee
     pub fee_summary: FeeSummary,
-    // Which vault/s paid the fee
-    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
-    // These will be removed once we have the parent_map for the toolkit to use
+    // These can be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<EpochChangeEvent>,
 }
@@ -181,22 +176,8 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl
-    From<(
-        CommitResult,
-        Vec<SubstateChange>,
-        TransactionExecutionTrace,
-        ExecutionMetrics,
-    )> for LocalTransactionReceipt
-{
-    fn from(
-        (commit_result, substate_changes, execution_trace, execution_metrics): (
-            CommitResult,
-            Vec<SubstateChange>,
-            TransactionExecutionTrace,
-            ExecutionMetrics,
-        ),
-    ) -> Self {
+impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
+    fn from((commit_result, substate_changes): (CommitResult, Vec<SubstateChange>)) -> Self {
         let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {
@@ -209,13 +190,12 @@ impl
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
-                execution_metrics,
+                execution_metrics: ExecutionMetrics::new_from_commit(&commit_result.fee_summary),
                 outcome: commit_result.outcome.into(),
                 fee_summary: commit_result.fee_summary,
-                fee_payments: commit_result.fee_payments,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
-                resource_changes: execution_trace.resource_changes,
+                resource_changes: commit_result.execution_trace.resource_changes,
                 next_epoch,
             },
         }

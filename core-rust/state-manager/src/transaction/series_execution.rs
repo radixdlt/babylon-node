@@ -70,11 +70,9 @@ use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
-use ::transaction::model::IntentHash;
 use ::transaction::prelude::*;
 use parking_lot::Mutex;
 use radix_engine::transaction::RejectResult;
-use utils::rust::collections::NonIterMap;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their
 /// progress.
@@ -125,26 +123,32 @@ where
     pub fn execute(
         &mut self,
         transaction: &ValidatedLedgerTransaction,
-        description: impl Display,
+        description: &'static str,
     ) -> Result<ProcessedCommitResult, RejectResult> {
         let description = DescribedTransactionHash {
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
         };
-        let config_type = transaction.config_type();
+        self.execute_wrapped(
+            &description,
+            self.execution_configurator
+                .wrap_ledger_transaction(transaction, &description),
+        )
+    }
+
+    fn execute_wrapped<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
+        &mut self,
+        description: &DescribedTransactionHash,
+        wrapped_executable: T,
+    ) -> Result<ProcessedCommitResult, RejectResult> {
         let mut execution_cache = self.execution_cache.lock();
         let processed = execution_cache.execute_transaction(
             self.store,
             self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
-            &transaction.ledger_transaction_hash(),
-            self.execution_configurator
-                .wrap(transaction.get_executable(), config_type)
-                .warn_after(
-                    config_type.get_transaction_runtime_warn_threshold(),
-                    &description,
-                ),
+            &description.ledger_hash,
+            wrapped_executable,
         );
         let result = processed.expect_commit_or_reject(&description).cloned();
         if let Ok(commit) = &result {
@@ -184,79 +188,19 @@ where
     }
 }
 
-/// A source of intent hash duplication.
-#[derive(Debug, Clone)]
-pub enum IntentHashDuplicateWith {
-    /// Some other newly-proposed transaction has the same intent hash.
-    Proposed,
-    /// Some ancestor transaction (i.e. already-prepared-but-not-yet-committed one) has the same
-    /// intent hash.
-    Ancestor,
-    /// Some committed transaction (i.e. already persisted on ledger) has the same intent hash.
-    Committed,
-}
-
-/// An internal implementation delegate dealing with intent hash duplicates.
-// TODO: Remove after this responsibility is implemented by the Engine.
-pub struct DuplicateIntentHashDetector<'s, S> {
-    store: &'s S,
-    recorded_intent_hashes: NonIterMap<IntentHash, IntentHashDuplicateWith>,
-}
-
-impl<'s, S: for<'a> TransactionIndex<&'a IntentHash>> DuplicateIntentHashDetector<'s, S> {
-    pub fn new(store: &'s S) -> Self {
-        Self {
-            store,
-            recorded_intent_hashes: NonIterMap::new(),
-        }
-    }
-
-    /// Records an intent hash of an ancestor (i.e. one of already-prepared-but-not-yet-committed)
-    /// transaction.
-    /// Please note that duplicates are not possible for ancestor transactions (since they were all
-    /// checked against this during previous prepare operations), and hence the `check_ancestor()`
-    /// method does not exist.
-    pub fn record_ancestor(&mut self, intent_hash: IntentHash) {
-        self.recorded_intent_hashes
-            .insert(intent_hash, IntentHashDuplicateWith::Ancestor);
-    }
-
-    /// Checks whether the given intent hash of a newly-proposed transaction clashes with any other
-    /// transaction (i.e. an already committed one, or an ancestor, or another proposed one).
-    pub fn check_proposed(
-        &mut self,
-        intent_hash: &IntentHash,
-    ) -> Result<(), IntentHashDuplicateWith> {
-        if let Some(duplicate_with) = self.recorded_intent_hashes.get(intent_hash) {
-            return Err(duplicate_with.clone());
-        }
-        let committed_at_version = self.store.get_txn_state_version_by_identifier(intent_hash);
-        if committed_at_version.is_some() {
-            // we insert this to our map only as an optimization (avoid repeating the same DB read)
-            self.recorded_intent_hashes
-                .insert(*intent_hash, IntentHashDuplicateWith::Committed);
-            return Err(IntentHashDuplicateWith::Committed);
-        }
-        Ok(())
-    }
-
-    /// Records an intent hash of a proposed transaction which is expected to be committed.
-    /// From this point on, it will be taken into account by the `check_proposed()` method.
-    pub fn record_committable_proposed(&mut self, intent_hash: IntentHash) {
-        self.recorded_intent_hashes
-            .insert(intent_hash, IntentHashDuplicateWith::Proposed);
-    }
-}
-
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
-struct DescribedTransactionHash<D> {
+struct DescribedTransactionHash {
     ledger_hash: LedgerTransactionHash,
-    description: D,
+    description: &'static str,
 }
 
-impl<D: Display> Display for DescribedTransactionHash<D> {
+impl Display for DescribedTransactionHash {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} (ledger hash {})", self.description, self.ledger_hash)
+        write!(
+            f,
+            "{} (ledger hash {:?})",
+            self.description, self.ledger_hash
+        )
     }
 }
 

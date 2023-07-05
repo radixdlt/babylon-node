@@ -16,21 +16,17 @@ pub struct FunctionSchema {
     #[serde(rename = "receiver_info", skip_serializing_if = "Option::is_none")]
     pub receiver_info: Option<Box<crate::core_api::generated::models::ReceiverInfo>>,
     #[serde(rename = "input")]
-    pub input: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    pub input: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "output")]
-    pub output: Box<crate::core_api::generated::models::LocalTypeIndex>,
-    /// Name used for export
-    #[serde(rename = "export")]
-    pub export: String,
+    pub output: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl FunctionSchema {
-    pub fn new(input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export: String) -> FunctionSchema {
+    pub fn new(input: crate::core_api::generated::models::TypePointer, output: crate::core_api::generated::models::TypePointer) -> FunctionSchema {
         FunctionSchema {
             receiver_info: None,
-            input: Box::new(input),
-            output: Box::new(output),
-            export,
+            input: Option::Some(input),
+            output: Option::Some(output),
         }
     }
 }

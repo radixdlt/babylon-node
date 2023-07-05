@@ -65,6 +65,7 @@
 package com.radixdlt.genesis;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
@@ -73,7 +74,14 @@ public record GenesisData(
     UInt64 initialEpoch,
     long initialTimestampMs,
     GenesisConsensusManagerConfig consensusManagerConfig,
-    ImmutableList<GenesisDataChunk> chunks) {
+    ImmutableList<GenesisDataChunk> chunks,
+    Decimal faucetSupply,
+    ImmutableList<String> scenarios) {
+
+  public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
+  public static final ImmutableList<String> ALL_SCENARIOS =
+      ImmutableList.of("transfer_xrd", "radiswap");
+  public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -85,6 +93,18 @@ public record GenesisData(
         UInt64.fromNonNegativeLong(1L),
         0,
         GenesisConsensusManagerConfig.testingDefaultEmpty(),
-        ImmutableList.of());
+        ImmutableList.of(),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        NO_SCENARIOS);
+  }
+
+  public static GenesisData testingDefaultEmptyWithScenarios() {
+    return new GenesisData(
+        UInt64.fromNonNegativeLong(1L),
+        0,
+        GenesisConsensusManagerConfig.testingDefaultEmpty(),
+        ImmutableList.of(),
+        DEFAULT_TEST_FAUCET_SUPPLY,
+        ALL_SCENARIOS);
   }
 }

@@ -30,21 +30,35 @@ public enum SubstateType {
   
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
-  ACCESSRULESMODULEFIELDACCESSRULES("AccessRulesModuleFieldAccessRules"),
+  ACCESSRULESMODULEFIELDOWNERROLE("AccessRulesModuleFieldOwnerRole"),
   
-  ROYALTYMODULEFIELDCONFIG("RoyaltyModuleFieldConfig"),
+  ACCESSRULESMODULERULEENTRY("AccessRulesModuleRuleEntry"),
   
-  ROYALTYMODULEFIELDACCUMULATOR("RoyaltyModuleFieldAccumulator"),
+  ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
+  
+  ROYALTYMODULEFIELDSTATE("RoyaltyModuleFieldState"),
+  
+  ROYALTYMODULEMETHODROYALTYENTRY("RoyaltyModuleMethodRoyaltyEntry"),
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   
-  PACKAGEFIELDINFO("PackageFieldInfo"),
+  PACKAGEFIELDROYALTYACCUMULATOR("PackageFieldRoyaltyAccumulator"),
   
-  PACKAGEFIELDCODETYPE("PackageFieldCodeType"),
+  PACKAGECODEVMTYPEENTRY("PackageCodeVmTypeEntry"),
   
-  PACKAGEFIELDCODE("PackageFieldCode"),
+  PACKAGECODEORIGINALCODEENTRY("PackageCodeOriginalCodeEntry"),
   
-  PACKAGEFIELDROYALTY("PackageFieldRoyalty"),
+  PACKAGECODEINSTRUMENTEDCODEENTRY("PackageCodeInstrumentedCodeEntry"),
+  
+  PACKAGESCHEMAENTRY("PackageSchemaEntry"),
+  
+  PACKAGEBLUEPRINTDEFINITIONENTRY("PackageBlueprintDefinitionEntry"),
+  
+  PACKAGEBLUEPRINTDEPENDENCIESENTRY("PackageBlueprintDependenciesEntry"),
+  
+  PACKAGEBLUEPRINTROYALTYENTRY("PackageBlueprintRoyaltyEntry"),
+  
+  PACKAGEBLUEPRINTAUTHTEMPLATEENTRY("PackageBlueprintAuthTemplateEntry"),
   
   PACKAGEFIELDFUNCTIONACCESSRULES("PackageFieldFunctionAccessRules"),
   
@@ -62,9 +76,15 @@ public enum SubstateType {
   
   FUNGIBLEVAULTFIELDBALANCE("FungibleVaultFieldBalance"),
   
+  FUNGIBLEVAULTFIELDFROZENSTATUS("FungibleVaultFieldFrozenStatus"),
+  
   NONFUNGIBLEVAULTFIELDBALANCE("NonFungibleVaultFieldBalance"),
   
+  NONFUNGIBLEVAULTFIELDFROZENSTATUS("NonFungibleVaultFieldFrozenStatus"),
+  
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
+  
+  CONSENSUSMANAGER("ConsensusManager"),
   
   CONSENSUSMANAGERFIELDCONFIG("ConsensusManagerFieldConfig"),
   
@@ -78,9 +98,13 @@ public enum SubstateType {
   
   CONSENSUSMANAGERFIELDCURRENTTIME("ConsensusManagerFieldCurrentTime"),
   
+  CONSENSUSMANAGERFIELDVALIDATORREWARDS("ConsensusManagerFieldValidatorRewards"),
+  
   CONSENSUSMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   
   VALIDATORFIELDSTATE("ValidatorFieldState"),
+  
+  VALIDATORFIELDPROTOCOLUPDATEREADINESSSIGNAL("ValidatorFieldProtocolUpdateReadinessSignal"),
   
   ACCOUNTFIELDSTATE("AccountFieldState"),
   
@@ -94,11 +118,15 @@ public enum SubstateType {
   
   GENERICKEYVALUESTOREENTRY("GenericKeyValueStoreEntry"),
   
-  ONERESOURCEPOOL("OneResourcePool"),
+  ONERESOURCEPOOLFIELDSTATE("OneResourcePoolFieldState"),
   
-  TWORESOURCEPOOL("TwoResourcePool"),
+  TWORESOURCEPOOLFIELDSTATE("TwoResourcePoolFieldState"),
   
-  MULTIRESOURCEPOOL("MultiResourcePool");
+  MULTIRESOURCEPOOLFIELDSTATE("MultiResourcePoolFieldState"),
+  
+  TRANSACTIONTRACKERFIELDSTATE("TransactionTrackerFieldState"),
+  
+  TRANSACTIONTRACKERCOLLECTIONENTRY("TransactionTrackerCollectionEntry");
 
   private String value;
 

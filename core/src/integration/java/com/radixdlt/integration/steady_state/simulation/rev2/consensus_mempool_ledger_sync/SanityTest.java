@@ -109,7 +109,7 @@ public class SanityTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createGenesisWithNumValidators(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
                             4,
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),

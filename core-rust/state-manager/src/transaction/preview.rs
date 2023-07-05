@@ -3,7 +3,6 @@ use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionRes
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
@@ -15,8 +14,6 @@ use transaction::model::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
-
-const PREVIEW_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer<S> {
@@ -59,11 +56,10 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .map_err(PreviewError::TransactionValidationError)?;
         let transaction_logic = self
             .execution_configurator
-            .wrap(validated.get_executable(), ConfigType::Preview)
-            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
+            .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
-        let substate_changes = match &receipt.result {
+        let substate_changes = match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
                 ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
                     read_store.deref(),
@@ -104,15 +100,10 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
                 },
                 instructions,
                 blobs,
-                attachments: AttachmentsV1 {},
+                message: MessageV1::None,
             },
             signer_public_keys: preview_request.signer_public_keys,
-            flags: PreviewFlags {
-                use_free_credit: preview_request.flags.use_free_credit,
-                assume_all_signature_proofs: preview_request.flags.assume_all_signature_proofs,
-                permit_duplicate_intent_hash: preview_request.flags.permit_duplicate_intent_hash,
-                permit_invalid_header_epoch: preview_request.flags.permit_invalid_header_epoch,
-            },
+            flags: preview_request.flags,
         }
     }
 }
@@ -187,7 +178,7 @@ mod tests {
                 &metric_registry,
             )));
 
-        state_manager.read().execute_test_genesis();
+        state_manager.read().execute_genesis_for_unit_tests();
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
@@ -210,8 +201,7 @@ mod tests {
             flags: PreviewFlags {
                 use_free_credit: true,
                 assume_all_signature_proofs: true,
-                permit_duplicate_intent_hash: false,
-                permit_invalid_header_epoch: false,
+                skip_epoch_check: false,
             },
         });
 

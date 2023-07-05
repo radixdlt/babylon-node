@@ -2,7 +2,6 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use radix_engine_common::types::ValidatorIndex;
 use state_manager::store::traits::*;
 use state_manager::transaction::*;
 use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
@@ -178,9 +177,19 @@ pub fn to_api_ledger_transaction(
                 round_update_transaction: Box::new(to_api_round_update_transaction(context, tx)?),
             }
         }
-        LedgerTransaction::Genesis(tx) => models::LedgerTransaction::GenesisLedgerTransaction {
-            payload_hex,
-            system_transaction: Box::new(to_api_system_transaction(context, tx)?),
+        LedgerTransaction::Genesis(tx) => match tx.as_ref() {
+            GenesisTransaction::Flash => models::LedgerTransaction::GenesisLedgerTransaction {
+                payload_hex,
+                is_flash: true,
+                system_transaction: None,
+            },
+            GenesisTransaction::Transaction(tx) => {
+                models::LedgerTransaction::GenesisLedgerTransaction {
+                    payload_hex,
+                    is_flash: false,
+                    system_transaction: Some(Box::new(to_api_system_transaction(context, tx)?)),
+                }
+            }
         },
     })
 }
@@ -246,7 +255,7 @@ pub fn to_api_intent(
         header,
         instructions,
         blobs,
-        attachments: _,
+        message: _,
     } = intent;
 
     let header = Box::new(models::TransactionHeader {
@@ -320,12 +329,6 @@ pub fn to_api_round_update_transaction(
             is_fallback: leader_proposal_history.is_fallback,
         }),
     })
-}
-
-fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveValidatorIndex {
-    models::ActiveValidatorIndex {
-        index: index as i32,
-    }
 }
 
 pub fn to_api_system_transaction(

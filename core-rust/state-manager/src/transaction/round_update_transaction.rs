@@ -58,7 +58,8 @@ impl RoundUpdateTransactionV1 {
                 round: self.round,
                 proposer_timestamp_ms: self.proposer_timestamp_ms,
                 leader_proposal_history: self.leader_proposal_history.clone(),
-            }),
+            })
+            .expect("round update input encoding should succeed"),
         }]
     }
 
@@ -138,7 +139,10 @@ impl PreparedRoundUpdateTransactionV1 {
             &self.references,
             &self.blobs,
             ExecutionContext {
-                transaction_hash: self.summary.hash,
+                intent_hash: TransactionIntentHash::NotToCheck {
+                    intent_hash: self.summary.hash,
+                },
+                epoch_range: None,
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: btreeset!(AuthAddresses::validator_role()),
@@ -146,10 +150,8 @@ impl PreparedRoundUpdateTransactionV1 {
                 },
                 fee_payment: FeePayment {
                     tip_percentage: 0,
-                    // TODO(after pulling in Engine fix): this should be `0` (needs https://github.com/radixdlt/radixdlt-scrypto/pull/1112)
-                    free_credit_in_xrd: DEFAULT_FREE_CREDIT_IN_XRD,
+                    free_credit_in_xrd: Decimal::ZERO,
                 },
-                runtime_validations: vec![],
                 pre_allocated_addresses: vec![],
             },
         )
