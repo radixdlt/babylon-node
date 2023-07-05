@@ -157,7 +157,9 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
           throws Exception {
     try (var test = buildRunningServerTest(100)) {
-      var transaction = TransactionBuilder.forTests().fromEpoch(2).prepare();
+      var currentEpoch = 2; // Epoch after genesis is 2
+      var validFromEpoch = 3; // Epoch after genesis is 2, so this needs to be after that
+      var transaction = TransactionBuilder.forTests().fromEpoch(validFromEpoch).prepare();
 
       var response =
           assertErrorResponseOfType(
@@ -182,13 +184,15 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
-      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
+      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(validFromEpoch);
       assertThat(rejectedDetails.getErrorMessage())
           .isEqualTo(
-              "TransactionEpochNotYetValid { valid_from: Epoch(2), current_epoch: Epoch(1) }");
+              String.format(
+                  "TransactionEpochNotYetValid { valid_from: Epoch(%s), current_epoch: Epoch(%s) }",
+                  validFromEpoch, currentEpoch));
 
-      // Now we run consensus up to epoch 2
-      test.runUntilState(allAtOrOverEpoch(2), 10000);
+      // Now we run consensus until we get to the validFromEpoch
+      test.runUntilState(allAtOrOverEpoch(validFromEpoch), 10000);
 
       // And we resubmit, as the Gateway would - this time it should be submittable
       var response2 =

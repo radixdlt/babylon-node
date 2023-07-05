@@ -23,7 +23,7 @@ pub(crate) async fn handle_state_package(
             &PackageField::Royalty.into(),
         )?;
 
-    let owner_role_substate: OwnerRole = read_mandatory_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         package_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,

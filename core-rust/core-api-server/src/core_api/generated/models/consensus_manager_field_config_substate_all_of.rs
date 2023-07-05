@@ -13,38 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerFieldConfigSubstateAllOf {
-    /// An integer between `0` and `10^10`, specifying the maximum number of validators in the active validator set. 
-    #[serde(rename = "max_validators")]
-    pub max_validators: i64,
-    #[serde(rename = "epoch_change_condition")]
-    pub epoch_change_condition: Box<crate::core_api::generated::models::EpochChangeCondition>,
-    /// An integer between `0` and `10^10`, specifying the minimum number of epochs before an unstaker can withdraw their XRD. 
-    #[serde(rename = "num_unstake_epochs")]
-    pub num_unstake_epochs: i64,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "total_emission_xrd_per_epoch")]
-    pub total_emission_xrd_per_epoch: String,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "min_validator_reliability")]
-    pub min_validator_reliability: String,
-    /// An integer between `0` and `10^10`, specifying the minimum number of epochs before an owner can take their stake units after attempting to withdraw them. 
-    #[serde(rename = "num_owner_stake_units_unlock_epochs")]
-    pub num_owner_stake_units_unlock_epochs: i64,
-    /// An integer between `0` and `10^10`, specifying the minimum number of epochs before a fee increase takes effect. 
-    #[serde(rename = "num_fee_increase_delay_epochs")]
-    pub num_fee_increase_delay_epochs: i64,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldConfigValue>,
 }
 
 impl ConsensusManagerFieldConfigSubstateAllOf {
-    pub fn new(max_validators: i64, epoch_change_condition: crate::core_api::generated::models::EpochChangeCondition, num_unstake_epochs: i64, total_emission_xrd_per_epoch: String, min_validator_reliability: String, num_owner_stake_units_unlock_epochs: i64, num_fee_increase_delay_epochs: i64) -> ConsensusManagerFieldConfigSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::ConsensusManagerFieldConfigValue) -> ConsensusManagerFieldConfigSubstateAllOf {
         ConsensusManagerFieldConfigSubstateAllOf {
-            max_validators,
-            epoch_change_condition: Box::new(epoch_change_condition),
-            num_unstake_epochs,
-            total_emission_xrd_per_epoch,
-            min_validator_reliability,
-            num_owner_stake_units_unlock_epochs,
-            num_fee_increase_delay_epochs,
+            value: Box::new(value),
         }
     }
 }

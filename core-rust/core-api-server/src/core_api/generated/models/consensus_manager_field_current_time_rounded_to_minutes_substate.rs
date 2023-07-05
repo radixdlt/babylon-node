@@ -15,15 +15,18 @@
 pub struct ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "proposer_timestamp_rounded_down_to_minute")]
-    pub proposer_timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldCurrentTimeRoundedToMinutesValue>,
 }
 
 impl ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, proposer_timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::ConsensusManagerFieldCurrentTimeRoundedToMinutesValue) -> ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
         ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate {
             substate_type,
-            proposer_timestamp_rounded_down_to_minute: Box::new(proposer_timestamp_rounded_down_to_minute),
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

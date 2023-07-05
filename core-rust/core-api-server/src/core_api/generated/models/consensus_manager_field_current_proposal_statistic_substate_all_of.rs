@@ -13,19 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
-    /// The number of successfully completed proposals this epoch for each validator, indexed by the validator order in the active set.
-    #[serde(rename = "completed")]
-    pub completed: Vec<i64>,
-    /// The number of missed proposals this epoch for each validator, indexed by the validator order in the active set.
-    #[serde(rename = "missed")]
-    pub missed: Vec<i64>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldCurrentProposalStatisticValue>,
 }
 
 impl ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
-    pub fn new(completed: Vec<i64>, missed: Vec<i64>) -> ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::ConsensusManagerFieldCurrentProposalStatisticValue) -> ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
         ConsensusManagerFieldCurrentProposalStatisticSubstateAllOf {
-            completed,
-            missed,
+            value: Box::new(value),
         }
     }
 }

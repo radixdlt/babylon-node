@@ -15,16 +15,18 @@
 pub struct NonFungibleResourceManagerFieldMutableFieldsSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The field names of the NF Metadata which are mutable. 
-    #[serde(rename = "mutable_fields")]
-    pub mutable_fields: Vec<String>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleResourceManagerFieldMutableFieldsValue>,
 }
 
 impl NonFungibleResourceManagerFieldMutableFieldsSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, mutable_fields: Vec<String>) -> NonFungibleResourceManagerFieldMutableFieldsSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::NonFungibleResourceManagerFieldMutableFieldsValue) -> NonFungibleResourceManagerFieldMutableFieldsSubstate {
         NonFungibleResourceManagerFieldMutableFieldsSubstate {
             substate_type,
-            mutable_fields,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldCurrentTimeSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentTimeSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP
+  ConsensusManagerFieldCurrentTimeSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldCurrentTimeSubstateAllOf {
-  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
-  private Instant proposerTimestamp;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldCurrentTimeValue value;
 
   public ConsensusManagerFieldCurrentTimeSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldCurrentTimeSubstateAllOf proposerTimestamp(Instant proposerTimestamp) {
-    this.proposerTimestamp = proposerTimestamp;
+  public ConsensusManagerFieldCurrentTimeSubstateAllOf value(ConsensusManagerFieldCurrentTimeValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get proposerTimestamp
-   * @return proposerTimestamp
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getProposerTimestamp() {
-    return proposerTimestamp;
+  public ConsensusManagerFieldCurrentTimeValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestamp(Instant proposerTimestamp) {
-    this.proposerTimestamp = proposerTimestamp;
+  public void setValue(ConsensusManagerFieldCurrentTimeValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class ConsensusManagerFieldCurrentTimeSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldCurrentTimeSubstateAllOf consensusManagerFieldCurrentTimeSubstateAllOf = (ConsensusManagerFieldCurrentTimeSubstateAllOf) o;
-    return Objects.equals(this.proposerTimestamp, consensusManagerFieldCurrentTimeSubstateAllOf.proposerTimestamp);
+    return Objects.equals(this.value, consensusManagerFieldCurrentTimeSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerTimestamp);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldCurrentTimeSubstateAllOf {\n");
-    sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

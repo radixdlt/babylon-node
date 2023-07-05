@@ -1,6 +1,7 @@
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::{TypedMainModuleSubstateKey, TypedSubstateKey};
 use std::ops::Deref;
 
 use crate::core_api::*;
@@ -54,6 +55,9 @@ pub(crate) async fn handle_state_non_fungible(
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
+            &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(
+                non_fungible_id,
+            )),
             &substate,
         )?),
     })

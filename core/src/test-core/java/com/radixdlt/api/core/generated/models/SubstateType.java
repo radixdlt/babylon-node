@@ -36,25 +36,29 @@ public enum SubstateType {
   
   ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
   
-  ROYALTYMODULEFIELDACCUMULATOR("RoyaltyModuleFieldAccumulator"),
+  ROYALTYMODULEFIELDSTATE("RoyaltyModuleFieldState"),
   
-  ROYALTYMODULEMETHODCONFIGENTRY("RoyaltyModuleMethodConfigEntry"),
+  ROYALTYMODULEMETHODROYALTYENTRY("RoyaltyModuleMethodRoyaltyEntry"),
   
   METADATAMODULEENTRY("MetadataModuleEntry"),
   
   PACKAGEFIELDROYALTYACCUMULATOR("PackageFieldRoyaltyAccumulator"),
   
-  PACKAGECODEENTRY("PackageCodeEntry"),
+  PACKAGECODEVMTYPEENTRY("PackageCodeVmTypeEntry"),
+  
+  PACKAGECODEORIGINALCODEENTRY("PackageCodeOriginalCodeEntry"),
+  
+  PACKAGECODEINSTRUMENTEDCODEENTRY("PackageCodeInstrumentedCodeEntry"),
   
   PACKAGESCHEMAENTRY("PackageSchemaEntry"),
   
-  PACKAGEBLUEPRINTENTRY("PackageBlueprintEntry"),
+  PACKAGEBLUEPRINTDEFINITIONENTRY("PackageBlueprintDefinitionEntry"),
   
   PACKAGEBLUEPRINTDEPENDENCIESENTRY("PackageBlueprintDependenciesEntry"),
   
-  PACKAGEROYALTYENTRY("PackageRoyaltyEntry"),
+  PACKAGEBLUEPRINTROYALTYENTRY("PackageBlueprintRoyaltyEntry"),
   
-  PACKAGEAUTHTEMPLATEENTRY("PackageAuthTemplateEntry"),
+  PACKAGEBLUEPRINTAUTHTEMPLATEENTRY("PackageBlueprintAuthTemplateEntry"),
   
   PACKAGEFIELDFUNCTIONACCESSRULES("PackageFieldFunctionAccessRules"),
   
@@ -72,7 +76,11 @@ public enum SubstateType {
   
   FUNGIBLEVAULTFIELDBALANCE("FungibleVaultFieldBalance"),
   
+  FUNGIBLEVAULTFIELDFROZENSTATUS("FungibleVaultFieldFrozenStatus"),
+  
   NONFUNGIBLEVAULTFIELDBALANCE("NonFungibleVaultFieldBalance"),
+  
+  NONFUNGIBLEVAULTFIELDFROZENSTATUS("NonFungibleVaultFieldFrozenStatus"),
   
   NONFUNGIBLEVAULTCONTENTSINDEXENTRY("NonFungibleVaultContentsIndexEntry"),
   
@@ -95,6 +103,8 @@ public enum SubstateType {
   CONSENSUSMANAGERREGISTEREDVALIDATORSBYSTAKEINDEXENTRY("ConsensusManagerRegisteredValidatorsByStakeIndexEntry"),
   
   VALIDATORFIELDSTATE("ValidatorFieldState"),
+  
+  VALIDATORFIELDPROTOCOLUPDATEREADINESSSIGNAL("ValidatorFieldProtocolUpdateReadinessSignal"),
   
   ACCOUNTFIELDSTATE("AccountFieldState"),
   

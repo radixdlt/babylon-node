@@ -16,10 +16,6 @@ pub enum TypeInfoType {
     Object,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
-    #[serde(rename = "GlobalAddressReservation")]
-    GlobalAddressReservation,
-    #[serde(rename = "GlobalAddressPhantom")]
-    GlobalAddressPhantom,
 
 }
 
@@ -28,8 +24,6 @@ impl ToString for TypeInfoType {
         match self {
             Self::Object => String::from("Object"),
             Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::GlobalAddressReservation => String::from("GlobalAddressReservation"),
-            Self::GlobalAddressPhantom => String::from("GlobalAddressPhantom"),
         }
     }
 }

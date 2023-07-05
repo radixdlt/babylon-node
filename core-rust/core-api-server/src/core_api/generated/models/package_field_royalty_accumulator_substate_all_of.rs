@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageFieldRoyaltyAccumulatorSubstateAllOf {
-    #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
-    pub vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue>,
 }
 
 impl PackageFieldRoyaltyAccumulatorSubstateAllOf {
-    pub fn new() -> PackageFieldRoyaltyAccumulatorSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue) -> PackageFieldRoyaltyAccumulatorSubstateAllOf {
         PackageFieldRoyaltyAccumulatorSubstateAllOf {
-            vault_entity: None,
+            value: Box::new(value),
         }
     }
 }

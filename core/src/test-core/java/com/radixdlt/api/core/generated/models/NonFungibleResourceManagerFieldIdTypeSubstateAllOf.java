@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.NonFungibleIdType;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldIdTypeValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleResourceManagerFieldIdTypeSubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldIdTypeSubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE
+  NonFungibleResourceManagerFieldIdTypeSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE = "non_fungible_id_type";
-  private NonFungibleIdType nonFungibleIdType;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerFieldIdTypeValue value;
 
   public NonFungibleResourceManagerFieldIdTypeSubstateAllOf() { 
   }
 
-  public NonFungibleResourceManagerFieldIdTypeSubstateAllOf nonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
+  public NonFungibleResourceManagerFieldIdTypeSubstateAllOf value(NonFungibleResourceManagerFieldIdTypeValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get nonFungibleIdType
-   * @return nonFungibleIdType
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NonFungibleIdType getNonFungibleIdType() {
-    return nonFungibleIdType;
+  public NonFungibleResourceManagerFieldIdTypeValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
+  public void setValue(NonFungibleResourceManagerFieldIdTypeValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class NonFungibleResourceManagerFieldIdTypeSubstateAllOf {
       return false;
     }
     NonFungibleResourceManagerFieldIdTypeSubstateAllOf nonFungibleResourceManagerFieldIdTypeSubstateAllOf = (NonFungibleResourceManagerFieldIdTypeSubstateAllOf) o;
-    return Objects.equals(this.nonFungibleIdType, nonFungibleResourceManagerFieldIdTypeSubstateAllOf.nonFungibleIdType);
+    return Objects.equals(this.value, nonFungibleResourceManagerFieldIdTypeSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleIdType);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerFieldIdTypeSubstateAllOf {\n");
-    sb.append("    nonFungibleIdType: ").append(toIndentedString(nonFungibleIdType)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

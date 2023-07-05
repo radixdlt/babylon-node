@@ -15,19 +15,21 @@
 pub struct PackageSchemaEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
-    #[serde(rename = "schema", skip_serializing_if = "Option::is_none")]
-    pub schema: Option<Box<crate::core_api::generated::models::ScryptoSchema>>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::SchemaKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageSchemaEntryValue>,
 }
 
 impl PackageSchemaEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, schema_hash: String) -> PackageSchemaEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::SchemaKey, value: crate::core_api::generated::models::PackageSchemaEntryValue) -> PackageSchemaEntrySubstate {
         PackageSchemaEntrySubstate {
             substate_type,
-            schema_hash,
-            schema: None,
+            is_locked,
+            key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

@@ -125,7 +125,7 @@ public class Manifest {
             """
             %s
             CREATE_ACCOUNT_ADVANCED
-                Enum<OwnerRole::Updateable>(
+                Enum<OwnerRole::Updatable>(
                     Enum<AccessRule::AllowAll>()
                 )
             ;
@@ -226,10 +226,16 @@ public class Manifest {
         String.format(
             """
             %s
-            CREATE_VALIDATOR Bytes("%s") Decimal("0");
+            CALL_METHOD Address("%s") "free";
+            TAKE_FROM_WORKTOP Address("%s") Decimal("1000") Bucket("validator_creation_fee");
+            CREATE_VALIDATOR Bytes("%s") Decimal("0") Bucket("validator_creation_fee");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
-            params.faucetLockFeeLine(), key.toHex(), params.encode(ownerAccount));
+            params.faucetLockFeeLine(),
+            params.encode(FAUCET),
+            params.encode(XRD),
+            key.toHex(),
+            params.encode(ownerAccount));
   }
 
   public static Functions.Func1<Parameters, String> registerValidator(
@@ -239,11 +245,13 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "create_proof" Address("%s");
+            CALL_METHOD Address("%s") "update_accept_delegated_stake" true;
             CALL_METHOD Address("%s") "register";
             """,
             params.faucetLockFeeLine(),
             params.encode(ownerAccount),
             params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.encode(validatorAddress),
             params.encode(validatorAddress));
   }
 
@@ -333,17 +341,33 @@ public class Manifest {
     return (params) ->
         String.format(
             """
-                    %s
-                    CREATE_NON_FUNGIBLE_RESOURCE
-                        Enum<NonFungibleIdType::Integer>()
-                        false
-                        Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-                        Map<String, Enum>()
-                        Map<Enum, Tuple>(
-                            Enum<ResourceMethodAuthKey::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-                            Enum<ResourceMethodAuthKey::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
-                        );
-                    """,
+            %s
+            CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<0u8>()
+                Enum<NonFungibleIdType::Integer>()
+                false
+                Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+                Tuple(
+                    Enum<Option::Some>(Tuple(                    # Mintable
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    )),
+                    Enum<Option::Some>(Tuple(                    # Burnable
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    )),
+                    Enum<Option::None>(),                        # Freezable
+                    Enum<Option::None>(),                        # Recallable
+                    Enum<Option::None>(),                        # Restrict Withdraw
+                    Enum<Option::None>(),                        # Restrict Deposit
+                    Enum<Option::None>()                         # Update Non Fungible Data
+                )
+                Tuple(
+                    Map<String, Tuple>(),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>();
+            """,
             params.faucetLockFeeLine());
   }
 

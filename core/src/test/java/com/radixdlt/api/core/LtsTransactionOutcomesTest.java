@@ -193,16 +193,18 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
           account2AddressStr,
           account1ToAccount2XrdTransferWithFeeFromAccount1Amount);
 
-      // Slightly weird transaction, the fee payment calculation guesses wrong for now.
-      // TODO: Uncomment this test when fee calculation is fixed to make fewer assumptions
-      //
-      // assertNoNonFeeXrdBalanceChange(account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion, faucetAddressStr);
-      //
-      // assertNonFeeXrdBalanceChange(account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion,
-      // account1AddressStr, -account1ToAccount2XrdTransferWithFeeFromAccount2Amount);
-      //
-      // assertNonFeeXrdBalanceChange(account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion,
-      // account2AddressStr, account1ToAccount2XrdTransferWithFeeFromAccount2Amount);
+      assertNoNonFeeXrdBalanceChange(
+          account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion(), faucetAddressStr);
+
+      assertNonFeeXrdBalanceChange(
+          account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion(),
+          account1AddressStr,
+          -account1ToAccount2XrdTransferWithFeeFromAccount2Amount);
+
+      assertNonFeeXrdBalanceChange(
+          account1ToAccount2XrdTransferWithFeeFromAccount2.stateVersion(),
+          account2AddressStr,
+          account1ToAccount2XrdTransferWithFeeFromAccount2Amount);
 
       // Even though the faucet paid the fee, it didn't have any other balance transfers
       assertNoNonFeeXrdBalanceChange(

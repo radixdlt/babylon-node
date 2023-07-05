@@ -15,15 +15,18 @@
 pub struct ConsensusManagerFieldCurrentValidatorSetSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "validator_set")]
-    pub validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldCurrentValidatorSetValue>,
 }
 
 impl ConsensusManagerFieldCurrentValidatorSetSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, validator_set: Vec<crate::core_api::generated::models::ActiveValidator>) -> ConsensusManagerFieldCurrentValidatorSetSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::ConsensusManagerFieldCurrentValidatorSetValue) -> ConsensusManagerFieldCurrentValidatorSetSubstate {
         ConsensusManagerFieldCurrentValidatorSetSubstate {
             substate_type,
-            validator_set,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

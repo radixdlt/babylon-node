@@ -76,6 +76,7 @@ use node_common::java::*;
 use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine::transaction::FeeReserveConfig;
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use tokio::runtime::Runtime;
@@ -181,7 +182,7 @@ impl JNIStateManager {
         let metric_registry = Registry::new();
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
-            fee_reserve_config.cost_unit_price = 0;
+            fee_reserve_config.cost_unit_price = Decimal::ZERO;
         }
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
             &logging_config,

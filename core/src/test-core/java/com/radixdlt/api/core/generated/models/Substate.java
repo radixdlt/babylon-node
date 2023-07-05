@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesModuleMutabilityEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
@@ -43,6 +42,7 @@ import com.radixdlt.api.core.generated.models.ConsensusManagerRegisteredValidato
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldDivisibilitySubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.FungibleVaultFieldBalanceSubstate;
+import com.radixdlt.api.core.generated.models.FungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.GenericKeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.GenericScryptoComponentFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.MetadataModuleEntrySubstate;
@@ -53,21 +53,25 @@ import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMut
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldTotalSupplySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultContentsIndexEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldBalanceSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleVaultFieldFrozenStatusSubstate;
 import com.radixdlt.api.core.generated.models.OneResourcePoolFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.PackageAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintAuthTemplateEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintDefinitionEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageBlueprintDependenciesEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageBlueprintEntrySubstate;
-import com.radixdlt.api.core.generated.models.PackageCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageBlueprintRoyaltyEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodConfigEntrySubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
+import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldStateSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -79,7 +83,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * Substate
  */
 @JsonPropertyOrder({
-  Substate.JSON_PROPERTY_SUBSTATE_TYPE
+  Substate.JSON_PROPERTY_SUBSTATE_TYPE,
+  Substate.JSON_PROPERTY_IS_LOCKED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -92,8 +97,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldStateSubstate"),
   @JsonSubTypes.Type(value = AccessRulesModuleFieldOwnerRoleSubstate.class, name = "AccessRulesModuleFieldOwnerRole"),
   @JsonSubTypes.Type(value = AccessRulesModuleFieldOwnerRoleSubstate.class, name = "AccessRulesModuleFieldOwnerRoleSubstate"),
-  @JsonSubTypes.Type(value = AccessRulesModuleMutabilityEntrySubstate.class, name = "AccessRulesModuleMutabilityEntry"),
-  @JsonSubTypes.Type(value = AccessRulesModuleMutabilityEntrySubstate.class, name = "AccessRulesModuleMutabilityEntrySubstate"),
   @JsonSubTypes.Type(value = AccessRulesModuleRuleEntrySubstate.class, name = "AccessRulesModuleRuleEntry"),
   @JsonSubTypes.Type(value = AccessRulesModuleRuleEntrySubstate.class, name = "AccessRulesModuleRuleEntrySubstate"),
   @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntry"),
@@ -124,6 +127,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = FungibleResourceManagerFieldTotalSupplySubstate.class, name = "FungibleResourceManagerFieldTotalSupplySubstate"),
   @JsonSubTypes.Type(value = FungibleVaultFieldBalanceSubstate.class, name = "FungibleVaultFieldBalance"),
   @JsonSubTypes.Type(value = FungibleVaultFieldBalanceSubstate.class, name = "FungibleVaultFieldBalanceSubstate"),
+  @JsonSubTypes.Type(value = FungibleVaultFieldFrozenStatusSubstate.class, name = "FungibleVaultFieldFrozenStatus"),
+  @JsonSubTypes.Type(value = FungibleVaultFieldFrozenStatusSubstate.class, name = "FungibleVaultFieldFrozenStatusSubstate"),
   @JsonSubTypes.Type(value = GenericKeyValueStoreEntrySubstate.class, name = "GenericKeyValueStoreEntry"),
   @JsonSubTypes.Type(value = GenericKeyValueStoreEntrySubstate.class, name = "GenericKeyValueStoreEntrySubstate"),
   @JsonSubTypes.Type(value = GenericScryptoComponentFieldStateSubstate.class, name = "GenericScryptoComponentFieldState"),
@@ -144,26 +149,32 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = NonFungibleVaultContentsIndexEntrySubstate.class, name = "NonFungibleVaultContentsIndexEntrySubstate"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalance"),
   @JsonSubTypes.Type(value = NonFungibleVaultFieldBalanceSubstate.class, name = "NonFungibleVaultFieldBalanceSubstate"),
+  @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatus"),
+  @JsonSubTypes.Type(value = NonFungibleVaultFieldFrozenStatusSubstate.class, name = "NonFungibleVaultFieldFrozenStatusSubstate"),
   @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldState"),
   @JsonSubTypes.Type(value = OneResourcePoolFieldStateSubstate.class, name = "OneResourcePoolFieldStateSubstate"),
-  @JsonSubTypes.Type(value = PackageAuthTemplateEntrySubstate.class, name = "PackageAuthTemplateEntry"),
-  @JsonSubTypes.Type(value = PackageAuthTemplateEntrySubstate.class, name = "PackageAuthTemplateEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageBlueprintAuthTemplateEntrySubstate.class, name = "PackageBlueprintAuthTemplateEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintAuthTemplateEntrySubstate.class, name = "PackageBlueprintAuthTemplateEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintDefinitionEntrySubstate.class, name = "PackageBlueprintDefinitionEntrySubstate"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntry"),
   @JsonSubTypes.Type(value = PackageBlueprintDependenciesEntrySubstate.class, name = "PackageBlueprintDependenciesEntrySubstate"),
-  @JsonSubTypes.Type(value = PackageBlueprintEntrySubstate.class, name = "PackageBlueprintEntry"),
-  @JsonSubTypes.Type(value = PackageBlueprintEntrySubstate.class, name = "PackageBlueprintEntrySubstate"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntry"),
-  @JsonSubTypes.Type(value = PackageCodeEntrySubstate.class, name = "PackageCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntry"),
+  @JsonSubTypes.Type(value = PackageBlueprintRoyaltyEntrySubstate.class, name = "PackageBlueprintRoyaltyEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeInstrumentedCodeEntrySubstate.class, name = "PackageCodeInstrumentedCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeOriginalCodeEntrySubstate.class, name = "PackageCodeOriginalCodeEntrySubstate"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
+  @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntrySubstate"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulatorSubstate"),
-  @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntry"),
-  @JsonSubTypes.Type(value = PackageRoyaltyEntrySubstate.class, name = "PackageRoyaltyEntrySubstate"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntrySubstate"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulator"),
-  @JsonSubTypes.Type(value = RoyaltyModuleFieldAccumulatorSubstate.class, name = "RoyaltyModuleFieldAccumulatorSubstate"),
-  @JsonSubTypes.Type(value = RoyaltyModuleMethodConfigEntrySubstate.class, name = "RoyaltyModuleMethodConfigEntry"),
-  @JsonSubTypes.Type(value = RoyaltyModuleMethodConfigEntrySubstate.class, name = "RoyaltyModuleMethodConfigEntrySubstate"),
+  @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
+  @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldStateSubstate"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
+  @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntrySubstate"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntrySubstate"),
   @JsonSubTypes.Type(value = TransactionTrackerFieldStateSubstate.class, name = "TransactionTrackerFieldState"),
@@ -172,6 +183,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = TwoResourcePoolFieldStateSubstate.class, name = "TwoResourcePoolFieldStateSubstate"),
   @JsonSubTypes.Type(value = TypeInfoModuleFieldTypeInfoSubstate.class, name = "TypeInfoModuleFieldTypeInfo"),
   @JsonSubTypes.Type(value = TypeInfoModuleFieldTypeInfoSubstate.class, name = "TypeInfoModuleFieldTypeInfoSubstate"),
+  @JsonSubTypes.Type(value = ValidatorFieldProtocolUpdateReadinessSignalSubstate.class, name = "ValidatorFieldProtocolUpdateReadinessSignal"),
+  @JsonSubTypes.Type(value = ValidatorFieldProtocolUpdateReadinessSignalSubstate.class, name = "ValidatorFieldProtocolUpdateReadinessSignalSubstate"),
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldState"),
   @JsonSubTypes.Type(value = ValidatorFieldStateSubstate.class, name = "ValidatorFieldStateSubstate"),
 })
@@ -179,6 +192,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 public class Substate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
+
+  public static final String JSON_PROPERTY_IS_LOCKED = "is_locked";
+  private Boolean isLocked;
 
   public Substate() { 
   }
@@ -209,6 +225,32 @@ public class Substate {
   }
 
 
+  public Substate isLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+    return this;
+  }
+
+   /**
+   * Get isLocked
+   * @return isLocked
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsLocked() {
+    return isLocked;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_LOCKED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsLocked(Boolean isLocked) {
+    this.isLocked = isLocked;
+  }
+
+
   /**
    * Return true if this Substate object is equal to o.
    */
@@ -221,12 +263,13 @@ public class Substate {
       return false;
     }
     Substate substate = (Substate) o;
-    return Objects.equals(this.substateType, substate.substateType);
+    return Objects.equals(this.substateType, substate.substateType) &&
+        Objects.equals(this.isLocked, substate.isLocked);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType);
+    return Objects.hash(substateType, isLocked);
   }
 
   @Override
@@ -234,6 +277,7 @@ public class Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class Substate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
+    sb.append("    isLocked: ").append(toIndentedString(isLocked)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -256,8 +300,6 @@ static {
   mappings.put("AccessControllerFieldStateSubstate", AccessControllerFieldStateSubstate.class);
   mappings.put("AccessRulesModuleFieldOwnerRole", AccessRulesModuleFieldOwnerRoleSubstate.class);
   mappings.put("AccessRulesModuleFieldOwnerRoleSubstate", AccessRulesModuleFieldOwnerRoleSubstate.class);
-  mappings.put("AccessRulesModuleMutabilityEntry", AccessRulesModuleMutabilityEntrySubstate.class);
-  mappings.put("AccessRulesModuleMutabilityEntrySubstate", AccessRulesModuleMutabilityEntrySubstate.class);
   mappings.put("AccessRulesModuleRuleEntry", AccessRulesModuleRuleEntrySubstate.class);
   mappings.put("AccessRulesModuleRuleEntrySubstate", AccessRulesModuleRuleEntrySubstate.class);
   mappings.put("AccountDepositRuleIndexEntry", AccountDepositRuleIndexEntrySubstate.class);
@@ -288,6 +330,8 @@ static {
   mappings.put("FungibleResourceManagerFieldTotalSupplySubstate", FungibleResourceManagerFieldTotalSupplySubstate.class);
   mappings.put("FungibleVaultFieldBalance", FungibleVaultFieldBalanceSubstate.class);
   mappings.put("FungibleVaultFieldBalanceSubstate", FungibleVaultFieldBalanceSubstate.class);
+  mappings.put("FungibleVaultFieldFrozenStatus", FungibleVaultFieldFrozenStatusSubstate.class);
+  mappings.put("FungibleVaultFieldFrozenStatusSubstate", FungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("GenericKeyValueStoreEntry", GenericKeyValueStoreEntrySubstate.class);
   mappings.put("GenericKeyValueStoreEntrySubstate", GenericKeyValueStoreEntrySubstate.class);
   mappings.put("GenericScryptoComponentFieldState", GenericScryptoComponentFieldStateSubstate.class);
@@ -308,26 +352,32 @@ static {
   mappings.put("NonFungibleVaultContentsIndexEntrySubstate", NonFungibleVaultContentsIndexEntrySubstate.class);
   mappings.put("NonFungibleVaultFieldBalance", NonFungibleVaultFieldBalanceSubstate.class);
   mappings.put("NonFungibleVaultFieldBalanceSubstate", NonFungibleVaultFieldBalanceSubstate.class);
+  mappings.put("NonFungibleVaultFieldFrozenStatus", NonFungibleVaultFieldFrozenStatusSubstate.class);
+  mappings.put("NonFungibleVaultFieldFrozenStatusSubstate", NonFungibleVaultFieldFrozenStatusSubstate.class);
   mappings.put("OneResourcePoolFieldState", OneResourcePoolFieldStateSubstate.class);
   mappings.put("OneResourcePoolFieldStateSubstate", OneResourcePoolFieldStateSubstate.class);
-  mappings.put("PackageAuthTemplateEntry", PackageAuthTemplateEntrySubstate.class);
-  mappings.put("PackageAuthTemplateEntrySubstate", PackageAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintAuthTemplateEntry", PackageBlueprintAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintAuthTemplateEntrySubstate", PackageBlueprintAuthTemplateEntrySubstate.class);
+  mappings.put("PackageBlueprintDefinitionEntry", PackageBlueprintDefinitionEntrySubstate.class);
+  mappings.put("PackageBlueprintDefinitionEntrySubstate", PackageBlueprintDefinitionEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntry", PackageBlueprintDependenciesEntrySubstate.class);
   mappings.put("PackageBlueprintDependenciesEntrySubstate", PackageBlueprintDependenciesEntrySubstate.class);
-  mappings.put("PackageBlueprintEntry", PackageBlueprintEntrySubstate.class);
-  mappings.put("PackageBlueprintEntrySubstate", PackageBlueprintEntrySubstate.class);
-  mappings.put("PackageCodeEntry", PackageCodeEntrySubstate.class);
-  mappings.put("PackageCodeEntrySubstate", PackageCodeEntrySubstate.class);
+  mappings.put("PackageBlueprintRoyaltyEntry", PackageBlueprintRoyaltyEntrySubstate.class);
+  mappings.put("PackageBlueprintRoyaltyEntrySubstate", PackageBlueprintRoyaltyEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntry", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeInstrumentedCodeEntrySubstate", PackageCodeInstrumentedCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntry", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeOriginalCodeEntrySubstate", PackageCodeOriginalCodeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
+  mappings.put("PackageCodeVmTypeEntrySubstate", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulatorSubstate", PackageFieldRoyaltyAccumulatorSubstate.class);
-  mappings.put("PackageRoyaltyEntry", PackageRoyaltyEntrySubstate.class);
-  mappings.put("PackageRoyaltyEntrySubstate", PackageRoyaltyEntrySubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
   mappings.put("PackageSchemaEntrySubstate", PackageSchemaEntrySubstate.class);
-  mappings.put("RoyaltyModuleFieldAccumulator", RoyaltyModuleFieldAccumulatorSubstate.class);
-  mappings.put("RoyaltyModuleFieldAccumulatorSubstate", RoyaltyModuleFieldAccumulatorSubstate.class);
-  mappings.put("RoyaltyModuleMethodConfigEntry", RoyaltyModuleMethodConfigEntrySubstate.class);
-  mappings.put("RoyaltyModuleMethodConfigEntrySubstate", RoyaltyModuleMethodConfigEntrySubstate.class);
+  mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleFieldStateSubstate", RoyaltyModuleFieldStateSubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
+  mappings.put("RoyaltyModuleMethodRoyaltyEntrySubstate", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntrySubstate", TransactionTrackerCollectionEntrySubstate.class);
   mappings.put("TransactionTrackerFieldState", TransactionTrackerFieldStateSubstate.class);
@@ -336,6 +386,8 @@ static {
   mappings.put("TwoResourcePoolFieldStateSubstate", TwoResourcePoolFieldStateSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfo", TypeInfoModuleFieldTypeInfoSubstate.class);
   mappings.put("TypeInfoModuleFieldTypeInfoSubstate", TypeInfoModuleFieldTypeInfoSubstate.class);
+  mappings.put("ValidatorFieldProtocolUpdateReadinessSignal", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
+  mappings.put("ValidatorFieldProtocolUpdateReadinessSignalSubstate", ValidatorFieldProtocolUpdateReadinessSignalSubstate.class);
   mappings.put("ValidatorFieldState", ValidatorFieldStateSubstate.class);
   mappings.put("ValidatorFieldStateSubstate", ValidatorFieldStateSubstate.class);
   mappings.put("Substate", Substate.class);

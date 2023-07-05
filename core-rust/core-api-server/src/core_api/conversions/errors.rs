@@ -1,5 +1,5 @@
 use radix_engine::types::NonFungibleIdType;
-use radix_engine_common::{address::EncodeBech32AddressError, types::PartitionNumber};
+use radix_engine_common::{address::AddressBech32EncodeError, types::PartitionNumber};
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use state_manager::StateVersion;
@@ -21,7 +21,7 @@ pub enum MappingError {
         bytes: Vec<u8>,
         message: String,
     },
-    InvalidMetadataKey {
+    UnexpectedPersistedData {
         message: String,
     },
     EntityTypeError,
@@ -41,7 +41,7 @@ pub enum MappingError {
         message: String,
     },
     InvalidEntityAddress {
-        encode_error: EncodeBech32AddressError,
+        encode_error: AddressBech32EncodeError,
     },
     MismatchedSubstateId {
         message: String,
@@ -60,6 +60,14 @@ pub enum MappingError {
         error: DecodeError,
     },
     KeyValueStoreEntryUnexpectedlyAbsent,
+    UnexpectedGenesis {
+        message: String,
+    },
+    /// An error occurring when the contents of some Node-maintained index table do not match the
+    /// Engine-owned data (most likely due to a bug on either side).
+    InternalIndexDataMismatch {
+        message: String,
+    },
 }
 
 impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {

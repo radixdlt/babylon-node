@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
-    #[serde(rename = "validator_set")]
-    pub validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::ConsensusManagerFieldCurrentValidatorSetValue>,
 }
 
 impl ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
-    pub fn new(validator_set: Vec<crate::core_api::generated::models::ActiveValidator>) -> ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::ConsensusManagerFieldCurrentValidatorSetValue) -> ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
         ConsensusManagerFieldCurrentValidatorSetSubstateAllOf {
-            validator_set,
+            value: Box::new(value),
         }
     }
 }

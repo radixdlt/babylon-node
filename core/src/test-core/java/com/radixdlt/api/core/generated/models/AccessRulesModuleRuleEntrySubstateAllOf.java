@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AccessRule;
-import com.radixdlt.api.core.generated.models.ObjectModuleId;
+import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntryValue;
+import com.radixdlt.api.core.generated.models.ObjectRoleKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,99 +33,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AccessRulesModuleRuleEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  AccessRulesModuleRuleEntrySubstateAllOf.JSON_PROPERTY_OBJECT_MODULE_ID,
-  AccessRulesModuleRuleEntrySubstateAllOf.JSON_PROPERTY_ROLE_KEY,
-  AccessRulesModuleRuleEntrySubstateAllOf.JSON_PROPERTY_ACCESS_RULE
+  AccessRulesModuleRuleEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  AccessRulesModuleRuleEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccessRulesModuleRuleEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
-  private ObjectModuleId objectModuleId;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private ObjectRoleKey key;
 
-  public static final String JSON_PROPERTY_ROLE_KEY = "role_key";
-  private String roleKey;
-
-  public static final String JSON_PROPERTY_ACCESS_RULE = "access_rule";
-  private AccessRule accessRule;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private AccessRulesModuleRuleEntryValue value;
 
   public AccessRulesModuleRuleEntrySubstateAllOf() { 
   }
 
-  public AccessRulesModuleRuleEntrySubstateAllOf objectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
+  public AccessRulesModuleRuleEntrySubstateAllOf key(ObjectRoleKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * Get objectModuleId
-   * @return objectModuleId
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ObjectModuleId getObjectModuleId() {
-    return objectModuleId;
+  public ObjectRoleKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setObjectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
+  public void setKey(ObjectRoleKey key) {
+    this.key = key;
   }
 
 
-  public AccessRulesModuleRuleEntrySubstateAllOf roleKey(String roleKey) {
-    this.roleKey = roleKey;
+  public AccessRulesModuleRuleEntrySubstateAllOf value(AccessRulesModuleRuleEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get roleKey
-   * @return roleKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROLE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getRoleKey() {
-    return roleKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROLE_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoleKey(String roleKey) {
-    this.roleKey = roleKey;
-  }
-
-
-  public AccessRulesModuleRuleEntrySubstateAllOf accessRule(AccessRule accessRule) {
-    this.accessRule = accessRule;
-    return this;
-  }
-
-   /**
-   * Get accessRule
-   * @return accessRule
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public AccessRule getAccessRule() {
-    return accessRule;
+  public AccessRulesModuleRuleEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAccessRule(AccessRule accessRule) {
-    this.accessRule = accessRule;
+  public void setValue(AccessRulesModuleRuleEntryValue value) {
+    this.value = value;
   }
 
 
@@ -141,23 +111,21 @@ public class AccessRulesModuleRuleEntrySubstateAllOf {
       return false;
     }
     AccessRulesModuleRuleEntrySubstateAllOf accessRulesModuleRuleEntrySubstateAllOf = (AccessRulesModuleRuleEntrySubstateAllOf) o;
-    return Objects.equals(this.objectModuleId, accessRulesModuleRuleEntrySubstateAllOf.objectModuleId) &&
-        Objects.equals(this.roleKey, accessRulesModuleRuleEntrySubstateAllOf.roleKey) &&
-        Objects.equals(this.accessRule, accessRulesModuleRuleEntrySubstateAllOf.accessRule);
+    return Objects.equals(this.key, accessRulesModuleRuleEntrySubstateAllOf.key) &&
+        Objects.equals(this.value, accessRulesModuleRuleEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(objectModuleId, roleKey, accessRule);
+    return Objects.hash(key, value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccessRulesModuleRuleEntrySubstateAllOf {\n");
-    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
-    sb.append("    roleKey: ").append(toIndentedString(roleKey)).append("\n");
-    sb.append("    accessRule: ").append(toIndentedString(accessRule)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

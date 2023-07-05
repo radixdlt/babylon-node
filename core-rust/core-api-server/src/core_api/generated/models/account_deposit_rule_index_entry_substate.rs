@@ -15,22 +15,21 @@
 pub struct AccountDepositRuleIndexEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
-    #[serde(rename = "deposit_rule", skip_serializing_if = "Option::is_none")]
-    pub deposit_rule: Option<crate::core_api::generated::models::DepositRule>,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::ResourceKey>,
+    #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+    pub value: Option<Box<crate::core_api::generated::models::AccountDepositRuleIndexEntryValue>>,
 }
 
 impl AccountDepositRuleIndexEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, resource_address: String, is_locked: bool) -> AccountDepositRuleIndexEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, key: crate::core_api::generated::models::ResourceKey) -> AccountDepositRuleIndexEntrySubstate {
         AccountDepositRuleIndexEntrySubstate {
             substate_type,
-            resource_address,
-            deposit_rule: None,
             is_locked,
+            key: Box::new(key),
+            value: None,
         }
     }
 }

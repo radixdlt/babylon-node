@@ -40,17 +40,16 @@ pub(crate) async fn handle_state_component(
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_accumulator: ComponentRoyaltyAccumulatorSubstate =
-        read_mandatory_substate(
-            database.deref(),
-            component_address.as_node_id(),
-            ROYALTY_BASE_PARTITION
-                .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                .unwrap(),
-            &RoyaltyField::RoyaltyAccumulator.into(),
-        )?;
+    let component_royalty_substate: ComponentRoyaltySubstate = read_mandatory_substate(
+        database.deref(),
+        component_address.as_node_id(),
+        ROYALTY_BASE_PARTITION
+            .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+            .unwrap(),
+        &RoyaltyField::RoyaltyAccumulator.into(),
+    )?;
 
-    let owner_role_substate: OwnerRole = read_mandatory_substate(
+    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,
@@ -64,13 +63,15 @@ pub(crate) async fn handle_state_component(
 
     Ok(models::StateComponentResponse {
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: Some(to_api_component_state_substate(
+        state: Some(
+            to_api_generic_scrypto_component_state_substate_from_scrypto_value(
+                &mapping_context,
+                &scrypto_value,
+            )?,
+        ),
+        royalty_accumulator: Some(to_api_component_royalty_substate(
             &mapping_context,
-            &scrypto_value,
-        )?),
-        royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
-            &mapping_context,
-            &component_royalty_accumulator,
+            &component_royalty_substate,
         )?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
