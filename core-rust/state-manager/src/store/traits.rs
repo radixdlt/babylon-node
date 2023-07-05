@@ -410,6 +410,8 @@ pub mod scenario {
 
     use transaction::model::IntentHash;
 
+    pub type ScenarioSequenceNumber = usize;
+
     #[derive(Debug, Categorize, Encode, Decode)]
     pub struct ExecutedGenesisScenario {
         pub logical_name: String,
@@ -432,7 +434,7 @@ pub mod scenario {
 
     #[enum_dispatch]
     pub trait ExecutedGenesisScenarioStore {
-        fn put(&mut self, base_version: StateVersion, scenario: ExecutedGenesisScenario);
+        fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
     }
 }
 

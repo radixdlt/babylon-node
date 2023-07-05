@@ -764,9 +764,10 @@ where
         if !scenarios_to_run.is_empty() {
             info!("Running {} scenarios", scenarios_to_run.len());
             let mut next_nonce: u32 = 0;
-            for scenario_name in scenarios_to_run.iter() {
+            for (sequence_number, scenario_name) in scenarios_to_run.iter().enumerate() {
                 next_nonce = self.execute_genesis_scenario(
                     &mut genesis_commit_request_factory,
+                    sequence_number,
                     scenario_name.as_str(),
                     initial_epoch,
                     next_nonce,
@@ -793,6 +794,7 @@ where
     fn execute_genesis_scenario(
         &self,
         genesis_commit_request_factory: &mut GenesisCommitRequestFactory,
+        sequence_number: usize,
         scenario_name: &str,
         epoch: Epoch,
         nonce: u32,
@@ -805,7 +807,6 @@ where
                     scenario_name
                 )
             });
-        let scenario_base_version = genesis_commit_request_factory.state_version;
         let mut previous = None;
         let mut committed_transactions = Vec::new();
         info!("Running scenario: {}", scenario_name);
@@ -864,7 +865,7 @@ where
                             .join("\n")
                     );
                     let mut write_store = self.store.write();
-                    write_store.put(scenario_base_version, executed_scenario);
+                    write_store.put(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
             }

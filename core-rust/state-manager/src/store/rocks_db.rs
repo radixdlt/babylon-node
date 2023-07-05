@@ -134,14 +134,15 @@ enum RocksDBColumnFamily {
     /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
     AccountChangeStateVersions,
     /// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
-    /// keyed by state version on top of which they are executed (note: this requires an assumption
-    /// that every Scenario has at least one transaction).
-    /// Schema: `StateVersion` -> `scrypto_encode(ExecutedGenesisScenario)`
+    /// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
+    /// Schema: `ScenarioSequenceNumber.to_be_byte()` -> `scrypto_encode(ExecutedGenesisScenario)`
     ExecutedGenesisScenarios,
 }
 
 use crate::store::node_ancestry_resolver::NodeAncestryResolver;
-use crate::store::traits::scenario::{ExecutedGenesisScenario, ExecutedGenesisScenarioStore};
+use crate::store::traits::scenario::{
+    ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
+};
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 19] = [
@@ -555,11 +556,11 @@ impl CommitStore for RocksDBStore {
 }
 
 impl ExecutedGenesisScenarioStore for RocksDBStore {
-    fn put(&mut self, base_version: StateVersion, scenario: ExecutedGenesisScenario) {
+    fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
         self.db
             .put_cf(
                 self.cf_handle(&ExecutedGenesisScenarios),
-                base_version.to_bytes(),
+                number.to_be_bytes(),
                 scrypto_encode(&scenario).unwrap(),
             )
             .expect("Executed scenario write failed");
