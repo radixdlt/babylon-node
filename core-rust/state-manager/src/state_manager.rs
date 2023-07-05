@@ -81,11 +81,17 @@ use radix_engine::transaction::{RejectResult, TransactionReceipt};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
+use transaction_scenarios::scenario::*;
+use transaction_scenarios::scenarios::*;
 
 use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
+use crate::store::traits::scenario::{
+    DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
+    ExecutedScenarioTransaction,
+};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -265,7 +271,7 @@ where
     pub fn prepare_scenario_transaction(
         &self,
         scenario_name: &str,
-        next: &transaction_scenarios::scenario::NextTransaction,
+        next: &NextTransaction,
     ) -> (ScenarioPrepareResult, TransactionReceipt) {
         let qualified_name = format!(
             "{} scenario - {} transaction",
@@ -631,7 +637,7 @@ struct TransactionMetricsData {
 
 impl<S> StateManager<S>
 where
-    S: CommitStore,
+    S: CommitStore + ExecutedGenesisScenarioStore,
     S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
@@ -756,68 +762,16 @@ where
         // These scenarios are committed before we start consensus / rounds after the genesis wrap-up.
         // This is a little weird, but should be fine.
         if !scenarios_to_run.is_empty() {
-            use transaction_scenarios::scenario::*;
             info!("Running {} scenarios", scenarios_to_run.len());
-            let encoder = AddressBech32Encoder::new(&self.network);
             let mut next_nonce: u32 = 0;
-            let epoch = initial_epoch;
-            for scenario_name in scenarios_to_run.iter() {
-                let mut scenario = self
-                    .find_scenario(epoch, next_nonce, scenario_name)
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "Could not find scenario with logical name: {}",
-                            scenario_name
-                        )
-                    });
-                let mut committed_transaction_count = 0;
-                let mut previous = None;
-                info!("Running scenario: {}", scenario_name);
-                loop {
-                    let next = scenario
-                        .next(previous.as_ref())
-                        .map_err(|err| err.into_full(&scenario))
-                        .unwrap();
-                    match next {
-                        NextAction::Transaction(next) => {
-                            let (prepare_result, basic_receipt) =
-                                self.prepare_scenario_transaction(scenario_name, &next);
-                            if let Some(commit_request) =
-                                genesis_commit_request_factory.create_for_scenario(prepare_result)
-                            {
-                                committed_transaction_count += 1;
-                                let resultant_state_version =
-                                    commit_request.proof.ledger_header.state_version;
-                                self.commit_genesis(commit_request);
-                                info!(
-                                    "Committed {} at state_version {}",
-                                    &next.logical_name, resultant_state_version
-                                );
-                            }
-                            previous = Some(basic_receipt);
-                        }
-                        NextAction::Completed(end_state) => {
-                            let formatted_addresses = end_state
-                                .output
-                                .interesting_addresses
-                                .0
-                                .iter()
-                                .map(|(descriptor, address)| {
-                                    format!("  - {}: {}", descriptor, address.display(&encoder))
-                                })
-                                .collect::<Vec<_>>()
-                                .join("\n");
-                            info!(
-                                "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
-                                committed_transaction_count,
-                                scenario_name,
-                                formatted_addresses
-                            );
-                            next_nonce = end_state.next_unused_nonce;
-                            break;
-                        }
-                    }
-                }
+            for (sequence_number, scenario_name) in scenarios_to_run.iter().enumerate() {
+                next_nonce = self.execute_genesis_scenario(
+                    &mut genesis_commit_request_factory,
+                    sequence_number,
+                    scenario_name.as_str(),
+                    initial_epoch,
+                    next_nonce,
+                );
             }
             info!("Scenarios finished");
         }
@@ -837,14 +791,93 @@ where
         final_ledger_proof
     }
 
+    fn execute_genesis_scenario(
+        &self,
+        genesis_commit_request_factory: &mut GenesisCommitRequestFactory,
+        sequence_number: usize,
+        scenario_name: &str,
+        epoch: Epoch,
+        nonce: u32,
+    ) -> u32 {
+        let mut scenario = self
+            .find_scenario(epoch, nonce, scenario_name)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Could not find scenario with logical name: {}",
+                    scenario_name
+                )
+            });
+        let mut previous = None;
+        let mut committed_transactions = Vec::new();
+        info!("Running scenario: {}", scenario_name);
+        loop {
+            let next = scenario
+                .next(previous.as_ref())
+                .map_err(|err| err.into_full(&scenario))
+                .unwrap();
+            match next {
+                NextAction::Transaction(next) => {
+                    let (prepare_result, basic_receipt) =
+                        self.prepare_scenario_transaction(scenario_name, &next);
+                    let intent_hash = prepare_result.validated.intent_hash_if_user().unwrap();
+                    if let Some(commit_request) =
+                        genesis_commit_request_factory.create_for_scenario(prepare_result)
+                    {
+                        self.commit_genesis(commit_request);
+                        committed_transactions.push(ExecutedScenarioTransaction {
+                            logical_name: next.logical_name.clone(),
+                            state_version: genesis_commit_request_factory.state_version,
+                            intent_hash,
+                        });
+                        info!(
+                            "Committed {} at state_version {}",
+                            &next.logical_name, genesis_commit_request_factory.state_version
+                        );
+                    }
+                    previous = Some(basic_receipt);
+                }
+                NextAction::Completed(end_state) => {
+                    let encoder = AddressBech32Encoder::new(&self.network);
+                    let executed_scenario = ExecutedGenesisScenario {
+                        logical_name: scenario.metadata().logical_name.to_string(),
+                        committed_transactions,
+                        addresses: end_state
+                            .output
+                            .interesting_addresses
+                            .0
+                            .into_iter()
+                            .map(|(descriptor, address)| DescribedAddress {
+                                logical_name: descriptor,
+                                rendered_address: address.display(&encoder).to_string(),
+                            })
+                            .collect(),
+                    };
+                    info!(
+                        "Completed committing {} transactions for scenario {}, with resultant addresses:\n{}",
+                        executed_scenario.committed_transactions.len(),
+                        executed_scenario.logical_name,
+                        executed_scenario.addresses
+                            .iter()
+                            .map(|address| format!(
+                                "  - {}: {}", address.logical_name, address.rendered_address
+                            ))
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    );
+                    let mut write_store = self.store.write();
+                    write_store.put(sequence_number, executed_scenario);
+                    return end_state.next_unused_nonce;
+                }
+            }
+        }
+    }
+
     fn find_scenario(
         &self,
         epoch: Epoch,
         next_nonce: u32,
         scenario_name: &str,
-    ) -> Option<Box<dyn transaction_scenarios::scenario::ScenarioInstance>> {
-        use transaction_scenarios::scenario::*;
-        use transaction_scenarios::scenarios::*;
+    ) -> Option<Box<dyn ScenarioInstance>> {
         for scenario_builder in get_builder_for_every_scenario() {
             let scenario =
                 scenario_builder(ScenarioCore::new(self.network.clone(), epoch, next_nonce));
