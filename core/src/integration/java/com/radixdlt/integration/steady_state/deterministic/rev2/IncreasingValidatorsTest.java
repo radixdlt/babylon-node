@@ -184,7 +184,8 @@ public final class IncreasingValidatorsTest {
             nodeAt(0, NodePredicate.committedUserTransaction(registerValidatorTxn, true, true)));
         var stakeValidatorTxn =
             TransactionBuilder.forTests()
-                .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
+                .manifest(
+                    Manifest.stakeValidatorAsOwner(ownerAccount, validatorAddress, ownerAccount))
                 .signatories(List.of(key))
                 .prepare()
                 .raw();

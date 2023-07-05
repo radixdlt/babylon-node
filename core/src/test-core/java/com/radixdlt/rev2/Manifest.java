@@ -270,7 +270,7 @@ public class Manifest {
             params.encode(validatorAddress));
   }
 
-  public static Functions.Func1<Parameters, String> stakeValidator(
+  public static Functions.Func1<Parameters, String> stakeValidatorAsNormalUser(
       ComponentAddress stakingAccount,
       ComponentAddress validatorAddress,
       ComponentAddress ownerAccount) {
@@ -282,6 +282,29 @@ public class Manifest {
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
             CALL_METHOD Address("%s") "stake" Bucket("xrd");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            """,
+            params.faucetLockFeeLine(),
+            params.encode(ownerAccount),
+            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.encode(FAUCET),
+            params.encode(XRD),
+            params.encode(validatorAddress),
+            params.encode(stakingAccount));
+  }
+
+  public static Functions.Func1<Parameters, String> stakeValidatorAsOwner(
+      ComponentAddress stakingAccount,
+      ComponentAddress validatorAddress,
+      ComponentAddress ownerAccount) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            CALL_METHOD Address("%s") "free";
+            TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
+            CALL_METHOD Address("%s") "stake_as_owner" Bucket("xrd");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
             params.faucetLockFeeLine(),

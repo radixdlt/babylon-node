@@ -154,14 +154,19 @@ public final class REv2RegisterValidatorTest {
       assertThat(validatorAddress.value()[0])
           .isEqualTo(ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID);
 
-      // Act: Submit transaction to mempool and run consensus
-      var stakeValidatorTransaction =
+      // Act: Submit transactions to mempool and run consensus
+      // (Side-note: The validator owner can stake_as_owner even if delegate stake is switched off)
+      var stakeValidatorAsOwnerTransaction =
           TransactionBuilder.forTests()
-              .manifest(Manifest.stakeValidator(ownerAccount, validatorAddress, ownerAccount))
+              .manifest(
+                  Manifest.stakeValidatorAsOwner(ownerAccount, validatorAddress, ownerAccount))
               .signatories(List.of(ownerKey))
               .prepare()
               .raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTransaction));
+      mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorAsOwnerTransaction));
+      test.runUntilState(
+          allCommittedTransactionSuccess(stakeValidatorAsOwnerTransaction),
+          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
 
       var registerValidatorTransaction =
           TransactionBuilder.forTests()
@@ -171,11 +176,6 @@ public final class REv2RegisterValidatorTest {
               .raw();
 
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
-
-      // Sanity check that they both get committed
-      test.runUntilState(
-          allCommittedTransactionSuccess(stakeValidatorTransaction),
-          onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
       test.runUntilState(
           allCommittedTransactionSuccess(registerValidatorTransaction),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
