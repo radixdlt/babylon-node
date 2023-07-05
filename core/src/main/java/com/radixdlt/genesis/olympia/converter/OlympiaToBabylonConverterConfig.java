@@ -89,6 +89,5 @@ public record OlympiaToBabylonConverterConfig(
           100,
           100,
           100,
-          // TODO(REP-73): Decimal.from(UInt256.TWO.pow(160))
-          Decimal.from(UInt256.from("1000000000000000000")));
+          Decimal.from(UInt256.TWO.pow(160)));
 }
