@@ -28,29 +28,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * A request to retrieve a sublist of committed transactions from the ledger. 
+ * ScenariosRequest
  */
-@ApiModel(description = "A request to retrieve a sublist of committed transactions from the ledger. ")
 @JsonPropertyOrder({
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_NETWORK,
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_LIMIT
+  ScenariosRequest.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStreamTransactionOutcomesRequest {
+public class ScenariosRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
-  public static final String JSON_PROPERTY_FROM_STATE_VERSION = "from_state_version";
-  private Long fromStateVersion;
-
-  public static final String JSON_PROPERTY_LIMIT = "limit";
-  private Integer limit;
-
-  public LtsStreamTransactionOutcomesRequest() { 
+  public ScenariosRequest() { 
   }
 
-  public LtsStreamTransactionOutcomesRequest network(String network) {
+  public ScenariosRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -76,62 +67,8 @@ public class LtsStreamTransactionOutcomesRequest {
   }
 
 
-  public LtsStreamTransactionOutcomesRequest fromStateVersion(Long fromStateVersion) {
-    this.fromStateVersion = fromStateVersion;
-    return this;
-  }
-
-   /**
-   * Get fromStateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return fromStateVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getFromStateVersion() {
-    return fromStateVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFromStateVersion(Long fromStateVersion) {
-    this.fromStateVersion = fromStateVersion;
-  }
-
-
-  public LtsStreamTransactionOutcomesRequest limit(Integer limit) {
-    this.limit = limit;
-    return this;
-  }
-
-   /**
-   * The maximum number of transactions that will be returned.
-   * @return limit
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The maximum number of transactions that will be returned.")
-  @JsonProperty(JSON_PROPERTY_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getLimit() {
-    return limit;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLimit(Integer limit) {
-    this.limit = limit;
-  }
-
-
   /**
-   * Return true if this LtsStreamTransactionOutcomesRequest object is equal to o.
+   * Return true if this ScenariosRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +78,20 @@ public class LtsStreamTransactionOutcomesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest = (LtsStreamTransactionOutcomesRequest) o;
-    return Objects.equals(this.network, ltsStreamTransactionOutcomesRequest.network) &&
-        Objects.equals(this.fromStateVersion, ltsStreamTransactionOutcomesRequest.fromStateVersion) &&
-        Objects.equals(this.limit, ltsStreamTransactionOutcomesRequest.limit);
+    ScenariosRequest scenariosRequest = (ScenariosRequest) o;
+    return Objects.equals(this.network, scenariosRequest.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, fromStateVersion, limit);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStreamTransactionOutcomesRequest {\n");
+    sb.append("class ScenariosRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
-    sb.append("    limit: ").append(toIndentedString(limit)).append("\n");
     sb.append("}");
     return sb.toString();
   }

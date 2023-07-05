@@ -1,6 +1,7 @@
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
+use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
 use crate::core_api::models;
@@ -17,6 +18,7 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
+const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
 const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
@@ -102,6 +104,17 @@ pub fn to_api_u16_as_i32(input: u16) -> i32 {
 
 pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
+}
+
+pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
+    if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
+        return Err(MappingError::IntegerError {
+            message: format!(
+                "Genesis scenario sequence number must be <= {MAX_API_GENESIS_SCENARIO_NUMBER}"
+            ),
+        });
+    }
+    Ok(number as i32)
 }
 
 #[allow(dead_code)]

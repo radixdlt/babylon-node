@@ -14,7 +14,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsCommittedTransactionOutcome {
-    /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
     /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = combine(ACC_N, LEDGER_HASH_{N}))` (where `combine()` is an arbitrary deterministic function we use). 

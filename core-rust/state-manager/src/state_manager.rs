@@ -90,7 +90,7 @@ use tracing::{info, warn};
 
 use crate::store::traits::scenario::{
     DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
-    ExecutedScenarioTransaction,
+    ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 use std::ops::Deref;
 use std::sync::Arc;
@@ -798,7 +798,7 @@ where
             for (sequence_number, scenario_name) in scenarios_to_run.iter().enumerate() {
                 next_nonce = self.execute_genesis_scenario(
                     &mut genesis_commit_request_factory,
-                    sequence_number,
+                    sequence_number.try_into().unwrap(),
                     scenario_name.as_str(),
                     initial_epoch,
                     next_nonce,
@@ -825,7 +825,7 @@ where
     fn execute_genesis_scenario(
         &self,
         genesis_commit_request_factory: &mut GenesisCommitRequestFactory,
-        sequence_number: usize,
+        sequence_number: ScenarioSequenceNumber,
         scenario_name: &str,
         epoch: Epoch,
         nonce: u32,
@@ -896,7 +896,7 @@ where
                             .join("\n")
                     );
                     let mut write_store = self.store.write();
-                    write_store.put(sequence_number, executed_scenario);
+                    write_store.put_scenario(sequence_number, executed_scenario);
                     return end_state.next_unused_nonce;
                 }
             }

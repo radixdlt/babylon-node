@@ -64,49 +64,76 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.genesis.GenesisData;
-import com.radixdlt.rev2.TransactionBuilder;
+import java.util.List;
+import java.util.stream.LongStream;
 import org.junit.Test;
 
-public class TransactionStreamTest extends DeterministicCoreApiTestBase {
-
+public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   @Test
-  public void test_core_api_can_submit_and_commit_transaction_after_running_all_scenarios()
-      throws Exception {
-    // This test checks that the transaction stream doesn't return errors when mapping genesis and
-    // the scenarios
-    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
+  public void test_network_scenarios() throws Exception {
+    // pick a custom subset/permutation (different than "all scenarios"):
+    final var names = ImmutableList.of("radiswap", "transfer_xrd");
+    try (var test = buildRunningServerTestWithScenarios(names)) {
       test.suppressUnusedWarning();
-      var transaction = TransactionBuilder.forTests().prepare();
 
-      // Submit transaction
-      var response =
-          getTransactionApi()
-              .transactionSubmitPost(
-                  new TransactionSubmitRequest()
-                      .network(networkLogicalName)
-                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
+      // query all scenarios
+      final var scenarios =
+          getStatusApi()
+              .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
+              .getExecutedScenarios();
 
-      assertThat(response.getDuplicate()).isFalse();
+      // assert some selected properties of the known scenarios
+      assertThat(scenarios).hasSize(2);
+      assertScenario(
+          scenarios,
+          0,
+          "radiswap",
+          ImmutableSet.of("radiswap-add-liquidity", "radiswap-swap-tokens"),
+          ImmutableSet.of("radiswap_owner", "pool_1_resource_1"));
+      assertScenario(
+          scenarios,
+          1,
+          "transfer_xrd",
+          ImmutableSet.of("faucet-top-up", "self-transfer--deposit_batch"),
+          ImmutableSet.of("from_account", "to_account_1"));
 
-      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 100);
-
-      var newTransactions =
-          getStreamApi()
-              .streamTransactionsPost(
-                  new StreamTransactionsRequest()
-                      .network(networkLogicalName)
-                      .limit(1000)
-                      .fromStateVersion(1L))
-              .getTransactions();
-
-      var lastTransaction = newTransactions.get(newTransactions.size() - 1).getLedgerTransaction();
-      assertThat(lastTransaction).isInstanceOf(UserLedgerTransaction.class);
+      // assert that the captured transaction state versions are consecutive
+      final var storedStateVersions =
+          scenarios.stream()
+              .map(ExecutedGenesisScenario::getCommittedTransactions)
+              .flatMap(List::stream)
+              .mapToLong(ExecutedScenarioTransaction::getStateVersion)
+              .toArray();
+      final var consecutiveStateVersions =
+          LongStream.rangeClosed(Longs.min(storedStateVersions), Longs.max(storedStateVersions))
+              .toArray();
+      assertThat(storedStateVersions).containsExactly(consecutiveStateVersions);
     }
+  }
+
+  private static void assertScenario(
+      List<ExecutedGenesisScenario> scenarios,
+      int index,
+      String scenarioName,
+      // we deliberately do not want to assert on exact list matches below, to avoid brittle tests
+      ImmutableSet<String> exampleTransactionNames,
+      ImmutableSet<String> exampleAddressNames) {
+    final var scenario = scenarios.get(index);
+    assertThat(scenario.getSequenceNumber()).isEqualTo(index);
+    assertThat(scenario.getLogicalName()).isEqualTo(scenarioName);
+    assertThat(
+            Lists.transform(
+                scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getLogicalName))
+        .containsAll(exampleTransactionNames);
+    assertThat(Lists.transform(scenario.getAddresses(), DescribedAddress::getLogicalName))
+        .containsAll(exampleAddressNames);
   }
 }

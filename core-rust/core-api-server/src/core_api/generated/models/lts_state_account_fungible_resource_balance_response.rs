@@ -13,7 +13,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsStateAccountFungibleResourceBalanceResponse {
-    /// An integer between `1` and `10^13`, giving the state version at which the query was performed. 
     #[serde(rename = "state_version")]
     pub state_version: i64,
     /// The Bech32m-encoded human readable version of the account's address
