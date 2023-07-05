@@ -3825,6 +3825,7 @@ components:
         - min_validator_reliability
         - num_owner_stake_units_unlock_epochs
         - num_fee_increase_delay_epochs
+        - validator_creation_usd_equivalent_cost
         - validator_creation_xrd_cost
       properties:
         max_validators:
@@ -3867,10 +3868,16 @@ components:
           description: |
             An integer between `0` and `10^10`, specifying the minimum number of epochs
             before a fee increase takes effect.
+        validator_creation_usd_equivalent_cost:
+          type: string
+          description: |
+            The defining decimal cost of a validator in USD.
+            This is turned into an XRD cost through the current protocol-based USD/XRD multiplier.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
         validator_creation_xrd_cost:
           type: string
           description: |
-            The amount of XRD required to be passed in a bucket to create a validator.
+            The decimal amount of XRD required to be passed in a bucket to create a validator.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     ConsensusManagerFieldValidatorRewardsSubstate:
       allOf:

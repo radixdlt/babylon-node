@@ -19,7 +19,7 @@ pub fn to_api_metadata_value_substate(
         models::MetadataKey {
             name: entry_name.to_string(),
         },
-        value -> {
+        value => {
             data_struct: Box::new(to_api_data_struct_from_bytes(context, &scrypto_encode(value).unwrap())?),
         }
     ))

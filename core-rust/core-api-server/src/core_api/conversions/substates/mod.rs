@@ -37,16 +37,12 @@ macro_rules! field_substate {
     (
         $substate:ident,
         $substate_type:ident,
-        {
-            $($value_key:ident$(: $value_value:expr)?),*$(,)?
-        }$(,)?
+        $fields:tt$(,)?
     ) => {
         paste::paste! {
             models::Substate::[<$substate_type Substate>] {
                 is_locked: false,
-                value: Box::new(models::[<$substate_type Value>] {
-                    $($value_key$(: $value_value)?,)*
-                })
+                value: Box::new(models::[<$substate_type Value>] $fields)
             }
         }
     };
@@ -58,9 +54,7 @@ macro_rules! key_value_store_optional_substate {
         $substate:ident,
         $substate_type:ident,
         $key:expr,
-        $value_ident:ident $($value_unpacking:block)? -> {
-            $($value_key:ident$(: $value_value:expr)?),*$(,)?
-        }$(,)?
+        $value_unpacking:pat => $fields:tt$(,)?
     ) => {
         paste::paste! {
             models::Substate::[<$substate_type Substate>] {
@@ -68,10 +62,8 @@ macro_rules! key_value_store_optional_substate {
                 key: Box::new($key),
                 value: $substate
                     .get_optional_value()
-                    .map(|$value_ident $($value_unpacking)?| -> Result<_, MappingError> {
-                        Ok(Box::new(models::[<$substate_type Value>] {
-                            $($value_key$(: $value_value)?,)*
-                        }))
+                    .map(|$value_unpacking| -> Result<_, MappingError> {
+                        Ok(Box::new(models::[<$substate_type Value>] $fields))
                     })
                     .transpose()?,
             }
@@ -85,19 +77,15 @@ macro_rules! key_value_store_mandatory_substate {
         $substate:ident,
         $substate_type:ident,
         $key:expr,
-        $value_ident:ident $($value_unpacking:block)? -> {
-            $($value_key:ident$(: $value_value:expr)?),*$(,)?
-        }$(,)?
+        $value_unpacking:pat => $fields:tt$(,)?
     ) => {
         paste::paste! {
             {
-                let $value_ident $($value_unpacking)? = $substate.get_definitely_present_value()?;
+                let $value_unpacking = $substate.get_definitely_present_value()?;
                 models::Substate::[<$substate_type Substate>] {
                     is_locked: !$substate.is_mutable(),
                     key: Box::new($key),
-                    value: Box::new(models::[<$substate_type Value>] {
-                        $($value_key$(: $value_value)?,)*
-                    })
+                    value: Box::new(models::[<$substate_type Value>] $fields)
                 }
             }
         }
@@ -110,17 +98,13 @@ macro_rules! index_substate {
         $substate:ident,
         $substate_type:ident,
         $key:expr,
-        {
-            $($value_key:ident$(: $value_value:expr)?),*$(,)?
-        }$(,)?
+        $fields:tt$(,)?
     ) => {
-        paste::paste!{
+        paste::paste! {
             models::Substate::[<$substate_type Substate>] {
                 is_locked: false,
                 key: Box::new($key),
-                value: Box::new(models::[<$substate_type Value>] {
-                    $($value_key$(: $value_value)?,)*
-                })
+                value: Box::new(models::[<$substate_type Value>] $fields)
             }
         }
     };

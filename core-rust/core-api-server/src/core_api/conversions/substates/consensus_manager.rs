@@ -265,7 +265,7 @@ pub fn to_api_consensus_manager_config_substate(
                 min_validator_reliability,
                 num_owner_stake_units_unlock_epochs,
                 num_fee_increase_delay_epochs,
-                validator_creation_xrd_cost,
+                validator_creation_usd_cost,
             },
     } = substate;
     Ok(field_substate!(
@@ -291,7 +291,8 @@ pub fn to_api_consensus_manager_config_substate(
                 *num_fee_increase_delay_epochs,
                 "num_fee_increase_delay_epochs",
             )?,
-            validator_creation_xrd_cost: to_api_decimal(validator_creation_xrd_cost),
+            validator_creation_usd_equivalent_cost: to_api_decimal(validator_creation_usd_cost),
+            validator_creation_xrd_cost: to_api_decimal(&(*validator_creation_usd_cost * Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap())),
         }
     ))
 }

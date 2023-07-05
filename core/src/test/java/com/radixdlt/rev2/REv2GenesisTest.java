@@ -85,7 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.testutil.TestStateReader;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.Map;
 import org.junit.Test;
 
@@ -163,20 +162,20 @@ public final class REv2GenesisTest {
 
       // Assert
       var stateReader = test.getInstance(0, TestStateReader.class);
-      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
 
-      // should correspond to the genesis wrap up transaction
-      final var latestStateVersion =
-          transactionStore.getLastProof().get().ledgerHeader().stateVersion();
-      final var genesisWrapUp =
-          stateReader
-              .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
-              .unwrap();
-      assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
+      // State version 1 is flash
+      // State version 2 is the genesis bootstrap transaction
+      final var genesisBootstrap = stateReader.getTransactionDetailsAtStateVersion(2).unwrap();
+      assertThat(genesisBootstrap.newComponentAddresses())
+          .contains(ScryptoConstants.FAUCET_ADDRESS);
 
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
-      assertThat(readFaucetAmount).isEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+      final var maxTotalXrdUsedByScenarios = Decimal.of(100_000);
+      assertThat(readFaucetAmount).isLessThanOrEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+      assertThat(readFaucetAmount)
+          .isGreaterThan(
+              GenesisData.DEFAULT_TEST_FAUCET_SUPPLY.subtract(maxTotalXrdUsedByScenarios));
 
       // Check genesis XRD alloc
       final var allocatedAmount =

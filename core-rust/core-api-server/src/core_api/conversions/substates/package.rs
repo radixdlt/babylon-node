@@ -38,7 +38,7 @@ pub fn to_api_package_code_vm_type_entry_substate(
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        PackageVmTypeSubstate { vm_type } -> {
+        PackageVmTypeSubstate { vm_type } => {
             vm_type: match vm_type {
                 VmType::Native => models::VmType::Native,
                 VmType::ScryptoV1 => models::VmType::ScryptoV1,
@@ -62,7 +62,7 @@ pub fn to_api_package_code_original_code_entry_substate(
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        PackageOriginalCodeSubstate { code } -> {
+        PackageOriginalCodeSubstate { code } => {
             code_hex: to_hex(code),
         }
     ))
@@ -83,7 +83,7 @@ pub fn to_api_package_code_instrumented_code_entry_substate(
         models::PackageCodeKey {
             code_hash: to_api_hash(hash),
         },
-        PackageInstrumentedCodeSubstate { code } -> {
+        PackageInstrumentedCodeSubstate { code } => {
             code_hex: to_hex(code),
         }
     ))
@@ -103,7 +103,7 @@ pub fn to_api_package_schema_entry(
         models::SchemaKey {
             schema_hash: to_api_hash(hash),
         },
-        value -> {
+        value => {
             schema: Box::new(to_api_scrypto_schema(context, value)?),
         }
     ))
@@ -121,7 +121,7 @@ pub fn to_api_package_blueprint_definition_entry(
         substate,
         PackageBlueprintDefinitionEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        value -> {
+        value => {
             definition: Box::new(to_api_blueprint_definition(context, value)?),
         }
     ))
@@ -139,7 +139,7 @@ pub fn to_api_package_blueprint_dependencies_entry(
         substate,
         PackageBlueprintDependenciesEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        value -> {
+        value => {
             dependencies: Box::new(to_api_blueprint_dependencies(
                 context,
                 value,
@@ -160,7 +160,7 @@ pub fn to_api_package_blueprint_royalty_entry(
         substate,
         PackageBlueprintRoyaltyEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        value -> {
+        value => {
             royalty_config: Box::new(to_api_package_blueprint_royalty_config(value)),
         }
     ))
@@ -201,7 +201,7 @@ pub fn to_api_package_auth_template_entry(
         substate,
         PackageBlueprintAuthTemplateEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
-        value -> {
+        value => {
             auth_config: Box::new(to_api_auth_config(
                 context,
                 value,
