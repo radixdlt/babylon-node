@@ -15,7 +15,7 @@
 pub struct DescribedAddress {
     #[serde(rename = "logical_name")]
     pub logical_name: String,
-    /// The Bech32m-encoded human readable version of any global address
+    /// An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
     #[serde(rename = "address")]
     pub address: String,
 }

@@ -77,11 +77,11 @@ public class DescribedAddress {
   }
 
    /**
-   * The Bech32m-encoded human readable version of any global address
+   * An arbitrary Bech32m-encoded human readable address (its type should be inferred from &#x60;logical_name&#x60;).
    * @return address
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of any global address")
+  @ApiModelProperty(required = true, value = "An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).")
   @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
