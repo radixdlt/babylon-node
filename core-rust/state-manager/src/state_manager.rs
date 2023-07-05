@@ -415,12 +415,13 @@ where
         let mut rejected_transactions = Vec::new();
         let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
-        let total_proposal_size = prepare_request
+        let total_proposal_size: usize = prepare_request
             .proposed_transactions
             .iter()
-            .fold(0, |total, tx| total + tx.0.len());
+            .map(|tx| tx.0.len())
+            .sum();
         let mut committed_proposal_size = 0;
-        let mut stop_reason = VertexPrepareStopReason::Normal;
+        let mut stop_reason = VertexPrepareStopReason::ProposalComplete;
 
         for (index, raw_user_transaction) in prepare_request
             .proposed_transactions
@@ -610,10 +611,10 @@ where
 
         self.vertex_prepare_metrics
             .proposal_transactions_size
-            .set(total_proposal_size as i64);
+            .observe(total_proposal_size as f64);
         self.vertex_prepare_metrics
             .wasted_proposal_bandwidth
-            .set((total_proposal_size - committed_proposal_size) as i64);
+            .observe((total_proposal_size - committed_proposal_size) as f64);
         self.vertex_prepare_metrics
             .stop_reason
             .with_label(stop_reason)

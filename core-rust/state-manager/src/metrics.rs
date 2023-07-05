@@ -67,6 +67,7 @@ use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
 use node_common::config::limits::{
     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
 };
 use prometheus::core::*;
 use prometheus::*;
@@ -93,8 +94,8 @@ pub struct CommittedTransactionsMetrics {
 }
 
 pub struct VertexPrepareMetrics {
-    pub proposal_transactions_size: IntGauge,
-    pub wasted_proposal_bandwidth: IntGauge,
+    pub proposal_transactions_size: Histogram,
+    pub wasted_proposal_bandwidth: Histogram,
     pub stop_reason: IntCounterVec,
 }
 
@@ -144,7 +145,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_size",
                     "Size in bytes of committed transactions.",
                 ),
-                Self::buckets(DEFAULT_MAX_TRANSACTION_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(DEFAULT_MAX_TRANSACTION_SIZE),
             )
             .registered_at(registry),
             execution_cost_units_consumed: new_histogram(
@@ -152,7 +153,9 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_execution_cost_units_consumed",
                     "Execution cost units consumed per committed transactions.",
                 ),
-                Self::buckets(execution_config.cost_unit_limit as usize),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    execution_config.cost_unit_limit as usize,
+                ),
             )
             .registered_at(registry),
             substate_read_size: new_histogram(
@@ -161,7 +164,9 @@ impl CommittedTransactionsMetrics {
                     "Total (per committed transaction) substate read size in bytes.",
                 ),
                 // TODO: update once max substate reads can be limited at execution
-                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
+                ),
             )
             .registered_at(registry),
             substate_read_count: new_histogram(
@@ -169,7 +174,9 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_count",
                     "Number of substate reads per committed transactions.",
                 ),
-                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
+                ),
             )
             .registered_at(registry),
             substate_write_size: new_histogram(
@@ -178,7 +185,9 @@ impl CommittedTransactionsMetrics {
                     "Total (per committed transaction) substate write size in bytes.",
                 ),
                 // TODO: update once max substate writes can be limited at execution
-                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
+                ),
             )
             .registered_at(registry),
             substate_write_count: new_histogram(
@@ -186,7 +195,9 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_count",
                     "Number of substate writes per committed transactions.",
                 ),
-                Self::buckets(DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
+                ),
             )
             .registered_at(registry),
             max_wasm_memory_used: new_histogram(
@@ -195,7 +206,7 @@ impl CommittedTransactionsMetrics {
                     "Maximum WASM memory used in bytes per committed transaction.",
                 ),
                 // Just a placeholder until we figure out ExecutionMetrics.
-                Self::buckets(10 * 1024 * 1024),
+                higher_resolution_for_lower_values_buckets_for_limit(10 * 1024 * 1024),
             )
             .registered_at(registry),
             max_invoke_payload_size: new_histogram(
@@ -203,35 +214,39 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_max_invoke_payload_size",
                     "Maximum invoke payload size in bytes per committed transaction.",
                 ),
-                Self::buckets(execution_config.max_invoke_input_size),
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    execution_config.max_invoke_input_size,
+                ),
             )
             .registered_at(registry),
         }
-    }
-
-    // Given a limit, builds buckets for a Histogram with higher resolution for lower values.
-    // This gives percentile buckets: 0-2, 2-4, 4-6, 6-8, 8-10, 10-15, 15-20, 20-25, 25-50, 50-75, 75-100
-    fn buckets(limit: usize) -> Vec<f64> {
-        let limit = limit as f64;
-        let mut buckets = equidistant_buckets(5, 0.0, 0.1 * limit);
-        buckets.extend(equidistant_buckets(3, 0.1 * limit, 0.25 * limit));
-        buckets.extend(equidistant_buckets(3, 0.25 * limit, limit));
-        buckets
     }
 }
 
 impl VertexPrepareMetrics {
     pub fn new(registry: &Registry) -> Self {
         Self {
-            proposal_transactions_size: IntGauge::with_opts(opts(
-                "vertex_prepare_proposal_transactions_size",
-                "Size of all transactions inside proposal.",
-            ))
+            proposal_transactions_size: new_histogram(
+                opts(
+                    "vertex_prepare_proposal_transactions_size",
+                    "Size of all transactions inside proposal.",
+                ),
+                // TODO: This is accurate enough but update once MAX_PROPOSAL_SIZE is available here
+                higher_resolution_for_higher_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+                ),
+            )
             .registered_at(registry),
-            wasted_proposal_bandwidth: IntGauge::with_opts(opts(
-                "vertex_prepare_wasted_proposal_bandwidth",
-                "Size sum of received transactions that were skipped during preparation.",
-            ))
+            wasted_proposal_bandwidth: new_histogram(
+                opts(
+                    "vertex_prepare_wasted_proposal_bandwidth",
+                    "Size sum of received transactions that were skipped during preparation.",
+                ),
+                // TODO: This is accurate enough but update once MAX_PROPOSAL_SIZE is available here
+                higher_resolution_for_lower_values_buckets_for_limit(
+                    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
+                ),
+            )
             .registered_at(registry),
             stop_reason: IntCounterVec::new(
                 opts(
@@ -308,6 +323,26 @@ fn equidistant_buckets(number_of_buckets: usize, min: f64, max: f64) -> Vec<f64>
             bucket * range + min
         })
         .collect()
+}
+
+// Given a limit, builds buckets for a Histogram with higher resolution for higher values.
+// This gives percentile buckets: 0-25, 25-50, 50-75, 75-80, 80-85, 85-90, 90-92, 92-94, 94-96, 96-98, 98-100
+fn higher_resolution_for_higher_values_buckets_for_limit(limit: usize) -> Vec<f64> {
+    let limit = limit as f64;
+    let mut buckets = equidistant_buckets(3, 0.0, 0.75 * limit);
+    buckets.extend(equidistant_buckets(3, 0.75 * limit, 0.9 * limit));
+    buckets.extend(equidistant_buckets(5, 0.9 * limit, limit));
+    buckets
+}
+
+// Given a limit, builds buckets for a Histogram with higher resolution for lower values.
+// This gives percentile buckets: 0-2, 2-4, 4-6, 6-8, 8-10, 10-15, 15-20, 20-25, 25-50, 50-75, 75-100
+fn higher_resolution_for_lower_values_buckets_for_limit(limit: usize) -> Vec<f64> {
+    let limit = limit as f64;
+    let mut buckets = equidistant_buckets(5, 0.0, 0.1 * limit);
+    buckets.extend(equidistant_buckets(3, 0.1 * limit, 0.25 * limit));
+    buckets.extend(equidistant_buckets(3, 0.25 * limit, limit));
+    buckets
 }
 
 /// Creates a new `Histogram` tailored to measuring time durations.
@@ -444,7 +479,7 @@ impl MetricLabel for MempoolAddError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VertexPrepareStopReason {
-    Normal,
+    ProposalComplete,
     EpochChange,
     LimitExceeded(VertexLimitsExceeded),
 }
@@ -454,16 +489,18 @@ impl MetricLabel for VertexPrepareStopReason {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         match self {
-            VertexPrepareStopReason::Normal => "Normal",
+            VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
-                VertexLimitsExceeded::TransactionsCount => "TransactionsCountExceeded",
-                VertexLimitsExceeded::TransactionsSize => "TransactionsSizeExceeded",
-                VertexLimitsExceeded::ExecutionCostUnitsConsumed => "ExecutionCostUnitsConsumed",
-                VertexLimitsExceeded::SubstateReadSize => "SubstateReadSizeExceeded",
-                VertexLimitsExceeded::SubstateReadCount => "SubstateReadCountExceeded",
-                VertexLimitsExceeded::SubstateWriteSize => "SubstateWriteSizeExceeded",
-                VertexLimitsExceeded::SubstateWriteCount => "SubstateWriteCountExceeded",
+                VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
+                VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",
+                VertexLimitsExceeded::ExecutionCostUnitsConsumed => {
+                    "ExecutionCostUnitsConsumedLimitReached"
+                }
+                VertexLimitsExceeded::SubstateReadSize => "SubstateReadSizeLimitReached",
+                VertexLimitsExceeded::SubstateReadCount => "SubstateReadCountLimitReached",
+                VertexLimitsExceeded::SubstateWriteSize => "SubstateWriteSizeLimitReached",
+                VertexLimitsExceeded::SubstateWriteCount => "SubstateWriteCountLimitReached",
             },
         }
     }
