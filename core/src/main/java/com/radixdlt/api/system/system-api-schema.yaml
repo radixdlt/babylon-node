@@ -290,12 +290,12 @@ components:
       type: object
       required:
         - uri
-        - blacklisted
+        - failed_handshake
         - last_connection_status
       properties:
         uri:
           type: string
-        blacklisted:
+        failed_handshake:
           type: boolean
         last_connection_status:
           type: string

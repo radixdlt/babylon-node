@@ -87,6 +87,7 @@ import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Comparator;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -182,7 +183,8 @@ public class MessageCentralImplTest {
             metricsMock,
             peerControlMock,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            capabilities);
+            capabilities,
+            Set.of());
     return messageCentral;
   }
 

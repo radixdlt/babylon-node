@@ -64,14 +64,17 @@
 
 package com.radixdlt.p2p.addressbook;
 
+import static com.radixdlt.lang.Tuple.tuple;
+import static com.radixdlt.lang.Unit.unit;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Tuple.Tuple2;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -80,16 +83,12 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.utils.InetUtils;
+import com.radixdlt.utils.LRUCache;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -144,8 +143,16 @@ public final class AddressBook {
   private final AddressBookPersistence persistence;
   private final Object lock = new Object();
   private final Map<NodeId, AddressBookEntry> knownPeers = new ConcurrentHashMap<>();
+  private int numStoredAddresses;
   private final PeerAddressEntryComparator addressEntryComparator =
       new PeerAddressEntryComparator();
+
+  /**
+   * Stores nodes that are considered in some way important (validators, for example). Address book
+   * makes sure to keep at least one address for each such peer (i.e. they receive special care
+   * during address book clean up).
+   */
+  private final LRUCache<NodeId, Unit> highPriorityPeers;
 
   @Inject
   public AddressBook(
@@ -158,49 +165,45 @@ public final class AddressBook {
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.persistence = Objects.requireNonNull(persistence);
     persistence.getAllEntries().forEach(e -> knownPeers.put(e.getNodeId(), e));
-    cleanup();
-  }
+    this.numStoredAddresses =
+        knownPeers.values().stream().mapToInt(e -> e.getKnownAddresses().size()).sum();
 
-  // filters out the addresses with a different network ID that have been persisted before the
-  // filtering was added
-  private void cleanup() {
-    final var cleanedUpEntries = new ImmutableMap.Builder<NodeId, AddressBookEntry>();
-    this.knownPeers.values().forEach(entry -> cleanupAddressBookEntry(entry, cleanedUpEntries));
-    this.knownPeers.clear();
-    this.knownPeers.putAll(cleanedUpEntries.build());
-  }
-
-  private void cleanupAddressBookEntry(
-      AddressBookEntry entry, ImmutableMap.Builder<NodeId, AddressBookEntry> cleanedUpEntries) {
-    final var filteredKnownAddresses =
-        entry.getKnownAddresses().stream()
-            .filter(addr -> sameNetworkHrp(addr.getUri()))
-            .collect(ImmutableSet.toImmutableSet());
-
-    if (filteredKnownAddresses.isEmpty() && !entry.isBanned()) {
-      // there are no known addresses and no ban info for peer so just remove it
-      this.persistence.removeEntry(entry.getNodeId());
-    } else if (filteredKnownAddresses.size() != entry.getKnownAddresses().size()) {
-      // some addresses got filtered out, need to persist a new entry
-      final var updatedEntry =
-          new AddressBookEntry(entry.getNodeId(), entry.bannedUntil(), filteredKnownAddresses);
-      cleanedUpEntries.put(entry.getNodeId(), updatedEntry);
-      persistEntry(updatedEntry);
-    } else {
-      cleanedUpEntries.put(entry.getNodeId(), entry);
+    // Reserving up to 1/10 of the address book for high priority peers
+    this.highPriorityPeers = new LRUCache<>(p2pConfig.addressBookMaxSize() / 10);
+    for (var nodeId : persistence.getHighPriorityPeers()) {
+      this.highPriorityPeers.put(nodeId, unit());
     }
   }
 
   public void addUncheckedPeers(Set<RadixNodeUri> peers) {
-    final var filteredUris =
-        peers.stream()
-            .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
-            .filter(this::sameNetworkHrp)
-            .filter(this::isPeerIpAddressValid)
-            .collect(ImmutableList.toImmutableList());
-
     synchronized (lock) {
-      filteredUris.forEach(this::insertOrUpdateAddressBookEntryWithUri);
+      final var filteredUris =
+          peers.stream()
+              .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
+              .filter(this::sameNetworkHrp)
+              .filter(this::isPeerIpAddressValid)
+              .filter(
+                  uri ->
+                      Optional.ofNullable(knownPeers.get(uri.getNodeId()))
+                          .filter(e -> e.hasAddress(uri))
+                          .isEmpty())
+              .collect(ImmutableList.toImmutableList());
+      final var slotsAvailable = p2pConfig.addressBookMaxSize() - numStoredAddresses;
+      if (slotsAvailable < filteredUris.size()) {
+        final var additionalSlotsNeededToIngestAllNewUris = filteredUris.size() - slotsAvailable;
+        this.removeLowestQualityAddresses(additionalSlotsNeededToIngestAllNewUris);
+      }
+      // No matter if we've been able to clean up any slots or not,
+      // insert as many addresses as we can.
+
+      // TODO: the response may contain some addresses for nodes on the `highPriorityPeers` list,
+      // which we may not have in our address book and which we should prioritise over existing
+      // addresses, even if they were used to establish a successful connection before.
+
+      final var slotsAvailableAfterCleanup = p2pConfig.addressBookMaxSize() - numStoredAddresses;
+      filteredUris.stream()
+          .limit(Math.max(0, slotsAvailableAfterCleanup))
+          .forEach(this::insertOrUpdateAddressBookEntryWithUri);
     }
   }
 
@@ -209,10 +212,10 @@ public final class AddressBook {
     final var newOrUpdatedEntry =
         maybeExistingEntry == null
             ? AddressBookEntry.create(uri)
-            : maybeExistingEntry.cleanupExpiredBlacklsitedUris().addUriIfNotExists(uri);
+            : maybeExistingEntry.cleanupExpiredFailedHandshakeUris().addUriIfNotExists(uri);
 
     if (!newOrUpdatedEntry.equals(maybeExistingEntry)) {
-      upsertAddressBookEntry(uri.getNodeId(), newOrUpdatedEntry);
+      upsertOrRemoveIfEmpty(newOrUpdatedEntry);
     }
   }
 
@@ -222,6 +225,14 @@ public final class AddressBook {
 
   public Optional<AddressBookEntry> findById(NodeId nodeId) {
     return Optional.ofNullable(this.knownPeers.get(nodeId));
+  }
+
+  public void reportHighPriorityPeer(NodeId nodeId) {
+    final var currKeys = highPriorityPeers.keys();
+    if (currKeys.size() == 0 || !currKeys.get(currKeys.size() - 1).equals(nodeId)) {
+      highPriorityPeers.put(nodeId, unit());
+      persistence.storeHighPriorityPeers(highPriorityPeers.keys());
+    }
   }
 
   public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
@@ -237,7 +248,7 @@ public final class AddressBook {
     return entries
         .filter(not(AddressBookEntry::isBanned))
         .flatMap(e -> e.getKnownAddresses().stream())
-        .filter(not(PeerAddressEntry::blacklisted))
+        .filter(PeerAddressEntry::failedHandshakeIsEmptyOrExpired)
         .filter(addressBookEntry -> this.isPeerIpAddressValid(addressBookEntry.getUri()))
         .sorted(addressEntryComparator)
         .map(AddressBookEntry.PeerAddressEntry::getUri);
@@ -264,42 +275,45 @@ public final class AddressBook {
   }
 
   public void addOrUpdatePeerWithSuccessfulConnection(RadixNodeUri radixNodeUri) {
-    this.cleanupPeerEntriesFromRemoteHostPort(radixNodeUri.getHost(), radixNodeUri.getPort());
+    // We've managed to successfully connect (incl. a complete handshake)
+    // to a peer using a specific URI.
+    // If the same (host, port) pair has been stored for any other node ID,
+    // we need to remove it (this can happen e.g. if a new key is used on the same server).
+    this.cleanKnownPeersAddressesAfterSuccessfulConnection(radixNodeUri);
     this.addOrUpdatePeerWithLatestConnectionStatus(radixNodeUri, LatestConnectionStatus.SUCCESS);
     this.addressEntryComparator.resetFailures(radixNodeUri);
   }
 
-  private void cleanupPeerEntriesFromRemoteHostPort(String host, int port) {
+  /**
+   * This removes any addresses with a matching host and port, but stored for a different node ID.
+   */
+  private void cleanKnownPeersAddressesAfterSuccessfulConnection(RadixNodeUri uriToKeep) {
     synchronized (lock) {
-      for (var entry : knownPeers.entrySet()) {
-        calculateUpdatedEntry(entry.getValue(), host, port)
-            .ifPresent(updatedEntry -> upsertAddressBookEntry(entry.getKey(), updatedEntry));
+      final var iter = knownPeers.entrySet().iterator();
+      while (iter.hasNext()) {
+        final var entry = iter.next();
+        if (entry.getKey().equals(uriToKeep.getNodeId())) {
+          // We're keeping the address that we've just used
+          continue;
+        }
+        final var updatedEntry =
+            entry
+                .getValue()
+                .removeAddressesThatMatchHostAndPort(uriToKeep.getHost(), uriToKeep.getPort());
+        final var hasEntryBeenModified =
+            entry.getValue().getKnownAddresses().size() != updatedEntry.getKnownAddresses().size();
+
+        if (hasEntryBeenModified) {
+          if (updatedEntry.isMeaningless()) {
+            iter.remove();
+            this.persistence.removeEntry(updatedEntry.getNodeId());
+          } else {
+            entry.setValue(updatedEntry);
+            this.persistence.upsertEntry(updatedEntry);
+          }
+        }
       }
     }
-  }
-
-  private Optional<AddressBookEntry> calculateUpdatedEntry(
-      AddressBookEntry inputEntry, String host, int port) {
-
-    var existingAddresses = inputEntry.getKnownAddresses();
-    var filteredAddresses = filterMatchingAddresses(existingAddresses, host, port);
-
-    if (filteredAddresses.size() == existingAddresses.size()) {
-      return Optional.empty();
-    }
-
-    return Optional.of(inputEntry.withReplacedKnownAddresses(filteredAddresses));
-  }
-
-  private ImmutableSet<PeerAddressEntry> filterMatchingAddresses(
-      ImmutableSet<PeerAddressEntry> knownAddresses, String host, int port) {
-    return knownAddresses.stream()
-        .filter(peerAddress -> doesNotMatchHostAndPort(peerAddress, host, port))
-        .collect(ImmutableSet.toImmutableSet());
-  }
-
-  private boolean doesNotMatchHostAndPort(PeerAddressEntry peerAddress, String host, int port) {
-    return peerAddress.getUri().getPort() != port || !peerAddress.getUri().getHost().equals(host);
   }
 
   public void addOrUpdatePeerWithFailedConnection(RadixNodeUri radixNodeUri) {
@@ -310,36 +324,116 @@ public final class AddressBook {
   private void addOrUpdatePeerWithLatestConnectionStatus(
       RadixNodeUri radixNodeUri, LatestConnectionStatus latestConnectionStatus) {
     synchronized (lock) {
-      final var maybeExistingEntry = this.knownPeers.get(radixNodeUri.getNodeId());
-      final var entry =
-          calculateNewOrUpdatedEntry(radixNodeUri, latestConnectionStatus, maybeExistingEntry);
-      upsertAddressBookEntry(radixNodeUri.getNodeId(), entry);
+      final var maybeExistingEntry =
+          Optional.ofNullable(this.knownPeers.get(radixNodeUri.getNodeId()));
+      final var newOrUpdatedEntry =
+          maybeExistingEntry
+              .map(
+                  e ->
+                      e.cleanupExpiredFailedHandshakeUris()
+                          .withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus))
+              .orElseGet(
+                  () ->
+                      AddressBookEntry.createWithLatestConnectionStatus(
+                          radixNodeUri, latestConnectionStatus));
+      /*
+      This is a bit of a corner case. This should almost always be an address update, not insertion.
+      We've just used a URI to establish a connection, so we must have had it in the address book.
+      But in theory, it might have been removed in the meantime (f.e. due to a call to `addUncheckedPeers`),
+      so we need to re-check the limits.
+       */
+      final var prevAddressesCount =
+          maybeExistingEntry.map(e -> e.getKnownAddresses().size()).orElse(0);
+      final var newAddressesCount = newOrUpdatedEntry.getKnownAddresses().size();
+      final var numAddressesDiff = newAddressesCount - prevAddressesCount;
+      // This will always be <= 1, but let's keep our abstractions right :)
+      final var additionalFreeSlotsNeeded =
+          (numStoredAddresses + numAddressesDiff) - p2pConfig.addressBookMaxSize();
+      if (additionalFreeSlotsNeeded > 0) {
+        this.removeLowestQualityAddresses(additionalFreeSlotsNeeded);
+      }
+      final var freeSlotsAfterCleanup = p2pConfig.addressBookMaxSize() - numStoredAddresses;
+      if (freeSlotsAfterCleanup >= numAddressesDiff) {
+        upsertOrRemoveIfEmpty(newOrUpdatedEntry);
+      }
     }
   }
 
-  private void upsertAddressBookEntry(NodeId nodeId, AddressBookEntry entry) {
-    this.knownPeers.put(nodeId, entry);
-    persistEntry(entry);
+  /**
+   * Removes up to `maxAddressesToRemove` addresses of the lowest quality from the address book. The
+   * interface doesn't specify an exact definition of address "quality", but caller can expect that:
+   * 1. the removed addresses are, in some sense, worse than a default (i.e. freshly added address)
+   * 2. nodes from the `highPriorityPeers` list get special treatment, i.e. if an address for any
+   * such node is to be removed, there must be at least one different address for the same node ID
+   * that will be kept.
+   */
+  private void removeLowestQualityAddresses(int maxAddressesToRemove) {
+    /* The removal order is as follows:
+    - first, any invalid URIs (just in case there are any)
+    - then the addresses that have failed the handshake
+    - then all banned peers (they come after the failed handshake
+        because ban info is more important)
+    - then the default comparator (based on connection attempts),
+        reversed - from worst to best
+     */
+    final var worstAddressesComparator =
+        Comparator.<Tuple2<AddressBookEntry, PeerAddressEntry>, Boolean>comparing(
+                e -> isPeerIpAddressValid(e.last().getUri()))
+            .thenComparing(e -> !e.last().failedHandshakeIsPresent())
+            .thenComparing(e -> !e.first().isBanned())
+            .thenComparing((a, b) -> addressEntryComparator.reversed().compare(a.last(), b.last()));
+
+    final var addressesToRemove =
+        this.knownPeers.entrySet().stream()
+            .filter(
+                not(
+                    e ->
+                        // For now let's just keep all addresses of these nodes
+                        this.highPriorityPeers.contains(e.getKey())))
+            .flatMap(
+                e -> e.getValue().getKnownAddresses().stream().map(a -> tuple(e.getValue(), a)))
+            .filter(
+                not(
+                    t -> {
+                      // Do not remove any addresses that haven't been tried yet
+                      // (as they're considered the same quality as a default, unchecked address)
+                      final var isUntried = t.last().getLatestConnectionStatus().isEmpty();
+                      // Do not remove any addresses that have previously succeeded
+                      // (as they're considered "better" than a default, unchecked address)
+                      final var wasSuccess =
+                          t.last().getLatestConnectionStatus().stream()
+                              .anyMatch(l -> l.equals(LatestConnectionStatus.SUCCESS));
+                      return isUntried || wasSuccess;
+                    }))
+            .sorted(worstAddressesComparator)
+            .limit(Math.max(0, maxAddressesToRemove))
+            .toList();
+
+    for (var addressToRemove : addressesToRemove) {
+      final var entry = addressToRemove.first();
+      final var address = addressToRemove.last();
+      final var updatedEntry = entry.removeAddressEntry(address);
+      upsertOrRemoveIfEmpty(updatedEntry);
+    }
   }
 
-  private AddressBookEntry calculateNewOrUpdatedEntry(
-      RadixNodeUri radixNodeUri,
-      LatestConnectionStatus latestConnectionStatus,
-      AddressBookEntry maybeExistingEntry) {
-    return maybeExistingEntry == null
-        ? AddressBookEntry.createWithLatestConnectionStatus(radixNodeUri, latestConnectionStatus)
-        : maybeExistingEntry
-            .cleanupExpiredBlacklsitedUris()
-            .withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus);
+  private void upsertOrRemoveIfEmpty(AddressBookEntry entry) {
+    final var maybePreviousEntry = Optional.ofNullable(this.knownPeers.get(entry.getNodeId()));
+    final var previousAddressesCount =
+        maybePreviousEntry.map(e -> e.getKnownAddresses().size()).orElse(0);
+    final var addressesCountDiff = entry.getKnownAddresses().size() - previousAddressesCount;
+    this.numStoredAddresses = this.numStoredAddresses + addressesCountDiff;
+    if (entry.isMeaningless()) {
+      this.knownPeers.remove(entry.getNodeId());
+      this.persistence.removeEntry(entry.getNodeId());
+    } else {
+      this.knownPeers.put(entry.getNodeId(), entry);
+      this.persistence.upsertEntry(entry);
+    }
   }
 
   public Stream<RadixNodeUri> bestCandidatesToConnect() {
     return onlyValidUrisSorted(this.knownPeers.values().stream());
-  }
-
-  private void persistEntry(AddressBookEntry entry) {
-    this.persistence.removeEntry(entry.getNodeId());
-    this.persistence.saveEntry(entry);
   }
 
   void banPeer(NodeId nodeId, Duration banDuration) {
@@ -352,15 +446,13 @@ public final class AddressBook {
             existingEntry.bannedUntil().filter(bu -> bu.isAfter(banUntil)).isPresent();
         if (!alreadyBanned) {
           final var updatedEntry =
-              existingEntry.cleanupExpiredBlacklsitedUris().withBanUntil(banUntil);
-          this.knownPeers.put(nodeId, updatedEntry);
-          this.persistEntry(updatedEntry);
+              existingEntry.cleanupExpiredFailedHandshakeUris().withBanUntil(banUntil);
+          upsertOrRemoveIfEmpty(updatedEntry);
           this.peerEventDispatcher.dispatch(new PeerBanned(nodeId));
         }
       } else {
         final var newEntry = AddressBookEntry.createBanned(nodeId, banUntil);
-        this.knownPeers.put(nodeId, newEntry);
-        this.persistEntry(newEntry);
+        upsertOrRemoveIfEmpty(newEntry);
         this.peerEventDispatcher.dispatch(new PeerBanned(nodeId));
       }
     }
@@ -370,18 +462,20 @@ public final class AddressBook {
     return ImmutableMap.copyOf(knownPeers);
   }
 
-  public void blacklist(RadixNodeUri uri) {
+  public void reportFailedHandshake(RadixNodeUri uri) {
     synchronized (lock) {
-      final var blacklistUntil = Instant.now().plus(Duration.ofMinutes(30));
+      final var retainUntil =
+          Instant.now().plus(p2pConfig.failedHandshakeAddressesRetentionDuration());
       final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
       final var newOrUpdatedEntry =
           maybeExistingEntry == null
-              ? AddressBookEntry.createBlacklisted(uri, blacklistUntil)
+              ? AddressBookEntry.createWithFailedHandshake(uri, retainUntil)
+                  .withLatestConnectionStatusForUri(uri, LatestConnectionStatus.FAILURE)
               : maybeExistingEntry
-                  .cleanupExpiredBlacklsitedUris()
-                  .withBlacklistedUri(uri, blacklistUntil);
-
-      upsertAddressBookEntry(uri.getNodeId(), newOrUpdatedEntry);
+                  .cleanupExpiredFailedHandshakeUris()
+                  .withFailedHandshakeUri(uri, retainUntil)
+                  .withLatestConnectionStatusForUri(uri, LatestConnectionStatus.FAILURE);
+      upsertOrRemoveIfEmpty(newOrUpdatedEntry);
     }
   }
 

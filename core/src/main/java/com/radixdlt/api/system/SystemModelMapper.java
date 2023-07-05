@@ -140,7 +140,7 @@ public final class SystemModelMapper {
   public Address address(PeerAddressEntry entry) {
     return new Address()
         .uri(entry.getUri().toString())
-        .blacklisted(entry.blacklisted())
+        .failedHandshake(entry.failedHandshakeIsPresent())
         .lastConnectionStatus(
             Address.LastConnectionStatusEnum.fromValue(
                 entry

@@ -151,8 +151,11 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
-      EventDispatcher<LedgerExtension> syncedLedgerExtensionDispatcher) {
-    return resp -> {
+      EventDispatcher<LedgerExtension> syncedLedgerExtensionDispatcher, PeerControl peerControl) {
+    return (sender, resp) -> {
+      // We've received a valid sync response, so it's an important peer
+      peerControl.reportHighPriorityPeer(sender);
+
       var dtoLedgerExtension = resp.getLedgerExtension();
       var nextHeader = LedgerProof.fromDto(dtoLedgerExtension.getTail());
 

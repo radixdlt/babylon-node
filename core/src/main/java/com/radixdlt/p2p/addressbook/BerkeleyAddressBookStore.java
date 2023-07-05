@@ -64,10 +64,10 @@
 
 package com.radixdlt.p2p.addressbook;
 
-import static com.sleepycat.je.EnvironmentConfig.*;
-
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -77,7 +77,9 @@ import com.sleepycat.je.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,10 +88,14 @@ import org.apache.logging.log4j.Logger;
 public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   private static final Logger log = LogManager.getLogger();
 
+  private static final byte[] HIGH_PRIORITY_PEERS_KEY =
+      "high_priority_peers".getBytes(StandardCharsets.UTF_8);
+
   private final Serialization serialization;
   private final Environment dbEnv;
   private final Metrics metrics;
   private Database entriesDb;
+  private Database highPriorityPeersDb;
 
   @Inject
   public BerkeleyAddressBookStore(
@@ -110,9 +116,12 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   public void open() {
     final var config = new DatabaseConfig();
     config.setAllowCreate(true);
+    config.setSortedDuplicates(false);
 
     try {
       this.entriesDb = this.dbEnv.openDatabase(null, "address_book_entries", config);
+      this.highPriorityPeersDb =
+          this.dbEnv.openDatabase(null, "address_book_high_priority_peers", config);
     } catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
       throw new IllegalStateException("while opening database", ex);
     }
@@ -126,6 +135,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       transaction =
           this.dbEnv.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
       this.dbEnv.truncateDatabase(transaction, "address_book_entries", false);
+      this.dbEnv.truncateDatabase(transaction, "address_book_high_priority_peers", false);
       transaction.commit();
     } catch (DatabaseNotFoundException dsnfex) {
       if (transaction != null) {
@@ -147,11 +157,16 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       this.entriesDb = null;
     }
 
+    if (this.highPriorityPeersDb != null) {
+      this.highPriorityPeersDb.close();
+      this.highPriorityPeersDb = null;
+    }
+
     dbEnv.close();
   }
 
   @Override
-  public boolean saveEntry(AddressBookEntry entry) {
+  public boolean upsertEntry(AddressBookEntry entry) {
     final var start = System.nanoTime();
     try {
       final var key = new DatabaseEntry(entry.getNodeId().getPublicKey().getBytes());
@@ -208,6 +223,66 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
     }
   }
 
+  @Override
+  public void storeHighPriorityPeers(List<NodeId> ids) {
+    final var start = System.nanoTime();
+
+    final var idsBytes = new byte[ids.size() * ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
+    for (int i = 0; i < ids.size(); i++) {
+      System.arraycopy(
+          ids.get(i).getPubKey(),
+          0,
+          idsBytes,
+          i * ECDSASecp256k1PublicKey.COMPRESSED_BYTES,
+          ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+    }
+
+    try {
+      final var key = new DatabaseEntry(HIGH_PRIORITY_PEERS_KEY);
+      final var value = new DatabaseEntry(idsBytes);
+
+      if (highPriorityPeersDb.put(null, key, value) == OperationStatus.SUCCESS) {
+        addBytesWrite(key.getSize() + value.getSize());
+      } else {
+        throw new BerkeleyAddressBookStoreException("Couldn't save high priority peers");
+      }
+    } finally {
+      addTime(start);
+    }
+  }
+
+  @Override
+  public List<NodeId> getHighPriorityPeers() {
+    final var start = System.nanoTime();
+    try (com.sleepycat.je.Cursor cursor = this.highPriorityPeersDb.openCursor(null, null)) {
+      final var pKey = new DatabaseEntry(HIGH_PRIORITY_PEERS_KEY);
+      final var value = new DatabaseEntry();
+      final var status = cursor.getSearchKey(pKey, value, LockMode.DEFAULT);
+      if (status == OperationStatus.SUCCESS) {
+        addBytesRead(pKey.getSize() + value.getSize());
+        final var builder = ImmutableList.<NodeId>builder();
+        int i = 0;
+        final var maxIdx = value.getData().length - ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
+        while (i <= maxIdx) {
+          final var nextIdBytes = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
+          System.arraycopy(
+              value.getData(), i, nextIdBytes, 0, ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+          i += ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
+          builder.add(NodeId.fromPublicKey(ECDSASecp256k1PublicKey.fromBytes(nextIdBytes)));
+        }
+        return builder.build();
+      } else if (status == OperationStatus.NOTFOUND) {
+        return List.of();
+      } else {
+        throw new BerkeleyAddressBookStoreException("Couldn't read high priority peers");
+      }
+    } catch (PublicKeyException e) {
+      throw new BerkeleyAddressBookStoreException("Couldn't read high priority peers", e);
+    } finally {
+      addTime(start);
+    }
+  }
+
   private void addTime(long start) {
     final var elapsed = Duration.ofNanos(System.nanoTime() - start);
     this.metrics.berkeleyDb().addressBook().interact().observe(elapsed);
@@ -219,5 +294,15 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
   private void addBytesWrite(int bytesWrite) {
     this.metrics.berkeleyDb().addressBook().bytesWritten().inc(bytesWrite);
+  }
+
+  public static final class BerkeleyAddressBookStoreException extends RuntimeException {
+    public BerkeleyAddressBookStoreException(String message) {
+      super(message);
+    }
+
+    public BerkeleyAddressBookStoreException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 }
