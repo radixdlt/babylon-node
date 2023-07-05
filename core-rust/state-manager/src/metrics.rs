@@ -163,7 +163,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_read_size",
                     "Total (per committed transaction) substate read size in bytes.",
                 ),
-                // TODO: update once max substate reads can be limited at execution
+                // TODO(RC): update once max substate reads can be limited at execution
                 higher_resolution_for_lower_values_buckets_for_limit(
                     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
                 ),
@@ -184,7 +184,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_size",
                     "Total (per committed transaction) substate write size in bytes.",
                 ),
-                // TODO: update once max substate writes can be limited at execution
+                // TODO(RCnet-V3): update once max substate writes can be limited at execution
                 higher_resolution_for_lower_values_buckets_for_limit(
                     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
                 ),
@@ -195,6 +195,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_substate_write_count",
                     "Number of substate writes per committed transactions.",
                 ),
+                // TODO(RCnet-V3): update once max substate writes can be limited at execution
                 higher_resolution_for_lower_values_buckets_for_limit(
                     DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
                 ),
@@ -205,7 +206,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_max_wasm_memory_used",
                     "Maximum WASM memory used in bytes per committed transaction.",
                 ),
-                // Just a placeholder until we figure out ExecutionMetrics.
+                // TODO(RCnet-V3): Just a placeholder until we figure out ExecutionMetrics.
                 higher_resolution_for_lower_values_buckets_for_limit(10 * 1024 * 1024),
             )
             .registered_at(registry),
