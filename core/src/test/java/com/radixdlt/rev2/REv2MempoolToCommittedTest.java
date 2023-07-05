@@ -76,7 +76,6 @@ import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -124,8 +123,7 @@ public class REv2MempoolToCommittedTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1024 * 1024, 1, new MempoolRelayConfig(0, 100))),
+                        StateComputerConfig.REV2ProposerConfig.singleTransactionMempool()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

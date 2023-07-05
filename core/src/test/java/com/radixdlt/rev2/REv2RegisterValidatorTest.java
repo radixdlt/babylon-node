@@ -83,7 +83,6 @@ import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -124,8 +123,7 @@ public final class REv2RegisterValidatorTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 2, MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.defaultMempool()))));
   }
 
   @Test

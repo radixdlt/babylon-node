@@ -123,8 +123,8 @@ public final class IncreasingValidatorsTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            2, 2 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
+                        StateComputerConfig.REV2ProposerConfig.defaultMempool(
+                            new MempoolRelayConfig(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

@@ -67,7 +67,6 @@ package com.radixdlt.targeted.mempool;
 import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 
@@ -87,11 +86,7 @@ public final class SimpleMempool
   }
 
   @Override
-  public void addTransaction(RawNotarizedTransaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
+  public void addTransaction(RawNotarizedTransaction transaction) throws MempoolDuplicateException {
     if (!this.data.add(transaction)) {
       throw new MempoolDuplicateException(
           String.format("Mempool already has transaction %s", transaction));

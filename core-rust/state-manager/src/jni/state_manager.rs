@@ -65,12 +65,12 @@
 use std::sync::{Arc, MutexGuard};
 
 use crate::mempool::simple_mempool::SimpleMempool;
-use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::config::MempoolConfig;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
 use parking_lot::RwLock;
@@ -167,7 +167,7 @@ impl JNIStateManager {
             // in general, missing mempool config should mean that mempool isn't needed
             // but for now just using a default
             {
-                MempoolConfig { max_size: 10 }
+                MempoolConfig::default()
             }
         };
         let network = config.network_definition;

@@ -65,23 +65,11 @@
 package com.radixdlt.mempool;
 
 /**
- * Exception thrown when an attempt to add new items would exceed the mempool's maximum capacity.
+ * Exception thrown when the mempool is full and the transaction's priority was not high enough to
+ * make room for it.
  */
-public class MempoolFullException extends MempoolRejectedException {
-  private final long maxSize;
-  private final long currentSize;
-
-  public MempoolFullException(long currentSize, long maxSize) {
-    super(String.format("Mempool full: %s of %s items", currentSize, maxSize));
-    this.maxSize = maxSize;
-    this.currentSize = currentSize;
-  }
-
-  public long getMaxSize() {
-    return maxSize;
-  }
-
-  public long getCurrentSize() {
-    return currentSize;
+public class MempoolPriorityThresholdNotMetException extends MempoolRejectedException {
+  public MempoolPriorityThresholdNotMetException(String message) {
+    super(message);
   }
 }

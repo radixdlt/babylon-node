@@ -88,7 +88,6 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.lang.Functions;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -178,8 +177,7 @@ public abstract class DeterministicCoreApiTestBase {
                                 scenariosToRun),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.mempool(
-                                50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
+                            StateComputerConfig.REV2ProposerConfig.defaultMempool()),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

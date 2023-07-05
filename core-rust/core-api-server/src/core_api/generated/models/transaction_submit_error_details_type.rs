@@ -12,8 +12,8 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum TransactionSubmitErrorDetailsType {
-    #[serde(rename = "MempoolFull")]
-    MempoolFull,
+    #[serde(rename = "PriorityThresholdNotMet")]
+    PriorityThresholdNotMet,
     #[serde(rename = "Rejected")]
     Rejected,
 
@@ -22,7 +22,7 @@ pub enum TransactionSubmitErrorDetailsType {
 impl ToString for TransactionSubmitErrorDetailsType {
     fn to_string(&self) -> String {
         match self {
-            Self::MempoolFull => String::from("MempoolFull"),
+            Self::PriorityThresholdNotMet => String::from("PriorityThresholdNotMet"),
             Self::Rejected => String::from("Rejected"),
         }
     }
@@ -30,7 +30,7 @@ impl ToString for TransactionSubmitErrorDetailsType {
 
 impl Default for TransactionSubmitErrorDetailsType {
     fn default() -> TransactionSubmitErrorDetailsType {
-        Self::MempoolFull
+        Self::PriorityThresholdNotMet
     }
 }
 

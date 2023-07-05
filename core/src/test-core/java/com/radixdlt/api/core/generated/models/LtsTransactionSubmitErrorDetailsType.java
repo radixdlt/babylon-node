@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum LtsTransactionSubmitErrorDetailsType {
   
-  MEMPOOLFULL("MempoolFull"),
+  PRIORITYTHRESHOLDNOTMET("PriorityThresholdNotMet"),
   
   REJECTED("Rejected");
 

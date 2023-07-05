@@ -119,9 +119,10 @@ mod tests {
         TransactionPreviewer,
     };
     use crate::{
-        LoggingConfig, MempoolConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
+        LoggingConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
         StateManagerLoggingConfig,
     };
+    use node_common::config::MempoolConfig;
     use parking_lot::RwLock;
     use prometheus::Registry;
     use radix_engine::transaction::FeeReserveConfig;
@@ -164,7 +165,10 @@ mod tests {
             pending_transaction_result_cache.clone(),
         );
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
-            MempoolConfig { max_size: 10 },
+            MempoolConfig {
+                max_total_transactions_size: 10 * 1024 * 1024,
+                max_transaction_count: 10,
+            },
         )));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,

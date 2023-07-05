@@ -29,14 +29,15 @@ pub(crate) async fn handle_lts_transaction_submit(
 
     match result {
         Ok(_) => Ok(models::LtsTransactionSubmitResponse::new(false)),
-        Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Full { max_size, .. }) => Err(detailed_error(
+        Err(MempoolAddError::PriorityThresholdNotMet { min_tip_percentage_required, tip_percentage }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
-            "Mempool is full",
-            LtsTransactionSubmitErrorDetails::LtsTransactionSubmitMempoolFullErrorDetails {
-                mempool_capacity: max_size as i32,
+            "The mempool is full and the submitted transaction's priority is not sufficient to replace any existing transactions. Try submitting with a larger tip to increase the transaction's priority.",
+            LtsTransactionSubmitErrorDetails::LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
+                tip_percentage: tip_percentage as i32,
+                min_tip_percentage_required: min_tip_percentage_required.map(|x| x as i32),
             },
         )),
+        Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Rejected(rejection)) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Transaction was rejected",

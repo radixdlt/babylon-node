@@ -74,6 +74,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -83,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public final class RustMempoolTest {
@@ -102,13 +104,20 @@ public final class RustMempoolTest {
         .initialize(genesisProvider);
   }
 
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
+
   @Test
   public void test_rust_mempool_add() throws Exception {
-    final var mempoolSize = 2;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
@@ -120,7 +129,6 @@ public final class RustMempoolTest {
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
       final var transaction2 = constructValidTransaction(0, 1);
-      final var transaction3 = constructValidTransaction(0, 2);
 
       assertEquals(0, rustMempool.getCount());
 
@@ -142,18 +150,6 @@ public final class RustMempoolTest {
       rustMempool.addTransaction(transaction2.raw());
       assertEquals(2, rustMempool.getCount());
 
-      try {
-        // Mempool is full - adding a new transaction should fail
-        rustMempool.addTransaction(transaction3.raw());
-        // Because we want to assert properties of the exception, we have to use this weird
-        // try/catch approach, instead of assertThrows
-        Assert.fail();
-      } catch (MempoolFullException ex) {
-        assertEquals(2, ex.getMaxSize());
-        assertEquals(2, ex.getCurrentSize());
-      }
-      assertEquals(2, rustMempool.getCount());
-
       // With a full mempool, a duplicate transaction returns Duplicate, not MempoolFull
       // This is an implementation detail, not mandated behaviour, feel free to change it in future
       Assert.assertThrows(
@@ -168,11 +164,13 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
-    final var mempoolSize = 3;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
@@ -302,11 +300,13 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
-    final var mempoolSize = 3;
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            Option.some(new RustMempoolConfig(mempoolSize)),
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),

@@ -101,6 +101,7 @@ pub struct VertexPrepareMetrics {
 
 pub struct MempoolMetrics {
     pub current_transactions: IntGauge,
+    pub current_total_transactions_size: IntGauge,
     pub submission_added: IntCounterVec,
     pub submission_rejected: IntCounterVec,
     pub from_local_api_to_commit_wait: Histogram,
@@ -267,6 +268,10 @@ impl MempoolMetrics {
             current_transactions: IntGauge::with_opts(opts(
                 "mempool_current_transactions",
                 "Number of transactions in progress in the mempool.",
+            )).registered_at(registry),
+            current_total_transactions_size: IntGauge::with_opts(opts(
+                "mempool_current_total_transactions_size",
+                "Total size in bytes of transactions in mempool.",
             )).registered_at(registry),
             submission_added: IntCounterVec::new(
                 opts(
@@ -468,11 +473,11 @@ impl MetricLabel for MempoolAddError {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         match self {
+            MempoolAddError::PriorityThresholdNotMet { .. } => "PriorityThresholdNotMet",
             MempoolAddError::Rejected(rejection) => match &rejection.reason {
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
             },
-            MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate(_) => "Duplicate",
         }
     }

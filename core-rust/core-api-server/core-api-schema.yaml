@@ -4549,7 +4549,7 @@ components:
     LtsTransactionSubmitErrorDetailsType:
       type: string
       enum:
-        - MempoolFull
+        - PriorityThresholdNotMet
         - Rejected
     LtsTransactionSubmitErrorDetails:
       type: object
@@ -4562,20 +4562,30 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
-          MempoolFull: "#/components/schemas/LtsTransactionSubmitMempoolFullErrorDetails"
+          PriorityThresholdNotMet: "#/components/schemas/LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"
           Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
-    LtsTransactionSubmitMempoolFullErrorDetails:
+    LtsTransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
         - type: object
           required:
-            - mempool_capacity
+            - tip_percentage
           properties:
-            mempool_capacity:
+            tip_percentage:
               type: integer
               format: int32
               minimum: 0
-              maximum: 10000
+              maximum: 65535
+              description: |
+                Tip percentage of the submitted (and rejected) transaction.
+            min_tip_percentage_required:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 65535
+              description: |
+                A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+                A missing value means there is no tip that can guarantee submission.
     LtsTransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
@@ -5551,7 +5561,7 @@ components:
     TransactionSubmitErrorDetailsType:
       type: string
       enum:
-        - MempoolFull
+        - PriorityThresholdNotMet
         - Rejected
     TransactionSubmitErrorDetails:
       type: object
@@ -5564,20 +5574,30 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match TransactionSubmitErrorDetailsType
-          MempoolFull: '#/components/schemas/TransactionSubmitMempoolFullErrorDetails'
+          PriorityThresholdNotMet: '#/components/schemas/TransactionSubmitPriorityThresholdNotMetErrorDetails'
           Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
-    TransactionSubmitMempoolFullErrorDetails:
+    TransactionSubmitPriorityThresholdNotMetErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
         - type: object
           required:
-            - mempool_capacity
+            - tip_percentage
           properties:
-            mempool_capacity:
+            tip_percentage:
               type: integer
               format: int32
               minimum: 0
-              maximum: 10000
+              maximum: 65535
+              description: |
+                Tip percentage of the submitted (and rejected) transaction.
+            min_tip_percentage_required:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 65535
+              description: |
+                A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+                A missing value means there is no tip that can guarantee submission.
     TransactionSubmitRejectedErrorDetails:
       allOf:
         - $ref: "#/components/schemas/TransactionSubmitErrorDetails"

@@ -12,18 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitMempoolFullErrorDetails {
+pub struct LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
     #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType,
-    #[serde(rename = "mempool_capacity")]
-    pub mempool_capacity: i32,
+    pub _type: crate::core_api::generated::models::LtsTransactionSubmitErrorDetailsType,
+    /// Tip percentage of the submitted (and rejected) transaction. 
+    #[serde(rename = "tip_percentage")]
+    pub tip_percentage: i32,
+    /// A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+    #[serde(rename = "min_tip_percentage_required", skip_serializing_if = "Option::is_none")]
+    pub min_tip_percentage_required: Option<i32>,
 }
 
-impl TransactionSubmitMempoolFullErrorDetails {
-    pub fn new(_type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType, mempool_capacity: i32) -> TransactionSubmitMempoolFullErrorDetails {
-        TransactionSubmitMempoolFullErrorDetails {
+impl LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
+    pub fn new(_type: crate::core_api::generated::models::LtsTransactionSubmitErrorDetailsType, tip_percentage: i32) -> LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
+        LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
             _type,
-            mempool_capacity,
+            tip_percentage,
+            min_tip_percentage_required: None,
         }
     }
 }

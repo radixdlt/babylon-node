@@ -227,13 +227,28 @@ public sealed interface StateComputerConfig {
     static REV2ProposerConfig mempool(
         int maxNumTransactionsPerProposal,
         int maxProposalTotalTxnsPayloadSize,
-        int mempoolMaxSize,
+        RustMempoolConfig mempoolConfig,
         MempoolRelayConfig config) {
       return new Mempool(
-          maxNumTransactionsPerProposal,
-          maxProposalTotalTxnsPayloadSize,
-          new RustMempoolConfig(mempoolMaxSize),
-          config);
+          maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, mempoolConfig, config);
+    }
+
+    static REV2ProposerConfig zeroMempool() {
+      return new Mempool(0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of());
+    }
+
+    static REV2ProposerConfig singleTransactionMempool() {
+      return new Mempool(
+          1, 1024 * 1024, new RustMempoolConfig(1024 * 1024, 1), new MempoolRelayConfig(0, 100));
+    }
+
+    static REV2ProposerConfig defaultMempool() {
+      return defaultMempool(MempoolRelayConfig.of());
+    }
+
+    static REV2ProposerConfig defaultMempool(MempoolRelayConfig relayConfig) {
+      return new Mempool(
+          10, 10 * 1024 * 1024, new RustMempoolConfig(100 * 1024 * 1024, 100), relayConfig);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}

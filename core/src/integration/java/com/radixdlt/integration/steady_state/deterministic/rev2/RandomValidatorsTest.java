@@ -127,8 +127,8 @@ public final class RandomValidatorsTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GENESIS,
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
+                        StateComputerConfig.REV2ProposerConfig.defaultMempool(
+                            MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
