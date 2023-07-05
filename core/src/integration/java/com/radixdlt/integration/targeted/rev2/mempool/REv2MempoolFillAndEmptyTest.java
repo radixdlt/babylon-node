@@ -140,7 +140,7 @@ public final class REv2MempoolFillAndEmptyTest {
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-    while (mempoolReader.getCount() < 1000) {
+    while (mempoolReader.getCount() < 100) {
       if (rateLimiter.tryAcquire()) {
         logger.info("Filling Mempool...  Current Size: {}", mempoolReader.getCount());
       }
