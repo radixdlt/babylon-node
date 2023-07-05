@@ -410,31 +410,45 @@ pub mod scenario {
 
     use transaction::model::IntentHash;
 
-    pub type ScenarioSequenceNumber = usize;
+    pub type ScenarioSequenceNumber = u32;
 
-    #[derive(Debug, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
     pub struct ExecutedGenesisScenario {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
         pub addresses: Vec<DescribedAddress>,
     }
 
-    #[derive(Debug, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
     pub struct DescribedAddress {
         pub logical_name: String,
         pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
     }
 
-    #[derive(Debug, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Categorize, Encode, Decode)]
     pub struct ExecutedScenarioTransaction {
         pub logical_name: String,
         pub state_version: StateVersion,
         pub intent_hash: IntentHash,
     }
 
+    /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
+    /// possible from the production stores (e.g. the writes happening outside of the regular commit
+    /// batch write).
     #[enum_dispatch]
     pub trait ExecutedGenesisScenarioStore {
-        fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
+        /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
+        /// overwriting, writing out-of-order, leaving gaps, etc.).
+        fn put_scenario(
+            &mut self,
+            number: ScenarioSequenceNumber,
+            scenario: ExecutedGenesisScenario,
+        );
+
+        /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
+        /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
+        /// Performance note: this method assumes a small number of Scenarios.
+        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)>;
     }
 }
 

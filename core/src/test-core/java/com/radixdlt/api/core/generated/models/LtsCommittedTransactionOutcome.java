@@ -78,13 +78,13 @@ public class LtsCommittedTransactionOutcome {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the resultant state version after the transaction has been committed
+   * Get stateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return stateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

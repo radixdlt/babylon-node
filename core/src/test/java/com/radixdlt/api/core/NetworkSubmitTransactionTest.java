@@ -119,7 +119,6 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
-  @SuppressWarnings("try")
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
     try (var ignored = buildRunningServerTest()) {
       var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();

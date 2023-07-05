@@ -20,7 +20,6 @@ pub struct LtsStreamAccountTransactionOutcomesRequest {
     /// The Bech32m-encoded human readable version of the account's address
     #[serde(rename = "account_address")]
     pub account_address: String,
-    /// An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
     /// The maximum number of transactions that will be returned.

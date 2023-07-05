@@ -28,110 +28,77 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * A request to retrieve a sublist of committed transactions from the ledger. 
+ * DescribedAddress
  */
-@ApiModel(description = "A request to retrieve a sublist of committed transactions from the ledger. ")
 @JsonPropertyOrder({
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_NETWORK,
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_LIMIT
+  DescribedAddress.JSON_PROPERTY_LOGICAL_NAME,
+  DescribedAddress.JSON_PROPERTY_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStreamTransactionOutcomesRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+public class DescribedAddress {
+  public static final String JSON_PROPERTY_LOGICAL_NAME = "logical_name";
+  private String logicalName;
 
-  public static final String JSON_PROPERTY_FROM_STATE_VERSION = "from_state_version";
-  private Long fromStateVersion;
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
 
-  public static final String JSON_PROPERTY_LIMIT = "limit";
-  private Integer limit;
-
-  public LtsStreamTransactionOutcomesRequest() { 
+  public DescribedAddress() { 
   }
 
-  public LtsStreamTransactionOutcomesRequest network(String network) {
-    this.network = network;
+  public DescribedAddress logicalName(String logicalName) {
+    this.logicalName = logicalName;
     return this;
   }
 
    /**
-   * The logical name of the network
-   * @return network
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getNetwork() {
-    return network;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NETWORK)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
-  }
-
-
-  public LtsStreamTransactionOutcomesRequest fromStateVersion(Long fromStateVersion) {
-    this.fromStateVersion = fromStateVersion;
-    return this;
-  }
-
-   /**
-   * Get fromStateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return fromStateVersion
+   * Get logicalName
+   * @return logicalName
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_LOGICAL_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getFromStateVersion() {
-    return fromStateVersion;
+  public String getLogicalName() {
+    return logicalName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_LOGICAL_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFromStateVersion(Long fromStateVersion) {
-    this.fromStateVersion = fromStateVersion;
+  public void setLogicalName(String logicalName) {
+    this.logicalName = logicalName;
   }
 
 
-  public LtsStreamTransactionOutcomesRequest limit(Integer limit) {
-    this.limit = limit;
+  public DescribedAddress address(String address) {
+    this.address = address;
     return this;
   }
 
    /**
-   * The maximum number of transactions that will be returned.
-   * @return limit
+   * The Bech32m-encoded human readable version of any global address
+   * @return address
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The maximum number of transactions that will be returned.")
-  @JsonProperty(JSON_PROPERTY_LIMIT)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of any global address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getLimit() {
-    return limit;
+  public String getAddress() {
+    return address;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LIMIT)
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLimit(Integer limit) {
-    this.limit = limit;
+  public void setAddress(String address) {
+    this.address = address;
   }
 
 
   /**
-   * Return true if this LtsStreamTransactionOutcomesRequest object is equal to o.
+   * Return true if this DescribedAddress object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +108,22 @@ public class LtsStreamTransactionOutcomesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest = (LtsStreamTransactionOutcomesRequest) o;
-    return Objects.equals(this.network, ltsStreamTransactionOutcomesRequest.network) &&
-        Objects.equals(this.fromStateVersion, ltsStreamTransactionOutcomesRequest.fromStateVersion) &&
-        Objects.equals(this.limit, ltsStreamTransactionOutcomesRequest.limit);
+    DescribedAddress describedAddress = (DescribedAddress) o;
+    return Objects.equals(this.logicalName, describedAddress.logicalName) &&
+        Objects.equals(this.address, describedAddress.address);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, fromStateVersion, limit);
+    return Objects.hash(logicalName, address);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStreamTransactionOutcomesRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
-    sb.append("    limit: ").append(toIndentedString(limit)).append("\n");
+    sb.append("class DescribedAddress {\n");
+    sb.append("    logicalName: ").append(toIndentedString(logicalName)).append("\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("}");
     return sb.toString();
   }

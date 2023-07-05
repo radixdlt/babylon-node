@@ -131,9 +131,8 @@ public abstract class DeterministicCoreApiTestBase {
         1000000, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS);
   }
 
-  protected DeterministicTest buildRunningServerTestWithTransactionScenarios() {
-    return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false), GenesisData.ALL_SCENARIOS);
+  protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
+    return buildRunningServerTest(1000000, new DatabaseFlags(true, false), scenarios);
   }
 
   protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {

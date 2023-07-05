@@ -461,6 +461,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/status/scenarios":
+    post:
+      summary: Get Scenarios' results.
+      description: Get results of test-oriented "Genesis Scenarios" executed on this Network.
+      tags:
+        - Status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScenariosRequest"
+      responses:
+        '200':
+          description: Scenarios' results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenariosResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 ###################
 # Mempool Sub-API #
 ###################
@@ -1273,6 +1298,11 @@ components:
       format: int32
       minimum: 0
       maximum: 255
+    StateVersion:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 100000000000000
     TransactionIdentifiers:
       type: object
       required:
@@ -4428,14 +4458,11 @@ components:
           description: |
             An explanation as to why the intent status is resolved as it is.
         committed_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
+          $ref: "#/components/schemas/StateVersion"
           description: |
-            An integer between `1` and `10^13`, giving the resultant state version when the transaction was committed.
+            The resultant state version when the transaction was committed.
             This is only present if the intent was committed (as a Success or Failure).
-            This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up
+            This can be considered to be the auto-incrementing primary key for a committed transaction, and can be used e.g. to look up
             details on the transaction's outcome from the `/lts/stream/transaction-outcomes` endpoint.
         invalid_from_epoch:
           type: integer
@@ -4625,12 +4652,8 @@ components:
         - fungible_resource_balances
       properties:
         state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: |
-            An integer between `1` and `10^13`, giving the state version at which the query was performed.
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -4677,12 +4700,8 @@ components:
         - fungible_resource_balance
       properties:
         state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: |
-            An integer between `1` and `10^13`, giving the state version at which the query was performed.
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -4703,11 +4722,8 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+          $ref: "#/components/schemas/StateVersion"
+          description: The first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -4720,12 +4736,9 @@ components:
         - committed_transaction_outcomes
       properties:
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
+          $ref: "#/components/schemas/StateVersion"
           description: |
-            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            The first (resultant) state version in the returned response (if any).
             This matches the `from_state_version` in the request.
         count:
           type: integer
@@ -4734,11 +4747,8 @@ components:
           maximum: 10000
           description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
         max_ledger_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+          $ref: "#/components/schemas/StateVersion"
+          description: The maximum state version currently committed on this node's ledger.
         committed_transaction_outcomes:
           description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
           type: array
@@ -4768,11 +4778,8 @@ components:
         - total_fee
       properties:
         state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+          $ref: "#/components/schemas/StateVersion"
+          description: The resultant state version after the transaction has been committed
         accumulator_hash:
           type: string
           minLength: 64
@@ -4928,11 +4935,8 @@ components:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+          $ref: "#/components/schemas/StateVersion"
+          description: The first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -4945,12 +4949,9 @@ components:
         - committed_transaction_outcomes
       properties:
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
+          $ref: "#/components/schemas/StateVersion"
           description: |
-            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            The first (resultant) state version in the returned response (if any).
             This matches the `from_state_version` in the request.
         count:
           type: integer
@@ -4959,11 +4960,8 @@ components:
           maximum: 10000
           description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
         max_ledger_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+          $ref: "#/components/schemas/StateVersion"
+          description: The maximum state version currently committed on this node's ledger.
         committed_transaction_outcomes:
           description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
           type: array
@@ -5185,11 +5183,8 @@ components:
         - receipt_tree_hash
       properties:
         state_version:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 100000000000000
-          description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version, which increments with each transaction, starting at `0` pre-genesis.
         state_tree_hash:
           type: string
           minLength: 64
@@ -5208,6 +5203,79 @@ components:
           maxLength: 64
           description: |
             The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
+##############################
+# REQUEST: /status/scenarios #
+##############################
+    ScenariosRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    ScenariosResponse:
+      type: object
+      required:
+        - executed_scenarios
+      properties:
+        executed_scenarios:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutedGenesisScenario"
+          description: Scenarios executed as part of Genesis (in their execution order).
+    ExecutedGenesisScenario:
+      type: object
+      required:
+        - sequence_number
+        - logical_name
+        - committed_transactions
+        - addresses
+      properties:
+        sequence_number:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1000000
+          description: |
+            An index of the Scenario on the list of all Scenarios that were executed.
+            Note: the stored sequence numbers do not necessarily have to be consecutive (e.g. in a
+            case where some configured Scenario failed to execute or failed to write results to the
+            database).
+        logical_name:
+          type: string
+        committed_transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutedScenarioTransaction"
+          description: Transactions successfully committed by the Scenario.
+        addresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/DescribedAddress"
+          description: Well-named addressed touched/created by the Scenario.
+    ExecutedScenarioTransaction:
+      type: object
+      required:
+        - logical_name
+        - state_version
+        - intent_hash
+      properties:
+        logical_name:
+          type: string
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    DescribedAddress:
+      type: object
+      required:
+        - logical_name
+        - address
+      properties:
+        logical_name:
+          type: string
+        address:
+          $ref: '#/components/schemas/GlobalAddress'
 ##########################
 # REQUEST: /mempool/list #
 ##########################
@@ -5852,11 +5920,8 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+          $ref: "#/components/schemas/StateVersion"
+          description: The first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -5875,12 +5940,9 @@ components:
         - transactions
       properties:
         from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
+          $ref: "#/components/schemas/StateVersion"
           description: |
-            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            The first (resultant) state version in the returned response (if any).
             This matches the `from_state_version` in the request.
         count:
           type: integer
@@ -5889,11 +5951,8 @@ components:
           maximum: 10000
           description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
         max_ledger_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+          $ref: "#/components/schemas/StateVersion"
+          description: The maximum state version currently committed on this node's ledger.
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array

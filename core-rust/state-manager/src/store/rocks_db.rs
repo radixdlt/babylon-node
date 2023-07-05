@@ -556,7 +556,7 @@ impl CommitStore for RocksDBStore {
 }
 
 impl ExecutedGenesisScenarioStore for RocksDBStore {
-    fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
+    fn put_scenario(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
         self.db
             .put_cf(
                 self.cf_handle(&ExecutedGenesisScenarios),
@@ -564,6 +564,22 @@ impl ExecutedGenesisScenarioStore for RocksDBStore {
                 scrypto_encode(&scenario).unwrap(),
             )
             .expect("Executed scenario write failed");
+    }
+
+    fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)> {
+        self.db
+            .iterator_cf(
+                self.cf_handle(&ExecutedGenesisScenarios),
+                IteratorMode::Start,
+            )
+            .map(|result| result.unwrap())
+            .map(|kv| {
+                (
+                    u32::from_be_bytes(kv.0.as_ref().try_into().unwrap()),
+                    scrypto_decode(kv.1.as_ref()).unwrap(),
+                )
+            })
+            .collect()
     }
 }
 

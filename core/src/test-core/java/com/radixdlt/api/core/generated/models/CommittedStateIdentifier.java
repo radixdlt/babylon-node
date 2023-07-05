@@ -59,13 +59,13 @@ public class CommittedStateIdentifier {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^13&#x60;, representing the state version. The state version increments with each transaction, starting at &#x60;0&#x60; pre-genesis.
-   * minimum: 0
+   * Get stateVersion
+   * minimum: 1
    * maximum: 100000000000000
    * @return stateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

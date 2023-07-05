@@ -62,13 +62,13 @@ public class LtsStreamAccountTransactionOutcomesResponse {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the first (resultant) state version in the returned response (if any). This matches the &#x60;from_state_version&#x60; in the request. 
+   * Get fromStateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return fromStateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any). This matches the `from_state_version` in the request. ")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -118,13 +118,13 @@ public class LtsStreamAccountTransactionOutcomesResponse {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the maximum state version currently committed on this node&#39;s ledger.
+   * Get maxLedgerStateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return maxLedgerStateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_MAX_LEDGER_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

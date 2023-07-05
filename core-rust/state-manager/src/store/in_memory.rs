@@ -341,8 +341,15 @@ impl CommitStore for InMemoryStore {
 }
 
 impl ExecutedGenesisScenarioStore for InMemoryStore {
-    fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
+    fn put_scenario(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
         self.executed_genesis_scenarios.insert(number, scenario);
+    }
+
+    fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)> {
+        self.executed_genesis_scenarios
+            .iter()
+            .map(|(number, scenario)| (*number, scenario.clone()))
+            .collect()
     }
 }
 
