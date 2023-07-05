@@ -183,6 +183,7 @@ impl JNIStateManager {
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
             fee_reserve_config.cost_unit_price = Decimal::ZERO;
+            fee_reserve_config.state_expansion_price = Decimal::ZERO;
         }
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
             &logging_config,
