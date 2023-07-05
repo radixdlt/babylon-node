@@ -39,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ConsensusManagerFieldConfigValue.JSON_PROPERTY_MIN_VALIDATOR_RELIABILITY,
   ConsensusManagerFieldConfigValue.JSON_PROPERTY_NUM_OWNER_STAKE_UNITS_UNLOCK_EPOCHS,
   ConsensusManagerFieldConfigValue.JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS,
+  ConsensusManagerFieldConfigValue.JSON_PROPERTY_VALIDATOR_CREATION_USD_EQUIVALENT_COST,
   ConsensusManagerFieldConfigValue.JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -63,6 +64,9 @@ public class ConsensusManagerFieldConfigValue {
 
   public static final String JSON_PROPERTY_NUM_FEE_INCREASE_DELAY_EPOCHS = "num_fee_increase_delay_epochs";
   private Long numFeeIncreaseDelayEpochs;
+
+  public static final String JSON_PROPERTY_VALIDATOR_CREATION_USD_EQUIVALENT_COST = "validator_creation_usd_equivalent_cost";
+  private String validatorCreationUsdEquivalentCost;
 
   public static final String JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST = "validator_creation_xrd_cost";
   private String validatorCreationXrdCost;
@@ -260,17 +264,43 @@ public class ConsensusManagerFieldConfigValue {
   }
 
 
+  public ConsensusManagerFieldConfigValue validatorCreationUsdEquivalentCost(String validatorCreationUsdEquivalentCost) {
+    this.validatorCreationUsdEquivalentCost = validatorCreationUsdEquivalentCost;
+    return this;
+  }
+
+   /**
+   * The defining decimal cost of a validator in USD. This is turned into an XRD cost through the current protocol-based USD/XRD multiplier. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return validatorCreationUsdEquivalentCost
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The defining decimal cost of a validator in USD. This is turned into an XRD cost through the current protocol-based USD/XRD multiplier. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_CREATION_USD_EQUIVALENT_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getValidatorCreationUsdEquivalentCost() {
+    return validatorCreationUsdEquivalentCost;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_CREATION_USD_EQUIVALENT_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorCreationUsdEquivalentCost(String validatorCreationUsdEquivalentCost) {
+    this.validatorCreationUsdEquivalentCost = validatorCreationUsdEquivalentCost;
+  }
+
+
   public ConsensusManagerFieldConfigValue validatorCreationXrdCost(String validatorCreationXrdCost) {
     this.validatorCreationXrdCost = validatorCreationXrdCost;
     return this;
   }
 
    /**
-   * The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * The decimal amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
    * @return validatorCreationXrdCost
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @ApiModelProperty(required = true, value = "The decimal amount of XRD required to be passed in a bucket to create a validator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
   @JsonProperty(JSON_PROPERTY_VALIDATOR_CREATION_XRD_COST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -305,12 +335,13 @@ public class ConsensusManagerFieldConfigValue {
         Objects.equals(this.minValidatorReliability, consensusManagerFieldConfigValue.minValidatorReliability) &&
         Objects.equals(this.numOwnerStakeUnitsUnlockEpochs, consensusManagerFieldConfigValue.numOwnerStakeUnitsUnlockEpochs) &&
         Objects.equals(this.numFeeIncreaseDelayEpochs, consensusManagerFieldConfigValue.numFeeIncreaseDelayEpochs) &&
+        Objects.equals(this.validatorCreationUsdEquivalentCost, consensusManagerFieldConfigValue.validatorCreationUsdEquivalentCost) &&
         Objects.equals(this.validatorCreationXrdCost, consensusManagerFieldConfigValue.validatorCreationXrdCost);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxValidators, epochChangeCondition, numUnstakeEpochs, totalEmissionXrdPerEpoch, minValidatorReliability, numOwnerStakeUnitsUnlockEpochs, numFeeIncreaseDelayEpochs, validatorCreationXrdCost);
+    return Objects.hash(maxValidators, epochChangeCondition, numUnstakeEpochs, totalEmissionXrdPerEpoch, minValidatorReliability, numOwnerStakeUnitsUnlockEpochs, numFeeIncreaseDelayEpochs, validatorCreationUsdEquivalentCost, validatorCreationXrdCost);
   }
 
   @Override
@@ -324,6 +355,7 @@ public class ConsensusManagerFieldConfigValue {
     sb.append("    minValidatorReliability: ").append(toIndentedString(minValidatorReliability)).append("\n");
     sb.append("    numOwnerStakeUnitsUnlockEpochs: ").append(toIndentedString(numOwnerStakeUnitsUnlockEpochs)).append("\n");
     sb.append("    numFeeIncreaseDelayEpochs: ").append(toIndentedString(numFeeIncreaseDelayEpochs)).append("\n");
+    sb.append("    validatorCreationUsdEquivalentCost: ").append(toIndentedString(validatorCreationUsdEquivalentCost)).append("\n");
     sb.append("    validatorCreationXrdCost: ").append(toIndentedString(validatorCreationXrdCost)).append("\n");
     sb.append("}");
     return sb.toString();

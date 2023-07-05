@@ -405,6 +405,39 @@ pub mod commit {
     }
 }
 
+pub mod scenario {
+    use super::*;
+
+    use transaction::model::IntentHash;
+
+    pub type ScenarioSequenceNumber = usize;
+
+    #[derive(Debug, Categorize, Encode, Decode)]
+    pub struct ExecutedGenesisScenario {
+        pub logical_name: String,
+        pub committed_transactions: Vec<ExecutedScenarioTransaction>,
+        pub addresses: Vec<DescribedAddress>,
+    }
+
+    #[derive(Debug, Categorize, Encode, Decode)]
+    pub struct DescribedAddress {
+        pub logical_name: String,
+        pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
+    }
+
+    #[derive(Debug, Categorize, Encode, Decode)]
+    pub struct ExecutedScenarioTransaction {
+        pub logical_name: String,
+        pub state_version: StateVersion,
+        pub intent_hash: IntentHash,
+    }
+
+    #[enum_dispatch]
+    pub trait ExecutedGenesisScenarioStore {
+        fn put(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
+    }
+}
+
 pub mod extensions {
     use super::*;
     use radix_engine::types::GlobalAddress;

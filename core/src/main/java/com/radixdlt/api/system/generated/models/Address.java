@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   Address.JSON_PROPERTY_URI,
-  Address.JSON_PROPERTY_BLACKLISTED,
+  Address.JSON_PROPERTY_FAILED_HANDSHAKE,
   Address.JSON_PROPERTY_LAST_CONNECTION_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -40,8 +40,8 @@ public class Address {
   public static final String JSON_PROPERTY_URI = "uri";
   private String uri;
 
-  public static final String JSON_PROPERTY_BLACKLISTED = "blacklisted";
-  private Boolean blacklisted;
+  public static final String JSON_PROPERTY_FAILED_HANDSHAKE = "failedHandshake";
+  private Boolean failedHandshake;
 
   /**
    * Gets or Sets lastConnectionStatus
@@ -110,29 +110,29 @@ public class Address {
   }
 
 
-  public Address blacklisted(Boolean blacklisted) {
-    this.blacklisted = blacklisted;
+  public Address failedHandshake(Boolean failedHandshake) {
+    this.failedHandshake = failedHandshake;
     return this;
   }
 
    /**
-   * Get blacklisted
-   * @return blacklisted
+   * Get failedHandshake
+   * @return failedHandshake
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLACKLISTED)
+  @JsonProperty(JSON_PROPERTY_FAILED_HANDSHAKE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getBlacklisted() {
-    return blacklisted;
+  public Boolean getFailedHandshake() {
+    return failedHandshake;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLACKLISTED)
+  @JsonProperty(JSON_PROPERTY_FAILED_HANDSHAKE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlacklisted(Boolean blacklisted) {
-    this.blacklisted = blacklisted;
+  public void setFailedHandshake(Boolean failedHandshake) {
+    this.failedHandshake = failedHandshake;
   }
 
 
@@ -175,13 +175,13 @@ public class Address {
     }
     Address address = (Address) o;
     return Objects.equals(this.uri, address.uri) &&
-        Objects.equals(this.blacklisted, address.blacklisted) &&
+        Objects.equals(this.failedHandshake, address.failedHandshake) &&
         Objects.equals(this.lastConnectionStatus, address.lastConnectionStatus);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(uri, blacklisted, lastConnectionStatus);
+    return Objects.hash(uri, failedHandshake, lastConnectionStatus);
   }
 
   @Override
@@ -189,7 +189,7 @@ public class Address {
     StringBuilder sb = new StringBuilder();
     sb.append("class Address {\n");
     sb.append("    uri: ").append(toIndentedString(uri)).append("\n");
-    sb.append("    blacklisted: ").append(toIndentedString(blacklisted)).append("\n");
+    sb.append("    failedHandshake: ").append(toIndentedString(failedHandshake)).append("\n");
     sb.append("    lastConnectionStatus: ").append(toIndentedString(lastConnectionStatus)).append("\n");
     sb.append("}");
     return sb.toString();

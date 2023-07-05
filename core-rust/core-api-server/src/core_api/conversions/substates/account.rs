@@ -40,7 +40,7 @@ pub fn to_api_account_vault_entry(
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
-        value -> {
+        value => {
             vault: Box::new(to_api_entity_reference(context, value.as_node_id())?),
         }
     ))
@@ -60,7 +60,7 @@ pub fn to_api_account_deposit_rule_entry(
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
-        value -> {
+        value => {
             deposit_rule: value.map(|rule| match rule {
                 ResourceDepositRule::Neither => models::DepositRule::Neither,
                 ResourceDepositRule::Allowed => models::DepositRule::Allowed,

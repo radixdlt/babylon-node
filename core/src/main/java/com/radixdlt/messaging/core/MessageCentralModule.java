@@ -67,6 +67,7 @@ package com.radixdlt.messaging.core;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Objects;
 
@@ -93,5 +94,9 @@ public final class MessageCentralModule extends AbstractModule {
 
     // MessageCentral dependencies
     bind(MessageCentralConfiguration.class).toInstance(this.config);
+
+    Multibinder.newSetBinder(binder(), OutboundMessageInterceptor.class)
+        .addBinding()
+        .to(ReportPriorityPeersMessageInterceptor.class);
   }
 }

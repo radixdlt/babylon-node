@@ -103,7 +103,8 @@ pub enum DatabaseBackendConfig {
     CommitStore,
     SubstateNodeAncestryStore,
     IterableAccountChangeIndex,
-    IterableTransactionStore
+    IterableTransactionStore,
+    ExecutedGenesisScenarioStore
 )]
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),

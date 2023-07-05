@@ -46,7 +46,7 @@ pub fn to_api_generic_key_value_store_substate(
         models::GenericKey {
             key_data: key_data_option.map(Box::new),
         },
-        value -> {
+        value => {
             data: Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?),
         },
     ))

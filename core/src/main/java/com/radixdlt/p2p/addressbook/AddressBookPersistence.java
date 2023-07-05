@@ -67,6 +67,7 @@ package com.radixdlt.p2p.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.p2p.NodeId;
+import java.util.List;
 
 public interface AddressBookPersistence extends NodeAutoCloseable {
   void open();
@@ -75,9 +76,13 @@ public interface AddressBookPersistence extends NodeAutoCloseable {
 
   void close();
 
-  boolean saveEntry(AddressBookEntry entry);
+  boolean upsertEntry(AddressBookEntry entry);
 
   boolean removeEntry(NodeId nodeId);
 
   ImmutableList<AddressBookEntry> getAllEntries();
+
+  void storeHighPriorityPeers(List<NodeId> ids);
+
+  List<NodeId> getHighPriorityPeers();
 }

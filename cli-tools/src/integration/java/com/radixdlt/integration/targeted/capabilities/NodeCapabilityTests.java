@@ -187,7 +187,7 @@ public class NodeCapabilityTests {
           m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
 
       // Have the expected messages been received?
-      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 3);
+      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 10);
 
       assertTrue(result.message, result.testOk);
     } catch (Exception ex) {

@@ -74,6 +74,12 @@ public interface PeerControl {
    */
   void banPeer(NodeId nodeId, Duration banDuration, String reason);
 
+  /**
+   * Indicates to the address book that the given node ID is in some way important and should be
+   * prioritized over other peers (f.e. when address book is close to being full).
+   */
+  void reportHighPriorityPeer(NodeId nodeId);
+
   default void banPeerForever(NodeId nodeId, String reason) {
     banPeer(nodeId, Duration.ofMillis(Long.MAX_VALUE), reason);
   }

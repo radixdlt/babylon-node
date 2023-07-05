@@ -227,7 +227,7 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "free";
-            TAKE_FROM_WORKTOP Address("%s") Decimal("1") Bucket("validator_creation_fee");
+            TAKE_FROM_WORKTOP Address("%s") Decimal("1000") Bucket("validator_creation_fee");
             CREATE_VALIDATOR Bytes("%s") Decimal("0") Bucket("validator_creation_fee");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
@@ -341,22 +341,33 @@ public class Manifest {
     return (params) ->
         String.format(
             """
-                    %s
-                    CREATE_NON_FUNGIBLE_RESOURCE
-                        Enum<0u8>()
-                        Enum<NonFungibleIdType::Integer>()
-                        false
-                        Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-                        Map<Enum, Tuple>(
-                            Enum<ResourceAction::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-                            Enum<ResourceAction::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
-                        )
-                        Tuple(
-                            Map<String, Tuple>(),
-                            Map<String, Tuple>()
-                        )
-                        Enum<0u8>();
-                    """,
+            %s
+            CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<0u8>()
+                Enum<NonFungibleIdType::Integer>()
+                false
+                Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+                Tuple(
+                    Enum<Option::Some>(Tuple(                    # Mintable
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    )),
+                    Enum<Option::Some>(Tuple(                    # Burnable
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
+                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    )),
+                    Enum<Option::None>(),                        # Freezable
+                    Enum<Option::None>(),                        # Recallable
+                    Enum<Option::None>(),                        # Restrict Withdraw
+                    Enum<Option::None>(),                        # Restrict Deposit
+                    Enum<Option::None>()                         # Update Non Fungible Data
+                )
+                Tuple(
+                    Map<String, Tuple>(),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>();
+            """,
             params.faucetLockFeeLine());
   }
 
