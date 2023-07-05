@@ -208,6 +208,9 @@ public class ConsensusModuleTest {
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());
         LedgerProof proof = mock(LedgerProof.class);
         when(proof.getRound()).thenReturn(Round.genesis());
+        final var header = mock(LedgerHeader.class);
+        when(header.getRound()).thenReturn(Round.genesis());
+        when(proof.getHeader()).thenReturn(header);
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)

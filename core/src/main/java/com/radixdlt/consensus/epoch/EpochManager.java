@@ -79,10 +79,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.*;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -90,6 +87,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -117,6 +115,7 @@ public final class EpochManager {
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
+  private LedgerHeader currentLedgerHeader;
   private EpochChange lastEpochChange;
 
   private ValidationStatus validationStatus;
@@ -140,6 +139,7 @@ public final class EpochManager {
   @Inject
   public EpochManager(
       @Self BFTValidatorId self,
+      @LastProof LedgerProof currentProof,
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
@@ -156,6 +156,7 @@ public final class EpochManager {
       SafetyState safetyState,
       PersistentSafetyStateStore persistentSafetyStateStore) {
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
+    this.currentLedgerHeader = currentProof.getHeader();
     this.lastEpochChange = requireNonNull(lastEpochChange);
     this.self = requireNonNull(self);
     this.pacemakerFactory = requireNonNull(pacemakerFactory);
@@ -238,8 +239,25 @@ public final class EpochManager {
             safetyRules,
             initialRoundUpdate,
             nextEpoch);
+
+    // It may happen that there's a temporary mismatch between the state
+    // of the vertex store and the ledger (f.e. when vertex store state is persisted
+    // through PersistentVertexStore, independently of a commit - specifically around an epoch
+    // change).
+    // While the vertex store itself is resilient to this, and has been designed
+    // to handle this scenario, BFTSync hasn't.
+    // So here we're using the highest state version ledger header out of the two.
+    // Note that this is a bit of a workaround and ideally should at some
+    // point be addresses by refactoring how VertexStore/BFTSync interact with Ledger.
+    final var vertexStoreRootHeader =
+        bftConfiguration.getVertexStoreState().getRootHeader().getHeader();
+    final var highestStateVersionLedgerHeader =
+        vertexStoreRootHeader.getStateVersion() >= currentLedgerHeader.getStateVersion()
+            ? vertexStoreRootHeader
+            : currentLedgerHeader;
     final var bftSync =
-        bftSyncFactory.create(safetyRules, vertexStore, pacemakerState, bftConfiguration);
+        bftSyncFactory.create(
+            safetyRules, vertexStore, pacemakerState, highestStateVersionLedgerHeader);
 
     this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
     this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
@@ -281,6 +299,8 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+    this.currentLedgerHeader = ledgerUpdate.getTail().getHeader();
+
     var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
 
     if (epochChange != null) {

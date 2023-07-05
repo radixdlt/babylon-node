@@ -125,17 +125,7 @@ public final class VertexStoreAdapter {
   public VertexStore.InsertQcResult insertQc(QuorumCertificate qc) {
     final var result = vertexStore.insertQc(qc);
     if (result instanceof VertexStore.InsertQcResult.Inserted inserted) {
-      // TODO: why is this if statement needed?
-      if (inserted.committedUpdate().isEmpty()) {
-        this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
-      }
-      inserted
-          .committedUpdate()
-          .onPresent(
-              committedUpdate ->
-                  this.bftCommittedDispatcher.dispatch(
-                      new BFTCommittedUpdate(
-                          committedUpdate.committedVertices(), inserted.vertexStoreState())));
+      dispatchPostQcInsertionEvents(inserted);
     }
     return result;
   }
@@ -150,22 +140,29 @@ public final class VertexStoreAdapter {
 
   public void insertVertexChain(VertexChain vertexChain) {
     final var result = vertexStore.insertVertexChain(vertexChain);
-    result
-        .insertedQcs()
-        .forEach(
-            insertedQc -> {
-              this.highQCUpdateDispatcher.dispatch(
-                  BFTHighQCUpdate.create(insertedQc.vertexStoreState()));
-              insertedQc
-                  .committedUpdate()
-                  .onPresent(
-                      committedUpdate ->
-                          this.bftCommittedDispatcher.dispatch(
-                              new BFTCommittedUpdate(
-                                  committedUpdate.committedVertices(),
-                                  insertedQc.vertexStoreState())));
-            });
+    result.insertedQcs().forEach(this::dispatchPostQcInsertionEvents);
     result.insertUpdates().forEach(bftUpdateDispatcher::dispatch);
+  }
+
+  private void dispatchPostQcInsertionEvents(VertexStore.InsertQcResult.Inserted inserted) {
+    // This is a bit of an abstraction break.
+    // We don't want to persist the vertex store state (via PersistentVertexStore)
+    // if the state is already being persisted alongside commit.
+    // This implicitly assumes that:
+    // - BFTHighQCUpdate triggers vertex store state persistence
+    //    (that's why this if statement is needed)
+    // - no other component needs this event if we're also committing
+    if (inserted.committedUpdate().isEmpty()) {
+      this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
+    }
+
+    inserted
+        .committedUpdate()
+        .onPresent(
+            committedUpdate ->
+                this.bftCommittedDispatcher.dispatch(
+                    new BFTCommittedUpdate(
+                        committedUpdate.committedVertices(), inserted.vertexStoreState())));
   }
 
   public Optional<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {

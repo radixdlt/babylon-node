@@ -229,7 +229,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
-      @LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
+      @LastProof LedgerProof ledgerLastProof,
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
@@ -247,7 +247,7 @@ public final class ConsensusModule extends AbstractModule {
         syncLedgerRequestSender,
         timeoutDispatcher,
         unexpectedEventEventDispatcher,
-        ledgerLastProof,
+        ledgerLastProof.getHeader(),
         random,
         bftSyncPatienceMillis,
         metrics);

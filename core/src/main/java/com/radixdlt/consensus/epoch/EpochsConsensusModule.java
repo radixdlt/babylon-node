@@ -417,7 +417,7 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (safetyRules, vertexStore, pacemakerState, configuration) ->
+    return (safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
         new BFTSync(
             self,
             syncRequestRateLimiter,
@@ -430,7 +430,7 @@ public class EpochsConsensusModule extends AbstractModule {
             syncLedgerRequestSender,
             timeoutDispatcher,
             unexpectedEventEventDispatcher,
-            configuration.getVertexStoreState().getRootHeader(),
+            currentLedgerHeader,
             random,
             bftSyncPatienceMillis,
             metrics);

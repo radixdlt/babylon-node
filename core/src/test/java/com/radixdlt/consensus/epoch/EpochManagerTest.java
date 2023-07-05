@@ -333,10 +333,11 @@ public class EpochManagerTest {
     when(proof.getNextEpoch())
         .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
     var epochChange = new EpochChange(proof, bftConfiguration);
+    final var ledgerUpdateExtension = mock(LedgerExtension.class);
+    when(ledgerUpdateExtension.getProof()).thenReturn(mock(LedgerProof.class));
     var ledgerUpdate =
         new LedgerUpdate(
-            mock(LedgerExtension.class),
-            ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
+            ledgerUpdateExtension, ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 
     // Act
     epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

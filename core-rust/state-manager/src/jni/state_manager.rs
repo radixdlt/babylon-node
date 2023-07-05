@@ -75,6 +75,8 @@ use node_common::environment::setup_tracing;
 use node_common::java::*;
 use parking_lot::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
+use radix_engine::transaction::FeeReserveConfig;
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use tokio::runtime::Runtime;
@@ -131,6 +133,7 @@ pub struct StateManagerConfig {
     pub database_backend_config: DatabaseBackendConfig,
     pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
+    pub no_fees: bool,
 }
 
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
@@ -177,7 +180,15 @@ impl JNIStateManager {
             ),
         ));
         let metric_registry = Registry::new();
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
+        let mut fee_reserve_config = FeeReserveConfig::default();
+        if config.no_fees {
+            fee_reserve_config.cost_unit_price = Decimal::ZERO;
+            fee_reserve_config.state_expansion_price = Decimal::ZERO;
+        }
+        let execution_configurator = Arc::new(ExecutionConfigurator::new(
+            &logging_config,
+            fee_reserve_config,
+        ));
         let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));

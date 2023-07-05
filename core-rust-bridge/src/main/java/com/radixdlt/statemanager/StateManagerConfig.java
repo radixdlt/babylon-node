@@ -75,7 +75,8 @@ public record StateManagerConfig(
     Option<RustMempoolConfig> mempoolConfigOpt,
     DatabaseBackendConfig databaseBackendConfig,
     DatabaseFlags databaseFlags,
-    LoggingConfig loggingConfig) {
+    LoggingConfig loggingConfig,
+    boolean noFees) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,

@@ -119,9 +119,10 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
   static StateComputerConfig rev2(
@@ -131,7 +132,7 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, false);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, false, false);
   }
 
   static StateComputerConfig rev2(
@@ -140,7 +141,13 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, new DatabaseFlags(true, false), proposerConfig, false);
+        networkId,
+        genesis,
+        databaseType,
+        new DatabaseFlags(true, false),
+        proposerConfig,
+        false,
+        false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -195,7 +202,8 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging)
+      boolean debugLogging,
+      boolean noFees)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
