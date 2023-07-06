@@ -2647,6 +2647,7 @@ components:
         - Public
         - OuterObjectOnly
         - RoleProtected
+        - OwnPackageOnly
     MethodAccessibility:
       type: object
       required:
@@ -2657,7 +2658,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match MethodPermissionType options above
+          # NOTE: These need to match MethodAccessibilityType options above
           Public: '#/components/schemas/PublicMethodAccessibility'
           OuterObjectOnly: '#/components/schemas/OuterObjectOnlyMethodAccessibility'
           RoleProtected: '#/components/schemas/RoleProtectedMethodAccessibility'

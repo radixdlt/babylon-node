@@ -32,7 +32,9 @@ public enum MethodAccessibilityType {
   
   OUTEROBJECTONLY("OuterObjectOnly"),
   
-  ROLEPROTECTED("RoleProtected");
+  ROLEPROTECTED("RoleProtected"),
+  
+  OWNPACKAGEONLY("OwnPackageOnly");
 
   private String value;
 

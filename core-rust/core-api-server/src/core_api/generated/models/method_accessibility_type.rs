@@ -18,6 +18,8 @@ pub enum MethodAccessibilityType {
     OuterObjectOnly,
     #[serde(rename = "RoleProtected")]
     RoleProtected,
+    #[serde(rename = "OwnPackageOnly")]
+    OwnPackageOnly,
 
 }
 
@@ -27,6 +29,7 @@ impl ToString for MethodAccessibilityType {
             Self::Public => String::from("Public"),
             Self::OuterObjectOnly => String::from("OuterObjectOnly"),
             Self::RoleProtected => String::from("RoleProtected"),
+            Self::OwnPackageOnly => String::from("OwnPackageOnly"),
         }
     }
 }

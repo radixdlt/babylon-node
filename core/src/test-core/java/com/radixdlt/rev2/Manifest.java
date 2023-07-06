@@ -366,30 +366,31 @@ public class Manifest {
             """
             %s
             CREATE_NON_FUNGIBLE_RESOURCE
-                Enum<0u8>()
+                Enum<OwnerRole::None>()
                 Enum<NonFungibleIdType::Integer>()
-                false
+                false                            # Track Supply
                 Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
                 Tuple(
-                    Enum<Option::Some>(Tuple(                    # Mintable
-                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
-                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    Some(Tuple(                  # Mintable
+                        Some(Enum<AccessRule::AllowAll>()),
+                        Some(Enum<AccessRule::DenyAll>()),
                     )),
-                    Enum<Option::Some>(Tuple(                    # Burnable
-                        Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false),
-                        Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)
+                    Some(Tuple(                  # Burnable
+                        Some(Enum<AccessRule::AllowAll>()),
+                        Some(Enum<AccessRule::DenyAll>()),
                     )),
-                    Enum<Option::None>(),                        # Freezable
-                    Enum<Option::None>(),                        # Recallable
-                    Enum<Option::None>(),                        # Restrict Withdraw
-                    Enum<Option::None>(),                        # Restrict Deposit
-                    Enum<Option::None>()                         # Update Non Fungible Data
+                    None,                        # Freezable
+                    None,                        # Recallable
+                    None,                        # Restrict Withdraw
+                    None,                        # Restrict Deposit 
+                    None,                        # Update Non Fungible Data
                 )
-                Tuple(
+                Tuple(                           # Metadata
                     Map<String, Tuple>(),
-                    Map<String, Tuple>()
+                    Map<String, Enum>()
                 )
-                Enum<0u8>();
+                None                             # Initial supply
+            ;
             """,
             params.faucetLockFeeLine());
   }
