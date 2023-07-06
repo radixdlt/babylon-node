@@ -83,6 +83,26 @@ public class Manifest {
           CALL_METHOD Address("%s") "lock_fee" Decimal("100");""", encode(address));
     }
 
+    public String createProofOfValidatorOwnerBadge(
+        ComponentAddress account, ComponentAddress validator) {
+      return createProofOfOwnerBadge(
+          account, ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS, validator);
+    }
+
+    public String createProofOfOwnerBadge(
+        ComponentAddress account, ResourceAddress ownerBadgeResource, ComponentAddress owned) {
+      return String.format(
+          """
+          CALL_METHOD Address("%s")
+              "create_proof_of_non_fungibles"
+              Address("%s")
+              Array<NonFungibleLocalId>(
+                  NonFungibleLocalId("%s"),
+              )
+          ;""",
+          encode(account), encode(ownerBadgeResource), owned.ownerBadgeBytesLocalId());
+    }
+
     public String encode(ComponentAddress address) {
       return address.encode(network);
     }
@@ -244,13 +264,12 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
             CALL_METHOD Address("%s") "update_accept_delegated_stake" true;
             CALL_METHOD Address("%s") "register";
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
             params.encode(validatorAddress),
             params.encode(validatorAddress));
   }
@@ -261,32 +280,26 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
             CALL_METHOD Address("%s") "unregister";
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
             params.encode(validatorAddress));
   }
 
   public static Functions.Func1<Parameters, String> stakeValidatorAsNormalUser(
-      ComponentAddress stakingAccount,
-      ComponentAddress validatorAddress,
-      ComponentAddress ownerAccount) {
+      ComponentAddress stakingAccount, ComponentAddress validatorAddress) {
     return (params) ->
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
             CALL_METHOD Address("%s") "stake" Bucket("xrd");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
             params.encode(FAUCET),
             params.encode(XRD),
             params.encode(validatorAddress),
@@ -301,15 +314,14 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
             CALL_METHOD Address("%s") "stake_as_owner" Bucket("xrd");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
             params.encode(FAUCET),
             params.encode(XRD),
             params.encode(validatorAddress),
@@ -382,7 +394,7 @@ public class Manifest {
                     None,                        # Freezable
                     None,                        # Recallable
                     None,                        # Restrict Withdraw
-                    None,                        # Restrict Deposit 
+                    None,                        # Restrict Deposit
                     None,                        # Update Non Fungible Data
                 )
                 Tuple(                           # Metadata

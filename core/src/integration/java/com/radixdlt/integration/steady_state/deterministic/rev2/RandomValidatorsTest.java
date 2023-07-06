@@ -231,8 +231,7 @@ public final class RandomValidatorsTest {
               txn =
                   TransactionBuilder.forTests()
                       .manifest(
-                          Manifest.stakeValidatorAsNormalUser(
-                              stakingAccount, validatorAddress, ownerAccount))
+                          Manifest.stakeValidatorAsNormalUser(stakingAccount, validatorAddress))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()
                       .raw();

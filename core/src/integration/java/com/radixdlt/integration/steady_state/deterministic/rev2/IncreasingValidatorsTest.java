@@ -73,6 +73,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -83,6 +84,7 @@ import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.identifiers.Address;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -92,6 +94,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import org.junit.Rule;
@@ -135,20 +138,21 @@ public final class IncreasingValidatorsTest {
 
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      var validatorDefinitions =
-          PrivateKeys.numeric(2)
-              .map(
-                  k -> {
-                    var ownerAccount = Address.virtualAccountAddress(k.getPublicKey());
-                    var rawTransaction =
-                        TransactionBuilder.forTests()
-                            .manifest(Manifest.createValidator(k.getPublicKey(), ownerAccount))
-                            .prepare()
-                            .raw();
-                    return tuple(rawTransaction, k, ownerAccount);
-                  })
-              .limit(NUM_VALIDATORS - 1)
-              .toList();
+      List<Tuple.Tuple3<RawNotarizedTransaction, ECKeyPair, ComponentAddress>>
+          validatorDefinitions =
+              PrivateKeys.numeric(2)
+                  .map(
+                      k -> {
+                        var ownerAccount = Address.virtualAccountAddress(k.getPublicKey());
+                        var rawTransaction =
+                            TransactionBuilder.forTests()
+                                .manifest(Manifest.createValidator(k.getPublicKey(), ownerAccount))
+                                .prepare()
+                                .raw();
+                        return tuple(rawTransaction, k, ownerAccount);
+                      })
+                  .limit(NUM_VALIDATORS - 1)
+                  .toList();
 
       // Create Validators
       for (var definition : validatorDefinitions) {

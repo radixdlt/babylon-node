@@ -98,6 +98,10 @@ public record ComponentAddress(byte[] value) {
     return new ComponentAddress(addressBytes);
   }
 
+  public String ownerBadgeBytesLocalId() {
+    return String.format("[%s]", toHexString());
+  }
+
   public String encode(NetworkDefinition networkDefinition) {
     return Bech32mCoder.encodeAddress(networkDefinition, this.value);
   }
