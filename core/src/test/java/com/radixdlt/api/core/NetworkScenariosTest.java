@@ -97,7 +97,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
           0,
           "radiswap",
           ImmutableSet.of("radiswap-add-liquidity", "radiswap-swap-tokens"),
-          ImmutableSet.of("radiswap_owner", "pool_1_resource_1"));
+          ImmutableSet.of("radiswap_dapp_definition_account", "pool_1_resource_1"));
       assertScenario(
           scenarios,
           1,
