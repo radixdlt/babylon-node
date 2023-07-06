@@ -12,19 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct DescribedAddress {
-    #[serde(rename = "logical_name")]
-    pub logical_name: String,
-    /// An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
-    #[serde(rename = "address")]
-    pub address: String,
+pub struct OwnPackageOnlyMethodAccessibility {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::MethodAccessibilityType,
 }
 
-impl DescribedAddress {
-    pub fn new(logical_name: String, address: String) -> DescribedAddress {
-        DescribedAddress {
-            logical_name,
-            address,
+impl OwnPackageOnlyMethodAccessibility {
+    pub fn new(_type: crate::core_api::generated::models::MethodAccessibilityType) -> OwnPackageOnlyMethodAccessibility {
+        OwnPackageOnlyMethodAccessibility {
+            _type,
         }
     }
 }

@@ -87,7 +87,7 @@ pub(crate) async fn handle_transaction_callpreview(
                     InstructionV1::CallMethod {
                         address: FAUCET.into(),
                         method_name: "lock_fee".to_string(),
-                        args: manifest_args!(Decimal::from(100u32)),
+                        args: manifest_args!(Decimal::from(100u32)).into(),
                     },
                     requested_call,
                 ],

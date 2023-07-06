@@ -6,7 +6,6 @@ use state_manager::store::traits::*;
 use state_manager::transaction::*;
 use state_manager::{CommittedTransactionIdentifiers, LocalTransactionReceipt, StateVersion};
 
-use std::collections::HashMap;
 use transaction::manifest;
 use transaction::prelude::*;
 
@@ -289,7 +288,7 @@ pub fn to_api_intent(
                 .blobs
                 .iter()
                 .map(|blob| (to_hex(hash(&blob.0)), to_hex(&blob.0)))
-                .collect::<HashMap<String, String>>(),
+                .collect(),
         )
     } else {
         None

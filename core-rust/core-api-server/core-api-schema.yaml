@@ -2661,6 +2661,7 @@ components:
           Public: '#/components/schemas/PublicMethodAccessibility'
           OuterObjectOnly: '#/components/schemas/OuterObjectOnlyMethodAccessibility'
           RoleProtected: '#/components/schemas/RoleProtectedMethodAccessibility'
+          OwnPackageOnly: '#/components/schemas/OwnPackageOnlyMethodAccessibility'
     PublicMethodAccessibility:
       allOf:
         - $ref: '#/components/schemas/MethodAccessibility'
@@ -2680,6 +2681,10 @@ components:
               type: array
               items:
                 type: string
+    OwnPackageOnlyMethodAccessibility:
+      allOf:
+        - $ref: '#/components/schemas/MethodAccessibility'
+        - type: object
     BlueprintSchemaFieldPartition:
       type: object
       description: The fields partition of the blueprint.
@@ -5259,10 +5264,11 @@ components:
             $ref: "#/components/schemas/ExecutedScenarioTransaction"
           description: Transactions successfully committed by the Scenario.
         addresses:
-          type: array
-          items:
+          type: object
+          description: |
+            Well-named addresses touched/created by the Scenario, keyed by their name.
+          additionalProperties:
             $ref: "#/components/schemas/DescribedAddress"
-          description: Well-named addressed touched/created by the Scenario.
     ExecutedScenarioTransaction:
       type: object
       required:
@@ -5277,16 +5283,8 @@ components:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
     DescribedAddress:
-      type: object
-      required:
-        - logical_name
-        - address
-      properties:
-        logical_name:
-          type: string
-        address:
-          type: string
-          description: An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
+      type: string
+      description: An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
 ##########################
 # REQUEST: /mempool/list #
 ##########################

@@ -3,8 +3,8 @@ use crate::core_api::*;
 use radix_engine_interface::prelude::*;
 
 use state_manager::store::traits::scenario::{
-    DescribedAddress, ExecutedGenesisScenario, ExecutedGenesisScenarioStore,
-    ExecutedScenarioTransaction, ScenarioSequenceNumber,
+    ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ExecutedScenarioTransaction,
+    ScenarioSequenceNumber,
 };
 
 #[tracing::instrument(skip(state))]
@@ -43,8 +43,13 @@ pub fn to_api_executed_scenario(
         addresses: scenario
             .addresses
             .iter()
-            .map(|address| to_api_described_address(context, address))
-            .collect::<Result<Vec<_>, _>>()?,
+            .map(|address| {
+                (
+                    address.logical_name.to_owned(),
+                    address.rendered_address.to_owned(),
+                )
+            })
+            .collect(),
     })
 }
 
@@ -56,15 +61,5 @@ pub fn to_api_scenario_transaction(
         logical_name: transaction.logical_name.clone(),
         state_version: to_api_state_version(transaction.state_version)?,
         intent_hash: to_api_intent_hash(&transaction.intent_hash),
-    })
-}
-
-pub fn to_api_described_address(
-    _context: &MappingContext,
-    address: &DescribedAddress,
-) -> Result<models::DescribedAddress, MappingError> {
-    Ok(models::DescribedAddress {
-        logical_name: address.logical_name.clone(),
-        address: address.rendered_address.clone(),
     })
 }

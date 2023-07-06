@@ -16,6 +16,9 @@ pub enum MethodAccessibility {
     #[serde(rename="OuterObjectOnly")]
     OuterObjectOnlyMethodAccessibility {
     },
+    #[serde(rename="OwnPackageOnly")]
+    OwnPackageOnlyMethodAccessibility {
+    },
     #[serde(rename="Public")]
     PublicMethodAccessibility {
     },

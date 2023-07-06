@@ -22,12 +22,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DescribedAddress;
 import com.radixdlt.api.core.generated.models.ExecutedScenarioTransaction;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -52,7 +53,7 @@ public class ExecutedGenesisScenario {
   private List<ExecutedScenarioTransaction> committedTransactions = new ArrayList<>();
 
   public static final String JSON_PROPERTY_ADDRESSES = "addresses";
-  private List<DescribedAddress> addresses = new ArrayList<>();
+  private Map<String, String> addresses = new HashMap<>();
 
   public ExecutedGenesisScenario() { 
   }
@@ -142,33 +143,33 @@ public class ExecutedGenesisScenario {
   }
 
 
-  public ExecutedGenesisScenario addresses(List<DescribedAddress> addresses) {
+  public ExecutedGenesisScenario addresses(Map<String, String> addresses) {
     this.addresses = addresses;
     return this;
   }
 
-  public ExecutedGenesisScenario addAddressesItem(DescribedAddress addressesItem) {
-    this.addresses.add(addressesItem);
+  public ExecutedGenesisScenario putAddressesItem(String key, String addressesItem) {
+    this.addresses.put(key, addressesItem);
     return this;
   }
 
    /**
-   * Well-named addressed touched/created by the Scenario.
+   * Well-named addresses touched/created by the Scenario, keyed by their name. 
    * @return addresses
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Well-named addressed touched/created by the Scenario.")
+  @ApiModelProperty(required = true, value = "Well-named addresses touched/created by the Scenario, keyed by their name. ")
   @JsonProperty(JSON_PROPERTY_ADDRESSES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<DescribedAddress> getAddresses() {
+  public Map<String, String> getAddresses() {
     return addresses;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ADDRESSES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddresses(List<DescribedAddress> addresses) {
+  public void setAddresses(Map<String, String> addresses) {
     this.addresses = addresses;
   }
 

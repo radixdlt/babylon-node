@@ -80,7 +80,8 @@ public record GenesisData(
 
   public static final Decimal DEFAULT_TEST_FAUCET_SUPPLY = Decimal.of(1000_000_000_000L);
   public static final ImmutableList<String> ALL_SCENARIOS =
-      ImmutableList.of("transfer_xrd", "radiswap");
+      ImmutableList.of(
+          "transfer_xrd", "radiswap", "metadata", "fungible_resource", "non_fungible_resource");
   public static final ImmutableList<String> NO_SCENARIOS = ImmutableList.of();
 
   public static void registerCodec(CodecMap codecMap) {

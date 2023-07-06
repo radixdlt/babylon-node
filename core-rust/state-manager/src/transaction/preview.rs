@@ -127,8 +127,6 @@ mod tests {
     use prometheus::Registry;
     use radix_engine::transaction::FeeReserveConfig;
     use radix_engine_common::network::NetworkDefinition;
-    use radix_engine_common::{dec, manifest_args};
-    use radix_engine_interface::constants::FAUCET;
     use std::sync::Arc;
     use transaction::builder::ManifestBuilder;
     use transaction::model::PreviewFlags;
@@ -194,9 +192,7 @@ mod tests {
             execution_configurator,
         ));
 
-        let preview_manifest = ManifestBuilder::new()
-            .call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")))
-            .build();
+        let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
         let preview_response = transaction_previewer.preview(PreviewRequest {
             manifest: preview_manifest,

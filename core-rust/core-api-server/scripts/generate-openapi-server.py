@@ -99,6 +99,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         # Fix changes due to putting generated files directly into the crate
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
+        replace_in_file(file_path, '::std::collections::HashMap', '::utils::rust::prelude::IndexMap')
         # Fix bugs in the OAS generation:
         fix_broken_discriminator_tag(file_path, "substate_type")
         fix_broken_discriminator_tag(file_path, "resource_type")

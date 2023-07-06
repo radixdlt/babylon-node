@@ -81,6 +81,7 @@ use radix_engine::transaction::{RejectResult, TransactionReceipt};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
+use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddress;
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
@@ -177,19 +178,8 @@ impl GenesisCommitRequestFactory {
         GenesisCommitRequest {
             raw: result.raw,
             validated: result.validated,
-            proof: LedgerProof {
-                opaque: self.genesis_opaque_hash,
-                ledger_header: LedgerHeader {
-                    epoch: self.epoch,
-                    round: Round::zero(),
-                    state_version: self.state_version,
-                    hashes: result.ledger_hashes,
-                    consensus_parent_round_timestamp_ms: self.timestamp,
-                    proposer_timestamp_ms: self.timestamp,
-                    next_epoch: result.next_epoch,
-                },
-                timestamped_signatures: vec![],
-            },
+            proof: self.create_proof(result.ledger_hashes, result.next_epoch),
+            require_success: true,
         }
     }
 
@@ -204,20 +194,25 @@ impl GenesisCommitRequestFactory {
         Some(GenesisCommitRequest {
             raw: result.raw,
             validated: result.validated,
-            proof: LedgerProof {
-                opaque: self.genesis_opaque_hash,
-                ledger_header: LedgerHeader {
-                    epoch: self.epoch,
-                    round: Round::zero(),
-                    state_version: self.state_version,
-                    hashes: ledger_hashes,
-                    consensus_parent_round_timestamp_ms: self.timestamp,
-                    proposer_timestamp_ms: self.timestamp,
-                    next_epoch: None,
-                },
-                timestamped_signatures: vec![],
-            },
+            proof: self.create_proof(ledger_hashes, None),
+            require_success: false,
         })
+    }
+
+    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
+        LedgerProof {
+            opaque: self.genesis_opaque_hash,
+            ledger_header: LedgerHeader {
+                epoch: self.epoch,
+                round: Round::zero(),
+                state_version: self.state_version,
+                hashes,
+                consensus_parent_round_timestamp_ms: self.timestamp,
+                proposer_timestamp_ms: self.timestamp,
+                next_epoch,
+            },
+            timestamped_signatures: vec![],
+        }
     }
 }
 
@@ -238,6 +233,7 @@ pub struct GenesisCommitRequest {
     raw: RawLedgerTransaction,
     validated: ValidatedLedgerTransaction,
     proof: LedgerProof,
+    require_success: bool,
 }
 
 impl<S> StateManager<S>
@@ -879,7 +875,17 @@ where
                             .into_iter()
                             .map(|(descriptor, address)| DescribedAddress {
                                 logical_name: descriptor,
-                                rendered_address: address.display(&encoder).to_string(),
+                                rendered_address: match address {
+                                    ScenarioDescribedAddress::Global(address) => {
+                                        address.to_string(&encoder)
+                                    }
+                                    ScenarioDescribedAddress::Internal(address) => {
+                                        address.to_string(&encoder)
+                                    }
+                                    ScenarioDescribedAddress::NonFungible(nf_global_id) => {
+                                        nf_global_id.to_string(&encoder)
+                                    }
+                                },
                             })
                             .collect(),
                     };
@@ -1119,10 +1125,13 @@ where
         let mut write_store = self.store.write();
         let mut series_executor = self.start_series_execution(write_store.deref());
 
-        let commit = series_executor
+        let mut commit = series_executor
             .execute(&request.validated, "genesis")
-            .expect("cannot execute genesis")
-            .expect_success("genesis not successful");
+            .expect("cannot execute genesis");
+
+        if request.require_success {
+            commit = commit.expect_success("genesis not successful");
+        }
 
         let resultant_state_version = series_executor.latest_state_version();
         let resultant_ledger_hashes = *series_executor.latest_ledger_hashes();

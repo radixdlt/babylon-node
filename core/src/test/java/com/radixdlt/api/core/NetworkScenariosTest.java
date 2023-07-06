@@ -133,7 +133,6 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
             Lists.transform(
                 scenario.getCommittedTransactions(), ExecutedScenarioTransaction::getLogicalName))
         .containsAll(exampleTransactionNames);
-    assertThat(Lists.transform(scenario.getAddresses(), DescribedAddress::getLogicalName))
-        .containsAll(exampleAddressNames);
+    assertThat(scenario.getAddresses().keySet()).containsAll(exampleAddressNames);
   }
 }

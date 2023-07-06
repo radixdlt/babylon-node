@@ -326,6 +326,9 @@ pub fn to_api_method_accessibility(
                     .collect::<Vec<_>>(),
             }
         }
+        MethodAccessibility::OwnPackageOnly => {
+            models::MethodAccessibility::OwnPackageOnlyMethodAccessibility {}
+        }
     })
 }
 

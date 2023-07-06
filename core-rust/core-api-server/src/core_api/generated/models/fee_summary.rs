@@ -28,7 +28,7 @@ pub struct FeeSummary {
     pub cost_units_consumed: i64,
     /// A breakdown of where the execution cost went. 
     #[serde(rename = "cost_unit_execution_breakdown")]
-    pub cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>,
+    pub cost_unit_execution_breakdown: ::utils::rust::prelude::IndexMap<String, i64>,
     /// The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "xrd_total_execution_cost")]
     pub xrd_total_execution_cost: String,
@@ -51,7 +51,7 @@ pub struct FeeSummary {
 
 impl FeeSummary {
     /// Fees paid
-    pub fn new(cost_unit_price: String, tip_percentage: i32, cost_unit_limit: i64, cost_units_consumed: i64, cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>, xrd_total_execution_cost: String, xrd_total_royalty_cost: String, xrd_total_state_expansion_cost: String, xrd_total_tipped: String, xrd_vault_payments: Vec<crate::core_api::generated::models::VaultPayment>, xrd_royalty_receivers: Vec<crate::core_api::generated::models::RoyaltyPayment>) -> FeeSummary {
+    pub fn new(cost_unit_price: String, tip_percentage: i32, cost_unit_limit: i64, cost_units_consumed: i64, cost_unit_execution_breakdown: ::utils::rust::prelude::IndexMap<String, i64>, xrd_total_execution_cost: String, xrd_total_royalty_cost: String, xrd_total_state_expansion_cost: String, xrd_total_tipped: String, xrd_vault_payments: Vec<crate::core_api::generated::models::VaultPayment>, xrd_royalty_receivers: Vec<crate::core_api::generated::models::RoyaltyPayment>) -> FeeSummary {
         FeeSummary {
             cost_unit_price,
             tip_percentage,

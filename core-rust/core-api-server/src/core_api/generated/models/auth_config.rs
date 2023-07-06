@@ -17,7 +17,7 @@ pub struct AuthConfig {
     pub function_auth_type: crate::core_api::generated::models::FunctionAuthType,
     /// A map from a function name to AccessRule. Only exists if `function_auth_type` is set to `FunctionAccessRules`. 
     #[serde(rename = "function_access_rules", skip_serializing_if = "Option::is_none")]
-    pub function_access_rules: Option<::std::collections::HashMap<String, crate::core_api::generated::models::AccessRule>>,
+    pub function_access_rules: Option<::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::AccessRule>>,
     #[serde(rename = "method_auth_type")]
     pub method_auth_type: crate::core_api::generated::models::MethodAuthType,
     #[serde(rename = "method_roles", skip_serializing_if = "Option::is_none")]

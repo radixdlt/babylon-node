@@ -24,14 +24,14 @@ pub struct BlueprintInterface {
     pub state: Box<crate::core_api::generated::models::IndexedStateSchema>,
     /// A map from the function name to the FunctionSchema
     #[serde(rename = "functions")]
-    pub functions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>,
+    pub functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>,
     /// A map from the event name to the local type index for the event payload under the blueprint schema.
     #[serde(rename = "events")]
-    pub events: ::std::collections::HashMap<String, crate::core_api::generated::models::TypePointer>,
+    pub events: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::TypePointer>,
 }
 
 impl BlueprintInterface {
-    pub fn new(generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::std::collections::HashMap<String, crate::core_api::generated::models::TypePointer>) -> BlueprintInterface {
+    pub fn new(generic_type_parameters: Vec<crate::core_api::generated::models::GenericTypeParameter>, features: Vec<String>, state: crate::core_api::generated::models::IndexedStateSchema, functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::FunctionSchema>, events: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::TypePointer>) -> BlueprintInterface {
         BlueprintInterface {
             outer_blueprint: None,
             generic_type_parameters,

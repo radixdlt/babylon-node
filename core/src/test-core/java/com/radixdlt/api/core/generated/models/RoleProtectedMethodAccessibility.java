@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.MethodAccessibility;
 import com.radixdlt.api.core.generated.models.MethodAccessibilityType;
 import com.radixdlt.api.core.generated.models.OuterObjectOnlyMethodAccessibility;
+import com.radixdlt.api.core.generated.models.OwnPackageOnlyMethodAccessibility;
 import com.radixdlt.api.core.generated.models.PublicMethodAccessibility;
 import com.radixdlt.api.core.generated.models.RoleProtectedMethodAccessibility;
 import com.radixdlt.api.core.generated.models.RoleProtectedMethodAccessibilityAllOf;
@@ -53,6 +54,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = OuterObjectOnlyMethodAccessibility.class, name = "OuterObjectOnly"),
+  @JsonSubTypes.Type(value = OwnPackageOnlyMethodAccessibility.class, name = "OwnPackageOnly"),
   @JsonSubTypes.Type(value = PublicMethodAccessibility.class, name = "Public"),
   @JsonSubTypes.Type(value = RoleProtectedMethodAccessibility.class, name = "RoleProtected"),
 })
@@ -141,6 +143,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("OuterObjectOnly", OuterObjectOnlyMethodAccessibility.class);
+  mappings.put("OwnPackageOnly", OwnPackageOnlyMethodAccessibility.class);
   mappings.put("Public", PublicMethodAccessibility.class);
   mappings.put("RoleProtected", RoleProtectedMethodAccessibility.class);
   mappings.put("RoleProtectedMethodAccessibility", RoleProtectedMethodAccessibility.class);
