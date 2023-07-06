@@ -168,8 +168,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     MempoolAddSuccess.create(
                         RawNotarizedTransaction.create(transaction.getPayload()), origin);
                 mempoolAddSuccessEventDispatcher.dispatch(success);
-              } catch (MempoolFullException | MempoolDuplicateException ignored) {
-                // Ignore these 2 specific subclasses of the `MempoolRejectedException` logged below
+              } catch (MempoolDuplicateException ignored) {
+                // Ignore these specific subclass of the `MempoolRejectedException` logged below
               } catch (MempoolRejectedException e) {
                 log.debug(e);
               }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FieldSchemaFeatureCondition;
 import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -33,15 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   FieldSchema.JSON_PROPERTY_FIELD_TYPE_POINTER,
-  FieldSchema.JSON_PROPERTY_IF_FEATURE
+  FieldSchema.JSON_PROPERTY_CONDITION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FieldSchema {
   public static final String JSON_PROPERTY_FIELD_TYPE_POINTER = "field_type_pointer";
   private TypePointer fieldTypePointer;
 
-  public static final String JSON_PROPERTY_IF_FEATURE = "if_feature";
-  private String ifFeature;
+  public static final String JSON_PROPERTY_CONDITION = "condition";
+  private FieldSchemaFeatureCondition condition;
 
   public FieldSchema() { 
   }
@@ -72,29 +73,29 @@ public class FieldSchema {
   }
 
 
-  public FieldSchema ifFeature(String ifFeature) {
-    this.ifFeature = ifFeature;
+  public FieldSchema condition(FieldSchemaFeatureCondition condition) {
+    this.condition = condition;
     return this;
   }
 
    /**
-   * A feature required for the field.
-   * @return ifFeature
+   * Get condition
+   * @return condition
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A feature required for the field.")
-  @JsonProperty(JSON_PROPERTY_IF_FEATURE)
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_CONDITION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getIfFeature() {
-    return ifFeature;
+  public FieldSchemaFeatureCondition getCondition() {
+    return condition;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IF_FEATURE)
+  @JsonProperty(JSON_PROPERTY_CONDITION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIfFeature(String ifFeature) {
-    this.ifFeature = ifFeature;
+  public void setCondition(FieldSchemaFeatureCondition condition) {
+    this.condition = condition;
   }
 
 
@@ -111,12 +112,12 @@ public class FieldSchema {
     }
     FieldSchema fieldSchema = (FieldSchema) o;
     return Objects.equals(this.fieldTypePointer, fieldSchema.fieldTypePointer) &&
-        Objects.equals(this.ifFeature, fieldSchema.ifFeature);
+        Objects.equals(this.condition, fieldSchema.condition);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldTypePointer, ifFeature);
+    return Objects.hash(fieldTypePointer, condition);
   }
 
   @Override
@@ -124,7 +125,7 @@ public class FieldSchema {
     StringBuilder sb = new StringBuilder();
     sb.append("class FieldSchema {\n");
     sb.append("    fieldTypePointer: ").append(toIndentedString(fieldTypePointer)).append("\n");
-    sb.append("    ifFeature: ").append(toIndentedString(ifFeature)).append("\n");
+    sb.append("    condition: ").append(toIndentedString(condition)).append("\n");
     sb.append("}");
     return sb.toString();
   }

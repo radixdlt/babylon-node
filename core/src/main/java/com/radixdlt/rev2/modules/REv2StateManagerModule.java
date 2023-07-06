@@ -108,6 +108,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
+  private final boolean noFees;
 
   private REv2StateManagerModule(
       int maxNumTransactionsPerProposal,
@@ -116,7 +117,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
     this.maxUncommittedUserTransactionsTotalPayloadSize =
@@ -125,6 +127,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
+    this.noFees = noFees;
   }
 
   public static REv2StateManagerModule create(
@@ -141,6 +144,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseType,
         databaseFlags,
         mempoolConfig,
+        false,
         false);
   }
 
@@ -150,7 +154,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     return new REv2StateManagerModule(
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
@@ -158,7 +163,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         databaseType,
         databaseFlags,
         mempoolConfig,
-        debugLogging);
+        debugLogging,
+        noFees);
   }
 
   @Override
@@ -204,7 +210,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                     mempoolConfig,
                     databaseBackendConfig,
                     databaseFlags,
-                    getLoggingConfig()));
+                    getLoggingConfig(),
+                    noFees));
           }
 
           @Provides

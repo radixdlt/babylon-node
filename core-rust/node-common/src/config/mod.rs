@@ -62,4 +62,33 @@
  * permissions under this License.
  */
 
+use sbor::*;
+
 pub mod limits;
+
+// Note: this is a hard limit on the raw network size of all transactions represented by the mempool.
+// However, the implementation may keep extra information (i.e. the same transaction but validated/prepared)
+// which doubles the effective memory usage.
+const DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE: u64 = 512 * 1024 * 1024;
+const DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT: u32 = 10_000;
+
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
+pub struct MempoolConfig {
+    pub max_total_transactions_size: u64,
+    pub max_transaction_count: u32,
+}
+
+impl MempoolConfig {
+    pub fn standard() -> Self {
+        Self {
+            max_total_transactions_size: DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE,
+            max_transaction_count: DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
+        }
+    }
+}
+
+impl Default for MempoolConfig {
+    fn default() -> Self {
+        MempoolConfig::standard()
+    }
+}

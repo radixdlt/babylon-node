@@ -112,13 +112,13 @@ public class LtsStreamAccountTransactionOutcomesRequest {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the first (resultant) state version to be returned
+   * Get fromStateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return fromStateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the first (resultant) state version to be returned")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_FROM_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

@@ -121,20 +121,16 @@ pub fn to_api_substate_id(
             SubstateType::AccessRulesModuleRuleEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(_)) => (
-            SubstateType::AccessRulesModuleMutabilityEntry,
-            models::PartitionKind::KeyValue,
-        ),
         TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(
             RoyaltyField::RoyaltyAccumulator,
         )) => (
-            SubstateType::RoyaltyModuleFieldAccumulator,
+            SubstateType::RoyaltyModuleFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(
-            _,
-        )) => (
-            SubstateType::RoyaltyModuleMethodConfigEntry,
+        TypedSubstateKey::RoyaltyModule(
+            TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(_),
+        ) => (
+            SubstateType::RoyaltyModuleMethodRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(_)) => (
@@ -188,6 +184,12 @@ pub fn to_api_substate_id(
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
+            FungibleVaultField::VaultFrozenFlag,
+        )) => (
+            SubstateType::FungibleVaultFieldFrozenStatus,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
             FungibleVaultField::LockedFungible,
         )) => {
             return Err(MappingError::SubstateKey {
@@ -201,6 +203,12 @@ pub fn to_api_substate_id(
             NonFungibleVaultField::LiquidNonFungible,
         )) => (
             SubstateType::NonFungibleVaultFieldBalance,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
+            NonFungibleVaultField::VaultFrozenFlag,
+        )) => (
+            SubstateType::NonFungibleVaultFieldFrozenStatus,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
@@ -267,6 +275,12 @@ pub fn to_api_substate_id(
             SubstateType::ValidatorFieldState,
             models::PartitionKind::Field,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ValidatorField(
+            ValidatorField::ProtocolUpdateReadinessSignal,
+        )) => (
+            SubstateType::ValidatorFieldProtocolUpdateReadinessSignal,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountField(
             AccountField::Account,
         )) => (
@@ -312,7 +326,7 @@ pub fn to_api_substate_id(
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(_)) => (
-            SubstateType::PackageBlueprintEntry,
+            SubstateType::PackageBlueprintDefinitionEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(
@@ -325,16 +339,26 @@ pub fn to_api_substate_id(
             SubstateType::PackageSchemaEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageCodeKey(_)) => (
-            SubstateType::PackageCodeEntry,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(_)) => (
+            SubstateType::PackageCodeVmTypeEntry,
             models::PartitionKind::KeyValue,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageOriginalCodeKey(_)) => (
+            SubstateType::PackageCodeOriginalCodeEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(_)) => {
+            (
+                SubstateType::PackageCodeInstrumentedCodeEntry,
+                models::PartitionKind::KeyValue,
+            )
+        }
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(_)) => (
-            SubstateType::PackageRoyaltyEntry,
+            SubstateType::PackageBlueprintRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(_)) => (
-            SubstateType::PackageAuthTemplateEntry,
+            SubstateType::PackageBlueprintAuthTemplateEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerField(_)) => (

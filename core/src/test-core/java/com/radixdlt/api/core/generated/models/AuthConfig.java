@@ -23,7 +23,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRule;
-import com.radixdlt.api.core.generated.models.StaticMethodAuthTemplate;
+import com.radixdlt.api.core.generated.models.FunctionAuthType;
+import com.radixdlt.api.core.generated.models.MethodAuthType;
+import com.radixdlt.api.core.generated.models.StaticRolesAuthTemplate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -36,74 +38,137 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * AuthConfig
  */
 @JsonPropertyOrder({
-  AuthConfig.JSON_PROPERTY_FUNCTION_AUTH,
-  AuthConfig.JSON_PROPERTY_METHOD_AUTH
+  AuthConfig.JSON_PROPERTY_FUNCTION_AUTH_TYPE,
+  AuthConfig.JSON_PROPERTY_FUNCTION_ACCESS_RULES,
+  AuthConfig.JSON_PROPERTY_METHOD_AUTH_TYPE,
+  AuthConfig.JSON_PROPERTY_METHOD_ROLES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AuthConfig {
-  public static final String JSON_PROPERTY_FUNCTION_AUTH = "function_auth";
-  private Map<String, AccessRule> functionAuth = new HashMap<>();
+  public static final String JSON_PROPERTY_FUNCTION_AUTH_TYPE = "function_auth_type";
+  private FunctionAuthType functionAuthType;
 
-  public static final String JSON_PROPERTY_METHOD_AUTH = "method_auth";
-  private StaticMethodAuthTemplate methodAuth;
+  public static final String JSON_PROPERTY_FUNCTION_ACCESS_RULES = "function_access_rules";
+  private Map<String, AccessRule> functionAccessRules = null;
+
+  public static final String JSON_PROPERTY_METHOD_AUTH_TYPE = "method_auth_type";
+  private MethodAuthType methodAuthType;
+
+  public static final String JSON_PROPERTY_METHOD_ROLES = "method_roles";
+  private StaticRolesAuthTemplate methodRoles;
 
   public AuthConfig() { 
   }
 
-  public AuthConfig functionAuth(Map<String, AccessRule> functionAuth) {
-    this.functionAuth = functionAuth;
-    return this;
-  }
-
-  public AuthConfig putFunctionAuthItem(String key, AccessRule functionAuthItem) {
-    this.functionAuth.put(key, functionAuthItem);
+  public AuthConfig functionAuthType(FunctionAuthType functionAuthType) {
+    this.functionAuthType = functionAuthType;
     return this;
   }
 
    /**
-   * A map from a function identifier to AccessRule
-   * @return functionAuth
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from a function identifier to AccessRule")
-  @JsonProperty(JSON_PROPERTY_FUNCTION_AUTH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Map<String, AccessRule> getFunctionAuth() {
-    return functionAuth;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FUNCTION_AUTH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFunctionAuth(Map<String, AccessRule> functionAuth) {
-    this.functionAuth = functionAuth;
-  }
-
-
-  public AuthConfig methodAuth(StaticMethodAuthTemplate methodAuth) {
-    this.methodAuth = methodAuth;
-    return this;
-  }
-
-   /**
-   * Get methodAuth
-   * @return methodAuth
+   * Get functionAuthType
+   * @return functionAuthType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METHOD_AUTH)
+  @JsonProperty(JSON_PROPERTY_FUNCTION_AUTH_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public StaticMethodAuthTemplate getMethodAuth() {
-    return methodAuth;
+  public FunctionAuthType getFunctionAuthType() {
+    return functionAuthType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METHOD_AUTH)
+  @JsonProperty(JSON_PROPERTY_FUNCTION_AUTH_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMethodAuth(StaticMethodAuthTemplate methodAuth) {
-    this.methodAuth = methodAuth;
+  public void setFunctionAuthType(FunctionAuthType functionAuthType) {
+    this.functionAuthType = functionAuthType;
+  }
+
+
+  public AuthConfig functionAccessRules(Map<String, AccessRule> functionAccessRules) {
+    this.functionAccessRules = functionAccessRules;
+    return this;
+  }
+
+  public AuthConfig putFunctionAccessRulesItem(String key, AccessRule functionAccessRulesItem) {
+    if (this.functionAccessRules == null) {
+      this.functionAccessRules = new HashMap<>();
+    }
+    this.functionAccessRules.put(key, functionAccessRulesItem);
+    return this;
+  }
+
+   /**
+   * A map from a function name to AccessRule. Only exists if &#x60;function_auth_type&#x60; is set to &#x60;FunctionAccessRules&#x60;. 
+   * @return functionAccessRules
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A map from a function name to AccessRule. Only exists if `function_auth_type` is set to `FunctionAccessRules`. ")
+  @JsonProperty(JSON_PROPERTY_FUNCTION_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Map<String, AccessRule> getFunctionAccessRules() {
+    return functionAccessRules;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FUNCTION_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFunctionAccessRules(Map<String, AccessRule> functionAccessRules) {
+    this.functionAccessRules = functionAccessRules;
+  }
+
+
+  public AuthConfig methodAuthType(MethodAuthType methodAuthType) {
+    this.methodAuthType = methodAuthType;
+    return this;
+  }
+
+   /**
+   * Get methodAuthType
+   * @return methodAuthType
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METHOD_AUTH_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public MethodAuthType getMethodAuthType() {
+    return methodAuthType;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METHOD_AUTH_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMethodAuthType(MethodAuthType methodAuthType) {
+    this.methodAuthType = methodAuthType;
+  }
+
+
+  public AuthConfig methodRoles(StaticRolesAuthTemplate methodRoles) {
+    this.methodRoles = methodRoles;
+    return this;
+  }
+
+   /**
+   * Get methodRoles
+   * @return methodRoles
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_METHOD_ROLES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public StaticRolesAuthTemplate getMethodRoles() {
+    return methodRoles;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METHOD_ROLES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMethodRoles(StaticRolesAuthTemplate methodRoles) {
+    this.methodRoles = methodRoles;
   }
 
 
@@ -119,21 +184,25 @@ public class AuthConfig {
       return false;
     }
     AuthConfig authConfig = (AuthConfig) o;
-    return Objects.equals(this.functionAuth, authConfig.functionAuth) &&
-        Objects.equals(this.methodAuth, authConfig.methodAuth);
+    return Objects.equals(this.functionAuthType, authConfig.functionAuthType) &&
+        Objects.equals(this.functionAccessRules, authConfig.functionAccessRules) &&
+        Objects.equals(this.methodAuthType, authConfig.methodAuthType) &&
+        Objects.equals(this.methodRoles, authConfig.methodRoles);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(functionAuth, methodAuth);
+    return Objects.hash(functionAuthType, functionAccessRules, methodAuthType, methodRoles);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AuthConfig {\n");
-    sb.append("    functionAuth: ").append(toIndentedString(functionAuth)).append("\n");
-    sb.append("    methodAuth: ").append(toIndentedString(methodAuth)).append("\n");
+    sb.append("    functionAuthType: ").append(toIndentedString(functionAuthType)).append("\n");
+    sb.append("    functionAccessRules: ").append(toIndentedString(functionAccessRules)).append("\n");
+    sb.append("    methodAuthType: ").append(toIndentedString(methodAuthType)).append("\n");
+    sb.append("    methodRoles: ").append(toIndentedString(methodRoles)).append("\n");
     sb.append("}");
     return sb.toString();
   }

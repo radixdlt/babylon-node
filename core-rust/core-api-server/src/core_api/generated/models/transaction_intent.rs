@@ -23,7 +23,7 @@ pub struct TransactionIntent {
     pub instructions: Option<String>,
     /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
-    pub blobs_hex: Option<::std::collections::HashMap<String, String>>,
+    pub blobs_hex: Option<::utils::rust::prelude::IndexMap<String, String>>,
 }
 
 impl TransactionIntent {

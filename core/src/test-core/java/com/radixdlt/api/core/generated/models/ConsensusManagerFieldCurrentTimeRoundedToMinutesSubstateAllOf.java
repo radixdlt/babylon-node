@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
+  ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf {
-  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "proposer_timestamp_rounded_down_to_minute";
-  private Instant proposerTimestampRoundedDownToMinute;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldCurrentTimeRoundedToMinutesValue value;
 
   public ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf proposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
-    this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
+  public ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf value(ConsensusManagerFieldCurrentTimeRoundedToMinutesValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get proposerTimestampRoundedDownToMinute
-   * @return proposerTimestampRoundedDownToMinute
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getProposerTimestampRoundedDownToMinute() {
-    return proposerTimestampRoundedDownToMinute;
+  public ConsensusManagerFieldCurrentTimeRoundedToMinutesValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestampRoundedDownToMinute(Instant proposerTimestampRoundedDownToMinute) {
-    this.proposerTimestampRoundedDownToMinute = proposerTimestampRoundedDownToMinute;
+  public void setValue(ConsensusManagerFieldCurrentTimeRoundedToMinutesValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf consensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf = (ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf) o;
-    return Objects.equals(this.proposerTimestampRoundedDownToMinute, consensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.proposerTimestampRoundedDownToMinute);
+    return Objects.equals(this.value, consensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposerTimestampRoundedDownToMinute);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstateAllOf {\n");
-    sb.append("    proposerTimestampRoundedDownToMinute: ").append(toIndentedString(proposerTimestampRoundedDownToMinute)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -69,14 +69,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.rev2.TransactionBuilder;
 import org.junit.Test;
 
 public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
   @Test
-  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+  public void test_core_api_can_submit_and_commit_transaction_after_running_all_scenarios()
+      throws Exception {
+    // This test checks that the transaction stream doesn't return errors when mapping genesis and
+    // the scenarios
+    try (var test = buildRunningServerTestWithScenarios(GenesisData.ALL_SCENARIOS)) {
       test.suppressUnusedWarning();
       var transaction = TransactionBuilder.forTests().prepare();
 

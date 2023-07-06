@@ -13,17 +13,6 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum TypeInfoDetails {
-    #[serde(rename="GlobalAddressPhantom")]
-    GlobalAddressPhantomTypeInfoDetails {
-        #[serde(rename = "global_address_phantom")]
-        global_address_phantom: Box<crate::core_api::generated::models::GlobalAddressPhantom>,
-    },
-    #[serde(rename="GlobalAddressReservation")]
-    GlobalAddressReservationTypeInfoDetails {
-        /// The Bech32m-encoded human readable version of any global address
-        #[serde(rename = "global_address")]
-        global_address: String,
-    },
     #[serde(rename="KeyValueStore")]
     KeyValueStoreTypeInfoDetails {
         #[serde(rename = "key_value_store_info")]

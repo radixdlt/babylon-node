@@ -119,13 +119,13 @@ public class LtsTransactionStatusResponse {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the resultant state version when the transaction was committed. This is only present if the intent was committed (as a Success or Failure). This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up details on the transaction&#39;s outcome from the &#x60;/lts/stream/transaction-outcomes&#x60; endpoint. 
+   * Get committedStateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return committedStateVersion
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `1` and `10^13`, giving the resultant state version when the transaction was committed. This is only present if the intent was committed (as a Success or Failure). This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up details on the transaction's outcome from the `/lts/stream/transaction-outcomes` endpoint. ")
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_COMMITTED_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

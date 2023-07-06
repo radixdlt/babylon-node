@@ -58,13 +58,13 @@ public class LtsStateAccountAllFungibleResourceBalancesResponse {
   }
 
    /**
-   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the state version at which the query was performed. 
+   * Get stateVersion
    * minimum: 1
    * maximum: 100000000000000
    * @return stateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the state version at which the query was performed. ")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

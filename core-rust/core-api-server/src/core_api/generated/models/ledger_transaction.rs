@@ -18,8 +18,11 @@ pub enum LedgerTransaction {
         /// The hex-encoded full ledger transaction payload. Only returned if enabled in TransactionFormatOptions on your request.
         #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
         payload_hex: Option<String>,
-        #[serde(rename = "system_transaction")]
-        system_transaction: Box<crate::core_api::generated::models::SystemTransaction>,
+        /// The first genesis \"transaction\" flashes state into the database to prepare for the bootstrap transaction. Such a transaction does not have an associated `system_transaction` 
+        #[serde(rename = "is_flash")]
+        is_flash: bool,
+        #[serde(rename = "system_transaction", skip_serializing_if = "Option::is_none")]
+        system_transaction: Option<Box<crate::core_api::generated::models::SystemTransaction>>,
     },
     #[serde(rename="RoundUpdate")]
     RoundUpdateLedgerTransaction {

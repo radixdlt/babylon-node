@@ -71,6 +71,7 @@ import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
 import org.junit.Test;
 
 public class NetworkStatusTest extends DeterministicCoreApiTestBase {
+  @SuppressWarnings("DataFlowIssue")
   @Test
   public void test_core_api_status_response_at_startup() throws Exception {
     try (var test = buildRunningServerTest()) {
@@ -79,8 +80,12 @@ public class NetworkStatusTest extends DeterministicCoreApiTestBase {
           getStatusApi()
               .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
 
-      // Has ingested genesis on startup (expecting 4 genesis txns)
-      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(4);
+      // Has ingested genesis on startup (expecting 5 genesis txns)
+      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(5);
+      assertThat(response.getGenesisEpochRound().getEpoch()).isEqualTo(1);
+      assertThat(response.getGenesisEpochRound().getRound()).isEqualTo(0);
+      assertThat(response.getPostGenesisEpochRound().getEpoch()).isEqualTo(2);
+      assertThat(response.getPostGenesisEpochRound().getRound()).isEqualTo(0);
     }
   }
 }

@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccessRulesModuleFieldOwnerRoleSubstateAllOf {
-    #[serde(rename = "owner_role")]
-    pub owner_role: Option<crate::core_api::generated::models::OwnerRole>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccessRulesModuleFieldOwnerRoleValue>,
 }
 
 impl AccessRulesModuleFieldOwnerRoleSubstateAllOf {
-    pub fn new(owner_role: crate::core_api::generated::models::OwnerRole) -> AccessRulesModuleFieldOwnerRoleSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::AccessRulesModuleFieldOwnerRoleValue) -> AccessRulesModuleFieldOwnerRoleSubstateAllOf {
         AccessRulesModuleFieldOwnerRoleSubstateAllOf {
-            owner_role: Option::Some(owner_role),
+            value: Box::new(value),
         }
     }
 }

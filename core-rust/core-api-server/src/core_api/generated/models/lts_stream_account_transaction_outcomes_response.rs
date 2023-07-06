@@ -13,13 +13,11 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsStreamAccountTransactionOutcomesResponse {
-    /// An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any). This matches the `from_state_version` in the request. 
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
     /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
     #[serde(rename = "count")]
     pub count: i32,
-    /// An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
     #[serde(rename = "max_ledger_state_version")]
     pub max_ledger_state_version: i64,
     /// A committed transaction outcomes list starting from the `from_state_version` (inclusive).

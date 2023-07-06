@@ -21,6 +21,8 @@ import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
 import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
 import com.radixdlt.api.core.generated.models.NetworkStatusResponse;
+import com.radixdlt.api.core.generated.models.ScenariosRequest;
+import com.radixdlt.api.core.generated.models.ScenariosResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -209,6 +211,84 @@ public class StatusApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(networkStatusRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Scenarios&#39; results.
+   * Get results of test-oriented \&quot;Genesis Scenarios\&quot; executed on this Network.
+   * @param scenariosRequest  (required)
+   * @return ScenariosResponse
+   * @throws ApiException if fails to make API call
+   */
+  public ScenariosResponse statusScenariosPost(ScenariosRequest scenariosRequest) throws ApiException {
+    ApiResponse<ScenariosResponse> localVarResponse = statusScenariosPostWithHttpInfo(scenariosRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Scenarios&#39; results.
+   * Get results of test-oriented \&quot;Genesis Scenarios\&quot; executed on this Network.
+   * @param scenariosRequest  (required)
+   * @return ApiResponse&lt;ScenariosResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<ScenariosResponse> statusScenariosPostWithHttpInfo(ScenariosRequest scenariosRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = statusScenariosPostRequestBuilder(scenariosRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("statusScenariosPost", localVarResponse);
+        }
+        return new ApiResponse<ScenariosResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<ScenariosResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder statusScenariosPostRequestBuilder(ScenariosRequest scenariosRequest) throws ApiException {
+    // verify the required parameter 'scenariosRequest' is set
+    if (scenariosRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'scenariosRequest' when calling statusScenariosPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/status/scenarios";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(scenariosRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

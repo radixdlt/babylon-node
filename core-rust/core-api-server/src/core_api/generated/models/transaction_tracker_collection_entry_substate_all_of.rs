@@ -13,18 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionTrackerCollectionEntrySubstateAllOf {
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-    #[serde(rename = "intent_hash")]
-    pub intent_hash: String,
-    #[serde(rename = "status", skip_serializing_if = "Option::is_none")]
-    pub status: Option<crate::core_api::generated::models::TransactionTrackerTransactionStatus>,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::TransactionIdKey>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::TransactionTrackerCollectionEntryValue>,
 }
 
 impl TransactionTrackerCollectionEntrySubstateAllOf {
-    pub fn new(intent_hash: String) -> TransactionTrackerCollectionEntrySubstateAllOf {
+    pub fn new(key: crate::core_api::generated::models::TransactionIdKey, value: crate::core_api::generated::models::TransactionTrackerCollectionEntryValue) -> TransactionTrackerCollectionEntrySubstateAllOf {
         TransactionTrackerCollectionEntrySubstateAllOf {
-            intent_hash,
-            status: None,
+            key: Box::new(key),
+            value: Box::new(value),
         }
     }
 }

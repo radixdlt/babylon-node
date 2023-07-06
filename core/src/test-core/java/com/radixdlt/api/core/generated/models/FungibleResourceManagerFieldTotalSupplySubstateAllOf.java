@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerFieldTotalSupplyValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FungibleResourceManagerFieldTotalSupplySubstateAllOf
  */
 @JsonPropertyOrder({
-  FungibleResourceManagerFieldTotalSupplySubstateAllOf.JSON_PROPERTY_TOTAL_SUPPLY
+  FungibleResourceManagerFieldTotalSupplySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FungibleResourceManagerFieldTotalSupplySubstateAllOf {
-  public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
-  private String totalSupply;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private FungibleResourceManagerFieldTotalSupplyValue value;
 
   public FungibleResourceManagerFieldTotalSupplySubstateAllOf() { 
   }
 
-  public FungibleResourceManagerFieldTotalSupplySubstateAllOf totalSupply(String totalSupply) {
-    this.totalSupply = totalSupply;
+  public FungibleResourceManagerFieldTotalSupplySubstateAllOf value(FungibleResourceManagerFieldTotalSupplyValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return totalSupply
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getTotalSupply() {
-    return totalSupply;
+  public FungibleResourceManagerFieldTotalSupplyValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TOTAL_SUPPLY)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTotalSupply(String totalSupply) {
-    this.totalSupply = totalSupply;
+  public void setValue(FungibleResourceManagerFieldTotalSupplyValue value) {
+    this.value = value;
   }
 
 
@@ -79,19 +80,19 @@ public class FungibleResourceManagerFieldTotalSupplySubstateAllOf {
       return false;
     }
     FungibleResourceManagerFieldTotalSupplySubstateAllOf fungibleResourceManagerFieldTotalSupplySubstateAllOf = (FungibleResourceManagerFieldTotalSupplySubstateAllOf) o;
-    return Objects.equals(this.totalSupply, fungibleResourceManagerFieldTotalSupplySubstateAllOf.totalSupply);
+    return Objects.equals(this.value, fungibleResourceManagerFieldTotalSupplySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(totalSupply);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FungibleResourceManagerFieldTotalSupplySubstateAllOf {\n");
-    sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

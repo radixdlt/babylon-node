@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TransactionTrackerTransactionStatus;
+import com.radixdlt.api.core.generated.models.TransactionIdKey;
+import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntryValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,69 +33,69 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionTrackerCollectionEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_INTENT_HASH,
-  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_STATUS
+  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_KEY,
+  TransactionTrackerCollectionEntrySubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionTrackerCollectionEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
-  private String intentHash;
+  public static final String JSON_PROPERTY_KEY = "key";
+  private TransactionIdKey key;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private TransactionTrackerTransactionStatus status;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TransactionTrackerCollectionEntryValue value;
 
   public TransactionTrackerCollectionEntrySubstateAllOf() { 
   }
 
-  public TransactionTrackerCollectionEntrySubstateAllOf intentHash(String intentHash) {
-    this.intentHash = intentHash;
+  public TransactionTrackerCollectionEntrySubstateAllOf key(TransactionIdKey key) {
+    this.key = key;
     return this;
   }
 
    /**
-   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-   * @return intentHash
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
-  @JsonProperty(JSON_PROPERTY_INTENT_HASH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getIntentHash() {
-    return intentHash;
+  public TransactionIdKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INTENT_HASH)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIntentHash(String intentHash) {
-    this.intentHash = intentHash;
+  public void setKey(TransactionIdKey key) {
+    this.key = key;
   }
 
 
-  public TransactionTrackerCollectionEntrySubstateAllOf status(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  public TransactionTrackerCollectionEntrySubstateAllOf value(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionTrackerTransactionStatus getStatus() {
-    return status;
+  public TransactionTrackerCollectionEntryValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setStatus(TransactionTrackerTransactionStatus status) {
-    this.status = status;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(TransactionTrackerCollectionEntryValue value) {
+    this.value = value;
   }
 
 
@@ -110,21 +111,21 @@ public class TransactionTrackerCollectionEntrySubstateAllOf {
       return false;
     }
     TransactionTrackerCollectionEntrySubstateAllOf transactionTrackerCollectionEntrySubstateAllOf = (TransactionTrackerCollectionEntrySubstateAllOf) o;
-    return Objects.equals(this.intentHash, transactionTrackerCollectionEntrySubstateAllOf.intentHash) &&
-        Objects.equals(this.status, transactionTrackerCollectionEntrySubstateAllOf.status);
+    return Objects.equals(this.key, transactionTrackerCollectionEntrySubstateAllOf.key) &&
+        Objects.equals(this.value, transactionTrackerCollectionEntrySubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, status);
+    return Objects.hash(key, value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionTrackerCollectionEntrySubstateAllOf {\n");
-    sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

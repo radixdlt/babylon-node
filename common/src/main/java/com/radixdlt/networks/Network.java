@@ -126,7 +126,7 @@ public enum Network {
       "genesis_test",
       FixedNetworkGenesis.resource(
           HashCode.fromBytes(
-              Hex.decode("133ac900071ed61ad78a9e5f0ce4abbefeb2242e45dce773dd9c017aab3b5724")),
+              Hex.decode("a613b44d69f30641a043cda5197e88a0f529053389764e21100ce693d4191e7e")),
           "genesis/test_genesis.bin"));
 
   private final int intId;

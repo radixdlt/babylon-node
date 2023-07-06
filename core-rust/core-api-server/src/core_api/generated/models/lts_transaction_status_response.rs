@@ -18,7 +18,6 @@ pub struct LtsTransactionStatusResponse {
     /// An explanation as to why the intent status is resolved as it is. 
     #[serde(rename = "status_description")]
     pub status_description: String,
-    /// An integer between `1` and `10^13`, giving the resultant state version when the transaction was committed. This is only present if the intent was committed (as a Success or Failure). This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up details on the transaction's outcome from the `/lts/stream/transaction-outcomes` endpoint. 
     #[serde(rename = "committed_state_version", skip_serializing_if = "Option::is_none")]
     pub committed_state_version: Option<i64>,
     /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the intent status is InMempool or Unknown and we know about a payload. 

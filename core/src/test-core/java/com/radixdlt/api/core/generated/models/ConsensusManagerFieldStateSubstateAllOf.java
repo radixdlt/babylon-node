@@ -22,8 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ActiveValidatorIndex;
-import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.ConsensusManagerFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,133 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ConsensusManagerFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH,
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_ROUND,
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_EPOCH_START,
-  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_CURRENT_LEADER
+  ConsensusManagerFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ConsensusManagerFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
-
-  public static final String JSON_PROPERTY_ROUND = "round";
-  private Long round;
-
-  public static final String JSON_PROPERTY_EPOCH_START = "epoch_start";
-  private Instant epochStart;
-
-  public static final String JSON_PROPERTY_CURRENT_LEADER = "current_leader";
-  private ActiveValidatorIndex currentLeader;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private ConsensusManagerFieldStateValue value;
 
   public ConsensusManagerFieldStateSubstateAllOf() { 
   }
 
-  public ConsensusManagerFieldStateSubstateAllOf epoch(Long epoch) {
-    this.epoch = epoch;
+  public ConsensusManagerFieldStateSubstateAllOf value(ConsensusManagerFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getEpoch() {
-    return epoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
-  }
-
-
-  public ConsensusManagerFieldStateSubstateAllOf round(Long round) {
-    this.round = round;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current round in an epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return round
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current round in an epoch")
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getRound() {
-    return round;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRound(Long round) {
-    this.round = round;
-  }
-
-
-  public ConsensusManagerFieldStateSubstateAllOf epochStart(Instant epochStart) {
-    this.epochStart = epochStart;
-    return this;
-  }
-
-   /**
-   * Get epochStart
-   * @return epochStart
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Instant getEpochStart() {
-    return epochStart;
+  public ConsensusManagerFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH_START)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpochStart(Instant epochStart) {
-    this.epochStart = epochStart;
-  }
-
-
-  public ConsensusManagerFieldStateSubstateAllOf currentLeader(ActiveValidatorIndex currentLeader) {
-    this.currentLeader = currentLeader;
-    return this;
-  }
-
-   /**
-   * Get currentLeader
-   * @return currentLeader
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public ActiveValidatorIndex getCurrentLeader() {
-    return currentLeader;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_LEADER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCurrentLeader(ActiveValidatorIndex currentLeader) {
-    this.currentLeader = currentLeader;
+  public void setValue(ConsensusManagerFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -175,25 +80,19 @@ public class ConsensusManagerFieldStateSubstateAllOf {
       return false;
     }
     ConsensusManagerFieldStateSubstateAllOf consensusManagerFieldStateSubstateAllOf = (ConsensusManagerFieldStateSubstateAllOf) o;
-    return Objects.equals(this.epoch, consensusManagerFieldStateSubstateAllOf.epoch) &&
-        Objects.equals(this.round, consensusManagerFieldStateSubstateAllOf.round) &&
-        Objects.equals(this.epochStart, consensusManagerFieldStateSubstateAllOf.epochStart) &&
-        Objects.equals(this.currentLeader, consensusManagerFieldStateSubstateAllOf.currentLeader);
+    return Objects.equals(this.value, consensusManagerFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, epochStart, currentLeader);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConsensusManagerFieldStateSubstateAllOf {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    round: ").append(toIndentedString(round)).append("\n");
-    sb.append("    epochStart: ").append(toIndentedString(epochStart)).append("\n");
-    sb.append("    currentLeader: ").append(toIndentedString(currentLeader)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

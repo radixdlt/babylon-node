@@ -17,7 +17,6 @@ pub struct StreamTransactionsRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
     /// The maximum number of transactions that will be returned.

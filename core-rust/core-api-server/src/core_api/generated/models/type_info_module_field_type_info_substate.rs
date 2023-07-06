@@ -15,15 +15,18 @@
 pub struct TypeInfoModuleFieldTypeInfoSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "details")]
-    pub details: Option<crate::core_api::generated::models::TypeInfoDetails>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::TypeInfoModuleFieldTypeInfoValue>,
 }
 
 impl TypeInfoModuleFieldTypeInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, details: crate::core_api::generated::models::TypeInfoDetails) -> TypeInfoModuleFieldTypeInfoSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::TypeInfoModuleFieldTypeInfoValue) -> TypeInfoModuleFieldTypeInfoSubstate {
         TypeInfoModuleFieldTypeInfoSubstate {
             substate_type,
-            details: Option::Some(details),
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

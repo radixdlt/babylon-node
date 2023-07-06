@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageFieldRoyaltyAccumulatorSubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageFieldRoyaltyAccumulatorSubstateAllOf.JSON_PROPERTY_VAULT_ENTITY
+  PackageFieldRoyaltyAccumulatorSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageFieldRoyaltyAccumulatorSubstateAllOf {
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private PackageFieldRoyaltyAccumulatorValue value;
 
   public PackageFieldRoyaltyAccumulatorSubstateAllOf() { 
   }
 
-  public PackageFieldRoyaltyAccumulatorSubstateAllOf vaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public PackageFieldRoyaltyAccumulatorSubstateAllOf value(PackageFieldRoyaltyAccumulatorValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vaultEntity
-   * @return vaultEntity
+   * Get value
+   * @return value
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVaultEntity() {
-    return vaultEntity;
+  public PackageFieldRoyaltyAccumulatorValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setVaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValue(PackageFieldRoyaltyAccumulatorValue value) {
+    this.value = value;
   }
 
 
@@ -80,19 +80,19 @@ public class PackageFieldRoyaltyAccumulatorSubstateAllOf {
       return false;
     }
     PackageFieldRoyaltyAccumulatorSubstateAllOf packageFieldRoyaltyAccumulatorSubstateAllOf = (PackageFieldRoyaltyAccumulatorSubstateAllOf) o;
-    return Objects.equals(this.vaultEntity, packageFieldRoyaltyAccumulatorSubstateAllOf.vaultEntity);
+    return Objects.equals(this.value, packageFieldRoyaltyAccumulatorSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaultEntity);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageFieldRoyaltyAccumulatorSubstateAllOf {\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

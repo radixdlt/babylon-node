@@ -79,7 +79,6 @@ import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -119,8 +118,7 @@ public final class REv2LargeTransactionTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.mempool(
-                            10, 100 * 1024 * 1024, 1, MempoolRelayConfig.of())),
+                        REV2ProposerConfig.singleTransactionMempool()),
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 

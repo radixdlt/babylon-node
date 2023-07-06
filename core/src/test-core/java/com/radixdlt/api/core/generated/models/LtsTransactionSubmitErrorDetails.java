@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorDetailsType;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitMempoolFullErrorDetails;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitPriorityThresholdNotMetErrorDetails;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -47,9 +47,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = LtsTransactionSubmitMempoolFullErrorDetails.class, name = "LtsTransactionSubmitMempoolFullErrorDetails"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "LtsTransactionSubmitPriorityThresholdNotMetErrorDetails"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitRejectedErrorDetails.class, name = "LtsTransactionSubmitRejectedErrorDetails"),
-  @JsonSubTypes.Type(value = LtsTransactionSubmitMempoolFullErrorDetails.class, name = "MempoolFull"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class, name = "PriorityThresholdNotMet"),
   @JsonSubTypes.Type(value = LtsTransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
 
@@ -129,9 +129,9 @@ public class LtsTransactionSubmitErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("LtsTransactionSubmitMempoolFullErrorDetails", LtsTransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("LtsTransactionSubmitPriorityThresholdNotMetErrorDetails", LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("LtsTransactionSubmitRejectedErrorDetails", LtsTransactionSubmitRejectedErrorDetails.class);
-  mappings.put("MempoolFull", LtsTransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("PriorityThresholdNotMet", LtsTransactionSubmitPriorityThresholdNotMetErrorDetails.class);
   mappings.put("Rejected", LtsTransactionSubmitRejectedErrorDetails.class);
   mappings.put("LtsTransactionSubmitErrorDetails", LtsTransactionSubmitErrorDetails.class);
   JSON.registerDiscriminator(LtsTransactionSubmitErrorDetails.class, "type", mappings);

@@ -22,10 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerFieldMutableFieldsValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -33,44 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf.JSON_PROPERTY_MUTABLE_FIELDS
+  NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
-  public static final String JSON_PROPERTY_MUTABLE_FIELDS = "mutable_fields";
-  private List<String> mutableFields = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private NonFungibleResourceManagerFieldMutableFieldsValue value;
 
   public NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf() { 
   }
 
-  public NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf mutableFields(List<String> mutableFields) {
-    this.mutableFields = mutableFields;
-    return this;
-  }
-
-  public NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf addMutableFieldsItem(String mutableFieldsItem) {
-    this.mutableFields.add(mutableFieldsItem);
+  public NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf value(NonFungibleResourceManagerFieldMutableFieldsValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * The field names of the NF Metadata which are mutable. 
-   * @return mutableFields
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The field names of the NF Metadata which are mutable. ")
-  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getMutableFields() {
-    return mutableFields;
+  public NonFungibleResourceManagerFieldMutableFieldsValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MUTABLE_FIELDS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMutableFields(List<String> mutableFields) {
-    this.mutableFields = mutableFields;
+  public void setValue(NonFungibleResourceManagerFieldMutableFieldsValue value) {
+    this.value = value;
   }
 
 
@@ -86,19 +80,19 @@ public class NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
       return false;
     }
     NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf nonFungibleResourceManagerFieldMutableFieldsSubstateAllOf = (NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf) o;
-    return Objects.equals(this.mutableFields, nonFungibleResourceManagerFieldMutableFieldsSubstateAllOf.mutableFields);
+    return Objects.equals(this.value, nonFungibleResourceManagerFieldMutableFieldsSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mutableFields);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {\n");
-    sb.append("    mutableFields: ").append(toIndentedString(mutableFields)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

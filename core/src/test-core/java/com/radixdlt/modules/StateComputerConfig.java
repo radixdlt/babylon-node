@@ -119,9 +119,10 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging) {
+      boolean debugLogging,
+      boolean noFees) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, debugLogging, noFees);
   }
 
   static StateComputerConfig rev2(
@@ -131,7 +132,7 @@ public sealed interface StateComputerConfig {
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, databaseFlags, proposerConfig, false);
+        networkId, genesis, databaseType, databaseFlags, proposerConfig, false, false);
   }
 
   static StateComputerConfig rev2(
@@ -140,7 +141,13 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseType, new DatabaseFlags(true, false), proposerConfig, false);
+        networkId,
+        genesis,
+        databaseType,
+        new DatabaseFlags(true, false),
+        proposerConfig,
+        false,
+        false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -195,7 +202,8 @@ public sealed interface StateComputerConfig {
       REv2StateManagerModule.DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       REV2ProposerConfig proposerConfig,
-      boolean debugLogging)
+      boolean debugLogging,
+      boolean noFees)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
@@ -219,13 +227,28 @@ public sealed interface StateComputerConfig {
     static REV2ProposerConfig mempool(
         int maxNumTransactionsPerProposal,
         int maxProposalTotalTxnsPayloadSize,
-        int mempoolMaxSize,
+        RustMempoolConfig mempoolConfig,
         MempoolRelayConfig config) {
       return new Mempool(
-          maxNumTransactionsPerProposal,
-          maxProposalTotalTxnsPayloadSize,
-          new RustMempoolConfig(mempoolMaxSize),
-          config);
+          maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, mempoolConfig, config);
+    }
+
+    static REV2ProposerConfig zeroMempool() {
+      return new Mempool(0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of());
+    }
+
+    static REV2ProposerConfig singleTransactionMempool() {
+      return new Mempool(
+          1, 1024 * 1024, new RustMempoolConfig(1024 * 1024, 1), new MempoolRelayConfig(0, 100));
+    }
+
+    static REV2ProposerConfig defaultMempool() {
+      return defaultMempool(MempoolRelayConfig.of());
+    }
+
+    static REV2ProposerConfig defaultMempool(MempoolRelayConfig relayConfig) {
+      return new Mempool(
+          10, 10 * 1024 * 1024, new RustMempoolConfig(100 * 1024 * 1024, 100), relayConfig);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}

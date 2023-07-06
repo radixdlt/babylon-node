@@ -71,6 +71,7 @@ use transaction::model::*;
 
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 use crate::simple_mempool::SimpleMempool;
@@ -122,26 +123,19 @@ impl MempoolManager {
 }
 
 impl MempoolManager {
-    /// Picks an arbitrary subset of transactions to form the proposal from.
-    /// Obeys the given count/size limits and explicit exclusions.
     pub fn get_proposal_transactions(
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
         user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
     ) -> Vec<Arc<MempoolTransaction>> {
-        // TODO - make this more efficient that cloning the whole mempool
         let read_mempool = self.mempool.read();
-        let all_transactions = read_mempool.get_all_transactions();
-        drop(read_mempool);
 
-        let candidate_transactions = all_transactions
-            .into_iter()
-            .filter(|candidate| {
-                !user_payload_hashes_to_exclude.contains(&candidate.notarized_transaction_hash())
-            })
-            .collect();
-        Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
+        read_mempool.get_proposal_transactions(
+            max_count,
+            max_payload_size_bytes,
+            user_payload_hashes_to_exclude,
+        )
     }
 
     /// Picks a random subset of transactions to be relayed via a mempool sync.
@@ -151,6 +145,8 @@ impl MempoolManager {
         max_count: usize,
         max_payload_size_bytes: u64,
     ) -> Vec<Arc<MempoolTransaction>> {
+        // TODO: don't grab whole mempool. Use a reservoir sampling method or a priority/round robin algorithm.
+        // Note that the round robin approach needs extra care to avoid relaying same transactions to same nodes.
         let candidate_transactions = self.mempool.read().get_all_transactions();
 
         Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
@@ -160,6 +156,7 @@ impl MempoolManager {
     /// from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
+        // TODO: instead of getting whole mempool use a priority queue/round robin.
         let mut candidate_transactions = self.mempool.read().get_all_transactions();
 
         let mut transactions_to_remove = Vec::new();
@@ -185,19 +182,23 @@ impl MempoolManager {
 
         if !transactions_to_remove.is_empty() {
             let mut write_mempool = self.mempool.write();
-            let removed_count = transactions_to_remove
+            let removed = transactions_to_remove
                 .iter()
                 .filter_map(|transaction_to_remove| {
-                    write_mempool.remove_transaction(
-                        &transaction_to_remove.validated.prepared.intent_hash(),
+                    write_mempool.remove_by_payload_hash(
                         &transaction_to_remove
                             .validated
                             .prepared
                             .notarized_transaction_hash(),
                     )
                 })
-                .count();
-            self.metrics.current_transactions.sub(removed_count as i64);
+                .fold(TransactionSizeAccumulator::new(), |acc, evicted| {
+                    acc.accumulate(&evicted.transaction)
+                });
+            self.metrics.current_transactions.sub(removed.count as i64);
+            self.metrics
+                .current_total_transactions_size
+                .sub(removed.bytes as i64);
         }
     }
 
@@ -248,10 +249,16 @@ impl MempoolManager {
             }
         };
 
-        // STEP 2 - Quick check to avoid transaction execution if it couldn't be added to the mempool anyway
-        self.mempool
-            .write()
-            .check_add_would_be_possible(&prepared.notarized_transaction_hash())?;
+        // STEP 2 - Check if transaction is already in mempool to avoid transaction execution.
+        if self
+            .mempool
+            .read()
+            .contains_transaction(&prepared.notarized_transaction_hash())
+        {
+            return Err(MempoolAddError::Duplicate(
+                prepared.notarized_transaction_hash(),
+            ));
+        }
 
         // STEP 3 - We validate + run the transaction through
         let force_recalculation = if force_recalculate {
@@ -277,12 +284,32 @@ impl MempoolManager {
                     validated,
                     raw: raw_transaction,
                 });
-                self.mempool
-                    .write()
-                    .add_transaction(mempool_transaction.clone(), source)?;
-                self.metrics.submission_added.with_label(source).inc();
-                self.metrics.current_transactions.inc();
-                Ok(mempool_transaction)
+                match self.mempool.write().add_transaction(
+                    mempool_transaction.clone(),
+                    source,
+                    Instant::now(),
+                ) {
+                    Ok(evicted) => {
+                        self.metrics.submission_added.with_label(source).inc();
+                        self.metrics
+                            .current_transactions
+                            .add(1 - evicted.len() as i64);
+                        let evicted_size = evicted.into_iter().fold(0, |sum, evicted| {
+                            sum - evicted.transaction.raw.0.len() as i64
+                        });
+                        self.metrics
+                            .current_total_transactions_size
+                            .add(mempool_transaction.raw.0.len() as i64 - evicted_size);
+                        Ok(mempool_transaction)
+                    }
+                    Err(error) => {
+                        self.metrics
+                            .submission_rejected
+                            .with_two_labels(source, &error)
+                            .inc();
+                        Err(error)
+                    }
+                }
             }
             Err(error) => {
                 self.metrics
@@ -301,7 +328,7 @@ impl MempoolManager {
         let mut write_mempool = self.mempool.write();
         let removed = intent_hashes
             .into_iter()
-            .flat_map(|intent_hash| write_mempool.remove_transactions(intent_hash))
+            .flat_map(|intent_hash| write_mempool.remove_by_intent_hash(intent_hash))
             .collect::<Vec<_>>();
         drop(write_mempool);
         removed
@@ -310,6 +337,11 @@ impl MempoolManager {
             .map(|data| data.added_at.elapsed().as_secs_f64())
             .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
         self.metrics.current_transactions.sub(removed.len() as i64);
+        self.metrics.current_total_transactions_size.sub(
+            removed.into_iter().fold(0, |sum, evicted| {
+                sum + evicted.transaction.raw.0.len() as i64
+            }),
+        );
     }
 
     /// Removes the transactions specified by the given user payload hashes (while checking
@@ -327,13 +359,18 @@ impl MempoolManager {
         rejected_transactions: &[(&IntentHash, &NotarizedTransactionHash)],
     ) {
         let mut write_mempool = self.mempool.write();
-        let removed_count = rejected_transactions
+        let removed = rejected_transactions
             .iter()
-            .filter_map(|(intent_hash, user_payload_hash)| {
-                write_mempool.remove_transaction(intent_hash, user_payload_hash)
+            .filter_map(|(_intent_hash, user_payload_hash)| {
+                write_mempool.remove_by_payload_hash(user_payload_hash)
             })
-            .count();
-        self.metrics.current_transactions.sub(removed_count as i64);
+            .fold(TransactionSizeAccumulator::new(), |acc, evicted| {
+                acc.accumulate(&evicted.transaction)
+            });
+        self.metrics.current_transactions.sub(removed.count as i64);
+        self.metrics
+            .current_total_transactions_size
+            .sub(removed.bytes as i64);
     }
 
     fn pick_subset_with_limits(
@@ -355,5 +392,24 @@ impl MempoolManager {
             })
             .take(max_count)
             .collect()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct TransactionSizeAccumulator {
+    pub count: usize,
+    pub bytes: usize,
+}
+
+impl TransactionSizeAccumulator {
+    pub fn new() -> Self {
+        Self { count: 0, bytes: 0 }
+    }
+
+    pub fn accumulate(&self, mempool_transaction: &MempoolTransaction) -> Self {
+        Self {
+            count: self.count + 1,
+            bytes: self.bytes + mempool_transaction.raw.0.len(),
+        }
     }
 }

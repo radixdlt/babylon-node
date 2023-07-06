@@ -22,11 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.PoolVault;
+import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,74 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TwoResourcePoolFieldStateSubstateAllOf
  */
 @JsonPropertyOrder({
-  TwoResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_VAULTS,
-  TwoResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS
+  TwoResourcePoolFieldStateSubstateAllOf.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TwoResourcePoolFieldStateSubstateAllOf {
-  public static final String JSON_PROPERTY_VAULTS = "vaults";
-  private List<PoolVault> vaults = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS = "pool_unit_resource_address";
-  private String poolUnitResourceAddress;
+  public static final String JSON_PROPERTY_VALUE = "value";
+  private TwoResourcePoolFieldStateValue value;
 
   public TwoResourcePoolFieldStateSubstateAllOf() { 
   }
 
-  public TwoResourcePoolFieldStateSubstateAllOf vaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-    return this;
-  }
-
-  public TwoResourcePoolFieldStateSubstateAllOf addVaultsItem(PoolVault vaultsItem) {
-    this.vaults.add(vaultsItem);
+  public TwoResourcePoolFieldStateSubstateAllOf value(TwoResourcePoolFieldStateValue value) {
+    this.value = value;
     return this;
   }
 
    /**
-   * Get vaults
-   * @return vaults
+   * Get value
+   * @return value
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<PoolVault> getVaults() {
-    return vaults;
+  public TwoResourcePoolFieldStateValue getValue() {
+    return value;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULTS)
+  @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaults(List<PoolVault> vaults) {
-    this.vaults = vaults;
-  }
-
-
-  public TwoResourcePoolFieldStateSubstateAllOf poolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return poolUnitResourceAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPoolUnitResourceAddress() {
-    return poolUnitResourceAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_POOL_UNIT_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPoolUnitResourceAddress(String poolUnitResourceAddress) {
-    this.poolUnitResourceAddress = poolUnitResourceAddress;
+  public void setValue(TwoResourcePoolFieldStateValue value) {
+    this.value = value;
   }
 
 
@@ -117,21 +80,19 @@ public class TwoResourcePoolFieldStateSubstateAllOf {
       return false;
     }
     TwoResourcePoolFieldStateSubstateAllOf twoResourcePoolFieldStateSubstateAllOf = (TwoResourcePoolFieldStateSubstateAllOf) o;
-    return Objects.equals(this.vaults, twoResourcePoolFieldStateSubstateAllOf.vaults) &&
-        Objects.equals(this.poolUnitResourceAddress, twoResourcePoolFieldStateSubstateAllOf.poolUnitResourceAddress);
+    return Objects.equals(this.value, twoResourcePoolFieldStateSubstateAllOf.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaults, poolUnitResourceAddress);
+    return Objects.hash(value);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TwoResourcePoolFieldStateSubstateAllOf {\n");
-    sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");
-    sb.append("    poolUnitResourceAddress: ").append(toIndentedString(poolUnitResourceAddress)).append("\n");
+    sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
     return sb.toString();
   }

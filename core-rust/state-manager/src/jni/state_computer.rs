@@ -90,6 +90,7 @@ pub struct JavaGenesisData {
     pub initial_config: JavaConsensusManagerConfig,
     pub chunks: Vec<GenesisDataChunk>,
     pub faucet_supply: Decimal,
+    pub scenarios_to_run: Vec<String>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -103,6 +104,7 @@ pub struct JavaConsensusManagerConfig {
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
+    pub validator_creation_usd_cost: Decimal,
 }
 
 #[no_mangle]
@@ -136,10 +138,12 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
                     min_validator_reliability: config.min_validator_reliability,
                     num_owner_stake_units_unlock_epochs: config.num_owner_stake_units_unlock_epochs,
                     num_fee_increase_delay_epochs: config.num_fee_increase_delay_epochs,
+                    validator_creation_usd_cost: config.validator_creation_usd_cost,
                 },
                 genesis_data.initial_timestamp_ms,
                 genesis_data_hash,
                 genesis_data.faucet_supply,
+                genesis_data.scenarios_to_run,
             );
             Ok(resultant_proof)
         },

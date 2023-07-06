@@ -83,6 +83,26 @@ public class Manifest {
           CALL_METHOD Address("%s") "lock_fee" Decimal("100");""", encode(address));
     }
 
+    public String createProofOfValidatorOwnerBadge(
+        ComponentAddress account, ComponentAddress validator) {
+      return createProofOfOwnerBadge(
+          account, ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS, validator);
+    }
+
+    public String createProofOfOwnerBadge(
+        ComponentAddress account, ResourceAddress ownerBadgeResource, ComponentAddress owned) {
+      return String.format(
+          """
+          CALL_METHOD Address("%s")
+              "create_proof_of_non_fungibles"
+              Address("%s")
+              Array<NonFungibleLocalId>(
+                  NonFungibleLocalId("%s"),
+              )
+          ;""",
+          encode(account), encode(ownerBadgeResource), owned.ownerBadgeBytesLocalId());
+    }
+
     public String encode(ComponentAddress address) {
       return address.encode(network);
     }
@@ -125,7 +145,7 @@ public class Manifest {
             """
             %s
             CREATE_ACCOUNT_ADVANCED
-                Enum<OwnerRole::Updateable>(
+                Enum<OwnerRole::Updatable>(
                     Enum<AccessRule::AllowAll>()
                 )
             ;
@@ -226,10 +246,16 @@ public class Manifest {
         String.format(
             """
             %s
-            CREATE_VALIDATOR Bytes("%s") Decimal("0");
+            CALL_METHOD Address("%s") "free";
+            TAKE_FROM_WORKTOP Address("%s") Decimal("1000") Bucket("validator_creation_fee");
+            CREATE_VALIDATOR Bytes("%s") Decimal("0") Bucket("validator_creation_fee");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
-            params.faucetLockFeeLine(), key.toHex(), params.encode(ownerAccount));
+            params.faucetLockFeeLine(),
+            params.encode(FAUCET),
+            params.encode(XRD),
+            key.toHex(),
+            params.encode(ownerAccount));
   }
 
   public static Functions.Func1<Parameters, String> registerValidator(
@@ -238,12 +264,13 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
+            CALL_METHOD Address("%s") "update_accept_delegated_stake" true;
             CALL_METHOD Address("%s") "register";
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
+            params.encode(validatorAddress),
             params.encode(validatorAddress));
   }
 
@@ -253,16 +280,33 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
             CALL_METHOD Address("%s") "unregister";
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
             params.encode(validatorAddress));
   }
 
-  public static Functions.Func1<Parameters, String> stakeValidator(
+  public static Functions.Func1<Parameters, String> stakeValidatorAsNormalUser(
+      ComponentAddress stakingAccount, ComponentAddress validatorAddress) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_METHOD Address("%s") "free";
+            TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
+            CALL_METHOD Address("%s") "stake" Bucket("xrd");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            """,
+            params.faucetLockFeeLine(),
+            params.encode(FAUCET),
+            params.encode(XRD),
+            params.encode(validatorAddress),
+            params.encode(stakingAccount));
+  }
+
+  public static Functions.Func1<Parameters, String> stakeValidatorAsOwner(
       ComponentAddress stakingAccount,
       ComponentAddress validatorAddress,
       ComponentAddress ownerAccount) {
@@ -270,15 +314,14 @@ public class Manifest {
         String.format(
             """
             %s
-            CALL_METHOD Address("%s") "create_proof" Address("%s");
+            %s
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
-            CALL_METHOD Address("%s") "stake" Bucket("xrd");
+            CALL_METHOD Address("%s") "stake_as_owner" Bucket("xrd");
             CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
             """,
             params.faucetLockFeeLine(),
-            params.encode(ownerAccount),
-            params.encode(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS),
+            params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
             params.encode(FAUCET),
             params.encode(XRD),
             params.encode(validatorAddress),
@@ -333,17 +376,34 @@ public class Manifest {
     return (params) ->
         String.format(
             """
-                    %s
-                    CREATE_NON_FUNGIBLE_RESOURCE
-                        Enum<NonFungibleIdType::Integer>()
-                        false
-                        Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-                        Map<String, Enum>()
-                        Map<Enum, Tuple>(
-                            Enum<ResourceMethodAuthKey::Mint>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-                            Enum<ResourceMethodAuthKey::Burn>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
-                        );
-                    """,
+            %s
+            CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<OwnerRole::None>()
+                Enum<NonFungibleIdType::Integer>()
+                false                            # Track Supply
+                Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+                Tuple(
+                    Some(Tuple(                  # Mintable
+                        Some(Enum<AccessRule::AllowAll>()),
+                        Some(Enum<AccessRule::DenyAll>()),
+                    )),
+                    Some(Tuple(                  # Burnable
+                        Some(Enum<AccessRule::AllowAll>()),
+                        Some(Enum<AccessRule::DenyAll>()),
+                    )),
+                    None,                        # Freezable
+                    None,                        # Recallable
+                    None,                        # Restrict Withdraw
+                    None,                        # Restrict Deposit
+                    None,                        # Update Non Fungible Data
+                )
+                Tuple(                           # Metadata
+                    Map<String, Tuple>(),
+                    Map<String, Enum>()
+                )
+                None                             # Initial supply
+            ;
+            """,
             params.faucetLockFeeLine());
   }
 

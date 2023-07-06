@@ -22,9 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.RoyaltyConfig;
+import com.radixdlt.api.core.generated.models.BlueprintMethodRoyalty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -32,69 +34,77 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintRoyaltyConfig
  */
 @JsonPropertyOrder({
-  BlueprintRoyaltyConfig.JSON_PROPERTY_BLUEPRINT_NAME,
-  BlueprintRoyaltyConfig.JSON_PROPERTY_ROYALTY_CONFIG
+  BlueprintRoyaltyConfig.JSON_PROPERTY_IS_ENABLED,
+  BlueprintRoyaltyConfig.JSON_PROPERTY_METHOD_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintRoyaltyConfig {
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
+  public static final String JSON_PROPERTY_IS_ENABLED = "is_enabled";
+  private Boolean isEnabled;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private RoyaltyConfig royaltyConfig;
+  public static final String JSON_PROPERTY_METHOD_RULES = "method_rules";
+  private List<BlueprintMethodRoyalty> methodRules = null;
 
   public BlueprintRoyaltyConfig() { 
   }
 
-  public BlueprintRoyaltyConfig blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public BlueprintRoyaltyConfig isEnabled(Boolean isEnabled) {
+    this.isEnabled = isEnabled;
     return this;
   }
 
    /**
-   * Get blueprintName
-   * @return blueprintName
+   * Get isEnabled
+   * @return isEnabled
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public Boolean getIsEnabled() {
+    return isEnabled;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_IS_ENABLED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public void setIsEnabled(Boolean isEnabled) {
+    this.isEnabled = isEnabled;
   }
 
 
-  public BlueprintRoyaltyConfig royaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public BlueprintRoyaltyConfig methodRules(List<BlueprintMethodRoyalty> methodRules) {
+    this.methodRules = methodRules;
+    return this;
+  }
+
+  public BlueprintRoyaltyConfig addMethodRulesItem(BlueprintMethodRoyalty methodRulesItem) {
+    if (this.methodRules == null) {
+      this.methodRules = new ArrayList<>();
+    }
+    this.methodRules.add(methodRulesItem);
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * The royalty rules by method. The array is only present if royalties are enabled.
+   * @return methodRules
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The royalty rules by method. The array is only present if royalties are enabled.")
+  @JsonProperty(JSON_PROPERTY_METHOD_RULES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public RoyaltyConfig getRoyaltyConfig() {
-    return royaltyConfig;
+  public List<BlueprintMethodRoyalty> getMethodRules() {
+    return methodRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(RoyaltyConfig royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  @JsonProperty(JSON_PROPERTY_METHOD_RULES)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMethodRules(List<BlueprintMethodRoyalty> methodRules) {
+    this.methodRules = methodRules;
   }
 
 
@@ -110,21 +120,21 @@ public class BlueprintRoyaltyConfig {
       return false;
     }
     BlueprintRoyaltyConfig blueprintRoyaltyConfig = (BlueprintRoyaltyConfig) o;
-    return Objects.equals(this.blueprintName, blueprintRoyaltyConfig.blueprintName) &&
-        Objects.equals(this.royaltyConfig, blueprintRoyaltyConfig.royaltyConfig);
+    return Objects.equals(this.isEnabled, blueprintRoyaltyConfig.isEnabled) &&
+        Objects.equals(this.methodRules, blueprintRoyaltyConfig.methodRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintName, royaltyConfig);
+    return Objects.hash(isEnabled, methodRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintRoyaltyConfig {\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    isEnabled: ").append(toIndentedString(isEnabled)).append("\n");
+    sb.append("    methodRules: ").append(toIndentedString(methodRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

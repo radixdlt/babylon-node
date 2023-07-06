@@ -33,3 +33,4 @@ hex = { version = "0.4.3", default-features = false }
 futures = { version = "0.3" }
 axum = { version = "0.6.6", features = ["http1", "json"] }
 hyper = { version = "0.14.20", features = ["server", "http1"] }
+paste = { version = "1.0.12", default-features = false }

@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
-    /// The field names of the NF Metadata which are mutable. 
-    #[serde(rename = "mutable_fields")]
-    pub mutable_fields: Vec<String>,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::NonFungibleResourceManagerFieldMutableFieldsValue>,
 }
 
 impl NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
-    pub fn new(mutable_fields: Vec<String>) -> NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::NonFungibleResourceManagerFieldMutableFieldsValue) -> NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
         NonFungibleResourceManagerFieldMutableFieldsSubstateAllOf {
-            mutable_fields,
+            value: Box::new(value),
         }
     }
 }

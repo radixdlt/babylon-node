@@ -64,17 +64,16 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 
-/** Creates a new bft sync given a vertex store and pacemaker */
 public interface BFTSyncFactory {
   BFTSync create(
       SafetyRules safetyRules,
       VertexStoreAdapter vertexStore,
       PacemakerState pacemakerState,
-      BFTConfiguration configuration);
+      LedgerHeader currentLedgerHeader);
 }

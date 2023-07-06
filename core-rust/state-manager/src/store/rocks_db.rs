@@ -133,12 +133,19 @@ enum RocksDBColumnFamily {
     /// Key: concat(account_address, state_version), value: null
     /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
     AccountChangeStateVersions,
+    /// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
+    /// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
+    /// Schema: `ScenarioSequenceNumber.to_be_byte()` -> `scrypto_encode(ExecutedGenesisScenario)`
+    ExecutedGenesisScenarios,
 }
 
 use crate::store::node_ancestry_resolver::NodeAncestryResolver;
+use crate::store::traits::scenario::{
+    ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ScenarioSequenceNumber,
+};
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 19] = [
     TxnByStateVersion,
     TxnIdentifiersByStateVersion,
     LedgerReceiptByStateVersion,
@@ -157,6 +164,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 18] = [
     ReceiptAccuTreeSliceByStateVersion,
     ExtensionsData,
     AccountChangeStateVersions,
+    ExecutedGenesisScenarios,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -184,6 +192,7 @@ impl fmt::Display for RocksDBColumnFamily {
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
             ExtensionsData => "extensions_data",
             AccountChangeStateVersions => "account_change_state_versions",
+            ExecutedGenesisScenarios => "executed_genesis_scenarios",
         };
         write!(f, "{str}")
     }
@@ -543,6 +552,34 @@ impl CommitStore for RocksDBStore {
         );
 
         self.db.write(batch).expect("Commit failed");
+    }
+}
+
+impl ExecutedGenesisScenarioStore for RocksDBStore {
+    fn put_scenario(&mut self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario) {
+        self.db
+            .put_cf(
+                self.cf_handle(&ExecutedGenesisScenarios),
+                number.to_be_bytes(),
+                scrypto_encode(&scenario).unwrap(),
+            )
+            .expect("Executed scenario write failed");
+    }
+
+    fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)> {
+        self.db
+            .iterator_cf(
+                self.cf_handle(&ExecutedGenesisScenarios),
+                IteratorMode::Start,
+            )
+            .map(|result| result.unwrap())
+            .map(|kv| {
+                (
+                    u32::from_be_bytes(kv.0.as_ref().try_into().unwrap()),
+                    scrypto_decode(kv.1.as_ref()).unwrap(),
+                )
+            })
+            .collect()
     }
 }
 

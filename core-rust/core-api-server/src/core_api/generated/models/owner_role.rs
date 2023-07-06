@@ -10,24 +10,22 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
-pub enum OwnerRole {
-    #[serde(rename="Fixed")]
-    FixedOwnerRole {
-        #[serde(rename = "access_rule")]
-        access_rule: Box<crate::core_api::generated::models::AccessRule>,
-    },
-    #[serde(rename="None")]
-    NoneOwnerRole {
-    },
-    #[serde(rename="Updateable")]
-    UpdateableOwnerRole {
-        #[serde(rename = "access_rule")]
-        access_rule: Box<crate::core_api::generated::models::AccessRule>,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct OwnerRole {
+    #[serde(rename = "rule")]
+    pub rule: Option<crate::core_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "updater")]
+    pub updater: crate::core_api::generated::models::OwnerRoleUpdater,
 }
 
-
+impl OwnerRole {
+    pub fn new(rule: crate::core_api::generated::models::AccessRule, updater: crate::core_api::generated::models::OwnerRoleUpdater) -> OwnerRole {
+        OwnerRole {
+            rule: Option::Some(rule),
+            updater,
+        }
+    }
+}
 
 

@@ -77,7 +77,6 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -86,7 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.testutil.TestStateReader;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.Map;
 import org.junit.Test;
 
@@ -150,10 +148,10 @@ public final class REv2GenesisTest {
                             1,
                             INITIAL_STAKE,
                             Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
-                            GenesisConsensusManagerConfig.Builder.testDefaults()),
+                            GenesisConsensusManagerConfig.Builder.testDefaults(),
+                            GenesisData.ALL_SCENARIOS),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, 0, MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.zeroMempool()))));
   }
 
   @Test
@@ -164,20 +162,20 @@ public final class REv2GenesisTest {
 
       // Assert
       var stateReader = test.getInstance(0, TestStateReader.class);
-      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
 
-      // should correspond to the genesis wrap up transaction
-      final var latestStateVersion =
-          transactionStore.getLastProof().get().ledgerHeader().stateVersion();
-      final var genesisWrapUp =
-          stateReader
-              .getTransactionDetailsAtStateVersion(latestStateVersion.toNonNegativeLong().unwrap())
-              .unwrap();
-      assertThat(genesisWrapUp.newComponentAddresses()).contains(ScryptoConstants.FAUCET_ADDRESS);
+      // State version 1 is flash
+      // State version 2 is the genesis bootstrap transaction
+      final var genesisBootstrap = stateReader.getTransactionDetailsAtStateVersion(2).unwrap();
+      assertThat(genesisBootstrap.newComponentAddresses())
+          .contains(ScryptoConstants.FAUCET_ADDRESS);
 
       final var readFaucetAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_ADDRESS);
-      assertThat(readFaucetAmount).isEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+      final var maxTotalXrdUsedByScenarios = Decimal.of(100_000);
+      assertThat(readFaucetAmount).isLessThanOrEqualTo(GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+      assertThat(readFaucetAmount)
+          .isGreaterThan(
+              GenesisData.DEFAULT_TEST_FAUCET_SUPPLY.subtract(maxTotalXrdUsedByScenarios));
 
       // Check genesis XRD alloc
       final var allocatedAmount =

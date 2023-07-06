@@ -61,7 +61,7 @@ pub(crate) async fn handle_transaction_receipt(
         .map(Json)
     } else {
         Err(not_found_error(format!(
-            "Committed transaction not found with intent hash: {intent_hash}"
+            "Committed transaction not found with intent hash: {intent_hash:?}"
         )))
     }
 }

@@ -15,15 +15,18 @@
 pub struct PackageFieldRoyaltyAccumulatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
-    pub vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue>,
 }
 
 impl PackageFieldRoyaltyAccumulatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> PackageFieldRoyaltyAccumulatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue) -> PackageFieldRoyaltyAccumulatorSubstate {
         PackageFieldRoyaltyAccumulatorSubstate {
             substate_type,
-            vault_entity: None,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

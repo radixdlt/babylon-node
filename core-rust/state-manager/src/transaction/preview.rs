@@ -3,7 +3,6 @@ use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionRes
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
@@ -15,8 +14,6 @@ use transaction::model::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
-
-const PREVIEW_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer<S> {
@@ -59,8 +56,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .map_err(PreviewError::TransactionValidationError)?;
         let transaction_logic = self
             .execution_configurator
-            .wrap(validated.get_executable(), ConfigType::Preview)
-            .warn_after(PREVIEW_RUNTIME_WARN_THRESHOLD, "preview");
+            .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
         let substate_changes = match &receipt.transaction_result {
@@ -123,14 +119,14 @@ mod tests {
         TransactionPreviewer,
     };
     use crate::{
-        LoggingConfig, MempoolConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
+        LoggingConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
         StateManagerLoggingConfig,
     };
+    use node_common::config::MempoolConfig;
     use parking_lot::RwLock;
     use prometheus::Registry;
+    use radix_engine::transaction::FeeReserveConfig;
     use radix_engine_common::network::NetworkDefinition;
-    use radix_engine_common::{dec, manifest_args};
-    use radix_engine_interface::constants::FAUCET;
     use std::sync::Arc;
     use transaction::builder::ManifestBuilder;
     use transaction::model::PreviewFlags;
@@ -149,7 +145,10 @@ mod tests {
             InMemoryStore::new(DatabaseFlags::default()),
         )));
         let metric_registry = Registry::new();
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(&logging_config));
+        let execution_configurator = Arc::new(ExecutionConfigurator::new(
+            &logging_config,
+            FeeReserveConfig::default(),
+        ));
         let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));
@@ -164,7 +163,10 @@ mod tests {
             pending_transaction_result_cache.clone(),
         );
         let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
-            MempoolConfig { max_size: 10 },
+            MempoolConfig {
+                max_total_transactions_size: 10 * 1024 * 1024,
+                max_transaction_count: 10,
+            },
         )));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,
@@ -190,9 +192,7 @@ mod tests {
             execution_configurator,
         ));
 
-        let preview_manifest = ManifestBuilder::new()
-            .call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")))
-            .build();
+        let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
         let preview_response = transaction_previewer.preview(PreviewRequest {
             manifest: preview_manifest,

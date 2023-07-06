@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FungibleResourceManagerFieldDivisibilitySubstateAllOf {
-    #[serde(rename = "divisibility")]
-    pub divisibility: i32,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::FungibleResourceManagerFieldDivisibilityValue>,
 }
 
 impl FungibleResourceManagerFieldDivisibilitySubstateAllOf {
-    pub fn new(divisibility: i32) -> FungibleResourceManagerFieldDivisibilitySubstateAllOf {
+    pub fn new(value: crate::core_api::generated::models::FungibleResourceManagerFieldDivisibilityValue) -> FungibleResourceManagerFieldDivisibilitySubstateAllOf {
         FungibleResourceManagerFieldDivisibilitySubstateAllOf {
-            divisibility,
+            value: Box::new(value),
         }
     }
 }

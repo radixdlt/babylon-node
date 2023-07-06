@@ -15,15 +15,18 @@
 pub struct AccountFieldStateSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "default_deposit_rule")]
-    pub default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule,
+    #[serde(rename = "is_locked")]
+    pub is_locked: bool,
+    #[serde(rename = "value")]
+    pub value: Box<crate::core_api::generated::models::AccountFieldStateValue>,
 }
 
 impl AccountFieldStateSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, default_deposit_rule: crate::core_api::generated::models::DefaultDepositRule) -> AccountFieldStateSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, value: crate::core_api::generated::models::AccountFieldStateValue) -> AccountFieldStateSubstate {
         AccountFieldStateSubstate {
             substate_type,
-            default_deposit_rule,
+            is_locked,
+            value: Box::new(value),
         }
     }
 }

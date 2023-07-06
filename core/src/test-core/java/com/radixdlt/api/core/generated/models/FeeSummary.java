@@ -45,6 +45,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   FeeSummary.JSON_PROPERTY_COST_UNIT_EXECUTION_BREAKDOWN,
   FeeSummary.JSON_PROPERTY_XRD_TOTAL_EXECUTION_COST,
   FeeSummary.JSON_PROPERTY_XRD_TOTAL_ROYALTY_COST,
+  FeeSummary.JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST,
   FeeSummary.JSON_PROPERTY_XRD_TOTAL_TIPPED,
   FeeSummary.JSON_PROPERTY_XRD_VAULT_PAYMENTS,
   FeeSummary.JSON_PROPERTY_XRD_ROYALTY_RECEIVERS
@@ -71,6 +72,9 @@ public class FeeSummary {
 
   public static final String JSON_PROPERTY_XRD_TOTAL_ROYALTY_COST = "xrd_total_royalty_cost";
   private String xrdTotalRoyaltyCost;
+
+  public static final String JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST = "xrd_total_state_expansion_cost";
+  private String xrdTotalStateExpansionCost;
 
   public static final String JSON_PROPERTY_XRD_TOTAL_TIPPED = "xrd_total_tipped";
   private String xrdTotalTipped;
@@ -277,6 +281,32 @@ public class FeeSummary {
   }
 
 
+  public FeeSummary xrdTotalStateExpansionCost(String xrdTotalStateExpansionCost) {
+    this.xrdTotalStateExpansionCost = xrdTotalStateExpansionCost;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return xrdTotalStateExpansionCost
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getXrdTotalStateExpansionCost() {
+    return xrdTotalStateExpansionCost;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setXrdTotalStateExpansionCost(String xrdTotalStateExpansionCost) {
+    this.xrdTotalStateExpansionCost = xrdTotalStateExpansionCost;
+  }
+
+
   public FeeSummary xrdTotalTipped(String xrdTotalTipped) {
     this.xrdTotalTipped = xrdTotalTipped;
     return this;
@@ -384,6 +414,7 @@ public class FeeSummary {
         Objects.equals(this.costUnitExecutionBreakdown, feeSummary.costUnitExecutionBreakdown) &&
         Objects.equals(this.xrdTotalExecutionCost, feeSummary.xrdTotalExecutionCost) &&
         Objects.equals(this.xrdTotalRoyaltyCost, feeSummary.xrdTotalRoyaltyCost) &&
+        Objects.equals(this.xrdTotalStateExpansionCost, feeSummary.xrdTotalStateExpansionCost) &&
         Objects.equals(this.xrdTotalTipped, feeSummary.xrdTotalTipped) &&
         Objects.equals(this.xrdVaultPayments, feeSummary.xrdVaultPayments) &&
         Objects.equals(this.xrdRoyaltyReceivers, feeSummary.xrdRoyaltyReceivers);
@@ -391,7 +422,7 @@ public class FeeSummary {
 
   @Override
   public int hashCode() {
-    return Objects.hash(costUnitPrice, tipPercentage, costUnitLimit, costUnitsConsumed, costUnitExecutionBreakdown, xrdTotalExecutionCost, xrdTotalRoyaltyCost, xrdTotalTipped, xrdVaultPayments, xrdRoyaltyReceivers);
+    return Objects.hash(costUnitPrice, tipPercentage, costUnitLimit, costUnitsConsumed, costUnitExecutionBreakdown, xrdTotalExecutionCost, xrdTotalRoyaltyCost, xrdTotalStateExpansionCost, xrdTotalTipped, xrdVaultPayments, xrdRoyaltyReceivers);
   }
 
   @Override
@@ -405,6 +436,7 @@ public class FeeSummary {
     sb.append("    costUnitExecutionBreakdown: ").append(toIndentedString(costUnitExecutionBreakdown)).append("\n");
     sb.append("    xrdTotalExecutionCost: ").append(toIndentedString(xrdTotalExecutionCost)).append("\n");
     sb.append("    xrdTotalRoyaltyCost: ").append(toIndentedString(xrdTotalRoyaltyCost)).append("\n");
+    sb.append("    xrdTotalStateExpansionCost: ").append(toIndentedString(xrdTotalStateExpansionCost)).append("\n");
     sb.append("    xrdTotalTipped: ").append(toIndentedString(xrdTotalTipped)).append("\n");
     sb.append("    xrdVaultPayments: ").append(toIndentedString(xrdVaultPayments)).append("\n");
     sb.append("    xrdRoyaltyReceivers: ").append(toIndentedString(xrdRoyaltyReceivers)).append("\n");

@@ -121,8 +121,8 @@ public final class REv2MempoolFillAndEmptyTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
+                        StateComputerConfig.REV2ProposerConfig.defaultMempool(
+                            new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -140,7 +140,7 @@ public final class REv2MempoolFillAndEmptyTest {
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-    while (mempoolReader.getCount() < 1000) {
+    while (mempoolReader.getCount() < 100) {
       if (rateLimiter.tryAcquire()) {
         logger.info("Filling Mempool...  Current Size: {}", mempoolReader.getCount());
       }

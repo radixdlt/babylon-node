@@ -144,6 +144,7 @@ where
             post(handle_status_network_configuration),
         )
         .route("/status/network-status", post(handle_status_network_status))
+        .route("/status/scenarios", post(handle_status_scenarios))
         // Mempool Sub-API
         .route("/mempool/list", post(handle_mempool_list))
         .route("/mempool/transaction", post(handle_mempool_transaction))
