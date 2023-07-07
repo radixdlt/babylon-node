@@ -64,83 +64,23 @@
 
 package com.radixdlt.transaction;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.*;
-import com.radixdlt.exceptions.TransactionPreparationException;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
-import com.radixdlt.sbor.Natives;
-import com.radixdlt.transactions.*;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
-import java.util.Optional;
 
-public final class TransactionPreparer {
-  static {
-    // This is idempotent with the other calls
-    System.loadLibrary("corerust");
+public record PrepareIntentRequest(
+    NetworkDefinition network,
+    TransactionHeader header,
+    String manifest,
+    List<byte[]> blobs,
+    Option<TransactionMessage> message) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PrepareIntentRequest.class,
+        codecs -> StructCodec.fromRecordComponents(PrepareIntentRequest.class, codecs));
   }
-
-  public static PreparedIntent prepareIntent(
-      NetworkDefinition network,
-      TransactionHeader header,
-      String manifest,
-      List<byte[]> blobs,
-      Optional<TransactionMessage> message) {
-    return prepareIntentFunc
-        .call(new PrepareIntentRequest(network, header, manifest, blobs, Option.from(message)))
-        .unwrap(TransactionPreparationException::new);
-  }
-
-  private static final Natives.Call1<PrepareIntentRequest, Result<PreparedIntent, String>>
-      prepareIntentFunc =
-          Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
-
-  public static PreparedSignedIntent prepareSignedIntent(
-      byte[] intent, List<SignatureWithPublicKey> signatures) {
-
-    return prepareSignedIntentBytesFunc
-        .call(tuple(intent, signatures))
-        .unwrap(TransactionPreparationException::new);
-  }
-
-  private static final Natives.Call1<
-          Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
-      prepareSignedIntentBytesFunc =
-          Natives.builder(TransactionPreparer::prepareSignedIntent).build(new TypeToken<>() {});
-
-  public static PreparedNotarizedTransaction prepareNotarizedTransaction(
-      byte[] signedIntent, Signature signature) {
-    return prepareNotarizedTransactionFunc
-        .call(tuple(signedIntent, signature))
-        .unwrap(TransactionPreparationException::new);
-  }
-
-  private static final Natives.Call1<
-          Tuple.Tuple2<byte[], Signature>, Result<PreparedNotarizedTransaction, String>>
-      prepareNotarizedTransactionFunc =
-          Natives.builder(TransactionPreparer::prepareNotarizedTransaction)
-              .build(new TypeToken<>() {});
-
-  public static RawLedgerTransaction rawNotarizedTransactionToRawLedgerTransaction(
-      RawNotarizedTransaction notarized) {
-    return userTransactionToLedger.call(notarized).unwrap(TransactionPreparationException::new);
-  }
-
-  private static final Natives.Call1<RawNotarizedTransaction, Result<RawLedgerTransaction, String>>
-      userTransactionToLedger =
-          Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
-
-  private static native byte[] prepareIntent(byte[] requestPayload);
-
-  private static native byte[] prepareSignedIntent(byte[] requestPayload);
-
-  private static native byte[] prepareNotarizedTransaction(byte[] requestPayload);
-
-  private static native byte[] userTransactionToLedger(byte[] requestPayload);
 }

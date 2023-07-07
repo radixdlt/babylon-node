@@ -12,30 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionIntent {
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-    #[serde(rename = "hash")]
-    pub hash: String,
-    #[serde(rename = "header")]
-    pub header: Box<crate::core_api::generated::models::TransactionHeader>,
-    /// The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.
-    #[serde(rename = "instructions", skip_serializing_if = "Option::is_none")]
-    pub instructions: Option<String>,
-    /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.
-    #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
-    pub blobs_hex: Option<::utils::rust::prelude::IndexMap<String, String>>,
-    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
-    pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
+pub struct EncryptedMessageDecryptor {
+    /// The last 8 bytes of the Blake2b-256 hash of the public key bytes, in their standard Radix byte-serialization.
+    #[serde(rename = "public_key_fingerprint_hex")]
+    pub public_key_fingerprint_hex: String,
+    /// The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the 128-bit message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type. The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher (wrapped 128-bit key, encoded as two 64-bit blocks)`. 
+    #[serde(rename = "aes_wrapped_key_hex")]
+    pub aes_wrapped_key_hex: String,
 }
 
-impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader) -> TransactionIntent {
-        TransactionIntent {
-            hash,
-            header: Box::new(header),
-            instructions: None,
-            blobs_hex: None,
-            message: None,
+impl EncryptedMessageDecryptor {
+    pub fn new(public_key_fingerprint_hex: String, aes_wrapped_key_hex: String) -> EncryptedMessageDecryptor {
+        EncryptedMessageDecryptor {
+            public_key_fingerprint_hex,
+            aes_wrapped_key_hex,
         }
     }
 }

@@ -17,9 +17,12 @@ pub struct TransactionFormatOptions {
     /// Whether to return the raw manifest (default true)
     #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
     pub manifest: Option<bool>,
-    /// Whether to return the raw manifest (default false)
+    /// Whether to return the hex-encoded blobs (default false)
     #[serde(rename = "blobs", skip_serializing_if = "Option::is_none")]
     pub blobs: Option<bool>,
+    /// Whether to return the transaction message (default false)
+    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    pub message: Option<bool>,
     /// Whether to return the raw hex-encoded system transaction bytes (default false)
     #[serde(rename = "raw_system_transaction", skip_serializing_if = "Option::is_none")]
     pub raw_system_transaction: Option<bool>,
@@ -37,6 +40,7 @@ impl TransactionFormatOptions {
         TransactionFormatOptions {
             manifest: None,
             blobs: None,
+            message: None,
             raw_system_transaction: None,
             raw_notarized_transaction: None,
             raw_ledger_transaction: None,

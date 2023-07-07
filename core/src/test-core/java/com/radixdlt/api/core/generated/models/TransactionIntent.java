@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionHeader;
+import com.radixdlt.api.core.generated.models.TransactionMessage;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -38,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionIntent.JSON_PROPERTY_HASH,
   TransactionIntent.JSON_PROPERTY_HEADER,
   TransactionIntent.JSON_PROPERTY_INSTRUCTIONS,
-  TransactionIntent.JSON_PROPERTY_BLOBS_HEX
+  TransactionIntent.JSON_PROPERTY_BLOBS_HEX,
+  TransactionIntent.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionIntent {
@@ -53,6 +55,9 @@ public class TransactionIntent {
 
   public static final String JSON_PROPERTY_BLOBS_HEX = "blobs_hex";
   private Map<String, String> blobsHex = null;
+
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private TransactionMessage message;
 
   public TransactionIntent() { 
   }
@@ -115,11 +120,11 @@ public class TransactionIntent {
   }
 
    /**
-   * The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+   * The decompiled transaction manifest instructions. Only returned if enabled in &#x60;TransactionFormatOptions&#x60; on your request.
    * @return instructions
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.")
+  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.")
   @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -149,11 +154,11 @@ public class TransactionIntent {
   }
 
    /**
-   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in &#x60;TransactionFormatOptions&#x60; on your request.
    * @return blobsHex
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.")
+  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.")
   @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -166,6 +171,32 @@ public class TransactionIntent {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBlobsHex(Map<String, String> blobsHex) {
     this.blobsHex = blobsHex;
+  }
+
+
+  public TransactionIntent message(TransactionMessage message) {
+    this.message = message;
+    return this;
+  }
+
+   /**
+   * Get message
+   * @return message
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionMessage getMessage() {
+    return message;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMessage(TransactionMessage message) {
+    this.message = message;
   }
 
 
@@ -184,12 +215,13 @@ public class TransactionIntent {
     return Objects.equals(this.hash, transactionIntent.hash) &&
         Objects.equals(this.header, transactionIntent.header) &&
         Objects.equals(this.instructions, transactionIntent.instructions) &&
-        Objects.equals(this.blobsHex, transactionIntent.blobsHex);
+        Objects.equals(this.blobsHex, transactionIntent.blobsHex) &&
+        Objects.equals(this.message, transactionIntent.message);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, header, instructions, blobsHex);
+    return Objects.hash(hash, header, instructions, blobsHex, message);
   }
 
   @Override
@@ -200,6 +232,7 @@ public class TransactionIntent {
     sb.append("    header: ").append(toIndentedString(header)).append("\n");
     sb.append("    instructions: ").append(toIndentedString(instructions)).append("\n");
     sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
   }

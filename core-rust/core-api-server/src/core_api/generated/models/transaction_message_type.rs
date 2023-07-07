@@ -9,35 +9,31 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum TransactionMessageType {
+    #[serde(rename = "Plaintext")]
+    Plaintext,
+    #[serde(rename = "Encrypted")]
+    Encrypted,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionIntent {
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
-    #[serde(rename = "hash")]
-    pub hash: String,
-    #[serde(rename = "header")]
-    pub header: Box<crate::core_api::generated::models::TransactionHeader>,
-    /// The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.
-    #[serde(rename = "instructions", skip_serializing_if = "Option::is_none")]
-    pub instructions: Option<String>,
-    /// A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.
-    #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
-    pub blobs_hex: Option<::utils::rust::prelude::IndexMap<String, String>>,
-    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
-    pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
 }
 
-impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader) -> TransactionIntent {
-        TransactionIntent {
-            hash,
-            header: Box::new(header),
-            instructions: None,
-            blobs_hex: None,
-            message: None,
+impl ToString for TransactionMessageType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Plaintext => String::from("Plaintext"),
+            Self::Encrypted => String::from("Encrypted"),
         }
     }
 }
+
+impl Default for TransactionMessageType {
+    fn default() -> TransactionMessageType {
+        Self::Plaintext
+    }
+}
+
+
 
 
