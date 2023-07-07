@@ -51,10 +51,10 @@ test('submit unparsable transaction errors', async () => {
     const response = await coreApiClient.LTS.submitTransaction({
         notarized_transaction_hex: invalidTransactionPayload
     });
-    if (response.result !== "Error") {
+    if (response.result !== "Rejected") {
         throw new Error(`Expected Error result, got: ${response}`);
     }
-    expect(response.message).toContain("InvalidTransaction");
+    expect(response.details.error_message).toContain("PrepareError");
 });
 
 test('get transaction status of an placeholder transaction returns NotSeen', async () => {
