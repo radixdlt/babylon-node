@@ -66,6 +66,8 @@ package com.radixdlt.message;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
 
 public sealed interface MessageContent {
   static void registerCodec(CodecMap codecMap) {
@@ -76,5 +78,21 @@ public sealed interface MessageContent {
 
   record StringContent(String string) implements MessageContent {}
 
-  record BytesContent(byte[] bytes) implements MessageContent {}
+  record BytesContent(byte[] bytes) implements MessageContent {
+
+    @Override
+    public boolean equals(Object object) {
+      return object instanceof BytesContent other && Arrays.equals(bytes, other.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(bytes);
+    }
+
+    @Override
+    public String toString() {
+      return "BytesContent{bytes=" + Bytes.toHexString(bytes) + "}";
+    }
+  }
 }

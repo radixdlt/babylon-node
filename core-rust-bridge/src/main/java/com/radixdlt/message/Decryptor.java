@@ -64,12 +64,36 @@
 
 package com.radixdlt.message;
 
+import com.google.common.base.Objects;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
 
 public record Decryptor(byte[] publicKeyFingerprint, byte[] aesWrappedKey) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         Decryptor.class, codecs -> StructCodec.fromRecordComponents(Decryptor.class, codecs));
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    return object instanceof Decryptor other
+        && Arrays.equals(publicKeyFingerprint, other.publicKeyFingerprint)
+        && Arrays.equals(aesWrappedKey, other.aesWrappedKey);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(Arrays.hashCode(publicKeyFingerprint), Arrays.hashCode(aesWrappedKey));
+  }
+
+  @Override
+  public String toString() {
+    return "Decryptor{publicKeyFingerprint="
+        + Bytes.toHexString(publicKeyFingerprint)
+        + ", aesWrappedKey="
+        + Bytes.toHexString(aesWrappedKey)
+        + "}";
   }
 }

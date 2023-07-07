@@ -64,8 +64,11 @@
 
 package com.radixdlt.message;
 
+import com.google.common.base.Objects;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
 import java.util.List;
 
 public record EncryptedTransactionMessage(
@@ -74,5 +77,26 @@ public record EncryptedTransactionMessage(
     codecMap.register(
         EncryptedTransactionMessage.class,
         codecs -> StructCodec.fromRecordComponents(EncryptedTransactionMessage.class, codecs));
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    return object instanceof EncryptedTransactionMessage other
+        && Arrays.equals(aesGcmPayload, other.aesGcmPayload)
+        && curveDecryptorSets.equals(other.curveDecryptorSets);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(Arrays.hashCode(aesGcmPayload), curveDecryptorSets.hashCode());
+  }
+
+  @Override
+  public String toString() {
+    return "EncryptedTransactionMessage{aesGcmPayload="
+        + Bytes.toHexString(aesGcmPayload)
+        + ", curveDecryptorSets="
+        + curveDecryptorSets
+        + "}";
   }
 }
