@@ -174,7 +174,7 @@ pub struct PriorityMempool {
     remaining_transaction_count: u32,
     /// Max sum of transactions size that can live in [`self.data`].
     remaining_total_transactions_size: u64,
-    /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and )
+    /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and longest time in mempool)
     proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
     /// Mapping from [`NotarizedTransactionHash`] to [`Arc<MempoolData>`] containing [`MempoolTransaction`] with said payload hash.
     /// We use [`IndexMap`] for it's O(1) [`get_index`] needed for efficient random sampling.
