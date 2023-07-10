@@ -194,7 +194,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
       assertThat(streamedIntents.get(streamedIntents.size() - 1).getMessage())
           .isEqualTo(
               new EncryptedTransactionMessage()
-                  .encryptedHex(com.radixdlt.utils.Bytes.toHexString(bytes(47)))
+                  .encryptedHex(Bytes.toHexString(bytes(47)))
                   .addCurveDecryptorSetsItem(
                       new EncryptedMessageCurveDecryptorSet()
                           .dhEphemeralPublicKey(
