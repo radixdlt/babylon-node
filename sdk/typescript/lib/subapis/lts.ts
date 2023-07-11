@@ -12,7 +12,7 @@ import {
   LtsTransactionConstructionResponse,
   LtsTransactionStatusRequest,
   LtsTransactionStatusResponse,
-  LtsTransactionSubmitMempoolFullErrorDetails,
+  LtsTransactionSubmitPriorityThresholdNotMetErrorDetails,
   LtsTransactionSubmitRejectedErrorDetails,
   LtsTransactionSubmitRequest,
   LtsTransactionSubmitResponse,
@@ -28,8 +28,8 @@ type LTSSubmitResult =
       error: ResponseError;
     }
   | {
-      result: "MempoolFull";
-      details: LtsTransactionSubmitMempoolFullErrorDetails;
+      result: "PriorityThresholdNotMet";
+      details: LtsTransactionSubmitPriorityThresholdNotMetErrorDetails;
       error: ResponseError;
     };
 
@@ -109,7 +109,7 @@ export class LTS {
             error: e,
           };
         }
-        if (details.type == "MempoolFull") {
+        if (details.type == "PriorityThresholdNotMet") {
           return {
             result: details.type,
             details,
