@@ -74,8 +74,8 @@ public record MempoolRelayerConfig(
     long maxMessagePayloadSize) {
   public static final long DEFAULT_INTERVAL_MS = 20000;
   public static final long DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
-  public static final long DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
-  public static final long DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
+  public static final long DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2L * 1024 * 1024;
+  public static final long DEFAULT_MAX_RELAYED_SIZE = 6L * 1024 * 1024;
 
   public static MempoolRelayerConfig of() {
     return new MempoolRelayerConfig(
