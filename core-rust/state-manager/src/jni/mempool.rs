@@ -66,7 +66,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use crate::jni::state_manager::JNIStateManager;
-use crate::simple_mempool::MempoolTransaction;
+use crate::mempool::priority_mempool::MempoolTransaction;
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

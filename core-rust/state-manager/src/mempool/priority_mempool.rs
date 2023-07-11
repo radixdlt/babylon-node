@@ -63,12 +63,14 @@
  */
 
 use node_common::config::MempoolConfig;
+use rand::seq::index::sample;
 use tracing::warn;
 use transaction::model::*;
+use utils::prelude::indexmap::IndexMap;
 
 use crate::mempool::*;
 
-use std::cmp::{max, Ordering};
+use std::cmp::{max, min, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
@@ -167,27 +169,33 @@ impl PartialOrd for MempoolDataProposalPriorityOrdering {
     }
 }
 
-pub struct SimpleMempool {
+pub struct PriorityMempool {
+    /// Max number of different (by [`NotarizedTransactionHash`]) transactions that can live at any moment of time in the mempool.
     remaining_transaction_count: u32,
+    /// Max sum of transactions size that can live in [`self.data`].
     remaining_total_transactions_size: u64,
+    /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and longest time in mempool)
     proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
-    data: HashMap<NotarizedTransactionHash, Arc<MempoolData>>,
+    /// Mapping from [`NotarizedTransactionHash`] to [`Arc<MempoolData>`] containing [`MempoolTransaction`] with said payload hash.
+    /// We use [`IndexMap`] for it's O(1) [`get_index`] needed for efficient random sampling.
+    data: IndexMap<NotarizedTransactionHash, Arc<MempoolData>>,
+    /// Mapping from [`IntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
 }
 
-impl SimpleMempool {
-    pub fn new(config: MempoolConfig) -> SimpleMempool {
-        SimpleMempool {
+impl PriorityMempool {
+    pub fn new(config: MempoolConfig) -> PriorityMempool {
+        PriorityMempool {
             remaining_transaction_count: config.max_transaction_count,
             remaining_total_transactions_size: config.max_total_transactions_size,
             proposal_priority_index: BTreeSet::new(),
-            data: HashMap::new(),
+            data: IndexMap::new(),
             intent_lookup: HashMap::new(),
         }
     }
 }
 
-impl SimpleMempool {
+impl PriorityMempool {
     /// ASSUMPTION: Mempool does not already contain the transaction (panics otherwise).
     /// Tries to add a new transaction into the mempool.
     /// Will return either a [`Vec`] of [`MempoolData`] that was evicted in order to fit the new transaction or an error
@@ -382,15 +390,18 @@ impl SimpleMempool {
         Some(&self.data.get(payload_hash)?.transaction)
     }
 
-    // This method needs to be removed. Consumers of SimpleMempool should not require full state retrieval.
-    pub fn get_all_transactions(&self) -> Vec<Arc<MempoolTransaction>> {
-        self.data
-            .values()
-            .map(|transaction_data| {
-                // Clone the Arc - this is relatively cheap
-                transaction_data.transaction.clone()
-            })
-            .collect()
+    /// Returns [`count`] randomly sampled transactions from the mempool.
+    /// If count is higher than the mempool size, all transaction are returned (in random order).
+    /// Complexity is given by [`sample`] which is usually O(count).
+    pub fn get_k_random_transactions(&self, count: usize) -> Vec<Arc<MempoolTransaction>> {
+        sample(
+            &mut rand::thread_rng(),
+            self.data.len(),
+            min(count, self.data.len()),
+        )
+        .into_iter()
+        .map(|index| self.data.get_index(index).unwrap().1.transaction.clone())
+        .collect()
     }
 
     /// Picks an subset of transactions to form the proposal.
@@ -437,7 +448,7 @@ mod tests {
     use transaction::model::*;
     use transaction::signing::secp256k1::Secp256k1Signature;
 
-    use crate::mempool::simple_mempool::*;
+    use crate::mempool::priority_mempool::*;
 
     fn create_fake_pub_key() -> PublicKey {
         PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]))
@@ -511,7 +522,7 @@ mod tests {
         let mt2 = create_fake_pending_transaction(2, 0, 0);
         let mt3 = create_fake_pending_transaction(3, 0, 0);
 
-        let mut mp = SimpleMempool::new(MempoolConfig {
+        let mut mp = PriorityMempool::new(MempoolConfig {
             max_transaction_count: 5,
             max_total_transactions_size: 2 * 1024 * 1024,
         });
@@ -559,7 +570,7 @@ mod tests {
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1, 0);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2, 0);
 
-        let mut mp = SimpleMempool::new(MempoolConfig {
+        let mut mp = PriorityMempool::new(MempoolConfig {
             max_transaction_count: 10,
             max_total_transactions_size: 2 * 1024 * 1024,
         });
@@ -723,7 +734,7 @@ mod tests {
             now + Duration::from_secs(3),
         ];
 
-        let mut mp = SimpleMempool::new(MempoolConfig {
+        let mut mp = PriorityMempool::new(MempoolConfig {
             max_transaction_count: 4,
             max_total_transactions_size: 2 * 1024 * 1024,
         });
