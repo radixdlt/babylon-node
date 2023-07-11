@@ -143,6 +143,10 @@ impl MempoolManager {
         max_count: usize,
         max_payload_size_bytes: u64,
     ) -> Vec<Arc<MempoolTransaction>> {
+        // TODO: Definitely a better algorithm could be used here, especially with extra information like:
+        // which peer/peers are we sending this to? or what do we know about said peer to have in it's mempool?
+        // However (NOTE/WARN): changing transactions selection without careful consideration of the peer selection,
+        // can lead to a scenario where we keep sending same transactions to same peer.
         let candidate_transactions = self.mempool.read().get_k_random_transactions(max_count * 2);
 
         let mut payload_size_so_far = 0;
@@ -164,6 +168,7 @@ impl MempoolManager {
     /// from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
+        // TODO: better selection of transactions based on last time/state version against it was reevaluated.
         const MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION: u32 = 100;
         let candidate_transactions = self.mempool.read().get_k_random_transactions(max(
             max_reevaluated_count,
