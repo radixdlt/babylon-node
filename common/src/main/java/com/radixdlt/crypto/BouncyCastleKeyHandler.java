@@ -145,7 +145,9 @@ final class BouncyCastleKeyHandler implements KeyHandler {
       // Note that the provider here *must* be "BC" for this to work
       // correctly because we are using the bouncy castle ECPublicKeySpec,
       // and are casting to a bouncy castle ECPublicKey.
-      return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec))
+      return ((ECPublicKey)
+              KeyFactory.getInstance("EC", BouncyCastleProviderInstance.get())
+                  .generatePublic(publicKeySpec))
           .getQ()
           .getEncoded(true);
 

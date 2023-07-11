@@ -75,12 +75,10 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.networks.Network;
-import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -89,11 +87,6 @@ public class RadixNodeModuleTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private static final Network NETWORK = Network.INTEGRATIONTESTNET;
-
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
 
   @Test
   public void testInjectorNotNullToken() {

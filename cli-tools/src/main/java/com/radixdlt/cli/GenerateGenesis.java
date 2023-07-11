@@ -81,13 +81,11 @@ import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.io.File;
-import java.security.Security;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.*;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /** Generates the genesis data for the Babylon Radix network */
 public final class GenerateGenesis {
@@ -126,8 +124,6 @@ public final class GenerateGenesis {
   private GenerateGenesis() {}
 
   public static void main(String[] args) throws Exception {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
     Options options = new Options();
     options.addOption("h", "help", false, "Show usage information (this message)");
     options.addOption("p", "public-keys", true, "Specify validator keys");

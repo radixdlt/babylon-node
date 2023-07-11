@@ -79,21 +79,14 @@ import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import java.io.File;
-import java.security.Security;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /** Command line utility for key generation. */
 public class KeyGenerator {
   private static final String DEFAULT_KEYPAIR_NAME = "node";
-
-  static {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-  }
-
   private final Options options;
 
   private KeyGenerator() {
