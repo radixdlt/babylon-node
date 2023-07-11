@@ -62,40 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.keys;
+package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.Optional;
 
-public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
+public final class MockedSelfValidatorInfoModule extends AbstractModule {
   @Provides
   @Singleton
   @Self
-  private BFTValidatorId self(
-      // Require the token to ensure ledger genesis init
-      REv2LedgerInitializerToken rev2LedgerInitializerToken,
-      @Self ECDSASecp256k1PublicKey key,
-      TransactionsAndProofReader transactionsAndProofReader) {
-    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
-    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
-    var potentialBFTValidators =
-        genesisValidatorSet.getValidators().stream()
-            .map(BFTValidator::getValidatorId)
-            .filter(node -> node.getKey().equals(key))
-            .toList();
-
-    if (potentialBFTValidators.size() > 1) {
-      throw new IllegalStateException(
-          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
-    }
-
-    return potentialBFTValidators.stream().findFirst().orElse(BFTValidatorId.create(key));
+  private SelfValidatorInfo selfValidatorInfo(@Self ECDSASecp256k1PublicKey key) {
+    return new SelfValidatorInfo(
+        key, Optional.of(BFTValidatorId.withKeyAndFakeDeterministicAddress(key)));
   }
 }

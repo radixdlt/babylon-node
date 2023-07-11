@@ -137,12 +137,12 @@ public final class BFTValidatorSet {
     return ValidationState.forValidatorSet(this);
   }
 
-  public boolean containsNode(BFTValidatorId node) {
-    return validators.containsKey(node);
+  public boolean containsValidator(BFTValidatorId validatorId) {
+    return validators.containsKey(validatorId);
   }
 
-  public UInt256 getPower(BFTValidatorId node) {
-    return validators.get(node).getPower();
+  public UInt256 getPower(BFTValidatorId validatorId) {
+    return validators.get(validatorId).getPower();
   }
 
   public UInt256 getTotalPower() {
@@ -153,7 +153,7 @@ public final class BFTValidatorSet {
     return validators.values();
   }
 
-  public ImmutableSet<BFTValidatorId> nodes() {
+  public ImmutableSet<BFTValidatorId> validators() {
     return validators.keySet();
   }
 

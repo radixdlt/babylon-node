@@ -64,42 +64,256 @@
 
 package com.radixdlt.environment;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.VertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.rev2.LastProof;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.utils.TimeSupplier;
+import java.util.Comparator;
+import java.util.Random;
 
-/** Sets up processors for consensus which doesn't support epochs */
+/** A module used in tests - configures a BFT validator logic for a single epoch. */
 public class NoEpochsConsensusModule extends AbstractModule {
+
   @Override
   public void configure() {
+    bind(PacemakerState.class).in(Scopes.SINGLETON);
+    bind(PacemakerReducer.class).to(PacemakerState.class);
+    bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+    bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+
     eventBinder.addBinding().toInstance(TimeoutQuorumDelayedResolution.class);
+    eventBinder.addBinding().toInstance(RoundUpdate.class);
+    eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
+    eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
+    eventBinder.addBinding().toInstance(Proposal.class);
+    eventBinder.addBinding().toInstance(Vote.class);
+    eventBinder.addBinding().toInstance(LedgerUpdate.class);
     eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(ProposalRejected.class);
-    eventBinder.addBinding().toInstance(RoundUpdate.class);
-    eventBinder.addBinding().toInstance(LedgerUpdate.class);
+  }
+
+  @Provides
+  @Singleton
+  public VertexStoreBFTSyncRequestProcessor syncRequestProcessor(
+      VertexStoreAdapter vertexStore,
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
+      Metrics metrics) {
+    return new VertexStoreBFTSyncRequestProcessor(
+        vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
+  }
+
+  @Provides
+  @Singleton
+  public ProposerElection proposerElection(BFTConfiguration configuration) {
+    return configuration.getProposerElection();
+  }
+
+  @Provides
+  @Singleton
+  public BFTEventProcessor bftEventProcessor(
+      @Self SelfValidatorInfo self,
+      BFTConfiguration config,
+      Pacemaker pacemaker,
+      BFTSync bftSync,
+      SafetyRules safetyRules,
+      Hasher hasher,
+      HashVerifier verifier,
+      TimeSupplier timeSupplier,
+      ProposerElection proposerElection,
+      Metrics metrics,
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
+      ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+          timeoutQuorumDelayedResolutionDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
+      EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
+      RoundUpdate roundUpdate,
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
+    /*
+    TODO: consider cleaning this up (but most probably it's not worth it :))
+    This is a little hacky.
+    We always instantiate NoEpochsConsensusModule (if epochs aren't configured),
+    regardless of whether this test node is a validator or a full node
+    (because that's how FunctionalRadixNodeModule currently works).
+    So for now, if the node is not a validator we're just going to create a dummy
+    BFT instance (i.e. Pacemaker, BFTSync, etc). Dummy in this context means
+    a complete instance, but configured with "self" validator ID that is not
+    present in the current validator set (so it won't be processing any events).
+     */
+    final var selfValidatorId = self.validatorIdOrFakeForTesting();
+
+    return BFTBuilder.create()
+        .self(selfValidatorId)
+        .hasher(hasher)
+        .verifier(verifier)
+        .proposalRejectedDispatcher(proposalRejectedDispatcher)
+        .safetyRules(safetyRules)
+        .pacemaker(pacemaker)
+        .roundQuorumResolutionDispatcher(
+            roundQuorumResolution -> {
+              // FIXME: a hack for now until replacement of epochmanager factories
+              bftSync.roundQuorumResolutionEventProcessor().process(roundQuorumResolution);
+              roundQuorumResolutionEventDispatcher.dispatch(roundQuorumResolution);
+            })
+        .timeoutQuorumDelayedResolutionDispatcher(timeoutQuorumDelayedResolutionDispatcher)
+        .timeoutQuorumResolutionDelayMs(timeoutQuorumResolutionDelayMs)
+        .doubleVoteDispatcher(doubleVoteEventDispatcher)
+        .roundUpdate(roundUpdate)
+        .bftSyncer(bftSync)
+        .validatorSet(config.getValidatorSet())
+        .timeSupplier(timeSupplier)
+        .metrics(metrics)
+        .proposerElection(proposerElection)
+        .build();
+  }
+
+  @Provides
+  @Singleton
+  private SafetyRules safetyRules(
+      @Self SelfValidatorInfo self,
+      SafetyState initialState,
+      PersistentSafetyStateStore persistentSafetyStateStore,
+      Hasher hasher,
+      HashSigner signer,
+      HashVerifier hashVerifier,
+      BFTValidatorSet validatorSet) {
+    return new SafetyRules(
+        self.validatorIdOrFakeForTesting(),
+        initialState,
+        persistentSafetyStateStore,
+        hasher,
+        signer,
+        hashVerifier,
+        validatorSet);
+  }
+
+  @Provides
+  @Singleton
+  private Pacemaker pacemaker(
+      @Self SelfValidatorInfo self,
+      SafetyRules safetyRules,
+      BFTConfiguration configuration,
+      VertexStoreAdapter vertexStore,
+      EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
+      PacemakerTimeoutCalculator timeoutCalculator,
+      ProposalGenerator proposalGenerator,
+      Hasher hasher,
+      RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
+      TimeSupplier timeSupplier,
+      RoundUpdate initialRoundUpdate,
+      Metrics metrics) {
+    BFTValidatorSet validatorSet = configuration.getValidatorSet();
+    return new Pacemaker(
+        self.validatorIdOrFakeForTesting(),
+        validatorSet,
+        vertexStore,
+        safetyRules,
+        timeoutDispatcher,
+        timeoutSender,
+        timeoutCalculator,
+        proposalGenerator,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          proposalDispatcher.dispatch(nodeId, m);
+        },
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          voteDispatcher.dispatch(nodeId, m);
+        },
+        noVoteDispatcher,
+        hasher,
+        timeSupplier,
+        initialRoundUpdate,
+        metrics);
+  }
+
+  @Provides
+  @Singleton
+  private BFTSync bftSync(
+      @Self SelfValidatorInfo self,
+      @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
+      VertexStoreAdapter vertexStore,
+      PacemakerReducer pacemakerReducer,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
+      EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
+      ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
+      @LastProof LedgerProof ledgerLastProof,
+      Random random,
+      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      Metrics metrics) {
+    return new BFTSync(
+        self.validatorIdOrFakeForTesting(),
+        syncRequestRateLimiter,
+        vertexStore,
+        hasher,
+        safetyRules,
+        pacemakerReducer,
+        Comparator.comparingLong(LedgerHeader::getStateVersion),
+        requestSender,
+        syncLedgerRequestSender,
+        timeoutDispatcher,
+        unexpectedEventEventDispatcher,
+        ledgerLastProof.getHeader(),
+        random,
+        bftSyncPatienceMillis,
+        metrics);
+  }
+
+  @Provides
+  @Singleton
+  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
+    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  }
+
+  @Provides
+  @Singleton
+  private VertexStoreAdapter vertexStoreAdapter(
+      VertexStore vertexStore,
+      EventDispatcher<BFTInsertUpdate> updateSender,
+      EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
+      EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
+      EventDispatcher<BFTCommittedUpdate> committedSender) {
+    return new VertexStoreAdapter(
+        vertexStore,
+        highQCUpdateEventDispatcher,
+        updateSender,
+        rebuildUpdateDispatcher,
+        committedSender);
   }
 
   @ProvidesIntoSet

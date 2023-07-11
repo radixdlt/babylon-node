@@ -84,7 +84,7 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
-  private static final int BYTE_LENGTH = 30;
+  public static final int BYTE_LENGTH = 30;
 
   // See entity_type.rs
 

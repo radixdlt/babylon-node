@@ -243,7 +243,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   }
 
   private boolean isAuthorInValidatorSet(ConsensusEvent event) {
-    return validatorSet.containsNode(event.getAuthor());
+    return validatorSet.containsValidator(event.getAuthor());
   }
 
   private boolean verifyHashSignature(

@@ -115,21 +115,24 @@ public class VertexTest {
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException() throws PublicKeyException {
     var proposer =
-        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     Vertex.create(null, 1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidRoundThrowsException() throws PublicKeyException {
     var proposer =
-        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     Vertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithInvalidTxnListThrowsException() throws PublicKeyException {
     var proposer =
-        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     var list = new ArrayList<byte[]>();
     list.add(null);
     Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, false, 0);
@@ -139,7 +142,8 @@ public class VertexTest {
   public void deserializationWithInvalidCombinationOfProposerTimeoutAndTxnListThrowsException()
       throws PublicKeyException {
     var proposer =
-        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     var list = new ArrayList<byte[]>();
     list.add(new byte[0]);
     Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, true, 0);

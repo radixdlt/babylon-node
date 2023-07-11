@@ -119,7 +119,7 @@ public final class DelayAfterFormingTcAndFormAQcTest {
   private DeterministicTest createTest(
       MessageSelector messageSelector, MessageMutator messageMutator) {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(4))
         .messageSelector(messageSelector)
         .messageMutators(messageMutator)
         .functionalNodeModule(

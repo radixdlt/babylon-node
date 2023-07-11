@@ -92,7 +92,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(5))
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutators(
             dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),

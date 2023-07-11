@@ -77,8 +77,8 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.keys.BFTValidatorIdModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
+import com.radixdlt.keys.SelfValidatorInfoModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
@@ -187,16 +187,17 @@ public final class DeterministicNodes implements AutoCloseable {
                     .annotatedWith(Self.class)
                     .toInstance(NodeId.fromPublicKey(config.key()));
 
-                if (config.loadFromGenesis()) {
-                  install(new BFTValidatorIdFromGenesisModule());
-                } else {
-                  var binder =
-                      OptionalBinder.newOptionalBinder(
-                          binder(), Key.get(ComponentAddress.class, Self.class));
-                  if (config.validatorAddress() != null) {
-                    binder.setBinding().toInstance(config.validatorAddress());
+                switch (config.validatorIdSource()) {
+                  case PhysicalNodeConfig.ValidatorIdSource.Provided provided -> {
+                    var binder =
+                        OptionalBinder.newOptionalBinder(
+                            binder(), Key.get(ComponentAddress.class, Self.class));
+                    binder.setBinding().toInstance(provided.validatorId().getValidatorAddress());
+                    install(new SelfValidatorInfoModule());
                   }
-                  install(new BFTValidatorIdModule());
+                  case PhysicalNodeConfig.ValidatorIdSource.LoadFromGenesis loadFromGenesis -> {
+                    install(new SelfValidatorInfoFromGenesisModule());
+                  }
                 }
 
                 install(

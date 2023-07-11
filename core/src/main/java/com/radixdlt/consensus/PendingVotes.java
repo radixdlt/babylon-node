@@ -118,15 +118,15 @@ public final class PendingVotes {
    * @return The result of vote processing
    */
   public VoteProcessingResult insertVote(Vote vote) {
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
-    if (!validatorSet.containsNode(node)) {
+    if (!validatorSet.containsValidator(author)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
     }
 
-    if (!replacePreviousVote(node, vote, voteDataHash)) {
+    if (!replacePreviousVote(author, vote, voteDataHash)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
     }
 
@@ -139,13 +139,13 @@ public final class PendingVotes {
   private Optional<QuorumCertificate> processVoteForQC(Vote vote) {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
 
     final ValidationState validationState =
         this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
     final boolean signatureAdded =
-        validationState.addSignature(node, vote.getTimestamp(), vote.getSignature());
+        validationState.addSignature(author, vote.getTimestamp(), vote.getSignature());
 
     if (signatureAdded && validationState.complete()) {
       return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
@@ -163,14 +163,14 @@ public final class PendingVotes {
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
     final HashCode voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
-    final BFTValidatorId node = vote.getAuthor();
+    final BFTValidatorId author = vote.getAuthor();
 
     final ValidationState validationState =
         this.timeoutVoteState.computeIfAbsent(
             voteTimeoutHash, k -> validatorSet.newValidationState());
 
     final boolean signatureAdded =
-        validationState.addSignature(node, vote.getTimestamp(), timeoutSignature);
+        validationState.addSignature(author, vote.getTimestamp(), timeoutSignature);
 
     if (signatureAdded && validationState.complete()) {
       return Optional.of(
@@ -224,7 +224,7 @@ public final class PendingVotes {
     if (vote.getRound().equals(previousVote.getRound())) {
       // If the validator already voted in this round for something else,
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
-      // on the same vote data, or a byzantine node
+      // on the same vote data, or a byzantine validator
 
       var isValidVote = thisVote.getHash().equals(previousVote.getHash());
       if (!isValidVote) {

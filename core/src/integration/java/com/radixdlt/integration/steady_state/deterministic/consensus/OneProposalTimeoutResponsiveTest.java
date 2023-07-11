@@ -89,7 +89,7 @@ public class OneProposalTimeoutResponsiveTest {
   private void run(int numValidatorNodes, int numRounds, long dropPeriod) {
     var test =
         DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
+            .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(numValidatorNodes))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropSomeProposals(dropPeriod))
             .functionalNodeModule(

@@ -378,7 +378,7 @@ pub struct NextEpoch {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
     pub key: Secp256k1PublicKey,
-    pub validator_address: Option<ComponentAddress>,
+    pub validator_address: ComponentAddress,
     pub timestamp_ms: i64,
     pub signature: Secp256k1Signature,
 }

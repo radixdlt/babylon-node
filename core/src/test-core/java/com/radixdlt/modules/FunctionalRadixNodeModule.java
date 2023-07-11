@@ -318,7 +318,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Consensus
     install(consensusConfig.asModule());
-    install(new ConsensusModule());
     if (this.epochs) {
       install(new EpochsConsensusModule());
       install(new EpochsSafetyRecoveryModule());

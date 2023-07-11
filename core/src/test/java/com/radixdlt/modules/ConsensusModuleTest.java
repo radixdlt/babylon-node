@@ -86,6 +86,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
@@ -118,7 +119,8 @@ public class ConsensusModuleTest {
   private BFTValidatorId validatorId;
   private BFTConfiguration bftConfiguration;
 
-  private ECKeyPair ecKeyPair;
+  private ECKeyPair selfKeyPair;
+  private BFTValidatorId selfValidatorId;
   private RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
   private RemoteEventDispatcher<NodeId, GetVerticesResponse> responseSender;
   private RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseSender;
@@ -132,19 +134,22 @@ public class ConsensusModuleTest {
         QuorumCertificate.createInitialEpochQC(
             genesisVertex, LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
-    this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
+    this.validatorId =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(this.validatorKeyPair.getPublicKey());
     var validatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
     var proposerElection = ProposerElections.defaultRotation(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-    this.ecKeyPair = ECKeyPair.generateNew();
+    this.selfKeyPair = ECKeyPair.generateNew();
+    this.selfValidatorId =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(selfKeyPair.getPublicKey());
     this.requestSender = rmock(RemoteEventDispatcher.class);
     this.responseSender = rmock(RemoteEventDispatcher.class);
     this.errorResponseSender = rmock(RemoteEventDispatcher.class);
 
-    Guice.createInjector(new ConsensusModule(), new CryptoModule(), getExternalModule())
+    Guice.createInjector(new NoEpochsConsensusModule(), new CryptoModule(), getExternalModule())
         .injectMembers(this);
   }
 
@@ -228,14 +233,15 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      RoundUpdate initialRoundUpdate(@Self BFTValidatorId node) {
-        return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
+      RoundUpdate initialRoundUpdate() {
+        return RoundUpdate.create(
+            Round.of(1), mock(HighQC.class), selfValidatorId, selfValidatorId);
       }
 
       @Provides
       @Self
-      private BFTValidatorId bftNode() {
-        return BFTValidatorId.create(ecKeyPair.getPublicKey());
+      private SelfValidatorInfo bftNode() {
+        return new SelfValidatorInfo(selfKeyPair.getPublicKey(), Optional.of(selfValidatorId));
       }
     };
   }
@@ -248,7 +254,8 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
-    final var proposerBftNode = BFTValidatorId.create(proposerKeyPair.getPublicKey());
+    final var proposerBftNode =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(proposerKeyPair.getPublicKey());
     var vertex =
         Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode, 0).withId(hasher);
     var next =

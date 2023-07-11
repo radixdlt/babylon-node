@@ -200,7 +200,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
           .ifPresent(
               proposal -> {
                 log.trace("Broadcasting proposal: {}", proposal);
-                this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
+                this.proposalDispatcher.dispatch(this.validatorSet.validators(), proposal);
                 this.metrics.bft().pacemaker().proposalsSent().inc();
               });
     } else {
@@ -298,7 +298,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     // before any timeout)
     // and still be sent only to the next leader (rather than being broadcasted).
     if (this.scheduledRoundTimeoutHasOccurred) {
-      this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote);
+      this.voteDispatcher.dispatch(this.validatorSet.validators(), vote);
     } else {
       this.voteDispatcher.dispatch(this.latestRoundUpdate.getNextLeader(), vote);
     }

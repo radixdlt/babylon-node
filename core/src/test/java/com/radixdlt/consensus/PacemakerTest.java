@@ -85,7 +85,7 @@ import org.junit.Test;
 public final class PacemakerTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(1))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(1))
         .messageSelector(MessageSelector.firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

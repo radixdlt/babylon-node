@@ -151,7 +151,7 @@ public class PacemakerTest {
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.of(lastVote));
     when(this.safetyRules.timeoutVote(lastVote)).thenReturn(lastVoteWithTimeout);
-    when(this.validatorSet.nodes()).thenReturn(validators);
+    when(this.validatorSet.validators()).thenReturn(validators);
 
     RoundUpdate roundUpdate =
         RoundUpdate.create(
@@ -210,7 +210,7 @@ public class PacemakerTest {
     when(this.safetyRules.createVote(any(), any(), anyLong(), any()))
         .thenReturn(Optional.of(emptyVote));
     when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(emptyVoteWithTimeout);
-    when(this.validatorSet.nodes()).thenReturn(validators);
+    when(this.validatorSet.validators()).thenReturn(validators);
 
     when(this.vertexStore.getExecutedVertex(any())).thenReturn(Optional.empty());
 

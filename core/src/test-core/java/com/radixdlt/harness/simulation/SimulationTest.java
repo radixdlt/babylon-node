@@ -84,8 +84,8 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.ledger.MockedBFTNodeModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
+import com.radixdlt.ledger.MockedSelfValidatorInfoModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -225,7 +225,7 @@ public final class SimulationTest {
 
       final var bftNodes =
           initialStakesMap.keySet().stream()
-              .map(BFTValidatorId::create)
+              .map(BFTValidatorId::withKeyAndFakeDeterministicAddress)
               .collect(ImmutableList.toImmutableList());
 
       this.bftValidatorIds = bftNodes;
@@ -382,9 +382,9 @@ public final class SimulationTest {
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
       if (this.functionalNodeModule.supportsREv2()) {
-        modules.add(new BFTValidatorIdFromGenesisModule());
+        modules.add(new SelfValidatorInfoFromGenesisModule());
       } else {
-        modules.add(new MockedBFTNodeModule());
+        modules.add(new MockedSelfValidatorInfoModule());
       }
       modules.add(this.functionalNodeModule);
 

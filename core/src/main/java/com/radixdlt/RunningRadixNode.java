@@ -72,6 +72,7 @@ import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
@@ -137,8 +138,8 @@ public final class RunningRadixNode {
     return new RunningRadixNode(injector);
   }
 
-  public BFTValidatorId self() {
-    return this.injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
+  public SelfValidatorInfo self() {
+    return this.injector.getInstance(Key.get(SelfValidatorInfo.class, Self.class));
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {

@@ -62,79 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.monitoring;
+package com.radixdlt.keys;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
-import com.radixdlt.monitoring.Metrics.Config;
-import com.radixdlt.p2p.PeersView;
-import java.util.Collection;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
-/** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
-public final class MetricInstaller {
+public final class SelfValidatorInfoFromGenesisModule extends AbstractModule {
+  @Provides
+  @Singleton
+  @Self
+  private SelfValidatorInfo self(
+      // Require the token to ensure ledger genesis init
+      REv2LedgerInitializerToken rev2LedgerInitializerToken,
+      @Self ECDSASecp256k1PublicKey key,
+      TransactionsAndProofReader transactionsAndProofReader) {
+    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
+    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
+    var potentialBFTValidators =
+        genesisValidatorSet.getValidators().stream()
+            .map(BFTValidator::getValidatorId)
+            .filter(node -> node.getKey().equals(key))
+            .toList();
 
-  /** An own node, for exposing the {@link Config#key()} information. */
-  private final SelfValidatorInfo self;
+    if (potentialBFTValidators.size() > 1) {
+      throw new IllegalStateException(
+          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
+    }
 
-  /** A source of "system" getters to be exposed as gauges. */
-  private final InMemorySystemInfo inMemorySystemInfo;
+    final var maybeGenesisValidatorMatchingSelfKey = potentialBFTValidators.stream().findFirst();
 
-  /** A source of "peers" getters to be exposed as gauges. */
-  private final PeersView peersView;
-
-  @Inject
-  public MetricInstaller(
-      final @Self SelfValidatorInfo self,
-      final InMemorySystemInfo inMemorySystemInfo,
-      final PeersView peersView) {
-    this.self = self;
-    this.inMemorySystemInfo = inMemorySystemInfo;
-    this.peersView = peersView;
-  }
-
-  /**
-   * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
-   * Prometheus measurement primitives.
-   *
-   * <p>This includes e.g. static "info" metrics, and directly-read "getter gauges".
-   *
-   * @param metrics Hierarchy where some legacy metrics need to be set.
-   */
-  public void installAt(Metrics metrics) {
-    final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.key().toHex());
-    metrics.misc().config().set(config);
-    metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
-    metrics.bft().validatorCount().initialize(this::countValidators);
-    metrics.bft().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
-    metrics
-        .epochManager()
-        .currentEpoch()
-        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getEpoch());
-    metrics
-        .epochManager()
-        .currentRound()
-        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getRound().number());
-  }
-
-  private boolean isInValidatorSet() {
-    return this.self.bftValidatorId().stream()
-        .anyMatch(
-            selfValidatorId ->
-                this.inMemorySystemInfo
-                    .getEpochProof()
-                    .getNextValidatorSet()
-                    .map(set -> set.containsValidator(selfValidatorId))
-                    .orElse(false));
-  }
-
-  private int countValidators() {
-    return this.inMemorySystemInfo
-        .getEpochProof()
-        .getNextValidatorSet()
-        .map(BFTValidatorSet::getValidators)
-        .map(Collection::size)
-        .orElse(0);
+    return new SelfValidatorInfo(key, maybeGenesisValidatorMatchingSelfKey);
   }
 }

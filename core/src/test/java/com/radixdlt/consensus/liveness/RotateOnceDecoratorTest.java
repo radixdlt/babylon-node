@@ -80,9 +80,7 @@ import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.LongStream;
-import javax.annotation.Nullable;
 import org.junit.Test;
 
 public class RotateOnceDecoratorTest {
@@ -91,7 +89,7 @@ public class RotateOnceDecoratorTest {
   public void initial_rounds_iterate_through_all_validators_once() {
     final var validators =
         Arrays.asList(
-            BFTValidator.from(id(null, 7), power(22)), // for round 2
+            BFTValidator.from(id(1012, 7), power(22)), // for round 2
             BFTValidator.from(id(1013, 3), power(33)), // for round 0
             BFTValidator.from(id(1018, 7), power(22)), // for round 3
             BFTValidator.from(id(1011, 5), power(22)) // for round 1
@@ -132,13 +130,9 @@ public class RotateOnceDecoratorTest {
     assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
   }
 
-  private static BFTValidatorId id(@Nullable Integer addressBytes, int keySeed) {
+  private static BFTValidatorId id(Integer addressBytes, int keySeed) {
     // we do not care about valid address representation (i.e. we do not call Engine), just ordering
-    final @Nullable ComponentAddress address =
-        Optional.ofNullable(addressBytes)
-            .map(Ints::toByteArray)
-            .map(ComponentAddress::new)
-            .orElse(null);
+    final ComponentAddress address = new ComponentAddress(Ints.toByteArray(addressBytes));
     final ECDSASecp256k1PublicKey key = PrivateKeys.ofNumeric(keySeed).getPublicKey();
     return BFTValidatorId.create(address, key);
   }

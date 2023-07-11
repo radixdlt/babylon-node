@@ -65,7 +65,6 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -97,9 +96,8 @@ public final class SafetyRules {
   private SafetyState state;
   private final Set<HashCode> verifiedCertificatesCache = new LinkedHashSet<>();
 
-  @Inject
   public SafetyRules(
-      @Self BFTValidatorId self,
+      BFTValidatorId self,
       SafetyState initialState,
       PersistentSafetyStateStore persistentSafetyStateStore,
       Hasher hasher,
@@ -333,7 +331,7 @@ public final class SafetyRules {
     }
 
     final var isTcValid =
-        tc.getSigners().allMatch(validatorSet::containsNode)
+        tc.getSigners().allMatch(validatorSet::containsValidator)
             && areAllTcTimestampedSignaturesValid(tc);
 
     if (isTcValid) {

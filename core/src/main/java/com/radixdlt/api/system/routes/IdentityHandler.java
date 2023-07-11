@@ -68,8 +68,8 @@ import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.IdentityResponse;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.NodeId;
@@ -87,7 +87,7 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
   private final ECDSASecp256k1PublicKey selfKey;
   private final NodeId nodeId;
   private final String selfName;
-  private final BFTValidatorId validatorId;
+  private final SelfValidatorInfo selfValidatorInfo;
 
   @Inject
   IdentityHandler(
@@ -98,7 +98,7 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
       @Self ECDSASecp256k1PublicKey selfKey,
       @Self NodeId nodeId,
       @Self String selfName,
-      @Self BFTValidatorId validatorId) {
+      @Self SelfValidatorInfo selfValidatorInfo) {
     super();
     this.addressing = addressing;
     this.epochManagerOptional = epochManagerOptional;
@@ -106,13 +106,16 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
     this.selfKey = selfKey;
     this.nodeId = nodeId;
     this.selfName = selfName;
-    this.validatorId = validatorId;
+    this.selfValidatorInfo = selfValidatorInfo;
   }
 
   @Override
   public IdentityResponse handleRequest() {
     final var validatorAddress =
-        validatorId.getValidatorAddress().map(addressing::encode).orElse(null);
+        selfValidatorInfo
+            .bftValidatorId()
+            .map(selfValidatorId -> addressing.encode(selfValidatorId.getValidatorAddress()))
+            .orElse(null);
 
     return new IdentityResponse()
         .publicKeyHex(selfKey.toHex())
@@ -121,7 +124,7 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
         .nodeName(selfName)
         .nodeId(nodeId.toString())
         .validatorAddress(validatorAddress)
-        .validatorName(validatorId.toString())
+        .validatorName(selfValidatorInfo.toString())
         .consensusStatus(consensusStatus());
   }
 

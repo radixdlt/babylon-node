@@ -76,6 +76,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -177,7 +178,8 @@ public final class EventLoggerModule extends AbstractModule {
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
       // The `Provider` indirection is needed here to break an unexpected circular dependency.
-      @Self Provider<BFTValidatorId> self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      @Self Provider<SelfValidatorInfo> self,
+      Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
@@ -186,7 +188,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @SuppressWarnings("UnstableApiUsage")
   private static void processLedgerUpdate(
-      BFTValidatorId self,
+      SelfValidatorInfo self,
       Function<ECDSASecp256k1PublicKey, String> nodeString,
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
@@ -219,12 +221,13 @@ public final class EventLoggerModule extends AbstractModule {
     */
   }
 
-  private static void logEpochChange(BFTValidatorId self, EpochChange epochChange) {
+  private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
     var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+    final var included = self.bftValidatorId().stream().anyMatch(validatorSet::containsValidator);
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
         epochChange.getNextEpoch(),
-        validatorSet.containsNode(self),
+        included,
         validatorSet.getValidators().size(),
         Amount.ofSubunits(validatorSet.getTotalPower()));
   }

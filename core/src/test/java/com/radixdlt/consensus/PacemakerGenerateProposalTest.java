@@ -88,11 +88,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public final class PacemakerGenerateProposalTest {
-  private BFTValidatorId self = BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey());
+  private BFTValidatorId self =
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(1).getPublicKey());
   private BFTValidatorId validator1 =
-      BFTValidatorId.create(PrivateKeys.ofNumeric(2).getPublicKey());
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(2).getPublicKey());
   private BFTValidatorId validator2 =
-      BFTValidatorId.create(PrivateKeys.ofNumeric(3).getPublicKey());
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(PrivateKeys.ofNumeric(3).getPublicKey());
   private BFTValidatorSet validatorSet;
   private VertexStoreAdapter vertexStore;
   private SafetyRules safetyRules;

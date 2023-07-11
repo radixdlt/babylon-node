@@ -77,9 +77,9 @@ import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
+import com.radixdlt.keys.SelfValidatorInfoModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -173,18 +173,17 @@ public final class RadixNodeModule extends AbstractModule {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
-      install(new BFTValidatorIdModule());
+      install(new SelfValidatorInfoModule());
     } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
-      install(new BFTValidatorIdFromGenesisModule());
+      install(new SelfValidatorInfoFromGenesisModule());
     } else {
       // No validator address provided, and use genesis explicitly disabled
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
-      install(new BFTValidatorIdModule());
+      install(new SelfValidatorInfoModule());
     }
 
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
-    install(new ConsensusModule());
 
     // Ledger
     install(new LedgerModule());

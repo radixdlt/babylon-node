@@ -113,7 +113,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
                         .map(
                             niw ->
                                 BFTValidator.from(
-                                    BFTValidatorId.create(
+                                    BFTValidatorId.withKeyAndFakeDeterministicAddress(
                                         PrivateKeys.ofNumeric(niw.index() + 1).getPublicKey()),
                                     niw.weight()))));
   }
