@@ -79,9 +79,7 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolReevaluationModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
@@ -376,7 +374,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
-                install(new MempoolRelayerModule(10000));
+                install(new MempoolRelayerModule(MempoolRelayerConfig.of(10000)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
@@ -417,7 +415,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.noFees()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
-                install(new MempoolRelayerModule(10000));
+                install(new MempoolRelayerModule(MempoolRelayerConfig.of(10000)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());

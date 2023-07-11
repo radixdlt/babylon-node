@@ -62,92 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.mempool;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.serialization.Serialization;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  private final NioEventLoopGroup clientWorkerGroup;
-  private final Capabilities capabilities;
-  private final long mempoolRelayerMaxMessagePayloadSize;
-
-  @Inject
-  public PeerOutboundBootstrapImpl(
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize long mempoolRelayerMaxMessagePayloadSize) {
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = "SomeForkName";
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
-    this.capabilities = capabilities;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
-  }
-
-  @Override
-  public void initOutboundConnection(RadixNodeUri uri) {
-    final var bootstrap = new Bootstrap();
-    bootstrap
-        .group(clientWorkerGroup)
-        .channel(NioSocketChannel.class)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .handler(
-            new PeerChannelInitializer(
-                config,
-                addressing,
-                network,
-                newestForkName,
-                metrics,
-                serialization,
-                secureRandom,
-                ecKeyOps,
-                peerEventDispatcher,
-                Optional.of(uri),
-                capabilities,
-                this.mempoolRelayerMaxMessagePayloadSize))
-        .connect(uri.getHost(), uri.getPort());
-  }
-}
+/**
+ * A limit of transaction bytes transferred during a single relaying event summed up for all chosen
+ * peers. For example, if the relay message size is 1 MiB and this is set to 3 MiB then we can only
+ * relay this message to a maximum of 3 peers (given that maxPeers is also greater than or equal 3).
+ * This prevents the mempool relayer from excessive bandwidth use.
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayerMaxRelayedSize {}

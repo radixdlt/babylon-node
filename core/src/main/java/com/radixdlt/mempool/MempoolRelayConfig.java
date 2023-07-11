@@ -66,7 +66,7 @@ package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 
-/** Configuration parameters for mempool. */
+/** Configuration parameters for mempool relay. */
 public record MempoolRelayConfig(long throttleMs, int relayMaxPeers) {
   public static MempoolRelayConfig of() {
     return new MempoolRelayConfig(10000, 100);

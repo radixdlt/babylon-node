@@ -64,11 +64,11 @@
 
 package com.radixdlt.p2p.transport;
 
+import com.google.inject.Inject;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -107,16 +107,56 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
   // `REv2TransactionsAndProofReader`)
   //    similarly, this doesn't include sync response overhead (proof)
-  //  - `MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE` in `MempoolRelayer`
-  private static final int MAX_PACKET_LENGTH;
+  //  - `@MempoolRelayerMaxMessagePayloadSize`
+  private static int MAX_PACKET_LENGTH;
 
-  static {
+  private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
+  private static final int SOCKET_BACKLOG_SIZE = 1024;
+
+  private final P2PConfig config;
+  private final Addressing addressing;
+  private final Network network;
+  private final String newestForkName;
+  private final Metrics metrics;
+  private final Serialization serialization;
+  private final SecureRandom secureRandom;
+  private final ECKeyOps ecKeyOps;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final Optional<RadixNodeUri> uri;
+  private final Capabilities capabilities;
+
+  @Inject
+  public PeerChannelInitializer(
+      P2PConfig config,
+      Addressing addressing,
+      Network network,
+      String newestForkName,
+      Metrics metrics,
+      Serialization serialization,
+      SecureRandom secureRandom,
+      ECKeyOps ecKeyOps,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      Optional<RadixNodeUri> uri,
+      Capabilities capabilities,
+      long mempoolRelayerMaxMessagePayloadSize) {
+    this.config = Objects.requireNonNull(config);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.network = network;
+    this.newestForkName = newestForkName;
+    this.metrics = Objects.requireNonNull(metrics);
+    this.serialization = Objects.requireNonNull(serialization);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.uri = Objects.requireNonNull(uri);
+    this.capabilities = capabilities;
+
     final var baseBufferSize =
         Math.max(
             Math.max(
                 REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
                 RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
-            MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
+            (int) mempoolRelayerMaxMessagePayloadSize);
     // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
     final var additionalBuffer = (int) (0.3 * baseBufferSize);
     final var bufferSize = baseBufferSize + additionalBuffer;
@@ -135,46 +175,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     }
 
     MAX_PACKET_LENGTH = bufferSize;
-  }
-
-  private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
-  private static final int SOCKET_BACKLOG_SIZE = 1024;
-
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
-  private final Optional<RadixNodeUri> uri;
-  private final Capabilities capabilities;
-
-  public PeerChannelInitializer(
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      String newestForkName,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Optional<RadixNodeUri> uri,
-      Capabilities capabilities) {
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = newestForkName;
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-    this.uri = Objects.requireNonNull(uri);
-    this.capabilities = capabilities;
   }
 
   @Override

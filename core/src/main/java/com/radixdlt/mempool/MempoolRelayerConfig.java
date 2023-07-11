@@ -62,92 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.mempool;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.serialization.Serialization;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+import com.google.inject.AbstractModule;
 
-public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+/** Configuration parameters for mempool relayer. */
+public record MempoolRelayerConfig(
+    long intervalMs,
+    long maxRelayedSize,
+    long maxMessageTransactionCount,
+    long maxMessagePayloadSize) {
+  public static final long DEFAULT_INTERVAL_MS = 20000;
+  public static final long DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
+  public static final long DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final long DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
 
-  private final NioEventLoopGroup clientWorkerGroup;
-  private final Capabilities capabilities;
-  private final long mempoolRelayerMaxMessagePayloadSize;
-
-  @Inject
-  public PeerOutboundBootstrapImpl(
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize long mempoolRelayerMaxMessagePayloadSize) {
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = "SomeForkName";
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
-    this.capabilities = capabilities;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
+  public static MempoolRelayerConfig of() {
+    return new MempoolRelayerConfig(
+        DEFAULT_INTERVAL_MS,
+        DEFAULT_MAX_RELAYED_SIZE,
+        DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
+        DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
   }
 
-  @Override
-  public void initOutboundConnection(RadixNodeUri uri) {
-    final var bootstrap = new Bootstrap();
-    bootstrap
-        .group(clientWorkerGroup)
-        .channel(NioSocketChannel.class)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .handler(
-            new PeerChannelInitializer(
-                config,
-                addressing,
-                network,
-                newestForkName,
-                metrics,
-                serialization,
-                secureRandom,
-                ecKeyOps,
-                peerEventDispatcher,
-                Optional.of(uri),
-                capabilities,
-                this.mempoolRelayerMaxMessagePayloadSize))
-        .connect(uri.getHost(), uri.getPort());
+  public static MempoolRelayerConfig of(long intervalMs) {
+    return new MempoolRelayerConfig(
+        intervalMs,
+        DEFAULT_MAX_RELAYED_SIZE,
+        DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
+        DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolRelayerIntervalMs.class).to(intervalMs);
+        bindConstant().annotatedWith(MempoolRelayerMaxRelayedSize.class).to(maxRelayedSize);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessageTransactionCount.class)
+            .to(maxMessageTransactionCount);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessagePayloadSize.class)
+            .to(maxMessagePayloadSize);
+      }
+    };
   }
 }
