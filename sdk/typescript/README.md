@@ -23,14 +23,14 @@ The options you provide will depend on how your node is configured, and how you'
 
 The client checks that it can connect to the Core API at `initialize` time.
 
-If running against RCnet-V1, with a full node running on localhost (such as running `testnet-node/run.sh` in local development), with its Core API bound to 3333, you can use:
+If running against RCnet-V2, with a full node running on localhost (such as running `testnet-node/run.sh` in local development), with its Core API bound to 3333, you can use:
 
 ```typescript
 import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "http://127.0.0.1:3333/core", // Note: 127.0.0.1 works better than localhost on Node.JS
-    logicalNetworkName: "kisharnet",
+    logicalNetworkName: "ansharnet",
     // Further options - explained below...
 });
 ```
@@ -92,7 +92,7 @@ const basicAuthPassword = "????"; // From your node set-up - provide this secure
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "https://127.0.0.1/core",
-    logicalNetworkName: "kisharnet",
+    logicalNetworkName: "ansharnet",
     advanced: {
         agent: new https.Agent({
             keepAlive: true,
@@ -121,7 +121,7 @@ const basicAuthPassword = "????"; // From your node set-up - provide this secure
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "https://127.0.0.1/core",
-    logicalNetworkName: "kisharnet",
+    logicalNetworkName: "ansharnet",
     advanced: {
         dispatcher: new Agent({
             connect: {

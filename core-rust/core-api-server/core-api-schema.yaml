@@ -74,7 +74,7 @@ info:
 
     ## Integration and forward compatibility guarantees
   
-    This version of the Core API belongs to the first release candidate of the Radix Babylon network ("RCnet-V1").
+    This version of the Core API belongs to the second release candidate of the Radix Babylon network ("RCnet v2").
 
     Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear
     and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.
