@@ -64,91 +64,12 @@
 
 package com.radixdlt.crypto;
 
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.Provider;
-import java.security.SecureRandomSpi;
-import java.security.Security;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-/**
- * Implementation from <a
- * href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/LinuxSecureRandom.java">
- * BitcoinJ implementation</a>
- *
- * <p>A SecureRandom implementation that is able to override the standard JVM provided
- * implementation, and which simply serves random numbers by reading /dev/urandom. That is, it
- * delegates to the kernel on UNIX systems and is unusable on other platforms. Attempts to manually
- * set the seed are ignored. There is no difference between seed bytes and non-seed bytes, they are
- * all from the same source.
- */
-@SecurityCritical(SecurityKind.RANDOMNESS)
-public class LinuxSecureRandom extends SecureRandomSpi {
-  private static final FileInputStream URANDOM;
+public final class BouncyCastleProviderInstance {
+  private static final BouncyCastleProvider instance = new BouncyCastleProvider();
 
-  private static class LinuxSecureRandomProvider extends Provider {
-    LinuxSecureRandomProvider() {
-      super(
-          "LinuxSecureRandom",
-          "1.0",
-          "A Linux specific random number provider that uses /dev/urandom");
-      put("SecureRandom.LinuxSecureRandom", LinuxSecureRandom.class.getName());
-    }
-  }
-
-  static {
-    try {
-      File file = new File("/dev/urandom");
-      // This stream is deliberately leaked.
-      URANDOM = new FileInputStream(file);
-      if (URANDOM.read() == -1) {
-        throw new RuntimeException("/dev/urandom not readable?");
-      }
-      // Now override the default SecureRandom implementation with this one.
-      int position = Security.insertProviderAt(new LinuxSecureRandomProvider(), 1);
-
-      if (position != -1) {
-        System.out.println("Secure randomness will be read from {} only. " + file.getPath());
-      } else {
-        System.out.println("Randomness is already secure.");
-      }
-    } catch (FileNotFoundException e) {
-      // Should never happen.
-      throw new RuntimeException("/dev/urandom does not appear to exist or is not openable", e);
-    } catch (IOException e) {
-      throw new RuntimeException("/dev/urandom does not appear to be readable", e);
-    }
-  }
-
-  private final DataInputStream dis;
-
-  public LinuxSecureRandom() {
-    // DataInputStream is not thread safe, so each random object has its own.
-    dis = new DataInputStream(URANDOM);
-  }
-
-  @Override
-  protected void engineSetSeed(byte[] bytes) {
-    // Ignore.
-  }
-
-  @Override
-  protected void engineNextBytes(byte[] bytes) {
-    try {
-      dis.readFully(bytes); // This will block until all the bytes can be read.
-    } catch (IOException e) {
-      throw new RuntimeException(e); // Fatal error. Do not attempt to recover from this.
-    }
-  }
-
-  @Override
-  protected byte[] engineGenerateSeed(int i) {
-    byte[] bits = new byte[i];
-    engineNextBytes(bits);
-    return bits;
+  public static BouncyCastleProvider get() {
+    return instance;
   }
 }

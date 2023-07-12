@@ -72,10 +72,8 @@ import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.net.URISyntaxException;
-import java.security.Security;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class RadixNodeApplication {
   private static final Logger log = LogManager.getLogger();
@@ -86,32 +84,13 @@ public final class RadixNodeApplication {
     System.setProperty("java.net.preferIPv4Stack", "true");
   }
 
-  private static final Object BC_LOCK = new Object();
-  private static boolean bcInitialised;
-
-  private static void setupBouncyCastle() {
-    synchronized (BC_LOCK) {
-      if (bcInitialised) {
-        log.warn("Bouncy castle is already initialised");
-        return;
-      }
-
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-      bcInitialised = true;
-    }
-  }
-
   public static void main(String[] args) {
     try {
       MemoryLeakDetector.start();
-
       logVersion();
       dumpExecutionLocation();
-      // Bouncy Castle is required for loading the node key, so set it up now.
-      setupBouncyCastle();
       final var properties = RuntimeProperties.fromCommandLineArgs(args);
       bootstrapRadixNode(properties);
-      log.info("Node bootstrapping completed");
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs

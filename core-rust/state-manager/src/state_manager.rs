@@ -773,8 +773,16 @@ where
 
         let genesis_data_chunks_len = genesis_data_chunks.len();
         for (index, chunk) in genesis_data_chunks.into_iter().enumerate() {
+            let chunk_type = match chunk {
+                GenesisDataChunk::Validators(_) => "validators",
+                GenesisDataChunk::Stakes { .. } => "stakes",
+                GenesisDataChunk::Resources(_) => "resources",
+                GenesisDataChunk::ResourceBalances { .. } => "resource_balances",
+                GenesisDataChunk::XrdBalances(_) => "xrd_balances",
+            };
             info!(
-                "Committing data ingestion chunk {} of {}",
+                "Committing data ingestion chunk ({}) {} of {}",
+                chunk_type,
                 index + 1,
                 genesis_data_chunks_len
             );

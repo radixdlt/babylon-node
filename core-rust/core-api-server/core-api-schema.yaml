@@ -1122,7 +1122,10 @@ components:
           description: Whether to return the raw manifest (default true)
           type: boolean
         blobs:
-          description: Whether to return the raw manifest (default false)
+          description: Whether to return the hex-encoded blobs (default false)
+          type: boolean
+        message:
+          description: Whether to return the transaction message (default false)
           type: boolean
         raw_system_transaction:
           description: Whether to return the raw hex-encoded system transaction bytes (default false)
@@ -1238,13 +1241,142 @@ components:
           $ref: "#/components/schemas/TransactionHeader"
         instructions:
           type: string
-          description: The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+          description: The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.
         blobs_hex:
           type: object
-          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.
           additionalProperties:
             type: string
             description: The hex-encoded blob content
+        message:
+          description: The optional transaction message. Only returned if present and enabled in `TransactionFormatOptions` on your request.
+          $ref: "#/components/schemas/TransactionMessage"
+    TransactionMessageType:
+      type: string
+      enum:
+        - Plaintext
+        - Encrypted
+    TransactionMessage:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionMessageType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TransactionMessageType
+          Plaintext: '#/components/schemas/PlaintextTransactionMessage'
+          Encrypted: '#/components/schemas/EncryptedTransactionMessage'
+    PlaintextTransactionMessage:
+      allOf:
+        - $ref: "#/components/schemas/TransactionMessage"
+        - type: object
+          description: An unencrypted message.
+          required:
+            - mime_type
+            - content
+          properties:
+            mime_type:
+              type: string
+              description: |
+                Intended to represent the RFC 2046 MIME type of the `content`.
+                A client cannot trust that this field is a valid mime type - in particular, the
+                choice between `String` or `Binary` representation of the content is not enforced by
+                this `mime_type`.
+            content:
+              $ref: "#/components/schemas/PlaintextMessageContent"
+    PlaintextMessageContentType:
+      type: string
+      enum:
+        - String
+        - Binary
+    PlaintextMessageContent:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/PlaintextMessageContentType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match PlaintextMessageContentType
+          String: '#/components/schemas/StringPlaintextMessageContent'
+          Binary: '#/components/schemas/BinaryPlaintextMessageContent'
+    StringPlaintextMessageContent:
+      allOf:
+        - $ref: "#/components/schemas/PlaintextMessageContent"
+        - type: object
+          required:
+            - value
+          properties:
+            value:
+              type: string
+              description: The value of a message that the author decided to provide as a UTF-8 string.
+    BinaryPlaintextMessageContent:
+      allOf:
+        - $ref: "#/components/schemas/PlaintextMessageContent"
+        - type: object
+          required:
+            - value_hex
+          properties:
+            value_hex:
+              type: string
+              description: The hex-encoded value of a message that the author decided to provide as raw bytes.
+    EncryptedTransactionMessage:
+      allOf:
+        - $ref: "#/components/schemas/TransactionMessage"
+        - type: object
+          description: A `PlaintextTransactionMessage` encrypted with "Multi-party ECIES" for a number of decryptors (public keys).
+          required:
+            - encrypted_hex
+            - curve_decryptor_sets
+          properties:
+            encrypted_hex:
+              type: string
+              description: |
+                The hex-encoded (128-bit) AES-GCM encrypted bytes of an SBOR-encoded `PlaintextTransactionMessage`.
+                The bytes are serialized as the concatenation `Nonce/IV (12 bytes) || Cipher (variable length) || Tag/MAC (16 bytes)`:
+            curve_decryptor_sets:
+              type: array
+              items:
+                $ref: "#/components/schemas/EncryptedMessageCurveDecryptorSet"
+    EncryptedMessageCurveDecryptorSet:
+      type: object
+      description: |
+        A decryptor set for a particular ECDSA curve type.
+        The (128-bit) AES-GCM symmetric key is encrypted separately for each decryptor public key via (256-bit) AES-KeyWrap.
+        AES-KeyWrap uses a key derived via a KDF (Key Derivation Function) using a shared secret.
+        For each decryptor public key, we create a shared curve point `G` via static Diffie-Helman between the decryptor public key, and a per-transaction ephemeral public key for that curve type.
+        We then use that shared secret with a key derivation function to create the (256-bit) KEK (Key Encrypting Key):
+        `KEK = HKDF(hash: Blake2b, secret: x co-ord of G, salt: [], length: 256 bits)`.
+      required:
+        - dh_ephemeral_public_key
+        - decryptors
+      properties:
+        dh_ephemeral_public_key:
+          description: The ephemeral Diffie-Helman public key for a particular ECDSA curve type (see its `key_type`).
+          $ref: "#/components/schemas/PublicKey"
+        decryptors:
+          type: array
+          items:
+            $ref: "#/components/schemas/EncryptedMessageDecryptor"
+    EncryptedMessageDecryptor:
+      type: object
+      required:
+        - public_key_fingerprint_hex
+        - aes_wrapped_key_hex
+      properties:
+        public_key_fingerprint_hex:
+          type: string
+          description: The last 8 bytes of the Blake2b-256 hash of the public key bytes, in their standard Radix byte-serialization.
+        aes_wrapped_key_hex:
+          type: string
+          description: |
+            The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the 128-bit message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type.
+            The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher (wrapped 128-bit key, encoded as two 64-bit blocks)`.
     TransactionHeader:
       type: object
       required:
@@ -1357,8 +1489,7 @@ components:
       discriminator:
         propertyName: error_type
         mapping:
-          # The discriminator values on the left side need to match ErrorResponseType
-          # NOTE: To ease 
+          # NOTE: These need to match ErrorResponseType
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
           LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"

@@ -66,10 +66,12 @@ package com.radixdlt.rev2;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Functions;
+import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -91,6 +93,7 @@ public class TransactionBuilder {
   private boolean notaryIsSignatory;
   private String manifest;
   private List<byte[]> blobs;
+  private Optional<TransactionMessage> message;
   private List<ECKeyPair> signatories;
 
   public TransactionBuilder(NetworkDefinition networkDefinition) {
@@ -101,6 +104,7 @@ public class TransactionBuilder {
     this.notary = DEFAULT_NOTARY;
     this.notaryIsSignatory = false;
     this.blobs = List.of();
+    this.message = Optional.empty();
     this.signatories = List.of();
     // Set a valid manifest
     this.manifest(Manifest.valid());
@@ -159,6 +163,11 @@ public class TransactionBuilder {
     return this;
   }
 
+  public TransactionBuilder message(TransactionMessage message) {
+    this.message = Optional.of(message);
+    return this;
+  }
+
   public TransactionBuilder signatories(List<ECKeyPair> signatories) {
     this.signatories = signatories;
     return this;
@@ -179,7 +188,8 @@ public class TransactionBuilder {
             this.notary.getPublicKey().toPublicKey(),
             this.notaryIsSignatory);
     var intent =
-        TransactionPreparer.prepareIntent(networkDefinition, header, this.manifest, this.blobs);
+        TransactionPreparer.prepareIntent(
+            networkDefinition, header, this.manifest, this.blobs, this.message);
     var intentSignatures =
         this.signatories.stream()
             .map(

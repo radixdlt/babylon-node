@@ -80,6 +80,7 @@ struct PrepareIntentRequest {
     header: TransactionHeaderJava,
     manifest: String,
     blobs: Vec<Vec<u8>>,
+    message: Option<TransactionMessageJava>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -109,7 +110,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
                 header: request.header.into(),
                 instructions,
                 blobs,
-                message: MessageV1::None,
+                message: request
+                    .message
+                    .map(|message| message.into())
+                    .unwrap_or_else(|| MessageV1::None),
             };
 
             let prepared_intent = intent.prepare()?;
@@ -145,6 +149,94 @@ impl From<TransactionHeaderJava> for TransactionHeaderV1 {
             notary_public_key: header.notary_public_key,
             notary_is_signatory: header.notary_is_signatory,
             tip_percentage: header.tip_percentage,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+enum TransactionMessageJava {
+    Plaintext(PlaintextMessageJava),
+    Encrypted(EncryptedMessageJava),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct PlaintextMessageJava {
+    mime_type: String,
+    content: MessageContentJava,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+enum MessageContentJava {
+    String(String),
+    Bytes(Vec<u8>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct EncryptedMessageJava {
+    aes_gcm_payload: Vec<u8>,
+    curve_decryptor_sets: Vec<CurveDecryptorSetJava>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct CurveDecryptorSetJava {
+    dh_ephemeral_public_key: PublicKey,
+    decryptors: Vec<DecryptorJava>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+struct DecryptorJava {
+    public_key_fingerprint: Vec<u8>,
+    aes_wrapped_key: Vec<u8>,
+}
+
+impl From<TransactionMessageJava> for MessageV1 {
+    fn from(message: TransactionMessageJava) -> Self {
+        match message {
+            TransactionMessageJava::Plaintext(plaintext) => {
+                MessageV1::Plaintext(PlaintextMessageV1 {
+                    mime_type: plaintext.mime_type,
+                    message: match plaintext.content {
+                        MessageContentJava::String(string) => MessageContentsV1::String(string),
+                        MessageContentJava::Bytes(bytes) => MessageContentsV1::Bytes(bytes),
+                    },
+                })
+            }
+            TransactionMessageJava::Encrypted(encrypted) => {
+                MessageV1::Encrypted(EncryptedMessageV1 {
+                    encrypted: AesGcmPayload(encrypted.aes_gcm_payload),
+                    decryptors_by_curve: encrypted
+                        .curve_decryptor_sets
+                        .into_iter()
+                        .map(DecryptorsByCurve::from)
+                        .map(|decryptors| (decryptors.curve_type(), decryptors))
+                        .collect(),
+                })
+            }
+        }
+    }
+}
+
+impl From<CurveDecryptorSetJava> for DecryptorsByCurve {
+    fn from(decryptor_set: CurveDecryptorSetJava) -> Self {
+        let decryptors = decryptor_set
+            .decryptors
+            .into_iter()
+            .map(|decryptor| {
+                (
+                    PublicKeyFingerprint(decryptor.public_key_fingerprint.try_into().unwrap()),
+                    AesWrapped128BitKey(decryptor.aes_wrapped_key.try_into().unwrap()),
+                )
+            })
+            .collect();
+        match decryptor_set.dh_ephemeral_public_key {
+            PublicKey::Secp256k1(dh_ephemeral_public_key) => DecryptorsByCurve::Secp256k1 {
+                dh_ephemeral_public_key,
+                decryptors,
+            },
+            PublicKey::Ed25519(dh_ephemeral_public_key) => DecryptorsByCurve::Ed25519 {
+                dh_ephemeral_public_key,
+                decryptors,
+            },
         }
     }
 }
@@ -246,28 +338,6 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransac
         |payload: RawNotarizedTransaction| -> Result<RawLedgerTransaction, StringError> {
             let notarized_transaction = NotarizedTransactionV1::from_raw(&payload)?;
             Ok(LedgerTransaction::UserV1(Box::new(notarized_transaction)).to_raw()?)
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_transactionBytesToNotarizedTransactionBytes(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |payload: RawLedgerTransaction| -> Result<Option<RawNotarizedTransaction>, StringError> {
-            let transaction = LedgerTransaction::from_raw(&payload)?;
-            Ok(match transaction {
-                LedgerTransaction::UserV1(notarized_transaction) => {
-                    Some(notarized_transaction.to_raw()?)
-                }
-                LedgerTransaction::RoundUpdateV1(..) => None,
-                LedgerTransaction::Genesis(..) => None,
-            })
         },
     )
 }

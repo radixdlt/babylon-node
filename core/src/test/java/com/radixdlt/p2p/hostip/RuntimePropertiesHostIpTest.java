@@ -90,15 +90,15 @@ public class RuntimePropertiesHostIpTest {
   @Test
   public void testValid() {
     RuntimePropertiesHostIp rphi = make("192.168.0.1");
-    Optional<String> host = rphi.hostIp();
+    Optional<HostIp> host = rphi.hostIp();
     assertTrue(host.isPresent());
-    assertEquals("192.168.0.1", host.get());
+    assertEquals("192.168.0.1", host.get().value());
   }
 
   private static RuntimePropertiesHostIp make(String value) {
     RuntimeProperties properties = mock(RuntimeProperties.class);
     when(properties.get(eq(RuntimePropertiesHostIp.HOST_IP_PROPERTY), anyString()))
         .thenReturn(value);
-    return (RuntimePropertiesHostIp) RuntimePropertiesHostIp.create(properties);
+    return new RuntimePropertiesHostIp(properties);
   }
 }

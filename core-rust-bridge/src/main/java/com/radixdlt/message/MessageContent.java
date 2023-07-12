@@ -62,26 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.message;
 
-import com.radixdlt.TestSetupUtils;
-import java.security.SecureRandom;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
 
-public class SecureRandomTest {
-
-  @Before
-  public void setUp() {
-    TestSetupUtils.installBouncyCastleProvider();
+public sealed interface MessageContent {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        MessageContent.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(MessageContent.class, codecs));
   }
 
-  @Test
-  public void verifySecureRandomUsingBouncyCastleProviderByDefault() {
-    Assert.assertTrue(
-        "BouncyCastleProvider should be used by default",
-        new SecureRandom().getProvider() instanceof BouncyCastleProvider);
+  record StringContent(String string) implements MessageContent {}
+
+  record BytesContent(byte[] bytes) implements MessageContent {
+
+    @Override
+    public boolean equals(Object object) {
+      return object instanceof BytesContent other && Arrays.equals(bytes, other.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(bytes);
+    }
+
+    @Override
+    public String toString() {
+      return "BytesContent{bytes=" + Bytes.toHexString(bytes) + "}";
+    }
   }
 }

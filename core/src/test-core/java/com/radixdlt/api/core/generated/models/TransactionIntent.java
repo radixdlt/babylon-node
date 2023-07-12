@@ -1,6 +1,6 @@
 /*
  * Babylon Core API - RCnet V2
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the second release candidate of the Radix Babylon network (\"RCnet v2\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.4.0
  * 
@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionHeader;
+import com.radixdlt.api.core.generated.models.TransactionMessage;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -38,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionIntent.JSON_PROPERTY_HASH,
   TransactionIntent.JSON_PROPERTY_HEADER,
   TransactionIntent.JSON_PROPERTY_INSTRUCTIONS,
-  TransactionIntent.JSON_PROPERTY_BLOBS_HEX
+  TransactionIntent.JSON_PROPERTY_BLOBS_HEX,
+  TransactionIntent.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionIntent {
@@ -53,6 +55,9 @@ public class TransactionIntent {
 
   public static final String JSON_PROPERTY_BLOBS_HEX = "blobs_hex";
   private Map<String, String> blobsHex = null;
+
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private TransactionMessage message;
 
   public TransactionIntent() { 
   }
@@ -115,11 +120,11 @@ public class TransactionIntent {
   }
 
    /**
-   * The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.
+   * The decompiled transaction manifest instructions. Only returned if enabled in &#x60;TransactionFormatOptions&#x60; on your request.
    * @return instructions
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in TransactionFormatOptions on your request.")
+  @ApiModelProperty(value = "The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.")
   @JsonProperty(JSON_PROPERTY_INSTRUCTIONS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -149,11 +154,11 @@ public class TransactionIntent {
   }
 
    /**
-   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.
+   * A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in &#x60;TransactionFormatOptions&#x60; on your request.
    * @return blobsHex
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in TransactionFormatOptions on your request.")
+  @ApiModelProperty(value = "A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.")
   @JsonProperty(JSON_PROPERTY_BLOBS_HEX)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -166,6 +171,32 @@ public class TransactionIntent {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBlobsHex(Map<String, String> blobsHex) {
     this.blobsHex = blobsHex;
+  }
+
+
+  public TransactionIntent message(TransactionMessage message) {
+    this.message = message;
+    return this;
+  }
+
+   /**
+   * Get message
+   * @return message
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TransactionMessage getMessage() {
+    return message;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMessage(TransactionMessage message) {
+    this.message = message;
   }
 
 
@@ -184,12 +215,13 @@ public class TransactionIntent {
     return Objects.equals(this.hash, transactionIntent.hash) &&
         Objects.equals(this.header, transactionIntent.header) &&
         Objects.equals(this.instructions, transactionIntent.instructions) &&
-        Objects.equals(this.blobsHex, transactionIntent.blobsHex);
+        Objects.equals(this.blobsHex, transactionIntent.blobsHex) &&
+        Objects.equals(this.message, transactionIntent.message);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, header, instructions, blobsHex);
+    return Objects.hash(hash, header, instructions, blobsHex, message);
   }
 
   @Override
@@ -200,6 +232,7 @@ public class TransactionIntent {
     sb.append("    header: ").append(toIndentedString(header)).append("\n");
     sb.append("    instructions: ").append(toIndentedString(instructions)).append("\n");
     sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
   }

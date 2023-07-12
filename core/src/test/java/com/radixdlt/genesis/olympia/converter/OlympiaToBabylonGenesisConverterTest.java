@@ -99,10 +99,8 @@ import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UniqueListBuilder;
 import java.math.BigInteger;
-import java.security.Security;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -110,10 +108,6 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public final class OlympiaToBabylonGenesisConverterTest {
   private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
-
-  static {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-  }
 
   private static final OlympiaToBabylonConverterConfig CONVERTER_CONFIG =
       new OlympiaToBabylonConverterConfig(

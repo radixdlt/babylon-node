@@ -64,12 +64,10 @@
 
 package com.radixdlt.serialization;
 
-import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import java.math.BigInteger;
 import java.util.Random;
 import java.util.function.Supplier;
-import org.junit.BeforeClass;
 
 /** JSON Serialization round trip of {@link ECDSASecp256k1Signature} */
 public class ECDSASecp256k1SignatureSerializationTest
@@ -78,11 +76,6 @@ public class ECDSASecp256k1SignatureSerializationTest
   public ECDSASecp256k1SignatureSerializationTest() {
     super(
         ECDSASecp256k1Signature.class, ECDSASecp256k1SignatureSerializationTest::getECDSASignature);
-  }
-
-  @BeforeClass
-  public static void startRadixTest() {
-    TestSetupUtils.installBouncyCastleProvider();
   }
 
   private static ECDSASecp256k1Signature getECDSASignature() {

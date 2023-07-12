@@ -78,18 +78,12 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.utils.*;
 import java.math.BigInteger;
-import java.security.Security;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
 /** Tests resource supply conversion (including scaling down large supplies) */
 public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
-  static {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-  }
-
   private final Random random = new Random(1234);
 
   @Test

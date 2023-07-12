@@ -254,7 +254,7 @@ pub fn to_api_intent(
         header,
         instructions,
         blobs,
-        message: _,
+        message,
     } = intent;
 
     let header = Box::new(models::TransactionHeader {
@@ -294,11 +294,104 @@ pub fn to_api_intent(
         None
     };
 
+    let message = if context.transaction_options.include_message {
+        match message {
+            MessageV1::None => None,
+            MessageV1::Plaintext(plaintext) => Some(to_api_plaintext_message(context, plaintext)?),
+            MessageV1::Encrypted(encrypted) => Some(to_api_encrypted_message(context, encrypted)?),
+        }
+        .map(Box::new)
+    } else {
+        None
+    };
+
     Ok(models::TransactionIntent {
         hash: to_api_intent_hash(intent_hash),
         header,
         instructions,
         blobs_hex,
+        message,
+    })
+}
+
+fn to_api_plaintext_message(
+    context: &MappingContext,
+    plaintext: &PlaintextMessageV1,
+) -> Result<models::TransactionMessage, MappingError> {
+    Ok(models::TransactionMessage::PlaintextTransactionMessage {
+        mime_type: plaintext.mime_type.clone(),
+        content: Box::new(to_api_plaintext_message_content(
+            context,
+            &plaintext.message,
+        )?),
+    })
+}
+
+fn to_api_plaintext_message_content(
+    _context: &MappingContext,
+    content: &MessageContentsV1,
+) -> Result<models::PlaintextMessageContent, MappingError> {
+    Ok(match content {
+        MessageContentsV1::String(string) => {
+            models::PlaintextMessageContent::StringPlaintextMessageContent {
+                value: string.clone(),
+            }
+        }
+        MessageContentsV1::Bytes(bytes) => {
+            models::PlaintextMessageContent::BinaryPlaintextMessageContent {
+                value_hex: to_hex(bytes),
+            }
+        }
+    })
+}
+
+fn to_api_encrypted_message(
+    context: &MappingContext,
+    encrypted: &EncryptedMessageV1,
+) -> Result<models::TransactionMessage, MappingError> {
+    Ok(models::TransactionMessage::EncryptedTransactionMessage {
+        encrypted_hex: to_hex(&encrypted.encrypted.0),
+        curve_decryptor_sets: encrypted
+            .decryptors_by_curve
+            .values()
+            .map(|decryptor_set| to_api_decryptor_set(context, decryptor_set))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+fn to_api_decryptor_set(
+    context: &MappingContext,
+    decryptor_set: &DecryptorsByCurve,
+) -> Result<models::EncryptedMessageCurveDecryptorSet, MappingError> {
+    let (dh_ephemeral_public_key, decryptors) = match decryptor_set {
+        DecryptorsByCurve::Ed25519 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Ed25519(*dh_ephemeral_public_key), decryptors),
+        DecryptorsByCurve::Secp256k1 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Secp256k1(*dh_ephemeral_public_key), decryptors),
+    };
+    Ok(models::EncryptedMessageCurveDecryptorSet {
+        dh_ephemeral_public_key: Some(to_api_public_key(&dh_ephemeral_public_key)),
+        decryptors: decryptors
+            .iter()
+            .map(|(public_key_fingerprint, aes_wrapped_key)| {
+                to_api_decryptor(context, public_key_fingerprint, aes_wrapped_key)
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+fn to_api_decryptor(
+    _context: &MappingContext,
+    public_key_fingerprint: &PublicKeyFingerprint,
+    aes_wrapped_key: &AesWrapped128BitKey,
+) -> Result<models::EncryptedMessageDecryptor, MappingError> {
+    Ok(models::EncryptedMessageDecryptor {
+        public_key_fingerprint_hex: to_hex(public_key_fingerprint.0),
+        aes_wrapped_key_hex: to_hex(aes_wrapped_key.0),
     })
 }
 
