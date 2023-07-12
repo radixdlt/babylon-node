@@ -84,8 +84,8 @@ use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, Re
 
 use crate::core_api::models::ErrorResponse;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
+use state_manager::mempool::priority_mempool::PriorityMempool;
 use state_manager::mempool_manager::MempoolManager;
-use state_manager::simple_mempool::SimpleMempool;
 use state_manager::store::StateManagerDatabase;
 use state_manager::transaction::{CommittabilityValidator, TransactionPreviewer};
 use state_manager::PendingTransactionResultCache;
@@ -96,7 +96,7 @@ pub struct CoreApiState {
     pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    pub mempool: Arc<RwLock<SimpleMempool>>,
+    pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,

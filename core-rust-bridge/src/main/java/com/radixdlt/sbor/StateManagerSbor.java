@@ -73,6 +73,7 @@ import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.ProposalTransactionsRequest;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.message.*;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -181,6 +182,13 @@ public final class StateManagerSbor {
     NonFungibleLocalId.registerCodec(codecMap);
     NonFungibleGlobalId.registerCodec(codecMap);
     InternalAddress.registerCodec(codecMap);
+    PrepareIntentRequest.registerCodec(codecMap);
+    TransactionMessage.registerCodec(codecMap);
+    PlaintextTransactionMessage.registerCodec(codecMap);
+    EncryptedTransactionMessage.registerCodec(codecMap);
+    MessageContent.registerCodec(codecMap);
+    CurveDecryptorSet.registerCodec(codecMap);
+    Decryptor.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

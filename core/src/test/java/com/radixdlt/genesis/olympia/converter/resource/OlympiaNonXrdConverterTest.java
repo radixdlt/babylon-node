@@ -68,18 +68,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.serialization.TestSetupUtils;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class OlympiaNonXrdConverterTest {
-
-  @BeforeClass
-  public static void setupBouncyCastle() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
-
   @Test
   public void olympiaToBabylonResourceAddress() {
     final var input = "floop_rr1q0p0hzap6ckxqdk6khesyft62w34e0vdd06msn9snhfqknl370";

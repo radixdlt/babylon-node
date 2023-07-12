@@ -77,14 +77,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.security.Security;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.core.ConditionTimeoutException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class LargeMessageTest {
   private static final Logger log = LogManager.getLogger();
@@ -93,8 +91,6 @@ public final class LargeMessageTest {
     private static final Logger log = LogManager.getLogger();
 
     public static void main(String[] args) throws Exception {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
       log.warn("Starting the target node...");
 
       nodeBuilder().p2pServer(Integer.parseInt(args[0])).prop("node.key.path", args[1]).build();
@@ -105,8 +101,6 @@ public final class LargeMessageTest {
     private static final Logger log = LogManager.getLogger();
 
     public static void main(String[] args) throws Exception {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
       log.warn("Starting the attacker node...");
 
       final var node =

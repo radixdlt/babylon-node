@@ -94,12 +94,12 @@ public class EnvironmentHostIpTest {
   @Test
   public void testValid() {
     EnvironmentHostIp ehip = make();
-    Optional<String> host = ehip.hostIp("127.0.0.1");
+    Optional<HostIp> host = ehip.hostIp("127.0.0.1");
     assertTrue(host.isPresent());
-    assertEquals("127.0.0.1", host.get());
+    assertEquals("127.0.0.1", host.get().value());
   }
 
   private static EnvironmentHostIp make() {
-    return (EnvironmentHostIp) EnvironmentHostIp.create();
+    return new EnvironmentHostIp();
   }
 }

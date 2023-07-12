@@ -1,6 +1,6 @@
 /*
  * Babylon Core API - RCnet V2
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the second release candidate of the Radix Babylon network (\"RCnet v2\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.4.0
  * 
@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   TransactionFormatOptions.JSON_PROPERTY_MANIFEST,
   TransactionFormatOptions.JSON_PROPERTY_BLOBS,
+  TransactionFormatOptions.JSON_PROPERTY_MESSAGE,
   TransactionFormatOptions.JSON_PROPERTY_RAW_SYSTEM_TRANSACTION,
   TransactionFormatOptions.JSON_PROPERTY_RAW_NOTARIZED_TRANSACTION,
   TransactionFormatOptions.JSON_PROPERTY_RAW_LEDGER_TRANSACTION
@@ -45,6 +46,9 @@ public class TransactionFormatOptions {
 
   public static final String JSON_PROPERTY_BLOBS = "blobs";
   private Boolean blobs;
+
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private Boolean message;
 
   public static final String JSON_PROPERTY_RAW_SYSTEM_TRANSACTION = "raw_system_transaction";
   private Boolean rawSystemTransaction;
@@ -90,11 +94,11 @@ public class TransactionFormatOptions {
   }
 
    /**
-   * Whether to return the raw manifest (default false)
+   * Whether to return the hex-encoded blobs (default false)
    * @return blobs
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the raw manifest (default false)")
+  @ApiModelProperty(value = "Whether to return the hex-encoded blobs (default false)")
   @JsonProperty(JSON_PROPERTY_BLOBS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -107,6 +111,32 @@ public class TransactionFormatOptions {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBlobs(Boolean blobs) {
     this.blobs = blobs;
+  }
+
+
+  public TransactionFormatOptions message(Boolean message) {
+    this.message = message;
+    return this;
+  }
+
+   /**
+   * Whether to return the transaction message (default false)
+   * @return message
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Whether to return the transaction message (default false)")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getMessage() {
+    return message;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMessage(Boolean message) {
+    this.message = message;
   }
 
 
@@ -202,6 +232,7 @@ public class TransactionFormatOptions {
     TransactionFormatOptions transactionFormatOptions = (TransactionFormatOptions) o;
     return Objects.equals(this.manifest, transactionFormatOptions.manifest) &&
         Objects.equals(this.blobs, transactionFormatOptions.blobs) &&
+        Objects.equals(this.message, transactionFormatOptions.message) &&
         Objects.equals(this.rawSystemTransaction, transactionFormatOptions.rawSystemTransaction) &&
         Objects.equals(this.rawNotarizedTransaction, transactionFormatOptions.rawNotarizedTransaction) &&
         Objects.equals(this.rawLedgerTransaction, transactionFormatOptions.rawLedgerTransaction);
@@ -209,7 +240,7 @@ public class TransactionFormatOptions {
 
   @Override
   public int hashCode() {
-    return Objects.hash(manifest, blobs, rawSystemTransaction, rawNotarizedTransaction, rawLedgerTransaction);
+    return Objects.hash(manifest, blobs, message, rawSystemTransaction, rawNotarizedTransaction, rawLedgerTransaction);
   }
 
   @Override
@@ -218,6 +249,7 @@ public class TransactionFormatOptions {
     sb.append("class TransactionFormatOptions {\n");
     sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
     sb.append("    blobs: ").append(toIndentedString(blobs)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    rawSystemTransaction: ").append(toIndentedString(rawSystemTransaction)).append("\n");
     sb.append("    rawNotarizedTransaction: ").append(toIndentedString(rawNotarizedTransaction)).append("\n");
     sb.append("    rawLedgerTransaction: ").append(toIndentedString(rawLedgerTransaction)).append("\n");

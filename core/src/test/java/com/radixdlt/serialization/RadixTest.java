@@ -79,8 +79,6 @@ public abstract class RadixTest {
 
   @BeforeClass
   public static void startRadixTest() {
-    TestSetupUtils.installBouncyCastleProvider();
-
     properties = mock(RuntimeProperties.class);
     doAnswer(invocation -> invocation.getArgument(1))
         .when(properties)

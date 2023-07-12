@@ -97,8 +97,6 @@ public final class RunningRadixNode {
   }
 
   public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
-    log.info("Starting Radix node");
-
     final var injector = unstartedRadixNode.instantiateRadixNodeModule();
 
     final var metrics = injector.getInstance(Metrics.class);

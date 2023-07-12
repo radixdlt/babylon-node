@@ -62,68 +62,38 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.message;
 
-import java.security.Security;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.google.common.base.Objects;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
 
-/** Some utilities to help with initialisation of other sub-systems that tests use. */
-public final class TestSetupUtils {
-  private static final int HEXDUMP_LINESIZE = 0x10;
-  private static final AtomicBoolean bouncyCastleInstalled = new AtomicBoolean(false);
-
-  private TestSetupUtils() {
-    throw new IllegalStateException("Can't construct");
+public record Decryptor(byte[] publicKeyFingerprint, byte[] aesWrappedKey) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Decryptor.class, codecs -> StructCodec.fromRecordComponents(Decryptor.class, codecs));
   }
 
-  /**
-   * Install the Bouncy Castle crypto provider used for various hashing and symmetric/asymmetric key
-   * functions.
-   */
-  public static void installBouncyCastleProvider() {
-    if (bouncyCastleInstalled.compareAndSet(false, true)) {
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-    }
+  @Override
+  public boolean equals(Object object) {
+    return object instanceof Decryptor other
+        && Arrays.equals(publicKeyFingerprint, other.publicKeyFingerprint)
+        && Arrays.equals(aesWrappedKey, other.aesWrappedKey);
   }
 
-  /**
-   * Useful method for discovering why things went wrong - outputs a hexdump to {@code System.out}.
-   *
-   * @param bytes bytes to dump
-   */
-  public static void hexdump(byte[] bytes) {
-    for (int index = 0; index < bytes.length; index += HEXDUMP_LINESIZE) {
-      int thisLen = Math.min(HEXDUMP_LINESIZE, bytes.length - index);
-      System.out.format("%04X:", index);
-      int ofs = 0;
-      for (; ofs < thisLen; ++ofs) {
-        if (ofs == HEXDUMP_LINESIZE / 2) {
-          System.out.format("-%02X", bytes[index + ofs] & 0xFF);
-        } else {
-          System.out.format(" %02X", bytes[index + ofs] & 0xFF);
-        }
-      }
-      while (ofs < HEXDUMP_LINESIZE) {
-        System.out.print("   ");
-        ofs += 1;
-      }
-      System.out.print("  |");
-      for (ofs = 0; ofs < thisLen; ++ofs) {
-        System.out.print(toPrintable(bytes[index + ofs]));
-      }
-      while (ofs < HEXDUMP_LINESIZE) {
-        System.out.print(' ');
-        ofs += 1;
-      }
-      System.out.println('|');
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(Arrays.hashCode(publicKeyFingerprint), Arrays.hashCode(aesWrappedKey));
   }
 
-  private static char toPrintable(byte b) {
-    if (b >= 0x20 && b < 0x7F) {
-      return (char) b;
-    }
-    return '.';
+  @Override
+  public String toString() {
+    return "Decryptor{publicKeyFingerprint="
+        + Bytes.toHexString(publicKeyFingerprint)
+        + ", aesWrappedKey="
+        + Bytes.toHexString(aesWrappedKey)
+        + "}";
   }
 }

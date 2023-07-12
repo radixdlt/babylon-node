@@ -69,19 +69,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.TestSetupUtils;
 import java.nio.charset.StandardCharsets;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ECKeyPairTest {
-
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
-
   @Test
   public void equalsContract() {
     EqualsVerifier.forClass(ECKeyPair.class)

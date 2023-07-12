@@ -69,11 +69,8 @@ import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.RuntimeUtils;
 import java.math.BigInteger;
-import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -81,7 +78,6 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECCurve;
@@ -128,22 +124,6 @@ public class ECKeyUtils {
   }
 
   static synchronized void install() {
-    if (RuntimeUtils.isAndroidRuntime()) {
-      // Reference class so static initializer is called.
-      LinuxSecureRandom.class.getName();
-      // Ensure the library version of BouncyCastle is used for Android
-      Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-    }
-    Provider requiredBouncyCastleProvider = new BouncyCastleProvider();
-    Provider currentBouncyCastleProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
-
-    // Check if the currently installed version of BouncyCastle is the version
-    // we want. NOTE! That Android has a stripped down version of BouncyCastle
-    // by default.
-    if (isOfRequiredVersion(currentBouncyCastleProvider, requiredBouncyCastleProvider)) {
-      Security.insertProviderAt(requiredBouncyCastleProvider, 1);
-    }
-
     secureRandom = new SecureRandom();
 
     curve = CustomNamedCurves.getByName(CURVE_NAME);
@@ -151,14 +131,6 @@ public class ECKeyUtils {
     spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
     order = adjustArray(domain.getN().toByteArray(), ECKeyPair.BYTES);
     FixedPointUtil.precompute(curve.getG());
-  }
-
-  private static boolean isOfRequiredVersion(
-      Provider currentBouncyCastleProvider, Provider requiredBouncyCastleProvider) {
-    return currentBouncyCastleProvider == null
-        || !currentBouncyCastleProvider
-            .getVersionStr()
-            .equals(requiredBouncyCastleProvider.getVersionStr());
   }
 
   // Must be after secureRandom init

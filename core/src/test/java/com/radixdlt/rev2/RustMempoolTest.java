@@ -74,7 +74,6 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -84,7 +83,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public final class RustMempoolTest {
@@ -102,11 +100,6 @@ public final class RustMempoolTest {
             new REv2TransactionsAndProofReader(
                 new REv2TransactionAndProofStore(metrics, stateManager)))
         .initialize(genesisProvider);
-  }
-
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
   }
 
   @Test

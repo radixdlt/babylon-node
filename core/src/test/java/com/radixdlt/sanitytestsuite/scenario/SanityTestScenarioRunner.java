@@ -67,6 +67,7 @@ package com.radixdlt.sanitytestsuite.scenario;
 import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.radixdlt.crypto.BouncyCastleProviderInstance;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot.Suite.Scenario;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.utils.JSONFormatter;
@@ -104,7 +105,7 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 
   public static byte[] sha256Hash(final byte[] bytes) {
     try {
-      var hasher = MessageDigest.getInstance("SHA-256");
+      var hasher = MessageDigest.getInstance("SHA-256", BouncyCastleProviderInstance.get());
       hasher.update(bytes);
       return hasher.digest();
     } catch (NoSuchAlgorithmException e) {

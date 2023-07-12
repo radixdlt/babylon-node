@@ -62,30 +62,28 @@
  * permissions under this License.
  */
 
+use crate::mempool::priority_mempool::*;
 use crate::mempool::*;
-use crate::simple_mempool::MempoolTransaction;
 use crate::{MempoolAddSource, MempoolMetrics, TakesMetricLabels};
 use prometheus::Registry;
-use rand::seq::SliceRandom;
 use transaction::model::*;
 
+use std::cmp::max;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
-use crate::simple_mempool::SimpleMempool;
 use crate::store::StateManagerDatabase;
 use crate::transaction::{
     CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
 };
 use parking_lot::RwLock;
-use rand::thread_rng;
 use tracing::warn;
 
-/// A high-level API giving a thread-safe access to the `SimpleMempool`.
+/// A high-level API giving a thread-safe access to the `PriorityMempool`.
 pub struct MempoolManager {
-    mempool: Arc<RwLock<SimpleMempool>>,
+    mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
     metrics: MempoolMetrics,
@@ -94,7 +92,7 @@ pub struct MempoolManager {
 impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
-        mempool: Arc<RwLock<SimpleMempool>>,
+        mempool: Arc<RwLock<PriorityMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
@@ -109,7 +107,7 @@ impl MempoolManager {
 
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
-        mempool: Arc<RwLock<SimpleMempool>>,
+        mempool: Arc<RwLock<PriorityMempool>>,
         cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
         metric_registry: &Registry,
     ) -> Self {
@@ -145,23 +143,41 @@ impl MempoolManager {
         max_count: usize,
         max_payload_size_bytes: u64,
     ) -> Vec<Arc<MempoolTransaction>> {
-        // TODO: don't grab whole mempool. Use a reservoir sampling method or a priority/round robin algorithm.
-        // Note that the round robin approach needs extra care to avoid relaying same transactions to same nodes.
-        let candidate_transactions = self.mempool.read().get_all_transactions();
+        // TODO: Definitely a better algorithm could be used here, especially with extra information like:
+        // which peer/peers are we sending this to? or what do we know about said peer to have in it's mempool?
+        // However (NOTE/WARN): changing transactions selection without careful consideration of the peer selection,
+        // can lead to a scenario where we keep sending same transactions to same peer.
+        let candidate_transactions = self.mempool.read().get_k_random_transactions(max_count * 2);
 
-        Self::pick_subset_with_limits(candidate_transactions, max_count, max_payload_size_bytes)
+        let mut payload_size_so_far = 0;
+        candidate_transactions
+            .into_iter()
+            .filter(|transaction| {
+                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
+                let fits = increased_payload_size <= max_payload_size_bytes;
+                if fits {
+                    payload_size_so_far = increased_payload_size;
+                }
+                fits
+            })
+            .take(max_count)
+            .collect()
     }
 
     /// Checks the committability of a random subset of transactions and removes the rejected ones
     /// from the mempool.
     /// Obeys the given limit on the number of actually executed (i.e. not cached) transactions.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        // TODO: instead of getting whole mempool use a priority queue/round robin.
-        let mut candidate_transactions = self.mempool.read().get_all_transactions();
+        // TODO: better selection of transactions based on last time/state version against it was reevaluated.
+        const MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION: u32 = 100;
+        let candidate_transactions = self.mempool.read().get_k_random_transactions(max(
+            max_reevaluated_count,
+            MIN_TRANSACTIONS_TO_CHECK_FOR_REEVALUATION,
+        )
+            as usize);
 
         let mut transactions_to_remove = Vec::new();
         let mut reevaluated_count = 0;
-        candidate_transactions.shuffle(&mut thread_rng());
         for candidate_transaction in candidate_transactions {
             let (record, was_cached) = self
                 .cached_committability_validator
@@ -371,27 +387,6 @@ impl MempoolManager {
         self.metrics
             .current_total_transactions_size
             .sub(removed.bytes as i64);
-    }
-
-    fn pick_subset_with_limits(
-        mut candidate_transactions: Vec<Arc<MempoolTransaction>>,
-        max_count: usize,
-        max_payload_size_bytes: u64,
-    ) -> Vec<Arc<MempoolTransaction>> {
-        candidate_transactions.shuffle(&mut thread_rng());
-        let mut payload_size_so_far = 0;
-        candidate_transactions
-            .into_iter()
-            .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
-                let fits = increased_payload_size <= max_payload_size_bytes;
-                if fits {
-                    payload_size_so_far = increased_payload_size;
-                }
-                fits
-            })
-            .take(max_count)
-            .collect()
     }
 }
 
