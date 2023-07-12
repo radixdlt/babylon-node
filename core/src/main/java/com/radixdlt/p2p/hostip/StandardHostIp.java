@@ -65,23 +65,78 @@
 package com.radixdlt.p2p.hostip;
 
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.util.HashSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Provides a standard {@link HostIp} retriever. */
 public final class StandardHostIp {
+  private static final Logger log = LogManager.getLogger();
 
   private StandardHostIp() {
     throw new IllegalStateException("Can't construct");
   }
 
   /**
-   * Queries the {@value EnvironmentHostIp#ENV_VAR} environment variable for a host name or IP, and
-   * if that fails, uses well-known web services to determine a public IP address.
-   *
-   * @return A {@link HostIp} object from which a host address can be queried
+   * Uses well-known web services to determine a public IP address and verifies a configured
+   * environment variable / property against it.
    */
   public static HostIp defaultHostIp(RuntimeProperties properties) {
-    return RuntimePropertiesHostIp.create(properties)
-        .or(EnvironmentHostIp.create())
-        .or(NetworkQueryHostIp.create(properties));
+    final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
+    final var maybeHostIpFromEnv = new EnvironmentHostIp().hostIp();
+    final var maybeHostIpFromProperties = new RuntimePropertiesHostIp(properties).hostIp();
+
+    final var configuredHostIps = new HashSet<HostIp>();
+    maybeHostIpFromEnv.ifPresent(configuredHostIps::add);
+    maybeHostIpFromProperties.ifPresent(configuredHostIps::add);
+    if (configuredHostIps.size() > 1) {
+      throw new RuntimeException(
+          String.format(
+              "A host IP address of this node has been configured in both properties"
+                  + " (network.host_ip=%s) and environment (RADIXDLT_HOST_IP_ADDRESS=%s) and they"
+                  + " differ. Make sure you configure an unambiguous host IP address.",
+              maybeHostIpFromProperties.orElseThrow(), maybeHostIpFromEnv.orElseThrow()));
+    } else if (configuredHostIps.size() == 0) {
+      if (networkQueryResult.maybeHostIp().isPresent()) {
+        // All good, we have an IP address from network query
+        log.info(
+            "Host's public IP address has been acquired from an external oracle (services queried:"
+                + " {}). Consider setting a `network.host_ip` property instead to lessen reliance"
+                + " on external services.",
+            networkQueryResult.hostsQueried());
+        return networkQueryResult.maybeHostIp().orElseThrow();
+      } else {
+        throw new RuntimeException(
+            String.format(
+                "An IP address of this node hasn't been configured. "
+                    + "Make sure you set your `network.host_ip` property. "
+                    + "An attempt was made to acquire it from an external oracle, "
+                    + "but that also failed (services queried: %s).",
+                networkQueryResult.hostsQueried()));
+      }
+    } else {
+      // We've got a configured IP and possibly also an IP address from an external oracle
+      // we're going to use a configured IP, but issue a warning if it doesn't match what
+      // we got from an oracle.
+
+      final var configuredHostIp = configuredHostIps.iterator().next();
+
+      if (networkQueryResult.maybeHostIp().stream()
+          .anyMatch(hostIpFromNetwork -> !hostIpFromNetwork.equals(configuredHostIp))) {
+        log.warn(
+            "An IP address that was configured for this node ({}) differs from a public IP "
+                + "address reported by an external oracle ({}, services queried: {}). "
+                + "This indicates a likely misconfiguration. "
+                + "Make sure your `network.host_ip` property or "
+                + "`RADIXDLT_HOST_IP_ADDRESS` environment variable are set correctly.",
+            configuredHostIp,
+            networkQueryResult.maybeHostIp().orElseThrow(),
+            networkQueryResult.hostsQueried());
+      }
+
+      log.info("Using a configured host IP address: {}", configuredHostIp);
+
+      return configuredHostIp;
+    }
   }
 }

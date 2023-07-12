@@ -71,7 +71,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -90,18 +89,11 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.stream.IntStream;
 import javax.crypto.SecretKey;
 import org.bouncycastle.jcajce.PKCS12Key;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RadixKeyStoreTest {
-
   private static final String TEST_SECRET = "secret";
   private static final String TEST_KS_FILENAME = "testfile.ks";
-
-  @BeforeClass
-  public static void setup() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
 
   /** Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}. */
   @Test
@@ -238,7 +230,8 @@ public class RadixKeyStoreTest {
     jks.load(null, TEST_SECRET.toCharArray());
 
     // Only secp256k1 curve is supported - use a different curve here
-    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+    KeyPairGenerator keyGen =
+        KeyPairGenerator.getInstance("EC", BouncyCastleProviderInstance.get());
     keyGen.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom());
 
     KeyPair keyPair = keyGen.generateKeyPair();
@@ -260,7 +253,7 @@ public class RadixKeyStoreTest {
   /** Test method for ensuring that only PrivateKeyEntry values are allowed. */
   @Test
   public void testInvalidEntry() throws IOException, GeneralSecurityException {
-    KeyStore jks = KeyStore.getInstance("pkcs12");
+    KeyStore jks = KeyStore.getInstance("pkcs12", BouncyCastleProviderInstance.get());
     jks.load(null, "password".toCharArray());
 
     SecretKey sk = new PKCS12Key(TEST_SECRET.toCharArray());

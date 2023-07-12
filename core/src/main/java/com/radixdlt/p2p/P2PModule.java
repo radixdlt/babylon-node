@@ -149,8 +149,7 @@ public final class P2PModule extends AbstractModule {
   @Self
   public RadixNodeUri selfUri(
       Network network, @Self ECDSASecp256k1PublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
-    final var host =
-        hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+    final var host = hostIp.value();
     final var port = p2pConfig.broadcastPort();
     return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
   }

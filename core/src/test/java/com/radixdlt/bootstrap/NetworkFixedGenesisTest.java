@@ -70,16 +70,9 @@ import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.genesis.FixedGenesisLoader;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.serialization.TestSetupUtils;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public final class NetworkFixedGenesisTest {
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
-
   @Test
   public void test_network_genesis_hash_is_correct() {
     final var hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());

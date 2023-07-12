@@ -87,7 +87,7 @@ public final class Blake2BHashHandler {
 
   private static MessageDigest getDigester(String algorithm) {
     try {
-      return MessageDigest.getInstance(algorithm);
+      return MessageDigest.getInstance(algorithm, BouncyCastleProviderInstance.get());
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalArgumentException("No such algorithm: " + algorithm, e);
     }

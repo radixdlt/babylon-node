@@ -74,7 +74,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Query for a public IP address from {@link RuntimeProperties}. */
-final class RuntimePropertiesHostIp implements HostIp {
+final class RuntimePropertiesHostIp {
   private static final Logger log = LogManager.getLogger();
 
   @VisibleForTesting static final String HOST_IP_PROPERTY = "network.host_ip";
@@ -86,23 +86,18 @@ final class RuntimePropertiesHostIp implements HostIp {
     this.value = hostProperty == null ? "" : hostProperty.trim();
   }
 
-  static HostIp create(RuntimeProperties properties) {
-    return new RuntimePropertiesHostIp(properties);
-  }
-
-  @Override
-  public Optional<String> hostIp() {
+  public Optional<HostIp> hostIp() {
     if (!this.value.isEmpty()) {
       try {
         InetAddress address = InetAddress.getByName(this.value);
         HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
-        log.info("Found address {}", hap);
-        return Optional.of(hap.getHost());
+        log.debug("Found address {}", hap);
+        return Optional.of(new HostIp(hap.getHost()));
       } catch (UnknownHostException | IllegalArgumentException e) {
         log.warn("Property {} is invalid: '{}'", HOST_IP_PROPERTY, this.value);
       }
     }
-    log.info("No suitable address found");
+    log.debug("No suitable address found");
     return Optional.empty();
   }
 }
