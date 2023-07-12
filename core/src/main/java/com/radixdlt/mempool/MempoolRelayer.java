@@ -101,10 +101,10 @@ public final class MempoolRelayer {
       MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash> mempoolRelayReader,
       RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
-      @MempoolRelayMaxPeers int maxPeers,
-      @MempoolRelayerMaxMessagePayloadSize long maxMessagePayloadSize,
-      @MempoolRelayerMaxMessageTransactionCount long maxMessageTransactionCount,
-      @MempoolRelayerMaxRelayedSize long maxRelayedSize,
+      @MempoolRelayerMaxPeers int maxPeers,
+      @MempoolRelayerMaxMessagePayloadSize int maxMessagePayloadSize,
+      @MempoolRelayerMaxMessageTransactionCount int maxMessageTransactionCount,
+      @MempoolRelayerMaxRelayedSize int maxRelayedSize,
       Metrics metrics) {
 
     this.mempoolRelayReader = mempoolRelayReader;

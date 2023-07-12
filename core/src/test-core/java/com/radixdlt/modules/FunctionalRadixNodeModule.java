@@ -374,7 +374,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
-                install(new MempoolRelayerModule(MempoolRelayerConfig.of(10000)));
+                install(
+                    new MempoolRelayerModule(
+                        MempoolRelayerConfig.defaults().withIntervalMs(10000)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
@@ -415,7 +417,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.noFees()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
-                install(new MempoolRelayerModule(MempoolRelayerConfig.of(10000)));
+                install(
+                    new MempoolRelayerModule(
+                        MempoolRelayerConfig.defaults().withIntervalMs(10000)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());

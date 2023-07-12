@@ -191,9 +191,11 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 100).asModule());
+    install(new MempoolRelayConfig(5).asModule());
     var mempoolRelayerIntervalMs =
         properties.get("mempool.relayer.interval_ms", MempoolRelayerConfig.DEFAULT_INTERVAL_MS);
+    var mempoolRelayerMaxPeers =
+        properties.get("mempool.relayer.max_peers", MempoolRelayerConfig.DEFAULT_MAX_PEERS);
     var mempoolRelayerMaxRelayedSize =
         properties.get(
             "mempool.relayer.max_relayed_size", MempoolRelayerConfig.DEFAULT_MAX_RELAYED_SIZE);
@@ -209,6 +211,7 @@ public final class RadixNodeModule extends AbstractModule {
         new MempoolRelayerModule(
             new MempoolRelayerConfig(
                 mempoolRelayerIntervalMs,
+                mempoolRelayerMaxPeers,
                 mempoolRelayerMaxRelayedSize,
                 mempoolRelayerMaxMessageTransactionCount,
                 mempoolRelayerMaxMessagePayloadSize)));

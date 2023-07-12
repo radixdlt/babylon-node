@@ -64,7 +64,6 @@
 
 package com.radixdlt.p2p.transport;
 
-import com.google.inject.Inject;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
@@ -125,7 +124,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final Optional<RadixNodeUri> uri;
   private final Capabilities capabilities;
 
-  @Inject
   public PeerChannelInitializer(
       P2PConfig config,
       Addressing addressing,
@@ -138,7 +136,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
       Capabilities capabilities,
-      long mempoolRelayerMaxMessagePayloadSize) {
+      int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -156,7 +154,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             Math.max(
                 REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
                 RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
-            (int) mempoolRelayerMaxMessagePayloadSize);
+            mempoolRelayerMaxMessagePayloadSize);
     // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
     final var additionalBuffer = (int) (0.3 * baseBufferSize);
     final var bufferSize = baseBufferSize + additionalBuffer;

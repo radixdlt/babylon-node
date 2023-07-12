@@ -115,7 +115,7 @@ public final class REv2MempoolRelayerTest {
                             0,
                             0,
                             new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
-                            new MempoolRelayConfig(0, 100))),
+                            new MempoolRelayConfig(0))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

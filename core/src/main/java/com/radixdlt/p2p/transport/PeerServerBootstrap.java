@@ -98,7 +98,7 @@ public final class PeerServerBootstrap {
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
   private ChannelFuture serverBind;
-  private final long mempoolRelayerMaxMessagePayloadSize;
+  private final int mempoolRelayerMaxMessagePayloadSize;
 
   @Inject
   public PeerServerBootstrap(
@@ -111,7 +111,7 @@ public final class PeerServerBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize long mempoolRelayerMaxMessagePayloadSize) {
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -149,7 +149,7 @@ public final class PeerServerBootstrap {
                 peerEventDispatcher,
                 Optional.empty(),
                 capabilities,
-                this.mempoolRelayerMaxMessagePayloadSize));
+                mempoolRelayerMaxMessagePayloadSize));
 
     serverBind =
         serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();

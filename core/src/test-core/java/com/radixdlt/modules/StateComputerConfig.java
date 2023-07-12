@@ -239,7 +239,7 @@ public sealed interface StateComputerConfig {
 
     static REV2ProposerConfig singleTransactionMempool() {
       return new Mempool(
-          1, 1024 * 1024, new RustMempoolConfig(1024 * 1024, 1), new MempoolRelayConfig(0, 100));
+          1, 1024 * 1024, new RustMempoolConfig(1024 * 1024, 1), new MempoolRelayConfig(0));
     }
 
     static REV2ProposerConfig defaultMempool() {

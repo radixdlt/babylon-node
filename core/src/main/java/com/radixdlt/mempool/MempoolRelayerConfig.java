@@ -68,29 +68,33 @@ import com.google.inject.AbstractModule;
 
 /** Configuration parameters for mempool relayer. */
 public record MempoolRelayerConfig(
-    long intervalMs,
-    long maxRelayedSize,
-    long maxMessageTransactionCount,
-    long maxMessagePayloadSize) {
-  public static final long DEFAULT_INTERVAL_MS = 20000;
-  public static final long DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
-  public static final long DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2L * 1024 * 1024;
-  public static final long DEFAULT_MAX_RELAYED_SIZE = 6L * 1024 * 1024;
+    int intervalMs,
+    int maxPeers,
+    int maxRelayedSize,
+    int maxMessageTransactionCount,
+    int maxMessagePayloadSize) {
+  public static final int DEFAULT_INTERVAL_MS = 20000;
+  public static final int DEFAULT_MAX_PEERS = 100;
+  public static final int DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
+  public static final int DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
 
-  public static MempoolRelayerConfig of() {
+  public static MempoolRelayerConfig defaults() {
     return new MempoolRelayerConfig(
         DEFAULT_INTERVAL_MS,
+        DEFAULT_MAX_PEERS,
         DEFAULT_MAX_RELAYED_SIZE,
         DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
         DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
   }
 
-  public static MempoolRelayerConfig of(long intervalMs) {
+  public MempoolRelayerConfig withIntervalMs(int intervalMs) {
     return new MempoolRelayerConfig(
         intervalMs,
-        DEFAULT_MAX_RELAYED_SIZE,
-        DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
-        DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+        this.maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
   }
 
   public AbstractModule asModule() {
@@ -98,6 +102,7 @@ public record MempoolRelayerConfig(
       @Override
       protected void configure() {
         bindConstant().annotatedWith(MempoolRelayerIntervalMs.class).to(intervalMs);
+        bindConstant().annotatedWith(MempoolRelayerMaxPeers.class).to(maxPeers);
         bindConstant().annotatedWith(MempoolRelayerMaxRelayedSize.class).to(maxRelayedSize);
         bindConstant()
             .annotatedWith(MempoolRelayerMaxMessageTransactionCount.class)

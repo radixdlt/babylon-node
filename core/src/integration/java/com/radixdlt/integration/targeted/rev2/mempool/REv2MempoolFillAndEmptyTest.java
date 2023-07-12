@@ -122,7 +122,7 @@ public final class REv2MempoolFillAndEmptyTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.defaultMempool(
-                            new MempoolRelayConfig(0, 100))),
+                            new MempoolRelayConfig(0))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

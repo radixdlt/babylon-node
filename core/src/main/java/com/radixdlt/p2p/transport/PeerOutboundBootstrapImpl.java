@@ -97,7 +97,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 
   private final NioEventLoopGroup clientWorkerGroup;
   private final Capabilities capabilities;
-  private final long mempoolRelayerMaxMessagePayloadSize;
+  private final int mempoolRelayerMaxMessagePayloadSize;
 
   @Inject
   public PeerOutboundBootstrapImpl(
@@ -110,7 +110,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize long mempoolRelayerMaxMessagePayloadSize) {
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -147,7 +147,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 peerEventDispatcher,
                 Optional.of(uri),
                 capabilities,
-                this.mempoolRelayerMaxMessagePayloadSize))
+                mempoolRelayerMaxMessagePayloadSize))
         .connect(uri.getHost(), uri.getPort());
   }
 }

@@ -95,18 +95,13 @@ public final class MempoolRelayerModule extends AbstractModule {
   @Singleton
   private EventProducer<MempoolRelayTrigger> eventProducer(
       ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher,
-      @MempoolRelayerIntervalMs long mempoolRelayerIntervalMs) {
+      @MempoolRelayerIntervalMs int mempoolRelayerIntervalMs) {
     return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayerIntervalMs);
   }
 
   @ProvidesIntoSet
   private StartProcessorOnRunner mempoolRelayerStart(
-      EventProducer<MempoolRelayTrigger> dispatcher,
-      @MempoolRelayMaxPeers int maxPeers,
-      @MempoolRelayerIntervalMs long mempoolRelayerIntervalMs,
-      @MempoolRelayerMaxMessageTransactionCount long mempoolRelayerMaxMessageTransactionCount,
-      @MempoolRelayerMaxMessagePayloadSize long mempoolRelayerMaxMessagePayloadSize,
-      @MempoolRelayerMaxRelayedSize long mempoolRelayerMaxRelayedSize) {
+      EventProducer<MempoolRelayTrigger> dispatcher) {
     return new StartProcessorOnRunner(
         Runners.MEMPOOL,
         () -> {
@@ -114,11 +109,11 @@ public final class MempoolRelayerModule extends AbstractModule {
               "Starting mempool relayer: at most {} txns (or {} txn bytes) will be relayed to at"
                   + " most {} peers (but no more than {} txn bytes sent to all peers during a"
                   + " single relaying event) every {} ms.",
-              mempoolRelayerMaxMessageTransactionCount,
-              mempoolRelayerMaxMessagePayloadSize,
-              maxPeers,
-              mempoolRelayerMaxRelayedSize,
-              mempoolRelayerIntervalMs);
+              config.maxMessageTransactionCount(),
+              config.maxMessagePayloadSize(),
+              config.maxPeers(),
+              config.maxRelayedSize(),
+              config.intervalMs());
 
           dispatcher.start();
         });

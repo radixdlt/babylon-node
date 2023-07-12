@@ -67,17 +67,13 @@ package com.radixdlt.mempool;
 import com.google.inject.AbstractModule;
 
 /** Configuration parameters for mempool relay. */
-public record MempoolRelayConfig(long throttleMs, int relayMaxPeers) {
+public record MempoolRelayConfig(long throttleMs) {
   public static MempoolRelayConfig of() {
-    return new MempoolRelayConfig(10000, 100);
+    return new MempoolRelayConfig(10000);
   }
 
   public static MempoolRelayConfig of(long throttleMs) {
-    return new MempoolRelayConfig(throttleMs, 100);
-  }
-
-  public static MempoolRelayConfig of(long throttleMs, int relayMaxPeers) {
-    return new MempoolRelayConfig(throttleMs, relayMaxPeers);
+    return new MempoolRelayConfig(throttleMs);
   }
 
   public AbstractModule asModule() {
@@ -85,7 +81,6 @@ public record MempoolRelayConfig(long throttleMs, int relayMaxPeers) {
       @Override
       protected void configure() {
         bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
-        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
       }
     };
   }
