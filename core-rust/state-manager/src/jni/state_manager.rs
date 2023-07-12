@@ -64,7 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
-use crate::mempool::simple_mempool::SimpleMempool;
+use crate::mempool::priority_mempool::PriorityMempool;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
@@ -144,7 +144,7 @@ pub struct JNIStateManager {
     pub state_manager: Arc<ActualStateManager>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    pub mempool: Arc<RwLock<SimpleMempool>>,
+    pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
@@ -202,7 +202,7 @@ impl JNIStateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
+        let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
             mempool_config,
         )));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
@@ -273,7 +273,7 @@ impl JNIStateManager {
         Self::get_state(env, j_state_manager).database.clone()
     }
 
-    pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<SimpleMempool>> {
+    pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<PriorityMempool>> {
         Self::get_state(env, j_state_manager).mempool.clone()
     }
 

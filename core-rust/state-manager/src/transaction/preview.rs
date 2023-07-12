@@ -112,7 +112,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 mod tests {
     use crate::jni::state_manager::ActualStateManager;
     use crate::mempool_manager::MempoolManager;
-    use crate::simple_mempool::SimpleMempool;
+    use crate::priority_mempool::PriorityMempool;
     use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
     use crate::transaction::{
         CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
@@ -162,7 +162,7 @@ mod tests {
             committability_validator,
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
+        let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
             MempoolConfig {
                 max_total_transactions_size: 10 * 1024 * 1024,
                 max_transaction_count: 10,

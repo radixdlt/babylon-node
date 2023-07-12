@@ -101,6 +101,7 @@ import org.junit.experimental.categories.Category;
  */
 @Category(Slow.class)
 public final class REv2MempoolFillAndEmptyTest {
+  private static final int MAX_MEMPOOL_TRANSACTION_COUNT = 1000;
   private static final Logger logger = LogManager.getLogger();
 
   private DeterministicTest createTest() {
@@ -121,7 +122,10 @@ public final class REv2MempoolFillAndEmptyTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.defaultMempool(
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10,
+                            10 * 1024 * 1024,
+                            new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
                             new MempoolRelayConfig(0))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
@@ -140,7 +144,7 @@ public final class REv2MempoolFillAndEmptyTest {
     var mempoolDispatcher =
         test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-    while (mempoolReader.getCount() < 100) {
+    while (mempoolReader.getCount() < MAX_MEMPOOL_TRANSACTION_COUNT) {
       if (rateLimiter.tryAcquire()) {
         logger.info("Filling Mempool...  Current Size: {}", mempoolReader.getCount());
       }
