@@ -80,6 +80,7 @@ COPY --from=java-build-stage /radixdlt/cli-tools/build/distributions /tmp/
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.7+7-1~deb11u1 \
+    unzip=6.0-26+deb11u1 \
     libssl-dev=1.1.1n-0+deb11u5 \
     software-properties-common=0.96.20.2-2.1 \
     gettext-base=0.21-4 \
