@@ -72,11 +72,13 @@ import com.radixdlt.exceptions.TransactionPreparationException;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.*;
 import java.util.List;
+import java.util.Optional;
 
 public final class TransactionPreparer {
   static {
@@ -85,15 +87,17 @@ public final class TransactionPreparer {
   }
 
   public static PreparedIntent prepareIntent(
-      NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
+      NetworkDefinition network,
+      TransactionHeader header,
+      String manifest,
+      List<byte[]> blobs,
+      Optional<TransactionMessage> message) {
     return prepareIntentFunc
-        .call(tuple(network, header, manifest, blobs))
+        .call(new PrepareIntentRequest(network, header, manifest, blobs, Option.from(message)))
         .unwrap(TransactionPreparationException::new);
   }
 
-  private static final Natives.Call1<
-          Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
-          Result<PreparedIntent, String>>
+  private static final Natives.Call1<PrepareIntentRequest, Result<PreparedIntent, String>>
       prepareIntentFunc =
           Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
 
@@ -132,19 +136,6 @@ public final class TransactionPreparer {
       userTransactionToLedger =
           Natives.builder(TransactionPreparer::userTransactionToLedger).build(new TypeToken<>() {});
 
-  public static Option<RawNotarizedTransaction> convertTransactionBytesToNotarizedTransactionBytes(
-      RawLedgerTransaction ledgerTransaction) {
-    return transactionBytesToNotarizedTransactionBytesFn
-        .call(ledgerTransaction)
-        .unwrap(TransactionPreparationException::new);
-  }
-
-  private static final Natives.Call1<
-          RawLedgerTransaction, Result<Option<RawNotarizedTransaction>, String>>
-      transactionBytesToNotarizedTransactionBytesFn =
-          Natives.builder(TransactionPreparer::transactionBytesToNotarizedTransactionBytes)
-              .build(new TypeToken<>() {});
-
   private static native byte[] prepareIntent(byte[] requestPayload);
 
   private static native byte[] prepareSignedIntent(byte[] requestPayload);
@@ -152,6 +143,4 @@ public final class TransactionPreparer {
   private static native byte[] prepareNotarizedTransaction(byte[] requestPayload);
 
   private static native byte[] userTransactionToLedger(byte[] requestPayload);
-
-  private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }
