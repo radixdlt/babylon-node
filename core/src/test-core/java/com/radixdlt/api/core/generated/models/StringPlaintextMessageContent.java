@@ -1,6 +1,6 @@
 /*
  * Babylon Core API - RCnet V2
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the second release candidate of the Radix Babylon network (\"RCnet v2\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.4.0
  * 
@@ -28,8 +28,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BinaryPlaintextMessageContent;
 import com.radixdlt.api.core.generated.models.PlaintextMessageContent;
 import com.radixdlt.api.core.generated.models.PlaintextMessageContentType;
-import com.radixdlt.api.core.generated.models.UnicodePlaintextMessageContent;
-import com.radixdlt.api.core.generated.models.UnicodePlaintextMessageContentAllOf;
+import com.radixdlt.api.core.generated.models.StringPlaintextMessageContent;
+import com.radixdlt.api.core.generated.models.StringPlaintextMessageContentAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,10 +37,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * UnicodePlaintextMessageContent
+ * StringPlaintextMessageContent
  */
 @JsonPropertyOrder({
-  UnicodePlaintextMessageContent.JSON_PROPERTY_VALUE
+  StringPlaintextMessageContent.JSON_PROPERTY_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -50,27 +50,27 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BinaryPlaintextMessageContent.class, name = "Binary"),
-  @JsonSubTypes.Type(value = UnicodePlaintextMessageContent.class, name = "Unicode"),
+  @JsonSubTypes.Type(value = StringPlaintextMessageContent.class, name = "String"),
 })
 
-public class UnicodePlaintextMessageContent extends PlaintextMessageContent {
+public class StringPlaintextMessageContent extends PlaintextMessageContent {
   public static final String JSON_PROPERTY_VALUE = "value";
   private String value;
 
-  public UnicodePlaintextMessageContent() { 
+  public StringPlaintextMessageContent() { 
   }
 
-  public UnicodePlaintextMessageContent value(String value) {
+  public StringPlaintextMessageContent value(String value) {
     this.value = value;
     return this;
   }
 
    /**
-   * The value of a message representable as a Unicode string (according to its &#x60;mime_type&#x60;).
+   * The value of a message that the author decided to provide as a UTF-8 string.
    * @return value
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The value of a message representable as a Unicode string (according to its `mime_type`).")
+  @ApiModelProperty(required = true, value = "The value of a message that the author decided to provide as a UTF-8 string.")
   @JsonProperty(JSON_PROPERTY_VALUE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -87,7 +87,7 @@ public class UnicodePlaintextMessageContent extends PlaintextMessageContent {
 
 
   /**
-   * Return true if this UnicodePlaintextMessageContent object is equal to o.
+   * Return true if this StringPlaintextMessageContent object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -97,8 +97,8 @@ public class UnicodePlaintextMessageContent extends PlaintextMessageContent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnicodePlaintextMessageContent unicodePlaintextMessageContent = (UnicodePlaintextMessageContent) o;
-    return Objects.equals(this.value, unicodePlaintextMessageContent.value) &&
+    StringPlaintextMessageContent stringPlaintextMessageContent = (StringPlaintextMessageContent) o;
+    return Objects.equals(this.value, stringPlaintextMessageContent.value) &&
         super.equals(o);
   }
 
@@ -110,7 +110,7 @@ public class UnicodePlaintextMessageContent extends PlaintextMessageContent {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnicodePlaintextMessageContent {\n");
+    sb.append("class StringPlaintextMessageContent {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
@@ -132,9 +132,9 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("Binary", BinaryPlaintextMessageContent.class);
-  mappings.put("Unicode", UnicodePlaintextMessageContent.class);
-  mappings.put("UnicodePlaintextMessageContent", UnicodePlaintextMessageContent.class);
-  JSON.registerDiscriminator(UnicodePlaintextMessageContent.class, "type", mappings);
+  mappings.put("String", StringPlaintextMessageContent.class);
+  mappings.put("StringPlaintextMessageContent", StringPlaintextMessageContent.class);
+  JSON.registerDiscriminator(StringPlaintextMessageContent.class, "type", mappings);
 }
 }
 

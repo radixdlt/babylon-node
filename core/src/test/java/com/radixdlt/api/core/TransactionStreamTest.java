@@ -187,9 +187,9 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
               new PlaintextTransactionMessage()
                   .mimeType("text/plain")
                   .content(
-                      new UnicodePlaintextMessageContent()
+                      new StringPlaintextMessageContent()
                           .value("hello transaction")
-                          .type(PlaintextMessageContentType.UNICODE))
+                          .type(PlaintextMessageContentType.STRING))
                   .type(TransactionMessageType.PLAINTEXT));
       assertThat(streamedIntents.get(streamedIntents.size() - 1).getMessage())
           .isEqualTo(

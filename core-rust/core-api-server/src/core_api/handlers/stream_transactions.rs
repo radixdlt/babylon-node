@@ -333,7 +333,7 @@ fn to_api_plaintext_message_content(
 ) -> Result<models::PlaintextMessageContent, MappingError> {
     Ok(match content {
         MessageContentsV1::String(string) => {
-            models::PlaintextMessageContent::UnicodePlaintextMessageContent {
+            models::PlaintextMessageContent::StringPlaintextMessageContent {
                 value: string.clone(),
             }
         }

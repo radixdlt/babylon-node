@@ -1280,13 +1280,17 @@ components:
           properties:
             mime_type:
               type: string
-              description: The RFC 2046 MIME type of the `content`.
+              description: |
+                Intended to represent the RFC 2046 MIME type of the `content`.
+                A client cannot trust that this field is a valid mime type - in particular, the
+                choice between `String` or `Binary` representation of the content is not enforced by
+                this `mime_type`.
             content:
               $ref: "#/components/schemas/PlaintextMessageContent"
     PlaintextMessageContentType:
       type: string
       enum:
-        - Unicode
+        - String
         - Binary
     PlaintextMessageContent:
       type: object
@@ -1299,9 +1303,9 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match PlaintextMessageContentType
-          Unicode: '#/components/schemas/UnicodePlaintextMessageContent'
+          String: '#/components/schemas/StringPlaintextMessageContent'
           Binary: '#/components/schemas/BinaryPlaintextMessageContent'
-    UnicodePlaintextMessageContent:
+    StringPlaintextMessageContent:
       allOf:
         - $ref: "#/components/schemas/PlaintextMessageContent"
         - type: object
@@ -1310,7 +1314,7 @@ components:
           properties:
             value:
               type: string
-              description: The value of a message representable as a Unicode string (according to its `mime_type`).
+              description: The value of a message that the author decided to provide as a UTF-8 string.
     BinaryPlaintextMessageContent:
       allOf:
         - $ref: "#/components/schemas/PlaintextMessageContent"
@@ -1320,7 +1324,7 @@ components:
           properties:
             value_hex:
               type: string
-              description: The hex-encoded value of a message _not_ representable as a Unicode string (according to its `mime_type`).
+              description: The hex-encoded value of a message that the author decided to provide as raw bytes.
     EncryptedTransactionMessage:
       allOf:
         - $ref: "#/components/schemas/TransactionMessage"
