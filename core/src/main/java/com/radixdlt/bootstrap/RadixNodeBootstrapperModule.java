@@ -68,7 +68,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
+import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Either;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.MetricsModule;
@@ -90,12 +92,19 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
   @Override
   public void configure() {
     bind(RuntimeProperties.class).toInstance(this.properties);
-    bind(Network.class).toInstance(readNetworkFromProperties(this.properties).unwrapRight());
+    final var network = readNetworkFromProperties(this.properties).unwrapRight();
+    bind(Network.class).toInstance(network);
+    bind(Addressing.class).toInstance(Addressing.ofNetwork(network));
     bind(GenesisFromPropertiesLoader.class).toInstance(new GenesisFromPropertiesLoader(properties));
     bind(RadixNodeBootstrapper.class).in(Scopes.SINGLETON);
     install(new MetricsModule());
     install(new CryptoModule());
     install(new NodeStorageLocationFromPropertiesModule());
+
+    // This isn't strictly required by the bootstrapper, but
+    // we're loading it up to verify that node's keystore
+    // configuration works.
+    install(new PersistedBFTKeyModule());
   }
 
   @Provides

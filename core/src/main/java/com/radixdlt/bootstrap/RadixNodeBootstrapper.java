@@ -64,13 +64,18 @@
 
 package com.radixdlt.bootstrap;
 
+import static com.radixdlt.lang.Unit.unit;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.UnstartedRadixNode;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.SystemApi;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.FixedGenesisLoader;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
@@ -78,11 +83,16 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
 import com.radixdlt.genesis.olympia.OlympiaGenesisConfig;
 import com.radixdlt.genesis.olympia.OlympiaGenesisService;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -135,27 +145,45 @@ public final class RadixNodeBootstrapper {
     }
   }
 
+  private final ECDSASecp256k1PublicKey selfPublicKey;
   private final Network network;
+  private final Addressing addressing;
   private final Hasher hasher;
   private final RuntimeProperties properties;
   private final GenesisFromPropertiesLoader genesisFromPropertiesLoader;
   private final GenesisStore genesisStore;
+  private final File nodeStorageDir;
 
   @Inject
   public RadixNodeBootstrapper(
+      @Self ECDSASecp256k1PublicKey selfPublicKey,
       Network network,
+      Addressing addressing,
       Hasher hasher,
       RuntimeProperties properties,
       GenesisFromPropertiesLoader genesisFromPropertiesLoader,
-      GenesisStore genesisStore) {
+      GenesisStore genesisStore,
+      @NodeStorageLocation String nodeStorageLocation) {
+    this.selfPublicKey = selfPublicKey;
     this.network = network;
+    this.addressing = addressing;
     this.hasher = hasher;
     this.properties = properties;
     this.genesisFromPropertiesLoader = genesisFromPropertiesLoader;
     this.genesisStore = genesisStore;
+    this.nodeStorageDir = new File(nodeStorageLocation);
   }
 
   public RadixNodeBootstrapperHandle bootstrapRadixNode() {
+    log.info("Radix node {} is starting...", addressing.encodeNodeAddress(selfPublicKey));
+
+    // An early check for storage misconfiguration
+    final var storageVerifyResult = verifyNodeStorageDirIsWritable();
+    if (storageVerifyResult.isError()) {
+      return new RadixNodeBootstrapperHandle.Failed(
+          new RuntimeException(storageVerifyResult.unwrapError()));
+    }
+
     // Genesis source #1: node configuration parameters / genesis file
     // If there is one configured, we always need to read it to memory
     // and calculate its hash.
@@ -232,6 +260,39 @@ public final class RadixNodeBootstrapper {
                     `network.genesis_data` and/or `network.genesis_data_file`).""",
                   configuredGenesisHash, fixedNetworkGenesisHash, storedGenesisHash)));
     }
+  }
+
+  private Result<Unit, String> verifyNodeStorageDirIsWritable() {
+    if (!nodeStorageDir.exists()) {
+      if (!nodeStorageDir.mkdirs()) {
+        return Result.error(
+            String.format(
+                "Node storage directory (%s) doesn't exist and it couldn't be created. Make sure"
+                    + " that the directory specified in `db.location` is writeable and accessible"
+                    + " by the current user.",
+                nodeStorageDir));
+      }
+    }
+    final var testFile = new File(nodeStorageDir, ".storage_test");
+    final var writeErrorMsg =
+        String.format(
+            "Couldn't write to node storage directory (%s). Make sure that the directory specified"
+                + " in `db.location` is writeable and accessible by the current user.",
+            nodeStorageDir);
+    try {
+      if (!testFile.exists()) {
+        if (!testFile.createNewFile()) {
+          return Result.error(writeErrorMsg);
+        }
+      }
+      if (!testFile.delete()) {
+        return Result.error(writeErrorMsg);
+      }
+    } catch (IOException e) {
+      return Result.error(writeErrorMsg);
+    }
+
+    return Result.success(unit());
   }
 
   /** A utility class encapsulating the Olympia-based genesis functionality */
