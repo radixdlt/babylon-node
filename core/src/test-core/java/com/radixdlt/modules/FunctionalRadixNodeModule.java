@@ -419,7 +419,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               case REV2ProposerConfig.Mempool mempool -> {
                 install(
                     new MempoolRelayerModule(
-                        MempoolRelayerConfig.defaults().withIntervalMs(10000)));
+                        MempoolRelayerConfig.defaults().withIntervalMs(10000).withMaxPeers(5)));
                 install(new MempoolReevaluationModule(Duration.ofSeconds(1), 1));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());

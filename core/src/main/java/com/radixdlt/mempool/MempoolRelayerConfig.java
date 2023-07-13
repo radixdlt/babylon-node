@@ -97,6 +97,15 @@ public record MempoolRelayerConfig(
         this.maxMessagePayloadSize);
   }
 
+  public MempoolRelayerConfig withMaxPeers(int maxPeers) {
+    return new MempoolRelayerConfig(
+        this.intervalMs,
+        maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
+  }
+
   public AbstractModule asModule() {
     return new AbstractModule() {
       @Override
