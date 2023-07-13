@@ -87,6 +87,7 @@ import com.radixdlt.utils.TimeSupplier;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
@@ -203,6 +204,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   private Optional<ExecutedVertex> prepareInternal(
       LinkedList<ExecutedVertex> previousVertices, VertexWithHash vertexWithHash) {
+    /*
     log.info(
         "Prepare request at ledger header {}, ancestors: {}, vertex to prepare: {}",
         this.currentLedgerHeader,
@@ -218,6 +220,16 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             .toList(),
         vertexWithHash.hash() + " (parent " + vertexWithHash.vertex().getParentVertexId() + ")");
 
+    previousVertices.forEach(prev -> {
+      final var txns = prev.getTransactions().map(r -> Hex.toHexString(r.getPayload())).reduce("", (a, b) -> a + ", " + b);
+      log.info("Previous vertex " + prev.getVertexHash() + " contains ledger_txns: " + txns);
+    });
+
+    final var vTxns = vertexWithHash.vertex().getTransactions().stream()
+            .map(r -> Hex.toHexString(r.getPayload())).reduce("", (a, b) -> a + ", " + b);
+    log.info("Vertex to prepare contains notarized_txns " + vTxns);
+
+     */
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 
@@ -269,6 +281,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         }
       }
 
+      /*
       log.info(
           "Passing prepare request to state computer. Filtered ancestors: {}",
           verticesInExtension.stream()
@@ -282,6 +295,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                           + ")")
               .toList());
 
+       */
+
       result =
           this.stateComputer.prepare(
               committedLedgerHeader.getHashes(),
@@ -289,7 +304,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getHashes(),
               vertex.getTransactions(),
               RoundDetails.fromVertex(vertexWithHash));
+
+
+      final var resTxns = result.getSuccessfullyExecutedTransactions().stream()
+              .map(r -> Hex.toHexString(r.transaction().getPayload())).reduce("", (a, b) -> a + ", " + b);
+//      log.info("Vertex {} has been prepared by rust, got result ledgeR_txn: {}", vertexWithHash.hash(), resTxns);
     }
+
+//    log.info("Post-prepare hashes: {}", result.getLedgerHashes());
 
     final LedgerHeader ledgerHeader =
         LedgerHeader.create(

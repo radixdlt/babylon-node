@@ -340,10 +340,10 @@ where
             .get_committed_transaction_identifiers(series_executor.latest_state_version())
             .map(|i| i.payload.ledger_payload_hash);
 
-        info!("Preparing ancestor transactions, committed state version: {:?}, hashes: {:?}, latest txn: {:?}",
-            series_executor.latest_state_version(),
-            series_executor.latest_ledger_hashes(),
-            latest_tx);
+        // info!("Preparing ancestor transactions, committed state version: {:?}, hashes: {:?}, latest txn: {:?}",
+        //     series_executor.latest_state_version(),
+        //     series_executor.latest_ledger_hashes(),
+        //     latest_tx);
 
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
@@ -357,11 +357,11 @@ where
                 .execute(&validated, "ancestor")
                 .expect("ancestor transaction rejected");
 
-            info!("Executed ancestor transaction {:?}, post execution state version: {:?}, hashes: {:?}",
-                validated.ledger_transaction_hash(),
-                series_executor.latest_state_version(),
-                series_executor.latest_ledger_hashes()
-            );
+            // info!("Executed ancestor transaction {:?}, post execution state version: {:?}, hashes: {:?}",
+            //     hex::encode(raw_ancestor.as_ref()),
+            //     series_executor.latest_state_version(),
+            //     series_executor.latest_ledger_hashes()
+            // );
         }
 
         if &prepare_request.ancestor_ledger_hashes != series_executor.latest_ledger_hashes() {
@@ -416,6 +416,12 @@ where
 
         round_update_result.expect_success("round update");
 
+        // info!("Executed round update transaction {:?}, post execution state version: {:?}, hashes: {:?}",
+        //     hex::encode(raw_ledger_round_update.as_ref()),
+        //     series_executor.latest_state_version(),
+        //     series_executor.latest_ledger_hashes()
+        // );
+
         committable_transactions.push(CommittableTransaction {
             index: None,
             raw: raw_ledger_round_update,
@@ -439,6 +445,8 @@ where
             .sum();
         let mut committed_proposal_size = 0;
         let mut stop_reason = VertexPrepareStopReason::ProposalComplete;
+
+        let mut hashes_to_return = series_executor.latest_ledger_hashes().clone();
 
         for (index, raw_user_transaction) in prepare_request
             .proposed_transactions
@@ -521,8 +529,16 @@ where
             };
 
             let execute_result = series_executor.execute(&validated, "newly proposed");
+
+            // info!("Executed prepare transaction {:?}, post execution state version: {:?}, hashes: {:?}",
+            //             hex::encode(raw_ledger_transaction.as_ref()),
+            //             series_executor.latest_state_version(),
+            //             series_executor.latest_ledger_hashes(),
+            //         );
+
             match execute_result {
                 Ok(processed_commit_result) => {
+                    // info!("Txn result: commit");
                     match vertex_limits_tracker.try_next_transaction(
                         transaction_size,
                         &processed_commit_result
@@ -531,6 +547,8 @@ where
                             .execution_metrics,
                     ) {
                         Ok(success) => {
+                            hashes_to_return = series_executor.latest_ledger_hashes().clone();
+                            // info!("Txn limits OK");
                             committed_proposal_size += transaction_size;
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
@@ -547,6 +565,7 @@ where
                             });
                             match success {
                                 VertexLimitsAdvanceSuccess::VertexFilled(limit_exceeded) => {
+                                    // info!("Vertex filled");
                                     stop_reason =
                                         VertexPrepareStopReason::LimitExceeded(limit_exceeded);
                                     break;
@@ -555,6 +574,8 @@ where
                             }
                         }
                         Err(error) => {
+                            // TODO: use PREVIOUS hashes, not series_executor latest hashes
+                            // info!("Txn limits error");
                             rejected_transactions.push(RejectedTransaction {
                                 index: index as u32,
                                 intent_hash: Some(intent_hash),
@@ -573,6 +594,7 @@ where
                     }
                 }
                 Err(RejectResult { error }) => {
+                    // info!("Result: rejected");
                     rejected_transactions.push(RejectedTransaction {
                         index: index as u32,
                         intent_hash: Some(intent_hash),
@@ -641,7 +663,7 @@ where
             committed: committable_transactions,
             rejected: rejected_transactions,
             next_epoch: series_executor.next_epoch().cloned(),
-            ledger_hashes: *series_executor.latest_ledger_hashes(),
+            ledger_hashes: hashes_to_return,
         }
     }
 

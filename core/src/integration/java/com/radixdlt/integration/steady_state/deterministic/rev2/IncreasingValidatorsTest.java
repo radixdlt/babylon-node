@@ -97,6 +97,9 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -130,6 +133,7 @@ public final class IncreasingValidatorsTest {
                             new MempoolRelayConfig(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
+  private static final Logger log = LogManager.getLogger();
 
   @Test
   public void normal_run_should_not_cause_unexpected_errors() {
@@ -184,6 +188,7 @@ public final class IncreasingValidatorsTest {
                 .prepare()
                 .raw();
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+        log.info("Awaiting commit {} of {}", i, validatorDefinitions.size());
         test.runUntilState(
             nodeAt(0, NodePredicate.committedUserTransaction(registerValidatorTxn, true, true)));
         var stakeValidatorTxn =

@@ -74,6 +74,7 @@ use std::cmp::{max, min, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
+use tracing::log::info;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct MempoolData {
@@ -206,6 +207,7 @@ impl PriorityMempool {
         source: MempoolAddSource,
         added_at: Instant,
     ) -> Result<Vec<Arc<MempoolData>>, MempoolAddError> {
+        info!("Adding transaction to mempool....");
         let payload_hash = transaction.notarized_transaction_hash();
         let intent_hash = transaction.intent_hash();
         let transaction_size = transaction.raw.0.len() as u64;
