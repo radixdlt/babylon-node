@@ -74,9 +74,7 @@ import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -115,7 +113,8 @@ public final class REv2MempoolRelayerTest {
                             0,
                             0,
                             new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
-                            new MempoolRelayConfig(0))),
+                            new MempoolReceiverConfig(0),
+                            MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

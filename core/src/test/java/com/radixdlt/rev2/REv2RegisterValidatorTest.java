@@ -123,7 +123,7 @@ public final class REv2RegisterValidatorTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.defaultMempool()))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()))));
   }
 
   @Test

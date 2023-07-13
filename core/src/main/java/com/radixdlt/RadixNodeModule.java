@@ -191,7 +191,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5).asModule());
+    install(new MempoolReceiverConfig(5).asModule());
     var mempoolRelayerIntervalMs =
         properties.get("mempool.relayer.interval_ms", MempoolRelayerConfig.DEFAULT_INTERVAL_MS);
     var mempoolRelayerMaxPeers =

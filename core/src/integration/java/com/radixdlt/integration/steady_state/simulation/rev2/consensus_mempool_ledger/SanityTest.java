@@ -112,7 +112,7 @@ public class SanityTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.defaultMempool()))))
+                        REV2ProposerConfig.Mempool.defaults()))))
         .addTestModules(
             ConsensusMonitors.safety(),
             ConsensusMonitors.proposerTimestampChecker(),

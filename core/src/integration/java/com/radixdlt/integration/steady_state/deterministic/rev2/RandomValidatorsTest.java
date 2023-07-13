@@ -81,7 +81,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
@@ -127,8 +127,8 @@ public final class RandomValidatorsTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         GENESIS,
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.defaultMempool(
-                            MempoolRelayConfig.of(5))),
+                        StateComputerConfig.REV2ProposerConfig.Mempool.defaults()
+                            .withReceiverConfig(MempoolReceiverConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

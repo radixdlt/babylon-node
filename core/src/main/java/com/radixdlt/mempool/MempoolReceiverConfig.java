@@ -66,14 +66,14 @@ package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 
-/** Configuration parameters for mempool relay. */
-public record MempoolRelayConfig(long throttleMs) {
-  public static MempoolRelayConfig of() {
-    return new MempoolRelayConfig(10000);
+/** Configuration parameters for mempool receiver. */
+public record MempoolReceiverConfig(long throttleMs) {
+  public static MempoolReceiverConfig of() {
+    return new MempoolReceiverConfig(10000);
   }
 
-  public static MempoolRelayConfig of(long throttleMs) {
-    return new MempoolRelayConfig(throttleMs);
+  public static MempoolReceiverConfig of(long throttleMs) {
+    return new MempoolReceiverConfig(throttleMs);
   }
 
   public AbstractModule asModule() {

@@ -70,7 +70,8 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolReceiverConfig;
+import com.radixdlt.mempool.MempoolRelayerConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.DatabaseFlags;
@@ -228,27 +229,14 @@ public sealed interface StateComputerConfig {
         int maxNumTransactionsPerProposal,
         int maxProposalTotalTxnsPayloadSize,
         RustMempoolConfig mempoolConfig,
-        MempoolRelayConfig config) {
+        MempoolReceiverConfig mempoolReceiverConfig,
+        MempoolRelayerConfig mempoolRelayerConfig) {
       return new Mempool(
-          maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, mempoolConfig, config);
-    }
-
-    static REV2ProposerConfig zeroMempool() {
-      return new Mempool(0, 0, new RustMempoolConfig(0, 0), MempoolRelayConfig.of());
-    }
-
-    static REV2ProposerConfig singleTransactionMempool() {
-      return new Mempool(
-          1, 1024 * 1024, new RustMempoolConfig(1024 * 1024, 1), new MempoolRelayConfig(0));
-    }
-
-    static REV2ProposerConfig defaultMempool() {
-      return defaultMempool(MempoolRelayConfig.of());
-    }
-
-    static REV2ProposerConfig defaultMempool(MempoolRelayConfig relayConfig) {
-      return new Mempool(
-          10, 10 * 1024 * 1024, new RustMempoolConfig(100 * 1024 * 1024, 100), relayConfig);
+          maxNumTransactionsPerProposal,
+          maxProposalTotalTxnsPayloadSize,
+          mempoolConfig,
+          mempoolReceiverConfig,
+          mempoolRelayerConfig);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
@@ -257,7 +245,62 @@ public sealed interface StateComputerConfig {
         int maxNumTransactionsPerProposal,
         int maxProposalTotalTxnsPayloadSize,
         RustMempoolConfig mempoolConfig,
-        MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
+        MempoolReceiverConfig mempoolReceiverConfig,
+        MempoolRelayerConfig mempoolRelayerConfig)
+        implements REV2ProposerConfig {
+      public static Mempool zero() {
+        return new Mempool(
+            0,
+            0,
+            new RustMempoolConfig(0, 0),
+            MempoolReceiverConfig.of(),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public static Mempool singleTransaction() {
+        return new Mempool(
+            1,
+            1024 * 1024,
+            new RustMempoolConfig(1024 * 1024, 1),
+            new MempoolReceiverConfig(0),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public static Mempool defaults() {
+        return new Mempool(
+            10,
+            10 * 1024 * 1024,
+            new RustMempoolConfig(100 * 1024 * 1024, 100),
+            MempoolReceiverConfig.of(),
+            MempoolRelayerConfig.defaults());
+      }
+
+      public Mempool withReceiverConfig(MempoolReceiverConfig mempoolReceiverConfig) {
+        return new Mempool(
+            maxNumTransactionsPerProposal,
+            maxProposalTotalTxnsPayloadSize,
+            mempoolConfig,
+            mempoolReceiverConfig,
+            mempoolRelayerConfig);
+      }
+
+      public Mempool withRelayerConfig(MempoolRelayerConfig mempoolRelayerConfig) {
+        return new Mempool(
+            maxNumTransactionsPerProposal,
+            maxProposalTotalTxnsPayloadSize,
+            mempoolConfig,
+            mempoolReceiverConfig,
+            mempoolRelayerConfig);
+      }
+
+      public Mempool withMempoolConfig(RustMempoolConfig mempoolConfig) {
+        return new Mempool(
+            maxNumTransactionsPerProposal,
+            maxProposalTotalTxnsPayloadSize,
+            mempoolConfig,
+            mempoolReceiverConfig,
+            mempoolRelayerConfig);
+      }
+    }
   }
 }
