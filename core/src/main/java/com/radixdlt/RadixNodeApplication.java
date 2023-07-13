@@ -129,7 +129,7 @@ public final class RadixNodeApplication {
               Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
             })
         // Call .join() to block on the future completing, ensuring that errors during
-        // bootstrapping are not swallowed, and propogate to the "Unable to start" handler.
+        // bootstrapping are not swallowed, and propagate to the "Unable to start" handler.
         // In particular, errors can come from running genesis during guice initiation in
         // RunningRadixNode.run(..);
         .join();

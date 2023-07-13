@@ -175,7 +175,7 @@ public final class RadixNodeBootstrapper {
   }
 
   public RadixNodeBootstrapperHandle bootstrapRadixNode() {
-    log.info("Radix node {} is starting...", addressing.encodeNodeAddress(selfPublicKey));
+    log.info("Radix node {} is booting...", addressing.encodeNodeAddress(selfPublicKey));
 
     // An early check for storage misconfiguration
     final var storageVerifyResult = verifyNodeStorageDirIsWritable();

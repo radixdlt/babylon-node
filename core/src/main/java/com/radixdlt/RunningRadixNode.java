@@ -96,6 +96,9 @@ public final class RunningRadixNode {
   }
 
   public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
+    log.info("Starting Radix node subsystems...");
+    log.info("Using a genesis of hash {}", unstartedRadixNode.genesisProvider().genesisDataHash());
+
     final var injector = unstartedRadixNode.instantiateRadixNodeModule();
 
     final var metrics = injector.getInstance(Metrics.class);

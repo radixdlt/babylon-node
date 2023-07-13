@@ -67,6 +67,7 @@ package com.radixdlt.messaging.core;
 import static com.radixdlt.messaging.core.MessagingErrors.IO_ERROR;
 import static com.radixdlt.messaging.core.MessagingErrors.MESSAGE_EXPIRED;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
@@ -78,11 +79,14 @@ import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.LRUCache;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,6 +95,7 @@ import org.apache.logging.log4j.Logger;
  * separated out so that we can check if all the functionality here is
  * required, and remove the stuff we don't want to keep.
  */
+@SuppressWarnings("UnstableApiUsage")
 class MessageDispatcher {
   private static final Logger log = LogManager.getLogger();
 
@@ -100,6 +105,12 @@ class MessageDispatcher {
   private final TimeSupplier timeSource;
   private final PeerManager peerManager;
   private final Addressing addressing;
+
+  private final RateLimiter ttlExpiredLogRateLimiter = RateLimiter.create(0.05);
+  private final AtomicInteger ttlExpiredMessagesCountSinceLastLog = new AtomicInteger(0);
+
+  private final LRUCache<NodeId, Pair<RateLimiter, AtomicInteger>>
+      sendErrorLogRateLimitersByReceiver = new LRUCache<>(100);
 
   MessageDispatcher(
       Metrics metrics,
@@ -121,13 +132,8 @@ class MessageDispatcher {
     final var receiver = outboundMessage.receiver();
 
     if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-      String msg =
-          String.format(
-              "TTL for %s message to %s has expired",
-              message.getClass().getSimpleName(),
-              addressing.encodeNodeAddress(receiver.getPublicKey()));
-      log.warn(msg);
       this.metrics.messages().outbound().aborted().inc();
+      logTtlExpired(message, receiver);
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
     }
 
@@ -137,24 +143,80 @@ class MessageDispatcher {
         .findOrCreateChannel(outboundMessage.receiver())
         .thenApply(channel -> send(channel, bytes))
         .thenApply(this::updateStatistics)
-        .exceptionally(t -> completionException(t, receiver, message));
+        .thenApply(
+            result -> {
+              result.onError(err -> logSendError(message, receiver, err.toString()));
+              return result;
+            })
+        .exceptionally(
+            t -> {
+              final var cause = t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+              logSendError(message, receiver, cause);
+              return IO_ERROR.result();
+            });
+  }
+
+  private void logSendError(Message message, NodeId receiver, String cause) {
+    final RateLimiter rateLimiter;
+    final AtomicInteger countSinceLastLog;
+    if (sendErrorLogRateLimitersByReceiver.contains(receiver)) {
+      final var curr = sendErrorLogRateLimitersByReceiver.get(receiver).orElseThrow();
+      rateLimiter = curr.getFirst();
+      countSinceLastLog = curr.getSecond();
+    } else {
+      rateLimiter = RateLimiter.create(0.05);
+      countSinceLastLog = new AtomicInteger(0);
+      sendErrorLogRateLimitersByReceiver.put(receiver, Pair.of(rateLimiter, countSinceLastLog));
+    }
+
+    if (rateLimiter.tryAcquire()) {
+      final var numSinceLastLog = countSinceLastLog.getAndSet(0);
+      final var baseMsg =
+          String.format(
+              "An outbound message of type %s couldn't be send to %s because of: \"%s\".",
+              message.getClass().getSimpleName(),
+              addressing.encodeNodeAddress(receiver.getPublicKey()),
+              cause);
+      if (numSinceLastLog > 0) {
+        log.warn(
+            "{} {} more messages couldn't be send to this peer since "
+                + "the previous log message (likely for the same reason).",
+            baseMsg,
+            numSinceLastLog);
+      } else {
+        log.warn(baseMsg);
+      }
+    } else {
+      countSinceLastLog.incrementAndGet();
+    }
+  }
+
+  private void logTtlExpired(Message message, NodeId receiver) {
+    if (ttlExpiredLogRateLimiter.tryAcquire()) {
+      final var numSinceLastLog = ttlExpiredMessagesCountSinceLastLog.getAndSet(0);
+      final var baseMsg =
+          String.format(
+              "TTL (of %s ms) has expired for an outbound message of type %s destined to %s.",
+              messageTtlMs,
+              message.getClass().getSimpleName(),
+              addressing.encodeNodeAddress(receiver.getPublicKey()));
+      if (numSinceLastLog > 0) {
+        log.warn(
+            "{} {} more messages were dropped due to TTL expiration "
+                + "since the previous log message (possibly targeted to different peers).",
+            baseMsg,
+            numSinceLastLog);
+      } else {
+        log.warn(baseMsg);
+      }
+    } else {
+      ttlExpiredMessagesCountSinceLastLog.incrementAndGet();
+    }
   }
 
   private Result<Unit, Cause> send(PeerChannel channel, byte[] bytes) {
     this.metrics.networking().bytesSent().inc(bytes.length);
     return channel.send(bytes);
-  }
-
-  private Result<Unit, Cause> completionException(
-      Throwable cause, NodeId receiver, Message message) {
-    final var msg =
-        String.format(
-            "Send %s to %s (of public key: %s) failed",
-            message.getClass().getSimpleName(),
-            addressing.encodeNodeAddress(receiver.getPublicKey()),
-            receiver.getPublicKey().toHex());
-    log.warn("{}: {}", msg, cause.getMessage());
-    return IO_ERROR.result();
   }
 
   private Result<Unit, Cause> updateStatistics(Result<Unit, Cause> result) {
