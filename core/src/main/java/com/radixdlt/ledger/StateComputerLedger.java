@@ -85,9 +85,12 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
+  private static final Logger log = LogManager.getLogger();
 
   public interface ExecutedTransaction {
     RawLedgerTransaction transaction();
@@ -200,6 +203,21 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   private Optional<ExecutedVertex> prepareInternal(
       LinkedList<ExecutedVertex> previousVertices, VertexWithHash vertexWithHash) {
+    log.info(
+        "Prepare request at ledger header {}, ancestors: {}, vertex to prepare: {}",
+        this.currentLedgerHeader,
+        previousVertices.stream()
+            .map(
+                v ->
+                    v.getVertexHash().toString()
+                        + " (txn hash "
+                        + v.getLedgerHeader().getHashes().getTransactionRoot()
+                        + ", parent "
+                        + v.getParentId()
+                        + ")")
+            .toList(),
+        vertexWithHash.hash() + " (parent " + vertexWithHash.vertex().getParentVertexId() + ")");
+
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 
@@ -250,6 +268,19 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           return Optional.empty();
         }
       }
+
+      log.info(
+          "Passing prepare request to state computer. Filtered ancestors: {}",
+          verticesInExtension.stream()
+              .map(
+                  v ->
+                      v.getVertexHash().toString()
+                          + " (txn hash "
+                          + v.getLedgerHeader().getHashes().getTransactionRoot()
+                          + ", parent "
+                          + v.getParentId()
+                          + ")")
+              .toList());
 
       result =
           this.stateComputer.prepare(

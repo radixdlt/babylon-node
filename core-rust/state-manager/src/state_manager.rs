@@ -336,6 +336,15 @@ where
             base_committed_state_version: series_executor.latest_state_version(),
         };
 
+        let latest_tx = read_store
+            .get_committed_transaction_identifiers(series_executor.latest_state_version())
+            .map(|i| i.payload.ledger_payload_hash);
+
+        info!("Preparing ancestor transactions, committed state version: {:?}, hashes: {:?}, latest txn: {:?}",
+            series_executor.latest_state_version(),
+            series_executor.latest_ledger_hashes(),
+            latest_tx);
+
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
             // and executable creation) by accessing the execution cache in a more clever way.
@@ -347,6 +356,12 @@ where
             series_executor
                 .execute(&validated, "ancestor")
                 .expect("ancestor transaction rejected");
+
+            info!("Executed ancestor transaction {:?}, post execution state version: {:?}, hashes: {:?}",
+                validated.ledger_transaction_hash(),
+                series_executor.latest_state_version(),
+                series_executor.latest_ledger_hashes()
+            );
         }
 
         if &prepare_request.ancestor_ledger_hashes != series_executor.latest_ledger_hashes() {
