@@ -6014,6 +6014,9 @@ components:
           items:
             $ref: "#/components/schemas/PublicKey"
           description: A list of public keys to be used as transaction signers
+        message:
+          description: An optional transaction message. Only affects the costing.
+          $ref: "#/components/schemas/TransactionMessage"
         flags:
           type: object
           required:

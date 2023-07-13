@@ -42,6 +42,8 @@ pub struct TransactionPreviewRequest {
     /// A list of public keys to be used as transaction signers
     #[serde(rename = "signer_public_keys")]
     pub signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>,
+    #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
+    pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
     #[serde(rename = "flags")]
     pub flags: Box<crate::core_api::generated::models::TransactionPreviewRequestFlags>,
 }
@@ -59,6 +61,7 @@ impl TransactionPreviewRequest {
             tip_percentage,
             nonce,
             signer_public_keys,
+            message: None,
             flags: Box::new(flags),
         }
     }

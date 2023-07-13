@@ -104,6 +104,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 assume_all_signature_proofs: true,
                 skip_epoch_check: true,
             },
+            message: MessageV1::None,
         })
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
