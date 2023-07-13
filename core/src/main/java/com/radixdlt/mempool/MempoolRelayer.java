@@ -110,7 +110,7 @@ public final class MempoolRelayer {
     this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
-    this.maxPeers = 100;
+    this.maxPeers = maxPeers;
     this.maxMessagePayloadSize = maxMessagePayloadSize;
     this.maxMessageTransactionCount = maxMessageTransactionCount;
     this.maxRelayedSize = maxRelayedSize;
