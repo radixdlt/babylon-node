@@ -127,7 +127,7 @@ public final class IncreasingValidatorsTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.defaultMempool(
-                            new MempoolRelayConfig(5, 5))),
+                            new MempoolRelayConfig(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

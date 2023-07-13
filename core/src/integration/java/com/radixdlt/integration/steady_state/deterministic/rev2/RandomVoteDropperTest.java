@@ -113,7 +113,7 @@ public final class RandomVoteDropperTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.defaultMempool(
-                            MempoolRelayConfig.of(5, 5))),
+                            MempoolRelayConfig.of(5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

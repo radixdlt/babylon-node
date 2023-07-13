@@ -64,15 +64,62 @@
 
 package com.radixdlt.mempool;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.inject.AbstractModule;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/** Configuration parameters for mempool relayer. */
+public record MempoolRelayerConfig(
+    int intervalMs,
+    int maxPeers,
+    int maxRelayedSize,
+    int maxMessageTransactionCount,
+    int maxMessagePayloadSize) {
+  public static final int DEFAULT_INTERVAL_MS = 20000;
+  public static final int DEFAULT_MAX_PEERS = 100;
+  public static final int DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
+  public static final int DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
 
-/** Maximum number of peers to relay txn to. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolRelayMaxPeers {}
+  public static MempoolRelayerConfig defaults() {
+    return new MempoolRelayerConfig(
+        DEFAULT_INTERVAL_MS,
+        DEFAULT_MAX_PEERS,
+        DEFAULT_MAX_RELAYED_SIZE,
+        DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
+        DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+  }
+
+  public MempoolRelayerConfig withIntervalMs(int intervalMs) {
+    return new MempoolRelayerConfig(
+        intervalMs,
+        this.maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
+  }
+
+  public MempoolRelayerConfig withMaxPeers(int maxPeers) {
+    return new MempoolRelayerConfig(
+        this.intervalMs,
+        maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolRelayerIntervalMs.class).to(intervalMs);
+        bindConstant().annotatedWith(MempoolRelayerMaxPeers.class).to(maxPeers);
+        bindConstant().annotatedWith(MempoolRelayerMaxRelayedSize.class).to(maxRelayedSize);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessageTransactionCount.class)
+            .to(maxMessageTransactionCount);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessagePayloadSize.class)
+            .to(maxMessagePayloadSize);
+      }
+    };
+  }
+}

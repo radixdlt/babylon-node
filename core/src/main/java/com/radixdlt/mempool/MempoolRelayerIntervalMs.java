@@ -64,101 +64,15 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Singleton;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.transactions.NotarizedTransactionHash;
-import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Relays transactions from the local mempool to node neighbors. */
-@Singleton
-public final class MempoolRelayer {
-  private final PeersView peersView;
-  private final RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  private final Metrics metrics;
-
-  private final MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash>
-      mempoolRelayReader;
-
-  private final int maxPeers;
-  private final long maxMessagePayloadSize;
-  private final long maxMessageTransactionCount;
-  private final long maxRelayedSize;
-
-  @Inject
-  public MempoolRelayer(
-      MempoolReader<PreparedNotarizedTransaction, NotarizedTransactionHash> mempoolRelayReader,
-      RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher,
-      PeersView peersView,
-      @MempoolRelayerMaxPeers int maxPeers,
-      @MempoolRelayerMaxMessagePayloadSize int maxMessagePayloadSize,
-      @MempoolRelayerMaxMessageTransactionCount int maxMessageTransactionCount,
-      @MempoolRelayerMaxRelayedSize int maxRelayedSize,
-      Metrics metrics) {
-
-    this.mempoolRelayReader = mempoolRelayReader;
-    this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
-    this.peersView = Objects.requireNonNull(peersView);
-    this.maxPeers = maxPeers;
-    this.maxMessagePayloadSize = maxMessagePayloadSize;
-    this.maxMessageTransactionCount = maxMessageTransactionCount;
-    this.maxRelayedSize = maxRelayedSize;
-    this.metrics = Objects.requireNonNull(metrics);
-  }
-
-  public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-    return mempoolAddSuccess -> {
-      final var ignorePeers =
-          mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
-      relayTransactions(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
-    };
-  }
-
-  public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
-    return ev -> {
-      final var transactions =
-          this.mempoolRelayReader.getTransactionsToRelay(
-              (int) this.maxMessageTransactionCount, (int) this.maxMessagePayloadSize);
-      final var rawTransactions =
-          transactions.stream().map(PreparedNotarizedTransaction::raw).toList();
-      if (!transactions.isEmpty()) {
-        relayTransactions(rawTransactions, ImmutableList.of());
-      }
-    };
-  }
-
-  private void relayTransactions(
-      List<RawNotarizedTransaction> transactions, ImmutableList<NodeId> ignorePeers) {
-    final var mempoolAddMsg = MempoolAdd.create(transactions);
-
-    final var totalTxnPayloadSizeInRelayMsg =
-        transactions.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);
-
-    final var maxPeersByTotalTransferSize = this.maxRelayedSize / totalTxnPayloadSizeInRelayMsg;
-    final var maxPeersToRelayTo = Math.min(maxPeers, maxPeersByTotalTransferSize);
-
-    final var peers =
-        this.peersView.peers().map(PeersView.PeerInfo::getNodeId).collect(Collectors.toList());
-
-    peers.removeAll(ignorePeers);
-    Collections.shuffle(peers);
-    peers.stream()
-        .limit(maxPeersToRelayTo)
-        .forEach(
-            peer -> {
-              metrics.mempool().relaysSent().inc(transactions.size());
-              this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
-            });
-  }
-}
+/** Interval time between two relay triggers */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayerIntervalMs {}
