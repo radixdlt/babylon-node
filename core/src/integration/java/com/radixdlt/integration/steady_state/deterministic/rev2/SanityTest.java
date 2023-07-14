@@ -140,7 +140,7 @@ public final class SanityTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.defaultMempool()),
+                        REV2ProposerConfig.Mempool.defaults()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

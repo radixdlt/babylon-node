@@ -13,6 +13,16 @@ db.location=$RADIXDLT_DB_LOCATION
 db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECUTION_INDEX_ENABLE
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
 
+mempool.max_transaction_count=${RADIXDLT_MEMPOOL_MAX_TRANSACTION_COUNT}
+mempool.max_total_transactions_size=${RADIXDLT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE}
+mempool.relayer.interval_ms=${RADIXDLT_MEMPOOL_RELAYER_INTERVAL_MS}
+mempool.relayer.max_peers=${RADIXDLT_MEMPOOL_RELAYER_MAX_PEERS}
+mempool.relayer.max_relayed_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_RELAYED_SIZE}
+mempool.relayer.max_message_transaction_count=${RADIXDLT_MEMPOOL_RELAYER_MAX_MESSAGE_TRANSACTION_COUNT}
+mempool.relayer.max_message_payload_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_MESSAGE_PAYLOAD_SIZE}
+mempool.reevaluation.interval_ms=${RADIXDLT_MEMPOOL_REEVALUATION_INTERVAL_MS}
+mempool.reevaluation.max_count=${RADIXDLT_MEMPOOL_REEVALUATION_MAX_COUNT}
+
 api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
 

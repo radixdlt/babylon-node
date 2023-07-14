@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -97,6 +98,7 @@ public final class PeerServerBootstrap {
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
   private ChannelFuture serverBind;
+  private final int mempoolRelayerMaxMessagePayloadSize;
 
   @Inject
   public PeerServerBootstrap(
@@ -108,7 +110,8 @@ public final class PeerServerBootstrap {
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -120,6 +123,7 @@ public final class PeerServerBootstrap {
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.capabilities = capabilities;
     this.serverBind = null;
+    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
   }
 
   public void start() {
@@ -144,7 +148,8 @@ public final class PeerServerBootstrap {
                 ecKeyOps,
                 peerEventDispatcher,
                 Optional.empty(),
-                capabilities));
+                capabilities,
+                mempoolRelayerMaxMessagePayloadSize));
 
     serverBind =
         serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
