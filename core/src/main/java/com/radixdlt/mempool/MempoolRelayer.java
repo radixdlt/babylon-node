@@ -92,9 +92,9 @@ public final class MempoolRelayer {
       mempoolRelayReader;
 
   private final int maxPeers;
-  private final long maxMessagePayloadSize;
-  private final long maxMessageTransactionCount;
-  private final long maxRelayedSize;
+  private final int maxMessagePayloadSize;
+  private final int maxMessageTransactionCount;
+  private final int maxRelayedSize;
 
   @Inject
   public MempoolRelayer(
@@ -129,7 +129,7 @@ public final class MempoolRelayer {
     return ev -> {
       final var transactions =
           this.mempoolRelayReader.getTransactionsToRelay(
-              (int) this.maxMessageTransactionCount, (int) this.maxMessagePayloadSize);
+              this.maxMessageTransactionCount, this.maxMessagePayloadSize);
       final var rawTransactions =
           transactions.stream().map(PreparedNotarizedTransaction::raw).toList();
       if (!transactions.isEmpty()) {
