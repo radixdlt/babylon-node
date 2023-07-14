@@ -73,11 +73,18 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.ComponentAddress;
 import java.util.Optional;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class SelfValidatorInfoModule extends AbstractModule {
+
+  private final Optional<ComponentAddress> selfValidatorAddress;
+
+  public SelfValidatorInfoModule(Optional<ComponentAddress> selfValidatorAddress) {
+    this.selfValidatorAddress = selfValidatorAddress;
+  }
+
   @Provides
-  public SelfValidatorInfo selfValidatorInfo(
-      @Self Optional<ComponentAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
+  public SelfValidatorInfo selfValidatorInfo(@Self ECDSASecp256k1PublicKey key) {
     return new SelfValidatorInfo(
-        key, validatorAddress.map(addr -> BFTValidatorId.create(addr, key)));
+        key, selfValidatorAddress.map(addr -> BFTValidatorId.create(addr, key)));
   }
 }

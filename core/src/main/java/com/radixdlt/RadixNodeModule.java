@@ -66,8 +66,6 @@ package com.radixdlt;
 
 import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
-import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
@@ -89,7 +87,6 @@ import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
@@ -97,6 +94,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.time.Duration;
+import java.util.Optional;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -170,16 +168,14 @@ public final class RadixNodeModule extends AbstractModule {
           "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
               + " consensus.validator_address. Please use one.");
     } else if (!Strings.isNullOrEmpty(validatorAddress)) {
-      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
-          .setBinding()
-          .toInstance(addressing.decodeValidatorAddress(validatorAddress));
-      install(new SelfValidatorInfoModule());
+      install(
+          new SelfValidatorInfoModule(
+              Optional.of(addressing.decodeValidatorAddress(validatorAddress))));
     } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
       install(new SelfValidatorInfoFromGenesisModule());
     } else {
       // No validator address provided, and use genesis explicitly disabled
-      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
-      install(new SelfValidatorInfoModule());
+      install(new SelfValidatorInfoModule(Optional.empty()));
     }
 
     install(new PersistedBFTKeyModule());
