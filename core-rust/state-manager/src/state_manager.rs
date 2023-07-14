@@ -254,7 +254,7 @@ where
         let mut series_executor = self.start_series_execution(read_store.deref());
 
         let commit = series_executor
-            .execute(&validated, "genesis")
+            .execute_and_update_state(&validated, "genesis")
             .expect("genesis not committable")
             .expect_success("genesis");
 
@@ -294,7 +294,7 @@ where
             .execute_on(read_store.deref());
         let mut series_executor = self.start_series_execution(read_store.deref());
 
-        let commit = series_executor.execute(&validated, "scenario transaction");
+        let commit = series_executor.execute_and_update_state(&validated, "scenario transaction");
 
         let prepare_result = ScenarioPrepareResult {
             raw,
@@ -345,7 +345,7 @@ where
                 .expect("Ancestor transactions should be valid");
 
             series_executor
-                .execute(&validated, "ancestor")
+                .execute_and_update_state(&validated, "ancestor")
                 .expect("ancestor transaction rejected");
         }
 
@@ -386,7 +386,7 @@ where
             .expect("round update transaction should fit inside of empty vertex");
 
         let round_update_result = series_executor
-            .execute(&validated_round_update, "round update")
+            .execute_and_update_state(&validated_round_update, "round update")
             .expect("round update rejected");
 
         vertex_limits_tracker
@@ -505,7 +505,13 @@ where
                 }
             };
 
-            let execute_result = series_executor.execute(&validated, "newly proposed");
+            // Note that we're using a "_no_state_update" variant here, because
+            // we may still reject some *committable* transactions if they exceed
+            // the limit, which would otherwise spoil the internal StateTracker.
+            // So it's important to manually update the state if the transaction
+            // is to be included (that's the `series_executor.update_state(...)` call below).
+            let execute_result =
+                series_executor.execute_no_state_update(&validated, "newly proposed");
             match execute_result {
                 Ok(processed_commit_result) => {
                     match vertex_limits_tracker.try_next_transaction(
@@ -516,6 +522,8 @@ where
                             .execution_metrics,
                     ) {
                         Ok(success) => {
+                            // We're including the transaction, so updating the executor state
+                            series_executor.update_state(&processed_commit_result);
                             committed_proposal_size += transaction_size;
                             committable_transactions.push(CommittableTransaction {
                                 index: Some(index as u32),
@@ -1041,7 +1049,7 @@ where
                 });
 
             let commit = series_executor
-                .execute(&validated, "prepared")
+                .execute_and_update_state(&validated, "prepared")
                 .expect("cannot execute transaction to be committed");
 
             if let Some(intent_hash) = validated.intent_hash_if_user() {
@@ -1134,7 +1142,7 @@ where
         let mut series_executor = self.start_series_execution(write_store.deref());
 
         let mut commit = series_executor
-            .execute(&request.validated, "genesis")
+            .execute_and_update_state(&request.validated, "genesis")
             .expect("cannot execute genesis");
 
         if request.require_success {
