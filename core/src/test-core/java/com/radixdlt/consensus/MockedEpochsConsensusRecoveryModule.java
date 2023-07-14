@@ -69,7 +69,6 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
@@ -119,8 +118,8 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   }
 
   @Provides
-  private RoundUpdate initialRoundUpdate(
-      BFTConfiguration configuration, ProposerElection proposerElection) {
+  private RoundUpdate initialRoundUpdate(BFTConfiguration configuration) {
+    final var proposerElection = configuration.getProposerElection();
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
     Round round = highQC.highestQC().getRound().next();
     final BFTValidatorId leader = proposerElection.getProposer(round);

@@ -98,7 +98,7 @@ public final class InMemorySystemInfo {
   public InMemorySystemInfo(
       @LastProof LedgerProof lastProof,
       @LastEpochProof LedgerProof lastEpochProof,
-      @Self SelfValidatorInfo self
+      SelfValidatorInfo self
       /*RadixEngine<LedgerAndBFTProof> radixEngine*/ ) {
     this.ledgerProof = new AtomicReference<>(lastProof);
     this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);

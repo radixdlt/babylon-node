@@ -137,7 +137,7 @@ public final class RunningRadixNode {
   }
 
   public SelfValidatorInfo self() {
-    return this.injector.getInstance(Key.get(SelfValidatorInfo.class, Self.class));
+    return this.injector.getInstance(SelfValidatorInfo.class);
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {

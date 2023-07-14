@@ -141,7 +141,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   public BFTEventProcessor bftEventProcessor(
-      @Self SelfValidatorInfo self,
+      SelfValidatorInfo self,
       BFTConfiguration config,
       Pacemaker pacemaker,
       BFTSync bftSync,
@@ -199,7 +199,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private SafetyRules safetyRules(
-      @Self SelfValidatorInfo self,
+      SelfValidatorInfo self,
       SafetyState initialState,
       PersistentSafetyStateStore persistentSafetyStateStore,
       Hasher hasher,
@@ -219,7 +219,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private Pacemaker pacemaker(
-      @Self SelfValidatorInfo self,
+      SelfValidatorInfo self,
       SafetyRules safetyRules,
       BFTConfiguration configuration,
       VertexStoreAdapter vertexStore,
@@ -262,7 +262,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTSync bftSync(
-      @Self SelfValidatorInfo self,
+      SelfValidatorInfo self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,

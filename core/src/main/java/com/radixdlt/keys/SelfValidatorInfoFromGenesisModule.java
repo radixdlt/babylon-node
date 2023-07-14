@@ -77,7 +77,6 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 public final class SelfValidatorInfoFromGenesisModule extends AbstractModule {
   @Provides
   @Singleton
-  @Self
   private SelfValidatorInfo self(
       // Require the token to ensure ledger genesis init
       REv2LedgerInitializerToken rev2LedgerInitializerToken,

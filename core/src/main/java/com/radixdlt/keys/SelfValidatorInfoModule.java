@@ -75,7 +75,6 @@ import java.util.Optional;
 
 public final class SelfValidatorInfoModule extends AbstractModule {
   @Provides
-  @Self
   public SelfValidatorInfo selfValidatorInfo(
       @Self Optional<ComponentAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
     return new SelfValidatorInfo(

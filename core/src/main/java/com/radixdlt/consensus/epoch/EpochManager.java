@@ -138,7 +138,7 @@ public final class EpochManager {
 
   @Inject
   public EpochManager(
-      @Self SelfValidatorInfo selfValidatorInfo,
+      SelfValidatorInfo selfValidatorInfo,
       @LastProof LedgerProof currentProof,
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,

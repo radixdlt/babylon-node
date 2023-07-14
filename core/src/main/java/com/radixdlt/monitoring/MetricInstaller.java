@@ -66,7 +66,6 @@ package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
 import com.radixdlt.p2p.PeersView;
@@ -86,7 +85,7 @@ public final class MetricInstaller {
 
   @Inject
   public MetricInstaller(
-      final @Self SelfValidatorInfo self,
+      final SelfValidatorInfo self,
       final InMemorySystemInfo inMemorySystemInfo,
       final PeersView peersView) {
     this.self = self;

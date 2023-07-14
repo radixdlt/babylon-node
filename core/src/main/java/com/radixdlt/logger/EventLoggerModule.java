@@ -178,8 +178,7 @@ public final class EventLoggerModule extends AbstractModule {
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
       // The `Provider` indirection is needed here to break an unexpected circular dependency.
-      @Self Provider<SelfValidatorInfo> self,
-      Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      Provider<SelfValidatorInfo> self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,

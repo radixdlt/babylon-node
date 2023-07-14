@@ -66,8 +66,8 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -223,7 +223,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               Hasher hasher,
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               Serialization serialization,
-              ProposerElection initialProposerElection,
+              BFTConfiguration initialBftConfiguration,
               Metrics metrics) {
             return new REv2StateComputer(
                 stateComputer,
@@ -235,7 +235,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 ledgerUpdateEventDispatcher,
                 mempoolAddSuccessEventDispatcher,
                 serialization,
-                initialProposerElection,
+                initialBftConfiguration.getProposerElection(),
                 metrics);
           }
 

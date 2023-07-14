@@ -98,7 +98,7 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
       @Self ECDSASecp256k1PublicKey selfKey,
       @Self NodeId nodeId,
       @Self String selfName,
-      @Self SelfValidatorInfo selfValidatorInfo) {
+      SelfValidatorInfo selfValidatorInfo) {
     super();
     this.addressing = addressing;
     this.epochManagerOptional = epochManagerOptional;

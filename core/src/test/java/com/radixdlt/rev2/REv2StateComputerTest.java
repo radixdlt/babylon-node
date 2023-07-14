@@ -65,13 +65,18 @@
 package com.radixdlt.rev2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -96,6 +101,7 @@ import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -143,8 +149,12 @@ public class REv2StateComputerTest {
           }
 
           @Provides
-          public ProposerElection proposerElection() {
-            return round -> ONLY_VALIDATOR_ID;
+          public BFTConfiguration initialBftConfiguration() {
+            final ProposerElection proposerElection = round -> ONLY_VALIDATOR_ID;
+            return new BFTConfiguration(
+                proposerElection,
+                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt256.ONE))),
+                mock(VertexStoreState.class));
           }
         });
   }

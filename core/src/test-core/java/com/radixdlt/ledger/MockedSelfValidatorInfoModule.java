@@ -76,7 +76,6 @@ import java.util.Optional;
 public final class MockedSelfValidatorInfoModule extends AbstractModule {
   @Provides
   @Singleton
-  @Self
   private SelfValidatorInfo selfValidatorInfo(@Self ECDSASecp256k1PublicKey key) {
     return new SelfValidatorInfo(
         key, Optional.of(BFTValidatorId.withKeyAndFakeDeterministicAddress(key)));

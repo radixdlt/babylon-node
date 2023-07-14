@@ -93,8 +93,6 @@ import java.util.Random;
 public class EpochsConsensusModule extends AbstractModule {
   @Override
   protected void configure() {
-    bind(PacemakerState.class).in(Scopes.SINGLETON);
-    bind(PacemakerReducer.class).to(PacemakerState.class);
     bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
     bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
 
@@ -118,12 +116,6 @@ public class EpochsConsensusModule extends AbstractModule {
     eventBinder.addBinding().toInstance(EpochProposalRejected.class);
     eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
     eventBinder.addBinding().toInstance(Epoched.class);
-  }
-
-  @Provides
-  @Singleton
-  public ProposerElection proposerElection(BFTConfiguration configuration) {
-    return configuration.getProposerElection();
   }
 
   @ProvidesIntoSet
@@ -438,9 +430,9 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (selfValidaatorId, safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
+    return (selfValidatorId, safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
         new BFTSync(
-            selfValidaatorId,
+            selfValidatorId,
             syncRequestRateLimiter,
             vertexStore,
             hasher,

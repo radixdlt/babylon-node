@@ -239,8 +239,7 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      @Self
-      private SelfValidatorInfo bftNode() {
+      private SelfValidatorInfo selfValidatorInfo() {
         return new SelfValidatorInfo(selfKeyPair.getPublicKey(), Optional.of(selfValidatorId));
       }
     };

@@ -172,7 +172,7 @@ public class EpochManagerTest {
       @Override
       protected void configure() {
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
-        bind(SelfValidatorInfo.class).annotatedWith(Self.class).toInstance(selfValidatorInfo);
+        bind(SelfValidatorInfo.class).toInstance(selfValidatorInfo);
         bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTInsertUpdate>>() {})
