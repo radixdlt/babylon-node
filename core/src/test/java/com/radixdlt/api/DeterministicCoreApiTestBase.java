@@ -177,7 +177,7 @@ public abstract class DeterministicCoreApiTestBase {
                                 scenariosToRun),
                             REv2StateManagerModule.DatabaseType.ROCKS_DB,
                             databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.defaultMempool()),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

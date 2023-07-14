@@ -179,7 +179,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
                             Network.INTEGRATIONTESTNET.getId(),
                             converted,
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                            StateComputerConfig.REV2ProposerConfig.zeroMempool()))))) {
+                            StateComputerConfig.REV2ProposerConfig.Mempool.zero()))))) {
       test.startAllNodes();
       final var expectedBalanceEntry =
           stateSummary.xrdBalances.entrySet().stream().findFirst().orElseThrow();

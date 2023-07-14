@@ -62,113 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.mempool;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.serialization.Serialization;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.google.inject.AbstractModule;
 
-public final class PeerServerBootstrap {
-  private static final Logger log = LogManager.getLogger();
-
-  private static final int BACKLOG_SIZE = 100;
-
-  private final RadixNodeUri self;
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
-  private final Capabilities capabilities;
-  private ChannelFuture serverBind;
-  private final int mempoolRelayerMaxMessagePayloadSize;
-
-  @Inject
-  public PeerServerBootstrap(
-      @Self RadixNodeUri self,
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
-    this.self = Objects.requireNonNull(self);
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = "SomeForkName";
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-    this.capabilities = capabilities;
-    this.serverBind = null;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
+/** Configuration parameters for mempool receiver. */
+public record MempoolReceiverConfig(long throttleMs) {
+  public static MempoolReceiverConfig of() {
+    return new MempoolReceiverConfig(10000);
   }
 
-  public void start() {
-    final var serverGroup = new NioEventLoopGroup(1);
-    final var workerGroup = new NioEventLoopGroup();
-
-    final var serverBootstrap = new ServerBootstrap();
-    serverBootstrap
-        .group(serverGroup, workerGroup)
-        .channel(NioServerSocketChannel.class)
-        .option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
-        .childHandler(
-            new PeerChannelInitializer(
-                config,
-                addressing,
-                network,
-                newestForkName,
-                metrics,
-                serialization,
-                secureRandom,
-                ecKeyOps,
-                peerEventDispatcher,
-                Optional.empty(),
-                capabilities,
-                mempoolRelayerMaxMessagePayloadSize));
-
-    serverBind =
-        serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
-
-    log.info("P2P server started. Node URI is: {}", self);
+  public static MempoolReceiverConfig of(long throttleMs) {
+    return new MempoolReceiverConfig(throttleMs);
   }
 
-  public void stop() {
-    if (serverBind != null) {
-      serverBind.channel().close().syncUninterruptibly();
-    }
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
+      }
+    };
   }
 }

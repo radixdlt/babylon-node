@@ -123,7 +123,7 @@ public class REv2MempoolToCommittedTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.singleTransactionMempool()),
+                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

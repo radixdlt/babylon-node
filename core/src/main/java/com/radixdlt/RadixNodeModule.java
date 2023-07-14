@@ -191,9 +191,37 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 100).asModule());
-    install(new MempoolRelayerModule(20000));
-    install(new MempoolReevaluationModule(Duration.ofSeconds(10), 5));
+    install(new MempoolReceiverConfig(5).asModule());
+    var mempoolRelayerIntervalMs =
+        properties.get("mempool.relayer.interval_ms", MempoolRelayerConfig.DEFAULT_INTERVAL_MS);
+    var mempoolRelayerMaxPeers =
+        properties.get("mempool.relayer.max_peers", MempoolRelayerConfig.DEFAULT_MAX_PEERS);
+    var mempoolRelayerMaxRelayedSize =
+        properties.get(
+            "mempool.relayer.max_relayed_size", MempoolRelayerConfig.DEFAULT_MAX_RELAYED_SIZE);
+    var mempoolRelayerMaxMessageTransactionCount =
+        properties.get(
+            "mempool.relayer.max_message_transaction_count",
+            MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT);
+    var mempoolRelayerMaxMessagePayloadSize =
+        properties.get(
+            "mempool.relayer.max_message_payload_size",
+            MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+    install(
+        new MempoolRelayerModule(
+            new MempoolRelayerConfig(
+                mempoolRelayerIntervalMs,
+                mempoolRelayerMaxPeers,
+                mempoolRelayerMaxRelayedSize,
+                mempoolRelayerMaxMessageTransactionCount,
+                mempoolRelayerMaxMessagePayloadSize)));
+
+    // Mempool Reevaluation
+    var mempoolReevaluationIntervalMs = properties.get("mempool.reevaluation.interval_ms", 10000);
+    var mempoolReevaluationMaxCount = properties.get("mempool.reevaluation.max_count", 5);
+    install(
+        new MempoolReevaluationModule(
+            Duration.ofMillis(mempoolReevaluationIntervalMs), mempoolReevaluationMaxCount));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -208,8 +236,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new NodeStorageLocationFromPropertiesModule());
     // State Computer
     var mempoolMaxTotalTransactionsSize =
-        properties.get("mempool.maxTotalTransactionsSize", 100 * 1024 * 1024);
-    var mempoolMaxTransactionCount = properties.get("mempool.maxTransactionCount", 10_000);
+        properties.get("mempool.max_total_transactions_size", 100 * 1024 * 1024);
+    var mempoolMaxTransactionCount = properties.get("mempool.max_transaction_count", 10_000);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
     var enableLocalTransactionExecutionIndex =
