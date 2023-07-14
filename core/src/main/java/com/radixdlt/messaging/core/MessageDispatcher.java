@@ -78,10 +78,8 @@ import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.LRUCache;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.*;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -106,6 +104,7 @@ class MessageDispatcher {
   private final PeerManager peerManager;
   private final Addressing addressing;
 
+  private final Object logRateLimiterLock = new Object();
   private final RateLimiter ttlExpiredLogRateLimiter = RateLimiter.create(0.05);
   private final AtomicInteger ttlExpiredMessagesCountSinceLastLog = new AtomicInteger(0);
 
@@ -156,6 +155,8 @@ class MessageDispatcher {
             });
   }
 
+  RateLimitedLogger loggg = new RateLimitedLogger(log, 0.2);
+
   private void logSendError(Message message, NodeId receiver, String cause) {
     final RateLimiter rateLimiter;
     final AtomicInteger countSinceLastLog;
@@ -192,6 +193,10 @@ class MessageDispatcher {
   }
 
   private void logTtlExpired(Message message, NodeId receiver) {
+    loggg.logRateLimited(limitedMessages -> {
+
+    })
+
     if (ttlExpiredLogRateLimiter.tryAcquire()) {
       final var numSinceLastLog = ttlExpiredMessagesCountSinceLastLog.getAndSet(0);
       final var baseMsg =
