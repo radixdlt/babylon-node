@@ -72,6 +72,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -108,11 +109,6 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
-
-  // Proposal constants
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
-  public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
   private final RuntimeProperties properties;
   private final Network network;
@@ -250,9 +246,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(
         REv2StateManagerModule.create(
-            MAX_TRANSACTIONS_PER_PROPOSAL,
-            MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
-            MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
+            ProposalLimitsConfig.defaults(),
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig)));

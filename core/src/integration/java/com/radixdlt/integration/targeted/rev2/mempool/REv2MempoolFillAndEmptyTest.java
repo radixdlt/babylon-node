@@ -69,6 +69,7 @@ import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAdd
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -123,8 +124,7 @@ public final class REv2MempoolFillAndEmptyTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            10,
-                            10 * 1024 * 1024,
+                            ProposalLimitsConfig.testDefaults(),
                             new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
                             new MempoolReceiverConfig(0),
                             MempoolRelayerConfig.defaults())),

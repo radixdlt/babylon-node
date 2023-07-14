@@ -66,6 +66,7 @@ package com.radixdlt.p2p.transport;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
@@ -99,6 +100,7 @@ public final class PeerServerBootstrap {
   private final Capabilities capabilities;
   private ChannelFuture serverBind;
   private final int mempoolRelayerMaxMessagePayloadSize;
+  private final int proposalMaxUncommittedTransactionsPayloadSize;
 
   @Inject
   public PeerServerBootstrap(
@@ -111,7 +113,9 @@ public final class PeerServerBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
+      @ProposalMaxUncommittedTransactionsPayloadSize
+          int proposalMaxUncommittedTransactionsPayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -124,6 +128,8 @@ public final class PeerServerBootstrap {
     this.capabilities = capabilities;
     this.serverBind = null;
     this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
+    this.proposalMaxUncommittedTransactionsPayloadSize =
+        proposalMaxUncommittedTransactionsPayloadSize;
   }
 
   public void start() {
@@ -149,7 +155,8 @@ public final class PeerServerBootstrap {
                 peerEventDispatcher,
                 Optional.empty(),
                 capabilities,
-                mempoolRelayerMaxMessagePayloadSize));
+                mempoolRelayerMaxMessagePayloadSize,
+                proposalMaxUncommittedTransactionsPayloadSize));
 
     serverBind =
         serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();

@@ -62,99 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.serialization.Serialization;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+import com.google.inject.AbstractModule;
 
-public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+/**
+ * [`maxTransactionCount`]: Maximum number of transactions to include in a proposal.
+ * [`maxTransactionsPayloadSize`]: Maximum number of transaction payload bytes to include in a
+ * proposal. [`maxUncommittedTransactionsPayloadSize`]: Maximum number of transaction payload bytes
+ * to include in a proposal and its previous vertices chain. Intended to limit the size of a commit
+ * batch (i.e. the size of transactions under a single commit proof). Note - we can still keep
+ * committing round changes, so this is not a guarantee. But should be reasonably effective as a
+ * limit.
+ */
+public record ProposalLimitsConfig(
+    int maxTransactionCount,
+    int maxTransactionsPayloadSize,
+    int maxUncommittedTransactionsPayloadSize) {
+  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 4;
+  public static final int DEFAULT_MAX_TRANSACTIONS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
-  private final NioEventLoopGroup clientWorkerGroup;
-  private final Capabilities capabilities;
-  private final int mempoolRelayerMaxMessagePayloadSize;
-  private final int proposalMaxUncommittedTransactionsPayloadSize;
-
-  @Inject
-  public PeerOutboundBootstrapImpl(
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
-      @ProposalMaxUncommittedTransactionsPayloadSize
-          int proposalMaxUncommittedTransactionsPayloadSize) {
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = "SomeForkName";
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
-    this.capabilities = capabilities;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
-    this.proposalMaxUncommittedTransactionsPayloadSize =
-        proposalMaxUncommittedTransactionsPayloadSize;
+  public static ProposalLimitsConfig zero() {
+    return new ProposalLimitsConfig(0, 0, 0);
   }
 
-  @Override
-  public void initOutboundConnection(RadixNodeUri uri) {
-    final var bootstrap = new Bootstrap();
-    bootstrap
-        .group(clientWorkerGroup)
-        .channel(NioSocketChannel.class)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .handler(
-            new PeerChannelInitializer(
-                config,
-                addressing,
-                network,
-                newestForkName,
-                metrics,
-                serialization,
-                secureRandom,
-                ecKeyOps,
-                peerEventDispatcher,
-                Optional.of(uri),
-                capabilities,
-                proposalMaxUncommittedTransactionsPayloadSize,
-                mempoolRelayerMaxMessagePayloadSize))
-        .connect(uri.getHost(), uri.getPort());
+  public static ProposalLimitsConfig singleTransaction() {
+    return new ProposalLimitsConfig(1, 1024 * 1024, 5 * 1024 * 1024);
+  }
+
+  public static ProposalLimitsConfig testDefaults() {
+    return new ProposalLimitsConfig(10, 10 * 1024 * 1024, 50 * 1024 * 1024);
+  }
+
+  public static ProposalLimitsConfig defaults() {
+    return new ProposalLimitsConfig(
+        DEFAULT_MAX_TRANSACTION_COUNT,
+        DEFAULT_MAX_TRANSACTIONS_PAYLOAD_SIZE,
+        DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant()
+            .annotatedWith(ProposalMaxUncommittedTransactionsPayloadSize.class)
+            .to(maxUncommittedTransactionsPayloadSize);
+      }
+    };
   }
 }

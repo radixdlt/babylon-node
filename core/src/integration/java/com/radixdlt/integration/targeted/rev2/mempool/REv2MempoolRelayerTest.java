@@ -69,6 +69,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -110,8 +111,7 @@ public final class REv2MempoolRelayerTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            0,
-                            0,
+                            ProposalLimitsConfig.zero(),
                             new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
                             new MempoolReceiverConfig(0),
                             MempoolRelayerConfig.defaults())),

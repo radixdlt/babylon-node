@@ -69,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -109,9 +110,7 @@ public class REv2StateComputerTest {
     return Guice.createInjector(
         new CryptoModule(),
         REv2StateManagerModule.create(
-            10,
-            10 * 1024 * 1024,
-            50 * 1024 * 1024,
+            ProposalLimitsConfig.testDefaults(),
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
             Option.none()),

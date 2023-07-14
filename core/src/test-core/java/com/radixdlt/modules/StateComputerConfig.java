@@ -66,6 +66,7 @@ package com.radixdlt.modules;
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.genesis.GenesisData;
@@ -226,32 +227,25 @@ public sealed interface StateComputerConfig {
     }
 
     static REV2ProposerConfig mempool(
-        int maxNumTransactionsPerProposal,
-        int maxProposalTotalTxnsPayloadSize,
+        ProposalLimitsConfig proposalLimitsConfig,
         RustMempoolConfig mempoolConfig,
         MempoolReceiverConfig mempoolReceiverConfig,
         MempoolRelayerConfig mempoolRelayerConfig) {
       return new Mempool(
-          maxNumTransactionsPerProposal,
-          maxProposalTotalTxnsPayloadSize,
-          mempoolConfig,
-          mempoolReceiverConfig,
-          mempoolRelayerConfig);
+          proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
     record Mempool(
-        int maxNumTransactionsPerProposal,
-        int maxProposalTotalTxnsPayloadSize,
+        ProposalLimitsConfig proposalLimitsConfig,
         RustMempoolConfig mempoolConfig,
         MempoolReceiverConfig mempoolReceiverConfig,
         MempoolRelayerConfig mempoolRelayerConfig)
         implements REV2ProposerConfig {
       public static Mempool zero() {
         return new Mempool(
-            0,
-            0,
+            ProposalLimitsConfig.zero(),
             new RustMempoolConfig(0, 0),
             MempoolReceiverConfig.of(),
             MempoolRelayerConfig.defaults());
@@ -259,8 +253,7 @@ public sealed interface StateComputerConfig {
 
       public static Mempool singleTransaction() {
         return new Mempool(
-            1,
-            1024 * 1024,
+            ProposalLimitsConfig.singleTransaction(),
             new RustMempoolConfig(1024 * 1024, 1),
             new MempoolReceiverConfig(0),
             MempoolRelayerConfig.defaults());
@@ -268,8 +261,7 @@ public sealed interface StateComputerConfig {
 
       public static Mempool defaults() {
         return new Mempool(
-            10,
-            10 * 1024 * 1024,
+            ProposalLimitsConfig.testDefaults(),
             new RustMempoolConfig(100 * 1024 * 1024, 100),
             MempoolReceiverConfig.of(),
             MempoolRelayerConfig.defaults());
@@ -277,29 +269,17 @@ public sealed interface StateComputerConfig {
 
       public Mempool withReceiverConfig(MempoolReceiverConfig mempoolReceiverConfig) {
         return new Mempool(
-            maxNumTransactionsPerProposal,
-            maxProposalTotalTxnsPayloadSize,
-            mempoolConfig,
-            mempoolReceiverConfig,
-            mempoolRelayerConfig);
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
       }
 
       public Mempool withRelayerConfig(MempoolRelayerConfig mempoolRelayerConfig) {
         return new Mempool(
-            maxNumTransactionsPerProposal,
-            maxProposalTotalTxnsPayloadSize,
-            mempoolConfig,
-            mempoolReceiverConfig,
-            mempoolRelayerConfig);
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
       }
 
       public Mempool withMempoolConfig(RustMempoolConfig mempoolConfig) {
         return new Mempool(
-            maxNumTransactionsPerProposal,
-            maxProposalTotalTxnsPayloadSize,
-            mempoolConfig,
-            mempoolReceiverConfig,
-            mempoolRelayerConfig);
+            proposalLimitsConfig, mempoolConfig, mempoolReceiverConfig, mempoolRelayerConfig);
       }
     }
   }

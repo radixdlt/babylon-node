@@ -62,99 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p.transport;
+package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.RadixNodeUri;
-import com.radixdlt.p2p.capability.Capabilities;
-import com.radixdlt.serialization.Serialization;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
-  private final P2PConfig config;
-  private final Addressing addressing;
-  private final Network network;
-  private final String newestForkName;
-  private final Metrics metrics;
-  private final Serialization serialization;
-  private final SecureRandom secureRandom;
-  private final ECKeyOps ecKeyOps;
-  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  private final NioEventLoopGroup clientWorkerGroup;
-  private final Capabilities capabilities;
-  private final int mempoolRelayerMaxMessagePayloadSize;
-  private final int proposalMaxUncommittedTransactionsPayloadSize;
-
-  @Inject
-  public PeerOutboundBootstrapImpl(
-      P2PConfig config,
-      Addressing addressing,
-      Network network,
-      Metrics metrics,
-      Serialization serialization,
-      SecureRandom secureRandom,
-      ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
-      @ProposalMaxUncommittedTransactionsPayloadSize
-          int proposalMaxUncommittedTransactionsPayloadSize) {
-    this.config = Objects.requireNonNull(config);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.network = network;
-    this.newestForkName = "SomeForkName";
-    this.metrics = Objects.requireNonNull(metrics);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
-    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
-    this.capabilities = capabilities;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
-    this.proposalMaxUncommittedTransactionsPayloadSize =
-        proposalMaxUncommittedTransactionsPayloadSize;
-  }
-
-  @Override
-  public void initOutboundConnection(RadixNodeUri uri) {
-    final var bootstrap = new Bootstrap();
-    bootstrap
-        .group(clientWorkerGroup)
-        .channel(NioSocketChannel.class)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .handler(
-            new PeerChannelInitializer(
-                config,
-                addressing,
-                network,
-                newestForkName,
-                metrics,
-                serialization,
-                secureRandom,
-                ecKeyOps,
-                peerEventDispatcher,
-                Optional.of(uri),
-                capabilities,
-                proposalMaxUncommittedTransactionsPayloadSize,
-                mempoolRelayerMaxMessagePayloadSize))
-        .connect(uri.getHost(), uri.getPort());
-  }
-}
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface ProposalMaxUncommittedTransactionsPayloadSize {}
