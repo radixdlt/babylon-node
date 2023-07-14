@@ -90,14 +90,11 @@ public final class RejectionCountingRateLimiter {
    * attempts that have been rejected since the previous permit.
    */
   public void tryAcquire(Consumer<Integer> consumer) {
-    countSinceLastPermit.getAndUpdate(
-        count -> {
-          if (baseRateLimiter.tryAcquire()) {
-            consumer.accept(count);
-            return 0;
-          } else {
-            return count + 1;
-          }
-        });
+    if (baseRateLimiter.tryAcquire()) {
+        final var count = countSinceLastPermit.getAndSet(0);
+        consumer.accept(count);
+    } else {
+        countSinceLastPermit.incrementAndGet();
+    }
   }
 }
