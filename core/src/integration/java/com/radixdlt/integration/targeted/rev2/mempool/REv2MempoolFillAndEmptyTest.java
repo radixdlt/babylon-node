@@ -126,7 +126,8 @@ public final class REv2MempoolFillAndEmptyTest {
                             10,
                             10 * 1024 * 1024,
                             new RustMempoolConfig(100 * 1024 * 1024, MAX_MEMPOOL_TRANSACTION_COUNT),
-                            new MempoolRelayConfig(0, 100))),
+                            new MempoolReceiverConfig(0),
+                            MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

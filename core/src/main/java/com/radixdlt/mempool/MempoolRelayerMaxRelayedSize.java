@@ -62,82 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2.consensus_mempool_ledger;
+package com.radixdlt.mempool;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-public class SanityTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private SimulationTest createTest() {
-    return SimulationTest.builder()
-        .numPhysicalNodes(4)
-        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                NodeStorageConfig.tempFolder(folder),
-                false,
-                SafetyRecoveryConfig.MOCKED,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            4,
-                            Decimal.of(1),
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.Mempool.defaults()))))
-        .addTestModules(
-            ConsensusMonitors.safety(),
-            ConsensusMonitors.proposerTimestampChecker(),
-            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-            ConsensusMonitors.noTimeouts(),
-            ConsensusMonitors.directParents(),
-            LedgerMonitors.consensusToLedger(),
-            LedgerMonitors.ordered())
-        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
-        .build();
-  }
-
-  @Test
-  public void sanity_test() {
-    // Arrange
-    var simulationTest = createTest();
-
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
-    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
-  }
-}
+/**
+ * A limit of transaction bytes transferred during a single relaying event summed up for all chosen
+ * peers. For example, if the relay message size is 1 MiB and this is set to 3 MiB then we can only
+ * relay this message to a maximum of 3 peers (given that maxPeers is also greater than or equal 3).
+ * This prevents the mempool relayer from excessive bandwidth use.
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayerMaxRelayedSize {}

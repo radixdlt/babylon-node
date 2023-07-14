@@ -134,7 +134,7 @@ public abstract class SystemApiTestBase {
                                 GenesisConsensusManagerConfig.Builder.testDefaults()),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             new DatabaseFlags(false, false),
-                            StateComputerConfig.REV2ProposerConfig.defaultMempool()),
+                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
