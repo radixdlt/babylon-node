@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -96,6 +97,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 
   private final NioEventLoopGroup clientWorkerGroup;
   private final Capabilities capabilities;
+  private final int mempoolRelayerMaxMessagePayloadSize;
 
   @Inject
   public PeerOutboundBootstrapImpl(
@@ -107,7 +109,8 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -120,6 +123,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 
     this.clientWorkerGroup = new NioEventLoopGroup();
     this.capabilities = capabilities;
+    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
   }
 
   @Override
@@ -142,7 +146,8 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 ecKeyOps,
                 peerEventDispatcher,
                 Optional.of(uri),
-                capabilities))
+                capabilities,
+                mempoolRelayerMaxMessagePayloadSize))
         .connect(uri.getHost(), uri.getPort());
   }
 }

@@ -66,26 +66,59 @@ package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 
-/** Configuration parameters for mempool. */
-public record MempoolRelayConfig(long throttleMs, int relayMaxPeers) {
-  public static MempoolRelayConfig of() {
-    return new MempoolRelayConfig(10000, 100);
+/** Configuration parameters for mempool relayer. */
+public record MempoolRelayerConfig(
+    int intervalMs,
+    int maxPeers,
+    int maxRelayedSize,
+    int maxMessageTransactionCount,
+    int maxMessagePayloadSize) {
+  public static final int DEFAULT_INTERVAL_MS = 20000;
+  public static final int DEFAULT_MAX_PEERS = 100;
+  public static final int DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT = 10;
+  public static final int DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int DEFAULT_MAX_RELAYED_SIZE = 6 * 1024 * 1024;
+
+  public static MempoolRelayerConfig defaults() {
+    return new MempoolRelayerConfig(
+        DEFAULT_INTERVAL_MS,
+        DEFAULT_MAX_PEERS,
+        DEFAULT_MAX_RELAYED_SIZE,
+        DEFAULT_MAX_MESSAGE_TRANSACTION_COUNT,
+        DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
   }
 
-  public static MempoolRelayConfig of(long throttleMs) {
-    return new MempoolRelayConfig(throttleMs, 100);
+  public MempoolRelayerConfig withIntervalMs(int intervalMs) {
+    return new MempoolRelayerConfig(
+        intervalMs,
+        this.maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
   }
 
-  public static MempoolRelayConfig of(long throttleMs, int relayMaxPeers) {
-    return new MempoolRelayConfig(throttleMs, relayMaxPeers);
+  public MempoolRelayerConfig withMaxPeers(int maxPeers) {
+    return new MempoolRelayerConfig(
+        this.intervalMs,
+        maxPeers,
+        this.maxRelayedSize,
+        this.maxMessageTransactionCount,
+        this.maxMessagePayloadSize);
   }
 
   public AbstractModule asModule() {
     return new AbstractModule() {
       @Override
       protected void configure() {
-        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
-        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
+        bindConstant().annotatedWith(MempoolRelayerIntervalMs.class).to(intervalMs);
+        bindConstant().annotatedWith(MempoolRelayerMaxPeers.class).to(maxPeers);
+        bindConstant().annotatedWith(MempoolRelayerMaxRelayedSize.class).to(maxRelayedSize);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessageTransactionCount.class)
+            .to(maxMessageTransactionCount);
+        bindConstant()
+            .annotatedWith(MempoolRelayerMaxMessagePayloadSize.class)
+            .to(maxMessagePayloadSize);
       }
     };
   }

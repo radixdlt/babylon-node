@@ -131,7 +131,7 @@ public final class MempoolRunnerTest {
         bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-        install(MempoolRelayConfig.of(10).asModule());
+        install(MempoolReceiverConfig.of(10).asModule());
         install(new MockedBFTNodeModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());

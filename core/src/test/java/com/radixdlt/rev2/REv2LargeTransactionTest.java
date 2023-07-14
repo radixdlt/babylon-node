@@ -118,7 +118,7 @@ public final class REv2LargeTransactionTest {
                             Decimal.of(1),
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(10)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        REV2ProposerConfig.singleTransactionMempool()),
+                        REV2ProposerConfig.Mempool.singleTransaction()),
                     SyncRelayConfig.of(200, 10, 1000))));
   }
 
