@@ -91,10 +91,10 @@ public final class RejectionCountingRateLimiter {
    */
   public void tryAcquire(Consumer<Integer> consumer) {
     if (baseRateLimiter.tryAcquire()) {
-        final var count = countSinceLastPermit.getAndSet(0);
-        consumer.accept(count);
+      final var count = countSinceLastPermit.getAndSet(0);
+      consumer.accept(count);
     } else {
-        countSinceLastPermit.incrementAndGet();
+      countSinceLastPermit.incrementAndGet();
     }
   }
 }
