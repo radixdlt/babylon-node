@@ -62,115 +62,17 @@
  * permissions under this License.
  */
 
-use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState};
-use futures::channel::oneshot;
-use futures::channel::oneshot::Sender;
-use futures::FutureExt;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use std::str;
-use std::sync::{Arc, MutexGuard};
-use tokio::runtime::Runtime;
+package com.radixdlt.mempool;
 
-use node_common::java::*;
-use state_manager::jni::state_manager::JNIStateManager;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-pub struct RunningServer {
-    pub shutdown_signal_sender: Sender<()>,
-}
-
-pub struct JNICoreApiServer {
-    pub config: CoreApiServerConfig,
-    pub runtime: Arc<Runtime>,
-    pub state: CoreApiState,
-    pub running_server: Option<RunningServer>,
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    j_core_api_server: JObject,
-    j_config: jbyteArray,
-) {
-    jni_sbor_coded_call(&env, j_config, |config: CoreApiServerConfig| {
-        let state = JNIStateManager::get_state(&env, j_state_manager);
-
-        let jni_core_api_server = JNICoreApiServer {
-            config,
-            runtime: state.runtime.clone(),
-            state: CoreApiState {
-                network: state.network.clone(),
-                state_manager: state.state_manager.clone(),
-                database: state.database.clone(),
-                pending_transaction_result_cache: state.pending_transaction_result_cache.clone(),
-                mempool: state.mempool.clone(),
-                mempool_manager: state.mempool_manager.clone(),
-                committability_validator: state.committability_validator.clone(),
-                transaction_previewer: state.transaction_previewer.clone(),
-            },
-            running_server: None,
-        };
-
-        env.set_rust_field(
-            j_core_api_server,
-            POINTER_JNI_FIELD_NAME,
-            jni_core_api_server,
-        )
-        .unwrap()
-    });
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
-    env: JNIEnv,
-    _class: JClass,
-    j_core_api_server: JObject,
-) {
-    jni_call(&env, || {
-        let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
-
-        let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
-            .get_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-
-        let config = &jni_core_api_server.config;
-
-        let state = jni_core_api_server.state.clone();
-        let runtime = &jni_core_api_server.runtime;
-
-        let bind_addr = format!("{}:{}", config.bind_interface, config.port);
-        runtime.spawn(async move {
-            create_server(&bind_addr, shutdown_signal_receiver.map(|_| ()), state).await;
-        });
-
-        jni_core_api_server.running_server = Some(RunningServer {
-            shutdown_signal_sender,
-        });
-    });
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
-    env: JNIEnv,
-    _class: JClass,
-    j_core_api_server: JObject,
-) {
-    jni_call(&env, || {
-        if let Ok(jni_core_api_server) = env.take_rust_field::<JObject, &str, JNICoreApiServer>(
-            j_core_api_server,
-            POINTER_JNI_FIELD_NAME,
-        ) {
-            if let Some(running_server) = jni_core_api_server.running_server {
-                running_server.shutdown_signal_sender.send(()).unwrap();
-            }
-            // No-op, drop the jni_core_api_server
-        }
-    });
-}
-
-pub fn export_extern_functions() {}
+/** Maximum number of peers to relay txn to. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayerMaxPeers {}

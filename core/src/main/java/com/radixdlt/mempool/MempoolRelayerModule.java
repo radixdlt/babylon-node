@@ -74,15 +74,15 @@ import org.apache.logging.log4j.Logger;
 /** Module responsible for sending mempool messages to other nodes. */
 public final class MempoolRelayerModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
+  private final MempoolRelayerConfig config;
 
-  private final long mempoolRelayIntervalMs;
-
-  public MempoolRelayerModule(long mempoolRelayIntervalMs) {
-    this.mempoolRelayIntervalMs = mempoolRelayIntervalMs;
+  public MempoolRelayerModule(MempoolRelayerConfig config) {
+    this.config = config;
   }
 
   @Override
   public void configure() {
+    install(this.config.asModule());
     bind(MempoolRelayer.class).in(Scopes.SINGLETON);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
@@ -94,13 +94,14 @@ public final class MempoolRelayerModule extends AbstractModule {
   @Provides
   @Singleton
   private EventProducer<MempoolRelayTrigger> eventProducer(
-      ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher) {
-    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayIntervalMs);
+      ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher,
+      @MempoolRelayerIntervalMs int mempoolRelayerIntervalMs) {
+    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayerIntervalMs);
   }
 
   @ProvidesIntoSet
   private StartProcessorOnRunner mempoolRelayerStart(
-      EventProducer<MempoolRelayTrigger> dispatcher, @MempoolRelayMaxPeers int maxPeers) {
+      EventProducer<MempoolRelayTrigger> dispatcher) {
     return new StartProcessorOnRunner(
         Runners.MEMPOOL,
         () -> {
@@ -108,11 +109,11 @@ public final class MempoolRelayerModule extends AbstractModule {
               "Starting mempool relayer: at most {} txns (or {} txn bytes) will be relayed to at"
                   + " most {} peers (but no more than {} txn bytes sent to all peers during a"
                   + " single relaying event) every {} ms.",
-              MempoolRelayer.MAX_RELAY_MSG_NUM_TXNS,
-              MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE,
-              maxPeers,
-              MempoolRelayer.MAX_TXN_BYTES_RELAYED_AT_ONCE_TO_ALL_PEERS,
-              mempoolRelayIntervalMs);
+              config.maxMessageTransactionCount(),
+              config.maxMessagePayloadSize(),
+              config.maxPeers(),
+              config.maxRelayedSize(),
+              config.intervalMs());
 
           dispatcher.start();
         });

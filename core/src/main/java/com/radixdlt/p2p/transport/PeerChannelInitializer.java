@@ -68,7 +68,6 @@ import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -107,35 +106,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
   // `REv2TransactionsAndProofReader`)
   //    similarly, this doesn't include sync response overhead (proof)
-  //  - `MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE` in `MempoolRelayer`
-  private static final int MAX_PACKET_LENGTH;
-
-  static {
-    final var baseBufferSize =
-        Math.max(
-            Math.max(
-                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
-            MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
-    // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
-    final var additionalBuffer = (int) (0.3 * baseBufferSize);
-    final var bufferSize = baseBufferSize + additionalBuffer;
-
-    // Just a sanity check that any changes to the constants used above
-    // don't cause excessive (and unintended) increase of p2p buffers.
-    // Might still be changed, if we decide so, but requires manual intervention.
-    final var maxReasonableBufferSize = 15 * 1024 * 1024;
-
-    //noinspection ConstantConditions
-    if (bufferSize > maxReasonableBufferSize) {
-      throw new RuntimeException(
-          "P2P buffer size exceeds "
-              + maxReasonableBufferSize
-              + ", double-check if this is intentional");
-    }
-
-    MAX_PACKET_LENGTH = bufferSize;
-  }
+  //  - `@MempoolRelayerMaxMessagePayloadSize`
+  private static int MAX_PACKET_LENGTH;
 
   private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
   private static final int SOCKET_BACKLOG_SIZE = 1024;
@@ -163,7 +135,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
-      Capabilities capabilities) {
+      Capabilities capabilities,
+      int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -175,6 +148,31 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.uri = Objects.requireNonNull(uri);
     this.capabilities = capabilities;
+
+    final var baseBufferSize =
+        Math.max(
+            Math.max(
+                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
+            mempoolRelayerMaxMessagePayloadSize);
+    // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
+    final var additionalBuffer = (int) (0.3 * baseBufferSize);
+    final var bufferSize = baseBufferSize + additionalBuffer;
+
+    // Just a sanity check that any changes to the constants used above
+    // don't cause excessive (and unintended) increase of p2p buffers.
+    // Might still be changed, if we decide so, but requires manual intervention.
+    final var maxReasonableBufferSize = 15 * 1024 * 1024;
+
+    //noinspection ConstantConditions
+    if (bufferSize > maxReasonableBufferSize) {
+      throw new RuntimeException(
+          "P2P buffer size exceeds "
+              + maxReasonableBufferSize
+              + ", double-check if this is intentional");
+    }
+
+    MAX_PACKET_LENGTH = bufferSize;
   }
 
   @Override

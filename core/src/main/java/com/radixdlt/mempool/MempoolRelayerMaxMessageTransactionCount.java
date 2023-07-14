@@ -71,8 +71,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Maximum number of peers to relay txn to. */
+/** Maximum message transaction count relayed to each peer. */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MempoolRelayMaxPeers {}
+public @interface MempoolRelayerMaxMessageTransactionCount {}

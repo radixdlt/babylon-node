@@ -98,7 +98,9 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     j_state_manager: JObject,
     j_config: jbyteArray,
 ) {
-    JNIStateManager::init(&env, j_state_manager, j_config);
+    jni_call(&env, || {
+        JNIStateManager::init(&env, j_state_manager, j_config)
+    });
 }
 
 #[no_mangle]
@@ -107,7 +109,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     _class: JClass,
     j_state_manager: JObject,
 ) {
-    JNIStateManager::cleanup(&env, j_state_manager);
+    jni_call(&env, || JNIStateManager::cleanup(&env, j_state_manager));
 }
 
 #[no_mangle]

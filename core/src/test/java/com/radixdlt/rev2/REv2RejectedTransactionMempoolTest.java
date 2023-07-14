@@ -136,8 +136,8 @@ public class REv2RejectedTransactionMempoolTest {
                             GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
                                 this.roundsPerEpoch)),
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1024 * 1024, mempoolConfig, MempoolRelayConfig.of())))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction()
+                            .withMempoolConfig(mempoolConfig)))));
   }
 
   @Test

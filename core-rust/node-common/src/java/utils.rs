@@ -66,6 +66,8 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{ScryptoDecode, ScryptoEncode};
 use sbor::Sbor;
+use std::panic;
+use std::panic::AssertUnwindSafe;
 
 use crate::java::structure::{StructFromJava, StructToJava};
 
@@ -89,6 +91,7 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
         .expect("Can't convert &[u8] back to jbyteArray - likely due to OOM")
 }
 
+/// A convenience method for a `jni_call()` which uses SBOR codec for its argument and result.
 pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
@@ -97,15 +100,60 @@ pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     jni_sbor_coded_fallible_call(env, encoded_request, |args| Ok(method(args)))
 }
 
+/// A convenience method for a `jni_call()` which uses SBOR codec for its argument and its
+/// potentially-erroneous result.
 pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> JavaResult<Response>,
 ) -> jbyteArray {
-    let result = jni_jbytearray_to_vector(env, encoded_request)
-        .and_then(|bytes| Args::from_java(&bytes))
-        .and_then(method);
-    jni_slice_to_jbytearray(env, &result.to_java().unwrap())
+    jni_call(env, || {
+        let result = jni_jbytearray_to_vector(env, encoded_request)
+            .and_then(|bytes| Args::from_java(&bytes))
+            .and_then(method);
+        jni_slice_to_jbytearray(env, &result.to_java().unwrap())
+    })
+    .unwrap_or_else(std::ptr::null_mut)
+}
+
+/// Executes the given function in a way that is panic-safe on a JNI-originating stack.
+/// This is achieved by intercepting any panic (i.e. `catch_unwind()`) and throwing a Java-side
+/// `RustPanicException` instead.
+///
+/// *This is a mandatory wrapper for all JNI calls.*
+/// Every top-level JNI method MUST immediately enter this template method (i.e. before executing
+/// any logic that may panic) - otherwise, unwinding a stack through the JNI boundary results in an
+/// undefined behavior.
+/// It is fine to enter this method indirectly, e.g. via one of convenience variants defined above.
+///
+/// Note on the "abrupt return" from this method:
+/// In case a Java exception is thrown, this function will return `None`, signalling the caller that
+/// there is no valid result of the call, and that it should immediately return from the JNI method,
+/// allowing the Java-side JNI infra to continue with the exception.
+/// For syntactic reasons, the caller may need to return some value back to the JNI - it is then
+/// fine to return virtually any value of a valid type (e.g. a `null_mut()` pointer, which denotes
+/// a Java `null`), since it will be ignored by the Java-side JNI infra anyway.
+pub fn jni_call<R>(env: &JNIEnv, callable: impl FnOnce() -> R) -> Option<R> {
+    let result = panic::catch_unwind(AssertUnwindSafe(callable)).map_err(|panic_payload| {
+        if let Some(string) = panic_payload.downcast_ref::<String>() {
+            string.clone()
+        } else if let Some(str_ref) = panic_payload.downcast_ref::<&'static str>() {
+            str_ref.to_string()
+        } else {
+            format!("[non-string panic payload: {:?}]", panic_payload)
+        }
+    });
+    match result {
+        Ok(return_value) => Some(return_value),
+        Err(panic_message) => {
+            let throw_result =
+                env.throw_new("com/radixdlt/exceptions/RustPanicException", panic_message);
+            if let Err(throw_error) = throw_result {
+                println!("failed to throw a java exception: {:?}", throw_error)
+            }
+            None
+        }
+    }
 }
 
 /// A type to allow easy transporting of error messages over the boundary, by returning a Result<X, StringError>

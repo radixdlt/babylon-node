@@ -81,6 +81,8 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.MempoolRelayerConfig;
+import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
@@ -186,6 +188,9 @@ public final class P2PTestNetworkRunner {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
+                    bindConstant()
+                        .annotatedWith(MempoolRelayerMaxMessagePayloadSize.class)
+                        .to(MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);

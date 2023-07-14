@@ -151,7 +151,7 @@ public final class REv2GenesisTest {
                             GenesisConsensusManagerConfig.Builder.testDefaults(),
                             GenesisData.ALL_SCENARIOS),
                         REv2StateManagerModule.DatabaseType.IN_MEMORY,
-                        StateComputerConfig.REV2ProposerConfig.zeroMempool()))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
   }
 
   @Test

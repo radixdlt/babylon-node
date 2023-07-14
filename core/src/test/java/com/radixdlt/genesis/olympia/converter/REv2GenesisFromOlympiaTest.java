@@ -109,7 +109,7 @@ public final class REv2GenesisFromOlympiaTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         genesisData,
                         REv2StateManagerModule.DatabaseType.ROCKS_DB,
-                        StateComputerConfig.REV2ProposerConfig.zeroMempool()))));
+                        StateComputerConfig.REV2ProposerConfig.Mempool.zero()))));
   }
 
   @Test

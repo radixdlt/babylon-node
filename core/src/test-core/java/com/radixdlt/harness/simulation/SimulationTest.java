@@ -88,7 +88,7 @@ import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
 import com.radixdlt.ledger.MockedSelfValidatorInfoModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolReceiverConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -297,7 +297,7 @@ public final class SimulationTest {
               LedgerConfig.stateComputerNoSync(
                   StateComputerConfig.mockedNoEpochs(
                       numValidators, new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
-      this.modules.add(MempoolRelayConfig.of(10).asModule());
+      this.modules.add(MempoolReceiverConfig.of(10).asModule());
       return this;
     }
 
