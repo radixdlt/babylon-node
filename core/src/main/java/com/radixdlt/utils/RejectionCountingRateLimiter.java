@@ -65,18 +65,17 @@
 package com.radixdlt.utils;
 
 import com.google.common.util.concurrent.RateLimiter;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * A wrapper around RateLimiter that counts the number of rejections between permits. This class is
- * not thread-safe.
+ * thread-safe.
  */
 @SuppressWarnings("UnstableApiUsage")
-@NotThreadSafe
 public final class RejectionCountingRateLimiter {
   private final RateLimiter baseRateLimiter;
-  private int countSinceLastPermit = 0;
+  private final AtomicInteger countSinceLastPermit = new AtomicInteger(0);
 
   public RejectionCountingRateLimiter(RateLimiter baseRateLimiter) {
     this.baseRateLimiter = baseRateLimiter;
@@ -91,11 +90,14 @@ public final class RejectionCountingRateLimiter {
    * attempts that have been rejected since the previous permit.
    */
   public void tryAcquire(Consumer<Integer> consumer) {
-    if (baseRateLimiter.tryAcquire()) {
-      consumer.accept(countSinceLastPermit);
-      countSinceLastPermit = 0;
-    } else {
-      countSinceLastPermit += 1;
-    }
+    countSinceLastPermit.getAndUpdate(
+        count -> {
+          if (baseRateLimiter.tryAcquire()) {
+            consumer.accept(count);
+            return 0;
+          } else {
+            return count + 1;
+          }
+        });
   }
 }
