@@ -118,9 +118,31 @@ where
     /// Executes the given already-validated ledger transaction (against the borrowed `store` and
     /// `execution_cache`).
     /// Uses an internal [`StateTracker`] to track the progression of *committable* transactions.
+    /// Note that this method should NOT be used if a *committable* transaction is to be in
+    /// some other way rejected by an upper layer (because then the subsequent
+    /// execute_* calls may use an invalid state, e.g. ledger hashes may include the
+    /// hash of the transaction, which the upper layer decided to discard).
     /// The passed description will only be used for logging/errors/panics (and will be augmented by
     /// the transaction's ledger hash).
-    pub fn execute(
+    pub fn execute_and_update_state(
+        &mut self,
+        transaction: &ValidatedLedgerTransaction,
+        description: &'static str,
+    ) -> Result<ProcessedCommitResult, RejectResult> {
+        let result = self.execute_no_state_update(transaction, description);
+        if let Ok(commit) = &result {
+            self.update_state(commit);
+        }
+        result
+    }
+
+    /// Executes the given already-validated ledger transaction (against the borrowed `store` and
+    /// `execution_cache`).
+    /// Uses an internal [`StateTracker`] in a read-only mode. Specifically, does NOT
+    /// update it with commit result (which can later be done by calling [`TransactionSeriesExecutor::update_state()`]).
+    /// The passed description will only be used for logging/errors/panics (and will be augmented by
+    /// the transaction's ledger hash).
+    pub fn execute_no_state_update(
         &mut self,
         transaction: &ValidatedLedgerTransaction,
         description: &'static str,
@@ -129,14 +151,14 @@ where
             ledger_hash: transaction.ledger_transaction_hash(),
             description,
         };
-        self.execute_wrapped(
+        self.execute_wrapped_no_state_update(
             &description,
             self.execution_configurator
                 .wrap_ledger_transaction(transaction, &description),
         )
     }
 
-    fn execute_wrapped<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
+    fn execute_wrapped_no_state_update<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
         &mut self,
         description: &DescribedTransactionHash,
         wrapped_executable: T,
@@ -150,11 +172,11 @@ where
             &description.ledger_hash,
             wrapped_executable,
         );
-        let result = processed.expect_commit_or_reject(&description).cloned();
-        if let Ok(commit) = &result {
-            self.state_tracker.update(commit);
-        }
-        result
+        processed.expect_commit_or_reject(&description).cloned()
+    }
+
+    pub fn update_state(&mut self, commit: &ProcessedCommitResult) {
+        self.state_tracker.update(commit);
     }
 
     /// Returns a ledger header which started the current epoch (i.e. in which the transactions are
