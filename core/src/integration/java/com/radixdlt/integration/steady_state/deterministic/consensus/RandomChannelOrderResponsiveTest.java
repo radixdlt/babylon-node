@@ -96,7 +96,7 @@ public class RandomChannelOrderResponsiveTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
+            .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(numValidatorNodes))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
             .functionalNodeModule(

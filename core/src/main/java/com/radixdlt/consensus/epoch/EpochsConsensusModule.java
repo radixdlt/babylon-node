@@ -65,10 +65,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -96,16 +93,28 @@ import java.util.Random;
 public class EpochsConsensusModule extends AbstractModule {
   @Override
   protected void configure() {
+    bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+    bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests
     bind(EpochManager.class).in(Scopes.SINGLETON);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+
+    // Non-epoched local events
+    eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
+    eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
+    eventBinder.addBinding().toInstance(Proposal.class);
+    eventBinder.addBinding().toInstance(Vote.class);
+    eventBinder.addBinding().toInstance(LedgerUpdate.class);
+    eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
+
+    // Epoched local events
     eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
     eventBinder.addBinding().toInstance(EpochProposalRejected.class);
-    eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
-    eventBinder.addBinding().toInstance(LedgerUpdate.class);
+    eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
     eventBinder.addBinding().toInstance(Epoched.class);
   }
 
@@ -302,7 +311,6 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerFactory pacemakerFactory(
-      @Self BFTValidatorId self,
       Metrics metrics,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
@@ -312,9 +320,15 @@ public class EpochsConsensusModule extends AbstractModule {
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
       TimeSupplier timeSupplier) {
-    return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
+    return (selfValidatorId,
+        validatorSet,
+        vertexStore,
+        timeoutCalculator,
+        safetyRules,
+        initialRoundUpdate,
+        epoch) ->
         new Pacemaker(
-            self,
+            selfValidatorId,
             validatorSet,
             vertexStore,
             safetyRules,
@@ -407,7 +421,6 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncFactory bftSyncFactory(
-      @Self BFTValidatorId self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
@@ -417,9 +430,9 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
+    return (selfValidatorId, safetyRules, vertexStore, pacemakerState, currentLedgerHeader) ->
         new BFTSync(
-            self,
+            selfValidatorId,
             syncRequestRateLimiter,
             vertexStore,
             hasher,

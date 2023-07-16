@@ -94,7 +94,7 @@ public class WeightedRotatingLeadersTest {
     this.validatorsInOrder =
         Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
             .limit(validatorSetSize)
-            .map(BFTValidatorId::create)
+            .map(BFTValidatorId::withKeyAndFakeDeterministicAddress)
             .map(node -> BFTValidator.from(node, UInt256.ONE))
             .sorted(
                 Comparator.comparing(

@@ -69,13 +69,15 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import java.util.Optional;
 
-public final class MockedBFTNodeModule extends AbstractModule {
+public final class MockedSelfValidatorInfoModule extends AbstractModule {
   @Provides
   @Singleton
-  @Self
-  private BFTValidatorId self(@Self ECDSASecp256k1PublicKey key) {
-    return BFTValidatorId.create(key);
+  private SelfValidatorInfo selfValidatorInfo(@Self ECDSASecp256k1PublicKey key) {
+    return new SelfValidatorInfo(
+        key, Optional.of(BFTValidatorId.withKeyAndFakeDeterministicAddress(key)));
   }
 }

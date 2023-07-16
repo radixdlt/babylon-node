@@ -92,7 +92,7 @@ public final class EpochTimeoutCertTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .addPhysicalNodes(PhysicalNodeConfig.createBatchWithFakeAddresses(4))
         .messageSelector(MessageSelector.firstSelector())
         .messageMutator(
             (m, q) -> {

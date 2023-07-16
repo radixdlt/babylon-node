@@ -92,7 +92,8 @@ public class FullNodeSyncTest {
             numValidators + numFullNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidators + numFullNodes))
+        .addPhysicalNodes(
+            PhysicalNodeConfig.createBatchWithFakeAddresses(numValidators + numFullNodes))
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

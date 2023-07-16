@@ -134,7 +134,7 @@ public class PendingVotesTest {
     when(validationState.complete()).thenReturn(true);
     when(validationState.signatures()).thenReturn(signatures);
     when(validatorSet.newValidationState()).thenReturn(validationState);
-    when(validatorSet.containsNode(any(BFTValidatorId.class))).thenReturn(true);
+    when(validatorSet.containsValidator(any(BFTValidatorId.class))).thenReturn(true);
 
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote.getVoteData().getProposed();
@@ -186,7 +186,7 @@ public class PendingVotesTest {
     when(validationState.signatures()).thenReturn(signatures);
     when(validationState.isEmpty()).thenReturn(true);
     when(validatorSet.newValidationState()).thenReturn(validationState);
-    when(validatorSet.containsNode(any(BFTValidatorId.class))).thenReturn(true);
+    when(validatorSet.containsValidator(any(BFTValidatorId.class))).thenReturn(true);
 
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote.getVoteData().getProposed();
@@ -219,7 +219,7 @@ public class PendingVotesTest {
     when(validationState.signatures()).thenReturn(signatures);
     when(validationState.isEmpty()).thenReturn(true);
     when(validatorSet.newValidationState()).thenReturn(validationState);
-    when(validatorSet.containsNode(any(BFTValidatorId.class))).thenReturn(true);
+    when(validatorSet.containsValidator(any(BFTValidatorId.class))).thenReturn(true);
 
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote.getVoteData().getProposed();

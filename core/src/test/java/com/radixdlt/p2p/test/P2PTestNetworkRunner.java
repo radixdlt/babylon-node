@@ -133,7 +133,9 @@ public final class P2PTestNetworkRunner {
             .collect(ImmutableList.toImmutableList());
 
     final var bftAddressBook =
-        nodesKeys.stream().map(key -> BFTValidatorId.create(key.getPublicKey())).toList();
+        nodesKeys.stream()
+            .map(key -> BFTValidatorId.withKeyAndFakeDeterministicAddress(key.getPublicKey()))
+            .toList();
     final var p2pAddressBook =
         nodesKeys.stream().map(key -> NodeId.fromPublicKey(key.getPublicKey())).toList();
     final var network =
@@ -216,7 +218,8 @@ public final class P2PTestNetworkRunner {
                 .toInstance(nodeKey.getPublicKey());
             bind(BFTValidatorId.class)
                 .annotatedWith(Self.class)
-                .toInstance(BFTValidatorId.create(nodeKey.getPublicKey()));
+                .toInstance(
+                    BFTValidatorId.withKeyAndFakeDeterministicAddress(nodeKey.getPublicKey()));
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(nodeKey.getPublicKey()));

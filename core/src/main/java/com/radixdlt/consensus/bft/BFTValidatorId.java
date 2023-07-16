@@ -66,11 +66,11 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Bytes;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * A node in a BFT network which can run BFT validation
@@ -85,25 +85,16 @@ public final class BFTValidatorId {
 
   private BFTValidatorId(
       ComponentAddress validatorAddress, ECDSASecp256k1PublicKey key, String shortenedName) {
-    this.validatorAddress = validatorAddress;
+    this.validatorAddress = Objects.requireNonNull(validatorAddress);
     this.key = Objects.requireNonNull(key);
     this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
   public static BFTValidatorId create(
       ComponentAddress validatorAddress, ECDSASecp256k1PublicKey key) {
-    final String name;
-    if (validatorAddress == null) {
-      name = key.toHex().substring(0, 10);
-    } else {
-      name = validatorAddress.toHexString().substring(0, 6) + ":" + key.toHex().substring(0, 6);
-    }
-    return new BFTValidatorId(validatorAddress, key, name);
-  }
-
-  public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTValidatorId(null, key, shortenedAddress);
+    final String shortenedName =
+        validatorAddress.toHexString().substring(0, 6) + ":" + key.toHex().substring(0, 6);
+    return new BFTValidatorId(validatorAddress, key, shortenedName);
   }
 
   // This method is only used in deserialization methods so should be okay
@@ -114,12 +105,8 @@ public final class BFTValidatorId {
     if (strings.length != 2) {
       throw new IllegalStateException("Error decoding node");
     }
-
     try {
-      var validatorAddress =
-          strings[0].length() == 0
-              ? null
-              : ComponentAddress.create(Bytes.fromHexString(strings[0]));
+      var validatorAddress = ComponentAddress.create(Bytes.fromHexString(strings[0]));
       var key = ECDSASecp256k1PublicKey.fromBytes(Bytes.fromHexString(strings[1]));
       return create(validatorAddress, key);
     } catch (PublicKeyException e) {
@@ -128,32 +115,31 @@ public final class BFTValidatorId {
   }
 
   public String toSerializedString() {
-    var addressString =
-        this.validatorAddress == null ? "" : Bytes.toHexString(this.validatorAddress.value());
-    var keyString = Bytes.toHexString(this.key.getCompressedBytes());
+    final var addressString = Bytes.toHexString(this.validatorAddress.value());
+    final var keyString = Bytes.toHexString(this.key.getCompressedBytes());
     return addressString + ":" + keyString;
-  }
-
-  public static BFTValidatorId random() {
-    return create(ECKeyPair.generateNew().getPublicKey());
   }
 
   public ECDSASecp256k1PublicKey getKey() {
     return key;
   }
 
-  public Optional<ComponentAddress> getValidatorAddress() {
-    return Optional.ofNullable(validatorAddress);
+  public ComponentAddress getValidatorAddress() {
+    return validatorAddress;
   }
 
-  public ComponentAddress getActiveValidatorAddress() {
-    return this.getValidatorAddress()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    String.format(
-                        "validator (%s) from active validator set must have an address",
-                        this.key)));
+  /** Only for use in tests */
+  public static BFTValidatorId random() {
+    return withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey());
+  }
+
+  /** Only for use in tests */
+  public static BFTValidatorId withKeyAndFakeDeterministicAddress(ECDSASecp256k1PublicKey key) {
+    final var addressBytes = new byte[ComponentAddress.BYTE_LENGTH];
+    final var hashedKeyBytes = HashUtils.blake2b256(key.getCompressedBytes()).asBytes();
+    System.arraycopy(hashedKeyBytes, 0, addressBytes, 0, addressBytes.length);
+    addressBytes[0] = ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID;
+    return create(ComponentAddress.create(addressBytes), key);
   }
 
   @Override

@@ -176,7 +176,7 @@ public final class BFTSync implements BFTSyncer {
   private final RateLimiter syncRequestRateLimiter;
 
   public BFTSync(
-      @Self BFTValidatorId self,
+      BFTValidatorId self,
       RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       Hasher hasher,

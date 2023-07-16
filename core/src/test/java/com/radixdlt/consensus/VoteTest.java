@@ -143,7 +143,9 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException2() throws PublicKeyException {
-    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     new Vote(
         author,
         null,
@@ -155,7 +157,9 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException3() throws PublicKeyException {
-    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),
@@ -167,7 +171,9 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException4() throws PublicKeyException {
-    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),
@@ -179,7 +185,9 @@ public class VoteTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidEpochThrowsException4() throws PublicKeyException {
-    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author =
+        BFTValidatorId.withKeyAndFakeDeterministicAddress(ECKeyPair.generateNew().getPublicKey())
+            .toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),

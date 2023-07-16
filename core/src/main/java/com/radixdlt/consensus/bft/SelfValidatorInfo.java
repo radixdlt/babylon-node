@@ -62,40 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.keys;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.Optional;
 
-public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
-  @Provides
-  @Singleton
-  @Self
-  private BFTValidatorId self(
-      // Require the token to ensure ledger genesis init
-      REv2LedgerInitializerToken rev2LedgerInitializerToken,
-      @Self ECDSASecp256k1PublicKey key,
-      TransactionsAndProofReader transactionsAndProofReader) {
-    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
-    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
-    var potentialBFTValidators =
-        genesisValidatorSet.getValidators().stream()
-            .map(BFTValidator::getValidatorId)
-            .filter(node -> node.getKey().equals(key))
-            .toList();
+public record SelfValidatorInfo(
+    ECDSASecp256k1PublicKey key, Optional<BFTValidatorId> bftValidatorId) {
+  @Override
+  public String toString() {
+    return bftValidatorId
+        .map(BFTValidatorId::toString)
+        .orElseGet(() -> key.toHex().substring(0, 10));
+  }
 
-    if (potentialBFTValidators.size() > 1) {
-      throw new IllegalStateException(
-          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
-    }
-
-    return potentialBFTValidators.stream().findFirst().orElse(BFTValidatorId.create(key));
+  public BFTValidatorId validatorIdOrFakeForTesting() {
+    return bftValidatorId.orElseGet(() -> BFTValidatorId.withKeyAndFakeDeterministicAddress(key));
   }
 }

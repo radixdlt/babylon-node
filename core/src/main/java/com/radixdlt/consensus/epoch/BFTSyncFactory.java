@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -72,6 +73,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 
 public interface BFTSyncFactory {
   BFTSync create(
+      BFTValidatorId selfValidatorId,
       SafetyRules safetyRules,
       VertexStoreAdapter vertexStore,
       PacemakerState pacemakerState,

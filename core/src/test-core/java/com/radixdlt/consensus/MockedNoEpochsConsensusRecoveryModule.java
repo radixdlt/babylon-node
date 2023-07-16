@@ -98,7 +98,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
     var validators =
         PrivateKeys.numeric(1)
             .limit(numValidators)
-            .map(k -> BFTValidatorId.create(k.getPublicKey()))
+            .map(k -> BFTValidatorId.withKeyAndFakeDeterministicAddress(k.getPublicKey()))
             .map(n -> BFTValidator.from(n, UInt256.ONE));
     return BFTValidatorSet.from(validators);
   }

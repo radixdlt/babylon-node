@@ -65,9 +65,8 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
 import com.radixdlt.p2p.PeersView;
 import java.util.Collection;
@@ -76,7 +75,7 @@ import java.util.Collection;
 public final class MetricInstaller {
 
   /** An own node, for exposing the {@link Config#key()} information. */
-  private final BFTValidatorId self;
+  private final SelfValidatorInfo self;
 
   /** A source of "system" getters to be exposed as gauges. */
   private final InMemorySystemInfo inMemorySystemInfo;
@@ -86,7 +85,7 @@ public final class MetricInstaller {
 
   @Inject
   public MetricInstaller(
-      final @Self BFTValidatorId self,
+      final SelfValidatorInfo self,
       final InMemorySystemInfo inMemorySystemInfo,
       final PeersView peersView) {
     this.self = self;
@@ -103,7 +102,7 @@ public final class MetricInstaller {
    * @param metrics Hierarchy where some legacy metrics need to be set.
    */
   public void installAt(Metrics metrics) {
-    final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
+    final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.key().toHex());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
     metrics.bft().validatorCount().initialize(this::countValidators);
@@ -119,11 +118,14 @@ public final class MetricInstaller {
   }
 
   private boolean isInValidatorSet() {
-    return this.inMemorySystemInfo
-        .getEpochProof()
-        .getNextValidatorSet()
-        .map(set -> set.containsNode(this.self))
-        .orElse(false);
+    return this.self.bftValidatorId().stream()
+        .anyMatch(
+            selfValidatorId ->
+                this.inMemorySystemInfo
+                    .getEpochProof()
+                    .getNextValidatorSet()
+                    .map(set -> set.containsValidator(selfValidatorId))
+                    .orElse(false));
   }
 
   private int countValidators() {

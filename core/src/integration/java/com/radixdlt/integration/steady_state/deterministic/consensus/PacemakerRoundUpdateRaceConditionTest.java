@@ -111,7 +111,8 @@ public class PacemakerRoundUpdateRaceConditionTest {
   @Test
   public void test_pacemaker_round_update_race_condition() {
     var nodeConfigs =
-        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
+        PhysicalNodeConfig.createSortedBatchWithFakeAddresses(
+            numValidatorNodes, KeyComparator.instance());
 
     final DeterministicTest test =
         DeterministicTest.builder()

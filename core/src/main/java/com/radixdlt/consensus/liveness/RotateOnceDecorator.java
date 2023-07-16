@@ -70,7 +70,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.KeyComparator;
 import java.util.*;
 
@@ -87,11 +86,7 @@ public final class RotateOnceDecorator implements ProposerElection {
           .thenComparing( // then by key (same as `WeightedRotatingLeaders`)
               v -> v.getValidatorId().getKey(), KeyComparator.instance())
           .thenComparing( // and also by optional address (because keys do not have to be unique!)
-              v ->
-                  v.getValidatorId()
-                      .getValidatorAddress()
-                      .map(ComponentAddress::value)
-                      .orElse(null),
+              v -> v.getValidatorId().getValidatorAddress().value(),
               Ordering.from(UnsignedBytes.lexicographicalComparator()).nullsFirst());
 
   /** An ordered list of all validators, to be traversed once during initial rounds. */

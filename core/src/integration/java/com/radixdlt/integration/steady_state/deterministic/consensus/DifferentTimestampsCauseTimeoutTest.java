@@ -95,7 +95,8 @@ public class DifferentTimestampsCauseTimeoutTest {
   public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
     final int numValidatorNodes = 4;
     var nodeConfigs =
-        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
+        PhysicalNodeConfig.createSortedBatchWithFakeAddresses(
+            numValidatorNodes, KeyComparator.instance());
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
             .addPhysicalNodes(nodeConfigs)
@@ -132,7 +133,8 @@ public class DifferentTimestampsCauseTimeoutTest {
   public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
     final int numValidatorNodes = 4;
     var nodeConfigs =
-        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
+        PhysicalNodeConfig.createSortedBatchWithFakeAddresses(
+            numValidatorNodes, KeyComparator.instance());
 
     // TODO: this test isn't exactly right and should be updated so that
     // TODO: byzantine node sends different sets of valid QCs to each node

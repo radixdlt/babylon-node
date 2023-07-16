@@ -247,7 +247,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         LongStream.range(roundDetails.previousQcRoundNumber() + 1, roundDetails.roundNumber())
             .mapToObj(Round::of)
             .map(this.currentProposerElection.get()::getProposer)
-            .map(BFTValidatorId::getActiveValidatorAddress)
+            .map(BFTValidatorId::getValidatorAddress)
             .toList();
     var prepareRequest =
         new PrepareRequest(
@@ -260,7 +260,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 UInt64.fromNonNegativeLong(roundDetails.epoch()),
                 UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
                 gapRoundLeaderAddresses,
-                roundDetails.roundProposer().getActiveValidatorAddress(),
+                roundDetails.roundProposer().getValidatorAddress(),
                 roundDetails.proposerTimestampMs()));
 
     var result = stateComputer.prepare(prepareRequest);
