@@ -103,7 +103,8 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
 
     // This isn't strictly required by the bootstrapper, but
     // we're loading it up to verify that node's keystore
-    // configuration works.
+    // configuration works - this will error at Guice
+    // instantiation if the key store isn't found.
     install(new PersistedBFTKeyModule());
   }
 
