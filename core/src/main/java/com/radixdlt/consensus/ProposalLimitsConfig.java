@@ -65,6 +65,7 @@
 package com.radixdlt.consensus;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.statemanager.VertexLimitsConfig;
 
 /**
  * [`maxTransactionCount`]: Maximum number of transactions to include in a proposal.
@@ -100,6 +101,18 @@ public record ProposalLimitsConfig(
         DEFAULT_MAX_TRANSACTION_COUNT,
         DEFAULT_MAX_TRANSACTIONS_PAYLOAD_SIZE,
         DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE);
+  }
+
+  public static ProposalLimitsConfig from(VertexLimitsConfig vertexLimitsConfig) {
+    return new ProposalLimitsConfig(
+        // we add an extra transaction to build the vertex from
+        vertexLimitsConfig.maxTransactionCount().toInt() + 1,
+        // even though we would like to fill the vertex transaction count to the maximum possible,
+        // we want to keep
+        // bandwidth strict
+        vertexLimitsConfig.maxTotalTransactionsSize().toInt(),
+        // we multiply by 3 for the 3-chain rule
+        vertexLimitsConfig.maxTotalTransactionsSize().toInt() * 3);
   }
 
   public AbstractModule asModule() {

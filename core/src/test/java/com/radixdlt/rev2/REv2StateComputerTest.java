@@ -109,11 +109,13 @@ public class REv2StateComputerTest {
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        REv2StateManagerModule.create(
+        REv2StateManagerModule.createForTesting(
             ProposalLimitsConfig.testDefaults(),
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
-            Option.none()),
+            Option.none(),
+            false,
+            false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(

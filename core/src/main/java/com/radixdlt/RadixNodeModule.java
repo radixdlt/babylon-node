@@ -93,6 +93,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.statemanager.VertexLimitsConfig;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -244,9 +245,27 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
+    var vertexMaxTransactionCount =
+        properties.get(
+            "protocol.vertex.max_transaction_count",
+            VertexLimitsConfig.DEFAULT_MAX_TRANSACTION_COUNT);
+    var vertexMaxTotalTransactionsSize =
+        properties.get(
+            "protocol.vertex.max_total_transactions_size",
+            VertexLimitsConfig.DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE);
+    var vertexMaxTotalExecutionCostUnitsConsumed =
+        properties.get(
+            "protocol.vertex.max_total_execution_cost_units_consumed",
+            VertexLimitsConfig.DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED);
+    var vertexLimitsConfig =
+        new VertexLimitsConfig(
+            vertexMaxTransactionCount,
+            vertexMaxTotalTransactionsSize,
+            vertexMaxTotalExecutionCostUnitsConsumed);
     install(
         REv2StateManagerModule.create(
-            ProposalLimitsConfig.defaults(),
+            ProposalLimitsConfig.from(vertexLimitsConfig),
+            vertexLimitsConfig,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig)));

@@ -103,6 +103,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   private final ProposalLimitsConfig proposalLimitsConfig;
+  private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
   private final DatabaseType databaseType;
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
@@ -111,12 +112,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
+      Option<VertexLimitsConfig> vertexLimitsConfigOpt,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       boolean noFees) {
     this.proposalLimitsConfig = proposalLimitsConfig;
+    this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseType = databaseType;
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
@@ -126,11 +129,18 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   public static REv2StateManagerModule create(
       ProposalLimitsConfig proposalLimitsConfig,
+      VertexLimitsConfig vertexLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        proposalLimitsConfig, databaseType, databaseFlags, mempoolConfig, false, false);
+        proposalLimitsConfig,
+        Option.some(vertexLimitsConfig),
+        databaseType,
+        databaseFlags,
+        mempoolConfig,
+        false,
+        false);
   }
 
   public static REv2StateManagerModule createForTesting(
@@ -141,7 +151,13 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean debugLogging,
       boolean noFees) {
     return new REv2StateManagerModule(
-        proposalLimitsConfig, databaseType, databaseFlags, mempoolConfig, debugLogging, noFees);
+        proposalLimitsConfig,
+        Option.none(),
+        databaseType,
+        databaseFlags,
+        mempoolConfig,
+        debugLogging,
+        noFees);
   }
 
   @Override
@@ -187,6 +203,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
+                    vertexLimitsConfigOpt,
                     databaseBackendConfig,
                     databaseFlags,
                     getLoggingConfig(),

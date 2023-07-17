@@ -62,46 +62,34 @@
  * permissions under this License.
  */
 
-use radix_engine_constants::DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
+package com.radixdlt.statemanager;
 
-// TODO: revisit & tune before Babylon
-pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 
-pub struct VertexLimitsConfig {
-    pub max_transaction_count: u32,
-    pub max_total_transactions_size: usize,
-    pub max_total_execution_cost_units_consumed: u32,
-    pub max_total_substate_read_size: usize,
-    pub max_total_substate_read_count: usize,
-    pub max_total_substate_write_size: usize,
-    pub max_total_substate_write_count: usize,
-}
+public record VertexLimitsConfig(
+    UInt32 maxTransactionCount,
+    UInt32 maxTotalTransactionsSize,
+    UInt32 maxTotalExecutionCostUnitsConsumed) {
+  // Keep in sync with core-rust/node-common/src/config/limits.rs
+  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 10;
+  public static final int DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE = 4 * 1024 * 1024;
+  public static final int DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED = 200_000_000;
 
-impl VertexLimitsConfig {
-    pub fn standard() -> Self {
-        Self {
-            max_transaction_count: DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
-            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
-            max_total_execution_cost_units_consumed:
-                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
-        }
-    }
-}
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        VertexLimitsConfig.class,
+        codecs -> StructCodec.fromRecordComponents(VertexLimitsConfig.class, codecs));
+  }
 
-impl Default for VertexLimitsConfig {
-    fn default() -> Self {
-        VertexLimitsConfig::standard()
-    }
+  public VertexLimitsConfig(
+      int maxTransactionCount,
+      int maxTotalTransactionsSize,
+      int maxTotalExecutionCostUnitsConsumed) {
+    this(
+        UInt32.fromNonNegativeInt(maxTransactionCount),
+        UInt32.fromNonNegativeInt(maxTotalTransactionsSize),
+        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed));
+  }
 }

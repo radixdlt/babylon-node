@@ -142,7 +142,7 @@ impl ExecutionMetrics {
 impl VertexLimitsTracker {
     pub fn new(config: &VertexLimitsConfig) -> Self {
         Self {
-            remaining_transactions_count: config.max_total_transactions_count,
+            remaining_transactions_count: config.max_transaction_count,
             remaining_transactions_size: config.max_total_transactions_size,
             remaining_execution_cost_units_consumed: config.max_total_execution_cost_units_consumed,
             remaining_substate_read_size: config.max_total_substate_read_size,
