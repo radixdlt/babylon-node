@@ -299,6 +299,7 @@ pub struct PreviewRequest {
     pub nonce: u32,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
+    pub message: MessageV1,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

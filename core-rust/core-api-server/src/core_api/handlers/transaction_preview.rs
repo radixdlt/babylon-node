@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::transaction::{PreviewError, TransactionResult};
+use radix_engine_common::crypto::PublicKey;
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use std::ops::Range;
@@ -8,7 +9,12 @@ use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::manifest::BlobProvider;
-use transaction::model::PreviewFlags;
+use transaction::model::{
+    AesGcmPayload, AesWrapped128BitKey, DecryptorsByCurve, EncryptedMessageV1, MessageV1,
+    PlaintextMessageV1, PreviewFlags, PublicKeyFingerprint,
+};
+use transaction::prelude::MessageContentsV1;
+use utils::copy_u8_array;
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -79,6 +85,13 @@ fn extract_preview_request(
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
             skip_epoch_check: request.flags.skip_epoch_check,
         },
+        message: request
+            .message
+            .map(|message| {
+                extract_api_message(*message).map_err(|err| err.into_response_error("message"))
+            })
+            .transpose()?
+            .unwrap_or_else(|| MessageV1::None),
     })
 }
 
@@ -161,4 +174,63 @@ fn to_api_response(
     };
 
     Ok(response)
+}
+
+fn extract_api_message(message: models::TransactionMessage) -> Result<MessageV1, ExtractionError> {
+    Ok(match message {
+        models::TransactionMessage::PlaintextTransactionMessage { mime_type, content } => {
+            MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type,
+                message: match *content {
+                    models::PlaintextMessageContent::StringPlaintextMessageContent { value } => {
+                        MessageContentsV1::String(value)
+                    }
+                    models::PlaintextMessageContent::BinaryPlaintextMessageContent {
+                        value_hex,
+                    } => MessageContentsV1::Bytes(from_hex(value_hex)?),
+                },
+            })
+        }
+        models::TransactionMessage::EncryptedTransactionMessage {
+            encrypted_hex,
+            curve_decryptor_sets,
+        } => MessageV1::Encrypted(EncryptedMessageV1 {
+            encrypted: AesGcmPayload(from_hex(encrypted_hex)?),
+            decryptors_by_curve: curve_decryptor_sets
+                .into_iter()
+                .map(|curve_decryptor_set| -> Result<_, ExtractionError> {
+                    let dh_ephemeral_public_key = extract_api_public_key(
+                        curve_decryptor_set.dh_ephemeral_public_key.unwrap(),
+                    )?;
+                    let decryptors = curve_decryptor_set
+                        .decryptors
+                        .into_iter()
+                        .map(|decryptor| -> Result<_, ExtractionError> {
+                            Ok((
+                                PublicKeyFingerprint(copy_u8_array(&from_hex(
+                                    decryptor.public_key_fingerprint_hex,
+                                )?)),
+                                AesWrapped128BitKey(copy_u8_array(&from_hex(
+                                    decryptor.aes_wrapped_key_hex,
+                                )?)),
+                            ))
+                        })
+                        .collect::<Result<_, _>>()?;
+                    let descryptors_by_curve = match dh_ephemeral_public_key {
+                        PublicKey::Secp256k1(dh_ephemeral_public_key) => {
+                            DecryptorsByCurve::Secp256k1 {
+                                dh_ephemeral_public_key,
+                                decryptors,
+                            }
+                        }
+                        PublicKey::Ed25519(dh_ephemeral_public_key) => DecryptorsByCurve::Ed25519 {
+                            dh_ephemeral_public_key,
+                            decryptors,
+                        },
+                    };
+                    Ok((descryptors_by_curve.curve_type(), descryptors_by_curve))
+                })
+                .collect::<Result<_, _>>()?,
+        }),
+    })
 }
