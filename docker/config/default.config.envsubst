@@ -23,6 +23,10 @@ mempool.relayer.max_message_payload_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_MESSAGE_
 mempool.reevaluation.interval_ms=${RADIXDLT_MEMPOOL_REEVALUATION_INTERVAL_MS}
 mempool.reevaluation.max_count=${RADIXDLT_MEMPOOL_REEVALUATION_MAX_COUNT}
 
+protocol.vertex.max_transaction_count=${RADIXDLT_PROTOCOL_VERTEX_MAX_TRANSACTION_COUNT}
+protocol.vertex.max_total_transactions_size=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_TRANSACTIONS_SIZE}
+protocol.vertex.max_total_execution_cost_units_consumed=${RADIXDLT_PROTOCOL_VERTEX_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED}
+
 api.core.port=$RADIXDLT_CORE_API_PORT
 api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
 
