@@ -77,8 +77,7 @@ import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -101,6 +100,12 @@ class MessageDispatcher {
   private final PeerManager peerManager;
   private final Addressing addressing;
 
+  // A rate of 0.05 == 1 message every 20s
+  private final RejectionCountingRateLimiter ttlExpiredLogRateLimiter =
+      new RejectionCountingRateLimiter(0.05);
+  private final LRUCache<NodeId, RejectionCountingRateLimiter> sendErrorLogRateLimitersByReceiver =
+      new LRUCache<>(150);
+
   MessageDispatcher(
       Metrics metrics,
       MessageCentralConfiguration config,
@@ -121,13 +126,8 @@ class MessageDispatcher {
     final var receiver = outboundMessage.receiver();
 
     if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-      String msg =
-          String.format(
-              "TTL for %s message to %s has expired",
-              message.getClass().getSimpleName(),
-              addressing.encodeNodeAddress(receiver.getPublicKey()));
-      log.warn(msg);
       this.metrics.messages().outbound().aborted().inc();
+      logTtlExpired(message, receiver);
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
     }
 
@@ -137,24 +137,77 @@ class MessageDispatcher {
         .findOrCreateChannel(outboundMessage.receiver())
         .thenApply(channel -> send(channel, bytes))
         .thenApply(this::updateStatistics)
-        .exceptionally(t -> completionException(t, receiver, message));
+        .thenApply(
+            result -> {
+              result.onError(err -> logSendError(message, receiver, err.toString()));
+              return result;
+            })
+        .exceptionally(
+            t -> {
+              final var cause = t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+              logSendError(message, receiver, cause);
+              return IO_ERROR.result();
+            });
+  }
+
+  private void logSendError(Message message, NodeId receiver, String cause) {
+    final RejectionCountingRateLimiter rateLimiter;
+    synchronized (sendErrorLogRateLimitersByReceiver) {
+      if (sendErrorLogRateLimitersByReceiver.contains(receiver)) {
+        rateLimiter = sendErrorLogRateLimitersByReceiver.get(receiver).orElseThrow();
+      } else {
+        // 1/60 permits a second == 1 message every minute
+        rateLimiter = new RejectionCountingRateLimiter((double) 1 / 60);
+        sendErrorLogRateLimitersByReceiver.put(receiver, rateLimiter);
+      }
+    }
+    rateLimiter.tryAcquire(
+        countSinceLastPermit -> {
+          final var baseMsg =
+              String.format(
+                  "An outbound message of type %s couldn't be sent to %s because of: \"%s\".",
+                  message.getClass().getSimpleName(),
+                  addressing.encodeNodeAddress(receiver.getPublicKey()),
+                  cause);
+          if (countSinceLastPermit > 0) {
+            log.warn(
+                "{} {} more messages couldn't be send to this peer since "
+                    + "the previous log message (likely for the same reason).",
+                baseMsg,
+                countSinceLastPermit);
+          } else {
+            log.warn(baseMsg);
+          }
+        });
+  }
+
+  private void logTtlExpired(Message message, NodeId receiver) {
+    ttlExpiredLogRateLimiter.tryAcquire(
+        countSinceLastPermit -> {
+          final var baseMsg =
+              String.format(
+                  "TTL (of %s ms) has expired for an outbound message of type %s destined to %s and"
+                      + " it will be dropped. This is likely caused by an overgrown message"
+                      + " backlog, which might be caused by slow network speed and/or excessive"
+                      + " processing load, in which case it's likely a transient issue.",
+                  messageTtlMs,
+                  message.getClass().getSimpleName(),
+                  addressing.encodeNodeAddress(receiver.getPublicKey()));
+          if (countSinceLastPermit > 0) {
+            log.warn(
+                "{} {} more messages were dropped due to TTL expiration "
+                    + "since the previous log message (possibly targeted to different peers).",
+                baseMsg,
+                countSinceLastPermit);
+          } else {
+            log.warn(baseMsg);
+          }
+        });
   }
 
   private Result<Unit, Cause> send(PeerChannel channel, byte[] bytes) {
     this.metrics.networking().bytesSent().inc(bytes.length);
     return channel.send(bytes);
-  }
-
-  private Result<Unit, Cause> completionException(
-      Throwable cause, NodeId receiver, Message message) {
-    final var msg =
-        String.format(
-            "Send %s to %s (of public key: %s) failed",
-            message.getClass().getSimpleName(),
-            addressing.encodeNodeAddress(receiver.getPublicKey()),
-            receiver.getPublicKey().toHex());
-    log.warn("{}: {}", msg, cause.getMessage());
-    return IO_ERROR.result();
   }
 
   private Result<Unit, Cause> updateStatistics(Result<Unit, Cause> result) {

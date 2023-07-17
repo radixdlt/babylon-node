@@ -100,7 +100,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
                 },
                 instructions,
                 blobs,
-                message: MessageV1::None,
+                message: preview_request.message,
             },
             signer_public_keys: preview_request.signer_public_keys,
             flags: preview_request.flags,
@@ -130,7 +130,7 @@ mod tests {
     use radix_engine_common::network::NetworkDefinition;
     use std::sync::Arc;
     use transaction::builder::ManifestBuilder;
-    use transaction::model::PreviewFlags;
+    use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
@@ -209,6 +209,7 @@ mod tests {
                 assume_all_signature_proofs: true,
                 skip_epoch_check: false,
             },
+            message: MessageV1::None,
         });
 
         // just checking that we're getting some processed substate changes back in the response

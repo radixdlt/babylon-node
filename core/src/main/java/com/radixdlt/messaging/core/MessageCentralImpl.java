@@ -144,7 +144,11 @@ public final class MessageCentralImpl implements MessageCentral {
     this.outboundThreadPool =
         new SimpleThreadPool<>(
             "Outbound message processing",
-            1, // Ensure messages sent in-order
+            /* This was meant to ensure messages are sent in order,
+            but this isn't guaranteed because currently
+            outboundMessageProcessor spawns a CompletableFuture
+            and doesn't await its completion. */
+            1,
             outboundQueue::take,
             this::outboundMessageProcessor,
             log);

@@ -79,7 +79,7 @@ public class BFTValidatorSetNodeSelector implements NodeSelector {
   @Override
   public Single<NodeId> nextNode(RunningNetwork network) {
     BFTConfiguration config = network.bftConfiguration();
-    ImmutableList<BFTValidatorId> validators = config.getValidatorSet().nodes().asList();
+    ImmutableList<BFTValidatorId> validators = config.getValidatorSet().validators().asList();
     int validatorSetSize = validators.size();
     var node = NodeId.fromPublicKey(validators.get(random.nextInt(validatorSetSize)).getKey());
     return Single.just(node);

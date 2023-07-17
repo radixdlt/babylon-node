@@ -299,6 +299,7 @@ pub struct PreviewRequest {
     pub nonce: u32,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
+    pub message: MessageV1,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -378,7 +379,7 @@ pub struct NextEpoch {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
     pub key: Secp256k1PublicKey,
-    pub validator_address: Option<ComponentAddress>,
+    pub validator_address: ComponentAddress,
     pub timestamp_ms: i64,
     pub signature: Secp256k1Signature,
 }

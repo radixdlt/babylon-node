@@ -67,6 +67,7 @@ package com.radixdlt.p2p.transport;
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
@@ -74,6 +75,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
+import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.ServerBootstrap;
@@ -84,10 +86,15 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class PeerServerBootstrap {
+  private static final Logger log = LogManager.getLogger();
+
   private static final int BACKLOG_SIZE = 100;
 
+  private final RadixNodeUri self;
   private final P2PConfig config;
   private final Addressing addressing;
   private final Network network;
@@ -104,6 +111,7 @@ public final class PeerServerBootstrap {
 
   @Inject
   public PeerServerBootstrap(
+      @Self RadixNodeUri self,
       P2PConfig config,
       Addressing addressing,
       Network network,
@@ -116,6 +124,7 @@ public final class PeerServerBootstrap {
       @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
       @ProposalMaxUncommittedTransactionsPayloadSize
           int proposalMaxUncommittedTransactionsPayloadSize) {
+    this.self = Objects.requireNonNull(self);
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -160,6 +169,8 @@ public final class PeerServerBootstrap {
 
     serverBind =
         serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
+
+    log.info("P2P server started. Node URI is: {}", self);
   }
 
   public void stop() {

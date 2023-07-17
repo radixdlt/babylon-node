@@ -73,9 +73,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -165,7 +165,11 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     // Making sure that the altered nodes are in fact consecutive leaders
     final var proposerElection =
-        runningTest.getNodeInjectors().get(0).getInstance(ProposerElection.class);
+        runningTest
+            .getNodeInjectors()
+            .get(0)
+            .getInstance(BFTConfiguration.class)
+            .getProposerElection();
     final var firstLeader = proposerElection.getProposer(Round.of(1L));
     final var nextLeader = proposerElection.getProposer(Round.of(2L));
     assertEquals(firstLeader.getKey(), rushingNode.get().getPublicKey());

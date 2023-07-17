@@ -81,7 +81,7 @@ import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.MockedBFTNodeModule;
+import com.radixdlt.ledger.MockedSelfValidatorInfoModule;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -132,7 +132,7 @@ public final class MempoolRunnerTest {
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
         install(MempoolReceiverConfig.of(10).asModule());
-        install(new MockedBFTNodeModule());
+        install(new MockedSelfValidatorInfoModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());
         install(new RxEnvironmentModule());

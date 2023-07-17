@@ -91,14 +91,14 @@ public final class InMemorySystemInfo {
    */
   private final AtomicReference<LedgerProof> ledgerProof;
   private final AtomicReference<LedgerProof> epochsLedgerProof;
-  private final BFTValidatorId self;
+  private final SelfValidatorInfo self;
   // private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
   public InMemorySystemInfo(
       @LastProof LedgerProof lastProof,
       @LastEpochProof LedgerProof lastEpochProof,
-      @Self BFTValidatorId self
+      SelfValidatorInfo self
       /*RadixEngine<LedgerAndBFTProof> radixEngine*/ ) {
     this.ledgerProof = new AtomicReference<>(lastProof);
     this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);

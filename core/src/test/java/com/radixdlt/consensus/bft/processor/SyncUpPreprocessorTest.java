@@ -112,7 +112,9 @@ public class SyncUpPreprocessorTest {
     final var proposalLedgerProof = mock(LedgerProof.class);
     when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
     when(proposal.getAuthor())
-        .thenReturn(BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey()));
+        .thenReturn(
+            BFTValidatorId.withKeyAndFakeDeterministicAddress(
+                PrivateKeys.ofNumeric(1).getPublicKey()));
     when(proposal.getRound()).thenReturn(Round.of(4));
     when(proposal.highQC()).thenReturn(proposalHighQc);
     when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);

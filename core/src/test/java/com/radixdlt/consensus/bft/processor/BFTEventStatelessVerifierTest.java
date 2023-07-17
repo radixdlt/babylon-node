@@ -147,7 +147,7 @@ public class BFTEventStatelessVerifierTest {
     final var highQc = mock(HighQC.class);
     when(highQc.getHighestRound()).thenReturn(Round.of(2));
     when(proposal.highQC()).thenReturn(highQc);
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
     when(proposerElection.getProposer(proposal.getRound())).thenReturn(author);
@@ -165,7 +165,7 @@ public class BFTEventStatelessVerifierTest {
     final var highQc = mock(HighQC.class);
     when(highQc.getHighestRound()).thenReturn(Round.of(1));
     when(proposal.highQC()).thenReturn(highQc);
-    when(validatorSet.containsNode(eq(author))).thenReturn(false);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(false);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, never()).processProposal(any());
@@ -187,7 +187,7 @@ public class BFTEventStatelessVerifierTest {
     final var highQc = mock(HighQC.class);
     when(highQc.getHighestRound()).thenReturn(Round.of(1));
     when(proposal.highQC()).thenReturn(highQc);
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, never()).processProposal(any());
@@ -239,7 +239,7 @@ public class BFTEventStatelessVerifierTest {
     ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
     when(vote.getSignature()).thenReturn(voteSignature);
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
@@ -253,7 +253,7 @@ public class BFTEventStatelessVerifierTest {
     BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
-    when(validatorSet.containsNode(eq(author))).thenReturn(false);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(false);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     eventVerifier.processVote(vote);
     verify(forwardTo, never()).processVote(any());
@@ -265,7 +265,7 @@ public class BFTEventStatelessVerifierTest {
     BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
     eventVerifier.processVote(vote);
     verify(forwardTo, never()).processVote(any());
@@ -282,7 +282,7 @@ public class BFTEventStatelessVerifierTest {
     ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
     when(vote.getSignature()).thenReturn(voteSignature);
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(validatorSet.containsValidator(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(false);
     eventVerifier.processVote(vote);

@@ -62,124 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.utils;
 
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.utils.UInt256;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.StringJoiner;
-import java.util.function.Function;
-import java.util.stream.Stream;
+import com.google.common.util.concurrent.RateLimiter;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
- * Set of validators for consensus. Only validators with power >= 1 will be part of the set.
- *
- * <p>Note that this set will validate for set sizes less than 4, as long as all validators sign.
+ * A wrapper around RateLimiter that counts the number of rejections between permits. This class is
+ * thread-safe.
  */
-public final class BFTValidatorSet {
-  private final ImmutableBiMap<BFTValidatorId, BFTValidator> validators;
+@SuppressWarnings("UnstableApiUsage")
+public final class RejectionCountingRateLimiter {
+  private final RateLimiter baseRateLimiter;
+  private final AtomicInteger countSinceLastPermit = new AtomicInteger(0);
 
-  // Because we will base power on tokens and because tokens have a max limit
-  // of 2^256 this should never overflow
-  private final transient UInt256 totalPower;
-
-  private BFTValidatorSet(Collection<BFTValidator> validators) {
-    this(validators.stream());
+  public RejectionCountingRateLimiter(RateLimiter baseRateLimiter) {
+    this.baseRateLimiter = baseRateLimiter;
   }
 
-  private BFTValidatorSet(Stream<BFTValidator> validators) {
-    this.validators =
-        validators
-            .filter(v -> !v.getPower().isZero())
-            .collect(
-                ImmutableBiMap.toImmutableBiMap(BFTValidator::getValidatorId, Function.identity()));
-    this.totalPower =
-        this.validators.values().stream()
-            .map(BFTValidator::getPower)
-            .reduce(UInt256::add)
-            .orElse(UInt256.ZERO);
+  public RejectionCountingRateLimiter(double permitsPerSecond) {
+    this(RateLimiter.create(permitsPerSecond));
   }
 
   /**
-   * Create a validator set from a collection of validators. The sum of power of all validator
-   * should not exceed UInt256.MAX_VALUE otherwise the resulting ValidatorSet will perform in an
-   * undefined way. This invariant should be upheld within the system due to max number of tokens
-   * being constrained to UInt256.MAX_VALUE.
-   *
-   * @param validators the collection of validators
-   * @return The new {@code ValidatorSet}.
+   * Invokes the supplied consumer if the permit was acquired. Consumer accepts a number of acquire
+   * attempts that have been rejected since the previous permit.
    */
-  public static BFTValidatorSet from(Collection<BFTValidator> validators) {
-    return new BFTValidatorSet(validators);
-  }
-
-  /**
-   * Create a validator set from a stream of validators. The sum of power of all validator should
-   * not exceed UInt256.MAX_VALUE otherwise the resulting ValidatorSet will perform in an undefined
-   * way. This invariant should be upheld within the system due to max number of tokens being
-   * constrained to UInt256.MAX_VALUE.
-   *
-   * @param validators the stream of validators
-   * @return The new {@code ValidatorSet}.
-   */
-  public static BFTValidatorSet from(Stream<BFTValidator> validators) {
-    return new BFTValidatorSet(validators);
-  }
-
-  /**
-   * Create an initial validation state with no signatures for this validator set.
-   *
-   * @return An initial validation state with no signatures
-   */
-  public ValidationState newValidationState() {
-    return ValidationState.forValidatorSet(this);
-  }
-
-  public boolean containsValidator(BFTValidatorId validatorId) {
-    return validators.containsKey(validatorId);
-  }
-
-  public UInt256 getPower(BFTValidatorId validatorId) {
-    return validators.get(validatorId).getPower();
-  }
-
-  public UInt256 getTotalPower() {
-    return totalPower;
-  }
-
-  public ImmutableSet<BFTValidator> getValidators() {
-    return validators.values();
-  }
-
-  public ImmutableSet<BFTValidatorId> validators() {
-    return validators.keySet();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(this.validators);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
+  public void tryAcquire(Consumer<Integer> consumer) {
+    if (baseRateLimiter.tryAcquire()) {
+      final var count = countSinceLastPermit.getAndSet(0);
+      consumer.accept(count);
+    } else {
+      countSinceLastPermit.incrementAndGet();
     }
-    if (obj instanceof BFTValidatorSet) {
-      BFTValidatorSet other = (BFTValidatorSet) obj;
-      return Objects.equals(this.validators, other.validators);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    final StringJoiner joiner = new StringJoiner(",");
-    for (BFTValidator validator : this.validators.values()) {
-      joiner.add(String.format("%s=%s", validator.getValidatorId(), validator.getPower()));
-    }
-    return String.format("%s[%s]", this.getClass().getSimpleName(), joiner.toString());
   }
 }

@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -78,6 +79,7 @@ public interface PacemakerFactory {
    * @return a new pacemaker
    */
   Pacemaker create(
+      BFTValidatorId selfValidatorId,
       BFTValidatorSet validatorSet,
       VertexStoreAdapter vertexStore,
       PacemakerTimeoutCalculator timeoutCalculator,

@@ -98,7 +98,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
-import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
 import com.radixdlt.monitoring.Metrics;
@@ -126,6 +125,8 @@ public class EpochManagerTest {
   @Inject private Hasher hasher;
 
   private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+  private BFTValidatorId selfValidatorId =
+      BFTValidatorId.withKeyAndFakeDeterministicAddress(ecKeyPair.getPublicKey());
 
   private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
   private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
@@ -165,12 +166,13 @@ public class EpochManagerTest {
       };
 
   private Module getExternalModule() {
-    BFTValidatorId self = BFTValidatorId.create(ecKeyPair.getPublicKey());
+    final var selfValidatorInfo =
+        new SelfValidatorInfo(ecKeyPair.getPublicKey(), Optional.of(selfValidatorId));
     return new AbstractModule() {
       @Override
       protected void configure() {
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
-        bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(self);
+        bind(SelfValidatorInfo.class).toInstance(selfValidatorInfo);
         bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTInsertUpdate>>() {})
@@ -253,12 +255,12 @@ public class EpochManagerTest {
       private RoundUpdate initialRoundUpdate(BFTConfiguration bftConfiguration) {
         HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
         Round round = highQC.getHighestRound().next();
-        return RoundUpdate.create(round, highQC, self, self);
+        return RoundUpdate.create(round, highQC, selfValidatorId, selfValidatorId);
       }
 
       @Provides
       BFTValidatorSet validatorSet() {
-        return BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)));
+        return BFTValidatorSet.from(Stream.of(BFTValidator.from(selfValidatorId, UInt256.ONE)));
       }
 
       @Provides
@@ -274,8 +276,7 @@ public class EpochManagerTest {
       }
 
       @Provides
-      BFTConfiguration bftConfiguration(
-          @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
+      BFTConfiguration bftConfiguration(Hasher hasher, BFTValidatorSet validatorSet) {
         var vertex =
             Vertex.createInitialEpochVertex(
                     LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
@@ -296,7 +297,6 @@ public class EpochManagerTest {
   public void setup() {
     Guice.createInjector(
             new CryptoModule(),
-            new ConsensusModule(),
             new EpochsConsensusModule(),
             new LedgerModule(),
             getExternalModule())

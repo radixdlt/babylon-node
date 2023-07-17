@@ -62,40 +62,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.keys;
+package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
-  @Provides
-  @Singleton
-  @Self
-  private BFTValidatorId self(
-      // Require the token to ensure ledger genesis init
-      REv2LedgerInitializerToken rev2LedgerInitializerToken,
-      @Self ECDSASecp256k1PublicKey key,
-      TransactionsAndProofReader transactionsAndProofReader) {
-    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
-    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
-    var potentialBFTValidators =
-        genesisValidatorSet.getValidators().stream()
-            .map(BFTValidator::getValidatorId)
-            .filter(node -> node.getKey().equals(key))
-            .toList();
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
+import org.junit.Test;
 
-    if (potentialBFTValidators.size() > 1) {
-      throw new IllegalStateException(
-          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
+public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void transaction_previewed_with_message_consumes_more_cost_units() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      // Prepare a base request (no message)
+      var manifest = Manifest.valid().apply(new Manifest.Parameters(networkDefinition));
+      var baseRequest =
+          new TransactionPreviewRequest()
+              .network(networkLogicalName)
+              .startEpochInclusive(0L)
+              .endEpochExclusive(100L)
+              .tipPercentage(1)
+              .nonce(10L)
+              .flags(
+                  new TransactionPreviewRequestFlags()
+                      .useFreeCredit(true)
+                      .assumeAllSignatureProofs(true)
+                      .skipEpochCheck(true))
+              .manifest(manifest);
+
+      // Prepare a complex message separately
+      var largeEncryptedMessage =
+          new EncryptedTransactionMessage()
+              .encryptedHex(Bytes.toHexString(new byte[1000]))
+              .addCurveDecryptorSetsItem(
+                  new EncryptedMessageCurveDecryptorSet()
+                      .dhEphemeralPublicKey(
+                          new EcdsaSecp256k1PublicKey()
+                              .keyHex(
+                                  Bytes.toHexString(
+                                      PrivateKeys.ofNumeric(1)
+                                          .getPublicKey()
+                                          .getCompressedBytes())))
+                      .addDecryptorsItem(
+                          new EncryptedMessageDecryptor()
+                              .publicKeyFingerprintHex(Bytes.toHexString(new byte[8]))
+                              .aesWrappedKeyHex(Bytes.toHexString(new byte[24]))));
+
+      // Ask for costing of a base request
+      var noMessageCost =
+          getTransactionApi()
+              .transactionPreviewPost(baseRequest)
+              .getReceipt()
+              .getFeeSummary()
+              .getCostUnitsConsumed();
+
+      // Ask for costing of a preview request with a large message
+      var largeEncryptedMessageCost =
+          getTransactionApi()
+              .transactionPreviewPost(baseRequest.message(largeEncryptedMessage))
+              .getReceipt()
+              .getFeeSummary()
+              .getCostUnitsConsumed();
+
+      // Message should add some cost
+      // TODO(after fix in the Engine): this should assert `.isGreaterThan()`, as the test's name
+      // suggests
+      assertThat(largeEncryptedMessageCost).isEqualTo(noMessageCost);
     }
-
-    return potentialBFTValidators.stream().findFirst().orElse(BFTValidatorId.create(key));
   }
 }

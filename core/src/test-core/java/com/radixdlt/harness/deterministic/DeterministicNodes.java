@@ -67,7 +67,6 @@ package com.radixdlt.harness.deterministic;
 import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -77,15 +76,14 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.keys.BFTValidatorIdModule;
+import com.radixdlt.keys.SelfValidatorInfoFromGenesisModule;
+import com.radixdlt.keys.SelfValidatorInfoModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -187,16 +185,15 @@ public final class DeterministicNodes implements AutoCloseable {
                     .annotatedWith(Self.class)
                     .toInstance(NodeId.fromPublicKey(config.key()));
 
-                if (config.loadFromGenesis()) {
-                  install(new BFTValidatorIdFromGenesisModule());
-                } else {
-                  var binder =
-                      OptionalBinder.newOptionalBinder(
-                          binder(), Key.get(ComponentAddress.class, Self.class));
-                  if (config.validatorAddress() != null) {
-                    binder.setBinding().toInstance(config.validatorAddress());
+                switch (config.validatorIdSource()) {
+                  case PhysicalNodeConfig.ValidatorIdSource.Provided provided -> {
+                    install(
+                        new SelfValidatorInfoModule(
+                            Optional.of(provided.validatorId().getValidatorAddress())));
                   }
-                  install(new BFTValidatorIdModule());
+                  case PhysicalNodeConfig.ValidatorIdSource.LoadFromGenesis loadFromGenesis -> {
+                    install(new SelfValidatorInfoFromGenesisModule());
+                  }
                 }
 
                 install(
