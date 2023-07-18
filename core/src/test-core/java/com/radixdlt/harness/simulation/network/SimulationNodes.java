@@ -255,14 +255,12 @@ public class SimulationNodes {
           .entrySet()
           .stream()
           .filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
-          .forEach(
-              e ->
-                  e.getValue()
-                      .start(
-                          error -> {
-                            log.error("uncaught {} error; stopping the network", e.getKey(), error);
-                            this.stop();
-                          }));
+          .forEach(e -> e.getValue().start(error -> this.onModuleError(e.getKey(), error)));
+    }
+
+    private void onModuleError(String module, Throwable error) {
+      log.error("Uncaught error from module {}; stopping the network", module, error);
+      this.stop();
     }
 
     private void addObservables(NodeId node, Injector injector) {

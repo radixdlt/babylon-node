@@ -90,7 +90,6 @@ import org.apache.logging.log4j.Logger;
 
 public final class RunningRadixNode {
   private static final Logger log = LogManager.getLogger();
-  public static RunningRadixNode ki;
 
   private final Injector injector;
 
@@ -126,8 +125,8 @@ public final class RunningRadixNode {
       final var moduleRunner = moduleRunners.get(module);
       moduleRunner.start(
           error -> {
-            log.error("Unhandled exception in runner {}; shutting down the node", module, error);
-            runningNode.shutdown();
+            log.error("Uncaught exception in runner {}; shutting down the node", module, error);
+            runningNode.shutdownFromModule(String.format("an error in runner %s", module));
           });
     }
 
@@ -164,16 +163,16 @@ public final class RunningRadixNode {
     Runtime.getRuntime().addShutdownHook(hook);
   }
 
-  public void shutdown() {
+  private void shutdownFromModule(String reason) {
     final @Nullable Thread hook = this.shutdownHook.getAndSet(null);
     if (hook != null) {
       Runtime.getRuntime().removeShutdownHook(hook);
     }
-    doShutdown("internal reasons");
+    doShutdown(reason);
   }
 
   private void shutdownFromHook() {
-    doShutdown("a shutdown hook");
+    doShutdown("a requested shutdown (via the Java shutdown hook)");
   }
 
   private void doShutdown(String reason) {

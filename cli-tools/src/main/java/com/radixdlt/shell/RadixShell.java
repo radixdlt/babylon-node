@@ -251,7 +251,7 @@ public final class RadixShell {
           .get(runner)
           .start(
               error -> {
-                log.error("Unhandled exception in runner {}; stopping all runners", runner, error);
+                log.error("Uncaught exception in runner {}; stopping all runners", runner, error);
                 moduleRunners.values().forEach(ModuleRunner::stop);
               });
     }

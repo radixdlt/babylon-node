@@ -152,7 +152,7 @@ public final class MempoolRunnerTest {
   @Test
   public void dispatched_mempool_add_arrives_at_state_computer() {
     Guice.createInjector(createModule()).injectMembers(this);
-    moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("uncaught runner error", error));
+    moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("Uncaught runner error", error));
 
     MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);
