@@ -102,20 +102,8 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
   private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
-    Disposable subscribe(Scheduler s) {
-      return o.observeOn(s)
-          .subscribe(
-              p::process,
-              e -> {
-                // TODO: Implement better error handling especially against Byzantine nodes.
-                // TODO: Exit process for now.
-                logger.error(
-                    "Unhandled exception in the event processing loop. Shutting down the node.", e);
-                Thread.sleep(500);
-                // This may cause integration test errors which look like:
-                // Process 'Gradle Test Executor 1' finished with non-zero exit value 255
-                System.exit(-1);
-              });
+    Disposable subscribe(Scheduler s, Consumer<Throwable> errorHandler) {
+      return o.observeOn(s).subscribe(p::process, errorHandler::accept);
     }
   }
 
@@ -195,7 +183,7 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   }
 
   @Override
-  public void start() {
+  public void start(Consumer<Throwable> errorHandler) {
     synchronized (this.startLock) {
       if (this.compositeDisposable != null) {
         return;
@@ -209,7 +197,9 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
 
       this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
       final var disposables =
-          this.subscriptions.stream().map(s -> s.subscribe(singleThreadScheduler)).toList();
+          this.subscriptions.stream()
+              .map(s -> s.subscribe(singleThreadScheduler, errorHandler))
+              .toList();
       this.compositeDisposable = new CompositeDisposable(disposables);
 
       this.onStart.forEach(f -> f.accept(this.executorService));

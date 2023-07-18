@@ -64,10 +64,15 @@
 
 package com.radixdlt.modules;
 
+import java.util.function.Consumer;
+
 /** Manages a module */
 public interface ModuleRunner {
-  /** Start running the module */
-  void start();
+  /**
+   * Start running the module. The given error handler will be notified each time an unhandled
+   * exception escapes the module's worker thread.
+   */
+  void start(Consumer<Throwable> errorHandler);
 
   /** Stop running the module */
   void stop();

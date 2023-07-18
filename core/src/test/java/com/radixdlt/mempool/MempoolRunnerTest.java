@@ -100,9 +100,13 @@ import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Comparator;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public final class MempoolRunnerTest {
+  private static final Logger log = LogManager.getLogger();
+
   @Inject private Map<String, ModuleRunner> moduleRunners;
   @Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
@@ -148,7 +152,7 @@ public final class MempoolRunnerTest {
   @Test
   public void dispatched_mempool_add_arrives_at_state_computer() {
     Guice.createInjector(createModule()).injectMembers(this);
-    moduleRunners.get(Runners.MEMPOOL).start();
+    moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("uncaught runner error", error));
 
     MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);

@@ -78,13 +78,14 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -104,7 +105,7 @@ public final class PeerServerBootstrap {
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
-  private ChannelFuture serverBind;
+  private final AtomicReference<ServerBootstrap> serverBootstrap;
   private final int mempoolRelayerMaxMessagePayloadSize;
 
   @Inject
@@ -131,7 +132,7 @@ public final class PeerServerBootstrap {
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.capabilities = capabilities;
-    this.serverBind = null;
+    this.serverBootstrap = new AtomicReference<>();
     this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
   }
 
@@ -160,15 +161,17 @@ public final class PeerServerBootstrap {
                 capabilities,
                 mempoolRelayerMaxMessagePayloadSize));
 
-    serverBind =
-        serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
+    serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
+    this.serverBootstrap.set(serverBootstrap);
 
     log.info("P2P server started. Node URI is: {}", self);
   }
 
   public void stop() {
-    if (serverBind != null) {
-      serverBind.channel().close().syncUninterruptibly();
+    @Nullable var runningServerBootstrap = this.serverBootstrap.getAndSet(null);
+    if (runningServerBootstrap != null) {
+      runningServerBootstrap.config().childGroup().shutdownGracefully().syncUninterruptibly();
+      runningServerBootstrap.config().group().shutdownGracefully().syncUninterruptibly();
     }
   }
 }

@@ -126,7 +126,7 @@ public final class RadixNodeApplication {
                   runningNode.self(),
                   startupTime.toMillis());
               runningNode.reportSelfStartupTime(startupTime);
-              Runtime.getRuntime().addShutdownHook(new Thread(runningNode::shutdown));
+              runningNode.installShutdownHook();
             })
         // Call .join() to block on the future completing, ensuring that errors during
         // bootstrapping are not swallowed, and propagate to the "Unable to start" handler.
