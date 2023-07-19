@@ -76,6 +76,7 @@ use axum::{
 use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
+use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{debug, error, info, trace, warn, Level};
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -83,6 +84,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use crate::core_api::models::ErrorResponse;
+use crate::core_api::InternalServerErrorResponseForPanic;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
 use state_manager::mempool::priority_mempool::PriorityMempool;
 use state_manager::mempool_manager::MempoolManager;
@@ -189,6 +191,7 @@ where
     let prefixed_router = Router::new()
         .nest("/core", router)
         .route("/", get(handle_no_core_path))
+        .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
         .layer(map_response(emit_error_response_event));
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
@@ -215,7 +218,7 @@ async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
     let error_response = response.extensions().get::<ErrorResponse>();
     if let Some(error_response) = error_response {
         let level = resolve_level(response.status());
-        // the `event!(level, ...)` macro does not accept non-costant levels, hence we unroll:
+        // the `event!(level, ...)` macro does not accept non-constant levels, hence we unroll:
         match level {
             Level::TRACE => trace!(path = uri.path(), error = debug(error_response)),
             Level::DEBUG => debug!(path = uri.path(), error = debug(error_response)),

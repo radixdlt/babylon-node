@@ -1,10 +1,13 @@
+use axum::body::BoxBody;
 use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use std::any::Any;
 
 use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
+use tower_http::catch_panic::ResponseForPanic;
 
 use super::models;
 use models::{
@@ -66,6 +69,23 @@ impl ErrorDetails for LtsTransactionSubmitErrorDetails {
             trace_id,
             details: details.map(Box::new),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct InternalServerErrorResponseForPanic;
+
+impl ResponseForPanic for InternalServerErrorResponseForPanic {
+    type ResponseBody = BoxBody;
+
+    fn response_for_panic(
+        &mut self,
+        _panic_payload: Box<dyn Any + Send + 'static>,
+    ) -> Response<Self::ResponseBody> {
+        // Please note that we deliberately do *not*:
+        // - log the panic payload (since the default panic handler already does this);
+        // - include the panic payload in the response (it may contain sensitive details).
+        server_error::<()>("Unexpected server error").into_response()
     }
 }
 

@@ -44,7 +44,7 @@ checksum = "f8175979259124331c1d7bf6586ee7e0da434155e4b2d48ec2c8386281d8df39"
 dependencies = [
  "async-trait",
  "axum-core",
- "bitflags",
+ "bitflags 1.3.2",
  "bytes",
  "futures-util",
  "http",
@@ -97,7 +97,7 @@ version = "0.64.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4243e6031260db77ede97ad86c27e501d646a27ab57b59a574f725d98ab1fb4"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "cexpr",
  "clang-sys",
  "lazy_static",
@@ -116,6 +116,12 @@ name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+
+[[package]]
+name = "bitflags"
+version = "2.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "630be753d4e58660abd17930c71b647fe46c27ea6b63cc59e1e3851406972e42"
 
 [[package]]
 name = "bitmaps"
@@ -333,6 +339,7 @@ dependencies = [
  "serde_json",
  "state-manager",
  "tokio",
+ "tower-http",
  "tracing",
  "transaction",
  "utils",
@@ -741,6 +748,12 @@ dependencies = [
  "http",
  "pin-project-lite",
 ]
+
+[[package]]
+name = "http-range-header"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bfe8eed0a9285ef776bb792479ea3834e8b94e13d615c2f66d03dd50a435a29"
 
 [[package]]
 name = "httparse"
@@ -1379,7 +1392,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a1a2f1f0a7ecff9c31abbe177637be0e97a0aef46cf8738ece09327985d998"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "memchr",
  "unicase",
 ]
@@ -1398,7 +1411,7 @@ name = "radix-engine"
 version = "0.10.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v2-638673d16e#638673d16e83e1f04ffd7e44d2a0254a6e54a07e"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "colored",
  "hex",
  "lazy_static",
@@ -1465,7 +1478,7 @@ name = "radix-engine-interface"
 version = "0.10.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v2-638673d16e#638673d16e83e1f04ffd7e44d2a0254a6e54a07e"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "const-sha1",
  "hex",
  "lazy_static",
@@ -1617,7 +1630,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "567664f262709473930a4bf9e51bf2ebf3348f2e748ccc50dea20646858f8f29"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
 ]
 
 [[package]]
@@ -1677,7 +1690,7 @@ version = "0.37.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b96e891d04aa506a6d1f318d2771bcb1c7dfda84e126660ace067c9b474bb2c0"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "errno",
  "io-lifetimes",
  "libc",
@@ -1761,7 +1774,7 @@ name = "scrypto-schema"
 version = "0.10.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v2-638673d16e#638673d16e83e1f04ffd7e44d2a0254a6e54a07e"
 dependencies = [
- "bitflags",
+ "bitflags 1.3.2",
  "radix-engine-common",
  "sbor",
  "serde",
@@ -2142,6 +2155,25 @@ dependencies = [
  "pin-project",
  "pin-project-lite",
  "tokio",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8bd22a874a2d0b70452d5597b12c537331d49060824a95f49f108994f94aa4c"
+dependencies = [
+ "bitflags 2.3.3",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-range-header",
+ "pin-project-lite",
  "tower-layer",
  "tower-service",
  "tracing",
