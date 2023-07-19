@@ -20,6 +20,7 @@ pub use generic::*;
 pub use metadata_module::*;
 pub use package::*;
 pub use pools::*;
+pub use radix_engine::system::system::FieldSubstate;
 pub use resource::*;
 pub use royalty_module::*;
 pub use substate::*;
@@ -37,17 +38,58 @@ macro_rules! field_substate {
     (
         $substate:ident,
         $substate_type:ident,
-        $fields:tt$(,)?
+        $value_unpacking:pat $(=> {
+            $($mapping:stmt)+
+        })?,
+        Value $fields:tt$(,)?
     ) => {
         paste::paste! {
+            // The trailing semicolon after the $($($mapping)+)?; output is occasionally needed,
+            // eg if the mapping ends with a match statement. But otherwise it's reported as a
+            // redundant - so add this allow statement to allow us just to include it regardless.
+            #[allow(redundant_semicolons)]
             models::Substate::[<$substate_type Substate>] {
-                is_locked: false,
-                value: Box::new(models::[<$substate_type Value>] $fields)
+                is_locked: !$substate.is_mutable(),
+                value: {
+                    // NB: We should use compiler to unpack to ensure we map all fields
+                    let $value_unpacking = &$substate.value.0;
+                    $($($mapping)+)?;
+                    Box::new(models::[<$substate_type Value>] $fields)
+                }
             }
         }
     };
 }
 pub(crate) use field_substate;
+
+// TODO - remove this when TypeInfo is properly wrapped in a FieldSubstate<..> wrapper
+macro_rules! fake_field_substate {
+    (
+        $substate:ident,
+        $substate_type:ident,
+        $value_unpacking:pat $(=> {
+            $($mapping:stmt)+
+        })?,
+        Value $fields:tt$(,)?
+    ) => {
+        paste::paste! {
+            // The trailing semicolon after the $($($mapping)+)?; output is occasionally needed,
+            // eg if the mapping ends with a match statement. But otherwise it's reported as a
+            // redundant - so add this allow statement to allow us just to include it regardless.
+            #[allow(redundant_semicolons)]
+            models::Substate::[<$substate_type Substate>] {
+                is_locked: false,
+                value: {
+                    // NB: We should use compiler to unpack to ensure we map all fields
+                    let $value_unpacking = &$substate;
+                    $($($mapping)+)?;
+                    Box::new(models::[<$substate_type Value>] $fields)
+                }
+            }
+        }
+    };
+}
+pub(crate) use fake_field_substate;
 
 macro_rules! key_value_store_optional_substate {
     (

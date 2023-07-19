@@ -1,6 +1,5 @@
 use crate::core_api::*;
 use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_package(
@@ -16,29 +15,33 @@ pub(crate) async fn handle_state_package(
 
     let database = state.database.read();
 
-    let package_royalty_accumulator: PackageRoyaltyAccumulatorSubstate =
-        read_mandatory_main_field_substate(
-            database.deref(),
-            package_address.as_node_id(),
-            &PackageField::Royalty.into(),
-        )?;
-
-    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
+    let owner_role_substate = read_optional_substate(
         database.deref(),
         package_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,
         &AccessRulesField::OwnerRole.into(),
-    )?;
+    )
+    .ok_or_else(|| not_found_error("Package not found".to_string()))?;
+
+    let package_royalty_accumulator = read_optional_main_field_substate(
+        database.deref(),
+        package_address.as_node_id(),
+        &PackageField::Royalty.into(),
+    );
 
     Ok(models::StatePackageResponse {
-        royalty: Some(to_api_package_royalty_accumulator_substate(
-            &mapping_context,
-            &package_royalty_accumulator,
-        )?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,
         )?),
+        royalty: package_royalty_accumulator
+            .map(|substate| -> Result<_, MappingError> {
+                Ok(Box::new(to_api_package_royalty_accumulator_substate(
+                    &mapping_context,
+                    &substate,
+                )?))
+            })
+            .transpose()?,
     })
     .map(Json)
 }

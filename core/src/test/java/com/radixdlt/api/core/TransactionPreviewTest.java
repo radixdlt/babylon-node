@@ -74,6 +74,7 @@ import com.radixdlt.utils.PrivateKeys;
 import org.junit.Test;
 
 public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
+  @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_with_message_consumes_more_cost_units() throws Exception {
     try (var test = buildRunningServerTest()) {
@@ -130,9 +131,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .getCostUnitsConsumed();
 
       // Message should add some cost
-      // TODO(after fix in the Engine): this should assert `.isGreaterThan()`, as the test's name
-      // suggests
-      assertThat(largeEncryptedMessageCost).isEqualTo(noMessageCost);
+      assertThat(largeEncryptedMessageCost).isGreaterThan(noMessageCost);
     }
   }
 }

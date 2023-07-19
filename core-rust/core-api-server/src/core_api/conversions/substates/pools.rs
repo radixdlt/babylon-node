@@ -7,16 +7,16 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_one_resource_pool_substate(
     context: &MappingContext,
-    substate: &one_resource_pool::OneResourcePoolSubstate,
+    substate: &FieldSubstate<one_resource_pool::OneResourcePoolSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let one_resource_pool::OneResourcePoolSubstate {
-        vault,
-        pool_unit_resource_manager,
-    } = substate;
     Ok(field_substate!(
         substate,
         OneResourcePoolFieldState,
-        {
+        one_resource_pool::OneResourcePoolSubstate {
+            vault,
+            pool_unit_resource_manager,
+        },
+        Value {
             vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
             pool_unit_resource_address: to_api_resource_address(
                 context,
@@ -28,19 +28,23 @@ pub fn to_api_one_resource_pool_substate(
 
 pub fn to_api_two_resource_pool_substate(
     context: &MappingContext,
-    substate: &two_resource_pool::TwoResourcePoolSubstate,
+    substate: &FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let two_resource_pool::TwoResourcePoolSubstate {
-        vaults,
-        pool_unit_resource_manager,
-    } = substate;
     Ok(field_substate!(
         substate,
         TwoResourcePoolFieldState,
-        {
+        two_resource_pool::TwoResourcePoolSubstate {
+            vaults,
+            pool_unit_resource_manager,
+        },
+        Value {
             vaults: vaults
                 .iter()
-                .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
+                .map(|(resource_address, vault)| to_api_pool_vault(
+                    context,
+                    resource_address,
+                    vault
+                ))
                 .collect::<Result<Vec<_>, _>>()?,
             pool_unit_resource_address: to_api_resource_address(
                 context,
@@ -52,19 +56,23 @@ pub fn to_api_two_resource_pool_substate(
 
 pub fn to_api_multi_resource_pool_substate(
     context: &MappingContext,
-    substate: &multi_resource_pool::MultiResourcePoolSubstate,
+    substate: &FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let multi_resource_pool::MultiResourcePoolSubstate {
-        vaults,
-        pool_unit_resource_manager,
-    } = substate;
     Ok(field_substate!(
         substate,
         MultiResourcePoolFieldState,
-        {
+        multi_resource_pool::MultiResourcePoolSubstate {
+            vaults,
+            pool_unit_resource_manager,
+        },
+        Value {
             vaults: vaults
                 .iter()
-                .map(|(resource_address, vault)| to_api_pool_vault(context, resource_address, vault))
+                .map(|(resource_address, vault)| to_api_pool_vault(
+                    context,
+                    resource_address,
+                    vault
+                ))
                 .collect::<Result<Vec<_>, _>>()?,
             pool_unit_resource_address: to_api_resource_address(
                 context,

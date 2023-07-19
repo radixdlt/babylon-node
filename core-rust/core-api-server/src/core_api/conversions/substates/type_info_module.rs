@@ -9,62 +9,62 @@ pub fn to_api_type_info_substate(
     context: &MappingContext,
     substate: &TypeInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let details = match substate {
-        TypeInfoSubstate::Object(ObjectInfo {
-            global,
-            blueprint_id:
-                BlueprintId {
-                    package_address,
-                    blueprint_name,
-                },
-            blueprint_info,
-            version,
-            features,
-            instance_schema,
-        }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
-            package_address: to_api_package_address(context, package_address)?,
-            blueprint_name: blueprint_name.to_string(),
-            blueprint_version: to_api_blueprint_version(context, version)?,
-            global: *global,
-            outer_object: match blueprint_info {
-                ObjectBlueprintInfo::Inner { outer_object } => {
-                    Some(to_api_global_address(context, outer_object)?)
-                }
-                ObjectBlueprintInfo::Outer => None,
-            },
-            instance_schema: instance_schema
-                .as_ref()
-                .map(|instance_schema| {
-                    Ok(Box::new(to_api_instance_schema(context, instance_schema)?))
-                })
-                .transpose()?,
-            features: features.iter().cloned().collect(),
-        },
-        TypeInfoSubstate::KeyValueStore(key_value_store_info) => {
-            models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
-                key_value_store_info: Box::new(to_api_key_value_store_info(
-                    context,
-                    key_value_store_info,
-                )?),
-            }
-        }
-        TypeInfoSubstate::GlobalAddressReservation(_) => {
-            return Err(MappingError::UnexpectedPersistedData {
-                message: "GlobalAddressReservation was persisted".to_string(),
-            })
-        }
-        TypeInfoSubstate::GlobalAddressPhantom(_) => {
-            return Err(MappingError::UnexpectedPersistedData {
-                message: "GlobalAddressPhantom was persisted".to_string(),
-            })
-        }
-    };
-
-    Ok(field_substate!(
+    Ok(fake_field_substate!(
         substate,
         TypeInfoModuleFieldTypeInfo,
-        {
+        value => {
+            let details = match value {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    global,
+                    blueprint_id:
+                        BlueprintId {
+                            package_address,
+                            blueprint_name,
+                        },
+                    blueprint_info,
+                    version,
+                    features,
+                    instance_schema,
+                }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
+                    package_address: to_api_package_address(context, package_address)?,
+                    blueprint_name: blueprint_name.to_string(),
+                    blueprint_version: to_api_blueprint_version(context, version)?,
+                    global: *global,
+                    outer_object: match blueprint_info {
+                        ObjectBlueprintInfo::Inner { outer_object } => {
+                            Some(to_api_global_address(context, outer_object)?)
+                        }
+                        ObjectBlueprintInfo::Outer => None,
+                    },
+                    instance_schema: instance_schema
+                        .as_ref()
+                        .map(|instance_schema| {
+                            Ok(Box::new(to_api_instance_schema(context, instance_schema)?))
+                        })
+                        .transpose()?,
+                    features: features.iter().cloned().collect(),
+                },
+                TypeInfoSubstate::KeyValueStore(key_value_store_info) => {
+                    models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
+                        key_value_store_info: Box::new(to_api_key_value_store_info(
+                            context,
+                            key_value_store_info,
+                        )?),
+                    }
+                }
+                TypeInfoSubstate::GlobalAddressReservation(_) => {
+                    return Err(MappingError::UnexpectedPersistedData {
+                        message: "GlobalAddressReservation was persisted".to_string(),
+                    })
+                }
+                TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                    return Err(MappingError::UnexpectedPersistedData {
+                        message: "GlobalAddressPhantom was persisted".to_string(),
+                    })
+                }
+            }
+        },
+        Value {
             details: Some(details),
         }
     ))

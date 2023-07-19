@@ -66,6 +66,7 @@ use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 
 use radix_engine_queries::query::ResourceAccounter;
@@ -238,12 +239,14 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
             let database = JNIStateManager::get_database(&env, j_state_manager);
             let read_store = database.read();
             let validator_substate: ValidatorSubstate = read_store
-                .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
                     validator_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ValidatorField::Validator.into(),
                 )
-                .unwrap();
+                .unwrap()
+                .value
+                .0;
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_substate.stake_unit_resource,
