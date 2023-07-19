@@ -109,6 +109,14 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
+  // Memory overhead of transactions living in the mempool. This does not take into account the
+  // (cached) results.
+  // For current implementation core-rust/state-manager/src/mempool/priority_mempool.rs, for each
+  // transaction we keep
+  // both the raw transaction and the parsed one (2x overhead) plus a very generous 30% overhead for
+  // the indexes.
+  public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR = 2.3;
+
   private final RuntimeProperties properties;
   private final Network network;
 
@@ -227,8 +235,9 @@ public final class RadixNodeModule extends AbstractModule {
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
     // State Computer
+    var mempoolMaxMemory = properties.get("mempool.max_memory", 100 * 1024 * 1024);
     var mempoolMaxTotalTransactionsSize =
-        properties.get("mempool.max_total_transactions_size", 100 * 1024 * 1024);
+        (int) (mempoolMaxMemory / MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
     var mempoolMaxTransactionCount = properties.get("mempool.max_transaction_count", 10_000);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
