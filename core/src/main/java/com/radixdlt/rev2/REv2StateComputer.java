@@ -108,7 +108,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   private final RustMempool mempool;
 
-  ProposalLimitsConfig proposalLimitsConfig;
+  private final ProposalLimitsConfig proposalLimitsConfig;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
