@@ -122,6 +122,7 @@ mod tests {
         LoggingConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
         StateManagerLoggingConfig,
     };
+    use node_common::config::limits::VertexLimitsConfig;
     use node_common::config::MempoolConfig;
     use parking_lot::RwLock;
     use prometheus::Registry;
@@ -176,6 +177,7 @@ mod tests {
         let state_manager: Arc<RwLock<ActualStateManager>> =
             Arc::new(parking_lot::const_rwlock(StateManager::new(
                 &network,
+                VertexLimitsConfig::default(),
                 database.clone(),
                 mempool_manager,
                 execution_configurator.clone(),

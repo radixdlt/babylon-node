@@ -68,6 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -407,8 +408,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        0,
-                        0,
+                        ProposalLimitsConfig.zero(),
                         rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.none(),
@@ -422,8 +422,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.mempoolReceiverConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        mempool.maxNumTransactionsPerProposal(),
-                        mempool.maxProposalTotalTxnsPayloadSize(),
+                        mempool.proposalLimitsConfig(),
                         rev2Config.databaseType(),
                         rev2Config.databaseFlags(),
                         Option.some(mempool.mempoolConfig()),

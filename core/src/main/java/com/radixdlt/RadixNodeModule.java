@@ -70,6 +70,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -89,6 +90,7 @@ import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.statemanager.VertexLimitsConfig;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -107,14 +109,12 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
-  // Proposal constants
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
-  public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
-
-  // Memory overhead of transactions living in the mempool. This does not take into account the (cached) results.
-  // For current implementation core-rust/state-manager/src/mempool/priority_mempool.rs, for each transaction we keep
-  // both the raw transaction and the parsed one (2x overhead) plus a very generous 30% overhead for the indexes.
+  // Memory overhead of transactions living in the mempool. This does not take into account the
+  // (cached) results.
+  // For current implementation core-rust/state-manager/src/mempool/priority_mempool.rs, for each
+  // transaction we keep
+  // both the raw transaction and the parsed one (2x overhead) plus a very generous 30% overhead for
+  // the indexes.
   public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR = 2.3;
 
   private final RuntimeProperties properties;
@@ -235,9 +235,9 @@ public final class RadixNodeModule extends AbstractModule {
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
     // State Computer
-    var mempoolMaxMemory =
-        properties.get("mempool.max_memory", 100 * 1024 * 1024);
-    var mempoolMaxTotalTransactionsSize = (int)(mempoolMaxMemory / MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
+    var mempoolMaxMemory = properties.get("mempool.max_memory", 100 * 1024 * 1024);
+    var mempoolMaxTotalTransactionsSize =
+        (int) (mempoolMaxMemory / MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
     var mempoolMaxTransactionCount = properties.get("mempool.max_transaction_count", 10_000);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
@@ -249,11 +249,27 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(new REv2LedgerInitializerModule(genesisProvider));
 
+    var vertexMaxTransactionCount =
+        properties.get(
+            "protocol.vertex.max_transaction_count",
+            VertexLimitsConfig.DEFAULT_MAX_TRANSACTION_COUNT);
+    var vertexMaxTotalTransactionsSize =
+        properties.get(
+            "protocol.vertex.max_total_transactions_size",
+            VertexLimitsConfig.DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE);
+    var vertexMaxTotalExecutionCostUnitsConsumed =
+        properties.get(
+            "protocol.vertex.max_total_execution_cost_units_consumed",
+            VertexLimitsConfig.DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED);
+    var vertexLimitsConfig =
+        new VertexLimitsConfig(
+            vertexMaxTransactionCount,
+            vertexMaxTotalTransactionsSize,
+            vertexMaxTotalExecutionCostUnitsConsumed);
     install(
         REv2StateManagerModule.create(
-            MAX_TRANSACTIONS_PER_PROPOSAL,
-            MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
-            MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
+            ProposalLimitsConfig.from(vertexLimitsConfig),
+            vertexLimitsConfig,
             REv2StateManagerModule.DatabaseType.ROCKS_DB,
             databaseFlags,
             Option.some(mempoolConfig)));

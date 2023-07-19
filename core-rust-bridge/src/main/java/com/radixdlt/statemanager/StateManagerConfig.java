@@ -73,6 +73,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 public record StateManagerConfig(
     NetworkDefinition networkDefinition,
     Option<RustMempoolConfig> mempoolConfigOpt,
+    Option<VertexLimitsConfig> vertexLimitsConfigOpt,
     DatabaseBackendConfig databaseBackendConfig,
     DatabaseFlags databaseFlags,
     LoggingConfig loggingConfig,

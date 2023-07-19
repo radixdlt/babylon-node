@@ -66,6 +66,7 @@ package com.radixdlt.p2p.transport;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
@@ -98,6 +99,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final NioEventLoopGroup clientWorkerGroup;
   private final Capabilities capabilities;
   private final int mempoolRelayerMaxMessagePayloadSize;
+  private final int proposalMaxUncommittedTransactionsPayloadSize;
 
   @Inject
   public PeerOutboundBootstrapImpl(
@@ -110,7 +112,9 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
+      @ProposalMaxUncommittedTransactionsPayloadSize
+          int proposalMaxUncommittedTransactionsPayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -124,6 +128,8 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
     this.clientWorkerGroup = new NioEventLoopGroup();
     this.capabilities = capabilities;
     this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
+    this.proposalMaxUncommittedTransactionsPayloadSize =
+        proposalMaxUncommittedTransactionsPayloadSize;
   }
 
   @Override
@@ -147,6 +153,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 peerEventDispatcher,
                 Optional.of(uri),
                 capabilities,
+                proposalMaxUncommittedTransactionsPayloadSize,
                 mempoolRelayerMaxMessagePayloadSize))
         .connect(uri.getHost(), uri.getPort());
   }

@@ -111,6 +111,7 @@ public final class RustMempoolTest {
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
@@ -164,6 +165,7 @@ public final class RustMempoolTest {
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),
@@ -300,6 +302,7 @@ public final class RustMempoolTest {
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
             DatabaseBackendConfig.inMemory(),
             new DatabaseFlags(false, false),
             LoggingConfig.getDefault(),

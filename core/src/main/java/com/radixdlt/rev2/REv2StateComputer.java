@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -107,18 +108,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   private final RustMempool mempool;
 
-  // Maximum number of transactions to include in a proposal
-  private final int maxNumTransactionsPerProposal;
-  // Maximum number of transaction payload bytes to include in a proposal
-  private final int maxProposalTotalTxnsPayloadSize;
-  // Maximum number of transaction payload bytes to include in a proposal and its previous vertices
-  // chain.
-  // Intended to limit the size of a commit batch (i.e. the size of transactions under a single
-  // commit proof).
-  // Note - we can still keep committing round changes, so this is not a guarantee. But should be
-  // reasonably
-  // effective as a limit.
-  private final int maxUncommittedTotalPayloadSize;
+  private final ProposalLimitsConfig proposalLimitsConfig;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
@@ -130,9 +120,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   public REv2StateComputer(
       RustStateComputer stateComputer,
       RustMempool mempool,
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -141,9 +129,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       Metrics metrics) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
-    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
-    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxUncommittedTotalPayloadSize = maxUncommittedUserTransactionsTotalPayloadSize;
+    this.proposalLimitsConfig = proposalLimitsConfig;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
@@ -191,19 +177,23 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .reduce(0, Integer::sum);
 
     final var remainingSizeInUncommittedVertices =
-        maxUncommittedTotalPayloadSize - rawPreviousExecutedTransactionsSize;
+        proposalLimitsConfig.maxUncommittedTransactionsPayloadSize()
+            - rawPreviousExecutedTransactionsSize;
 
     final var maxPayloadSize =
-        Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
+        Math.min(
+            remainingSizeInUncommittedVertices, proposalLimitsConfig.maxTransactionsPayloadSize());
 
     metrics.bft().leaderMaxProposalPayloadSize().observe(maxPayloadSize);
 
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     final var result =
-        maxPayloadSize > 0 && maxNumTransactionsPerProposal > 0
+        maxPayloadSize > 0 && proposalLimitsConfig.maxTransactionCount() > 0
             ? mempool.getTransactionsForProposal(
-                maxNumTransactionsPerProposal, maxPayloadSize, previousTransactionHashes)
+                proposalLimitsConfig.maxTransactionCount(),
+                maxPayloadSize,
+                previousTransactionHashes)
             : List.<PreparedNotarizedTransaction>of();
 
     final var proposedRawTransactions =

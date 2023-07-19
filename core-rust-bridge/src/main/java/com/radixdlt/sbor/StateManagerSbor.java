@@ -189,6 +189,7 @@ public final class StateManagerSbor {
     MessageContent.registerCodec(codecMap);
     CurveDecryptorSet.registerCodec(codecMap);
     Decryptor.registerCodec(codecMap);
+    VertexLimitsConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

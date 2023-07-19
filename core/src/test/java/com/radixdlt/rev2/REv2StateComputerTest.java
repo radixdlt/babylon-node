@@ -71,6 +71,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -114,13 +115,13 @@ public class REv2StateComputerTest {
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        REv2StateManagerModule.create(
-            10,
-            10 * 1024 * 1024,
-            50 * 1024 * 1024,
+        REv2StateManagerModule.createForTesting(
+            ProposalLimitsConfig.testDefaults(),
             REv2StateManagerModule.DatabaseType.IN_MEMORY,
             new DatabaseFlags(false, false),
-            Option.none()),
+            Option.none(),
+            false,
+            false),
         new REv2LedgerInitializerModule(
             RawGenesisDataWithHash.fromGenesisData(
                 GenesisBuilder.createGenesisWithValidatorsAndXrdBalances(

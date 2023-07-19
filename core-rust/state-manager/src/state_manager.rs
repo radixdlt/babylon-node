@@ -125,8 +125,11 @@ pub struct StateManager<S> {
 }
 
 impl<S: TransactionIdentifierLoader> StateManager<S> {
+    // TODO: refactor and maybe make clippy happy too
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         network: &NetworkDefinition,
+        vertex_limits_config: VertexLimitsConfig,
         store: Arc<RwLock<S>>,
         mempool_manager: Arc<MempoolManager>,
         execution_configurator: Arc<ExecutionConfigurator>,
@@ -153,7 +156,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metric_registry),
-            vertex_limits_config: VertexLimitsConfig::default(),
+            vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(metric_registry),
             committed_transactions_metrics,
         }

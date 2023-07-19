@@ -70,6 +70,7 @@ use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use node_common::config::limits::VertexLimitsConfig;
 use node_common::config::MempoolConfig;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
@@ -128,10 +129,29 @@ extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics
     })
 }
 
+#[derive(Debug, ScryptoSbor)]
+pub struct JavaVertexLimitsConfig {
+    pub max_transaction_count: u32,
+    pub max_total_transactions_size: u32,
+    pub max_total_execution_cost_units_consumed: u32,
+}
+
+impl From<JavaVertexLimitsConfig> for VertexLimitsConfig {
+    fn from(val: JavaVertexLimitsConfig) -> Self {
+        VertexLimitsConfig {
+            max_transaction_count: val.max_transaction_count,
+            max_total_transactions_size: val.max_total_transactions_size as usize,
+            max_total_execution_cost_units_consumed: val.max_total_execution_cost_units_consumed,
+            ..VertexLimitsConfig::default()
+        }
+    }
+}
+
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
+    pub vertex_limits_config: Option<JavaVertexLimitsConfig>,
     pub database_backend_config: DatabaseBackendConfig,
     pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
@@ -220,9 +240,15 @@ impl JNIStateManager {
             execution_configurator.clone(),
         ));
 
+        let vertex_limits_config = match config.vertex_limits_config {
+            Some(java_vertex_limits_config) => java_vertex_limits_config.into(),
+            None => VertexLimitsConfig::default(),
+        };
+
         // Build the state manager.
         let state_manager = Arc::new(StateManager::new(
             &network,
+            vertex_limits_config,
             database.clone(),
             mempool_manager.clone(),
             execution_configurator,

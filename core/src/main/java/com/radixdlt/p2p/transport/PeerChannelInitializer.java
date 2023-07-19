@@ -64,7 +64,6 @@
 
 package com.radixdlt.p2p.transport;
 
-import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -136,6 +135,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
       Capabilities capabilities,
+      int proposalMaxUncommittedTransactionsPayloadSize,
       int mempoolRelayerMaxMessagePayloadSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
@@ -153,7 +153,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         Math.max(
             Math.max(
                 REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
+                proposalMaxUncommittedTransactionsPayloadSize),
             mempoolRelayerMaxMessagePayloadSize);
     // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
     final var additionalBuffer = (int) (0.3 * baseBufferSize);

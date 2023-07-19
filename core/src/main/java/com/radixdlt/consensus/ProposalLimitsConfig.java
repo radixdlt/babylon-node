@@ -62,46 +62,67 @@
  * permissions under this License.
  */
 
-use radix_engine_constants::DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
+package com.radixdlt.consensus;
 
-// TODO: revisit & tune before Babylon
-pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = 4 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
+import com.google.inject.AbstractModule;
+import com.radixdlt.statemanager.VertexLimitsConfig;
 
-pub struct VertexLimitsConfig {
-    pub max_transaction_count: u32,
-    pub max_total_transactions_size: usize,
-    pub max_total_execution_cost_units_consumed: u32,
-    pub max_total_substate_read_size: usize,
-    pub max_total_substate_read_count: usize,
-    pub max_total_substate_write_size: usize,
-    pub max_total_substate_write_count: usize,
-}
+/**
+ * [`maxTransactionCount`]: Maximum number of transactions to include in a proposal.
+ * [`maxTransactionsPayloadSize`]: Maximum number of transaction payload bytes to include in a
+ * proposal. [`maxUncommittedTransactionsPayloadSize`]: Maximum number of transaction payload bytes
+ * to include in a proposal and its previous vertices chain. Intended to limit the size of a commit
+ * batch (i.e. the size of transactions under a single commit proof). Note - we can still keep
+ * committing round changes, so this is not a guarantee. But should be reasonably effective as a
+ * limit.
+ */
+public record ProposalLimitsConfig(
+    int maxTransactionCount,
+    int maxTransactionsPayloadSize,
+    int maxUncommittedTransactionsPayloadSize) {
+  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 4;
+  public static final int DEFAULT_MAX_TRANSACTIONS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
-impl VertexLimitsConfig {
-    pub fn standard() -> Self {
-        Self {
-            max_transaction_count: DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
-            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
-            max_total_execution_cost_units_consumed:
-                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
-        }
-    }
-}
+  public static ProposalLimitsConfig zero() {
+    return new ProposalLimitsConfig(0, 0, 0);
+  }
 
-impl Default for VertexLimitsConfig {
-    fn default() -> Self {
-        VertexLimitsConfig::standard()
-    }
+  public static ProposalLimitsConfig singleTransaction() {
+    return new ProposalLimitsConfig(1, 1024 * 1024, 5 * 1024 * 1024);
+  }
+
+  public static ProposalLimitsConfig testDefaults() {
+    return new ProposalLimitsConfig(10, 10 * 1024 * 1024, 50 * 1024 * 1024);
+  }
+
+  public static ProposalLimitsConfig defaults() {
+    return new ProposalLimitsConfig(
+        DEFAULT_MAX_TRANSACTION_COUNT,
+        DEFAULT_MAX_TRANSACTIONS_PAYLOAD_SIZE,
+        DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE);
+  }
+
+  public static ProposalLimitsConfig from(VertexLimitsConfig vertexLimitsConfig) {
+    return new ProposalLimitsConfig(
+        // we add an extra transaction to build the vertex from
+        vertexLimitsConfig.maxTransactionCount().toInt() + 1,
+        // even though we would like to fill the vertex transaction count to the maximum possible,
+        // we want to keep
+        // bandwidth strict
+        vertexLimitsConfig.maxTotalTransactionsSize().toInt(),
+        // we multiply by 3 for the 3-chain rule
+        vertexLimitsConfig.maxTotalTransactionsSize().toInt() * 3);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant()
+            .annotatedWith(ProposalMaxUncommittedTransactionsPayloadSize.class)
+            .to(maxUncommittedTransactionsPayloadSize);
+      }
+    };
+  }
 }

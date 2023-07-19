@@ -67,6 +67,7 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
@@ -101,9 +102,8 @@ public final class REv2StateManagerModule extends AbstractModule {
     ROCKS_DB,
   }
 
-  private final int maxNumTransactionsPerProposal;
-  private final int maxProposalTotalTxnsPayloadSize;
-  private final int maxUncommittedUserTransactionsTotalPayloadSize;
+  private final ProposalLimitsConfig proposalLimitsConfig;
+  private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
   private final DatabaseType databaseType;
   private final DatabaseFlags databaseFlags;
   private final Option<RustMempoolConfig> mempoolConfig;
@@ -111,18 +111,15 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final boolean noFees;
 
   private REv2StateManagerModule(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
+      Option<VertexLimitsConfig> vertexLimitsConfigOpt,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       boolean noFees) {
-    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
-    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxUncommittedUserTransactionsTotalPayloadSize =
-        maxUncommittedUserTransactionsTotalPayloadSize;
+    this.proposalLimitsConfig = proposalLimitsConfig;
+    this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseType = databaseType;
     this.databaseFlags = databaseFlags;
     this.mempoolConfig = mempoolConfig;
@@ -131,16 +128,14 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   public static REv2StateManagerModule create(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
-      int maxUncommittedUserTransactionsTotalPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
+      VertexLimitsConfig vertexLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        maxNumTransactionsPerProposal,
-        maxProposalTotalTxnsPayloadSize,
-        maxUncommittedUserTransactionsTotalPayloadSize,
+        proposalLimitsConfig,
+        Option.some(vertexLimitsConfig),
         databaseType,
         databaseFlags,
         mempoolConfig,
@@ -149,17 +144,15 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   public static REv2StateManagerModule createForTesting(
-      int maxNumTransactionsPerProposal,
-      int maxProposalTotalTxnsPayloadSize,
+      ProposalLimitsConfig proposalLimitsConfig,
       DatabaseType databaseType,
       DatabaseFlags databaseFlags,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
       boolean noFees) {
     return new REv2StateManagerModule(
-        maxNumTransactionsPerProposal,
-        maxProposalTotalTxnsPayloadSize,
-        maxProposalTotalTxnsPayloadSize * 5,
+        proposalLimitsConfig,
+        Option.none(),
         databaseType,
         databaseFlags,
         mempoolConfig,
@@ -173,6 +166,8 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     bind(DatabaseFlags.class).toInstance(databaseFlags);
+
+    install(proposalLimitsConfig.asModule());
 
     switch (databaseType) {
       case ROCKS_DB -> install(
@@ -208,6 +203,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
+                    vertexLimitsConfigOpt,
                     databaseBackendConfig,
                     databaseFlags,
                     getLoggingConfig(),
@@ -228,9 +224,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
-                maxNumTransactionsPerProposal,
-                maxProposalTotalTxnsPayloadSize,
-                maxUncommittedUserTransactionsTotalPayloadSize,
+                proposalLimitsConfig,
                 hasher,
                 ledgerUpdateEventDispatcher,
                 mempoolAddSuccessEventDispatcher,
