@@ -75,6 +75,7 @@ use ::transaction::errors::TransactionValidationError;
 use ::transaction::model::{IntentHash, NotarizedTransactionHash};
 use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
+use node_common::metrics::TakesMetricLabels;
 
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::{RejectResult, TransactionReceipt};

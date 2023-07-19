@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
+use crate::mempool::metrics::MempoolMetrics;
 use crate::mempool::priority_mempool::*;
 use crate::mempool::*;
-use crate::{MempoolAddSource, MempoolMetrics, TakesMetricLabels};
+use crate::MempoolAddSource;
+use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use transaction::model::*;
 

@@ -63,16 +63,10 @@
  */
 
 use crate::limits::VertexLimitsExceeded;
-use crate::{MempoolAddError, MempoolAddSource, RejectionReason};
-use node_common::config::limits::{
-    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT, DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
-};
-use prometheus::core::*;
+use node_common::config::limits::*;
+use node_common::metrics::*;
 use prometheus::*;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine_common::types::ComponentAddress;
 use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
 
 pub struct LedgerMetrics {
@@ -97,14 +91,6 @@ pub struct VertexPrepareMetrics {
     pub proposal_transactions_size: Histogram,
     pub wasted_proposal_bandwidth: Histogram,
     pub stop_reason: IntCounterVec,
-}
-
-pub struct MempoolMetrics {
-    pub current_transactions: IntGauge,
-    pub current_total_transactions_size: IntGauge,
-    pub submission_added: IntCounterVec,
-    pub submission_rejected: IntCounterVec,
-    pub from_local_api_to_commit_wait: Histogram,
 }
 
 impl LedgerMetrics {
@@ -262,182 +248,7 @@ impl VertexPrepareMetrics {
     }
 }
 
-impl MempoolMetrics {
-    pub fn new(registry: &Registry) -> Self {
-        Self {
-            current_transactions: IntGauge::with_opts(opts(
-                "mempool_current_transactions",
-                "Number of transactions in progress in the mempool.",
-            )).registered_at(registry),
-            current_total_transactions_size: IntGauge::with_opts(opts(
-                "mempool_current_total_transactions_size",
-                "Total size in bytes of transactions in mempool.",
-            )).registered_at(registry),
-            submission_added: IntCounterVec::new(
-                opts(
-                    "mempool_submission_added_total",
-                    "Count of submissions added to the mempool.",
-                ),
-                &["source"],
-            ).registered_at(registry),
-            submission_rejected: IntCounterVec::new(
-                opts(
-                    "mempool_submission_rejected_total",
-                    "Count of the submissions rejected by the mempool.",
-                ),
-                &["source", "rejection_reason"],
-            ).registered_at(registry),
-            from_local_api_to_commit_wait: new_timer(
-                opts(
-                    "mempool_from_local_api_to_commit_wait",
-                    "Time spent in the mempool, by a transaction coming from local API, until successful commit."
-                ),
-                vec![0.01, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0]
-            ).registered_at(registry)
-        }
-    }
-}
-
-/// A syntactic sugar trait allowing for an inline "create + register" metric definition.
-trait AtDefaultRegistryExt<R> {
-    /// Unwraps a Prometheus metric creation `Result` and registers it at the given registry.
-    fn registered_at(self, registry: &Registry) -> R;
-}
-
-impl<T: Collector + Clone + 'static> AtDefaultRegistryExt<T> for Result<T> {
-    fn registered_at(self, registry: &Registry) -> T {
-        let collector = self.unwrap();
-        registry.register(Box::new(collector.clone())).unwrap();
-        collector
-    }
-}
-
-fn opts(name: &str, help: &str) -> Opts {
-    Opts::new(format!("rn_{name}"), help)
-}
-
-fn new_histogram(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
-    Histogram::with_opts(HistogramOpts::from(opts).buckets(buckets))
-}
-
-fn equidistant_buckets(number_of_buckets: usize, min: f64, max: f64) -> Vec<f64> {
-    let range = max - min;
-    (1..number_of_buckets + 1)
-        .map(|bucket| {
-            let bucket = bucket as f64 / number_of_buckets as f64;
-
-            bucket * range + min
-        })
-        .collect()
-}
-
-// Given a limit, builds buckets for a Histogram with higher resolution for higher values.
-// This gives percentile buckets: 0-25, 25-50, 50-75, 75-80, 80-85, 85-90, 90-92, 92-94, 94-96, 96-98, 98-100
-fn higher_resolution_for_higher_values_buckets_for_limit(limit: usize) -> Vec<f64> {
-    let limit = limit as f64;
-    let mut buckets = equidistant_buckets(3, 0.0, 0.75 * limit);
-    buckets.extend(equidistant_buckets(3, 0.75 * limit, 0.9 * limit));
-    buckets.extend(equidistant_buckets(5, 0.9 * limit, limit));
-    buckets
-}
-
-// Given a limit, builds buckets for a Histogram with higher resolution for lower values.
-// This gives percentile buckets: 0-2, 2-4, 4-6, 6-8, 8-10, 10-15, 15-20, 20-25, 25-50, 50-75, 75-100
-fn higher_resolution_for_lower_values_buckets_for_limit(limit: usize) -> Vec<f64> {
-    let limit = limit as f64;
-    let mut buckets = equidistant_buckets(5, 0.0, 0.1 * limit);
-    buckets.extend(equidistant_buckets(3, 0.1 * limit, 0.25 * limit));
-    buckets.extend(equidistant_buckets(3, 0.25 * limit, limit));
-    buckets
-}
-
-/// Creates a new `Histogram` tailored to measuring time durations.
-/// The name (found in `Opts`) is expected to be a verb (describing the measured action) and will be
-/// auto-suffixed with a conventional `_seconds` string. The measurements are thus expected to be
-/// reported in seconds (possibly fractional).
-/// The buckets should represent expected interesting ranges of the measurements (i.e. their upper
-/// bounds). The last `+inf` bucket will be auto-added - this means that an empty bucket list may be
-/// passed here, and the timer will work in a `Summary` mode (i.e. tracking just sum and count).
-fn new_timer(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
-    let mut adjusted_opts = opts;
-    adjusted_opts.name = format!("{}_seconds", adjusted_opts.name);
-    let mut adjusted_buckets = buckets;
-    adjusted_buckets.push(f64::INFINITY);
-    new_histogram(adjusted_opts, adjusted_buckets)
-}
-
-// TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.
-pub trait TakesMetricLabels {
-    type Metric;
-
-    fn with_label(&self, label1: impl MetricLabel) -> Self::Metric;
-    fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric;
-    fn with_three_labels(
-        &self,
-        label1: impl MetricLabel,
-        label2: impl MetricLabel,
-        label3: impl MetricLabel,
-    ) -> Self::Metric;
-}
-
-impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
-    type Metric = <T as MetricVecBuilder>::M;
-
-    fn with_label(&self, label1: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[label1.prometheus_label_name().as_ref()])
-    }
-
-    fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[
-            label1.prometheus_label_name().as_ref(),
-            label2.prometheus_label_name().as_ref(),
-        ])
-    }
-
-    fn with_three_labels(
-        &self,
-        label1: impl MetricLabel,
-        label2: impl MetricLabel,
-        label3: impl MetricLabel,
-    ) -> Self::Metric {
-        self.with_label_values(&[
-            label1.prometheus_label_name().as_ref(),
-            label2.prometheus_label_name().as_ref(),
-            label3.prometheus_label_name().as_ref(),
-        ])
-    }
-}
-
-/// Typically applied to enums or Errors where we wish to derive a label name.
-/// Note the label name returned should be in a fixed, small-ish sized-set, to prevent
-/// issues with tracking too many metrics, or combinatorial explosion of metrics with different labels.
-pub trait MetricLabel {
-    /// Typically &str, but could also be String if it's dynamic (as long as it's in a fixed small set)
-    type StringReturnType: AsRef<str>;
-
-    /// Returns the string label associated with this enum value.
-    fn prometheus_label_name(&self) -> Self::StringReturnType;
-}
-
-/// We implement it for &T so that you can pass references in to function parameters taking `impl MetricLabel`
-impl<T: MetricLabel> MetricLabel for &T {
-    type StringReturnType = <T as MetricLabel>::StringReturnType;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        T::prometheus_label_name(self)
-    }
-}
-
 // Concrete types used for metric labels:
-
-impl MetricLabel for ComponentAddress {
-    type StringReturnType = String;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        self.to_hex()
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConsensusRoundResolution {
     Successful,
@@ -453,32 +264,6 @@ impl MetricLabel for ConsensusRoundResolution {
             ConsensusRoundResolution::Successful => "Successful",
             ConsensusRoundResolution::MissedByFallback => "MissedByFallback",
             ConsensusRoundResolution::MissedByGap => "MissedByGap",
-        }
-    }
-}
-
-impl MetricLabel for MempoolAddSource {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match *self {
-            MempoolAddSource::CoreApi => "CoreApi",
-            MempoolAddSource::MempoolSync => "MempoolSync",
-        }
-    }
-}
-
-impl MetricLabel for MempoolAddError {
-    type StringReturnType = &'static str;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match self {
-            MempoolAddError::PriorityThresholdNotMet { .. } => "PriorityThresholdNotMet",
-            MempoolAddError::Rejected(rejection) => match &rejection.reason {
-                RejectionReason::FromExecution(_) => "ExecutionError",
-                RejectionReason::ValidationError(_) => "ValidationError",
-            },
-            MempoolAddError::Duplicate(_) => "Duplicate",
         }
     }
 }
