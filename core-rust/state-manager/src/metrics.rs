@@ -62,11 +62,16 @@
  * permissions under this License.
  */
 
-use crate::limits::VertexLimitsExceeded;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::limits::{ExecutionMetrics, VertexLimitsExceeded};
+use crate::transaction::LeaderRoundCounter;
+use crate::StateVersion;
 use node_common::config::limits::*;
 use node_common::metrics::*;
 use prometheus::*;
 use radix_engine::transaction::ExecutionConfig;
+use radix_engine_common::types::ComponentAddress;
 use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
 
 pub struct LedgerMetrics {
@@ -120,6 +125,48 @@ impl LedgerMetrics {
             ))
             .registered_at(registry),
         }
+    }
+
+    pub fn update(
+        &self,
+        added_transactions: usize,
+        new_state_version: StateVersion,
+        validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+    ) {
+        self.state_version.set(new_state_version.number() as i64);
+        self.transactions_committed
+            .inc_by(added_transactions as u64);
+        for (validator_address, counter) in validator_proposal_counters {
+            for (round_resolution, count) in [
+                (ConsensusRoundResolution::Successful, counter.successful),
+                (
+                    ConsensusRoundResolution::MissedByFallback,
+                    counter.missed_by_fallback,
+                ),
+                (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
+            ] {
+                self.consensus_rounds_committed
+                    .with_two_labels(validator_address, round_resolution)
+                    .inc_by(count as u64);
+            }
+        }
+        self.last_update_epoch_second.set(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs_f64(),
+        );
+    }
+}
+
+pub struct TransactionMetricsData {
+    size: usize,
+    execution: ExecutionMetrics,
+}
+
+impl TransactionMetricsData {
+    pub fn new(size: usize, execution: ExecutionMetrics) -> Self {
+        TransactionMetricsData { size, execution }
     }
 }
 
@@ -209,6 +256,29 @@ impl CommittedTransactionsMetrics {
             .registered_at(registry),
         }
     }
+
+    pub fn update(&self, transactions_metrics_data: Vec<TransactionMetricsData>) {
+        for transaction_metrics_data in transactions_metrics_data {
+            self.size.observe(transaction_metrics_data.size as f64);
+            self.execution_cost_units_consumed.observe(
+                transaction_metrics_data
+                    .execution
+                    .execution_cost_units_consumed as f64,
+            );
+            self.substate_read_size
+                .observe(transaction_metrics_data.execution.substate_read_size as f64);
+            self.substate_read_count
+                .observe(transaction_metrics_data.execution.substate_read_count as f64);
+            self.substate_write_size
+                .observe(transaction_metrics_data.execution.substate_write_size as f64);
+            self.substate_write_count
+                .observe(transaction_metrics_data.execution.substate_write_count as f64);
+            self.max_wasm_memory_used
+                .observe(transaction_metrics_data.execution.max_wasm_memory_used as f64);
+            self.max_invoke_payload_size
+                .observe(transaction_metrics_data.execution.max_invoke_payload_size as f64);
+        }
+    }
 }
 
 impl VertexPrepareMetrics {
@@ -245,6 +315,19 @@ impl VertexPrepareMetrics {
             )
             .registered_at(registry),
         }
+    }
+
+    pub fn update(
+        &self,
+        total_proposal_size: usize,
+        committed_proposal_size: usize,
+        stop_reason: VertexPrepareStopReason,
+    ) {
+        self.proposal_transactions_size
+            .observe(total_proposal_size as f64);
+        self.wasted_proposal_bandwidth
+            .observe((total_proposal_size - committed_proposal_size) as f64);
+        self.stop_reason.with_label(stop_reason).inc();
     }
 }
 

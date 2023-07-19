@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::limits::{ExecutionMetrics, VertexLimitsAdvanceSuccess, VertexLimitsTracker};
+use crate::limits::{VertexLimitsAdvanceSuccess, VertexLimitsTracker};
 use crate::mempool_manager::MempoolManager;
 use crate::query::*;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
@@ -75,7 +75,6 @@ use ::transaction::errors::TransactionValidationError;
 use ::transaction::model::{IntentHash, NotarizedTransactionHash};
 use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
-use node_common::metrics::TakesMetricLabels;
 
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::{RejectResult, TransactionReceipt};
@@ -96,7 +95,7 @@ use crate::store::traits::scenario::{
 };
 use std::ops::Deref;
 use std::sync::Arc;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -623,16 +622,11 @@ where
         }
         drop(write_pending_transaction_result_cache);
 
-        self.vertex_prepare_metrics
-            .proposal_transactions_size
-            .observe(total_proposal_size as f64);
-        self.vertex_prepare_metrics
-            .wasted_proposal_bandwidth
-            .observe((total_proposal_size - committed_proposal_size) as f64);
-        self.vertex_prepare_metrics
-            .stop_reason
-            .with_label(stop_reason)
-            .inc();
+        self.vertex_prepare_metrics.update(
+            total_proposal_size,
+            committed_proposal_size,
+            stop_reason,
+        );
 
         PrepareResult {
             committed: committable_transactions,
@@ -667,11 +661,6 @@ where
             self.execution_configurator.deref(),
         )
     }
-}
-
-struct TransactionMetricsData {
-    size: usize,
-    execution: ExecutionMetrics,
 }
 
 impl<S> StateManager<S>
@@ -1069,14 +1058,14 @@ where
             transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
             receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
 
-            transactions_metrics_data.push(TransactionMetricsData {
-                size: raw.0.len(),
-                execution: commit
+            transactions_metrics_data.push(TransactionMetricsData::new(
+                raw.0.len(),
+                commit
                     .local_receipt
                     .local_execution
                     .execution_metrics
                     .clone(),
-            });
+            ));
             committed_transaction_bundles.push(CommittedTransactionBundle {
                 state_version: series_executor.latest_state_version(),
                 raw,
@@ -1129,12 +1118,13 @@ where
             .write()
             .track_committed_transactions(SystemTime::now(), intent_hashes);
 
-        self.update_ledger_metrics(
+        self.ledger_metrics.update(
             commit_transactions_len,
             commit_state_version,
             round_counters,
         );
-        self.update_committed_transactions_metrics(transactions_metrics_data);
+        self.committed_transactions_metrics
+            .update(transactions_metrics_data);
         Ok(())
     }
 
@@ -1185,78 +1175,8 @@ where
         });
         drop(write_store);
 
-        self.update_ledger_metrics(1, resultant_state_version, Vec::new());
-    }
-
-    fn update_ledger_metrics(
-        &self,
-        added_transactions: usize,
-        new_state_version: StateVersion,
-        validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
-    ) {
         self.ledger_metrics
-            .state_version
-            .set(new_state_version.number() as i64);
-        self.ledger_metrics
-            .transactions_committed
-            .inc_by(added_transactions as u64);
-        for (validator_address, counter) in validator_proposal_counters {
-            for (round_resolution, count) in [
-                (ConsensusRoundResolution::Successful, counter.successful),
-                (
-                    ConsensusRoundResolution::MissedByFallback,
-                    counter.missed_by_fallback,
-                ),
-                (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
-            ] {
-                self.ledger_metrics
-                    .consensus_rounds_committed
-                    .with_two_labels(validator_address, round_resolution)
-                    .inc_by(count as u64);
-            }
-        }
-        self.ledger_metrics.last_update_epoch_second.set(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs_f64(),
-        );
-    }
-
-    fn update_committed_transactions_metrics(
-        &self,
-        transactions_metrics_data: Vec<TransactionMetricsData>,
-    ) {
-        for transaction_metrics_data in transactions_metrics_data {
-            self.committed_transactions_metrics
-                .size
-                .observe(transaction_metrics_data.size as f64);
-            self.committed_transactions_metrics
-                .execution_cost_units_consumed
-                .observe(
-                    transaction_metrics_data
-                        .execution
-                        .execution_cost_units_consumed as f64,
-                );
-            self.committed_transactions_metrics
-                .substate_read_size
-                .observe(transaction_metrics_data.execution.substate_read_size as f64);
-            self.committed_transactions_metrics
-                .substate_read_count
-                .observe(transaction_metrics_data.execution.substate_read_count as f64);
-            self.committed_transactions_metrics
-                .substate_write_size
-                .observe(transaction_metrics_data.execution.substate_write_size as f64);
-            self.committed_transactions_metrics
-                .substate_write_count
-                .observe(transaction_metrics_data.execution.substate_write_count as f64);
-            self.committed_transactions_metrics
-                .max_wasm_memory_used
-                .observe(transaction_metrics_data.execution.max_wasm_memory_used as f64);
-            self.committed_transactions_metrics
-                .max_invoke_payload_size
-                .observe(transaction_metrics_data.execution.max_invoke_payload_size as f64);
-        }
+            .update(1, resultant_state_version, Vec::new());
     }
 
     fn find_transaction_root_in_execution_cache(
