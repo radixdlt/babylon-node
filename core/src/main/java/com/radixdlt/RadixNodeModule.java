@@ -112,6 +112,11 @@ public final class RadixNodeModule extends AbstractModule {
   public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
   public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
+  // Memory overhead of transactions living in the mempool. This does not take into account the (cached) results.
+  // For current implementation core-rust/state-manager/src/mempool/priority_mempool.rs, for each transaction we keep
+  // both the raw transaction and the parsed one (2x overhead) plus a very generous 30% overhead for the indexes.
+  public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR = 2.3;
+
   private final RuntimeProperties properties;
   private final Network network;
 
@@ -230,8 +235,9 @@ public final class RadixNodeModule extends AbstractModule {
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
     // State Computer
-    var mempoolMaxTotalTransactionsSize =
-        properties.get("mempool.max_total_transactions_size", 100 * 1024 * 1024);
+    var mempoolMaxMemory =
+        properties.get("mempool.max_memory", 100 * 1024 * 1024);
+    var mempoolMaxTotalTransactionsSize = (int)(mempoolMaxMemory / MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
     var mempoolMaxTransactionCount = properties.get("mempool.max_transaction_count", 10_000);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);

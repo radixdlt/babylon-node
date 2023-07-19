@@ -14,7 +14,7 @@ db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECU
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
 
 mempool.max_transaction_count=${RADIXDLT_MEMPOOL_MAX_TRANSACTION_COUNT}
-mempool.max_total_transactions_size=${RADIXDLT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE}
+mempool.max_memory=${RADIXDLT_MEMPOOL_MAX_MEMORY}
 mempool.relayer.interval_ms=${RADIXDLT_MEMPOOL_RELAYER_INTERVAL_MS}
 mempool.relayer.max_peers=${RADIXDLT_MEMPOOL_RELAYER_MAX_PEERS}
 mempool.relayer.max_relayed_size=${RADIXDLT_MEMPOOL_RELAYER_MAX_RELAYED_SIZE}
