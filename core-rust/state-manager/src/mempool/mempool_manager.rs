@@ -237,9 +237,29 @@ impl MempoolManager {
         Ok(())
     }
 
+    /// A wrapper around [`self.add_if_committable_internal`] that catches all submission rejections and reports them to Prometheus.
+    pub fn add_if_committable(
+        &self,
+        source: MempoolAddSource,
+        raw_transaction: RawNotarizedTransaction,
+        force_recalculate: bool,
+    ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
+        let result = self.add_if_committable_internal(source, raw_transaction, force_recalculate);
+        match &result {
+            Ok(_) => {}
+            Err(error) => {
+                self.metrics
+                    .submission_rejected
+                    .with_two_labels(source, error)
+                    .inc();
+            }
+        }
+        result
+    }
+
     /// Checks the committability of the given transaction (see `CachedCommittabilityValidator`) and
     /// either adds it to the mempool, or returns the encountered error.
-    pub fn add_if_committable(
+    fn add_if_committable_internal(
         &self,
         source: MempoolAddSource,
         raw_transaction: RawNotarizedTransaction,
@@ -301,22 +321,10 @@ impl MempoolManager {
                     Instant::now(),
                 ) {
                     Ok(_evicted) => Ok(mempool_transaction),
-                    Err(error) => {
-                        self.metrics
-                            .submission_rejected
-                            .with_two_labels(source, &error)
-                            .inc();
-                        Err(error)
-                    }
+                    Err(error) => Err(error),
                 }
             }
-            Err(error) => {
-                self.metrics
-                    .submission_rejected
-                    .with_two_labels(source, &error)
-                    .inc();
-                Err(error)
-            }
+            Err(error) => Err(error),
         }
     }
 
