@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * Babylon Core API - RCnet V2
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node\'s function.  This API exposes queries against the node\'s current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node\'s function.  This API exposes queries against the node\'s current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the second release candidate of the Radix Babylon network (\"RCnet v2\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.4.0
  * 
@@ -19,6 +19,12 @@ import {
     PublicKeyFromJSONTyped,
     PublicKeyToJSON,
 } from './PublicKey';
+import type { TransactionMessage } from './TransactionMessage';
+import {
+    TransactionMessageFromJSON,
+    TransactionMessageFromJSONTyped,
+    TransactionMessageToJSON,
+} from './TransactionMessage';
 import type { TransactionPreviewRequestFlags } from './TransactionPreviewRequestFlags';
 import {
     TransactionPreviewRequestFlagsFromJSON,
@@ -94,6 +100,12 @@ export interface TransactionPreviewRequest {
     signer_public_keys: Array<PublicKey>;
     /**
      * 
+     * @type {TransactionMessage}
+     * @memberof TransactionPreviewRequest
+     */
+    message?: TransactionMessage;
+    /**
+     * 
      * @type {TransactionPreviewRequestFlags}
      * @memberof TransactionPreviewRequest
      */
@@ -137,6 +149,7 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
         'tip_percentage': json['tip_percentage'],
         'nonce': json['nonce'],
         'signer_public_keys': ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
+        'message': !exists(json, 'message') ? undefined : TransactionMessageFromJSON(json['message']),
         'flags': TransactionPreviewRequestFlagsFromJSON(json['flags']),
     };
 }
@@ -160,6 +173,7 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
         'tip_percentage': value.tip_percentage,
         'nonce': value.nonce,
         'signer_public_keys': ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
+        'message': TransactionMessageToJSON(value.message),
         'flags': TransactionPreviewRequestFlagsToJSON(value.flags),
     };
 }
