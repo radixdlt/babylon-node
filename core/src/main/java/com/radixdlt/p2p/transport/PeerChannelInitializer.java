@@ -162,7 +162,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     // Just a sanity check that any changes to the constants used above
     // don't cause excessive (and unintended) increase of p2p buffers.
     // Might still be changed, if we decide so, but requires manual intervention.
-    final var maxReasonableBufferSize = 15 * 1024 * 1024;
+    final var maxReasonableBufferSize = 16 * 1024 * 1024;
 
     //noinspection ConstantConditions
     if (bufferSize > maxReasonableBufferSize) {
