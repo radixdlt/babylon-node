@@ -226,6 +226,7 @@ impl JNIStateManager {
         );
         let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
             mempool_config,
+            &metric_registry,
         )));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(

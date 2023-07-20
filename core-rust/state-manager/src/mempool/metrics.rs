@@ -71,6 +71,9 @@ pub struct MempoolMetrics {
     pub current_transactions: IntGauge,
     pub current_total_transactions_size: IntGauge,
     pub submission_added: IntCounterVec,
+}
+
+pub struct MempoolManagerMetrics {
     pub submission_rejected: IntCounterVec,
     pub from_local_api_to_commit_wait: Histogram,
 }
@@ -81,18 +84,28 @@ impl MempoolMetrics {
             current_transactions: IntGauge::with_opts(opts(
                 "mempool_current_transactions",
                 "Number of transactions in progress in the mempool.",
-            )).registered_at(registry),
+            ))
+            .registered_at(registry),
             current_total_transactions_size: IntGauge::with_opts(opts(
                 "mempool_current_total_transactions_size",
                 "Total size in bytes of transactions in mempool.",
-            )).registered_at(registry),
+            ))
+            .registered_at(registry),
             submission_added: IntCounterVec::new(
                 opts(
                     "mempool_submission_added_total",
                     "Count of submissions added to the mempool.",
                 ),
                 &["source"],
-            ).registered_at(registry),
+            )
+            .registered_at(registry),
+        }
+    }
+}
+
+impl MempoolManagerMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
             submission_rejected: IntCounterVec::new(
                 opts(
                     "mempool_submission_rejected_total",
