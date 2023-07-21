@@ -150,7 +150,7 @@ public final class RunningRadixNode {
     this.injector.getInstance(Metrics.class).misc().nodeStartup().observe(startupTimeMs);
   }
 
-  public void shutdown() {
+  public void onShutdown() {
     // using System.out.printf as logger no longer works reliably in a shutdown hook
     System.out.printf("Node %s is shutting down...\n", this.self());
 
