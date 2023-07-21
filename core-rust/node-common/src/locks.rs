@@ -62,7 +62,11 @@
  * permissions under this License.
  */
 
+use std::any::type_name;
 use std::ops::{Deref, DerefMut};
+use std::process::abort;
+use std::thread;
+use tracing::error;
 
 //==================================================================================================
 // DEFINITION:
@@ -117,6 +121,12 @@ impl<'a, T: 'a> DerefMut for MutexGuard<'a, T> {
     }
 }
 
+impl<'a, T> Drop for MutexGuard<'a, T> {
+    fn drop(&mut self) {
+        abort_if_panicking(self);
+    }
+}
+
 /// A panic-safe facade for a [`parking_lot::RwLock`].
 pub struct RwLock<T> {
     underlying: parking_lot::RwLock<T>,
@@ -158,6 +168,14 @@ impl<'a, T: 'a> Deref for RwLockReadGuard<'a, T> {
     }
 }
 
+impl<'a, T> Drop for RwLockReadGuard<'a, T> {
+    fn drop(&mut self) {
+        // The impl here is deliberately no-op:
+        // The lock guard will be dropped (i.e. lock released) on its own, and in case of reading,
+        // we do not need to abort the process (since unmodified state means consistent state).
+    }
+}
+
 /// A panic-safe facade for a [`parking_lot::RwLockWriteGuard`].
 pub struct RwLockWriteGuard<'a, T> {
     underlying: parking_lot::RwLockWriteGuard<'a, T>,
@@ -174,5 +192,21 @@ impl<'a, T: 'a> Deref for RwLockWriteGuard<'a, T> {
 impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut T {
         self.underlying.deref_mut()
+    }
+}
+
+impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
+    fn drop(&mut self) {
+        abort_if_panicking(self);
+    }
+}
+
+fn abort_if_panicking<T>(_guard: &T) {
+    if thread::panicking() {
+        error!(
+            "a {} was released while panicking; aborting the process",
+            type_name::<T>()
+        );
+        abort();
     }
 }
