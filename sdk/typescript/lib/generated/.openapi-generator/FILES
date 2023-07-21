@@ -50,6 +50,8 @@ models/AnyOfProofRuleAllOf.ts
 models/AuthConfig.ts
 models/BasicErrorResponse.ts
 models/BasicErrorResponseAllOf.ts
+models/BinaryPlaintextMessageContent.ts
+models/BinaryPlaintextMessageContentAllOf.ts
 models/BlueprintCollectionSchema.ts
 models/BlueprintCollectionSchemaBase.ts
 models/BlueprintCollectionSchemaType.ts
@@ -117,6 +119,10 @@ models/EddsaEd25519Signature.ts
 models/EddsaEd25519SignatureAllOf.ts
 models/EddsaEd25519SignatureWithPublicKey.ts
 models/EddsaEd25519SignatureWithPublicKeyAllOf.ts
+models/EncryptedMessageCurveDecryptorSet.ts
+models/EncryptedMessageDecryptor.ts
+models/EncryptedTransactionMessage.ts
+models/EncryptedTransactionMessageAllOf.ts
 models/EntityModule.ts
 models/EntityReference.ts
 models/EntityType.ts
@@ -350,6 +356,11 @@ models/ParsedTransactionIntentIdentifiers.ts
 models/ParsedTransactionType.ts
 models/PartitionKind.ts
 models/PendingOwnerStakeWithdrawal.ts
+models/PlaintextMessageContent.ts
+models/PlaintextMessageContentBase.ts
+models/PlaintextMessageContentType.ts
+models/PlaintextTransactionMessage.ts
+models/PlaintextTransactionMessageAllOf.ts
 models/PoolVault.ts
 models/ProofAccessRuleNode.ts
 models/ProofAccessRuleNodeAllOf.ts
@@ -435,6 +446,8 @@ models/StateValidatorResponse.ts
 models/StaticRolesAuthTemplate.ts
 models/StreamTransactionsRequest.ts
 models/StreamTransactionsResponse.ts
+models/StringPlaintextMessageContent.ts
+models/StringPlaintextMessageContentAllOf.ts
 models/Substate.ts
 models/SubstateBase.ts
 models/SubstateFormatOptions.ts
@@ -456,6 +469,9 @@ models/TransactionIdKey.ts
 models/TransactionIdentifiers.ts
 models/TransactionIntent.ts
 models/TransactionIntentStatus.ts
+models/TransactionMessage.ts
+models/TransactionMessageBase.ts
+models/TransactionMessageType.ts
 models/TransactionParseRequest.ts
 models/TransactionParseResponse.ts
 models/TransactionPayloadStatus.ts
