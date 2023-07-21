@@ -98,6 +98,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** A multi-node bft test network where the network and latencies of each message is simulated. */
 public class SimulationNodes {
@@ -195,6 +197,8 @@ public class SimulationNodes {
   }
 
   private class RunningNetworkImpl implements RunningNetwork {
+    private static final Logger log = LogManager.getLogger();
+
     private final ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners;
     private final Map<NodeId, Injector> nodes;
 
@@ -251,7 +255,12 @@ public class SimulationNodes {
           .entrySet()
           .stream()
           .filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
-          .forEach(e -> e.getValue().start());
+          .forEach(e -> e.getValue().start(error -> this.onModuleError(e.getKey(), error)));
+    }
+
+    private void onModuleError(String module, Throwable error) {
+      log.error("Uncaught error from module {}; stopping the network", module, error);
+      this.stop();
     }
 
     private void addObservables(NodeId node, Injector injector) {
@@ -339,7 +348,12 @@ public class SimulationNodes {
           .get(node)
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
           .get(name)
-          .start();
+          .start(
+              error -> {
+                log.error(
+                    "uncaught error in individually run {}; stopping the network", name, error);
+                this.stop();
+              });
     }
 
     @Override

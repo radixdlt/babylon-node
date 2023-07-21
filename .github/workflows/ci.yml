@@ -120,10 +120,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
         # If you need better logging, you should add --info to the below command to output application logs.
-        #   This is useful to debug failures caused by an uncaught exception.
-        #   In this case, the node calls System.exit(X), which appear in the integration test logs
-        #   as something like:
-        # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
         run: ./gradlew clean runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
@@ -151,10 +147,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
         # If you need better logging, you should add --info to the below command to output application logs.
-        #   This is useful to debug failures caused by an uncaught exception.
-        #   In this case, the node calls System.exit(X), which appear in the integration test logs
-        #   as something like:
-        # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
         run: ./gradlew clean runTargetedIntegrationTests --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows
