@@ -105,7 +105,7 @@ public final class RadixNodeBootstrapper {
   public sealed interface RadixNodeBootstrapperHandle {
     CompletableFuture<UnstartedRadixNode> radixNodeFuture();
 
-    void shutdown();
+    void onShutdown();
 
     record Resolved(UnstartedRadixNode radixNode) implements RadixNodeBootstrapperHandle {
       @Override
@@ -114,7 +114,7 @@ public final class RadixNodeBootstrapper {
       }
 
       @Override
-      public void shutdown() {
+      public void onShutdown() {
         // no-op
       }
     }
@@ -127,7 +127,7 @@ public final class RadixNodeBootstrapper {
       }
 
       @Override
-      public void shutdown() {
+      public void onShutdown() {
         olympiaGenesisBootstrapper.cleanup();
       }
     }
@@ -139,7 +139,7 @@ public final class RadixNodeBootstrapper {
       }
 
       @Override
-      public void shutdown() {
+      public void onShutdown() {
         // no-op
       }
     }
