@@ -381,7 +381,15 @@ public class Manifest {
                 Enum<OwnerRole::None>()
                 Enum<NonFungibleIdType::Integer>()
                 false                            # Track Supply
-                Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
+                Tuple(                           # The NonFungibleDataSchema
+                    Tuple(                       # The SBOR schema for the non-fungible data (here: empty schema)
+                        Array<Enum>(),
+                        Array<Tuple>(),
+                        Array<Enum>()
+                    ),
+                    Enum<0u8>(66u8),             # The local type index in the schema (here: well-known - Unit tuple)
+                    Array<String>()              # Mutable field names
+                )
                 Tuple(
                     Some(Tuple(                  # Mintable
                         Some(Enum<AccessRule::AllowAll>()),

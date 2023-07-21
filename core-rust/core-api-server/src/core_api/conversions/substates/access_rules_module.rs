@@ -7,13 +7,13 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_owner_role_substate(
     context: &MappingContext,
-    substate: &OwnerRoleSubstate,
+    substate: &FieldSubstate<OwnerRoleSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let OwnerRoleSubstate { owner_role_entry } = substate;
     Ok(field_substate!(
         substate,
         AccessRulesModuleFieldOwnerRole,
-        {
+        OwnerRoleSubstate { owner_role_entry },
+        Value {
             owner_role: Some(models::OwnerRole {
                 rule: Some(to_api_access_rule(context, &owner_role_entry.rule)?),
                 updater: match owner_role_entry.updater {

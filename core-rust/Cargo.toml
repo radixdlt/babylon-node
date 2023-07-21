@@ -21,17 +21,17 @@ members = [
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-638673d16e", features = ["serde"] }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+radix-engine-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v2-phase-2-bc272a1267", features = ["serde"] }
 
 jni = { version = "0.19.0" }
 tracing = { version = "0.1" }

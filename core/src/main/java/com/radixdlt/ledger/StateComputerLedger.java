@@ -85,9 +85,13 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
+
+  private static final Logger log = LogManager.getLogger();
 
   public interface ExecutedTransaction {
     RawLedgerTransaction transaction();
@@ -152,7 +156,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore);
   }
 
-  private final Comparator<LedgerProof> headerComparator;
   private final StateComputer stateComputer;
   private final Metrics metrics;
   private final TimeSupplier timeSupplier;
@@ -163,11 +166,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public StateComputerLedger(
       TimeSupplier timeSupplier,
       @LastProof LedgerProof initialLedgerState,
-      Comparator<LedgerProof> headerComparator,
       StateComputer stateComputer,
       Metrics metrics) {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.headerComparator = Objects.requireNonNull(headerComparator);
     this.stateComputer = Objects.requireNonNull(stateComputer);
     this.metrics = Objects.requireNonNull(metrics);
     this.currentLedgerHeader = initialLedgerState;
@@ -326,7 +327,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     synchronized (this.commitAndAdvanceLedgerLock) {
       final LedgerProof againstLedgerHeader = this.currentLedgerHeader;
 
-      if (this.headerComparator.compare(nextHeader, againstLedgerHeader) <= 0) {
+      if (nextHeader.getStateVersion() <= againstLedgerHeader.getStateVersion()) {
+        log.trace(
+            "Ignoring the ledger extension {} which would not progress the current ledger {}",
+            nextHeader,
+            againstLedgerHeader);
         return;
       }
 

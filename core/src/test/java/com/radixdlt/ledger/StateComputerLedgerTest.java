@@ -80,7 +80,6 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -93,21 +92,17 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
 
 public class StateComputerLedgerTest {
-  private Mempool<RawNotarizedTransaction, PreparedNotarizedTransaction, NotarizedTransactionHash>
-      mempool;
 
   private StateComputer stateComputer;
   private StateComputerLedger sut;
   private LedgerProof currentLedgerHeader;
   private Metrics metrics;
-  private Comparator<LedgerProof> headerComparator;
 
   private LedgerHeader ledgerHeader;
   private VertexWithHash genesisVertex;
@@ -140,11 +135,9 @@ public class StateComputerLedgerTest {
 
   @Before
   public void setup() {
-    this.mempool = TypedMocks.rmock(Mempool.class);
     // No type check issues with mocking generic here
     this.stateComputer = mock(StateComputer.class);
     this.metrics = new MetricsInitializer().initialize();
-    this.headerComparator = TypedMocks.rmock(Comparator.class);
 
     this.ledgerHeader = LedgerHeader.genesis(0, LedgerHashes.zero(), null, 0, 0);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
@@ -157,11 +150,7 @@ public class StateComputerLedgerTest {
 
     this.sut =
         new StateComputerLedger(
-            mock(TimeSupplier.class),
-            currentLedgerHeader,
-            headerComparator,
-            stateComputer,
-            metrics);
+            mock(TimeSupplier.class), currentLedgerHeader, stateComputer, metrics);
   }
 
   public void genesisIsEndOfEpoch(boolean endOfEpoch) {
@@ -188,11 +177,7 @@ public class StateComputerLedgerTest {
 
     this.sut =
         new StateComputerLedger(
-            mock(TimeSupplier.class),
-            currentLedgerHeader,
-            headerComparator,
-            stateComputer,
-            metrics);
+            mock(TimeSupplier.class), currentLedgerHeader, stateComputer, metrics);
   }
 
   @Test

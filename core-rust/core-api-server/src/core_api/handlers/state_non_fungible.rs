@@ -21,22 +21,30 @@ pub(crate) async fn handle_state_non_fungible(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
+    if Some(EntityType::GlobalNonFungibleResourceManager)
+        != resource_address.as_node_id().entity_type()
+    {
+        return Err(client_error("Resource is not a non-fungible resource"));
+    }
+
     let database = state.database.read();
 
-    let id_type_substate: NonFungibleResourceManagerIdTypeSubstate =
-        read_mandatory_main_field_substate(
-            database.deref(),
-            resource_address.as_node_id(),
-            &NonFungibleResourceManagerField::IdType.into(),
-        )?;
+    let id_type = read_optional_main_field_substate(
+        database.deref(),
+        resource_address.as_node_id(),
+        &NonFungibleResourceManagerField::IdType.into(),
+    )
+    .ok_or_else(|| not_found_error("Resource not found".to_string()))?
+    .value
+    .0;
 
     let non_fungible_id =
         extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
             .map_err(|err| err.into_response_error("non_fungible_id"))?;
 
-    if non_fungible_id.id_type() != id_type_substate {
+    if non_fungible_id.id_type() != id_type {
         return Err(ExtractionError::WrongNonFungibleIdType {
-            expected: id_type_substate,
+            expected: id_type,
             actual: non_fungible_id.id_type(),
         }
         .into_response_error("non_fungible_id"));

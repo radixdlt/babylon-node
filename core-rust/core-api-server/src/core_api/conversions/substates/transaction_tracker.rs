@@ -7,19 +7,19 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_transaction_tracker_substate(
     context: &MappingContext,
-    substate: &TransactionTrackerSubstate,
+    substate: &FieldSubstate<TransactionTrackerSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let TransactionTrackerSubstate {
-        start_epoch,
-        start_partition,
-        partition_range_start_inclusive,
-        partition_range_end_inclusive,
-        epochs_per_partition,
-    } = substate;
     Ok(field_substate!(
         substate,
         TransactionTrackerFieldState,
-        {
+        TransactionTrackerSubstate {
+            start_epoch,
+            start_partition,
+            partition_range_start_inclusive,
+            partition_range_end_inclusive,
+            epochs_per_partition,
+        },
+        Value {
             start_epoch: to_api_epoch(context, Epoch::of(*start_epoch))?,
             start_partition: to_api_u8_as_i32(*start_partition),
             partition_range_start_inclusive: to_api_u8_as_i32(*partition_range_start_inclusive),

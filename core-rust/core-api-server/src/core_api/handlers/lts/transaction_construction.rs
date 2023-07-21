@@ -13,17 +13,22 @@ pub(crate) async fn handle_lts_transaction_construction(
 
     let database = state.database.read();
 
-    let consensus_manager_substate: ConsensusManagerSubstate = read_mandatory_main_field_substate(
-        database.deref(),
-        CONSENSUS_MANAGER.as_node_id(),
-        &ConsensusManagerField::ConsensusManager.into(),
-    )?;
+    let consensus_manager_substate =
+        read_mandatory_main_field_substate::<ConsensusManagerSubstate>(
+            database.deref(),
+            CONSENSUS_MANAGER.as_node_id(),
+            &ConsensusManagerField::ConsensusManager.into(),
+        )?
+        .value
+        .0;
 
-    let timestamp_substate: ProposerMilliTimestampSubstate = read_mandatory_main_field_substate(
+    let timestamp_substate = read_mandatory_main_field_substate::<ProposerMilliTimestampSubstate>(
         database.deref(),
         CONSENSUS_MANAGER.as_node_id(),
         &ConsensusManagerField::CurrentTime.into(),
-    )?;
+    )?
+    .value
+    .0;
 
     Ok(models::LtsTransactionConstructionResponse {
         current_epoch: to_api_epoch(&mapping_context, consensus_manager_substate.epoch)?,

@@ -8,19 +8,20 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_account_state_substate(
     _context: &MappingContext,
-    substate: &AccountSubstate,
+    substate: &FieldSubstate<AccountSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let AccountSubstate {
-        default_deposit_rule,
-    } = substate;
     Ok(field_substate!(
         substate,
         AccountFieldState,
-        {
+        AccountSubstate {
+            default_deposit_rule,
+        },
+        Value {
             default_deposit_rule: match default_deposit_rule {
                 AccountDefaultDepositRule::Accept => models::DefaultDepositRule::Accept,
                 AccountDefaultDepositRule::Reject => models::DefaultDepositRule::Reject,
-                AccountDefaultDepositRule::AllowExisting => models::DefaultDepositRule::AllowExisting,
+                AccountDefaultDepositRule::AllowExisting =>
+                    models::DefaultDepositRule::AllowExisting,
             },
         }
     ))

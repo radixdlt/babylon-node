@@ -7,25 +7,15 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_generic_scrypto_component_state_substate(
     context: &MappingContext,
-    substate: &GenericScryptoSborPayload,
+    substate: &FieldSubstate<ScryptoValue>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         GenericScryptoComponentFieldState,
-        {
-            data_struct: Box::new(to_api_data_struct_from_bytes(context, substate.data.as_ref())?),
-        }
-    ))
-}
-
-pub fn to_api_generic_scrypto_component_state_substate_from_scrypto_value(
-    context: &MappingContext,
-    scrypto_value: &ScryptoValue,
-) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
-        substate,
-        GenericScryptoComponentFieldState,
-        {
+        value => {
+            let scrypto_value = value;
+        },
+        Value {
             data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, scrypto_value)?),
         }
     ))

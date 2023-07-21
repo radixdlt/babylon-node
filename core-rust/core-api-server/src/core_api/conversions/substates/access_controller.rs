@@ -7,14 +7,15 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_access_controller_substate(
     context: &MappingContext,
-    substate: &AccessControllerSubstate,
+    substate: &FieldSubstate<AccessControllerSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let data = scrypto_encode(substate).unwrap();
-
     Ok(field_substate!(
         substate,
         AccessControllerFieldState,
-        {
+        substate => {
+            let data = scrypto_encode(substate).unwrap();
+        },
+        Value {
             data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
         }
     ))
