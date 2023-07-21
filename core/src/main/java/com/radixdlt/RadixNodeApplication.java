@@ -94,7 +94,7 @@ public final class RadixNodeApplication {
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
-      exitWithError();
+      System.exit(-1);
     }
   }
 
@@ -114,7 +114,9 @@ public final class RadixNodeApplication {
            provides the shutdown functionality) is still needed - for both happy (no errors during initialization)
            and unhappy (errors during initialization) paths.
     */
-    Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(radixNodeBootstrapperHandle::shutdown, "Bootstrapper-Shutdown"));
     radixNodeBootstrapperHandle
         .radixNodeFuture()
         .thenAccept(
@@ -126,19 +128,14 @@ public final class RadixNodeApplication {
                   runningNode.self(),
                   startupTime.toMillis());
               runningNode.reportSelfStartupTime(startupTime);
-              runningNode.installShutdownHook();
+              Runtime.getRuntime()
+                  .addShutdownHook(new Thread(runningNode::shutdown, "Node-Shutdown"));
             })
         // Call .join() to block on the future completing, ensuring that errors during
         // bootstrapping are not swallowed, and propagate to the "Unable to start" handler.
         // In particular, errors can come from running genesis during guice initiation in
         // RunningRadixNode.run(..);
         .join();
-  }
-
-  private static void exitWithError() {
-    // When this happens, the integration test errors look like:
-    // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-    java.lang.System.exit(-1);
   }
 
   private static void logVersion() {

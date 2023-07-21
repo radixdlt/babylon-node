@@ -64,7 +64,6 @@
 
 package com.radixdlt;
 
-import com.google.common.base.Preconditions;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -83,8 +82,6 @@ import com.radixdlt.statemanager.StateManager;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,11 +90,8 @@ public final class RunningRadixNode {
 
   private final Injector injector;
 
-  private final AtomicReference<Thread> shutdownHook;
-
   private RunningRadixNode(Injector injector) {
     this.injector = injector;
-    this.shutdownHook = new AtomicReference<>();
   }
 
   public static RunningRadixNode run(UnstartedRadixNode unstartedRadixNode) {
@@ -125,8 +119,8 @@ public final class RunningRadixNode {
       final var moduleRunner = moduleRunners.get(module);
       moduleRunner.start(
           error -> {
-            log.error("Uncaught exception in runner {}; shutting down the node", module, error);
-            runningNode.shutdownFromModule(String.format("an error in runner %s", module));
+            log.error("Uncaught exception in runner {}; exiting the process", module, error);
+            System.exit(-1);
           });
     }
 
@@ -156,28 +150,9 @@ public final class RunningRadixNode {
     this.injector.getInstance(Metrics.class).misc().nodeStartup().observe(startupTimeMs);
   }
 
-  public void installShutdownHook() {
-    Thread hook = new Thread(this::shutdownFromHook);
-    final var set = this.shutdownHook.compareAndSet(null, hook);
-    Preconditions.checkState(set, "already installed before");
-    Runtime.getRuntime().addShutdownHook(hook);
-  }
-
-  private void shutdownFromModule(String reason) {
-    final @Nullable Thread hook = this.shutdownHook.getAndSet(null);
-    if (hook != null) {
-      Runtime.getRuntime().removeShutdownHook(hook);
-    }
-    doShutdown(reason);
-  }
-
-  private void shutdownFromHook() {
-    doShutdown("a requested shutdown (via the Java shutdown hook)");
-  }
-
-  private void doShutdown(String reason) {
+  public void shutdown() {
     // using System.out.printf as logger no longer works reliably in a shutdown hook
-    System.out.printf("Node %s is shutting down due to %s...\n", this.self(), reason);
+    System.out.printf("Node %s is shutting down...\n", this.self());
 
     injector
         .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
