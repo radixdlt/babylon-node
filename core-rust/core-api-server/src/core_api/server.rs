@@ -73,7 +73,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
 use tower_http::catch_panic::CatchPanicLayer;

@@ -74,7 +74,7 @@ use node_common::config::limits::VertexLimitsConfig;
 use node_common::config::MempoolConfig;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine_common::math::Decimal;
@@ -195,12 +195,10 @@ impl JNIStateManager {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(parking_lot::const_rwlock(
-            StateManagerDatabase::from_config(
-                config.database_backend_config,
-                config.database_flags,
-            ),
-        ));
+        let database = Arc::new(RwLock::new(StateManagerDatabase::from_config(
+            config.database_backend_config,
+            config.database_flags,
+        )));
         let metric_registry = Registry::new();
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
@@ -211,7 +209,7 @@ impl JNIStateManager {
             &logging_config,
             fee_reserve_config,
         ));
-        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
+        let pending_transaction_result_cache = Arc::new(RwLock::new(
             PendingTransactionResultCache::new(10000, 10000),
         ));
         let committability_validator = Arc::new(CommittabilityValidator::new(
@@ -224,9 +222,7 @@ impl JNIStateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
-            mempool_config,
-        )));
+        let mempool = Arc::new(RwLock::new(PriorityMempool::new(mempool_config)));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),

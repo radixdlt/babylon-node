@@ -62,9 +62,117 @@
  * permissions under this License.
  */
 
-pub mod config;
-pub mod environment;
-pub mod java;
-pub mod jni;
-pub mod locks;
-pub mod utils;
+use std::ops::{Deref, DerefMut};
+
+//==================================================================================================
+// DEFINITION:
+// A synchronization primitive is "panic-safe" if it does not allow any `panic!` to leave the
+// subject of synchronization in an inconsistent state.
+// Please note that every `panic!` that occurs while a lock is acquired for writing can interrupt a
+// series of operations somewhere in the middle, where invariants are not kept. Hence, the
+// implementations in this module will always abort the process in such situations (in order to
+// disallow `catch_unwind()` of the current thread, or inconsistent data access from other threads).
+// The vanilla `parking_lot` synchronization primitives are not panic-safe in any way, i.e. they
+// simply release the lock when the stack in unwinding (without aborting the process or at least
+// "poisoning" the primitive).
+//==================================================================================================
+
+/// A panic-safe facade for a [`parking_lot::Mutex`].
+pub struct Mutex<T> {
+    underlying: parking_lot::Mutex<T>,
+}
+
+impl<T> Mutex<T> {
+    /// Wraps the given value in a panic-safe [`Mutex`].
+    pub fn new(value: T) -> Self {
+        Self {
+            underlying: parking_lot::const_mutex(value),
+        }
+    }
+
+    /// Delegates to the [`parking_lot::Mutex::lock()`], but returns a panic-safe guard.
+    pub fn lock(&self) -> MutexGuard<'_, T> {
+        MutexGuard {
+            underlying: self.underlying.lock(),
+        }
+    }
+}
+
+/// A panic-safe facade for a [`parking_lot::MutexGuard`].
+pub struct MutexGuard<'a, T> {
+    underlying: parking_lot::MutexGuard<'a, T>,
+}
+
+impl<'a, T: 'a> Deref for MutexGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.underlying.deref()
+    }
+}
+
+impl<'a, T: 'a> DerefMut for MutexGuard<'a, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.underlying.deref_mut()
+    }
+}
+
+/// A panic-safe facade for a [`parking_lot::RwLock`].
+pub struct RwLock<T> {
+    underlying: parking_lot::RwLock<T>,
+}
+
+impl<T> RwLock<T> {
+    /// Wraps the given value in a panic-safe [`RwLock`].
+    pub fn new(value: T) -> Self {
+        Self {
+            underlying: parking_lot::const_rwlock(value),
+        }
+    }
+
+    /// Delegates to the [`parking_lot::RwLockReadGuard::read()`], but returns a panic-safe guard.
+    pub fn read(&self) -> RwLockReadGuard<'_, T> {
+        RwLockReadGuard {
+            underlying: self.underlying.read(),
+        }
+    }
+
+    /// Delegates to the [`parking_lot::RwLockReadGuard::write()`], but returns a panic-safe guard.
+    pub fn write(&self) -> RwLockWriteGuard<'_, T> {
+        RwLockWriteGuard {
+            underlying: self.underlying.write(),
+        }
+    }
+}
+
+/// A panic-safe facade for a [`parking_lot::RwLockReadGuard`].
+pub struct RwLockReadGuard<'a, T> {
+    underlying: parking_lot::RwLockReadGuard<'a, T>,
+}
+
+impl<'a, T: 'a> Deref for RwLockReadGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.underlying.deref()
+    }
+}
+
+/// A panic-safe facade for a [`parking_lot::RwLockWriteGuard`].
+pub struct RwLockWriteGuard<'a, T> {
+    underlying: parking_lot::RwLockWriteGuard<'a, T>,
+}
+
+impl<'a, T: 'a> Deref for RwLockWriteGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.underlying.deref()
+    }
+}
+
+impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.underlying.deref_mut()
+    }
+}

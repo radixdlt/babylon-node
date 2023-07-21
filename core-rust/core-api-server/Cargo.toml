@@ -22,7 +22,6 @@ utils = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
-parking_lot = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 serde = { workspace = true }

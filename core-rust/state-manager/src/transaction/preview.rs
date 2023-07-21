@@ -1,4 +1,4 @@
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
@@ -124,7 +124,7 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::config::MempoolConfig;
-    use parking_lot::RwLock;
+    use node_common::locks::RwLock;
     use prometheus::Registry;
     use radix_engine::transaction::FeeReserveConfig;
     use radix_engine_common::network::NetworkDefinition;
@@ -142,7 +142,7 @@ mod tests {
                 log_on_transaction_rejection: false,
             },
         };
-        let database = Arc::new(parking_lot::const_rwlock(StateManagerDatabase::InMemory(
+        let database = Arc::new(RwLock::new(StateManagerDatabase::InMemory(
             InMemoryStore::new(DatabaseFlags::default()),
         )));
         let metric_registry = Registry::new();
@@ -150,7 +150,7 @@ mod tests {
             &logging_config,
             FeeReserveConfig::default(),
         ));
-        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
+        let pending_transaction_result_cache = Arc::new(RwLock::new(
             PendingTransactionResultCache::new(10000, 10000),
         ));
         let committability_validator = Arc::new(CommittabilityValidator::new(
@@ -163,19 +163,17 @@ mod tests {
             committability_validator,
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
-            MempoolConfig {
-                max_total_transactions_size: 10 * 1024 * 1024,
-                max_transaction_count: 10,
-            },
-        )));
+        let mempool = Arc::new(RwLock::new(PriorityMempool::new(MempoolConfig {
+            max_total_transactions_size: 10 * 1024 * 1024,
+            max_transaction_count: 10,
+        })));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,
             cached_committability_validator,
             &metric_registry,
         ));
         let state_manager: Arc<RwLock<ActualStateManager>> =
-            Arc::new(parking_lot::const_rwlock(StateManager::new(
+            Arc::new(RwLock::new(StateManager::new(
                 &network,
                 VertexLimitsConfig::default(),
                 database.clone(),
