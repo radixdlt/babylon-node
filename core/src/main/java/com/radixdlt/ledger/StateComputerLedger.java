@@ -329,7 +329,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       if (nextHeader.getStateVersion() <= againstLedgerHeader.getStateVersion()) {
         log.trace(
-            "ignoring the ledger extension {} which would not progress the current ledger {}",
+            "Ignoring the ledger extension {} which would not progress the current ledger {}",
             nextHeader,
             againstLedgerHeader);
         return;
