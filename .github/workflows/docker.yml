@@ -95,6 +95,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -170,6 +171,7 @@ jobs:
       tags: |
         type=ref,event=branch
         type=ref,event=pr
+        type=ref,event=tag
         type=semver,pattern={{version}}
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
@@ -219,6 +221,8 @@ jobs:
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
+      tags:
+        type=ref,event=tag
       flavor: |
         suffix=-amd64
       context: "."
@@ -242,6 +246,8 @@ jobs:
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
+      tags:
+        type=ref,event=tag
       flavor: |
         suffix=-arm64
       context: "."
