@@ -8,13 +8,13 @@ use radix_engine_common::types::EntityType;
 
 enum ManagerByType {
     Fungible(
-        FungibleResourceManagerDivisibilitySubstate,
-        Option<FungibleResourceManagerTotalSupplySubstate>,
+        FieldSubstate<FungibleResourceManagerDivisibilitySubstate>,
+        Option<FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>,
     ),
     NonFungible(
-        NonFungibleResourceManagerIdTypeSubstate,
-        Option<NonFungibleResourceManagerTotalSupplySubstate>,
-        NonFungibleResourceManagerMutableFieldsSubstate,
+        FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>,
+        Option<FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>>,
+        FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>,
     ),
 }
 
@@ -36,11 +36,12 @@ pub(crate) async fn handle_state_resource(
         resource_node_id.entity_type() == Some(EntityType::GlobalFungibleResourceManager);
     let manager = if is_fungible {
         ManagerByType::Fungible(
-            read_mandatory_main_field_substate(
+            read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
                 &FungibleResourceManagerField::Divisibility.into(),
-            )?,
+            )
+            .ok_or_else(|| not_found_error("Resource not found".to_string()))?,
             read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
@@ -49,11 +50,12 @@ pub(crate) async fn handle_state_resource(
         )
     } else {
         ManagerByType::NonFungible(
-            read_mandatory_main_field_substate(
+            read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
                 &NonFungibleResourceManagerField::IdType.into(),
-            )?,
+            )
+            .ok_or_else(|| not_found_error("Resource not found".to_string()))?,
             read_optional_main_field_substate(
                 database.deref(),
                 resource_node_id,
@@ -67,7 +69,7 @@ pub(crate) async fn handle_state_resource(
         )
     };
 
-    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
+    let owner_role_substate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,
@@ -89,10 +91,10 @@ fn to_api_resource_manager(
     manager: &ManagerByType,
 ) -> Result<models::StateResourceManager, MappingError> {
     Ok(match manager {
-        ManagerByType::Fungible(divisiility, total_supply) => {
+        ManagerByType::Fungible(divisibility, total_supply) => {
             models::StateResourceManager::StateFungibleResourceManager {
                 divisibility: Box::new(to_api_fungible_resource_manager_divisibility_substate(
-                    divisiility,
+                    divisibility,
                 )?),
                 total_supply: total_supply
                     .as_ref()

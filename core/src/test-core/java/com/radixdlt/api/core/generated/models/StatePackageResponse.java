@@ -32,45 +32,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StatePackageResponse
  */
 @JsonPropertyOrder({
-  StatePackageResponse.JSON_PROPERTY_ROYALTY,
-  StatePackageResponse.JSON_PROPERTY_OWNER_ROLE
+  StatePackageResponse.JSON_PROPERTY_OWNER_ROLE,
+  StatePackageResponse.JSON_PROPERTY_ROYALTY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StatePackageResponse {
-  public static final String JSON_PROPERTY_ROYALTY = "royalty";
-  private Substate royalty;
-
   public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
   private Substate ownerRole;
 
+  public static final String JSON_PROPERTY_ROYALTY = "royalty";
+  private Substate royalty;
+
   public StatePackageResponse() { 
   }
-
-  public StatePackageResponse royalty(Substate royalty) {
-    this.royalty = royalty;
-    return this;
-  }
-
-   /**
-   * Get royalty
-   * @return royalty
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getRoyalty() {
-    return royalty;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROYALTY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyalty(Substate royalty) {
-    this.royalty = royalty;
-  }
-
 
   public StatePackageResponse ownerRole(Substate ownerRole) {
     this.ownerRole = ownerRole;
@@ -98,6 +72,32 @@ public class StatePackageResponse {
   }
 
 
+  public StatePackageResponse royalty(Substate royalty) {
+    this.royalty = royalty;
+    return this;
+  }
+
+   /**
+   * Get royalty
+   * @return royalty
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Substate getRoyalty() {
+    return royalty;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRoyalty(Substate royalty) {
+    this.royalty = royalty;
+  }
+
+
   /**
    * Return true if this StatePackageResponse object is equal to o.
    */
@@ -110,21 +110,21 @@ public class StatePackageResponse {
       return false;
     }
     StatePackageResponse statePackageResponse = (StatePackageResponse) o;
-    return Objects.equals(this.royalty, statePackageResponse.royalty) &&
-        Objects.equals(this.ownerRole, statePackageResponse.ownerRole);
+    return Objects.equals(this.ownerRole, statePackageResponse.ownerRole) &&
+        Objects.equals(this.royalty, statePackageResponse.royalty);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(royalty, ownerRole);
+    return Objects.hash(ownerRole, royalty);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StatePackageResponse {\n");
-    sb.append("    royalty: ").append(toIndentedString(royalty)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
+    sb.append("    royalty: ").append(toIndentedString(royalty)).append("\n");
     sb.append("}");
     return sb.toString();
   }

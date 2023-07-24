@@ -1,7 +1,5 @@
 use crate::core_api::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
 use std::ops::Deref;
@@ -26,7 +24,7 @@ pub(crate) async fn handle_state_component(
     }
 
     let database = state.database.read();
-    let type_info: TypeInfoSubstate = read_optional_substate(
+    let type_info_substate = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
         TYPE_INFO_FIELD_PARTITION,
@@ -34,13 +32,13 @@ pub(crate) async fn handle_state_component(
     )
     .ok_or_else(|| not_found_error("Component not found".to_string()))?;
 
-    let scrypto_value: ScryptoValue = read_mandatory_main_field_substate(
+    let component_state_substate = read_mandatory_main_field_substate(
         database.deref(),
         component_address.as_node_id(),
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_substate: ComponentRoyaltySubstate = read_mandatory_substate(
+    let component_royalty_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
         ROYALTY_BASE_PARTITION
@@ -49,7 +47,7 @@ pub(crate) async fn handle_state_component(
         &RoyaltyField::RoyaltyAccumulator.into(),
     )?;
 
-    let owner_role_substate: OwnerRoleSubstate = read_mandatory_substate(
+    let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
         ACCESS_RULES_FIELDS_PARTITION,
@@ -62,13 +60,14 @@ pub(crate) async fn handle_state_component(
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateComponentResponse {
-        info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: Some(
-            to_api_generic_scrypto_component_state_substate_from_scrypto_value(
-                &mapping_context,
-                &scrypto_value,
-            )?,
-        ),
+        info: Some(to_api_type_info_substate(
+            &mapping_context,
+            &type_info_substate,
+        )?),
+        state: Some(to_api_generic_scrypto_component_state_substate(
+            &mapping_context,
+            &component_state_substate,
+        )?),
         royalty_accumulator: Some(to_api_component_royalty_substate(
             &mapping_context,
             &component_royalty_substate,

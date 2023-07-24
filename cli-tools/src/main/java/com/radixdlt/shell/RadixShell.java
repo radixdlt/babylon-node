@@ -235,8 +235,7 @@ public final class RadixShell {
 
     public Node(Injector injector) {
       this.injector = injector;
-      this.moduleRunners =
-          injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
+      this.moduleRunners = injector.getInstance(Key.get(new TypeLiteral<>() {}));
     }
 
     public <T> T getInstance(Key<T> key) {
@@ -248,7 +247,13 @@ public final class RadixShell {
     }
 
     public void startRunner(String runner) {
-      moduleRunners.get(runner).start();
+      moduleRunners
+          .get(runner)
+          .start(
+              error -> {
+                log.error("Uncaught exception in runner {}; stopping all runners", runner, error);
+                moduleRunners.values().forEach(ModuleRunner::stop);
+              });
     }
 
     public void stopRunner(String runner) {

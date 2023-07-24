@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine::{system::system::FieldSubstate, types::*};
 
 use radix_engine_interface::api::CollectionIndex;
 use serde::Serialize;
@@ -38,8 +38,13 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
     substate_key: &SubstateKey,
-) -> Result<D, ResponseError<()>> {
-    read_mandatory_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
+) -> Result<FieldSubstate<D>, ResponseError<()>> {
+    read_mandatory_substate::<FieldSubstate<D>>(
+        database,
+        node_id,
+        MAIN_BASE_PARTITION,
+        substate_key,
+    )
 }
 
 #[tracing::instrument(skip_all)]
@@ -71,8 +76,8 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
     database: &StateManagerDatabase,
     node_id: &NodeId,
     substate_key: &SubstateKey,
-) -> Option<D> {
-    read_optional_substate(database, node_id, MAIN_BASE_PARTITION, substate_key)
+) -> Option<FieldSubstate<D>> {
+    read_optional_substate::<FieldSubstate<D>>(database, node_id, MAIN_BASE_PARTITION, substate_key)
 }
 
 #[tracing::instrument(skip_all)]

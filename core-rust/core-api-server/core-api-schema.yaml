@@ -6567,10 +6567,9 @@ components:
     StatePackageResponse:
       type: object
       required:
-        - royalty
         - owner_role
       properties:
-        royalty:
-          $ref: "#/components/schemas/Substate"
         owner_role:
+          $ref: "#/components/schemas/Substate"
+        royalty:
           $ref: "#/components/schemas/Substate"

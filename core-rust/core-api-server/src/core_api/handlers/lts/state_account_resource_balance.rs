@@ -95,6 +95,8 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
                 &owned_vault.0,
                 &FungibleVaultField::LiquidFungible.into(),
             )?
+            .value
+            .0
             .amount(),
             _ => Decimal::ZERO,
         }

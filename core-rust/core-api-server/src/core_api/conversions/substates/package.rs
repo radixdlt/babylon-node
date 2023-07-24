@@ -7,15 +7,13 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_package_royalty_accumulator_substate(
     context: &MappingContext,
-    substate: &PackageRoyaltyAccumulatorSubstate,
+    substate: &FieldSubstate<PackageRoyaltyAccumulatorSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let PackageRoyaltyAccumulatorSubstate { royalty_vault } = substate;
-
     Ok(field_substate!(
         substate,
         PackageFieldRoyaltyAccumulator,
-        {
+        PackageRoyaltyAccumulatorSubstate { royalty_vault },
+        Value {
             vault_entity: Box::new(to_api_entity_reference(
                 context,
                 royalty_vault.0.as_node_id(),

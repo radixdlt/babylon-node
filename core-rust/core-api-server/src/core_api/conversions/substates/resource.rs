@@ -7,12 +7,13 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_fungible_vault_balance_substate(
     _context: &MappingContext,
-    balance: &FungibleVaultBalanceSubstate,
+    substate: &FieldSubstate<FungibleVaultBalanceSubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         FungibleVaultFieldBalance,
-        {
+        balance,
+        Value {
             amount: to_api_decimal(&balance.amount()),
         }
     ))
@@ -20,13 +21,13 @@ pub fn to_api_fungible_vault_balance_substate(
 
 pub fn to_api_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
-    substate: &VaultFrozenFlag,
+    substate: &FieldSubstate<VaultFrozenFlag>,
 ) -> Result<models::Substate, MappingError> {
-    let VaultFrozenFlag { frozen } = substate;
     Ok(field_substate!(
         substate,
         FungibleVaultFieldFrozenStatus,
-        {
+        VaultFrozenFlag { frozen },
+        Value {
             frozen_status: Box::new(to_api_frozen_status(frozen)),
         }
     ))
@@ -45,26 +46,27 @@ pub fn to_api_frozen_status(vault_freeze_flags: &VaultFreezeFlags) -> models::Fr
 
 pub fn to_api_non_fungible_vault_balance_substate(
     _context: &MappingContext,
-    substate: &NonFungibleVaultBalanceSubstate,
+    substate: &FieldSubstate<NonFungibleVaultBalanceSubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         NonFungibleVaultFieldBalance,
-        {
-            amount: to_api_decimal(&substate.amount),
+        NonFungibleVaultBalanceSubstate { amount },
+        Value {
+            amount: to_api_decimal(amount),
         }
     ))
 }
 
 pub fn to_api_non_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
-    substate: &VaultFrozenFlag,
+    substate: &FieldSubstate<VaultFrozenFlag>,
 ) -> Result<models::Substate, MappingError> {
-    let VaultFrozenFlag { frozen } = substate;
     Ok(field_substate!(
         substate,
         FungibleVaultFieldFrozenStatus,
-        {
+        VaultFrozenFlag { frozen },
+        Value {
             frozen_status: Box::new(to_api_frozen_status(frozen)),
         }
     ))
@@ -87,63 +89,71 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
 }
 
 pub fn to_api_fungible_resource_manager_divisibility_substate(
-    substate: &FungibleResourceManagerDivisibilitySubstate,
+    substate: &FieldSubstate<FungibleResourceManagerDivisibilitySubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         FungibleResourceManagerFieldDivisibility,
-        {
-            divisibility: to_api_u8_as_i32(*substate),
+        divisibility,
+        Value {
+            divisibility: to_api_u8_as_i32(*divisibility),
         }
     ))
 }
 
 pub fn to_api_fungible_resource_manager_total_supply_substate(
-    substate: &FungibleResourceManagerTotalSupplySubstate,
+    substate: &FieldSubstate<FungibleResourceManagerTotalSupplySubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         FungibleResourceManagerFieldTotalSupply,
-        {
-            total_supply: to_api_decimal(substate),
+        total_supply,
+        Value {
+            total_supply: to_api_decimal(total_supply),
         }
     ))
 }
 
 pub fn to_api_non_fungible_resource_manager_id_type_substate(
-    substate: &NonFungibleResourceManagerIdTypeSubstate,
+    substate: &FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         NonFungibleResourceManagerFieldIdType,
-        {
-            non_fungible_id_type: to_api_non_fungible_id_type(substate),
+        non_fungible_id_type,
+        Value {
+            non_fungible_id_type: to_api_non_fungible_id_type(non_fungible_id_type),
         }
     ))
 }
 
 pub fn to_api_non_fungible_resource_manager_total_supply_substate(
-    substate: &NonFungibleResourceManagerTotalSupplySubstate,
+    substate: &FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
         NonFungibleResourceManagerFieldTotalSupply,
-        {
-            total_supply: to_api_decimal(substate),
+        total_supply,
+        Value {
+            total_supply: to_api_decimal(total_supply),
         }
     ))
 }
 
 pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
     _context: &MappingContext,
-    substate: &NonFungibleResourceManagerMutableFieldsSubstate,
+    substate: &FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>,
 ) -> Result<models::Substate, MappingError> {
-    let NonFungibleResourceManagerMutableFieldsSubstate { mutable_fields } = substate;
     Ok(field_substate!(
         substate,
         NonFungibleResourceManagerFieldMutableFields,
-        {
-            mutable_fields: mutable_fields.iter().cloned().collect(),
+        NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_field_index
+        },
+        Value {
+            // TODO(RCnet-v3) - We didn't want to change this for RCnet-v2 phase 2
+            // So for RCnet-v3, fix this to map properly to include the field indices
+            mutable_fields: mutable_field_index.keys().cloned().collect(),
         }
     ))
 }
