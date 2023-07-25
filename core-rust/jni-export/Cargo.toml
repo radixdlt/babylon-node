@@ -9,6 +9,7 @@ state-manager = { path = "../state-manager" }
 core-api-server = { path = "../core-api-server" }
 
 jni = { workspace = true }
+jni-sys = { workspace = true }
 
 [lib]
 name = "corerust"

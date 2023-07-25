@@ -20,6 +20,7 @@ utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
 jni = { workspace = true }
+jni-sys = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
 prometheus = { workspace = true }
