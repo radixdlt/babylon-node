@@ -95,19 +95,19 @@ public final class DtoLedgerExtension {
   @DsonOutput(Output.ALL)
   private final List<RawLedgerTransaction> transactions;
 
-  @JsonProperty("head") // TODO(during review): are we free to rename these too?
+  @JsonProperty("start")
   @DsonOutput(Output.ALL)
   private final DtoLedgerProof start;
 
-  @JsonProperty("tail")
+  @JsonProperty("end")
   @DsonOutput(Output.ALL)
   private final DtoLedgerProof end;
 
   @JsonCreator
   public DtoLedgerExtension(
       @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "head", required = true) DtoLedgerProof start,
-      @JsonProperty(value = "tail", required = true) DtoLedgerProof end) {
+      @JsonProperty(value = "start", required = true) DtoLedgerProof start,
+      @JsonProperty(value = "end", required = true) DtoLedgerProof end) {
     this.transactions = transactions == null ? ImmutableList.of() : transactions;
     this.start = requireNonNull(start);
     this.end = requireNonNull(end);
