@@ -96,7 +96,6 @@ public class SyncServiceModule extends AbstractModule {
   public void configure() {
     bind(SyncRelayConfig.class).toInstance(this.syncRelayConfig);
     bind(LocalSyncService.class).in(Scopes.SINGLETON);
-    bind(SyncResponseHandler.class).in(Scopes.SINGLETON);
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
 

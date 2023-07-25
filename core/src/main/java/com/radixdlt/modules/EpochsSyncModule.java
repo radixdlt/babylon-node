@@ -71,6 +71,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
+import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -84,6 +85,7 @@ import com.radixdlt.sync.epochs.EpochsLocalSyncService;
 import com.radixdlt.sync.epochs.LocalSyncServiceFactory;
 import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
+import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 
 /** Epoch+Sync extension */
 public class EpochsSyncModule extends AbstractModule {
@@ -203,11 +205,12 @@ public class EpochsSyncModule extends AbstractModule {
       RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
+      EventDispatcher<LedgerExtension> syncedLedgerExtensionDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       PeersView peersView,
-      PeerControl peerControl,
-      SyncResponseHandler syncResponseHandler) {
+      RemoteSyncResponseSignaturesVerifier signaturesVerifier,
+      PeerControl peerControl) {
     return (remoteSyncResponseValidatorSetVerifier, syncState) ->
         new LocalSyncService(
             statusRequestDispatcher,
@@ -219,7 +222,10 @@ public class EpochsSyncModule extends AbstractModule {
             metrics,
             peersView,
             peerControl,
-            syncResponseHandler,
+            new SyncResponseHandler(
+                remoteSyncResponseValidatorSetVerifier,
+                signaturesVerifier,
+                syncedLedgerExtensionDispatcher),
             syncState);
   }
 }
