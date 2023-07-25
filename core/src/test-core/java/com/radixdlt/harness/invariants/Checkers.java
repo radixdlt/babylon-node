@@ -220,7 +220,7 @@ public final class Checkers {
   public static void assertNoInvalidSyncResponses(List<Injector> nodeInjectors) {
     for (var injector : nodeInjectors) {
       var metrics = injector.getInstance(Metrics.class);
-      assertThat(metrics.sync().invalidResponsesReceived().get()).isEqualTo(0);
+      assertThat(metrics.sync().invalidResponsesReceived().getSum()).isEqualTo(0);
     }
   }
 }

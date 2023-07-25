@@ -74,17 +74,16 @@ import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
-import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.sync.SyncResponseHandler;
 import com.radixdlt.sync.epochs.EpochsLocalSyncService;
 import com.radixdlt.sync.epochs.LocalSyncServiceFactory;
 import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
-import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 
 /** Epoch+Sync extension */
 public class EpochsSyncModule extends AbstractModule {
@@ -207,9 +206,8 @@ public class EpochsSyncModule extends AbstractModule {
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       PeersView peersView,
-      RemoteSyncResponseSignaturesVerifier signaturesVerifier,
-      VerifiedSyncResponseHandler verifiedSyncResponseHandler,
-      InvalidSyncResponseHandler invalidSyncResponseHandler) {
+      PeerControl peerControl,
+      SyncResponseHandler syncResponseHandler) {
     return (remoteSyncResponseValidatorSetVerifier, syncState) ->
         new LocalSyncService(
             statusRequestDispatcher,
@@ -220,10 +218,8 @@ public class EpochsSyncModule extends AbstractModule {
             syncRelayConfig,
             metrics,
             peersView,
-            remoteSyncResponseValidatorSetVerifier,
-            signaturesVerifier,
-            verifiedSyncResponseHandler,
-            invalidSyncResponseHandler,
+            peerControl,
+            syncResponseHandler,
             syncState);
   }
 }

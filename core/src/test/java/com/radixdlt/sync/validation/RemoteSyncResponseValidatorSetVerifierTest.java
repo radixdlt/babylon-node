@@ -70,30 +70,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.ledger.DtoLedgerExtension;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteSyncResponseValidatorSetVerifierTest {
   private BFTValidatorSet validatorSet;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-  private DtoLedgerExtension dtoLedgerExtension;
+  private LedgerProof headerAndProof;
 
   @Before
   public void setup() {
     this.validatorSet = mock(BFTValidatorSet.class);
     this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
-    this.dtoLedgerExtension = mock(DtoLedgerExtension.class);
-    DtoLedgerProof headerAndProof = mock(DtoLedgerProof.class);
+    this.headerAndProof = mock(LedgerProof.class);
     TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
     when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
     when(headerAndProof.getSignatures()).thenReturn(signatures);
-    when(dtoLedgerExtension.getTail()).thenReturn(headerAndProof);
   }
 
   @Test
@@ -102,7 +98,7 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(true);
 
-    assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
+    assertTrue(validatorSetVerifier.verifyValidatorSet(headerAndProof));
   }
 
   @Test
@@ -111,6 +107,6 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(false);
 
-    assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(dtoLedgerExtension)));
+    assertFalse(validatorSetVerifier.verifyValidatorSet(headerAndProof));
   }
 }

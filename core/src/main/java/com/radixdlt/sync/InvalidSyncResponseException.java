@@ -62,44 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync.validation;
+package com.radixdlt.sync;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusHasher;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.crypto.Hasher;
-import java.util.Map.Entry;
-import java.util.Objects;
+/**
+ * An exception signalling that processing of a sync response did <b>not</b> result in all of its
+ * transactions being included in the ledger.
+ */
+public abstract sealed class InvalidSyncResponseException extends RuntimeException {
 
-/** Verifies the signatures in a sync response */
-public final class RemoteSyncResponseSignaturesVerifier {
+  /**
+   * A sync response was received while no request was pending. Note: this can occur also to a
+   * non-malicious sender e.g. in case of this Node's request being delayed.
+   */
+  public static final class NoSyncRequestPending extends InvalidSyncResponseException {}
 
-  private final Hasher hasher;
-  private final HashVerifier hashVerifier;
+  /**
+   * A sync response was received from peer X while the currently pending request was sent to Y.
+   * Note: this can occur also to a non-malicious sender e.g. in case of the sender's response being
+   * delayed.
+   */
+  public static final class SyncRequestSenderMismatch extends InvalidSyncResponseException {}
 
-  @Inject
-  public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
-    this.hasher = Objects.requireNonNull(hasher);
-    this.hashVerifier = Objects.requireNonNull(hashVerifier);
-  }
+  /**
+   * A sync response was received from the right peer, but it specifies a start header different
+   * from this Node's current ledger state. Note: this can occur also to a non-malicious sender e.g.
+   * in case of the sender's response being heavily delayed.
+   */
+  public static final class LedgerExtensionStartMismatch extends InvalidSyncResponseException {}
 
-  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    var signatures = ledgerProof.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
-        signatures.entrySet()) {
-      var node = nodeAndSignature.getKey();
-      var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
-          ConsensusHasher.toHash(
-              ledgerProof.getOpaque(), ledgerProof.getHeader(), signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-        return false;
-      }
-    }
+  /**
+   * A sync response contained 0 transactions. A non-malicious sender should not construct such
+   * response.
+   */
+  public static final class EmptySyncResponse extends InvalidSyncResponseException {}
 
-    return true;
-  }
+  /**
+   * A sync response contained some number of transactions that did not match the specified start
+   * and end state versions. A non-malicious sender should not construct such response.
+   */
+  public static final class InconsistentTransactionCount extends InvalidSyncResponseException {}
+
+  /**
+   * A sync response contained a transaction that could not be parsed. A non-malicious sender should
+   * not construct such response.
+   */
+  public static final class UnparseableTransaction extends InvalidSyncResponseException {}
+
+  /**
+   * A transaction root hash computed by applying the transaction chain from the sync response to
+   * the current ledger does not match the transaction root hash from the end header specified in
+   * the sync response. A non-malicious sender should not construct such response.
+   */
+  public static final class ComputedTransactionRootMismatch extends InvalidSyncResponseException {}
+
+  /**
+   * A sync response was not signed by a sufficient number of validators from the current set. A
+   * non-malicious sender should not construct such response.
+   */
+  public static final class NoQuorumInValidatorSet extends InvalidSyncResponseException {}
+
+  /**
+   * A sync response contained a validator signature that did not pass the verification. A
+   * non-malicious sender should not construct such response.
+   */
+  public static final class ValidatorSignatureMismatch extends InvalidSyncResponseException {}
 }

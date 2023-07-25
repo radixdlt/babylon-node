@@ -95,22 +95,22 @@ public final class DtoLedgerExtension {
   @DsonOutput(Output.ALL)
   private final List<RawLedgerTransaction> transactions;
 
-  @JsonProperty("head")
+  @JsonProperty("head") // TODO(during review): are we free to rename these too?
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof head;
+  private final DtoLedgerProof start;
 
   @JsonProperty("tail")
   @DsonOutput(Output.ALL)
-  private final DtoLedgerProof tail;
+  private final DtoLedgerProof end;
 
   @JsonCreator
   public DtoLedgerExtension(
       @JsonProperty("txns") List<RawLedgerTransaction> transactions,
-      @JsonProperty(value = "head", required = true) DtoLedgerProof head,
-      @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
+      @JsonProperty(value = "head", required = true) DtoLedgerProof start,
+      @JsonProperty(value = "tail", required = true) DtoLedgerProof end) {
     this.transactions = transactions == null ? ImmutableList.of() : transactions;
-    this.head = requireNonNull(head);
-    this.tail = requireNonNull(tail);
+    this.start = requireNonNull(start);
+    this.end = requireNonNull(end);
 
     this.transactions.forEach(Objects::requireNonNull);
   }
@@ -119,17 +119,19 @@ public final class DtoLedgerExtension {
     return transactions;
   }
 
-  public DtoLedgerProof getHead() {
-    return head;
+  public DtoLedgerProof getStart() {
+    return start;
   }
 
-  public DtoLedgerProof getTail() {
-    return tail;
+  public DtoLedgerProof getEnd() {
+    return end;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
+    return String.format(
+        "%s{head=%s, transactions.len=%s, tail=%s}",
+        this.getClass().getSimpleName(), start, transactions.size(), end);
   }
 
   @Override
@@ -140,12 +142,12 @@ public final class DtoLedgerExtension {
 
     return (o instanceof DtoLedgerExtension that)
         && Objects.equals(transactions, that.transactions)
-        && Objects.equals(head, that.head)
-        && Objects.equals(tail, that.tail);
+        && Objects.equals(start, that.start)
+        && Objects.equals(end, that.end);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactions, head, tail);
+    return Objects.hash(transactions, start, end);
   }
 }

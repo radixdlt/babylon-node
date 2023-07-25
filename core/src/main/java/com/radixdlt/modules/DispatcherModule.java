@@ -426,10 +426,7 @@ public class DispatcherModule extends AbstractModule {
   @Provides
   private EventDispatcher<LedgerExtension> syncUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<LedgerExtension>> processors, Metrics metrics) {
-    return commit -> {
-      metrics.sync().validResponsesReceived().inc(commit.getTransactions().size());
-      processors.forEach(e -> e.process(commit));
-    };
+    return commit -> processors.forEach(e -> e.process(commit));
   }
 
   @Provides

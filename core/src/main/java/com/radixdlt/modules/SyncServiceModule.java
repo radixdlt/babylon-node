@@ -74,24 +74,15 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
-import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.rev2.LastProof;
-import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
-import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
-import com.radixdlt.sync.RemoteSyncService;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.sync.SyncState;
+import com.radixdlt.sync.*;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
-import java.time.Duration;
 
 /** Module which manages synchronization of committed transactions across nodes */
 public class SyncServiceModule extends AbstractModule {
@@ -105,6 +96,7 @@ public class SyncServiceModule extends AbstractModule {
   public void configure() {
     bind(SyncRelayConfig.class).toInstance(this.syncRelayConfig);
     bind(LocalSyncService.class).in(Scopes.SINGLETON);
+    bind(SyncResponseHandler.class).in(Scopes.SINGLETON);
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
 
@@ -138,32 +130,6 @@ public class SyncServiceModule extends AbstractModule {
       RemoteSyncService remoteSyncService) {
     return new EventProcessorOnRunner<>(
         Runners.SYNC, LedgerUpdate.class, remoteSyncService.ledgerUpdateEventProcessor());
-  }
-
-  @Provides
-  private InvalidSyncResponseHandler invalidSyncResponseHandler(
-      Metrics metrics, PeerControl peerControl) {
-    return (sender, resp) -> {
-      peerControl.banPeer(sender, Duration.ofMinutes(10), "Received invalid sync response");
-      metrics.sync().invalidResponsesReceived().inc();
-    };
-  }
-
-  @Provides
-  private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
-      EventDispatcher<LedgerExtension> syncedLedgerExtensionDispatcher, PeerControl peerControl) {
-    return (sender, resp) -> {
-      // We've received a valid sync response, so it's an important peer
-      peerControl.reportHighPriorityPeer(sender);
-
-      var dtoLedgerExtension = resp.getLedgerExtension();
-      var nextHeader = LedgerProof.fromDto(dtoLedgerExtension.getTail());
-
-      var ledgerExtension =
-          LedgerExtension.create(dtoLedgerExtension.getTransactions(), nextHeader);
-
-      syncedLedgerExtensionDispatcher.dispatch(ledgerExtension);
-    };
   }
 
   @Provides
