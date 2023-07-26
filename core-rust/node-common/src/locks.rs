@@ -65,7 +65,11 @@
 use std::any::type_name;
 use std::ops::{Deref, DerefMut};
 use std::process::abort;
+use std::ptr::null_mut;
 use std::thread;
+use jni::JavaVM;
+use jni::objects::JValue;
+use jni_sys::JNI_GetCreatedJavaVMs;
 use tracing::error;
 
 //==================================================================================================
@@ -130,6 +134,12 @@ impl<'a, T> Drop for MutexGuard<'a, T> {
 /// A panic-safe facade for a [`parking_lot::RwLock`].
 pub struct RwLock<T> {
     underlying: parking_lot::RwLock<T>,
+}
+
+impl<T> Drop for RwLock<T> {
+    fn drop(&mut self) {
+        println!("dropping RWLock {}", type_name::<T>())
+    }
 }
 
 impl<T> RwLock<T> {
@@ -204,9 +214,30 @@ impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
 fn abort_if_panicking<T>(_guard: &T) {
     if thread::panicking() {
         error!(
-            "a {} was released while panicking; aborting the process",
+            "a {} was released while panicking; stopping",
             type_name::<T>()
         );
-        abort();
+
+        unsafe {
+            let jvm_ptr = [null_mut()].as_mut_ptr();
+            let count = null_mut();
+            let from_sys_result = JNI_GetCreatedJavaVMs(jvm_ptr, 1, count);
+            if from_sys_result == 0 {
+                let count_val = *count;
+                if count_val == 1 {
+                    let from_sys = *jvm_ptr;
+                    let jvm = JavaVM::from_raw(from_sys).unwrap();
+                    let attachment = jvm.attach_current_thread().unwrap();
+                    let env = attachment.deref();
+                    println!("calling static jvm exit");
+                    env.call_static_method("java/lang/System", "exit", "(I)V", &[JValue::Int(-1)]).unwrap();
+                } else {
+                    println!("no jvm");
+                }
+            } else {
+                println!("result: {}", from_sys_result);
+            }
+        }
+        println!("unsafe block went fine");
     }
 }

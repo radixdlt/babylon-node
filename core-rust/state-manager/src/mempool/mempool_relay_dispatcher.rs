@@ -66,8 +66,6 @@ use jni::errors::Result;
 use jni::objects::{GlobalRef, JObject, JValue};
 use jni::{JNIEnv, JavaVM};
 use std::ops::Deref;
-use std::ptr::null_mut;
-use jni::sys::JNI_GetCreatedJavaVMs;
 use transaction::prelude::*;
 
 use node_common::java::*;
@@ -92,16 +90,6 @@ impl MempoolRelayDispatcher {
     /// Creates a long-lived dispatcher from the given short-lived JNI context and Java state
     /// manager reference.
     pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
-        let from_env = env.get_java_vm().unwrap().get_java_vm_pointer();
-
-        unsafe {
-            let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
-            let count = null_mut();
-            let from_sys_result = JNI_GetCreatedJavaVMs(jvm_ptr, 1, count);
-            let from_sys = *jvm_ptr;
-            println!("result={}, count={}, jvms: {:?} vs {:?}", from_sys_result, *count, from_env, from_sys);
-        }
-
         Ok(Self {
             jvm: env.get_java_vm()?,
             j_state_manager_ref: env.new_global_ref(j_state_manager)?,

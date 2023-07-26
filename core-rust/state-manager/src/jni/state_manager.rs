@@ -63,6 +63,7 @@
  */
 
 use std::sync::{Arc, MutexGuard};
+use std::thread;
 
 use crate::mempool::priority_mempool::PriorityMempool;
 use crate::state_manager::{LoggingConfig, StateManager};
@@ -271,11 +272,14 @@ impl JNIStateManager {
     }
 
     pub fn cleanup(env: &JNIEnv, j_state_manager: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-
+        println!("cleanup in");
+        let jni_state_manager = env
+            .take_rust_field::<_, _, JNIStateManager>(j_state_manager, POINTER_JNI_FIELD_NAME);
+        println!("field taken");
+        let jni_state_manager = jni_state_manager.unwrap();
+        println!("field unwrapped");
         drop(jni_state_manager);
+        println!("field dropped");
     }
 
     pub fn get_state<'a>(
