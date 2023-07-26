@@ -65,7 +65,6 @@
 package com.radixdlt.p2p.addressbook;
 
 import static com.radixdlt.lang.Tuple.tuple;
-import static com.radixdlt.lang.Unit.unit;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
@@ -74,7 +73,6 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Tuple.Tuple2;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -83,7 +81,6 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.utils.InetUtils;
-import com.radixdlt.utils.LRUCache;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -148,11 +145,11 @@ public final class AddressBook {
       new PeerAddressEntryComparator();
 
   /**
-   * Stores nodes that are considered in some way important (validators, for example). Address book
-   * makes sure to keep at least one address for each such peer (i.e. they receive special care
-   * during address book clean up).
+   * A list of high-priority peers that are maintained by this address book and receive special care
+   * during address book clean up. Namely: we make sure to keep at least one address for each peer
+   * from this list.
    */
-  private final LRUCache<NodeId, Unit> highPriorityPeers;
+  private final HighPriorityPeerList highPriorityPeers;
 
   @Inject
   public AddressBook(
@@ -169,10 +166,9 @@ public final class AddressBook {
         knownPeers.values().stream().mapToInt(e -> e.getKnownAddresses().size()).sum();
 
     // Reserving up to 1/10 of the address book for high priority peers
-    this.highPriorityPeers = new LRUCache<>(p2pConfig.addressBookMaxSize() / 10);
-    for (var nodeId : persistence.getHighPriorityPeers()) {
-      this.highPriorityPeers.put(nodeId, unit());
-    }
+    this.highPriorityPeers =
+        new HighPriorityPeerList(
+            p2pConfig.addressBookMaxSize() / 10, persistence.getHighPriorityPeers());
   }
 
   public void addUncheckedPeers(Set<RadixNodeUri> peers) {
@@ -228,11 +224,9 @@ public final class AddressBook {
   }
 
   public void reportHighPriorityPeer(NodeId nodeId) {
-    final var currKeys = highPriorityPeers.keys();
-    if (currKeys.size() == 0 || !currKeys.get(currKeys.size() - 1).equals(nodeId)) {
-      highPriorityPeers.put(nodeId, unit());
-      persistence.storeHighPriorityPeers(highPriorityPeers.keys());
-    }
+    this.highPriorityPeers
+        .reportUsageAndGetNewHighPriorityPeers(nodeId)
+        .ifPresent(persistence::storeHighPriorityPeers);
   }
 
   public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
@@ -385,11 +379,8 @@ public final class AddressBook {
 
     final var addressesToRemove =
         this.knownPeers.entrySet().stream()
-            .filter(
-                not(
-                    e ->
-                        // For now let's just keep all addresses of these nodes
-                        this.highPriorityPeers.contains(e.getKey())))
+            // For now let's just keep all addresses of these nodes
+            .filter(not(e -> this.highPriorityPeers.contains(e.getKey())))
             .flatMap(
                 e -> e.getValue().getKnownAddresses().stream().map(a -> tuple(e.getValue(), a)))
             .filter(
