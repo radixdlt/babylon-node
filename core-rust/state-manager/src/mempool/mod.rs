@@ -153,5 +153,6 @@ impl ToString for MempoolAddError {
 
 pub mod mempool_manager;
 pub mod mempool_relay_dispatcher;
+pub mod metrics;
 pub mod pending_transaction_result_cache;
 pub mod priority_mempool;
