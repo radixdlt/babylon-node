@@ -79,6 +79,7 @@ pub struct LedgerMetrics {
     pub transactions_committed: IntCounter,
     pub consensus_rounds_committed: IntCounterVec,
     pub last_update_epoch_second: Gauge,
+    pub last_update_proposer_epoch_second: Gauge,
 }
 
 pub struct CommittedTransactionsMetrics {
@@ -124,6 +125,11 @@ impl LedgerMetrics {
                 "Last timestamp at which the ledger was updated.",
             ))
             .registered_at(registry),
+            last_update_proposer_epoch_second: Gauge::with_opts(opts(
+                "ledger_last_update_proposer_epoch_second",
+                "Proposer timestamp from the last proof written to the ledger.",
+            ))
+            .registered_at(registry),
         }
     }
 
@@ -132,6 +138,7 @@ impl LedgerMetrics {
         added_transactions: usize,
         new_state_version: StateVersion,
         validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+        proposer_timestamp_ms: i64,
     ) {
         self.state_version.set(new_state_version.number() as i64);
         self.transactions_committed
@@ -156,6 +163,8 @@ impl LedgerMetrics {
                 .unwrap()
                 .as_secs_f64(),
         );
+        self.last_update_proposer_epoch_second
+            .set(proposer_timestamp_ms as f64 / 1000.0);
     }
 }
 
