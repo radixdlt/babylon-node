@@ -150,7 +150,9 @@ mod tests {
             &logging_config,
             FeeReserveConfig::default(),
         ));
-        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
+        let pending_transaction_result_cache: Arc<
+            parking_lot::lock_api::RwLock<parking_lot::RawRwLock, PendingTransactionResultCache>,
+        > = Arc::new(parking_lot::const_rwlock(
             PendingTransactionResultCache::new(10000, 10000),
         ));
         let committability_validator = Arc::new(CommittabilityValidator::new(
@@ -168,6 +170,7 @@ mod tests {
                 max_total_transactions_size: 10 * 1024 * 1024,
                 max_transaction_count: 10,
             },
+            &metric_registry,
         )));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,

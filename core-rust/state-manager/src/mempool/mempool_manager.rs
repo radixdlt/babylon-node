@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
+use super::metrics::MempoolManagerMetrics;
 use crate::mempool::priority_mempool::*;
 use crate::mempool::*;
-use crate::{MempoolAddSource, MempoolMetrics, TakesMetricLabels};
+use crate::MempoolAddSource;
+use node_common::metrics::TakesMetricLabels;
 use prometheus::Registry;
 use transaction::model::*;
 
@@ -86,7 +88,7 @@ pub struct MempoolManager {
     mempool: Arc<RwLock<PriorityMempool>>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_committability_validator: CachedCommittabilityValidator<StateManagerDatabase>,
-    metrics: MempoolMetrics,
+    metrics: MempoolManagerMetrics,
 }
 
 impl MempoolManager {
@@ -101,7 +103,7 @@ impl MempoolManager {
             mempool,
             relay_dispatcher: Some(relay_dispatcher),
             cached_committability_validator,
-            metrics: MempoolMetrics::new(metric_registry),
+            metrics: MempoolManagerMetrics::new(metric_registry),
         }
     }
 
@@ -115,7 +117,7 @@ impl MempoolManager {
             mempool,
             relay_dispatcher: None,
             cached_committability_validator,
-            metrics: MempoolMetrics::new(metric_registry),
+            metrics: MempoolManagerMetrics::new(metric_registry),
         }
     }
 }
@@ -198,23 +200,16 @@ impl MempoolManager {
 
         if !transactions_to_remove.is_empty() {
             let mut write_mempool = self.mempool.write();
-            let removed = transactions_to_remove
+            transactions_to_remove
                 .iter()
-                .filter_map(|transaction_to_remove| {
+                .for_each(|transaction_to_remove| {
                     write_mempool.remove_by_payload_hash(
                         &transaction_to_remove
                             .validated
                             .prepared
                             .notarized_transaction_hash(),
-                    )
-                })
-                .fold(TransactionSizeAccumulator::new(), |acc, evicted| {
-                    acc.accumulate(&evicted.transaction)
+                    );
                 });
-            self.metrics.current_transactions.sub(removed.count as i64);
-            self.metrics
-                .current_total_transactions_size
-                .sub(removed.bytes as i64);
         }
     }
 
@@ -242,9 +237,29 @@ impl MempoolManager {
         Ok(())
     }
 
+    /// A wrapper around [`self.add_if_committable_internal`] that catches all submission rejections and reports them to Prometheus.
+    pub fn add_if_committable(
+        &self,
+        source: MempoolAddSource,
+        raw_transaction: RawNotarizedTransaction,
+        force_recalculate: bool,
+    ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
+        let result = self.add_if_committable_internal(source, raw_transaction, force_recalculate);
+        match &result {
+            Ok(_) => {}
+            Err(error) => {
+                self.metrics
+                    .submission_rejected
+                    .with_two_labels(source, error)
+                    .inc();
+            }
+        }
+        result
+    }
+
     /// Checks the committability of the given transaction (see `CachedCommittabilityValidator`) and
     /// either adds it to the mempool, or returns the encountered error.
-    pub fn add_if_committable(
+    fn add_if_committable_internal(
         &self,
         source: MempoolAddSource,
         raw_transaction: RawNotarizedTransaction,
@@ -305,35 +320,11 @@ impl MempoolManager {
                     source,
                     Instant::now(),
                 ) {
-                    Ok(evicted) => {
-                        self.metrics.submission_added.with_label(source).inc();
-                        self.metrics
-                            .current_transactions
-                            .add(1 - evicted.len() as i64);
-                        let evicted_size = evicted.into_iter().fold(0, |sum, evicted| {
-                            sum - evicted.transaction.raw.0.len() as i64
-                        });
-                        self.metrics
-                            .current_total_transactions_size
-                            .add(mempool_transaction.raw.0.len() as i64 - evicted_size);
-                        Ok(mempool_transaction)
-                    }
-                    Err(error) => {
-                        self.metrics
-                            .submission_rejected
-                            .with_two_labels(source, &error)
-                            .inc();
-                        Err(error)
-                    }
+                    Ok(_evicted) => Ok(mempool_transaction),
+                    Err(error) => Err(error),
                 }
             }
-            Err(error) => {
-                self.metrics
-                    .submission_rejected
-                    .with_two_labels(source, &error)
-                    .inc();
-                Err(error)
-            }
+            Err(error) => Err(error),
         }
     }
 
@@ -348,16 +339,10 @@ impl MempoolManager {
             .collect::<Vec<_>>();
         drop(write_mempool);
         removed
-            .iter()
+            .into_iter()
             .filter(|data| data.source == MempoolAddSource::CoreApi)
             .map(|data| data.added_at.elapsed().as_secs_f64())
             .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
-        self.metrics.current_transactions.sub(removed.len() as i64);
-        self.metrics.current_total_transactions_size.sub(
-            removed.into_iter().fold(0, |sum, evicted| {
-                sum + evicted.transaction.raw.0.len() as i64
-            }),
-        );
     }
 
     /// Removes the transactions specified by the given user payload hashes (while checking
@@ -375,36 +360,10 @@ impl MempoolManager {
         rejected_transactions: &[(&IntentHash, &NotarizedTransactionHash)],
     ) {
         let mut write_mempool = self.mempool.write();
-        let removed = rejected_transactions
+        rejected_transactions
             .iter()
-            .filter_map(|(_intent_hash, user_payload_hash)| {
-                write_mempool.remove_by_payload_hash(user_payload_hash)
-            })
-            .fold(TransactionSizeAccumulator::new(), |acc, evicted| {
-                acc.accumulate(&evicted.transaction)
+            .for_each(|(_intent_hash, user_payload_hash)| {
+                write_mempool.remove_by_payload_hash(user_payload_hash);
             });
-        self.metrics.current_transactions.sub(removed.count as i64);
-        self.metrics
-            .current_total_transactions_size
-            .sub(removed.bytes as i64);
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct TransactionSizeAccumulator {
-    pub count: usize,
-    pub bytes: usize,
-}
-
-impl TransactionSizeAccumulator {
-    pub fn new() -> Self {
-        Self { count: 0, bytes: 0 }
-    }
-
-    pub fn accumulate(&self, mempool_transaction: &MempoolTransaction) -> Self {
-        Self {
-            count: self.count + 1,
-            bytes: self.bytes + mempool_transaction.raw.0.len(),
-        }
     }
 }

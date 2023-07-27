@@ -63,6 +63,8 @@
  */
 
 use node_common::config::MempoolConfig;
+use node_common::metrics::TakesMetricLabels;
+use prometheus::Registry;
 use rand::seq::index::sample;
 use tracing::warn;
 use transaction::model::*;
@@ -74,6 +76,8 @@ use std::cmp::{max, min, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
+
+use super::metrics::MempoolMetrics;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct MempoolData {
@@ -181,16 +185,19 @@ pub struct PriorityMempool {
     data: IndexMap<NotarizedTransactionHash, Arc<MempoolData>>,
     /// Mapping from [`IntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
+    /// Various metrics
+    metrics: MempoolMetrics,
 }
 
 impl PriorityMempool {
-    pub fn new(config: MempoolConfig) -> PriorityMempool {
+    pub fn new(config: MempoolConfig, metric_registry: &Registry) -> PriorityMempool {
         PriorityMempool {
             remaining_transaction_count: config.max_transaction_count,
             remaining_total_transactions_size: config.max_total_transactions_size,
             proposal_priority_index: BTreeSet::new(),
             data: IndexMap::new(),
             intent_lookup: HashMap::new(),
+            metrics: MempoolMetrics::new(metric_registry),
         }
     }
 }
@@ -271,6 +278,13 @@ impl PriorityMempool {
         self.remaining_total_transactions_size -= transaction_size;
         self.remaining_transaction_count -= 1;
 
+        // Update metrics as well
+        self.metrics
+            .current_total_transactions_size
+            .add(transaction_size as i64);
+        self.metrics.current_transactions.add(1);
+        self.metrics.submission_added.with_label(source).inc();
+
         // Add new MempoolData
         if self.data.insert(payload_hash, transaction_data).is_some() {
             panic!("Broken precondition: Transaction already inside mempool");
@@ -299,8 +313,15 @@ impl PriorityMempool {
         let payload_hash = &data.transaction.notarized_transaction_hash();
         let intent_hash = &data.transaction.intent_hash();
 
+        let transaction_size = data.transaction.raw.0.len();
         self.remaining_transaction_count += 1;
-        self.remaining_total_transactions_size += data.transaction.raw.0.len() as u64;
+        self.remaining_total_transactions_size += transaction_size as u64;
+
+        // Update metrics
+        self.metrics
+            .current_total_transactions_size
+            .sub(transaction_size as i64);
+        self.metrics.current_transactions.sub(1);
 
         self.data.remove(payload_hash);
 
@@ -522,10 +543,15 @@ mod tests {
         let mt2 = create_fake_pending_transaction(2, 0, 0);
         let mt3 = create_fake_pending_transaction(3, 0, 0);
 
-        let mut mp = PriorityMempool::new(MempoolConfig {
-            max_transaction_count: 5,
-            max_total_transactions_size: 2 * 1024 * 1024,
-        });
+        let registry = Registry::new();
+
+        let mut mp = PriorityMempool::new(
+            MempoolConfig {
+                max_transaction_count: 5,
+                max_total_transactions_size: 2 * 1024 * 1024,
+            },
+            &registry,
+        );
         assert_eq!(mp.remaining_transaction_count, 5);
         assert_eq!(mp.get_count(), 0);
 
@@ -570,10 +596,15 @@ mod tests {
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1, 0);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2, 0);
 
-        let mut mp = PriorityMempool::new(MempoolConfig {
-            max_transaction_count: 10,
-            max_total_transactions_size: 2 * 1024 * 1024,
-        });
+        let registry = Registry::new();
+
+        let mut mp = PriorityMempool::new(
+            MempoolConfig {
+                max_transaction_count: 10,
+                max_total_transactions_size: 2 * 1024 * 1024,
+            },
+            &registry,
+        );
         assert!(mp
             .add_transaction(
                 intent_1_payload_1.clone(),
@@ -734,10 +765,15 @@ mod tests {
             now + Duration::from_secs(3),
         ];
 
-        let mut mp = PriorityMempool::new(MempoolConfig {
-            max_transaction_count: 4,
-            max_total_transactions_size: 2 * 1024 * 1024,
-        });
+        let registry = Registry::new();
+
+        let mut mp = PriorityMempool::new(
+            MempoolConfig {
+                max_transaction_count: 4,
+                max_total_transactions_size: 2 * 1024 * 1024,
+            },
+            &registry,
+        );
 
         assert!(mp
             .add_transaction(mt4.clone(), MempoolAddSource::CoreApi, time_point[0])
