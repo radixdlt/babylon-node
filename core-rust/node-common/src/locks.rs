@@ -229,8 +229,14 @@ fn abort_if_panicking<T>(_guard: &T) {
                     let jvm = JavaVM::from_raw(jvm_ptr).unwrap();
                     let attachment = jvm.attach_current_thread().unwrap();
                     let env = attachment.deref();
-                    println!("calling static jvm exit");
-                    env.call_static_method("java/lang/System", "exit", "(I)V", &[JValue::Int(-1)]).unwrap();
+
+                    // println!("calling static SYNC jvm exit");
+                    // env.call_static_method("java/lang/System", "exit", "(I)V", &[JValue::Int(-1)]).unwrap();
+
+                    println!("calling static ASYNC jvm exit");
+                    env.call_static_method("com/radixdlt/RadixNodeApplication", "exit", "(I)V", &[JValue::Int(-1)]).unwrap();
+
+                    println!("exit called")
                 } else {
                     println!("no jvm");
                 }

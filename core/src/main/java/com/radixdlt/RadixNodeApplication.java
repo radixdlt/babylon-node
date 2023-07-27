@@ -98,6 +98,10 @@ public final class RadixNodeApplication {
     }
   }
 
+  public static void exit(int k) {
+    new Thread(() -> System.exit(k)).start();
+  }
+
   private static void bootstrapRadixNode(RuntimeProperties properties) {
     final var nodeBootStopwatch = Stopwatch.createStarted();
     final var bootstrapperModule =
