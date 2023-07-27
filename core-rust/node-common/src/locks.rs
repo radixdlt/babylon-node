@@ -64,8 +64,12 @@
 
 use std::any::type_name;
 use std::ops::{Deref, DerefMut};
-use std::process::abort;
+
 use std::thread;
+
+use jni::objects::JValue;
+
+use crate::jni::static_resolver::resolve_running_jvm;
 use tracing::error;
 
 //==================================================================================================
@@ -74,11 +78,15 @@ use tracing::error;
 // subject of synchronization in an inconsistent state.
 // Please note that every `panic!` that occurs while a lock is acquired for writing can interrupt a
 // series of operations somewhere in the middle, where invariants are not kept. Hence, the
-// implementations in this module will always abort the process in such situations (in order to
-// disallow `catch_unwind()` of the current thread, or inconsistent data access from other threads).
+// implementations in this module will always trigger a graceful shutdown of the application in such
+// situations (in order to mitigate inconsistent data access from subsequent calls, possibly from
+// other threads).
 // The vanilla `parking_lot` synchronization primitives are not panic-safe in any way, i.e. they
-// simply release the lock when the stack in unwinding (without aborting the process or at least
-// "poisoning" the primitive).
+// simply release the lock when the stack in unwinding (without shutting down the application or
+// at least "poisoning" the primitive).
+// Note: our current application architecture involves a Java process instantiating and calling
+// Rust services via JNI. Hence, this implementation triggers a Java shutdown, which takes care of
+// cleaning up all Java and Rust resources,
 //==================================================================================================
 
 /// A panic-safe facade for a [`parking_lot::Mutex`].
@@ -123,7 +131,7 @@ impl<'a, T: 'a> DerefMut for MutexGuard<'a, T> {
 
 impl<'a, T> Drop for MutexGuard<'a, T> {
     fn drop(&mut self) {
-        abort_if_panicking(self);
+        trigger_java_shutdown_if_panicking::<Self>();
     }
 }
 
@@ -172,7 +180,7 @@ impl<'a, T> Drop for RwLockReadGuard<'a, T> {
     fn drop(&mut self) {
         // The impl here is deliberately no-op:
         // The lock guard will be dropped (i.e. lock released) on its own, and in case of reading,
-        // we do not need to abort the process (since unmodified state means consistent state).
+        // we do not need to shutdown the process (since unmodified state means consistent state).
     }
 }
 
@@ -197,16 +205,40 @@ impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
 
 impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
-        abort_if_panicking(self);
+        trigger_java_shutdown_if_panicking::<Self>();
     }
 }
 
-fn abort_if_panicking<T>(_guard: &T) {
+/// Executes [`trigger_java_shutdown()`] if the current thread is panicking.
+/// Logs the error if unsuccessful.
+fn trigger_java_shutdown_if_panicking<T>() {
     if thread::panicking() {
-        error!(
-            "a {} was released while panicking; aborting the process",
-            type_name::<T>()
-        );
-        abort();
+        error!("a {} was released while panicking", type_name::<T>());
+        if let Err(error_message) = trigger_java_shutdown() {
+            error!(
+                "could not trigger Java shutdown: {}; ignoring",
+                error_message
+            );
+        }
     }
+}
+
+/// Invokes a known Java static method defined in our codebase, which is supposed to trigger an
+/// asynchronous JVM shutdown (which in turn cleans up both Java and Rust resources via shutdown
+/// hooks).
+fn trigger_java_shutdown() -> Result<(), String> {
+    let jvm =
+        resolve_running_jvm().map_err(|error| format!("could not resolve JVM: {:?}", error))?;
+    let attachment = jvm
+        .attach_current_thread()
+        .map_err(|error| format!("could not attach current thread to JVM: {:?}", error))?;
+    let env = attachment.deref();
+    env.call_static_method(
+        "com/radixdlt/utils/AsynchronousSystem",
+        "exit",
+        "(I)V",
+        &[JValue::Int(-1)],
+    )
+    .map_err(|error| format!("could not invoke Java shutdown method: {:?}", error))?;
+    Ok(())
 }

@@ -62,6 +62,29 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod scrypto_constants;
-pub mod static_resolver;
+package com.radixdlt.utils;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/** An asynchronous counterpart of the {@link System} class. */
+public final class AsynchronousSystem {
+  private static final Logger log = LogManager.getLogger();
+
+  /**
+   * An asynchronous counterpart of the {@link System#exit(int)} (delegating to the original
+   * implementation in a newly-started thread). This is useful for exits triggered from Rust (via
+   * JNI), which cause shutdown hooks' threads to hang inside native Rust methods after calling the
+   * synchronous {@link System#exit(int)}.
+   */
+  public static void exit(int status) {
+    log.info("Starting a thread for asynchronous System.exit()");
+    new Thread(
+            () -> {
+              log.info("Invoking a System.exit()");
+              System.exit(status);
+            },
+            "Asynchronous-Exit")
+        .start();
+  }
+}

@@ -62,6 +62,40 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod scrypto_constants;
-pub mod static_resolver;
+use jni::errors::Error;
+use jni::JavaVM;
+use jni_sys::{jint, jsize, JNI_GetCreatedJavaVMs};
+use std::ptr::null_mut;
+
+/// Statically resolves a pointer to the JVM running in the same process.
+/// This method uses a (documented) guarantee that current JNI specification assumes no support for
+/// multiple JVMs running within a single process.
+pub fn resolve_running_jvm() -> Result<JavaVM, JvmResolutionError> {
+    let mut jvm_ptr: *mut jni_sys::JavaVM = null_mut();
+    let jvm_ptr_ptr: *mut *mut jni_sys::JavaVM = &mut jvm_ptr;
+    let mut count: jsize = 0;
+    let count_ptr: *mut jsize = &mut count;
+    unsafe {
+        let jni_result = JNI_GetCreatedJavaVMs(jvm_ptr_ptr, 1, count_ptr);
+        if jni_result != 0 {
+            return Err(JvmResolutionError::NativeJniCallError {
+                error_code: jni_result,
+            });
+        }
+        if count == 0 {
+            return Err(JvmResolutionError::NoRunningJvm);
+        }
+        JavaVM::from_raw(jvm_ptr).map_err(JvmResolutionError::InvalidJvmPointer)
+    }
+}
+
+/// An error that may occur when resolving a running JVM.
+#[derive(Debug)]
+pub enum JvmResolutionError {
+    /// A call to a native `JNI_GetCreatedJavaVMs` has returned an error.
+    NativeJniCallError { error_code: jint },
+    /// No JVM found within the process.
+    NoRunningJvm,
+    /// A JVM pointer was successfully returned from JNI, but a JNI-wrapper did not accept it.
+    InvalidJvmPointer(Error),
+}
