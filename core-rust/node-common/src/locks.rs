@@ -69,7 +69,7 @@ use std::ptr::null_mut;
 use std::thread;
 use jni::JavaVM;
 use jni::objects::JValue;
-use jni_sys::JNI_GetCreatedJavaVMs;
+use jni_sys::{JNI_GetCreatedJavaVMs, jsize};
 use tracing::error;
 
 //==================================================================================================
@@ -218,15 +218,15 @@ fn abort_if_panicking<T>(_guard: &T) {
             type_name::<T>()
         );
 
+        let mut jvm_ptr: *mut jni_sys::JavaVM = null_mut();
+        let mut jvm_ptr_ptr: *mut *mut jni_sys::JavaVM = &mut jvm_ptr;
+        let mut count: jsize = 0;
+        let mut count_ptr: *mut jsize = &mut count;
         unsafe {
-            let jvm_ptr = [null_mut()].as_mut_ptr();
-            let count = null_mut();
-            let from_sys_result = JNI_GetCreatedJavaVMs(jvm_ptr, 1, count);
+            let from_sys_result = JNI_GetCreatedJavaVMs(jvm_ptr_ptr, 1, count_ptr);
             if from_sys_result == 0 {
-                let count_val = *count;
-                if count_val == 1 {
-                    let from_sys = *jvm_ptr;
-                    let jvm = JavaVM::from_raw(from_sys).unwrap();
+                if count == 1 {
+                    let jvm = JavaVM::from_raw(jvm_ptr).unwrap();
                     let attachment = jvm.attach_current_thread().unwrap();
                     let env = attachment.deref();
                     println!("calling static jvm exit");
