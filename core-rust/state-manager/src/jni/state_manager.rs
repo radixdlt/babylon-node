@@ -222,7 +222,10 @@ impl JNIStateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(RwLock::new(PriorityMempool::new(mempool_config)));
+        let mempool = Arc::new(RwLock::new(PriorityMempool::new(
+            mempool_config,
+            &metric_registry,
+        )));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),

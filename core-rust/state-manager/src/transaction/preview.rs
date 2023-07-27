@@ -163,10 +163,13 @@ mod tests {
             committability_validator,
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(RwLock::new(PriorityMempool::new(MempoolConfig {
-            max_total_transactions_size: 10 * 1024 * 1024,
-            max_transaction_count: 10,
-        })));
+        let mempool = Arc::new(RwLock::new(PriorityMempool::new(
+            MempoolConfig {
+                max_total_transactions_size: 10 * 1024 * 1024,
+                max_transaction_count: 10,
+            },
+            &metric_registry,
+        )));
         let mempool_manager = Arc::new(MempoolManager::new_for_testing(
             mempool,
             cached_committability_validator,

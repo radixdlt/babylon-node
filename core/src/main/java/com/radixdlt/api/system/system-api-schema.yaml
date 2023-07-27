@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  version: '0.4.0'
-  title: 'Babylon System API - RCnet V2'
+  version: '0.5.0'
+  title: 'Babylon System API - RCnet v3'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
