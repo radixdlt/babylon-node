@@ -88,6 +88,14 @@ pub fn new_histogram(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
     Histogram::with_opts(HistogramOpts::from(opts).buckets(buckets))
 }
 
+pub fn new_histogram_vec(
+    opts: Opts,
+    label_names: &[&str],
+    buckets: Vec<f64>,
+) -> Result<HistogramVec> {
+    HistogramVec::new(HistogramOpts::from(opts).buckets(buckets), label_names)
+}
+
 pub fn equidistant_buckets(number_of_buckets: usize, min: f64, max: f64) -> Vec<f64> {
     let range = max - min;
     (1..number_of_buckets + 1)
@@ -126,12 +134,23 @@ pub fn higher_resolution_for_lower_values_buckets_for_limit(limit: usize) -> Vec
 /// The buckets should represent expected interesting ranges of the measurements (i.e. their upper
 /// bounds). The last `+inf` bucket will be auto-added - this means that an empty bucket list may be
 /// passed here, and the timer will work in a `Summary` mode (i.e. tracking just sum and count).
-pub fn new_timer(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
-    let mut adjusted_opts = opts;
-    adjusted_opts.name = format!("{}_seconds", adjusted_opts.name);
-    let mut adjusted_buckets = buckets;
-    adjusted_buckets.push(f64::INFINITY);
-    new_histogram(adjusted_opts, adjusted_buckets)
+pub fn new_timer(mut opts: Opts, mut buckets: Vec<f64>) -> Result<Histogram> {
+    adjust_new_timer_opts(&mut opts, &mut buckets);
+    new_histogram(opts, buckets)
+}
+
+pub fn new_timer_vec(
+    mut opts: Opts,
+    label_names: &[&str],
+    mut buckets: Vec<f64>,
+) -> Result<HistogramVec> {
+    adjust_new_timer_opts(&mut opts, &mut buckets);
+    new_histogram_vec(opts, label_names, buckets)
+}
+
+fn adjust_new_timer_opts(opts: &mut Opts, buckets: &mut Vec<f64>) {
+    opts.name = format!("{}_seconds", opts.name);
+    buckets.push(f64::INFINITY);
 }
 
 // TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.
@@ -201,5 +220,13 @@ impl MetricLabel for ComponentAddress {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         self.to_hex()
+    }
+}
+
+impl MetricLabel for String {
+    type StringReturnType = String;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        self.clone()
     }
 }

@@ -62,32 +62,52 @@
  * permissions under this License.
  */
 
-mod constants;
-mod conversions;
-mod errors;
-mod extractors;
-mod handlers;
-mod helpers;
-mod metrics;
-mod metrics_layer;
-mod server;
+use node_common::metrics::*;
+use prometheus::*;
 
-#[allow(unused)]
-#[rustfmt::skip]
-#[allow(clippy::all)]
-mod generated;
-
-pub(crate) use constants::*;
-pub(crate) use conversions::*;
-pub(crate) use errors::*;
-pub(crate) use extractors::*;
-pub(crate) use helpers::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
-
-pub(crate) mod models {
-    pub(crate) use super::generated::models::*;
-    pub(crate) use super::generated::SCHEMA_VERSION;
+#[derive(Debug, Clone)]
+pub struct CoreApiMetrics {
+    pub requests_count: IntCounterVec,
+    pub requests_duration: HistogramVec,
+    pub requests_pending: IntGaugeVec,
+    pub requests_not_found: IntCounter,
 }
 
-// Re-exports for handlers
-pub use hyper::StatusCode;
+impl CoreApiMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        CoreApiMetrics {
+            requests_count: IntCounterVec::new(
+                opts(
+                    "core_api_requests_count",
+                    "Count of total core api requests by endpoint and status.",
+                ),
+                &["endpoint", "status"],
+            )
+            .registered_at(registry),
+            requests_duration: new_timer_vec(
+                opts(
+                    "core_api_requests_duration",
+                    "Time spent by request and status.",
+                ),
+                &["endpoint", "status"],
+                vec![
+                    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+                ],
+            )
+            .registered_at(registry),
+            requests_pending: IntGaugeVec::new(
+                opts(
+                    "core_api_requests_pending",
+                    "Number of pending requests by endpoint.",
+                ),
+                &["endpoint"],
+            )
+            .registered_at(registry),
+            requests_not_found: IntCounter::new(
+                "core_api_requests_not_found",
+                "Number of total requests that did not match any configured route.",
+            )
+            .registered_at(registry),
+        }
+    }
+}
