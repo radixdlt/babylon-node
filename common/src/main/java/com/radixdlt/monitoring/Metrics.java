@@ -176,6 +176,7 @@ public record Metrics(
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
+      LabelledGauge<Validator> proposalTimestampDifferenceSeconds,
       GetterGauge validatorCount,
       GetterGauge inValidatorSet,
       Pacemaker pacemaker,
@@ -340,6 +341,8 @@ public record Metrics(
       NOT_MONOTONIC
     }
   }
+
+  public record Validator(String key, String componentAddress) {}
 
   public record ChannelProperties(Direction direction) {
 

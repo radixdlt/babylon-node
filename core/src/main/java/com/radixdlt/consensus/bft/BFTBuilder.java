@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.processor.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
@@ -102,6 +103,7 @@ public final class BFTBuilder {
 
   private TimeSupplier timeSupplier;
   private Metrics metrics;
+  private Addressing addressing;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -196,6 +198,11 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder addressing(Addressing addressing) {
+    this.addressing = addressing;
+    return this;
+  }
+
   public BFTEventProcessor build() {
     if (!validatorSet.containsValidator(self)) {
       return EmptyBFTEventProcessor.INSTANCE;
@@ -225,7 +232,7 @@ public final class BFTBuilder {
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(
-            quorumAssembler, timeSupplier, metrics, proposalRejectedDispatcher);
+            quorumAssembler, timeSupplier, metrics, addressing, proposalRejectedDispatcher);
 
     final var postSyncUpVerifier =
         new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
