@@ -67,27 +67,18 @@ use prometheus::*;
 
 #[derive(Debug, Clone)]
 pub struct CoreApiMetrics {
-    pub requests_count: IntCounterVec,
-    pub requests_duration: HistogramVec,
-    pub requests_pending: IntGaugeVec,
+    pub handle_request: HistogramVec,
+    pub requests_accepted: IntCounterVec,
     pub requests_not_found: IntCounter,
 }
 
 impl CoreApiMetrics {
     pub fn new(registry: &Registry) -> Self {
         CoreApiMetrics {
-            requests_count: IntCounterVec::new(
+            handle_request: new_timer_vec(
                 opts(
-                    "core_api_requests_count",
-                    "Count of total core api requests by endpoint and status.",
-                ),
-                &["endpoint", "status"],
-            )
-            .registered_at(registry),
-            requests_duration: new_timer_vec(
-                opts(
-                    "core_api_requests_duration",
-                    "Time spent by request and status.",
+                    "core_api_handle_request",
+                    "Time spent by endpoint and status.",
                 ),
                 &["endpoint", "status"],
                 vec![
@@ -95,10 +86,10 @@ impl CoreApiMetrics {
                 ],
             )
             .registered_at(registry),
-            requests_pending: IntGaugeVec::new(
+            requests_accepted: IntCounterVec::new(
                 opts(
-                    "core_api_requests_pending",
-                    "Number of pending requests by endpoint.",
+                    "core_api_requests_accepted",
+                    "Number of accepted requests by endpoint.",
                 ),
                 &["endpoint"],
             )

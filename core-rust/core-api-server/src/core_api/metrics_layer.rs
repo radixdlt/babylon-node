@@ -122,7 +122,7 @@ where
         let endpoint: String = request.uri().path().into();
 
         let metrics = self.metrics.clone();
-        metrics.requests_pending.with_label(endpoint.clone()).inc();
+        metrics.requests_accepted.with_label(endpoint.clone()).inc();
 
         let future = self.inner.call(request);
 
@@ -133,14 +133,9 @@ where
             let status = response.status().as_u16().to_string();
 
             metrics
-                .requests_duration
+                .handle_request
                 .with_two_labels(endpoint.clone(), status.clone())
                 .observe(duration);
-            metrics
-                .requests_count
-                .with_two_labels(endpoint.clone(), status)
-                .inc();
-            metrics.requests_pending.with_label(endpoint).dec();
 
             Ok(response)
         })
