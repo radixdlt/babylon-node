@@ -69,6 +69,7 @@ use futures::FutureExt;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use prometheus::*;
 use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
@@ -87,6 +88,7 @@ pub struct JNICoreApiServer {
     pub runtime: Arc<Runtime>,
     pub state: CoreApiState,
     pub running_server: Option<RunningServer>,
+    pub metric_registry: Arc<Registry>,
 }
 
 #[no_mangle]
@@ -114,6 +116,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
                 transaction_previewer: state.transaction_previewer.clone(),
             },
             running_server: None,
+            metric_registry: state.metric_registry.clone(),
         };
 
         env.set_rust_field(
@@ -142,10 +145,17 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
         let state = jni_core_api_server.state.clone();
         let runtime = &jni_core_api_server.runtime;
+        let metric_registry = jni_core_api_server.metric_registry.clone();
 
         let bind_addr = format!("{}:{}", config.bind_interface, config.port);
         runtime.spawn(async move {
-            create_server(&bind_addr, shutdown_signal_receiver.map(|_| ()), state).await;
+            create_server(
+                &bind_addr,
+                shutdown_signal_receiver.map(|_| ()),
+                state,
+                &metric_registry,
+            )
+            .await;
         });
 
         jni_core_api_server.running_server = Some(RunningServer {
