@@ -40,7 +40,7 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::SborFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.sbor_options;
+        let options = &mut self.sbor_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.raw {
                 options.include_raw = value;
@@ -56,7 +56,7 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::TransactionFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.transaction_options;
+        let options = &mut self.transaction_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.manifest {
                 options.include_manifest = value;
@@ -84,7 +84,7 @@ impl MappingContext {
         mut self,
         format_options: &Option<Box<models::SubstateFormatOptions>>,
     ) -> Self {
-        let mut options = &mut self.substate_options;
+        let options = &mut self.substate_options;
         if let Some(formats) = format_options {
             if let Some(value) = formats.hash {
                 options.include_hash = value;

@@ -69,6 +69,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.Collection;
 
 /** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
@@ -83,14 +84,19 @@ public final class MetricInstaller {
   /** A source of "peers" getters to be exposed as gauges. */
   private final PeersView peersView;
 
+  /** A wallclock, to be exposed as a metric as well. */
+  private final TimeSupplier timeSupplier;
+
   @Inject
   public MetricInstaller(
       final SelfValidatorInfo self,
       final InMemorySystemInfo inMemorySystemInfo,
-      final PeersView peersView) {
+      final PeersView peersView,
+      final TimeSupplier timeSupplier) {
     this.self = self;
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.peersView = peersView;
+    this.timeSupplier = timeSupplier;
   }
 
   /**
@@ -105,6 +111,10 @@ public final class MetricInstaller {
     final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.key().toHex());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
+    metrics
+        .misc()
+        .wallclockEpochSecond()
+        .initialize(() -> this.timeSupplier.currentTime() / 1000.0);
     metrics.bft().validatorCount().initialize(this::countValidators);
     metrics.bft().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
     metrics

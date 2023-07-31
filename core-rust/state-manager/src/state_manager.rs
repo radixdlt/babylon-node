@@ -1100,6 +1100,7 @@ where
             .progress_base(&final_ledger_hashes.transaction_root);
 
         let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
+        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms; // for metrics only
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
@@ -1122,6 +1123,7 @@ where
             commit_transactions_len,
             commit_state_version,
             round_counters,
+            proposer_timestamp_ms,
         );
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
@@ -1160,10 +1162,12 @@ where
             },
         };
 
+        let proof = request.proof;
+        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms; // for metrics only
         let hash_structures_diff = commit.hash_structures_diff;
         write_store.commit(CommitBundle {
             transactions: vec![committed_transaction_bundle],
-            proof: request.proof,
+            proof,
             substate_store_update: SubstateStoreUpdate::from_single(commit.database_updates),
             vertex_store: None,
             state_tree_update: HashTreeUpdate::from_single(
@@ -1175,8 +1179,12 @@ where
         });
         drop(write_store);
 
-        self.ledger_metrics
-            .update(1, resultant_state_version, Vec::new());
+        self.ledger_metrics.update(
+            1,
+            resultant_state_version,
+            Vec::new(),
+            proposer_timestamp_ms,
+        );
     }
 
     fn find_transaction_root_in_execution_cache(
