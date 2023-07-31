@@ -25,7 +25,7 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       target: "keygen"
-      platforms: "linux/amd64"
+      platforms: "linux/amd64,linux/arm64"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -45,7 +45,7 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       target: "keygen"
-      platforms: "linux/amd64"
+      platforms: "linux/amd64,linux/arm64"
       enable_dockerhub: "true"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
@@ -67,7 +67,7 @@ jobs:
       context: "."
       dockerfile: "./Dockerfile"
       target: "keygen"
-      platforms: "linux/amd64"
+      platforms: "linux/amd64,linux/arm64"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
