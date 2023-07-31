@@ -69,6 +69,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Collection;
 
@@ -77,6 +78,9 @@ public final class MetricInstaller {
 
   /** An own node, for exposing the {@link Config#key()} information. */
   private final SelfValidatorInfo self;
+
+  /** A source of post-genesis ledger hashes. */
+  private final REv2LedgerInitializerToken ledgerInitialization;
 
   /** A source of "system" getters to be exposed as gauges. */
   private final InMemorySystemInfo inMemorySystemInfo;
@@ -90,10 +94,12 @@ public final class MetricInstaller {
   @Inject
   public MetricInstaller(
       final SelfValidatorInfo self,
+      final REv2LedgerInitializerToken ledgerInitialization,
       final InMemorySystemInfo inMemorySystemInfo,
       final PeersView peersView,
       final TimeSupplier timeSupplier) {
     this.self = self;
+    this.ledgerInitialization = ledgerInitialization;
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.peersView = peersView;
     this.timeSupplier = timeSupplier;
@@ -108,7 +114,11 @@ public final class MetricInstaller {
    * @param metrics Hierarchy where some legacy metrics need to be set.
    */
   public void installAt(Metrics metrics) {
-    final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.key().toHex());
+    final var config =
+        new Config(
+            ApplicationVersion.INSTANCE.string(),
+            this.self.key().toHex(),
+            this.ledgerInitialization.postGenesisEpochProof().getLedgerHashes().getStateRoot());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
     metrics

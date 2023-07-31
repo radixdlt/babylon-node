@@ -64,6 +64,9 @@
 
 package com.radixdlt.rev2;
 
+import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -72,32 +75,38 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 public record REv2LedgerInitializer(
     Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
 
-  public void initialize(GenesisProvider genesisProvider) {
-    // If the database was already initialized, we verify that the
-    // previous genesis matches the current configuration
-    // to protect from node misconfiguration
-    // (i.e. configuring genesis A, but node really using prev genesis B).
-    reader
-        .getPostGenesisEpochProof()
-        .ifPresentOrElse(
-            firstEpochProof -> {
-              // Opaque value of the first epoch proof is the hash of GenesisData
-              final var existingGenesisHash = firstEpochProof.getOpaque();
-              final var currentGenesisHash = genesisProvider.genesisDataHash();
-              if (!currentGenesisHash.equals(existingGenesisHash)) {
-                throw new IllegalStateException(
-                    String.format(
-                        """
-                              Current genesis data (of hash %s) doesn't match the genesis data that has previously \
-                              been used to initialize the database (%s). \
-                              Make sure your configuration is correct (check `network.id` and/or \
-                               `network.genesis_data` and/or `network.genesis_data_file`).""",
-                        currentGenesisHash, existingGenesisHash));
-              }
-            },
-            () -> {
-              // It's a fresh database, so execute the genesis
-              rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
-            });
+  public LedgerProof initialize(GenesisProvider genesisProvider) {
+    var postGenesisEpochProof = reader.getPostGenesisEpochProof();
+    if (postGenesisEpochProof.isPresent()) {
+      // the database has already been initialized:
+      var existingPostGenesisEpochProof = postGenesisEpochProof.get();
+      checkGenesisDataHashMatches(genesisProvider.genesisDataHash(), existingPostGenesisEpochProof);
+      return existingPostGenesisEpochProof;
+    } else {
+      // the database is fresh, so execute the genesis:
+      var executedPostGenesisEpochProof =
+          rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
+      return REv2ToConsensus.ledgerProof(executedPostGenesisEpochProof);
+    }
+  }
+
+  /**
+   * Verifies that the previous genesis matches the current configuration, to protect from node
+   * misconfiguration (i.e. configuring genesis A, but node already uses a previously-executed
+   * genesis B).
+   */
+  private void checkGenesisDataHashMatches(
+      HashCode configuredGenesisDataHash, LedgerProof postGenesisEpochProof) {
+    // Opaque value of the first epoch proof is the hash of GenesisData
+    final var existingGenesisHash = postGenesisEpochProof.getOpaque();
+    Preconditions.checkState(
+        existingGenesisHash.equals(configuredGenesisDataHash),
+        """
+        Current genesis data (of hash %s) doesn't match the genesis data that has previously been \
+        used to initialize the database (%s). \
+        Make sure your configuration is correct (check `network.id` and/or `network.genesis_data` \
+        and/or `network.genesis_data_file`).""",
+        configuredGenesisDataHash,
+        existingGenesisHash);
   }
 }

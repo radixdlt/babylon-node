@@ -65,6 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Info;
@@ -349,5 +350,5 @@ public record Metrics(
     }
   }
 
-  public record Config(String branchAndCommit, String key) {}
+  public record Config(String branchAndCommit, String key, HashCode postGenesisEpochStateHash) {}
 }
