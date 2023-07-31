@@ -262,6 +262,7 @@ public record Metrics(
   public record Misc(
       TypedInfo<Config> config,
       Timer nodeStartup,
+      GetterGauge wallclockEpochSecond,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
 
