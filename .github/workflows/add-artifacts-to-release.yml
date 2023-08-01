@@ -125,12 +125,6 @@ jobs:
           ls -lah libcorerust-${{ matrix.target }}
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
       - if: github.event_name == 'release'
-        name: Get release
-        id: get_release
-        uses: bruceadams/get-release@74c3d60f5a28f358ccf241a00c9021ea16f0569f
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - if: github.event_name == 'release'
         id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
@@ -142,7 +136,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           asset_content_type: application/zip
@@ -178,11 +172,6 @@ jobs:
         with:
           is_release: true
           gradle_command: clean build -x test
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
@@ -195,7 +184,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip
           asset_name: babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
           asset_content_type: application/zip
