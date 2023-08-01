@@ -62,32 +62,82 @@
  * permissions under this License.
  */
 
-mod constants;
-mod conversions;
-mod errors;
-mod extractors;
-mod handlers;
-mod helpers;
-mod metrics;
-mod metrics_layer;
-mod server;
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+    time::Instant,
+};
 
-#[allow(unused)]
-#[rustfmt::skip]
-#[allow(clippy::all)]
-mod generated;
+use axum::{http::Request, response::Response};
+use futures_util::future::BoxFuture;
+use node_common::metrics::TakesMetricLabels;
+use tower::{Layer, Service};
 
-pub(crate) use constants::*;
-pub(crate) use conversions::*;
-pub(crate) use errors::*;
-pub(crate) use extractors::*;
-pub(crate) use helpers::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
+use super::metrics::CoreApiMetrics;
 
-pub(crate) mod models {
-    pub(crate) use super::generated::models::*;
-    pub(crate) use super::generated::SCHEMA_VERSION;
+#[derive(Debug, Clone)]
+pub struct MetricsLayer {
+    metrics: Arc<CoreApiMetrics>,
 }
 
-// Re-exports for handlers
-pub use hyper::StatusCode;
+impl MetricsLayer {
+    pub fn new(metrics: Arc<CoreApiMetrics>) -> Self {
+        Self { metrics }
+    }
+}
+
+impl<S> Layer<S> for MetricsLayer {
+    type Service = MetricsService<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        MetricsService {
+            inner,
+            metrics: self.metrics.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MetricsService<S> {
+    inner: S,
+    metrics: Arc<CoreApiMetrics>,
+}
+
+impl<S, ReqBody> Service<Request<ReqBody>> for MetricsService<S>
+where
+    S: Service<Request<ReqBody>, Response = Response> + Send + 'static,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, request: Request<ReqBody>) -> Self::Future {
+        let start = Instant::now();
+        let endpoint: String = request.uri().path().into();
+
+        let metrics = self.metrics.clone();
+        metrics.requests_accepted.with_label(endpoint.clone()).inc();
+
+        let future = self.inner.call(request);
+
+        Box::pin(async move {
+            let response: Response = future.await?;
+
+            let duration = start.elapsed().as_secs_f64();
+            let status = response.status().as_u16().to_string();
+
+            metrics
+                .handle_request
+                .with_two_labels(endpoint.clone(), status.clone())
+                .observe(duration);
+
+            Ok(response)
+        })
+    }
+}
