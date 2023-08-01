@@ -62,11 +62,12 @@
  * permissions under this License.
  */
 
-use std::any::type_name;
 use std::ops::{Deref, DerefMut};
-use std::process::abort;
+
+use std::sync::Arc;
+
 use std::thread;
-use tracing::error;
+use tracing::{error, info};
 
 //==================================================================================================
 // DEFINITION:
@@ -74,30 +75,66 @@ use tracing::error;
 // subject of synchronization in an inconsistent state.
 // Please note that every `panic!` that occurs while a lock is acquired for writing can interrupt a
 // series of operations somewhere in the middle, where invariants are not kept. Hence, the
-// implementations in this module will always abort the process in such situations (in order to
-// disallow `catch_unwind()` of the current thread, or inconsistent data access from other threads).
+// implementations in this module will always trigger a preconfigured "service stopper" in such
+// situations (in order to mitigate inconsistent data access from subsequent calls, possibly from
+// other threads).
 // The vanilla `parking_lot` synchronization primitives are not panic-safe in any way, i.e. they
-// simply release the lock when the stack in unwinding (without aborting the process or at least
-// "poisoning" the primitive).
+// simply release the lock when the stack in unwinding (without shutting down the application or
+// at least "poisoning" the lock).
 //==================================================================================================
+
+pub struct LockFactory {
+    stopper: Arc<TakeOnce<Box<dyn FnOnce() + Send>>>,
+    name: String,
+}
+
+impl LockFactory {
+    pub fn new(stopper: impl FnOnce() + Send + 'static) -> Self {
+        Self {
+            stopper: Arc::new(TakeOnce::new(Box::new(stopper))),
+            name: "".to_string(),
+        }
+    }
+
+    pub fn named(&self, segment: impl Into<String>) -> Self {
+        let segment = segment.into();
+        Self {
+            stopper: self.stopper.clone(),
+            name: if self.name.is_empty() {
+                segment
+            } else {
+                format!("{}.{}", self.name, segment)
+            },
+        }
+    }
+
+    pub fn new_mutex<T>(&self, value: T) -> Mutex<T> {
+        Mutex {
+            underlying: parking_lot::const_mutex(value),
+            panic_drop_handler: PanicDropHandler::new(self),
+        }
+    }
+
+    pub fn new_rwlock<T>(&self, value: T) -> RwLock<T> {
+        RwLock {
+            underlying: parking_lot::const_rwlock(value),
+            panic_drop_handler: PanicDropHandler::new(self),
+        }
+    }
+}
 
 /// A panic-safe facade for a [`parking_lot::Mutex`].
 pub struct Mutex<T> {
     underlying: parking_lot::Mutex<T>,
+    panic_drop_handler: PanicDropHandler,
 }
 
 impl<T> Mutex<T> {
-    /// Wraps the given value in a panic-safe [`Mutex`].
-    pub fn new(value: T) -> Self {
-        Self {
-            underlying: parking_lot::const_mutex(value),
-        }
-    }
-
     /// Delegates to the [`parking_lot::Mutex::lock()`], but returns a panic-safe guard.
     pub fn lock(&self) -> MutexGuard<'_, T> {
         MutexGuard {
             underlying: self.underlying.lock(),
+            panic_drop_handler: &self.panic_drop_handler,
         }
     }
 }
@@ -105,6 +142,7 @@ impl<T> Mutex<T> {
 /// A panic-safe facade for a [`parking_lot::MutexGuard`].
 pub struct MutexGuard<'a, T> {
     underlying: parking_lot::MutexGuard<'a, T>,
+    panic_drop_handler: &'a PanicDropHandler,
 }
 
 impl<'a, T: 'a> Deref for MutexGuard<'a, T> {
@@ -123,23 +161,17 @@ impl<'a, T: 'a> DerefMut for MutexGuard<'a, T> {
 
 impl<'a, T> Drop for MutexGuard<'a, T> {
     fn drop(&mut self) {
-        abort_if_panicking(self);
+        self.panic_drop_handler.on_drop();
     }
 }
 
 /// A panic-safe facade for a [`parking_lot::RwLock`].
 pub struct RwLock<T> {
     underlying: parking_lot::RwLock<T>,
+    panic_drop_handler: PanicDropHandler,
 }
 
 impl<T> RwLock<T> {
-    /// Wraps the given value in a panic-safe [`RwLock`].
-    pub fn new(value: T) -> Self {
-        Self {
-            underlying: parking_lot::const_rwlock(value),
-        }
-    }
-
     /// Delegates to the [`parking_lot::RwLockReadGuard::read()`], but returns a panic-safe guard.
     pub fn read(&self) -> RwLockReadGuard<'_, T> {
         RwLockReadGuard {
@@ -151,6 +183,7 @@ impl<T> RwLock<T> {
     pub fn write(&self) -> RwLockWriteGuard<'_, T> {
         RwLockWriteGuard {
             underlying: self.underlying.write(),
+            panic_drop_handler: &self.panic_drop_handler,
         }
     }
 }
@@ -179,6 +212,7 @@ impl<'a, T> Drop for RwLockReadGuard<'a, T> {
 /// A panic-safe facade for a [`parking_lot::RwLockWriteGuard`].
 pub struct RwLockWriteGuard<'a, T> {
     underlying: parking_lot::RwLockWriteGuard<'a, T>,
+    panic_drop_handler: &'a PanicDropHandler,
 }
 
 impl<'a, T: 'a> Deref for RwLockWriteGuard<'a, T> {
@@ -197,16 +231,68 @@ impl<'a, T: 'a> DerefMut for RwLockWriteGuard<'a, T> {
 
 impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
-        abort_if_panicking(self);
+        self.panic_drop_handler.on_drop();
     }
 }
 
-fn abort_if_panicking<T>(_guard: &T) {
-    if thread::panicking() {
-        error!(
-            "a {} was released while panicking; aborting the process",
-            type_name::<T>()
-        );
-        abort();
+/// A synchronized box allowing to take the ownership of its contents only once, on first access.
+struct TakeOnce<T> {
+    // Note: ironically, the implementation uses a raw `parking_lot::Mutex`, which is not wrapped in
+    // our facade (because of chicken-and-egg reasons). However, this is fine, since we never block
+    // on the mutex (i.e. we only `try_lock()`, which reduces to a single CAS).
+    mutex: parking_lot::Mutex<Option<T>>,
+}
+
+impl<T> TakeOnce<T> {
+    pub fn new(value: T) -> Self {
+        Self {
+            mutex: parking_lot::const_mutex(Some(value)),
+        }
+    }
+
+    /// Returns the contents if this is the very first invocation on this instance, or [`None`]
+    /// otherwise.
+    pub fn take(&self) -> Option<T> {
+        if let Some(mut option) = self.mutex.try_lock() {
+            option.take()
+        } else {
+            None
+        }
+    }
+}
+
+/// An implementation delegate for all "lock write guards" which need to trigger a "service stopper"
+/// on drop, if the current thread is panicking.
+struct PanicDropHandler {
+    stopper: Arc<TakeOnce<Box<dyn FnOnce() + Send>>>,
+    name: String,
+}
+
+impl PanicDropHandler {
+    fn new(factory: &LockFactory) -> Self {
+        Self {
+            stopper: factory.stopper.clone(),
+            name: factory.name.clone(),
+        }
+    }
+
+    /// Attempts to invoke the contents of [`stopper`] if the current thread is panicking. Logs the
+    /// attempt's outcome.
+    pub fn on_drop(&self) {
+        if !thread::panicking() {
+            return;
+        }
+        if let Some(stopper) = self.stopper.take() {
+            error!(
+                "a write guard of {} was dropped while panicking; stopping",
+                self.name
+            );
+            stopper();
+        } else {
+            info!(
+                "a write guard of {} was dropped during stopping; ignoring",
+                self.name
+            );
+        }
     }
 }

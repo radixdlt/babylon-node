@@ -110,7 +110,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
 #[cfg(test)]
 mod tests {
-    use crate::jni::state_manager::ActualStateManager;
+
     use crate::mempool_manager::MempoolManager;
     use crate::priority_mempool::PriorityMempool;
     use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
@@ -124,7 +124,7 @@ mod tests {
     };
     use node_common::config::limits::VertexLimitsConfig;
     use node_common::config::MempoolConfig;
-    use node_common::locks::RwLock;
+    use node_common::locks::LockFactory;
     use prometheus::Registry;
     use radix_engine::transaction::FeeReserveConfig;
     use radix_engine_common::network::NetworkDefinition;
@@ -142,7 +142,8 @@ mod tests {
                 log_on_transaction_rejection: false,
             },
         };
-        let database = Arc::new(RwLock::new(StateManagerDatabase::InMemory(
+        let lock_factory = LockFactory::new(|| {});
+        let database = Arc::new(lock_factory.new_rwlock(StateManagerDatabase::InMemory(
             InMemoryStore::new(DatabaseFlags::default()),
         )));
         let metric_registry = Registry::new();
@@ -150,9 +151,8 @@ mod tests {
             &logging_config,
             FeeReserveConfig::default(),
         ));
-        let pending_transaction_result_cache = Arc::new(RwLock::new(
-            PendingTransactionResultCache::new(10000, 10000),
-        ));
+        let pending_transaction_result_cache =
+            Arc::new(lock_factory.new_rwlock(PendingTransactionResultCache::new(10000, 10000)));
         let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
@@ -163,7 +163,7 @@ mod tests {
             committability_validator,
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(RwLock::new(PriorityMempool::new(
+        let mempool = Arc::new(lock_factory.new_rwlock(PriorityMempool::new(
             MempoolConfig {
                 max_total_transactions_size: 10 * 1024 * 1024,
                 max_transaction_count: 10,
@@ -175,19 +175,19 @@ mod tests {
             cached_committability_validator,
             &metric_registry,
         ));
-        let state_manager: Arc<RwLock<ActualStateManager>> =
-            Arc::new(RwLock::new(StateManager::new(
-                &network,
-                VertexLimitsConfig::default(),
-                database.clone(),
-                mempool_manager,
-                execution_configurator.clone(),
-                pending_transaction_result_cache,
-                logging_config,
-                &metric_registry,
-            )));
+        let state_manager = StateManager::new(
+            &network,
+            VertexLimitsConfig::default(),
+            database.clone(),
+            mempool_manager,
+            execution_configurator.clone(),
+            pending_transaction_result_cache,
+            logging_config,
+            &metric_registry,
+            &lock_factory,
+        );
 
-        state_manager.read().execute_genesis_for_unit_tests();
+        state_manager.execute_genesis_for_unit_tests();
 
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,

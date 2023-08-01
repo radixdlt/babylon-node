@@ -85,6 +85,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.statemanager.FatalPanicHandler;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.stream.Stream;
@@ -105,7 +106,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     // System
     bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
+    bind(FatalPanicHandler.class).toInstance(() -> {});
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     bind(Addressing.class).toInstance(addressing);
     install(new SelfValidatorInfoFromGenesisModule());

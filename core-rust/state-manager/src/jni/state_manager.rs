@@ -64,6 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
+use crate::jni::fatal_panic_handler::FatalPanicHandler;
 use crate::mempool::priority_mempool::PriorityMempool;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
@@ -74,7 +75,7 @@ use node_common::config::limits::VertexLimitsConfig;
 use node_common::config::MempoolConfig;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
-use node_common::locks::RwLock;
+use node_common::locks::{LockFactory, RwLock};
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine_common::math::Decimal;
@@ -195,7 +196,10 @@ impl JNIStateManager {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(RwLock::new(
+        let fatal_panic_handler = FatalPanicHandler::new(env, j_state_manager).unwrap();
+        let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
+
+        let database = Arc::new(lock_factory.named("database").new_rwlock(
             StateManagerDatabase::from_config(
                 config.database_backend_config,
                 config.database_flags,
@@ -211,9 +215,11 @@ impl JNIStateManager {
             &logging_config,
             fee_reserve_config,
         ));
-        let pending_transaction_result_cache = Arc::new(RwLock::new(
-            PendingTransactionResultCache::new(10000, 10000),
-        ));
+        let pending_transaction_result_cache = Arc::new(
+            lock_factory
+                .named("pending_cache")
+                .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
+        );
         let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
@@ -224,10 +230,11 @@ impl JNIStateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(RwLock::new(PriorityMempool::new(
-            mempool_config,
-            &metric_registry,
-        )));
+        let mempool = Arc::new(
+            lock_factory
+                .named("mempool")
+                .new_rwlock(PriorityMempool::new(mempool_config, &metric_registry)),
+        );
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),
@@ -256,6 +263,7 @@ impl JNIStateManager {
             pending_transaction_result_cache.clone(),
             logging_config,
             &metric_registry,
+            &lock_factory.named("state_manager"),
         ));
 
         let jni_state_manager = JNIStateManager {
