@@ -170,7 +170,7 @@ pub struct JNIStateManager {
     pub mempool_manager: Arc<MempoolManager>,
     pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
-    pub metric_registry: Registry,
+    pub metric_registry: Arc<Registry>,
 }
 
 impl JNIStateManager {
@@ -195,11 +195,13 @@ impl JNIStateManager {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(RwLock::new(StateManagerDatabase::from_config(
-            config.database_backend_config,
-            config.database_flags,
-        )));
-        let metric_registry = Registry::new();
+        let database = Arc::new(RwLock::new(
+            StateManagerDatabase::from_config(
+                config.database_backend_config,
+                config.database_flags,
+            ),
+        ));
+        let metric_registry = Arc::new(Registry::new());
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
             fee_reserve_config.cost_unit_price = Decimal::ZERO;
@@ -222,7 +224,10 @@ impl JNIStateManager {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(RwLock::new(PriorityMempool::new(mempool_config)));
+        let mempool = Arc::new(RwLock::new(PriorityMempool::new(
+            mempool_config,
+            &metric_registry,
+        )));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
         let mempool_manager = Arc::new(MempoolManager::new(
             mempool.clone(),

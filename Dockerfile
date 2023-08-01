@@ -72,11 +72,16 @@ USER nobody
 # LAYER: Keygen
 # An alternative build target that executes the keygeneration
 # =================================================================================================
-# hadolint ignore=DL3029
-FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine AS keygen
+FROM eclipse-temurin:17.0.7_7-jre AS keygen
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 COPY --from=java-build-stage /radixdlt/cli-tools/build/distributions /tmp/
+
+RUN apt-get update -y \
+  && apt-get -y --no-install-recommends install \
+    unzip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /keygen
 

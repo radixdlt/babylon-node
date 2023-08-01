@@ -68,6 +68,8 @@ mod errors;
 mod extractors;
 mod handlers;
 mod helpers;
+mod metrics;
+mod metrics_layer;
 mod server;
 
 #[allow(unused)]

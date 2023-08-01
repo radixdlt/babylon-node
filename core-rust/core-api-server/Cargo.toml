@@ -30,7 +30,9 @@ serde_json = { workspace = true }
 chrono = { version = "0.4.23", default-features = false, features = ["std"] }
 hex = { version = "0.4.3", default-features = false }
 futures = { version = "0.3" }
+futures-util = "0.3.28"
 axum = { version = "0.6.6", features = ["http1", "json"] }
-tower-http = { version = "0.4.0", features = ["catch-panic"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.3", features = ["catch-panic"]}
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 paste = { version = "1.0.12", default-features = false }
