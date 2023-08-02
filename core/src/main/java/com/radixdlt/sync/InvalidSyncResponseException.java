@@ -65,8 +65,8 @@
 package com.radixdlt.sync;
 
 /**
- * An exception signalling that processing of a sync response did <b>not</b> result in all of its
- * transactions being included in the ledger.
+ * An exception signalling that none of the contents of a ledger sync response were committed,
+ * because of a specific problem (indicated by an exception subclass) with any of its parts.
  */
 public abstract sealed class InvalidSyncResponseException extends RuntimeException {
 

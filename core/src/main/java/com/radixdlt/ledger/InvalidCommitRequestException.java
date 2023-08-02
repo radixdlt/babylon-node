@@ -75,6 +75,7 @@ public class InvalidCommitRequestException extends RuntimeException {
   private final InvalidCommitRequestError error;
 
   public InvalidCommitRequestException(InvalidCommitRequestError error) {
+    super(error.toString());
     this.error = error;
   }
 

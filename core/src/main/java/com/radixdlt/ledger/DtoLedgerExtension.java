@@ -130,7 +130,7 @@ public final class DtoLedgerExtension {
   @Override
   public String toString() {
     return String.format(
-        "%s{head=%s, transactions.len=%s, tail=%s}",
+        "%s{start=%s, transactions.len=%s, end=%s}",
         this.getClass().getSimpleName(), start, transactions.size(), end);
   }
 
