@@ -65,6 +65,7 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use axum::extract::State;
 use axum::http::{StatusCode, Uri};
 use axum::middleware::map_response;
 use axum::response::Response;
@@ -74,6 +75,7 @@ use axum::{
     Router,
 };
 use parking_lot::RwLock;
+use prometheus::Registry;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
 use tower_http::catch_panic::CatchPanicLayer;
@@ -81,6 +83,8 @@ use tracing::{debug, error, info, trace, warn, Level};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
+use super::metrics::CoreApiMetrics;
+use super::metrics_layer::MetricsLayer;
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use crate::core_api::models::ErrorResponse;
@@ -104,8 +108,12 @@ pub struct CoreApiState {
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
 }
 
-pub async fn create_server<F>(bind_addr: &str, shutdown_signal: F, core_api_state: CoreApiState)
-where
+pub async fn create_server<F>(
+    bind_addr: &str,
+    shutdown_signal: F,
+    core_api_state: CoreApiState,
+    metric_registry: &Registry,
+) where
     F: Future<Output = ()>,
 {
     let router = Router::new()
@@ -188,11 +196,18 @@ where
         .route("/state/non-fungible", post(handle_state_non_fungible))
         .with_state(core_api_state);
 
+    let metrics = Arc::new(CoreApiMetrics::new(metric_registry));
+
     let prefixed_router = Router::new()
         .nest("/core", router)
         .route("/", get(handle_no_core_path))
         .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
-        .layer(map_response(emit_error_response_event));
+        // Note: it is important to run the metrics middleware only on router matched paths to avoid out of memory crash
+        // of node or full storage for prometheus server.
+        .route_layer(MetricsLayer::new(metrics.clone()))
+        .layer(map_response(emit_error_response_event))
+        .fallback(handle_not_found)
+        .with_state(metrics);
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
 
@@ -206,6 +221,11 @@ where
 #[tracing::instrument]
 pub(crate) async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
     Err(not_found_error("Try /core"))
+}
+
+async fn handle_not_found(metrics: State<Arc<CoreApiMetrics>>) -> Result<(), ResponseError<()>> {
+    metrics.requests_not_found.inc();
+    Err(not_found_error("Not found!"))
 }
 
 /// A function (to be used within a `map_response` layer) in order to emit more customized events

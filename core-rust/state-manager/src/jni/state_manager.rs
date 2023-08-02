@@ -170,7 +170,7 @@ pub struct JNIStateManager {
     pub mempool_manager: Arc<MempoolManager>,
     pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
-    pub metric_registry: Registry,
+    pub metric_registry: Arc<Registry>,
 }
 
 impl JNIStateManager {
@@ -201,7 +201,7 @@ impl JNIStateManager {
                 config.database_flags,
             ),
         ));
-        let metric_registry = Registry::new();
+        let metric_registry = Arc::new(Registry::new());
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
             fee_reserve_config.cost_unit_price = Decimal::ZERO;
