@@ -80,6 +80,7 @@ pub(crate) async fn handle_transaction_callpreview(
     };
 
     let result = state
+        .radix_node
         .transaction_previewer
         .preview(PreviewRequest {
             manifest: TransactionManifestV1 {

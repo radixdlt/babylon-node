@@ -20,7 +20,7 @@ pub(crate) async fn handle_state_account(
         return Err(client_error("Only account addresses starting account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.radix_node.database.read();
     let type_info = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),

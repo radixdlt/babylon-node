@@ -92,7 +92,7 @@ import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;

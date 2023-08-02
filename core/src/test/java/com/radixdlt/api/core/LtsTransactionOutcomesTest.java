@@ -75,7 +75,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
-import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import com.radixdlt.transactions.IntentHash;
 import java.math.BigDecimal;
 import java.util.List;

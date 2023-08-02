@@ -65,9 +65,9 @@
 package com.radixdlt.api;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.rustglobalcontext.CoreApiServerConfig;
+import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.statemanager.CoreApiServerConfig;
-import com.radixdlt.statemanager.StateManager;
 
 public final class CoreApiServer {
 
@@ -84,14 +84,15 @@ public final class CoreApiServer {
   @SuppressWarnings("unused")
   private final long rustCoreApiServerPointer = 0;
 
-  public static CoreApiServer create(StateManager stateManager, CoreApiServerConfig config) {
-    return new CoreApiServer(stateManager, config);
+  public static CoreApiServer create(
+      RustGlobalContext rustGlobalContext, CoreApiServerConfig config) {
+    return new CoreApiServer(rustGlobalContext, config);
   }
 
-  CoreApiServer(StateManager stateManager, CoreApiServerConfig config) {
+  CoreApiServer(RustGlobalContext rustGlobalContext, CoreApiServerConfig config) {
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(stateManager, this, encodedConfig);
+    init(rustGlobalContext, this, encodedConfig);
   }
 
   public void start() {
@@ -103,7 +104,7 @@ public final class CoreApiServer {
   }
 
   private static native void init(
-      StateManager stateManager, CoreApiServer coreApiServer, byte[] config);
+      RustGlobalContext rustGlobalContext, CoreApiServer coreApiServer, byte[] config);
 
   private static native void start(CoreApiServer coreApiServer);
 

@@ -97,14 +97,14 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
 pub struct LoggingConfig {
     pub engine_trace: bool,
     pub state_manager_config: StateManagerLoggingConfig,
 }
 
 // TODO: Replace this with better loglevel integration
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
 pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }

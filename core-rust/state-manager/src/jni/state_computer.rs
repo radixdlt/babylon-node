@@ -71,7 +71,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::rust_global_context::JNIRustGlobalContext;
 
 use node_common::java::*;
 
@@ -111,14 +111,15 @@ pub struct JavaConsensusManagerConfig {
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_fallible_call(
         &env,
         request_payload,
         |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let state_manager =
+                JNIRustGlobalContext::get_state_manager(&env, j_rust_global_context);
             let genesis_data_hash = hash(&raw_genesis_data);
             let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
                 .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
@@ -154,14 +155,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGene
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |prepare_request: PrepareRequest| -> PrepareResult {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let state_manager =
+                JNIRustGlobalContext::get_state_manager(&env, j_rust_global_context);
             state_manager.prepare(prepare_request)
         },
     )
@@ -171,14 +173,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
-            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let state_manager =
+                JNIRustGlobalContext::get_state_manager(&env, j_rust_global_context);
             state_manager.commit(commit_request)
         },
     )

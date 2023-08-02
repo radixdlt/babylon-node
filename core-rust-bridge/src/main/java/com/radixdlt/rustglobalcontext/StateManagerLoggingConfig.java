@@ -62,16 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rustglobalcontext;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
 
-public record CoreApiServerConfig(String bindInterface, UInt32 port) {
+public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CoreApiServerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(CoreApiServerConfig.class, codecs));
+        StateManagerLoggingConfig.class,
+        codecs -> StructCodec.fromRecordComponents(StateManagerLoggingConfig.class, codecs));
+  }
+
+  public static StateManagerLoggingConfig getDefault() {
+    return new StateManagerLoggingConfig(false);
+  }
+
+  public static StateManagerLoggingConfig getDebug() {
+    return new StateManagerLoggingConfig(true);
   }
 }

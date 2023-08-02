@@ -65,7 +65,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::rust_global_context::JNIRustGlobalContext;
 use crate::mempool::priority_mempool::MempoolTransaction;
 
 use jni::objects::{JClass, JObject};
@@ -89,18 +89,15 @@ use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager).add_if_committable(
-                MempoolAddSource::MempoolSync,
-                transaction,
-                false,
-            )?;
+            JNIRustGlobalContext::get_mempool_manager(&env, j_rust_global_context)
+                .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)?;
             Ok(())
         },
     )
@@ -110,14 +107,14 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |request: ProposalTransactionsRequest| -> Vec<JavaPreparedNotarizedTransaction> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+            JNIRustGlobalContext::get_mempool_manager(&env, j_rust_global_context)
                 .get_proposal_transactions(
                     request.max_count.try_into().unwrap(),
                     request.max_payload_size_bytes as u64,
@@ -134,11 +131,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
-        let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
+        let mempool = JNIRustGlobalContext::get_mempool(&env, j_rust_global_context);
         let read_mempool = mempool.read();
         read_mempool.get_count().try_into().unwrap()
     })
@@ -148,14 +145,14 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaPreparedNotarizedTransaction> {
-            JNIStateManager::get_mempool_manager(&env, j_state_manager)
+            JNIRustGlobalContext::get_mempool_manager(&env, j_rust_global_context)
                 .get_relay_transactions(
                     max_num_txns.try_into().unwrap(),
                     max_payload_size_bytes as u64,
@@ -171,11 +168,12 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCommittability(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |max_reevaluated_count: u32| {
-        let mempool_manager = JNIStateManager::get_mempool_manager(&env, j_state_manager);
+        let mempool_manager =
+            JNIRustGlobalContext::get_mempool_manager(&env, j_rust_global_context);
         mempool_manager.reevaluate_transaction_committability(max_reevaluated_count);
     })
 }

@@ -67,15 +67,15 @@ package com.radixdlt.prometheus;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
 
 public class RustPrometheus {
 
   @Inject
-  public RustPrometheus(StateManager stateManager) {
+  public RustPrometheus(RustGlobalContext rustGlobalContext) {
     this.prometheusMetricsFunc =
-        Natives.builder(stateManager, RustPrometheus::prometheusMetrics)
+        Natives.builder(rustGlobalContext, RustPrometheus::prometheusMetrics)
             .build(new TypeToken<>() {});
   }
 
@@ -85,5 +85,5 @@ public class RustPrometheus {
 
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
-  private static native byte[] prometheusMetrics(StateManager stateManager, byte[] args);
+  private static native byte[] prometheusMetrics(RustGlobalContext rustGlobalContext, byte[] args);
 }

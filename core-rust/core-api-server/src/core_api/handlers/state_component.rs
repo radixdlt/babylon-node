@@ -23,7 +23,7 @@ pub(crate) async fn handle_state_component(
         return Err(client_error("Only component addresses starting component_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.radix_node.database.read();
     let type_info_substate = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),

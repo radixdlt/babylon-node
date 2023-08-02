@@ -73,9 +73,9 @@ import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.rustglobalcontext.*;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -90,15 +90,15 @@ public final class RustMempoolTest {
   /** A no-op dispatcher of transactions to be relayed. */
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
 
-  private static void initStateComputer(StateManager stateManager) {
+  private static void initStateComputer(RustGlobalContext rustGlobalContext) {
     final var metrics = new MetricsInitializer().initialize();
     final var genesisProvider =
         RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
     new REv2LedgerInitializer(
             new Blake2b256Hasher(DefaultSerialization.getInstance()),
-            new RustStateComputer(metrics, stateManager),
+            new RustStateComputer(metrics, rustGlobalContext),
             new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, stateManager)))
+                new REv2TransactionAndProofStore(metrics, rustGlobalContext)))
         .initialize(genesisProvider);
   }
 
@@ -107,7 +107,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
     final var config =
-        new StateManagerConfig(
+        new RadixNodeConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
@@ -118,7 +118,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new RustGlobalContext(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -161,7 +161,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
     final var config =
-        new StateManagerConfig(
+        new RadixNodeConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
@@ -172,7 +172,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new RustGlobalContext(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -298,7 +298,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
     final var config =
-        new StateManagerConfig(
+        new RadixNodeConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
@@ -309,7 +309,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new RustGlobalContext(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);

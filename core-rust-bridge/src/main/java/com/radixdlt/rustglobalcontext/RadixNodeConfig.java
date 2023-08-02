@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rustglobalcontext;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
@@ -70,7 +70,7 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record StateManagerConfig(
+public record RadixNodeConfig(
     NetworkDefinition networkDefinition,
     Option<RustMempoolConfig> mempoolConfigOpt,
     Option<VertexLimitsConfig> vertexLimitsConfigOpt,
@@ -80,7 +80,7 @@ public record StateManagerConfig(
     boolean noFees) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
+        RadixNodeConfig.class,
+        codecs -> StructCodec.fromRecordComponents(RadixNodeConfig.class, codecs));
   }
 }

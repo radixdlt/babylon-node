@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::rust_global_context::JNIRustGlobalContext;
 use crate::store::traits::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::{LedgerProof, StateVersion};
@@ -89,14 +89,14 @@ struct TxnsAndProof {
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTxnsAndProof(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |request: TxnsAndProofRequest| -> Option<TxnsAndProof> {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
             let txns_and_proof = database.read().get_txns_and_proof(
                 StateVersion::of(request.start_state_version_inclusive),
                 request.max_number_of_txns_if_more_than_one_proof,
@@ -114,11 +114,11 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getPostGenesisEpochProof(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<LedgerProof> {
-        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
         let proof = database.read().get_post_genesis_epoch_proof();
         proof
     })
@@ -128,14 +128,14 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getEpochProof(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |epoch: Epoch| -> Option<LedgerProof> {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
             let proof = database.read().get_epoch_proof(epoch);
             proof
         },
@@ -146,14 +146,14 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |_no_args: ()| -> Option<LedgerProof> {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
             let proof = database.read().get_last_proof();
             proof
         },

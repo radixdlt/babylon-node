@@ -70,28 +70,29 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.GlobalAddress;
+import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.utils.UInt64;
 
 public final class TestStateReader {
-  public TestStateReader(StateManager stateManager) {
+  public TestStateReader(RustGlobalContext rustGlobalContext) {
     this.getTransactionAtStateVersionFunc =
-        Natives.builder(stateManager, TestStateReader::getTransactionAtStateVersion)
+        Natives.builder(rustGlobalContext, TestStateReader::getTransactionAtStateVersion)
             .build(new TypeToken<>() {});
     this.getTransactionDetailsAtStateVersionFunc =
-        Natives.builder(stateManager, TestStateReader::getTransactionDetailsAtStateVersion)
+        Natives.builder(rustGlobalContext, TestStateReader::getTransactionDetailsAtStateVersion)
             .build(new TypeToken<>() {});
     this.componentXrdAmountFunc =
-        Natives.builder(stateManager, TestStateReader::componentXrdAmount)
+        Natives.builder(rustGlobalContext, TestStateReader::componentXrdAmount)
             .build(new TypeToken<>() {});
     this.validatorInfoFunc =
-        Natives.builder(stateManager, TestStateReader::validatorInfo).build(new TypeToken<>() {});
+        Natives.builder(rustGlobalContext, TestStateReader::validatorInfo)
+            .build(new TypeToken<>() {});
     this.epochFunc =
-        Natives.builder(stateManager, TestStateReader::epoch).build(new TypeToken<>() {});
+        Natives.builder(rustGlobalContext, TestStateReader::epoch).build(new TypeToken<>() {});
     this.getNodeGlobalRootFunc =
-        Natives.builder(stateManager, TestStateReader::getNodeGlobalRoot)
+        Natives.builder(rustGlobalContext, TestStateReader::getNodeGlobalRoot)
             .build(new TypeToken<>() {});
   }
 
@@ -112,12 +113,12 @@ public final class TestStateReader {
       getTransactionDetailsAtStateVersionFunc;
 
   private static native byte[] getTransactionAtStateVersion(
-      StateManager stateManager, byte[] payload);
+      RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
 
   private static native byte[] getTransactionDetailsAtStateVersion(
-      StateManager stateManager, byte[] payload);
+      RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
 
@@ -125,7 +126,8 @@ public final class TestStateReader {
     return componentXrdAmountFunc.call(componentAddress);
   }
 
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+  private static native byte[] componentXrdAmount(
+      RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
 
@@ -133,7 +135,7 @@ public final class TestStateReader {
     return epochFunc.call(Tuple.tuple());
   }
 
-  private static native byte[] epoch(StateManager stateManager, byte[] payload);
+  private static native byte[] epoch(RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
 
@@ -141,9 +143,10 @@ public final class TestStateReader {
     return validatorInfoFunc.call(validatorAddress);
   }
 
-  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
+  private static native byte[] validatorInfo(RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<InternalAddress, Option<GlobalAddress>> getNodeGlobalRootFunc;
 
-  private static native byte[] getNodeGlobalRoot(StateManager stateManager, byte[] payload);
+  private static native byte[] getNodeGlobalRoot(
+      RustGlobalContext rustGlobalContext, byte[] payload);
 }

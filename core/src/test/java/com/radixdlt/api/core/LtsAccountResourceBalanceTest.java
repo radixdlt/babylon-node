@@ -72,7 +72,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import java.util.List;
 import org.junit.Test;
 

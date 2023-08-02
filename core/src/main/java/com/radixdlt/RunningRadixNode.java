@@ -78,7 +78,7 @@ import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +181,7 @@ public final class RunningRadixNode {
         "CoreApiServer", () -> injector.getInstance(CoreApiServer.class).stop());
 
     catchAllAndLogShutdownError(
-        "StateManager", () -> injector.getInstance(StateManager.class).shutdown());
+        "StateManager", () -> injector.getInstance(RustGlobalContext.class).shutdown());
   }
 
   private void catchAllAndLogShutdownError(String what, Runnable thunk) {

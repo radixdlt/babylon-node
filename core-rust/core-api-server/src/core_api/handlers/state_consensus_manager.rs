@@ -9,7 +9,7 @@ pub(crate) async fn handle_state_consensus_manager(
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
-    let database = state.database.read();
+    let database = state.radix_node.database.read();
 
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),

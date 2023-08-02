@@ -97,7 +97,7 @@ import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionBuilder;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;

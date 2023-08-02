@@ -62,23 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rustglobalcontext;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
+public record LoggingConfig(
+    boolean engineTrace, StateManagerLoggingConfig stateManagerLoggingConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerLoggingConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerLoggingConfig.class, codecs));
+        LoggingConfig.class,
+        codecs -> StructCodec.fromRecordComponents(LoggingConfig.class, codecs));
   }
 
-  public static StateManagerLoggingConfig getDefault() {
-    return new StateManagerLoggingConfig(false);
+  public static LoggingConfig getDefault() {
+    return new LoggingConfig(false, StateManagerLoggingConfig.getDefault());
   }
 
-  public static StateManagerLoggingConfig getDebug() {
-    return new StateManagerLoggingConfig(true);
+  public static LoggingConfig getDebug() {
+    return new LoggingConfig(true, StateManagerLoggingConfig.getDebug());
   }
 }

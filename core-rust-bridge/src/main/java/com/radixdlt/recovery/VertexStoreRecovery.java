@@ -69,19 +69,19 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
 import java.util.Optional;
 
 public final class VertexStoreRecovery {
-  public VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
+  public VertexStoreRecovery(Metrics metrics, RustGlobalContext rustGlobalContext) {
     LabelledTimer<Metrics.MethodId> timer = metrics.stateManager().nativeCall();
     this.getVertexStore =
-        Natives.builder(stateManager, VertexStoreRecovery::getVertexStore)
+        Natives.builder(rustGlobalContext, VertexStoreRecovery::getVertexStore)
             .measure(timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "getVertexStore")))
             .build(new TypeToken<>() {});
     this.saveVertexStoreFunc =
-        Natives.builder(stateManager, VertexStoreRecovery::saveVertexStore)
+        Natives.builder(rustGlobalContext, VertexStoreRecovery::saveVertexStore)
             .measure(
                 timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "saveVertexStore")))
             .build(new TypeToken<>() {});
@@ -91,7 +91,7 @@ public final class VertexStoreRecovery {
     return this.getVertexStore.call(Tuple.tuple()).toOptional();
   }
 
-  private static native byte[] getVertexStore(StateManager stateManager, byte[] payload);
+  private static native byte[] getVertexStore(RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<byte[]>> getVertexStore;
 
@@ -99,7 +99,7 @@ public final class VertexStoreRecovery {
     this.saveVertexStoreFunc.call(vertexStoreBytes);
   }
 
-  private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
+  private static native byte[] saveVertexStore(RustGlobalContext rustGlobalContext, byte[] payload);
 
   private final Natives.Call1<byte[], Tuple.Tuple0> saveVertexStoreFunc;
 }

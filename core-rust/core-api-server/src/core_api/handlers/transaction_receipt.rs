@@ -16,7 +16,7 @@ pub(crate) async fn handle_transaction_receipt(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let database = state.database.read();
+    let database = state.radix_node.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

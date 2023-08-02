@@ -83,10 +83,10 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
+import com.radixdlt.rustglobalcontext.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
@@ -193,14 +193,14 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          private StateManager stateManager(
+          private RustGlobalContext stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
               DatabaseFlags databaseFlags) {
-            return new StateManager(
+            return new RustGlobalContext(
                 mempoolRelayDispatcher,
-                new StateManagerConfig(
+                new RadixNodeConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
@@ -235,18 +235,19 @@ public final class REv2StateManagerModule extends AbstractModule {
 
           @Provides
           REv2TransactionAndProofStore transactionAndProofStore(
-              Metrics metrics, StateManager stateManager) {
-            return new REv2TransactionAndProofStore(metrics, stateManager);
+              Metrics metrics, RustGlobalContext rustGlobalContext) {
+            return new REv2TransactionAndProofStore(metrics, rustGlobalContext);
           }
 
           @Provides
-          VertexStoreRecovery rEv2VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
-            return new VertexStoreRecovery(metrics, stateManager);
+          VertexStoreRecovery rEv2VertexStoreRecovery(
+              Metrics metrics, RustGlobalContext rustGlobalContext) {
+            return new VertexStoreRecovery(metrics, rustGlobalContext);
           }
 
           @Provides
-          TestStateReader testStateReader(StateManager stateManager) {
-            return new TestStateReader(stateManager);
+          TestStateReader testStateReader(RustGlobalContext rustGlobalContext) {
+            return new TestStateReader(rustGlobalContext);
           }
 
           @Provides
@@ -283,8 +284,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  NodeAutoCloseable closeable(StateManager stateManager) {
-    return stateManager::shutdown;
+  NodeAutoCloseable closeable(RustGlobalContext rustGlobalContext) {
+    return rustGlobalContext::shutdown;
   }
 
   public LoggingConfig getLoggingConfig() {
@@ -293,13 +294,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
-    return new RustStateComputer(metrics, stateManager);
+  private RustStateComputer rustStateComputer(
+      Metrics metrics, RustGlobalContext rustGlobalContext) {
+    return new RustStateComputer(metrics, rustGlobalContext);
   }
 
   @Provides
   @Singleton
-  private RustMempool rustMempool(Metrics metrics, StateManager stateManager) {
-    return new RustMempool(metrics, stateManager);
+  private RustMempool rustMempool(Metrics metrics, RustGlobalContext rustGlobalContext) {
+    return new RustMempool(metrics, rustGlobalContext);
   }
 }

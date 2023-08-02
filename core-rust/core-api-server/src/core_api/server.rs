@@ -65,6 +65,8 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use super::metrics::CoreApiMetrics;
+use super::metrics_layer::MetricsLayer;
 use axum::extract::State;
 use axum::http::{StatusCode, Uri};
 use axum::middleware::map_response;
@@ -74,38 +76,23 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use parking_lot::RwLock;
 use prometheus::Registry;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
+use state_manager::jni::rust_global_context::RadixNode;
 use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{debug, error, info, trace, warn, Level};
 
-use state_manager::jni::state_manager::ActualStateManager;
-
-use super::metrics::CoreApiMetrics;
-use super::metrics_layer::MetricsLayer;
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use crate::core_api::models::ErrorResponse;
 use crate::core_api::InternalServerErrorResponseForPanic;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
-use state_manager::mempool::priority_mempool::PriorityMempool;
-use state_manager::mempool_manager::MempoolManager;
-use state_manager::store::StateManagerDatabase;
-use state_manager::transaction::{CommittabilityValidator, TransactionPreviewer};
-use state_manager::PendingTransactionResultCache;
 
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
-    pub state_manager: Arc<ActualStateManager>,
-    pub database: Arc<RwLock<StateManagerDatabase>>,
-    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
-    pub mempool: Arc<RwLock<PriorityMempool>>,
-    pub mempool_manager: Arc<MempoolManager>,
-    pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
-    pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
+    pub radix_node: RadixNode,
 }
 
 pub async fn create_server<F>(

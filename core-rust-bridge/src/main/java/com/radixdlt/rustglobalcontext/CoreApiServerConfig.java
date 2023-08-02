@@ -62,17 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rustglobalcontext;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 
-/** Database configuration options */
-public record DatabaseFlags(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
+public record CoreApiServerConfig(String bindInterface, UInt32 port) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        DatabaseFlags.class,
-        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
+        CoreApiServerConfig.class,
+        codecs -> StructCodec.fromRecordComponents(CoreApiServerConfig.class, codecs));
   }
 }

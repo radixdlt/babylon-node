@@ -18,7 +18,7 @@ pub(crate) async fn handle_transaction_submit(
 
     let force_recalculate = request.force_recalculate.unwrap_or(false);
 
-    let result = state.mempool_manager.add_and_trigger_relay(
+    let result = state.radix_node.mempool_manager.add_and_trigger_relay(
         MempoolAddSource::CoreApi,
         RawNotarizedTransaction(transaction_bytes),
         force_recalculate,

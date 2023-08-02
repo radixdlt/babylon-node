@@ -62,14 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rustglobalcontext;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.mempool.MempoolRelayDispatcher;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 
-public final class StateManager implements AutoCloseable {
+public final class RustGlobalContext implements AutoCloseable {
 
   static {
     System.loadLibrary("corerust");
@@ -82,13 +82,13 @@ public final class StateManager implements AutoCloseable {
    * that to access all state and make calls.
    */
   @SuppressWarnings("unused")
-  private final long rustStateManagerPointer = 0;
+  private final long rustRustGlobalContextPointer = 0;
 
   private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
 
-  public StateManager(
+  public RustGlobalContext(
       MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
-      StateManagerConfig config) {
+      RadixNodeConfig config) {
     this.mempoolRelayDispatcher = mempoolRelayDispatcher;
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
@@ -114,7 +114,7 @@ public final class StateManager implements AutoCloseable {
         RawNotarizedTransaction.create(notarizedTransactionPayload));
   }
 
-  private static native void init(StateManager stateManager, byte[] config);
+  private static native void init(RustGlobalContext rustGlobalContext, byte[] config);
 
-  private static native void cleanup(StateManager stateManager);
+  private static native void cleanup(RustGlobalContext rustGlobalContext);
 }

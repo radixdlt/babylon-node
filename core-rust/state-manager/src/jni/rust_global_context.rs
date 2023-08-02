@@ -90,38 +90,40 @@ use crate::transaction::{
 };
 use crate::PendingTransactionResultCache;
 
-const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
+const POINTER_JNI_FIELD_NAME: &str = "rustRustGlobalContextPointer";
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
+extern "system" fn Java_com_radixdlt_rustglobalcontext_RustGlobalContext_init(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     j_config: jbyteArray,
 ) {
     jni_call(&env, || {
-        JNIStateManager::init(&env, j_state_manager, j_config)
+        JNIRustGlobalContext::init(&env, j_rust_global_context, j_config)
     });
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
+extern "system" fn Java_com_radixdlt_rustglobalcontext_RustGlobalContext_cleanup(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
 ) {
-    jni_call(&env, || JNIStateManager::cleanup(&env, j_state_manager));
+    jni_call(&env, || {
+        JNIRustGlobalContext::cleanup(&env, j_rust_global_context)
+    });
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
-        let registry = &JNIStateManager::get_state(&env, j_state_manager).metric_registry;
+        let registry = &JNIRustGlobalContext::get(&env, j_rust_global_context).metric_registry;
         let encoder = TextEncoder::new();
         let mut buffer = vec![];
         encoder.encode(&registry.gather(), &mut buffer).unwrap();
@@ -148,7 +150,7 @@ impl From<JavaVertexLimitsConfig> for VertexLimitsConfig {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct StateManagerConfig {
+pub struct RadixNodeConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
     pub vertex_limits_config: Option<JavaVertexLimitsConfig>,
@@ -158,31 +160,37 @@ pub struct StateManagerConfig {
     pub no_fees: bool,
 }
 
-pub type ActualStateManager = StateManager<StateManagerDatabase>;
+impl RadixNodeConfig {
+    pub fn new_for_testing() -> Self {
+        RadixNodeConfig {
+            network_definition: NetworkDefinition::simulator(),
+            mempool_config: Some(MempoolConfig::new_for_testing()),
+            vertex_limits_config: None,
+            database_backend_config: DatabaseBackendConfig::InMemory,
+            database_flags: DatabaseFlags::default(),
+            logging_config: LoggingConfig::default(),
+            no_fees: false,
+        }
+    }
+}
 
-pub struct JNIStateManager {
-    pub runtime: Arc<Runtime>,
-    pub network: NetworkDefinition,
-    pub state_manager: Arc<ActualStateManager>,
+#[derive(Clone)]
+pub struct RadixNode {
+    pub state_manager: Arc<StateManager<StateManagerDatabase>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub committability_validator: Arc<CommittabilityValidator<StateManagerDatabase>>,
     pub transaction_previewer: Arc<TransactionPreviewer<StateManagerDatabase>>,
-    pub metric_registry: Arc<Registry>,
 }
 
-impl JNIStateManager {
-    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
-
-        let runtime = Runtime::new().unwrap();
-
-        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
-
-        // Build the basic subcomponents.
+impl RadixNode {
+    pub fn new(
+        config: RadixNodeConfig,
+        mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
+        metric_registry: &Registry,
+    ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
             None =>
@@ -201,7 +209,7 @@ impl JNIStateManager {
                 config.database_flags,
             ),
         ));
-        let metric_registry = Arc::new(Registry::new());
+
         let mut fee_reserve_config = FeeReserveConfig::default();
         if config.no_fees {
             fee_reserve_config.cost_unit_price = Decimal::ZERO;
@@ -226,15 +234,22 @@ impl JNIStateManager {
         );
         let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
             mempool_config,
-            &metric_registry,
+            metric_registry,
         )));
-        let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
-        let mempool_manager = Arc::new(MempoolManager::new(
-            mempool.clone(),
-            mempool_relay_dispatcher,
-            cached_committability_validator,
-            &metric_registry,
-        ));
+
+        let mempool_manager = Arc::new(match mempool_relay_dispatcher {
+            None => MempoolManager::new_for_testing(
+                mempool.clone(),
+                cached_committability_validator,
+                metric_registry,
+            ),
+            Some(mempool_relay_dispatcher) => MempoolManager::new(
+                mempool.clone(),
+                mempool_relay_dispatcher,
+                cached_committability_validator,
+                metric_registry,
+            ),
+        });
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
             database.clone(),
@@ -255,12 +270,10 @@ impl JNIStateManager {
             execution_configurator,
             pending_transaction_result_cache.clone(),
             logging_config,
-            &metric_registry,
+            metric_registry,
         ));
 
-        let jni_state_manager = JNIStateManager {
-            runtime: Arc::new(runtime),
-            network,
+        Self {
             state_manager,
             database,
             pending_transaction_result_cache,
@@ -268,46 +281,106 @@ impl JNIStateManager {
             mempool_manager,
             committability_validator,
             transaction_previewer,
+        }
+    }
+}
+
+pub struct JNIRustGlobalContext {
+    pub runtime: Arc<Runtime>,
+    pub network: NetworkDefinition,
+    pub radix_node: RadixNode,
+    pub metric_registry: Arc<Registry>,
+}
+
+impl JNIRustGlobalContext {
+    pub fn init(env: &JNIEnv, j_rust_global_context: JObject, j_config: jbyteArray) {
+        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
+        let config = RadixNodeConfig::from_java(&config_bytes).unwrap();
+
+        let network = config.network_definition.clone();
+
+        let runtime = Runtime::new().unwrap();
+
+        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
+
+        let metric_registry = Arc::new(Registry::new());
+
+        let radix_node = RadixNode::new(
+            config,
+            Some(MempoolRelayDispatcher::new(env, j_rust_global_context).unwrap()),
+            &metric_registry,
+        );
+
+        let jni_rust_global_context = JNIRustGlobalContext {
+            runtime: Arc::new(runtime),
+            network,
+            radix_node,
             metric_registry,
         };
 
-        env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
-            .unwrap();
+        env.set_rust_field(
+            j_rust_global_context,
+            POINTER_JNI_FIELD_NAME,
+            jni_rust_global_context,
+        )
+        .unwrap();
     }
 
-    pub fn cleanup(env: &JNIEnv, j_state_manager: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
+    pub fn cleanup(env: &JNIEnv, j_rust_global_context: JObject) {
+        let jni_rust_global_context: JNIRustGlobalContext = env
+            .take_rust_field(j_rust_global_context, POINTER_JNI_FIELD_NAME)
             .unwrap();
 
-        drop(jni_state_manager);
+        drop(jni_rust_global_context);
     }
 
-    pub fn get_state<'a>(
+    pub fn get<'a>(
         env: &'a JNIEnv<'a>,
-        j_state_manager: JObject<'a>,
-    ) -> MutexGuard<'a, JNIStateManager> {
-        env.get_rust_field::<_, _, JNIStateManager>(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap()
+        j_rust_global_context: JObject<'a>,
+    ) -> MutexGuard<'a, JNIRustGlobalContext> {
+        env.get_rust_field::<_, _, JNIRustGlobalContext>(
+            j_rust_global_context,
+            POINTER_JNI_FIELD_NAME,
+        )
+        .unwrap()
     }
 
-    pub fn get_state_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<ActualStateManager> {
-        Self::get_state(env, j_state_manager).state_manager.clone()
+    pub fn get_state_manager(
+        env: &JNIEnv,
+        j_rust_global_context: JObject,
+    ) -> Arc<StateManager<StateManagerDatabase>> {
+        Self::get(env, j_rust_global_context)
+            .radix_node
+            .state_manager
+            .clone()
     }
 
     pub fn get_database(
         env: &JNIEnv,
-        j_state_manager: JObject,
+        j_rust_global_context: JObject,
     ) -> Arc<RwLock<StateManagerDatabase>> {
-        Self::get_state(env, j_state_manager).database.clone()
+        Self::get(env, j_rust_global_context)
+            .radix_node
+            .database
+            .clone()
     }
 
-    pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<PriorityMempool>> {
-        Self::get_state(env, j_state_manager).mempool.clone()
+    pub fn get_mempool(
+        env: &JNIEnv,
+        j_rust_global_context: JObject,
+    ) -> Arc<RwLock<PriorityMempool>> {
+        Self::get(env, j_rust_global_context)
+            .radix_node
+            .mempool
+            .clone()
     }
 
-    pub fn get_mempool_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<MempoolManager> {
-        Self::get_state(env, j_state_manager)
+    pub fn get_mempool_manager(
+        env: &JNIEnv,
+        j_rust_global_context: JObject,
+    ) -> Arc<MempoolManager> {
+        Self::get(env, j_rust_global_context)
+            .radix_node
             .mempool_manager
             .clone()
     }
