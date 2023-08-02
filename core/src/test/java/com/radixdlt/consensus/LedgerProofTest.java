@@ -69,20 +69,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
 import org.junit.Test;
 
 public class LedgerProofTest {
-  private OrderByEpochAndVersionComparator headerComparator;
-
-  @Before
-  public void setup() {
-    this.headerComparator = new OrderByEpochAndVersionComparator();
-  }
 
   @Test
   public void equalsContract() {
@@ -108,71 +100,6 @@ public class LedgerProofTest {
     assertThat(ledgerHeaderAndProof.getRound()).isEqualTo(round);
     assertThat(ledgerHeaderAndProof.consensusParentRoundTimestamp()).isEqualTo(2468L);
     assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isTrue();
-  }
-
-  @Test
-  public void testComparsionBetweenDifferentEpochs() {
-    LedgerHeader l0 = mock(LedgerHeader.class);
-    when(l0.getEpoch()).thenReturn(1L);
-    var s0 = new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
-    LedgerHeader l1 = mock(LedgerHeader.class);
-    when(l1.getEpoch()).thenReturn(2L);
-    LedgerProof s1 =
-        new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
-    assertThat(headerComparator.compare(s0, s1)).isNegative();
-    assertThat(headerComparator.compare(s1, s0)).isPositive();
-  }
-
-  @Test
-  public void testComparsionBetweenDifferentStateVersions() {
-    LedgerHeader l0 = mock(LedgerHeader.class);
-    when(l0.getEpoch()).thenReturn(2L);
-    when(l0.getStateVersion()).thenReturn(2L);
-    LedgerProof s0 =
-        new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
-    LedgerHeader l1 = mock(LedgerHeader.class);
-    when(l1.getEpoch()).thenReturn(2L);
-    when(l1.getStateVersion()).thenReturn(3L);
-    LedgerProof s1 =
-        new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
-    assertThat(headerComparator.compare(s0, s1)).isNegative();
-    assertThat(headerComparator.compare(s1, s0)).isPositive();
-  }
-
-  @Test
-  public void testComparsionWithEndOfEpoch() {
-    LedgerHeader l0 = mock(LedgerHeader.class);
-    when(l0.getEpoch()).thenReturn(2L);
-    when(l0.getStateVersion()).thenReturn(2L);
-    when(l0.isEndOfEpoch()).thenReturn(false);
-    LedgerProof s0 =
-        new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
-    LedgerHeader l1 = mock(LedgerHeader.class);
-    when(l1.getEpoch()).thenReturn(2L);
-    when(l1.getStateVersion()).thenReturn(3L);
-    when(l1.isEndOfEpoch()).thenReturn(true);
-    LedgerProof s1 =
-        new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
-    assertThat(headerComparator.compare(s0, s1)).isNegative();
-    assertThat(headerComparator.compare(s1, s0)).isPositive();
-  }
-
-  @Test
-  public void testComparsionEqual() {
-    LedgerHeader l0 = mock(LedgerHeader.class);
-    when(l0.getEpoch()).thenReturn(2L);
-    when(l0.getStateVersion()).thenReturn(3L);
-    when(l0.isEndOfEpoch()).thenReturn(true);
-    LedgerProof s0 =
-        new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
-    LedgerHeader l1 = mock(LedgerHeader.class);
-    when(l1.getEpoch()).thenReturn(2L);
-    when(l1.getStateVersion()).thenReturn(3L);
-    when(l1.isEndOfEpoch()).thenReturn(true);
-    LedgerProof s1 =
-        new LedgerProof(HashUtils.random256(), l1, mock(TimestampedECDSASignatures.class));
-    assertThat(headerComparator.compare(s0, s1)).isZero();
-    assertThat(headerComparator.compare(s1, s0)).isZero();
   }
 
   @Test(expected = NullPointerException.class)
