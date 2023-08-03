@@ -77,9 +77,7 @@ public record ExitingStake(
     long epochUnlocked, ECDSASecp256k1PublicKey delegateKey, REAddr owner, UInt256 amount)
     implements ResourceInBucket {
   private static final int DATA_SIZE =
-      ECDSASecp256k1PublicKey.COMPRESSED_BYTES
-          + (ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1)
-          + Long.BYTES;
+      ECDSASecp256k1PublicKey.LENGTH + (ECDSASecp256k1PublicKey.LENGTH + 1) + Long.BYTES;
 
   public ExitingStake {
     requireNonNull(delegateKey);
@@ -90,7 +88,7 @@ public record ExitingStake(
   public byte[] dataKey() {
     return ByteBuffer.wrap(new byte[DATA_SIZE])
         .putLong(epochUnlocked)
-        .put(delegateKey.getCompressedBytes())
+        .put(delegateKey.getBytes())
         .put(owner.getBytes())
         .array();
   }

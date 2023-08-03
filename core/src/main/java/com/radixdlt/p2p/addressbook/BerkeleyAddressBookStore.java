@@ -227,14 +227,14 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   public void storeHighPriorityPeers(List<NodeId> ids) {
     final var start = System.nanoTime();
 
-    final var idsBytes = new byte[ids.size() * ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
+    final var idsBytes = new byte[ids.size() * ECDSASecp256k1PublicKey.LENGTH];
     for (int i = 0; i < ids.size(); i++) {
       System.arraycopy(
           ids.get(i).getPubKey(),
           0,
           idsBytes,
-          i * ECDSASecp256k1PublicKey.COMPRESSED_BYTES,
-          ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+          i * ECDSASecp256k1PublicKey.LENGTH,
+          ECDSASecp256k1PublicKey.LENGTH);
     }
 
     try {
@@ -262,12 +262,11 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
         addBytesRead(pKey.getSize() + value.getSize());
         final var builder = ImmutableList.<NodeId>builder();
         int i = 0;
-        final var maxIdx = value.getData().length - ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
+        final var maxIdx = value.getData().length - ECDSASecp256k1PublicKey.LENGTH;
         while (i <= maxIdx) {
-          final var nextIdBytes = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
-          System.arraycopy(
-              value.getData(), i, nextIdBytes, 0, ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
-          i += ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
+          final var nextIdBytes = new byte[ECDSASecp256k1PublicKey.LENGTH];
+          System.arraycopy(value.getData(), i, nextIdBytes, 0, ECDSASecp256k1PublicKey.LENGTH);
+          i += ECDSASecp256k1PublicKey.LENGTH;
           builder.add(NodeId.fromPublicKey(ECDSASecp256k1PublicKey.fromBytes(nextIdBytes)));
         }
         return builder.build();
@@ -277,7 +276,8 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
         throw new BerkeleyAddressBookStoreException("Couldn't read high priority peers");
       }
     } catch (PublicKeyException e) {
-      throw new BerkeleyAddressBookStoreException("Couldn't read high priority peers", e);
+      throw new BerkeleyAddressBookStoreException(
+          "Couldn't read high priority peers (invalid persisted public key)");
     } finally {
       addTime(start);
     }

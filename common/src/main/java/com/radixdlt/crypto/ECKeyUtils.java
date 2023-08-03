@@ -67,7 +67,6 @@ package com.radixdlt.crypto;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -158,29 +157,6 @@ public class ECKeyUtils {
     }
   }
 
-  static void validatePublic(byte[] publicKey) throws PublicKeyException {
-    if (publicKey == null || publicKey.length == 0) {
-      throw new PublicKeyException("Public key is empty");
-    }
-
-    int pubkey0 = publicKey[0] & 0xFF;
-    switch (pubkey0) {
-      case 2:
-      case 3:
-        if (publicKey.length != ECDSASecp256k1PublicKey.COMPRESSED_BYTES) {
-          throw new PublicKeyException("Public key has invalid compressed size");
-        }
-        break;
-      case 4:
-        if (publicKey.length != ECDSASecp256k1PublicKey.UNCOMPRESSED_BYTES) {
-          throw new PublicKeyException("Public key has invalid uncompressed size");
-        }
-        break;
-      default:
-        throw new PublicKeyException("Public key has invalid format");
-    }
-  }
-
   private static final X9IntegerConverter CONVERTER = new X9IntegerConverter();
 
   private static ECCurve ecCurve() {
@@ -211,7 +187,7 @@ public class ECKeyUtils {
   private static Optional<Integer> tryV(
       int v, BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
     return ECKeyUtils.recoverFromSignature(v, r, s, hash)
-        .filter(q -> Arrays.equals(q.getEncoded(false), publicKey))
+        .filter(q -> Arrays.equals(q.getEncoded(true), publicKey))
         .map(__ -> v);
   }
 

@@ -216,7 +216,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
       final var isRegistered = random.nextBoolean();
       final var validator =
           new OlympiaStateIR.Validator(
-              HashCode.fromBytes(publicKey.getCompressedBytes()),
+              HashCode.fromBytes(publicKey.getBytes()),
               "Validator " + i,
               "Validator " + i + " URL",
               acceptDelegatedStake,
@@ -337,7 +337,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
   }
 
   private Tuple2<HashCode, Integer> randomAccount(UniqueListBuilder<HashCode> accountsBuilder) {
-    final var publicKeyBytes = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
+    final var publicKeyBytes = new byte[ECDSASecp256k1PublicKey.LENGTH];
     random.nextBytes(publicKeyBytes);
     final var publicKey = HashCode.fromBytes(publicKeyBytes);
     final var accountIndex = accountsBuilder.insertIfMissingAndGetIndex(publicKey);
