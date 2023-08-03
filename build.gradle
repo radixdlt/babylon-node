@@ -328,6 +328,7 @@ subprojects {
             dependency 'nl.jqno.equalsverifier:equalsverifier:3.6.1'
             dependency 'org.assertj:assertj-core:3.20.2'
             dependency 'junit:junit:4.13.2'
+            dependency 'pl.pragmatists:JUnitParams:1.1.1'
             dependency 'commons-cli:commons-cli:1.4'
         }
     }

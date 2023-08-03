@@ -228,13 +228,32 @@ public record Metrics(
       Timer prepare) {}
 
   public record LedgerSync(
-      Counter invalidResponsesReceived,
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
       Gauge targetStateVersion,
-      Counter staleSyncResponses,
-      Counter unexpectedSyncResponses) {}
+      LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
+      LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
+
+    public record UnexpectedSyncResponse(UnexpectedSyncResponseReason reason) {}
+
+    public enum UnexpectedSyncResponseReason {
+      NO_REQUEST_PENDING,
+      UNEXPECTED_SENDER,
+      LEDGER_START_MISMATCH,
+    }
+
+    public record InvalidSyncResponse(InvalidSyncResponseReason reason) {}
+
+    public enum InvalidSyncResponseReason {
+      NO_TRANSACTIONS,
+      TRANSACTION_COUNT_MISMATCH,
+      UNPARSEABLE_TRANSACTION,
+      MISMATCHED_TRANSACTION_ROOT,
+      INSUFFICIENT_VALIDATOR_SET,
+      MISMATCHED_SIGNATURES
+    }
+  }
 
   public record Mempool(Counter relaysSent) {}
 
