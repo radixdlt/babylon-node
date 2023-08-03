@@ -5,7 +5,7 @@ The goal of recording tracing information is twofold:
 - aid the debugging by recording low-severity events and spans, like recording
   function calls, their parameters, and so on
 
-## Summary
+## Summary
 
 - Use the `tracing` crate
 - Annotate any function of your choosing with the `#[tracing::instrument]`
@@ -13,7 +13,7 @@ The goal of recording tracing information is twofold:
   `#[tracing::instrument(skip_all)]` )
 - Don't worry about the performance overhead, yet
 
-## Status
+## Status
 As of 2022-09-29, the `tracing_subscriber::fmt` is active unconditionally,
 which prints every "error", "warning", "info", and "debug" to the `stderr`,
 similarly to the Java logger.
