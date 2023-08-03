@@ -65,6 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.monitoring.Metrics.Config;
@@ -76,7 +77,7 @@ import java.util.Collection;
 /** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
 public final class MetricInstaller {
 
-  /** An own node, for exposing the {@link Config#key()} information. */
+  /** An own node, for exposing the {@link Config} information. */
   private final SelfValidatorInfo self;
 
   /** A source of post-genesis ledger hashes. */
@@ -88,6 +89,9 @@ public final class MetricInstaller {
   /** A source of "peers" getters to be exposed as gauges. */
   private final PeersView peersView;
 
+  /** An address renderer (for self validator component). */
+  private final Addressing addressing;
+
   /** A wallclock, to be exposed as a metric as well. */
   private final TimeSupplier timeSupplier;
 
@@ -97,11 +101,13 @@ public final class MetricInstaller {
       final REv2LedgerInitializerToken ledgerInitialization,
       final InMemorySystemInfo inMemorySystemInfo,
       final PeersView peersView,
+      final Addressing addressing,
       final TimeSupplier timeSupplier) {
     this.self = self;
     this.ledgerInitialization = ledgerInitialization;
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.peersView = peersView;
+    this.addressing = addressing;
     this.timeSupplier = timeSupplier;
   }
 
@@ -118,6 +124,10 @@ public final class MetricInstaller {
         new Config(
             ApplicationVersion.INSTANCE.string(),
             this.self.key().toHex(),
+            this.self
+                .bftValidatorId()
+                .map(id -> this.addressing.encode(id.getValidatorAddress()))
+                .orElse(null),
             this.ledgerInitialization.postGenesisEpochProof().getLedgerHashes().getStateRoot());
     metrics.misc().config().set(config);
     metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());

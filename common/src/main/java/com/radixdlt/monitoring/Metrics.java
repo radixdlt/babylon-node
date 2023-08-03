@@ -234,6 +234,7 @@ public record Metrics(
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
       Gauge targetStateVersion,
+      Gauge targetProposerEpochSecond,
       LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
       LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
 
@@ -372,5 +373,9 @@ public record Metrics(
     }
   }
 
-  public record Config(String branchAndCommit, String key, HashCode postGenesisEpochStateHash) {}
+  public record Config(
+      String branchAndCommit,
+      String key,
+      @Nullable String componentAddress, // null when not configured as validator
+      HashCode postGenesisEpochStateHash) {}
 }
