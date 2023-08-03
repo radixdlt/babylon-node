@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+pub mod fatal_panic_handler;
 pub mod mempool;
 pub mod rust_global_context;
 pub mod state_computer;

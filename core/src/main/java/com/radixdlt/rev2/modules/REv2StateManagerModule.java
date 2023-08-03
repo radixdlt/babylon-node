@@ -195,11 +195,13 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Singleton
           private RustGlobalContext stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+              FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
               DatabaseFlags databaseFlags) {
             return new RustGlobalContext(
                 mempoolRelayDispatcher,
+                fatalPanicHandler,
                 new RadixNodeConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,

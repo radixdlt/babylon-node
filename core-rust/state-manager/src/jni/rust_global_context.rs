@@ -64,6 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
+use crate::jni::fatal_panic_handler::FatalPanicHandler;
 use crate::mempool::priority_mempool::PriorityMempool;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseBackendConfig, DatabaseFlags, StateManagerDatabase};
@@ -74,7 +75,7 @@ use node_common::config::limits::VertexLimitsConfig;
 use node_common::config::MempoolConfig;
 use node_common::environment::setup_tracing;
 use node_common::java::*;
-use parking_lot::RwLock;
+use node_common::locks::{LockFactory, RwLock};
 use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine_common::math::Decimal;
@@ -189,7 +190,8 @@ impl RadixNode {
     pub fn new(
         config: RadixNodeConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
-        metric_registry: &Registry,
+        lock_factory: &LockFactory,
+        metrics_registry: &Registry,
     ) -> Self {
         let mempool_config = match config.mempool_config {
             Some(mempool_config) => mempool_config,
@@ -203,7 +205,7 @@ impl RadixNode {
         let network = config.network_definition;
         let logging_config = config.logging_config;
 
-        let database = Arc::new(parking_lot::const_rwlock(
+        let database = Arc::new(lock_factory.named("database").new_rwlock(
             StateManagerDatabase::from_config(
                 config.database_backend_config,
                 config.database_flags,
@@ -219,9 +221,11 @@ impl RadixNode {
             &logging_config,
             fee_reserve_config,
         ));
-        let pending_transaction_result_cache = Arc::new(parking_lot::const_rwlock(
-            PendingTransactionResultCache::new(10000, 10000),
-        ));
+        let pending_transaction_result_cache = Arc::new(
+            lock_factory
+                .named("pending_cache")
+                .new_rwlock(PendingTransactionResultCache::new(10000, 10000)),
+        );
         let committability_validator = Arc::new(CommittabilityValidator::new(
             &network,
             database.clone(),
@@ -232,24 +236,27 @@ impl RadixNode {
             committability_validator.clone(),
             pending_transaction_result_cache.clone(),
         );
-        let mempool = Arc::new(parking_lot::const_rwlock(PriorityMempool::new(
-            mempool_config,
-            metric_registry,
-        )));
+
+        let mempool = Arc::new(
+            lock_factory
+                .named("mempool")
+                .new_rwlock(PriorityMempool::new(mempool_config, metrics_registry)),
+        );
 
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
                 mempool.clone(),
                 cached_committability_validator,
-                metric_registry,
+                metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
                 mempool.clone(),
                 mempool_relay_dispatcher,
                 cached_committability_validator,
-                metric_registry,
+                metrics_registry,
             ),
         });
+
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             &network,
             database.clone(),
@@ -270,7 +277,8 @@ impl RadixNode {
             execution_configurator,
             pending_transaction_result_cache.clone(),
             logging_config,
-            metric_registry,
+            metrics_registry,
+            &lock_factory.named("state_manager"),
         ));
 
         Self {
@@ -303,11 +311,14 @@ impl JNIRustGlobalContext {
 
         setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
 
+        let fatal_panic_handler = FatalPanicHandler::new(env, j_rust_global_context).unwrap();
+        let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
         let metric_registry = Arc::new(Registry::new());
 
         let radix_node = RadixNode::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_rust_global_context).unwrap()),
+            &lock_factory,
             &metric_registry,
         );
 

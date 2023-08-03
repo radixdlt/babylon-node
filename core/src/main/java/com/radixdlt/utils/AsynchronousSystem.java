@@ -62,99 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.utils;
 
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
-
-import com.google.inject.*;
-import com.google.inject.Module;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.MockedSelfValidatorInfoModule;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.logger.EventLoggerConfig;
-import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.modules.DispatcherModule;
-import com.radixdlt.modules.MockedCryptoModule;
-import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.rev2.LastProof;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Test;
 
-public final class MempoolRunnerTest {
+/** An asynchronous counterpart of the {@link System} class. */
+public final class AsynchronousSystem {
   private static final Logger log = LogManager.getLogger();
 
-  @Inject private Map<String, ModuleRunner> moduleRunners;
-  @Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
-
-  private StateComputer stateComputer = mock(StateComputer.class);
-
-  @SuppressWarnings(
-      "unchecked") // The mock method doesn't support type-safe generics due to type erasure
-  public Module createModule() {
-    return new AbstractModule() {
-      @Override
-      public void configure() {
-        var key = PrivateKeys.ofNumeric(1).getPublicKey();
-        bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(key);
-        bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
-        bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
-        bind(StateComputer.class).toInstance(stateComputer);
-        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-        bind(RxRemoteEnvironment.class)
-            .toInstance(
-                new RxRemoteEnvironment() {
-                  @Override
-                  public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
-                    return Flowable.never();
-                  }
-                });
-        bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-        Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-        install(MempoolReceiverConfig.of(10).asModule());
-        install(new MockedSelfValidatorInfoModule());
-        install(new MockedKeyModule());
-        install(new MockedCryptoModule());
-        install(new RxEnvironmentModule());
-        install(new DispatcherModule());
-        install(new MempoolReceiverModule());
-        install(
-            new EventLoggerModule(
-                EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))));
-      }
-    };
+  /**
+   * An asynchronous counterpart of the {@link System#exit(int)} (delegating to the original
+   * implementation in a newly-started thread). This is useful for exits triggered from Rust (via
+   * JNI), which cause shutdown hooks' threads to hang inside native Rust methods after calling the
+   * synchronous {@link System#exit(int)}.
+   */
+  public static void exit(int status) {
+    log.info("Starting a thread for asynchronous System.exit({})", status);
+    new Thread(() -> logAndExitSynchronously(status), "Asynchronous-Exit").start();
   }
 
-  @Test
-  public void dispatched_mempool_add_arrives_at_state_computer() {
-    Guice.createInjector(createModule()).injectMembers(this);
-    moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("Uncaught runner error", error));
-
-    MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
-    mempoolAddEventDispatcher.dispatch(mempoolAdd);
-
-    verify(stateComputer, timeout(1000).times(1)).addToMempool(eq(mempoolAdd), isNull());
+  private static void logAndExitSynchronously(int status) {
+    log.info("Invoking a System.exit({})", status);
+    System.exit(status);
   }
 }

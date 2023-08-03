@@ -73,10 +73,14 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.InvalidCommitRequestException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.LedgerSync.InvalidSyncResponse;
+import com.radixdlt.monitoring.Metrics.LedgerSync.InvalidSyncResponseReason;
+import com.radixdlt.monitoring.Metrics.LedgerSync.UnexpectedSyncResponse;
+import com.radixdlt.monitoring.Metrics.LedgerSync.UnexpectedSyncResponseReason;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -85,13 +89,9 @@ import com.radixdlt.sync.SyncState.SyncCheckState;
 import com.radixdlt.sync.SyncState.SyncingState;
 import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
-import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
-import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.utils.Pair;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Objects;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -107,15 +107,12 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class LocalSyncService {
 
-  public interface VerifiedSyncResponseHandler {
-    void handleSyncResponse(NodeId sender, SyncResponse syncResponse);
-  }
-
-  public interface InvalidSyncResponseHandler {
-    void handleInvalidSyncResponse(NodeId sender, SyncResponse syncResponse);
-  }
-
   private static final Logger log = LogManager.getLogger();
+
+  /**
+   * A default duration of a ban imposed on a peer from which an invalid sync response was received.
+   */
+  private static final Duration PEER_BAN_DURATION = Duration.ofMinutes(10);
 
   private final AtomicLong requestIdCounter = new AtomicLong();
   private final RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher;
@@ -127,11 +124,8 @@ public final class LocalSyncService {
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
   private final PeersView peersView;
-  private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-  private final RemoteSyncResponseSignaturesVerifier signaturesVerifier;
-  private final VerifiedSyncResponseHandler verifiedSyncResponseHandler;
-  private final InvalidSyncResponseHandler invalidSyncResponseHandler;
-
+  private final PeerControl peerControl;
+  private final SyncResponseHandler syncResponseHandler;
   private final ImmutableMap<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>> handlers;
 
   private SyncState syncState;
@@ -147,10 +141,8 @@ public final class LocalSyncService {
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       PeersView peersView,
-      RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
-      RemoteSyncResponseSignaturesVerifier signaturesVerifier,
-      VerifiedSyncResponseHandler verifiedSyncResponseHandler,
-      InvalidSyncResponseHandler invalidSyncResponseHandler,
+      PeerControl peerControl,
+      SyncResponseHandler syncResponseHandler,
       SyncState initialState) {
     this.statusRequestDispatcher = Objects.requireNonNull(statusRequestDispatcher);
     this.syncCheckReceiveStatusTimeoutDispatcher =
@@ -162,10 +154,8 @@ public final class LocalSyncService {
     this.syncRelayConfig = Objects.requireNonNull(syncRelayConfig);
     this.metrics = Objects.requireNonNull(metrics);
     this.peersView = Objects.requireNonNull(peersView);
-    this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
-    this.signaturesVerifier = Objects.requireNonNull(signaturesVerifier);
-    this.verifiedSyncResponseHandler = Objects.requireNonNull(verifiedSyncResponseHandler);
-    this.invalidSyncResponseHandler = Objects.requireNonNull(invalidSyncResponseHandler);
+    this.peerControl = peerControl;
+    this.syncResponseHandler = syncResponseHandler;
 
     this.syncState = initialState;
 
@@ -428,68 +418,137 @@ public final class LocalSyncService {
   private SyncState processSyncResponse(
       SyncingState currentState, NodeId sender, SyncResponse syncResponse) {
     log.trace("LocalSync: Received sync response from {}", sender);
-
-    if (!currentState.waitingForResponseFrom(sender)) {
-      log.trace("LocalSync: Received unexpected sync response from {}", sender);
-      metrics.sync().unexpectedSyncResponses().inc();
-      return currentState;
-    }
-
-    final var responseTailStateVersion =
-        syncResponse.getLedgerExtension().getTail().getLedgerHeader().getStateVersion();
-    final var currentStateVersion = currentState.getCurrentHeader().getStateVersion();
-    if (responseTailStateVersion <= currentStateVersion) {
-      log.trace("LocalSync: Received a stale sync response from {}", sender);
-      metrics.sync().staleSyncResponses().inc();
-      return this.processSync(currentState.clearPendingRequest());
-    }
-
-    if (syncResponse.getLedgerExtension().getTransactions().isEmpty()) {
-      log.warn("LocalSync: Received empty sync response from {}", sender);
-      // didn't receive any transactions, remove from candidate peers and processSync
-      return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
-    }
-
-    if (!this.verifyConsensusProofOnSyncResponse(syncResponse)) {
-      log.warn(
-          "LocalSync: Received consensus-mismatched sync response {} from {}",
-          syncResponse,
-          sender);
-      // consensus-level validation failed, remove from candidate peers and processSync
-      invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
-      return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
-    }
-
     try {
-      this.verifiedSyncResponseHandler.handleSyncResponse(sender, syncResponse);
-    } catch (InvalidCommitRequestException exception) {
-      log.warn(
-          "LocalSync: Received invalid commit request ({}) in sync response {} from {}",
-          exception.getMessage(),
-          syncResponse,
-          sender);
-      // ledger-level validation failed, remove from candidate peers and processSync
-      invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
-      return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+      this.syncResponseHandler.handle(currentState, sender, syncResponse);
+      // At this point we know that the commit was successful:
+      this.metrics.sync().validResponsesReceived().inc();
+      this.peerControl.reportHighPriorityPeer(sender);
+      this.syncLedgerUpdateTimeoutDispatcher.dispatch(
+          SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
+      return currentState.clearPendingRequest();
+    } catch (InvalidSyncResponseException isre) {
+      // Implementation note:
+      // Java 17 still cannot compile a "complete catch" of all subclasses of a sealed exception.
+      // But it can compile a "complete switch", and we want to leverage this in order to ensure
+      // that all future corner-cases of response processing are handled here as well.
+      return switch (isre) {
+        case InvalidSyncResponseException.NoSyncRequestPending exc -> {
+          log.trace(
+              "LocalSync: Received sync response {} from {} while not expecting any",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .unexpectedResponsesReceived()
+              .label(new UnexpectedSyncResponse(UnexpectedSyncResponseReason.NO_REQUEST_PENDING))
+              .inc();
+          yield currentState;
+        }
+        case InvalidSyncResponseException.SyncRequestSenderMismatch exc -> {
+          log.trace(
+              "LocalSync: Received sync response {} from sender {} while expecting one from {}",
+              syncResponse,
+              sender,
+              currentState.getPendingRequest().map(SyncState.PendingRequest::getPeer));
+          metrics
+              .sync()
+              .unexpectedResponsesReceived()
+              .label(new UnexpectedSyncResponse(UnexpectedSyncResponseReason.UNEXPECTED_SENDER))
+              .inc();
+          yield currentState;
+        }
+        case InvalidSyncResponseException.LedgerExtensionStartMismatch exc -> {
+          log.trace(
+              "LocalSync: Received sync response {} while current state is at {}",
+              syncResponse,
+              currentState.getCurrentHeader());
+          metrics
+              .sync()
+              .unexpectedResponsesReceived()
+              .label(new UnexpectedSyncResponse(UnexpectedSyncResponseReason.LEDGER_START_MISMATCH))
+              .inc();
+          yield currentState;
+        }
+        case InvalidSyncResponseException.EmptySyncResponse exc -> {
+          log.warn(
+              "LocalSync: Received 0 transactions in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.NO_TRANSACTIONS))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "empty sync response received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+        case InvalidSyncResponseException.InconsistentTransactionCount exc -> {
+          log.warn(
+              "LocalSync: Received inconsistent transaction count in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.TRANSACTION_COUNT_MISMATCH))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "inconsistent transaction count received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+        case InvalidSyncResponseException.UnparseableTransaction exc -> {
+          log.warn(
+              "LocalSync: Received unparseable transaction in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.UNPARSEABLE_TRANSACTION))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "unparseable transaction received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+        case InvalidSyncResponseException.ComputedTransactionRootMismatch exc -> {
+          log.warn(
+              "LocalSync: Received mismatched transaction root in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.MISMATCHED_TRANSACTION_ROOT))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "mismatched transaction root received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+        case InvalidSyncResponseException.NoQuorumInValidatorSet exc -> {
+          log.warn(
+              "LocalSync: Received insufficient validator set in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.INSUFFICIENT_VALIDATOR_SET))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "insufficient validator set received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+        case InvalidSyncResponseException.ValidatorSignatureMismatch exc -> {
+          log.warn(
+              "LocalSync: Received mismatched signatures in sync response {} from {}",
+              syncResponse,
+              sender);
+          metrics
+              .sync()
+              .invalidResponsesReceived()
+              .label(new InvalidSyncResponse(InvalidSyncResponseReason.MISMATCHED_SIGNATURES))
+              .inc();
+          peerControl.banPeer(sender, PEER_BAN_DURATION, "mismatched signatures received");
+          yield this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
+        }
+      };
     }
-
-    this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-        SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
-    return currentState.clearPendingRequest();
-  }
-
-  private boolean verifyConsensusProofOnSyncResponse(SyncResponse syncResponse) {
-    if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {
-      log.warn("Invalid validator set");
-      return false;
-    }
-
-    if (!this.signaturesVerifier.verifyResponseSignatures(syncResponse)) {
-      log.warn("Invalid signatures");
-      return false;
-    }
-
-    return true;
   }
 
   private SyncState processSyncRequestTimeout(

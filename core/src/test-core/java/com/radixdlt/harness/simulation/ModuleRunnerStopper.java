@@ -62,44 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync.validation;
+package com.radixdlt.harness.simulation;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusHasher;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.crypto.Hasher;
-import java.util.Map.Entry;
-import java.util.Objects;
+import com.radixdlt.modules.ModuleRunner;
+import java.util.Collection;
+import java.util.Map;
+import javax.inject.Inject;
 
-/** Verifies the signatures in a sync response */
-public final class RemoteSyncResponseSignaturesVerifier {
+public class ModuleRunnerStopper {
 
-  private final Hasher hasher;
-  private final HashVerifier hashVerifier;
+  private final Collection<ModuleRunner> moduleRunners;
 
   @Inject
-  public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
-    this.hasher = Objects.requireNonNull(hasher);
-    this.hashVerifier = Objects.requireNonNull(hashVerifier);
+  public ModuleRunnerStopper(Map<String, ModuleRunner> moduleRunners) {
+    this.moduleRunners = moduleRunners.values();
   }
 
-  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    var signatures = ledgerProof.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
-        signatures.entrySet()) {
-      var node = nodeAndSignature.getKey();
-      var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
-          ConsensusHasher.toHash(
-              ledgerProof.getOpaque(), ledgerProof.getHeader(), signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-        return false;
-      }
-    }
-
-    return true;
+  public void stop() {
+    this.moduleRunners.forEach(ModuleRunner::stop);
   }
 }

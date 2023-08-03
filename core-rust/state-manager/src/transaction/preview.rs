@@ -1,4 +1,4 @@
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use radix_engine::transaction::{PreviewError, TransactionReceipt, TransactionResult};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use std::ops::{Deref, Range};
@@ -112,15 +112,21 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 mod tests {
     use crate::jni::rust_global_context::{RadixNode, RadixNodeConfig};
     use crate::PreviewRequest;
+    use node_common::locks::LockFactory;
     use prometheus::Registry;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
+        let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
-        let radix_node =
-            RadixNode::new(RadixNodeConfig::new_for_testing(), None, &metrics_registry);
+        let radix_node = RadixNode::new(
+            RadixNodeConfig::new_for_testing(),
+            None,
+            &lock_factory,
+            &metrics_registry,
+        );
 
         radix_node.state_manager.execute_genesis_for_unit_tests();
 

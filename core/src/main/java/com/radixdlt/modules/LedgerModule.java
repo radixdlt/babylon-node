@@ -66,26 +66,19 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.LedgerExtension;
 import com.radixdlt.ledger.StateComputerLedger;
-import java.util.Comparator;
 
 /** Module which manages ledger state and synchronization of updates to ledger state */
 public class LedgerModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(Ledger.class).to(StateComputerLedger.class);
-    bind(new TypeLiteral<Comparator<LedgerProof>>() {})
-        .to(OrderByEpochAndVersionComparator.class)
-        .in(Scopes.SINGLETON);
     bind(StateComputerLedger.class).in(Scopes.SINGLETON);
   }
 

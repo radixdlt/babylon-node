@@ -62,44 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync.validation;
+package com.radixdlt.rustglobalcontext;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusHasher;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.crypto.Hasher;
-import java.util.Map.Entry;
-import java.util.Objects;
+/**
+ * A handler of fatal Rust panics, responsible for graceful shutdown of a Node. In production, this
+ * currently means invoking a Java shutdown (i.e. running shutdown hooks and terminating the host
+ * process). In tests, this should cause a test failure, <b>without</b> terminating the process (in
+ * order to properly report the test result to the test infra).
+ */
+public interface FatalPanicHandler {
 
-/** Verifies the signatures in a sync response */
-public final class RemoteSyncResponseSignaturesVerifier {
-
-  private final Hasher hasher;
-  private final HashVerifier hashVerifier;
-
-  @Inject
-  public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
-    this.hasher = Objects.requireNonNull(hasher);
-    this.hashVerifier = Objects.requireNonNull(hashVerifier);
-  }
-
-  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    var signatures = ledgerProof.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
-        signatures.entrySet()) {
-      var node = nodeAndSignature.getKey();
-      var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
-          ConsensusHasher.toHash(
-              ledgerProof.getOpaque(), ledgerProof.getHeader(), signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-        return false;
-      }
-    }
-
-    return true;
-  }
+  /** Handles a fatal panic. */
+  void handleFatalPanic();
 }

@@ -85,7 +85,7 @@ use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddres
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use parking_lot::{Mutex, RwLock};
+use node_common::locks::{LockFactory, Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
@@ -135,7 +135,8 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
         execution_configurator: Arc<ExecutionConfigurator>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         logging_config: LoggingConfig,
-        metric_registry: &Registry,
+        metrics_registry: &Registry,
+        lock_factory: &LockFactory,
     ) -> StateManager<S> {
         let transaction_root = store.read().get_top_ledger_hashes().1.transaction_root;
 
@@ -144,7 +145,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             .get(&ConfigType::Regular)
             .unwrap();
         let committed_transactions_metrics =
-            CommittedTransactionsMetrics::new(metric_registry, regular_execution_config);
+            CommittedTransactionsMetrics::new(metrics_registry, regular_execution_config);
 
         StateManager {
             network: network.clone(),
@@ -152,12 +153,14 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             mempool_manager,
             execution_configurator,
             pending_transaction_result_cache,
-            execution_cache: parking_lot::const_mutex(ExecutionCache::new(transaction_root)),
+            execution_cache: lock_factory
+                .named("execution_cache")
+                .new_mutex(ExecutionCache::new(transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
-            vertex_prepare_metrics: VertexPrepareMetrics::new(metric_registry),
+            vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
-            ledger_metrics: LedgerMetrics::new(metric_registry),
+            ledger_metrics: LedgerMetrics::new(metrics_registry),
             committed_transactions_metrics,
         }
     }
@@ -1241,6 +1244,7 @@ mod tests {
     use crate::jni::rust_global_context::{JavaVertexLimitsConfig, RadixNode, RadixNodeConfig};
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
     use crate::{LedgerProof, PrepareRequest, PrepareResult, RoundHistory};
+    use node_common::locks::LockFactory;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
     use radix_engine_common::types::{Epoch, Round};
@@ -1333,13 +1337,14 @@ mod tests {
     fn setup_state_manager(
         vertex_limits_config: JavaVertexLimitsConfig,
     ) -> (LedgerProof, RadixNode) {
+        let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
 
         let config = RadixNodeConfig {
             vertex_limits_config: Some(vertex_limits_config),
             ..RadixNodeConfig::new_for_testing()
         };
-        let radix_node = RadixNode::new(config, None, &metrics_registry);
+        let radix_node = RadixNode::new(config, None, &lock_factory, &metrics_registry);
 
         let proof = radix_node.state_manager.execute_genesis_for_unit_tests();
 

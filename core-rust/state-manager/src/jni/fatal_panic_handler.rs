@@ -62,44 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync.validation;
+use jni::errors::Result;
+use jni::objects::{GlobalRef, JObject};
+use jni::{JNIEnv, JavaVM};
+use std::ops::Deref;
+use tracing::error;
+use transaction::prelude::*;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusHasher;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.crypto.Hasher;
-import java.util.Map.Entry;
-import java.util.Objects;
+/// An interface for notifying Java about a fatal panic.
+pub struct FatalPanicHandler {
+    jvm: JavaVM,
+    j_rust_global_context_ref: GlobalRef,
+}
 
-/** Verifies the signatures in a sync response */
-public final class RemoteSyncResponseSignaturesVerifier {
+impl FatalPanicHandler {
+    /// Name of the "handle fatal panic" method on the Java side.
+    const HANDLE_METHOD_NAME: &'static str = "handleFatalPanic";
 
-  private final Hasher hasher;
-  private final HashVerifier hashVerifier;
+    /// The Java handler method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const HANDLE_METHOD_DESCRIPTOR: &'static str = "()V";
 
-  @Inject
-  public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
-    this.hasher = Objects.requireNonNull(hasher);
-    this.hashVerifier = Objects.requireNonNull(hashVerifier);
-  }
-
-  public boolean verifyResponseSignatures(LedgerProof ledgerProof) {
-    var signatures = ledgerProof.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
-        signatures.entrySet()) {
-      var node = nodeAndSignature.getKey();
-      var signature = nodeAndSignature.getValue();
-      final var voteDataHash =
-          ConsensusHasher.toHash(
-              ledgerProof.getOpaque(), ledgerProof.getHeader(), signature.timestamp(), hasher);
-      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-        return false;
-      }
+    /// Creates a long-lived handler from the given short-lived JNI context and Java state manager
+    /// reference.
+    pub fn new(env: &JNIEnv, j_rust_global_context: JObject) -> Result<Self> {
+        Ok(Self {
+            jvm: env.get_java_vm()?,
+            j_rust_global_context_ref: env.new_global_ref(j_rust_global_context)?,
+        })
     }
 
-    return true;
-  }
+    /// Calls the Java handler of fatal Rust panics.
+    /// Any `Err` will be logged and ignored.
+    /// Any Java exception will be left untouched - which means: if the current thread originates
+    /// from Java (i.e. went through JNI), then the exception will continue to propagate after
+    /// returning back to Java.
+    pub fn handle_fatal_panic(&self) {
+        if let Err(error) = self.call_java_fatal_panic_handler() {
+            error!("failed to call Java fatal panic handler: {:?}", error);
+        }
+    }
+
+    fn call_java_fatal_panic_handler(&self) -> Result<()> {
+        let attachment = self.jvm.attach_current_thread()?;
+        let env = attachment.deref();
+        let j_rust_global_context = self.j_rust_global_context_ref.as_obj();
+        let result = env.call_method(
+            j_rust_global_context,
+            FatalPanicHandler::HANDLE_METHOD_NAME,
+            FatalPanicHandler::HANDLE_METHOD_DESCRIPTOR,
+            &[],
+        );
+        result.map(|_| ())
+    }
 }

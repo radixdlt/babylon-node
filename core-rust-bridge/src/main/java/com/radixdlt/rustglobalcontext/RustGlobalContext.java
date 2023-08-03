@@ -85,11 +85,14 @@ public final class RustGlobalContext implements AutoCloseable {
   private final long rustRustGlobalContextPointer = 0;
 
   private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
+  private final FatalPanicHandler fatalPanicHandler;
 
   public RustGlobalContext(
       MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+      FatalPanicHandler fatalPanicHandler,
       RadixNodeConfig config) {
     this.mempoolRelayDispatcher = mempoolRelayDispatcher;
+    this.fatalPanicHandler = fatalPanicHandler;
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     init(this, encodedConfig);
@@ -112,6 +115,17 @@ public final class RustGlobalContext implements AutoCloseable {
   public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
     this.mempoolRelayDispatcher.dispatchRelay(
         RawNotarizedTransaction.create(notarizedTransactionPayload));
+  }
+
+  /**
+   * Delegates the handling of a fatal Rust panic (e.g. happening while any write lock is held).
+   * This method is called from Rust via JNI. In production, it is critical to shut down the Node's
+   * process gracefully (which must be driven by the "host" Java side) in such case, to avoid data
+   * corruption.
+   */
+  @SuppressWarnings("unused")
+  public void handleFatalPanic() {
+    this.fatalPanicHandler.handleFatalPanic();
   }
 
   private static native void init(RustGlobalContext rustGlobalContext, byte[] config);

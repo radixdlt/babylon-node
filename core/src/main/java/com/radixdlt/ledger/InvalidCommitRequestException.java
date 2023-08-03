@@ -71,7 +71,15 @@ import com.radixdlt.statecomputer.commit.InvalidCommitRequestError;
  * consistent (e.g. non-parseable or non-committable transactions, ledger proof mismatches).
  */
 public class InvalidCommitRequestException extends RuntimeException {
+
+  private final InvalidCommitRequestError error;
+
   public InvalidCommitRequestException(InvalidCommitRequestError error) {
     super(error.toString());
+    this.error = error;
+  }
+
+  public InvalidCommitRequestError getError() {
+    return error;
   }
 }
