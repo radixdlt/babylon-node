@@ -69,6 +69,7 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
@@ -151,6 +152,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
       TimeSupplier timeSupplier,
       ProposerElection proposerElection,
       Metrics metrics,
+      Addressing addressing,
       EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
       ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
           timeoutQuorumDelayedResolutionDispatcher,
@@ -192,6 +194,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
         .validatorSet(config.getValidatorSet())
         .timeSupplier(timeSupplier)
         .metrics(metrics)
+        .addressing(addressing)
         .proposerElection(proposerElection)
         .build();
   }

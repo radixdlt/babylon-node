@@ -359,6 +359,7 @@ public class EpochsConsensusModule extends AbstractModule {
       HashVerifier verifier,
       TimeSupplier timeSupplier,
       Metrics metrics,
+      Addressing addressing,
       EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
       ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>
           timeoutQuorumDelayedResolutionDispatcher,
@@ -403,6 +404,7 @@ public class EpochsConsensusModule extends AbstractModule {
             .timeSupplier(timeSupplier)
             .proposerElection(proposerElection)
             .metrics(metrics)
+            .addressing(addressing)
             .build();
   }
 
