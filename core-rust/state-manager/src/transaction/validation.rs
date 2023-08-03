@@ -1,4 +1,4 @@
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use radix_engine::errors::RejectionError;
 use std::ops::Deref;
 use std::sync::Arc;

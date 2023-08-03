@@ -62,48 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation;
+use jni::errors::Result;
+use jni::objects::{GlobalRef, JObject};
+use jni::{JNIEnv, JavaVM};
+use std::ops::Deref;
+use tracing::error;
+use transaction::prelude::*;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.statemanager.FatalPanicHandler;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.Random;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+/// An interface for notifying Java about a fatal panic.
+pub struct FatalPanicHandler {
+    jvm: JavaVM,
+    j_state_manager_ref: GlobalRef,
+}
 
-public class MockedSystemModule extends AbstractModule {
-  final Random sharedRandom = new Random();
+impl FatalPanicHandler {
+    /// Name of the "handle fatal panic" method on the Java side.
+    const HANDLE_METHOD_NAME: &'static str = "handleFatalPanic";
 
-  @Override
-  public void configure() {
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-    bind(Random.class).toInstance(sharedRandom);
-    bind(FatalPanicHandler.class).to(ModuleRunnerStoppingHandler.class);
-  }
+    /// The Java handler method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const HANDLE_METHOD_DESCRIPTOR: &'static str = "()V";
 
-  public static class ModuleRunnerStoppingHandler implements FatalPanicHandler {
-
-    private static final Logger log = LogManager.getLogger();
-
-    // Note: the stopper references all modules, and the fatal panic handler is referenced by one of
-    // these modules - hence a provider indirection is needed to break the circular dependency.
-    private final Provider<ModuleRunnerStopper> stopper;
-
-    @Inject
-    public ModuleRunnerStoppingHandler(Provider<ModuleRunnerStopper> stopper) {
-      this.stopper = stopper;
+    /// Creates a long-lived handler from the given short-lived JNI context and Java state manager
+    /// reference.
+    pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
+        Ok(Self {
+            jvm: env.get_java_vm()?,
+            j_state_manager_ref: env.new_global_ref(j_state_manager)?,
+        })
     }
 
-    @Override
-    public void handleFatalPanic() {
-      log.error(
-          """
-          A fatal Rust panic (e.g. while holding a write lock) happened; stopping the Node modules.
-          The current test should fail as if the tested Node was shut down gracefully.
-          """);
-      this.stopper.get().stop();
+    /// Calls the Java handler of fatal Rust panics.
+    /// Any `Err` will be logged and ignored.
+    /// Any Java exception will be left untouched - which means: if the current thread originates
+    /// from Java (i.e. went through JNI), then the exception will continue to propagate after
+    /// returning back to Java.
+    pub fn handle_fatal_panic(&self) {
+        if let Err(error) = self.call_java_fatal_panic_handler() {
+            error!("failed to call Java fatal panic handler: {:?}", error);
+        }
     }
-  }
+
+    fn call_java_fatal_panic_handler(&self) -> Result<()> {
+        let attachment = self.jvm.attach_current_thread()?;
+        let env = attachment.deref();
+        let j_state_manager = self.j_state_manager_ref.as_obj();
+        let result = env.call_method(
+            j_state_manager,
+            FatalPanicHandler::HANDLE_METHOD_NAME,
+            FatalPanicHandler::HANDLE_METHOD_DESCRIPTOR,
+            &[],
+        );
+        result.map(|_| ())
+    }
 }

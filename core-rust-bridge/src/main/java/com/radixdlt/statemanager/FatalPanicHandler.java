@@ -62,48 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation;
+package com.radixdlt.statemanager;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.statemanager.FatalPanicHandler;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.Random;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+/**
+ * A handler of fatal Rust panics, responsible for graceful shutdown of a Node. In production, this
+ * currently means invoking a Java shutdown (i.e. running shutdown hooks and terminating the host
+ * process). In tests, this should cause a test failure, <b>without</b> terminating the process (in
+ * order to properly report the test result to the test infra).
+ */
+public interface FatalPanicHandler {
 
-public class MockedSystemModule extends AbstractModule {
-  final Random sharedRandom = new Random();
-
-  @Override
-  public void configure() {
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-    bind(Random.class).toInstance(sharedRandom);
-    bind(FatalPanicHandler.class).to(ModuleRunnerStoppingHandler.class);
-  }
-
-  public static class ModuleRunnerStoppingHandler implements FatalPanicHandler {
-
-    private static final Logger log = LogManager.getLogger();
-
-    // Note: the stopper references all modules, and the fatal panic handler is referenced by one of
-    // these modules - hence a provider indirection is needed to break the circular dependency.
-    private final Provider<ModuleRunnerStopper> stopper;
-
-    @Inject
-    public ModuleRunnerStoppingHandler(Provider<ModuleRunnerStopper> stopper) {
-      this.stopper = stopper;
-    }
-
-    @Override
-    public void handleFatalPanic() {
-      log.error(
-          """
-          A fatal Rust panic (e.g. while holding a write lock) happened; stopping the Node modules.
-          The current test should fail as if the tested Node was shut down gracefully.
-          """);
-      this.stopper.get().stop();
-    }
-  }
+  /** Handles a fatal panic. */
+  void handleFatalPanic();
 }

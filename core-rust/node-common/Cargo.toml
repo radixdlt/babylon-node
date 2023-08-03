@@ -19,7 +19,7 @@ utils = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
-parking_lot = { workspace = true }
+parking_lot = { version = "0.12" }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 bech32 = { version = "0.9.0", default-features = false }
