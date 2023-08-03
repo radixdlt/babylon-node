@@ -693,8 +693,8 @@ where
         let initial_config = ConsensusManagerConfig {
             max_validators: 10,
             epoch_change_condition: EpochChangeCondition {
-                min_round_count: 1,
-                max_round_count: 1,
+                min_round_count: 3,
+                max_round_count: 3,
                 target_duration_millis: 0,
             },
             num_unstake_epochs: 1,
@@ -1232,4 +1232,273 @@ struct PendingTransactionResult {
     pub notarized_transaction_hash: NotarizedTransactionHash,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<RejectionReason>,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ops::Deref;
+
+    use crate::jni::rust_global_context::{JavaVertexLimitsConfig, RadixNode, RadixNodeConfig};
+    use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
+    use crate::{LedgerProof, PrepareRequest, PrepareResult, RoundHistory};
+    use prometheus::Registry;
+    use radix_engine_common::prelude::NetworkDefinition;
+    use radix_engine_common::types::{Epoch, Round};
+    use transaction::builder::ManifestBuilder;
+    use transaction::prelude::*;
+
+    // TODO: maybe move/refactor testing infra as we add more Rust tests
+    fn build_unit_test_round_history(proof: &LedgerProof) -> RoundHistory {
+        RoundHistory {
+            is_fallback: false,
+            epoch: proof.ledger_header.epoch,
+            round: Round::of(proof.ledger_header.round.number() + 1),
+            gap_round_leader_addresses: Vec::new(),
+            proposer_address: proof
+                .ledger_header
+                .next_epoch
+                .clone()
+                .unwrap()
+                .validator_set[0]
+                .address,
+            proposer_timestamp_ms: proof.ledger_header.proposer_timestamp_ms,
+        }
+    }
+
+    fn build_unit_test_prepare_request(
+        proof: &LedgerProof,
+        proposed_transactions: Vec<RawNotarizedTransaction>,
+    ) -> PrepareRequest {
+        PrepareRequest {
+            committed_ledger_hashes: proof.ledger_header.hashes,
+            ancestor_transactions: Vec::new(),
+            ancestor_ledger_hashes: proof.ledger_header.hashes,
+            proposed_transactions,
+            round_history: build_unit_test_round_history(proof),
+        }
+    }
+
+    fn build_committable_transaction(epoch: Epoch, nonce: u32) -> RawNotarizedTransaction {
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let notary_private_key = Secp256k1PrivateKey::from_u64(2).unwrap();
+
+        TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: epoch,
+                end_epoch_exclusive: epoch.after(100),
+                nonce,
+                notary_public_key: notary_private_key.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .get_free_xrd_from_faucet()
+                    .try_deposit_batch_or_abort(ComponentAddress::virtual_account_from_public_key(
+                        &sig_1_private_key.public_key(),
+                    ))
+                    .build(),
+            )
+            .sign(&sig_1_private_key)
+            .notarize(&notary_private_key)
+            .build()
+            .to_raw()
+            .unwrap()
+    }
+
+    fn build_rejected_transaction(epoch: Epoch, nonce: u32) -> RawNotarizedTransaction {
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let notary_private_key = Secp256k1PrivateKey::from_u64(2).unwrap();
+
+        TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: epoch,
+                end_epoch_exclusive: epoch.after(100),
+                nonce,
+                notary_public_key: notary_private_key.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(ManifestBuilder::new().get_free_xrd_from_faucet().build())
+            .sign(&sig_1_private_key)
+            .notarize(&notary_private_key)
+            .build()
+            .to_raw()
+            .unwrap()
+    }
+
+    fn setup_state_manager(
+        vertex_limits_config: JavaVertexLimitsConfig,
+    ) -> (LedgerProof, RadixNode) {
+        let metrics_registry = Registry::new();
+
+        let config = RadixNodeConfig {
+            vertex_limits_config: Some(vertex_limits_config),
+            ..RadixNodeConfig::new_for_testing()
+        };
+        let radix_node = RadixNode::new(config, None, &metrics_registry);
+
+        let proof = radix_node.state_manager.execute_genesis_for_unit_tests();
+
+        (proof, radix_node)
+    }
+
+    fn prepare_with_vertex_limits(
+        vertex_limits_config: JavaVertexLimitsConfig,
+        proposed_transactions: Vec<RawNotarizedTransaction>,
+    ) -> PrepareResult {
+        let (proof, radix_node) = setup_state_manager(vertex_limits_config);
+        radix_node
+            .state_manager
+            .prepare(build_unit_test_prepare_request(
+                &proof,
+                proposed_transactions,
+            ))
+    }
+
+    fn no_limit() -> JavaVertexLimitsConfig {
+        JavaVertexLimitsConfig {
+            max_total_transactions_size: u32::MAX,
+            max_transaction_count: u32::MAX,
+            max_total_execution_cost_units_consumed: u32::MAX,
+        }
+    }
+
+    fn compute_consumed_execution_units(
+        radix_node: &RadixNode,
+        prepare_request: PrepareRequest,
+    ) -> u32 {
+        let read_store = radix_node.state_manager.store.read();
+        let mut series_executor = radix_node
+            .state_manager
+            .start_series_execution(read_store.deref());
+
+        let round_update = RoundUpdateTransactionV1::new(
+            series_executor.epoch_header(),
+            &prepare_request.round_history,
+        );
+        let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
+        let validated_round_update = radix_node
+            .state_manager
+            .ledger_transaction_validator
+            .validate_user_or_round_update_from_model(&ledger_round_update)
+            .expect("expected to be able to prepare the round update transaction");
+
+        let round_update_result = series_executor
+            .execute_and_update_state(&validated_round_update, "cost computation - round update")
+            .expect("round update rejected");
+
+        prepare_request
+            .proposed_transactions
+            .iter()
+            .filter_map(|raw_user_transaction| {
+                let (_, prepared_transaction) = radix_node
+                    .state_manager
+                    .try_prepare_ledger_transaction_from_user_transaction(raw_user_transaction)
+                    .unwrap();
+
+                let validated = radix_node
+                    .state_manager
+                    .ledger_transaction_validator
+                    .validate_user_or_round_update(prepared_transaction)
+                    .unwrap();
+
+                let execute_result =
+                    series_executor.execute_and_update_state(&validated, "cost computation");
+
+                execute_result.ok().map(|result| {
+                    result
+                        .local_receipt
+                        .local_execution
+                        .execution_metrics
+                        .execution_cost_units_consumed
+                })
+            })
+            .sum::<u32>()
+            + round_update_result
+                .local_receipt
+                .local_execution
+                .execution_metrics
+                .execution_cost_units_consumed
+    }
+
+    #[test]
+    fn test_prepare_vertex_limits() {
+        let (proof, radix_node) = setup_state_manager(no_limit());
+
+        let mut proposed_transactions = Vec::new();
+        let epoch = proof.ledger_header.epoch;
+        proposed_transactions.push(build_committable_transaction(epoch, 1));
+        proposed_transactions.push(build_committable_transaction(epoch, 2));
+        proposed_transactions.push(build_rejected_transaction(epoch, 1));
+        proposed_transactions.push(build_committable_transaction(epoch, 3));
+        proposed_transactions.push(build_committable_transaction(epoch, 4));
+        proposed_transactions.push(build_rejected_transaction(epoch, 2));
+        proposed_transactions.push(build_committable_transaction(epoch, 5));
+        proposed_transactions.push(build_rejected_transaction(epoch, 3));
+        proposed_transactions.push(build_committable_transaction(epoch, 6));
+        proposed_transactions.push(build_committable_transaction(epoch, 7));
+        proposed_transactions.push(build_rejected_transaction(epoch, 4));
+        proposed_transactions.push(build_committable_transaction(epoch, 8));
+        proposed_transactions.push(build_committable_transaction(epoch, 9));
+        proposed_transactions.push(build_rejected_transaction(epoch, 5));
+
+        let prepare_result = radix_node
+            .state_manager
+            .prepare(build_unit_test_prepare_request(
+                &proof,
+                proposed_transactions.clone(),
+            ));
+        assert_eq!(prepare_result.committed.len(), 10); // 9 committable transactions + 1 round update transaction
+        assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions
+
+        let prepare_result = prepare_with_vertex_limits(
+            JavaVertexLimitsConfig {
+                max_transaction_count: 6,
+                ..no_limit()
+            },
+            proposed_transactions.clone(),
+        );
+
+        assert_eq!(prepare_result.committed.len(), 6); // same as the limit
+                                                       // only first 7 (5 committable) transactions are executed before the limit is hit, at which point we have encountered only 2 rejected transactions
+        assert_eq!(prepare_result.rejected.len(), 2);
+
+        let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
+
+        // We now compute PrepareResult only for the first 7 transactions in order to test that indeed resultant states are the same.
+        let prepare_result =
+            prepare_with_vertex_limits(no_limit(), proposed_transactions.clone()[0..7].to_vec());
+        assert_eq!(prepare_result.committed.len(), 6);
+        assert_eq!(prepare_result.rejected.len(), 2);
+        assert_eq!(prepare_result.ledger_hashes, limited_proposal_ledger_hashes);
+
+        // Transaction size/count only tests `check_pre_execution`. We also need to test `try_next_transaction`.
+        let cost_for_first_9_user_transactions = compute_consumed_execution_units(
+            &setup_state_manager(no_limit()).1,
+            build_unit_test_prepare_request(&proof, proposed_transactions.clone()[0..9].to_vec()),
+        );
+        let prepare_result = prepare_with_vertex_limits(
+            JavaVertexLimitsConfig {
+                // We add an extra cost unit in order to not trigger the LimitExceeded right at 9th transaction.
+                max_total_execution_cost_units_consumed: cost_for_first_9_user_transactions + 1,
+                ..no_limit()
+            },
+            proposed_transactions.clone(),
+        );
+        assert_eq!(prepare_result.committed.len(), 7); // in the first 9 proposed transactions we have 6 that gets committed + 1 round update transaction
+        assert_eq!(prepare_result.rejected.len(), 4); // 3 rejected transactions + last one that is committable but gets discarded due to limits
+
+        let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
+        let prepare_result =
+            prepare_with_vertex_limits(no_limit(), proposed_transactions.clone()[0..9].to_vec());
+
+        // Should be identical to previous prepare run (cost limited)
+        assert_eq!(prepare_result.committed.len(), 7);
+        assert_eq!(prepare_result.rejected.len(), 3);
+        assert_eq!(prepare_result.ledger_hashes, limited_proposal_ledger_hashes);
+    }
 }
