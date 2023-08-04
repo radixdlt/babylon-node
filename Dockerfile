@@ -227,6 +227,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - libssl-dev is needed for encryption methods used in the keystore.ks
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
+# - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.7+7-1~deb11u1 \
@@ -234,6 +235,7 @@ RUN apt-get update -y \
     daemontools=1:0.76-7 \
     libssl-dev=1.1.1n-0+deb11u5 \
     software-properties-common=0.96.20.2-2.1 \
+    curl=7.74.0-1.3+deb11u7 \
     gettext-base=0.21-4 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
