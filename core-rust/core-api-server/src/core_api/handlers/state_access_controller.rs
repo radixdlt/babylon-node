@@ -2,6 +2,7 @@ use crate::core_api::*;
 
 use radix_engine::types::*;
 use state_manager::query::dump_component_state;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::component_dump_to_vaults_and_nodes;
@@ -44,6 +45,7 @@ pub(crate) async fn handle_state_access_controller(
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateAccessControllerResponse {
+        state_version: to_api_state_version(database.max_state_version())?,
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_substate,

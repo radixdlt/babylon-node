@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateResourceResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     #[serde(rename = "manager")]
     pub manager: Option<crate::core_api::generated::models::StateResourceManager>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
@@ -20,8 +22,9 @@ pub struct StateResourceResponse {
 }
 
 impl StateResourceResponse {
-    pub fn new(manager: crate::core_api::generated::models::StateResourceManager, owner_role: crate::core_api::generated::models::Substate) -> StateResourceResponse {
+    pub fn new(state_version: i64, manager: crate::core_api::generated::models::StateResourceManager, owner_role: crate::core_api::generated::models::Substate) -> StateResourceResponse {
         StateResourceResponse {
+            state_version,
             manager: Option::Some(manager),
             owner_role: Option::Some(owner_role),
         }

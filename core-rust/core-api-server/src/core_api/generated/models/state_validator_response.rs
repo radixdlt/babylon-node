@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateValidatorResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
@@ -29,8 +31,9 @@ pub struct StateValidatorResponse {
 }
 
 impl StateValidatorResponse {
-    pub fn new(address: String, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
+    pub fn new(state_version: i64, address: String, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
         StateValidatorResponse {
+            state_version,
             address,
             state: Option::Some(state),
             owner_role: Option::Some(owner_role),

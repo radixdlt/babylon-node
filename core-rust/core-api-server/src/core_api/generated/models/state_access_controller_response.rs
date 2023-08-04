@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateAccessControllerResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     #[serde(rename = "state")]
     pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
@@ -26,8 +28,9 @@ pub struct StateAccessControllerResponse {
 }
 
 impl StateAccessControllerResponse {
-    pub fn new(state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateAccessControllerResponse {
+    pub fn new(state_version: i64, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateAccessControllerResponse {
         StateAccessControllerResponse {
+            state_version,
             state: Option::Some(state),
             owner_role: Option::Some(owner_role),
             vaults,

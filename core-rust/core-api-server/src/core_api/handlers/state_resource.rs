@@ -2,6 +2,7 @@ use crate::core_api::*;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use radix_engine_common::types::EntityType;
@@ -77,6 +78,7 @@ pub(crate) async fn handle_state_resource(
     )?;
 
     Ok(models::StateResourceResponse {
+        state_version: to_api_state_version(database.max_state_version())?,
         manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

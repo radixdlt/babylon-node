@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateConsensusManagerResponse
  */
 @JsonPropertyOrder({
+  StateConsensusManagerResponse.JSON_PROPERTY_STATE_VERSION,
   StateConsensusManagerResponse.JSON_PROPERTY_CONFIG,
   StateConsensusManagerResponse.JSON_PROPERTY_STATE,
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_PROPOSAL_STATISTIC,
@@ -41,6 +42,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateConsensusManagerResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_CONFIG = "config";
   private Substate config;
 
@@ -61,6 +65,34 @@ public class StateConsensusManagerResponse {
 
   public StateConsensusManagerResponse() { 
   }
+
+  public StateConsensusManagerResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateConsensusManagerResponse config(Substate config) {
     this.config = config;
@@ -230,7 +262,8 @@ public class StateConsensusManagerResponse {
       return false;
     }
     StateConsensusManagerResponse stateConsensusManagerResponse = (StateConsensusManagerResponse) o;
-    return Objects.equals(this.config, stateConsensusManagerResponse.config) &&
+    return Objects.equals(this.stateVersion, stateConsensusManagerResponse.stateVersion) &&
+        Objects.equals(this.config, stateConsensusManagerResponse.config) &&
         Objects.equals(this.state, stateConsensusManagerResponse.state) &&
         Objects.equals(this.currentProposalStatistic, stateConsensusManagerResponse.currentProposalStatistic) &&
         Objects.equals(this.currentValidatorSet, stateConsensusManagerResponse.currentValidatorSet) &&
@@ -240,13 +273,14 @@ public class StateConsensusManagerResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
+    return Objects.hash(stateVersion, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateConsensusManagerResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    config: ").append(toIndentedString(config)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    currentProposalStatistic: ").append(toIndentedString(currentProposalStatistic)).append("\n");

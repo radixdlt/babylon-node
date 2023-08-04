@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateValidatorResponse
  */
 @JsonPropertyOrder({
+  StateValidatorResponse.JSON_PROPERTY_STATE_VERSION,
   StateValidatorResponse.JSON_PROPERTY_ADDRESS,
   StateValidatorResponse.JSON_PROPERTY_STATE,
   StateValidatorResponse.JSON_PROPERTY_OWNER_ROLE,
@@ -44,6 +45,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateValidatorResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_ADDRESS = "address";
   private String address;
 
@@ -61,6 +65,34 @@ public class StateValidatorResponse {
 
   public StateValidatorResponse() { 
   }
+
+  public StateValidatorResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateValidatorResponse address(String address) {
     this.address = address;
@@ -214,7 +246,8 @@ public class StateValidatorResponse {
       return false;
     }
     StateValidatorResponse stateValidatorResponse = (StateValidatorResponse) o;
-    return Objects.equals(this.address, stateValidatorResponse.address) &&
+    return Objects.equals(this.stateVersion, stateValidatorResponse.stateVersion) &&
+        Objects.equals(this.address, stateValidatorResponse.address) &&
         Objects.equals(this.state, stateValidatorResponse.state) &&
         Objects.equals(this.ownerRole, stateValidatorResponse.ownerRole) &&
         Objects.equals(this.vaults, stateValidatorResponse.vaults) &&
@@ -223,13 +256,14 @@ public class StateValidatorResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, state, ownerRole, vaults, descendentNodes);
+    return Objects.hash(stateVersion, address, state, ownerRole, vaults, descendentNodes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateValidatorResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");

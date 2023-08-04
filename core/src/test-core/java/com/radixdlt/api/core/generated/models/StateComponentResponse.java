@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateComponentResponse
  */
 @JsonPropertyOrder({
+  StateComponentResponse.JSON_PROPERTY_STATE_VERSION,
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
@@ -45,6 +46,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateComponentResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
@@ -65,6 +69,34 @@ public class StateComponentResponse {
 
   public StateComponentResponse() { 
   }
+
+  public StateComponentResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateComponentResponse info(Substate info) {
     this.info = info;
@@ -244,7 +276,8 @@ public class StateComponentResponse {
       return false;
     }
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
-    return Objects.equals(this.info, stateComponentResponse.info) &&
+    return Objects.equals(this.stateVersion, stateComponentResponse.stateVersion) &&
+        Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
         Objects.equals(this.ownerRole, stateComponentResponse.ownerRole) &&
@@ -254,13 +287,14 @@ public class StateComponentResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
+    return Objects.hash(stateVersion, info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateComponentResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");

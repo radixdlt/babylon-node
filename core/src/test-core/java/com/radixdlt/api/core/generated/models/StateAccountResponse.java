@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateAccountResponse
  */
 @JsonPropertyOrder({
+  StateAccountResponse.JSON_PROPERTY_STATE_VERSION,
   StateAccountResponse.JSON_PROPERTY_INFO,
   StateAccountResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccountResponse.JSON_PROPERTY_STATE,
@@ -42,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateAccountResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
@@ -56,6 +60,34 @@ public class StateAccountResponse {
 
   public StateAccountResponse() { 
   }
+
+  public StateAccountResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateAccountResponse info(Substate info) {
     this.info = info;
@@ -178,7 +210,8 @@ public class StateAccountResponse {
       return false;
     }
     StateAccountResponse stateAccountResponse = (StateAccountResponse) o;
-    return Objects.equals(this.info, stateAccountResponse.info) &&
+    return Objects.equals(this.stateVersion, stateAccountResponse.stateVersion) &&
+        Objects.equals(this.info, stateAccountResponse.info) &&
         Objects.equals(this.ownerRole, stateAccountResponse.ownerRole) &&
         Objects.equals(this.state, stateAccountResponse.state) &&
         Objects.equals(this.vaults, stateAccountResponse.vaults);
@@ -186,13 +219,14 @@ public class StateAccountResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, ownerRole, state, vaults);
+    return Objects.hash(stateVersion, info, ownerRole, state, vaults);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccountResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");

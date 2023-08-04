@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StatePackageResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     #[serde(rename = "owner_role")]
     pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "royalty", skip_serializing_if = "Option::is_none")]
@@ -20,8 +22,9 @@ pub struct StatePackageResponse {
 }
 
 impl StatePackageResponse {
-    pub fn new(owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
+    pub fn new(state_version: i64, owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
         StatePackageResponse {
+            state_version,
             owner_role: Option::Some(owner_role),
             royalty: None,
         }

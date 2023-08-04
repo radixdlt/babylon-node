@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateConsensusManagerResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     #[serde(rename = "config")]
     pub config: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "state")]
@@ -28,8 +30,9 @@ pub struct StateConsensusManagerResponse {
 }
 
 impl StateConsensusManagerResponse {
-    pub fn new(config: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, current_proposal_statistic: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate, current_time: crate::core_api::generated::models::Substate, current_time_rounded_to_minutes: crate::core_api::generated::models::Substate) -> StateConsensusManagerResponse {
+    pub fn new(state_version: i64, config: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, current_proposal_statistic: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate, current_time: crate::core_api::generated::models::Substate, current_time_rounded_to_minutes: crate::core_api::generated::models::Substate) -> StateConsensusManagerResponse {
         StateConsensusManagerResponse {
+            state_version,
             config: Option::Some(config),
             state: Option::Some(state),
             current_proposal_statistic: Option::Some(current_proposal_statistic),

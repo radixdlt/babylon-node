@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 use state_manager::query::{dump_component_state, VaultData};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_account(
@@ -51,6 +52,7 @@ pub(crate) async fn handle_state_account(
         .collect::<Result<Vec<_>, MappingError>>()?;
 
     Ok(models::StateAccountResponse {
+        state_version: to_api_state_version(database.max_state_version())?,
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

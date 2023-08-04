@@ -6253,6 +6253,7 @@ components:
     StateConsensusManagerResponse:
       type: object
       required:
+        - state_version
         - config
         - state
         - current_proposal_statistic
@@ -6260,6 +6261,9 @@ components:
         - current_time
         - current_time_rounded_to_minutes
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         config:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6289,11 +6293,15 @@ components:
     StateAccountResponse:
       type: object
       required:
+        - state_version
         - info
         - owner_role
         - state
         - vaults
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         info:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6332,6 +6340,7 @@ components:
     StateComponentResponse:
       type: object
       required:
+        - state_version
         - info
         - state
         - royalty_accumulator
@@ -6339,6 +6348,9 @@ components:
         - vaults
         - descendent_nodes
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         info:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6404,12 +6416,16 @@ components:
     StateValidatorResponse:
       type: object
       required:
+        - state_version
         - address
         - state
         - owner_role
         - vaults
         - descendent_nodes
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
@@ -6442,11 +6458,15 @@ components:
     StateAccessControllerResponse:
       type: object
       required:
+        - state_version
         - state
         - owner_role
         - vaults
         - descendent_nodes
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         state:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6478,9 +6498,13 @@ components:
     StateResourceResponse:
       type: object
       required:
+        - state_version
         - manager
         - owner_role
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         manager:
           $ref: "#/components/schemas/StateResourceManager"
         owner_role:
@@ -6543,8 +6567,12 @@ components:
     StateNonFungibleResponse:
       type: object
       required:
+        - state_version
         - non_fungible
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         non_fungible:
           $ref: "#/components/schemas/Substate"
 ###########################
@@ -6564,8 +6592,12 @@ components:
     StatePackageResponse:
       type: object
       required:
+        - state_version
         - owner_role
       properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The state version at which the query was performed.
         owner_role:
           $ref: "#/components/schemas/Substate"
         royalty:

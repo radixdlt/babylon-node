@@ -33,11 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateResourceResponse
  */
 @JsonPropertyOrder({
+  StateResourceResponse.JSON_PROPERTY_STATE_VERSION,
   StateResourceResponse.JSON_PROPERTY_MANAGER,
   StateResourceResponse.JSON_PROPERTY_OWNER_ROLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateResourceResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_MANAGER = "manager";
   private StateResourceManager manager;
 
@@ -46,6 +50,34 @@ public class StateResourceResponse {
 
   public StateResourceResponse() { 
   }
+
+  public StateResourceResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateResourceResponse manager(StateResourceManager manager) {
     this.manager = manager;
@@ -111,19 +143,21 @@ public class StateResourceResponse {
       return false;
     }
     StateResourceResponse stateResourceResponse = (StateResourceResponse) o;
-    return Objects.equals(this.manager, stateResourceResponse.manager) &&
+    return Objects.equals(this.stateVersion, stateResourceResponse.stateVersion) &&
+        Objects.equals(this.manager, stateResourceResponse.manager) &&
         Objects.equals(this.ownerRole, stateResourceResponse.ownerRole);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, ownerRole);
+    return Objects.hash(stateVersion, manager, ownerRole);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateResourceResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("}");

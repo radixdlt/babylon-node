@@ -2,6 +2,7 @@ use crate::core_api::*;
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::map_to_vault_balance;
@@ -60,6 +61,7 @@ pub(crate) async fn handle_state_component(
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
     Ok(models::StateComponentResponse {
+        state_version: to_api_state_version(database.max_state_version())?,
         info: Some(to_api_type_info_substate(
             &mapping_context,
             &type_info_substate,

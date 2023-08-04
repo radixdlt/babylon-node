@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -43,6 +44,7 @@ pub(crate) async fn handle_state_consensus_manager(
     )?;
 
     Ok(models::StateConsensusManagerResponse {
+        state_version: to_api_state_version(database.max_state_version())?,
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,

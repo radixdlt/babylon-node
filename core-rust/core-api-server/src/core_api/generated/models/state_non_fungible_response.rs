@@ -13,13 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateNonFungibleResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     #[serde(rename = "non_fungible")]
     pub non_fungible: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StateNonFungibleResponse {
-    pub fn new(non_fungible: crate::core_api::generated::models::Substate) -> StateNonFungibleResponse {
+    pub fn new(state_version: i64, non_fungible: crate::core_api::generated::models::Substate) -> StateNonFungibleResponse {
         StateNonFungibleResponse {
+            state_version,
             non_fungible: Option::Some(non_fungible),
         }
     }

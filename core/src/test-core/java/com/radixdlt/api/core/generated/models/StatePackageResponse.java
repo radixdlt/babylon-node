@@ -32,11 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StatePackageResponse
  */
 @JsonPropertyOrder({
+  StatePackageResponse.JSON_PROPERTY_STATE_VERSION,
   StatePackageResponse.JSON_PROPERTY_OWNER_ROLE,
   StatePackageResponse.JSON_PROPERTY_ROYALTY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StatePackageResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_OWNER_ROLE = "owner_role";
   private Substate ownerRole;
 
@@ -45,6 +49,34 @@ public class StatePackageResponse {
 
   public StatePackageResponse() { 
   }
+
+  public StatePackageResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StatePackageResponse ownerRole(Substate ownerRole) {
     this.ownerRole = ownerRole;
@@ -110,19 +142,21 @@ public class StatePackageResponse {
       return false;
     }
     StatePackageResponse statePackageResponse = (StatePackageResponse) o;
-    return Objects.equals(this.ownerRole, statePackageResponse.ownerRole) &&
+    return Objects.equals(this.stateVersion, statePackageResponse.stateVersion) &&
+        Objects.equals(this.ownerRole, statePackageResponse.ownerRole) &&
         Objects.equals(this.royalty, statePackageResponse.royalty);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ownerRole, royalty);
+    return Objects.hash(stateVersion, ownerRole, royalty);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StatePackageResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    royalty: ").append(toIndentedString(royalty)).append("\n");
     sb.append("}");

@@ -32,15 +32,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateNonFungibleResponse
  */
 @JsonPropertyOrder({
+  StateNonFungibleResponse.JSON_PROPERTY_STATE_VERSION,
   StateNonFungibleResponse.JSON_PROPERTY_NON_FUNGIBLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateNonFungibleResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
+
   public static final String JSON_PROPERTY_NON_FUNGIBLE = "non_fungible";
   private Substate nonFungible;
 
   public StateNonFungibleResponse() { 
   }
+
+  public StateNonFungibleResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+    return this;
+  }
+
+   /**
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getStateVersion() {
+    return stateVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
+
 
   public StateNonFungibleResponse nonFungible(Substate nonFungible) {
     this.nonFungible = nonFungible;
@@ -80,18 +112,20 @@ public class StateNonFungibleResponse {
       return false;
     }
     StateNonFungibleResponse stateNonFungibleResponse = (StateNonFungibleResponse) o;
-    return Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
+    return Objects.equals(this.stateVersion, stateNonFungibleResponse.stateVersion) &&
+        Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungible);
+    return Objects.hash(stateVersion, nonFungible);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateNonFungibleResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    nonFungible: ").append(toIndentedString(nonFungible)).append("\n");
     sb.append("}");
     return sb.toString();
