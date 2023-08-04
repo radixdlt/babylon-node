@@ -116,7 +116,7 @@ public final class BFTValidatorId {
 
   public String toSerializedString() {
     final var addressString = Bytes.toHexString(this.validatorAddress.value());
-    final var keyString = Bytes.toHexString(this.key.getCompressedBytes());
+    final var keyString = Bytes.toHexString(this.key.getBytes());
     return addressString + ":" + keyString;
   }
 
@@ -136,7 +136,7 @@ public final class BFTValidatorId {
   /** Only for use in tests */
   public static BFTValidatorId withKeyAndFakeDeterministicAddress(ECDSASecp256k1PublicKey key) {
     final var addressBytes = new byte[ComponentAddress.BYTE_LENGTH];
-    final var hashedKeyBytes = HashUtils.blake2b256(key.getCompressedBytes()).asBytes();
+    final var hashedKeyBytes = HashUtils.blake2b256(key.getBytes()).asBytes();
     System.arraycopy(hashedKeyBytes, 0, addressBytes, 0, addressBytes.length);
     addressBytes[0] = ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID;
     return create(ComponentAddress.create(addressBytes), key);

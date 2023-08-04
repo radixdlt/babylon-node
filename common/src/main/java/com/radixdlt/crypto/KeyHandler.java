@@ -124,6 +124,7 @@ interface KeyHandler {
    *
    * @param hash The hash to sign
    * @param privateKey The private key to sign the hash with
+   * @param publicKey Compressed public key bytes
    * @return An {@link ECDSASecp256k1Signature} with {@code r} and {@code s} values included
    */
   default ECDSASecp256k1Signature sign(byte[] hash, byte[] privateKey, byte[] publicKey) {

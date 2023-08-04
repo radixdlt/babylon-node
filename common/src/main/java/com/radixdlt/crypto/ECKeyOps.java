@@ -69,11 +69,12 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.math.ec.ECPoint;
 
 /** An interface used for actions that require access to node's private key */
 public interface ECKeyOps {
   /** Calculates an ECDH agreement using node's private key */
-  BigInteger ecdhAgreement(ECDSASecp256k1PublicKey publicKey);
+  BigInteger ecdhAgreement(ECPoint publicKeyPoint);
 
   /** Decrypts a message using node's private key */
   byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException;
@@ -84,13 +85,13 @@ public interface ECKeyOps {
   static ECKeyOps fromKeyPair(ECKeyPair keyPair) {
     return new ECKeyOps() {
       @Override
-      public BigInteger ecdhAgreement(ECDSASecp256k1PublicKey publicKey) {
+      public BigInteger ecdhAgreement(ECPoint publicKeyPoint) {
         final var agreement = new ECDHBasicAgreement();
         agreement.init(
             new ECPrivateKeyParameters(
                 new BigInteger(1, keyPair.getPrivateKey()), ECKeyUtils.domain()));
         return agreement.calculateAgreement(
-            new ECPublicKeyParameters(publicKey.getEcPoint(), ECKeyUtils.domain()));
+            new ECPublicKeyParameters(publicKeyPoint, ECKeyUtils.domain()));
       }
 
       @Override

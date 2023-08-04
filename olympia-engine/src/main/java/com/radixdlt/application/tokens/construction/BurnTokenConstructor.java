@@ -76,7 +76,7 @@ import java.nio.ByteBuffer;
 public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {
   @Override
   public void construct(BurnToken action, TxBuilder txBuilder) throws TxBuilderException {
-    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
     buf.put(action.fromAddr().getBytes());
