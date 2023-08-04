@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -33,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateConsensusManagerResponse.JSON_PROPERTY_STATE_VERSION,
+  StateConsensusManagerResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
   StateConsensusManagerResponse.JSON_PROPERTY_CONFIG,
   StateConsensusManagerResponse.JSON_PROPERTY_STATE,
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_PROPOSAL_STATISTIC,
@@ -44,6 +46,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class StateConsensusManagerResponse {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
+
+  public static final String JSON_PROPERTY_LEDGER_HEADER_SUMMARY = "ledger_header_summary";
+  private LedgerHeaderSummary ledgerHeaderSummary;
 
   public static final String JSON_PROPERTY_CONFIG = "config";
   private Substate config;
@@ -91,6 +96,32 @@ public class StateConsensusManagerResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
+  }
+
+
+  public StateConsensusManagerResponse ledgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
+    return this;
+  }
+
+   /**
+   * Get ledgerHeaderSummary
+   * @return ledgerHeaderSummary
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerHeaderSummary getLedgerHeaderSummary() {
+    return ledgerHeaderSummary;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
   }
 
 
@@ -263,6 +294,7 @@ public class StateConsensusManagerResponse {
     }
     StateConsensusManagerResponse stateConsensusManagerResponse = (StateConsensusManagerResponse) o;
     return Objects.equals(this.stateVersion, stateConsensusManagerResponse.stateVersion) &&
+        Objects.equals(this.ledgerHeaderSummary, stateConsensusManagerResponse.ledgerHeaderSummary) &&
         Objects.equals(this.config, stateConsensusManagerResponse.config) &&
         Objects.equals(this.state, stateConsensusManagerResponse.state) &&
         Objects.equals(this.currentProposalStatistic, stateConsensusManagerResponse.currentProposalStatistic) &&
@@ -273,7 +305,7 @@ public class StateConsensusManagerResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
+    return Objects.hash(stateVersion, ledgerHeaderSummary, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
   }
 
   @Override
@@ -281,6 +313,7 @@ public class StateConsensusManagerResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateConsensusManagerResponse {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
     sb.append("    config: ").append(toIndentedString(config)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    currentProposalStatistic: ").append(toIndentedString(currentProposalStatistic)).append("\n");

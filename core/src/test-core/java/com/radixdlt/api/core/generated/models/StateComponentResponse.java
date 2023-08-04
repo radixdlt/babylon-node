@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
 import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateComponentResponse.JSON_PROPERTY_STATE_VERSION,
+  StateComponentResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
@@ -48,6 +50,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class StateComponentResponse {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
+
+  public static final String JSON_PROPERTY_LEDGER_HEADER_SUMMARY = "ledger_header_summary";
+  private LedgerHeaderSummary ledgerHeaderSummary;
 
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
@@ -95,6 +100,32 @@ public class StateComponentResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
+  }
+
+
+  public StateComponentResponse ledgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
+    return this;
+  }
+
+   /**
+   * Get ledgerHeaderSummary
+   * @return ledgerHeaderSummary
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerHeaderSummary getLedgerHeaderSummary() {
+    return ledgerHeaderSummary;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
   }
 
 
@@ -277,6 +308,7 @@ public class StateComponentResponse {
     }
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
     return Objects.equals(this.stateVersion, stateComponentResponse.stateVersion) &&
+        Objects.equals(this.ledgerHeaderSummary, stateComponentResponse.ledgerHeaderSummary) &&
         Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
@@ -287,7 +319,7 @@ public class StateComponentResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
+    return Objects.hash(stateVersion, ledgerHeaderSummary, info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
   }
 
   @Override
@@ -295,6 +327,7 @@ public class StateComponentResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateComponentResponse {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");

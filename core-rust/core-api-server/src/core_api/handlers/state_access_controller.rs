@@ -44,8 +44,14 @@ pub(crate) async fn handle_state_access_controller(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateAccessControllerResponse {
-        state_version: to_api_state_version(database.max_state_version())?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_substate,

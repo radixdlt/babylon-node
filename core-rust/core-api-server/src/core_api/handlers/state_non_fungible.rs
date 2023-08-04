@@ -61,8 +61,14 @@ pub(crate) async fn handle_state_non_fungible(
         not_found_error("The given non_fungible_id doesn't exist under that resource address")
     })?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(StateNonFungibleResponse {
-        state_version: to_api_state_version(database.max_state_version())?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
             &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(

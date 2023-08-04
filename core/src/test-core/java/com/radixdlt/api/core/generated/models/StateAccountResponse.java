@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
 import io.swagger.annotations.ApiModel;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateAccountResponse.JSON_PROPERTY_STATE_VERSION,
+  StateAccountResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
   StateAccountResponse.JSON_PROPERTY_INFO,
   StateAccountResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccountResponse.JSON_PROPERTY_STATE,
@@ -45,6 +47,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class StateAccountResponse {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
+
+  public static final String JSON_PROPERTY_LEDGER_HEADER_SUMMARY = "ledger_header_summary";
+  private LedgerHeaderSummary ledgerHeaderSummary;
 
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
@@ -86,6 +91,32 @@ public class StateAccountResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
+  }
+
+
+  public StateAccountResponse ledgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
+    return this;
+  }
+
+   /**
+   * Get ledgerHeaderSummary
+   * @return ledgerHeaderSummary
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerHeaderSummary getLedgerHeaderSummary() {
+    return ledgerHeaderSummary;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
   }
 
 
@@ -211,6 +242,7 @@ public class StateAccountResponse {
     }
     StateAccountResponse stateAccountResponse = (StateAccountResponse) o;
     return Objects.equals(this.stateVersion, stateAccountResponse.stateVersion) &&
+        Objects.equals(this.ledgerHeaderSummary, stateAccountResponse.ledgerHeaderSummary) &&
         Objects.equals(this.info, stateAccountResponse.info) &&
         Objects.equals(this.ownerRole, stateAccountResponse.ownerRole) &&
         Objects.equals(this.state, stateAccountResponse.state) &&
@@ -219,7 +251,7 @@ public class StateAccountResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, info, ownerRole, state, vaults);
+    return Objects.hash(stateVersion, ledgerHeaderSummary, info, ownerRole, state, vaults);
   }
 
   @Override
@@ -227,6 +259,7 @@ public class StateAccountResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccountResponse {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");

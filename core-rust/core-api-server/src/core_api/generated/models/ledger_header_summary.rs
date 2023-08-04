@@ -12,25 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsStateAccountFungibleResourceBalanceResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
-    /// The Bech32m-encoded human readable version of the account's address
-    #[serde(rename = "account_address")]
-    pub account_address: String,
-    #[serde(rename = "fungible_resource_balance")]
-    pub fungible_resource_balance: Box<crate::core_api::generated::models::LtsFungibleResourceBalance>,
+pub struct LedgerHeaderSummary {
+    #[serde(rename = "ledger_hashes")]
+    pub ledger_hashes: Box<crate::core_api::generated::models::LedgerHashes>,
+    #[serde(rename = "proposer_timestamp")]
+    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl LtsStateAccountFungibleResourceBalanceResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, account_address: String, fungible_resource_balance: crate::core_api::generated::models::LtsFungibleResourceBalance) -> LtsStateAccountFungibleResourceBalanceResponse {
-        LtsStateAccountFungibleResourceBalanceResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
-            account_address,
-            fungible_resource_balance: Box::new(fungible_resource_balance),
+impl LedgerHeaderSummary {
+    pub fn new(ledger_hashes: crate::core_api::generated::models::LedgerHashes, proposer_timestamp: crate::core_api::generated::models::Instant) -> LedgerHeaderSummary {
+        LedgerHeaderSummary {
+            ledger_hashes: Box::new(ledger_hashes),
+            proposer_timestamp: Box::new(proposer_timestamp),
         }
     }
 }

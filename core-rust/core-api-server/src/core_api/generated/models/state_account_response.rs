@@ -15,6 +15,8 @@
 pub struct StateAccountResponse {
     #[serde(rename = "state_version")]
     pub state_version: i64,
+    #[serde(rename = "ledger_header_summary")]
+    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
     #[serde(rename = "info")]
     pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
@@ -27,9 +29,10 @@ pub struct StateAccountResponse {
 }
 
 impl StateAccountResponse {
-    pub fn new(state_version: i64, info: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>) -> StateAccountResponse {
+    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, info: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>) -> StateAccountResponse {
         StateAccountResponse {
             state_version,
+            ledger_header_summary: Box::new(ledger_header_summary),
             info: Option::Some(info),
             owner_role: Option::Some(owner_role),
             state: Option::Some(state),

@@ -1427,6 +1427,41 @@ components:
       format: int32
       minimum: 0
       maximum: 255
+    LedgerHeaderSummary:
+      type: object
+      required:
+        - ledger_hashes
+        - proposer_timestamp
+      properties:
+        ledger_hashes:
+          $ref: "#/components/schemas/LedgerHashes"
+        proposer_timestamp:
+          $ref: '#/components/schemas/Instant'
+    LedgerHashes:
+      type: object
+      required:
+        - state_tree_hash
+        - transaction_tree_hash
+        - receipt_tree_hash
+      properties:
+        state_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
+        transaction_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
+        receipt_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
     StateVersion:
       type: integer
       format: int64
@@ -4792,12 +4827,16 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - account_address
         - fungible_resource_balances
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -4840,12 +4879,16 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - account_address
         - fungible_resource_balance
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -5319,34 +5362,15 @@ components:
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current round in an epoch
     CommittedStateIdentifier:
-      type: object
-      required:
-        - state_version
-        - state_tree_hash
-        - transaction_tree_hash
-        - receipt_tree_hash
-      properties:
-        state_version:
-          $ref: "#/components/schemas/StateVersion"
-          description: The state version, which increments with each transaction, starting at `0` pre-genesis.
-        state_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
-        transaction_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
-        receipt_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
+      allOf:
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: The state version, which increments with each transaction, starting at `0` pre-genesis.
+        - $ref: "#/components/schemas/LedgerHashes"
 ##############################
 # REQUEST: /status/scenarios #
 ##############################
@@ -6254,6 +6278,7 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - config
         - state
         - current_proposal_statistic
@@ -6264,6 +6289,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         config:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6294,6 +6322,7 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - info
         - owner_role
         - state
@@ -6302,6 +6331,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         info:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6341,6 +6373,7 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - info
         - state
         - royalty_accumulator
@@ -6351,6 +6384,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         info:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6417,6 +6453,7 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - address
         - state
         - owner_role
@@ -6426,6 +6463,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
@@ -6459,6 +6499,7 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - state
         - owner_role
         - vaults
@@ -6467,6 +6508,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         state:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6499,12 +6543,16 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - manager
         - owner_role
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         manager:
           $ref: "#/components/schemas/StateResourceManager"
         owner_role:
@@ -6568,11 +6616,15 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - non_fungible
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         non_fungible:
           $ref: "#/components/schemas/Substate"
 ###########################
@@ -6593,11 +6645,15 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - owner_role
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         owner_role:
           $ref: "#/components/schemas/Substate"
         royalty:

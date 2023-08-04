@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
 import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -33,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_STATE_VERSION,
+  LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
   LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_ACCOUNT_ADDRESS,
   LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE
 })
@@ -40,6 +42,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class LtsStateAccountFungibleResourceBalanceResponse {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
+
+  public static final String JSON_PROPERTY_LEDGER_HEADER_SUMMARY = "ledger_header_summary";
+  private LedgerHeaderSummary ledgerHeaderSummary;
 
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
@@ -75,6 +80,32 @@ public class LtsStateAccountFungibleResourceBalanceResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
+  }
+
+
+  public LtsStateAccountFungibleResourceBalanceResponse ledgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
+    return this;
+  }
+
+   /**
+   * Get ledgerHeaderSummary
+   * @return ledgerHeaderSummary
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerHeaderSummary getLedgerHeaderSummary() {
+    return ledgerHeaderSummary;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
+    this.ledgerHeaderSummary = ledgerHeaderSummary;
   }
 
 
@@ -143,13 +174,14 @@ public class LtsStateAccountFungibleResourceBalanceResponse {
     }
     LtsStateAccountFungibleResourceBalanceResponse ltsStateAccountFungibleResourceBalanceResponse = (LtsStateAccountFungibleResourceBalanceResponse) o;
     return Objects.equals(this.stateVersion, ltsStateAccountFungibleResourceBalanceResponse.stateVersion) &&
+        Objects.equals(this.ledgerHeaderSummary, ltsStateAccountFungibleResourceBalanceResponse.ledgerHeaderSummary) &&
         Objects.equals(this.accountAddress, ltsStateAccountFungibleResourceBalanceResponse.accountAddress) &&
         Objects.equals(this.fungibleResourceBalance, ltsStateAccountFungibleResourceBalanceResponse.fungibleResourceBalance);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accountAddress, fungibleResourceBalance);
+    return Objects.hash(stateVersion, ledgerHeaderSummary, accountAddress, fungibleResourceBalance);
   }
 
   @Override
@@ -157,6 +189,7 @@ public class LtsStateAccountFungibleResourceBalanceResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsStateAccountFungibleResourceBalanceResponse {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
     sb.append("    fungibleResourceBalance: ").append(toIndentedString(fungibleResourceBalance)).append("\n");
     sb.append("}");

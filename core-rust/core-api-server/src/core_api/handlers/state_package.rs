@@ -30,8 +30,14 @@ pub(crate) async fn handle_state_package(
         &PackageField::Royalty.into(),
     );
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StatePackageResponse {
-        state_version: to_api_state_version(database.max_state_version())?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,

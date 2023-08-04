@@ -12,25 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsStateAccountFungibleResourceBalanceResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
-    /// The Bech32m-encoded human readable version of the account's address
-    #[serde(rename = "account_address")]
-    pub account_address: String,
-    #[serde(rename = "fungible_resource_balance")]
-    pub fungible_resource_balance: Box<crate::core_api::generated::models::LtsFungibleResourceBalance>,
+pub struct LedgerHashes {
+    /// The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. 
+    #[serde(rename = "state_tree_hash")]
+    pub state_tree_hash: String,
+    /// The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. 
+    #[serde(rename = "transaction_tree_hash")]
+    pub transaction_tree_hash: String,
+    /// The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. 
+    #[serde(rename = "receipt_tree_hash")]
+    pub receipt_tree_hash: String,
 }
 
-impl LtsStateAccountFungibleResourceBalanceResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, account_address: String, fungible_resource_balance: crate::core_api::generated::models::LtsFungibleResourceBalance) -> LtsStateAccountFungibleResourceBalanceResponse {
-        LtsStateAccountFungibleResourceBalanceResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
-            account_address,
-            fungible_resource_balance: Box::new(fungible_resource_balance),
+impl LedgerHashes {
+    pub fn new(state_tree_hash: String, transaction_tree_hash: String, receipt_tree_hash: String) -> LedgerHashes {
+        LedgerHashes {
+            state_tree_hash,
+            transaction_tree_hash,
+            receipt_tree_hash,
         }
     }
 }

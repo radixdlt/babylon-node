@@ -22,27 +22,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.CommittedStateIdentifierAllOf;
-import com.radixdlt.api.core.generated.models.LedgerHashes;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CommittedStateIdentifier
+ * LedgerHashes
  */
 @JsonPropertyOrder({
-  CommittedStateIdentifier.JSON_PROPERTY_STATE_VERSION,
-  CommittedStateIdentifier.JSON_PROPERTY_STATE_TREE_HASH,
-  CommittedStateIdentifier.JSON_PROPERTY_TRANSACTION_TREE_HASH,
-  CommittedStateIdentifier.JSON_PROPERTY_RECEIPT_TREE_HASH
+  LedgerHashes.JSON_PROPERTY_STATE_TREE_HASH,
+  LedgerHashes.JSON_PROPERTY_TRANSACTION_TREE_HASH,
+  LedgerHashes.JSON_PROPERTY_RECEIPT_TREE_HASH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CommittedStateIdentifier {
-  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
-  private Long stateVersion;
-
+public class LedgerHashes {
   public static final String JSON_PROPERTY_STATE_TREE_HASH = "state_tree_hash";
   private String stateTreeHash;
 
@@ -52,38 +46,10 @@ public class CommittedStateIdentifier {
   public static final String JSON_PROPERTY_RECEIPT_TREE_HASH = "receipt_tree_hash";
   private String receiptTreeHash;
 
-  public CommittedStateIdentifier() { 
+  public LedgerHashes() { 
   }
 
-  public CommittedStateIdentifier stateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
-    return this;
-  }
-
-   /**
-   * Get stateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return stateVersion
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getStateVersion() {
-    return stateVersion;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
-  }
-
-
-  public CommittedStateIdentifier stateTreeHash(String stateTreeHash) {
+  public LedgerHashes stateTreeHash(String stateTreeHash) {
     this.stateTreeHash = stateTreeHash;
     return this;
   }
@@ -109,7 +75,7 @@ public class CommittedStateIdentifier {
   }
 
 
-  public CommittedStateIdentifier transactionTreeHash(String transactionTreeHash) {
+  public LedgerHashes transactionTreeHash(String transactionTreeHash) {
     this.transactionTreeHash = transactionTreeHash;
     return this;
   }
@@ -135,7 +101,7 @@ public class CommittedStateIdentifier {
   }
 
 
-  public CommittedStateIdentifier receiptTreeHash(String receiptTreeHash) {
+  public LedgerHashes receiptTreeHash(String receiptTreeHash) {
     this.receiptTreeHash = receiptTreeHash;
     return this;
   }
@@ -162,7 +128,7 @@ public class CommittedStateIdentifier {
 
 
   /**
-   * Return true if this CommittedStateIdentifier object is equal to o.
+   * Return true if this LedgerHashes object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -172,23 +138,21 @@ public class CommittedStateIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CommittedStateIdentifier committedStateIdentifier = (CommittedStateIdentifier) o;
-    return Objects.equals(this.stateVersion, committedStateIdentifier.stateVersion) &&
-        Objects.equals(this.stateTreeHash, committedStateIdentifier.stateTreeHash) &&
-        Objects.equals(this.transactionTreeHash, committedStateIdentifier.transactionTreeHash) &&
-        Objects.equals(this.receiptTreeHash, committedStateIdentifier.receiptTreeHash);
+    LedgerHashes ledgerHashes = (LedgerHashes) o;
+    return Objects.equals(this.stateTreeHash, ledgerHashes.stateTreeHash) &&
+        Objects.equals(this.transactionTreeHash, ledgerHashes.transactionTreeHash) &&
+        Objects.equals(this.receiptTreeHash, ledgerHashes.receiptTreeHash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, stateTreeHash, transactionTreeHash, receiptTreeHash);
+    return Objects.hash(stateTreeHash, transactionTreeHash, receiptTreeHash);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CommittedStateIdentifier {\n");
-    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("class LedgerHashes {\n");
     sb.append("    stateTreeHash: ").append(toIndentedString(stateTreeHash)).append("\n");
     sb.append("    transactionTreeHash: ").append(toIndentedString(transactionTreeHash)).append("\n");
     sb.append("    receiptTreeHash: ").append(toIndentedString(receiptTreeHash)).append("\n");
