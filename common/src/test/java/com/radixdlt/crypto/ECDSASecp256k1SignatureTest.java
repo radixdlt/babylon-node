@@ -259,7 +259,8 @@ public class ECDSASecp256k1SignatureTest {
               signature.getConcatRecoveryRSBytes()));
 
       var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
-      var sigFromDER = ECDSASecp256k1Signature.decodeFromDER(expectedSignatureDERBytes);
+      var sigFromDER =
+          ECDSASecp256k1Signature.decodeNonRecoverableFromDer(expectedSignatureDERBytes);
 
       // Signature from DER has no `v` byte, so comparing using `equals` fails.
       assertEquals(sigFromDER.getR(), signature.getR());

@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.InstanceSchema;
+import com.radixdlt.api.core.generated.models.BlueprintInfo;
+import com.radixdlt.api.core.generated.models.ModuleVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -34,115 +35,78 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ObjectTypeInfoDetailsAllOf
  */
 @JsonPropertyOrder({
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_VERSION,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_OUTER_OBJECT,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_INSTANCE_SCHEMA,
-  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_FEATURES
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_MODULE_VERSIONS,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_BLUEPRINT_INFO,
+  ObjectTypeInfoDetailsAllOf.JSON_PROPERTY_GLOBAL
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ObjectTypeInfoDetailsAllOf {
-  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
-  private String packageAddress;
+  public static final String JSON_PROPERTY_MODULE_VERSIONS = "module_versions";
+  private List<ModuleVersion> moduleVersions = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
-  private String blueprintVersion;
+  public static final String JSON_PROPERTY_BLUEPRINT_INFO = "blueprint_info";
+  private BlueprintInfo blueprintInfo;
 
   public static final String JSON_PROPERTY_GLOBAL = "global";
   private Boolean global;
 
-  public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
-  private String outerObject;
-
-  public static final String JSON_PROPERTY_INSTANCE_SCHEMA = "instance_schema";
-  private InstanceSchema instanceSchema;
-
-  public static final String JSON_PROPERTY_FEATURES = "features";
-  private List<String> features = new ArrayList<>();
-
   public ObjectTypeInfoDetailsAllOf() { 
   }
 
-  public ObjectTypeInfoDetailsAllOf packageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
+  public ObjectTypeInfoDetailsAllOf moduleVersions(List<ModuleVersion> moduleVersions) {
+    this.moduleVersions = moduleVersions;
+    return this;
+  }
+
+  public ObjectTypeInfoDetailsAllOf addModuleVersionsItem(ModuleVersion moduleVersionsItem) {
+    this.moduleVersions.add(moduleVersionsItem);
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the package address
-   * @return packageAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPackageAddress() {
-    return packageAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
-  }
-
-
-  public ObjectTypeInfoDetailsAllOf blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-    return this;
-  }
-
-   /**
-   * Get blueprintName
-   * @return blueprintName
+   * Get moduleVersions
+   * @return moduleVersions
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_MODULE_VERSIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public List<ModuleVersion> getModuleVersions() {
+    return moduleVersions;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_MODULE_VERSIONS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public void setModuleVersions(List<ModuleVersion> moduleVersions) {
+    this.moduleVersions = moduleVersions;
   }
 
 
-  public ObjectTypeInfoDetailsAllOf blueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
+  public ObjectTypeInfoDetailsAllOf blueprintInfo(BlueprintInfo blueprintInfo) {
+    this.blueprintInfo = blueprintInfo;
     return this;
   }
 
    /**
-   * Get blueprintVersion
-   * @return blueprintVersion
+   * Get blueprintInfo
+   * @return blueprintInfo
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintVersion() {
-    return blueprintVersion;
+  public BlueprintInfo getBlueprintInfo() {
+    return blueprintInfo;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintVersion(String blueprintVersion) {
-    this.blueprintVersion = blueprintVersion;
+  public void setBlueprintInfo(BlueprintInfo blueprintInfo) {
+    this.blueprintInfo = blueprintInfo;
   }
 
 
@@ -172,89 +136,6 @@ public class ObjectTypeInfoDetailsAllOf {
   }
 
 
-  public ObjectTypeInfoDetailsAllOf outerObject(String outerObject) {
-    this.outerObject = outerObject;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of any global address
-   * @return outerObject
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The Bech32m-encoded human readable version of any global address")
-  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getOuterObject() {
-    return outerObject;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_OUTER_OBJECT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setOuterObject(String outerObject) {
-    this.outerObject = outerObject;
-  }
-
-
-  public ObjectTypeInfoDetailsAllOf instanceSchema(InstanceSchema instanceSchema) {
-    this.instanceSchema = instanceSchema;
-    return this;
-  }
-
-   /**
-   * Get instanceSchema
-   * @return instanceSchema
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public InstanceSchema getInstanceSchema() {
-    return instanceSchema;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setInstanceSchema(InstanceSchema instanceSchema) {
-    this.instanceSchema = instanceSchema;
-  }
-
-
-  public ObjectTypeInfoDetailsAllOf features(List<String> features) {
-    this.features = features;
-    return this;
-  }
-
-  public ObjectTypeInfoDetailsAllOf addFeaturesItem(String featuresItem) {
-    this.features.add(featuresItem);
-    return this;
-  }
-
-   /**
-   * Get features
-   * @return features
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FEATURES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<String> getFeatures() {
-    return features;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FEATURES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFeatures(List<String> features) {
-    this.features = features;
-  }
-
-
   /**
    * Return true if this ObjectTypeInfoDetails_allOf object is equal to o.
    */
@@ -267,31 +148,23 @@ public class ObjectTypeInfoDetailsAllOf {
       return false;
     }
     ObjectTypeInfoDetailsAllOf objectTypeInfoDetailsAllOf = (ObjectTypeInfoDetailsAllOf) o;
-    return Objects.equals(this.packageAddress, objectTypeInfoDetailsAllOf.packageAddress) &&
-        Objects.equals(this.blueprintName, objectTypeInfoDetailsAllOf.blueprintName) &&
-        Objects.equals(this.blueprintVersion, objectTypeInfoDetailsAllOf.blueprintVersion) &&
-        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global) &&
-        Objects.equals(this.outerObject, objectTypeInfoDetailsAllOf.outerObject) &&
-        Objects.equals(this.instanceSchema, objectTypeInfoDetailsAllOf.instanceSchema) &&
-        Objects.equals(this.features, objectTypeInfoDetailsAllOf.features);
+    return Objects.equals(this.moduleVersions, objectTypeInfoDetailsAllOf.moduleVersions) &&
+        Objects.equals(this.blueprintInfo, objectTypeInfoDetailsAllOf.blueprintInfo) &&
+        Objects.equals(this.global, objectTypeInfoDetailsAllOf.global);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, blueprintVersion, global, outerObject, instanceSchema, features);
+    return Objects.hash(moduleVersions, blueprintInfo, global);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ObjectTypeInfoDetailsAllOf {\n");
-    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
+    sb.append("    moduleVersions: ").append(toIndentedString(moduleVersions)).append("\n");
+    sb.append("    blueprintInfo: ").append(toIndentedString(blueprintInfo)).append("\n");
     sb.append("    global: ").append(toIndentedString(global)).append("\n");
-    sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
-    sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");
-    sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("}");
     return sb.toString();
   }

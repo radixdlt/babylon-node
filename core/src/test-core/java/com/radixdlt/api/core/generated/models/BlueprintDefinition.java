@@ -23,9 +23,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintInterface;
+import com.radixdlt.api.core.generated.models.HookExport;
 import com.radixdlt.api.core.generated.models.PackageExport;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,19 +39,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   BlueprintDefinition.JSON_PROPERTY_INTERFACE,
+  BlueprintDefinition.JSON_PROPERTY_IS_TRANSIENT,
   BlueprintDefinition.JSON_PROPERTY_FUNCTION_EXPORTS,
-  BlueprintDefinition.JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS
+  BlueprintDefinition.JSON_PROPERTY_HOOK_EXPORTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintDefinition {
   public static final String JSON_PROPERTY_INTERFACE = "interface";
   private BlueprintInterface _interface;
 
+  public static final String JSON_PROPERTY_IS_TRANSIENT = "is_transient";
+  private Boolean isTransient;
+
   public static final String JSON_PROPERTY_FUNCTION_EXPORTS = "function_exports";
   private Map<String, PackageExport> functionExports = new HashMap<>();
 
-  public static final String JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS = "virtual_lazy_load_functions";
-  private Map<String, PackageExport> virtualLazyLoadFunctions = new HashMap<>();
+  public static final String JSON_PROPERTY_HOOK_EXPORTS = "hook_exports";
+  private List<HookExport> hookExports = new ArrayList<>();
 
   public BlueprintDefinition() { 
   }
@@ -77,6 +83,32 @@ public class BlueprintDefinition {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setInterface(BlueprintInterface _interface) {
     this._interface = _interface;
+  }
+
+
+  public BlueprintDefinition isTransient(Boolean isTransient) {
+    this.isTransient = isTransient;
+    return this;
+  }
+
+   /**
+   * If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
+   * @return isTransient
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.")
+  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsTransient() {
+    return isTransient;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsTransient(Boolean isTransient) {
+    this.isTransient = isTransient;
   }
 
 
@@ -111,34 +143,34 @@ public class BlueprintDefinition {
   }
 
 
-  public BlueprintDefinition virtualLazyLoadFunctions(Map<String, PackageExport> virtualLazyLoadFunctions) {
-    this.virtualLazyLoadFunctions = virtualLazyLoadFunctions;
+  public BlueprintDefinition hookExports(List<HookExport> hookExports) {
+    this.hookExports = hookExports;
     return this;
   }
 
-  public BlueprintDefinition putVirtualLazyLoadFunctionsItem(String key, PackageExport virtualLazyLoadFunctionsItem) {
-    this.virtualLazyLoadFunctions.put(key, virtualLazyLoadFunctionsItem);
+  public BlueprintDefinition addHookExportsItem(HookExport hookExportsItem) {
+    this.hookExports.add(hookExportsItem);
     return this;
   }
 
    /**
-   * A map from the engine system&#39;s virtualization module&#39;s function identifier to the package export of the function.
-   * @return virtualLazyLoadFunctions
+   * A map from certain object lifecycle hooks to a callback \&quot;package export\&quot;. There is at most one callback registered for each &#x60;ObjectHook&#x60;. 
+   * @return hookExports
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the engine system's virtualization module's function identifier to the package export of the function.")
-  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS)
+  @ApiModelProperty(required = true, value = "A map from certain object lifecycle hooks to a callback \"package export\". There is at most one callback registered for each `ObjectHook`. ")
+  @JsonProperty(JSON_PROPERTY_HOOK_EXPORTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, PackageExport> getVirtualLazyLoadFunctions() {
-    return virtualLazyLoadFunctions;
+  public List<HookExport> getHookExports() {
+    return hookExports;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTIONS)
+  @JsonProperty(JSON_PROPERTY_HOOK_EXPORTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVirtualLazyLoadFunctions(Map<String, PackageExport> virtualLazyLoadFunctions) {
-    this.virtualLazyLoadFunctions = virtualLazyLoadFunctions;
+  public void setHookExports(List<HookExport> hookExports) {
+    this.hookExports = hookExports;
   }
 
 
@@ -155,13 +187,14 @@ public class BlueprintDefinition {
     }
     BlueprintDefinition blueprintDefinition = (BlueprintDefinition) o;
     return Objects.equals(this._interface, blueprintDefinition._interface) &&
+        Objects.equals(this.isTransient, blueprintDefinition.isTransient) &&
         Objects.equals(this.functionExports, blueprintDefinition.functionExports) &&
-        Objects.equals(this.virtualLazyLoadFunctions, blueprintDefinition.virtualLazyLoadFunctions);
+        Objects.equals(this.hookExports, blueprintDefinition.hookExports);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(_interface, functionExports, virtualLazyLoadFunctions);
+    return Objects.hash(_interface, isTransient, functionExports, hookExports);
   }
 
   @Override
@@ -169,8 +202,9 @@ public class BlueprintDefinition {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintDefinition {\n");
     sb.append("    _interface: ").append(toIndentedString(_interface)).append("\n");
+    sb.append("    isTransient: ").append(toIndentedString(isTransient)).append("\n");
     sb.append("    functionExports: ").append(toIndentedString(functionExports)).append("\n");
-    sb.append("    virtualLazyLoadFunctions: ").append(toIndentedString(virtualLazyLoadFunctions)).append("\n");
+    sb.append("    hookExports: ").append(toIndentedString(hookExports)).append("\n");
     sb.append("}");
     return sb.toString();
   }

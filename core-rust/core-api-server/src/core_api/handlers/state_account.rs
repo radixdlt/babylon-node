@@ -32,8 +32,8 @@ pub(crate) async fn handle_state_account(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let state_substate = read_mandatory_main_field_substate(

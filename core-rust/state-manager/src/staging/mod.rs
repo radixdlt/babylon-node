@@ -71,19 +71,13 @@ mod substate_overlay_iterator;
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use radix_engine_store_interface::interface::SubstateDatabase;
-use radix_engine_stores::hash_tree::tree_store::{PartitionPayload, ReadableTreeStore};
+use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 
 pub use cache::*;
 pub use result::*;
 
-pub trait ReadableStateTreeStore:
-    ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
-{
-}
-impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
-{
-}
+pub trait ReadableStateTreeStore: ReadableTreeStore {}
+impl<T> ReadableStateTreeStore for T where T: ReadableTreeStore {}
 
 pub trait ReadableHashStructuresStore:
     ReadableStateTreeStore

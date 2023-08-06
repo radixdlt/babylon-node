@@ -84,7 +84,7 @@ use radix_engine::track::SystemUpdates;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
+    NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 
@@ -323,8 +323,7 @@ pub struct HashStructuresDiff {
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
+    pub new_nodes: Vec<(NodeKey, TreeNode)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
@@ -332,8 +331,7 @@ impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
-            new_re_node_layer_nodes: Vec::new(),
-            new_substate_layer_nodes: Vec::new(),
+            new_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),
         }
     }
@@ -406,25 +404,15 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S> WriteableTreeStore<PartitionPayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<PartitionPayload>) {
-        self.diff.new_re_node_layer_nodes.push((key, node));
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
-    }
-}
-
-impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
-        self.diff.new_substate_layer_nodes.push((key, node));
+impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.diff.new_nodes.push((key, node));
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {

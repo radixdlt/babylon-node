@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   KeyValueStoreSchema.JSON_PROPERTY_SCHEMA,
+  KeyValueStoreSchema.JSON_PROPERTY_SCHEMA_HASH,
   KeyValueStoreSchema.JSON_PROPERTY_KEY_TYPE,
   KeyValueStoreSchema.JSON_PROPERTY_VALUE_TYPE,
   KeyValueStoreSchema.JSON_PROPERTY_CAN_OWN
@@ -42,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class KeyValueStoreSchema {
   public static final String JSON_PROPERTY_SCHEMA = "schema";
   private ScryptoSchema schema;
+
+  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
+  private String schemaHash;
 
   public static final String JSON_PROPERTY_KEY_TYPE = "key_type";
   private LocalTypeIndex keyType;
@@ -78,6 +82,32 @@ public class KeyValueStoreSchema {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSchema(ScryptoSchema schema) {
     this.schema = schema;
+  }
+
+
+  public KeyValueStoreSchema schemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
+    return this;
+  }
+
+   /**
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
+   * @return schemaHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSchemaHash() {
+    return schemaHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSchemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
   }
 
 
@@ -172,6 +202,7 @@ public class KeyValueStoreSchema {
     }
     KeyValueStoreSchema keyValueStoreSchema = (KeyValueStoreSchema) o;
     return Objects.equals(this.schema, keyValueStoreSchema.schema) &&
+        Objects.equals(this.schemaHash, keyValueStoreSchema.schemaHash) &&
         Objects.equals(this.keyType, keyValueStoreSchema.keyType) &&
         Objects.equals(this.valueType, keyValueStoreSchema.valueType) &&
         Objects.equals(this.canOwn, keyValueStoreSchema.canOwn);
@@ -179,7 +210,7 @@ public class KeyValueStoreSchema {
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, keyType, valueType, canOwn);
+    return Objects.hash(schema, schemaHash, keyType, valueType, canOwn);
   }
 
   @Override
@@ -187,6 +218,7 @@ public class KeyValueStoreSchema {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreSchema {\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
+    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
     sb.append("    keyType: ").append(toIndentedString(keyType)).append("\n");
     sb.append("    valueType: ").append(toIndentedString(valueType)).append("\n");
     sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");

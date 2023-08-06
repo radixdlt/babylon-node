@@ -18,8 +18,8 @@ pub(crate) async fn handle_state_package(
     let owner_role_substate = read_optional_substate(
         database.deref(),
         package_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )
     .ok_or_else(|| not_found_error("Package not found".to_string()))?;
 

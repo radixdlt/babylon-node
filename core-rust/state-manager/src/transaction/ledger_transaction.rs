@@ -1,4 +1,3 @@
-use radix_engine_constants::TRANSACTION_HASHABLE_PAYLOAD_PREFIX;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::*;
 use sbor::*;
@@ -450,7 +449,7 @@ mod tests {
                 notary_is_signatory: true,
                 tip_percentage: 0,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().drop_all_proofs().build())
             .sign(&sig_1_private_key)
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)
