@@ -202,6 +202,10 @@ public final class LedgerProof {
     return ledgerHeader.getStateVersion();
   }
 
+  public long getProposerTimestamp() {
+    return ledgerHeader.proposerTimestamp();
+  }
+
   public long consensusParentRoundTimestamp() {
     return ledgerHeader.consensusParentRoundTimestamp();
   }

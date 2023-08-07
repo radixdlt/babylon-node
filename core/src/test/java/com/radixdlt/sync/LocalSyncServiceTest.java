@@ -693,6 +693,7 @@ public class LocalSyncServiceTest {
   private LedgerProof createHeaderAtStateVersion(long version) {
     final LedgerProof header = mock(LedgerProof.class);
     when(header.getStateVersion()).thenReturn(version);
+    when(header.getProposerTimestamp()).thenReturn(version * 1000);
     return header;
   }
 
