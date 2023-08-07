@@ -233,8 +233,8 @@ public record Metrics(
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
-      Gauge targetStateVersion,
-      Gauge targetProposerEpochSecond,
+      Gauge targetStateVersion, // UNTRUSTED: comes from a single peer Node and is not verified
+      Gauge targetProposerTimestampEpochSecond, // UNTRUSTED: same as `targetStateVersion`
       LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
       LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
 
@@ -376,6 +376,6 @@ public record Metrics(
   public record Config(
       String branchAndCommit,
       String key,
-      @Nullable String componentAddress, // null when not configured as validator
+      @Nullable String configuredValidatorAddress, // null when not configured as validator
       HashCode postGenesisEpochStateHash) {}
 }

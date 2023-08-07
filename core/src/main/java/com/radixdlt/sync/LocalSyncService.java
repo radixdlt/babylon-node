@@ -615,13 +615,13 @@ public final class LocalSyncService {
           .set(syncingState.getTargetHeader().getStateVersion());
       this.metrics
           .sync()
-          .targetProposerEpochSecond()
+          .targetProposerTimestampEpochSecond()
           .set(syncingState.getTargetHeader().getProposerTimestamp() / 1000.0);
     } else {
       this.metrics.sync().targetStateVersion().set(syncState.getCurrentHeader().getStateVersion());
       this.metrics
           .sync()
-          .targetProposerEpochSecond()
+          .targetProposerTimestampEpochSecond()
           .set(syncState.getCurrentHeader().getProposerTimestamp() / 1000.0);
     }
   }
