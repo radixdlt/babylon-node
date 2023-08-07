@@ -69,7 +69,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import org.junit.Test;
@@ -133,65 +132,6 @@ public class ECKeyUtilsTest {
     byte[] testArray = new byte[ECKeyPair.BYTES + 1];
     Arrays.fill(testArray, (byte) 1);
     ECKeyUtils.adjustArray(testArray, ECKeyPair.BYTES);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForNullInput() throws PublicKeyException {
-    ECKeyUtils.validatePublic(null);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForEmptyInput() throws PublicKeyException {
-    ECKeyUtils.validatePublic(new byte[] {});
-  }
-
-  @Test
-  public void testValidatePublicPassForType2Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
-    key[0] = 0x02;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForType2Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1];
-    key[0] = 0x02;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test
-  public void testValidatePublicPassForType3Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES];
-    key[0] = 0x03;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForType3Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1];
-    key[0] = 0x03;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test
-  public void testValidatePublicPassForType4Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.UNCOMPRESSED_BYTES];
-    key[0] = 0x04;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForType4Key() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.UNCOMPRESSED_BYTES + 1];
-    key[0] = 0x04;
-    ECKeyUtils.validatePublic(key);
-  }
-
-  @Test(expected = PublicKeyException.class)
-  public void testValidatePublicFailForUnknownTypeKey() throws PublicKeyException {
-    var key = new byte[ECDSASecp256k1PublicKey.UNCOMPRESSED_BYTES];
-    key[0] = 0x05;
-    ECKeyUtils.validatePublic(key);
   }
 
   @Test(expected = PrivateKeyException.class)

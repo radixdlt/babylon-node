@@ -75,6 +75,6 @@ public final class KeyComparator {
 
   public static Comparator<ECDSASecp256k1PublicKey> instance() {
     return Comparator.comparing(
-        ECDSASecp256k1PublicKey::getCompressedBytes, UnsignedBytes.lexicographicalComparator());
+        ECDSASecp256k1PublicKey::getBytes, UnsignedBytes.lexicographicalComparator());
   }
 }

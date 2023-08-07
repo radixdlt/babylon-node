@@ -97,10 +97,10 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             addr, UInt256.from(18), true, Optional.empty(), "LARGE", "", "", "", "");
     final var acc1 =
         new OlympiaStateIR.Account(
-            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getBytes()));
     final var acc2 =
         new OlympiaStateIR.Account(
-            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getBytes()));
     final var balances =
         ImmutableList.of(
             new OlympiaStateIR.AccountBalance(0, 1, BigInteger.valueOf(10000)),
@@ -145,7 +145,7 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             addr, UInt256.from(18), true, Optional.empty(), "LARGE", "", "", "", "");
     final var acc1 =
         new OlympiaStateIR.Account(
-            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getBytes()));
     final var balances =
         ImmutableList.of(
             new OlympiaStateIR.AccountBalance(
@@ -188,10 +188,10 @@ public final class OlympiaToBabylonGenesisConverterResourceSupplyTest {
             addr, UInt256.from(18), true, Optional.empty(), "LARGE", "", "", "", "");
     final var acc1 =
         new OlympiaStateIR.Account(
-            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getBytes()));
     final var acc2 =
         new OlympiaStateIR.Account(
-            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()));
+            HashCode.fromBytes(ECKeyPair.generateNew().getPublicKey().getBytes()));
     final var balances =
         ImmutableList.of(
             new OlympiaStateIR.AccountBalance(

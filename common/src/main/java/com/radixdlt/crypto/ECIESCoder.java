@@ -90,11 +90,6 @@ public final class ECIESCoder {
 
   private ECIESCoder() {}
 
-  public static byte[] decrypt(BigInteger privKey, byte[] cipher)
-      throws IOException, InvalidCipherTextException {
-    return decrypt(privKey, cipher, null);
-  }
-
   public static byte[] decrypt(BigInteger privKey, byte[] cipher, byte[] macData)
       throws InvalidCipherTextException {
     final var is = new ByteArrayInputStream(cipher);

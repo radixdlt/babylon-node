@@ -66,48 +66,22 @@ package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.rev2.LastEpochProof;
-import com.radixdlt.rev2.LastProof;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
-  private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
   private final AtomicReference<EpochRound> currentEpochRound =
       new AtomicReference<>(EpochRound.of(0L, Round.genesis()));
-  private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
-  /* BAB-TODO: Add back in missed proposal tracking
-  private final AtomicMarkableReference<Optional<ValidatorBFTDataEvent>> missedProposals =
-      new AtomicMarkableReference<>(Optional.empty(), false);
-   */
-  private final AtomicReference<LedgerProof> ledgerProof;
   private final AtomicReference<LedgerProof> epochsLedgerProof;
-  private final SelfValidatorInfo self;
-  // private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
-  public InMemorySystemInfo(
-      @LastProof LedgerProof lastProof,
-      @LastEpochProof LedgerProof lastEpochProof,
-      SelfValidatorInfo self
-      /*RadixEngine<LedgerAndBFTProof> radixEngine*/ ) {
-    this.ledgerProof = new AtomicReference<>(lastProof);
+  public InMemorySystemInfo(@LastEpochProof LedgerProof lastEpochProof) {
     this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
-    this.self = self;
-    // this.radixEngine = radixEngine;
-  }
-
-  public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
-    lastTimeout.set(timeout);
   }
 
   public void processEpochRound(EpochRound epochRound) {
@@ -116,62 +90,11 @@ public final class InMemorySystemInfo {
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      this.ledgerProof.set(update.getTail());
-      var epochChange = update.getStateComputerOutput().getInstance(EpochChange.class);
-      if (epochChange != null) {
-        epochsLedgerProof.set(update.getTail());
+      var ledgerProof = update.getTail();
+      if (ledgerProof.getNextEpoch().isPresent()) {
+        epochsLedgerProof.set(ledgerProof);
       }
-
-      /*
-      update.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
-          .flatMap(processedTxn -> processedTxn.getEvents().stream())
-          .filter(ValidatorBFTDataEvent.class::isInstance)
-          .map(ValidatorBFTDataEvent.class::cast)
-          .filter(event -> event.validatorKey().equals(self.getKey()))
-          .map(Optional::of)
-          .forEach(event -> missedProposals.set(event, true));
-       */
     };
-  }
-
-  public Optional<ValidatorBFTDataEvent> getValidatorBFTData() {
-    return Optional.empty();
-    /*
-    if (!missedProposals.isMarked()) {
-      // There were no relevant events yet
-      missedProposals.set(getProposalStats(), true);
-    }
-
-    return missedProposals.getReference();
-     */
-  }
-
-  /*
-  private Optional<ValidatorBFTDataEvent> getProposalStats() {
-    var validatorBFTKey =
-        SystemMapKey.ofSystem(VALIDATOR_BFT_DATA.id(), self.getKey().getCompressedBytes());
-
-    return radixEngine.read(
-        reader ->
-            reader
-                .get(validatorBFTKey)
-                .map(ValidatorBFTData.class::cast)
-                .map(ValidatorBFTDataEvent::fromData));
-  }
-   */
-
-  public EventProcessor<BFTHighQCUpdate> bftHighQCEventProcessor() {
-    return update -> this.highQC.set(update.getHighQC().highestQC());
-  }
-
-  public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
-    return update -> {
-      this.highQC.set(update.vertexStoreState().getHighQC().highestQC());
-    };
-  }
-
-  public LedgerProof getCurrentProof() {
-    return ledgerProof.get();
   }
 
   public LedgerProof getEpochProof() {
@@ -180,13 +103,5 @@ public final class InMemorySystemInfo {
 
   public EpochRound getCurrentRound() {
     return this.currentEpochRound.get();
-  }
-
-  public EpochLocalTimeoutOccurrence getLastTimeout() {
-    return this.lastTimeout.get();
-  }
-
-  public QuorumCertificate getHighestQC() {
-    return this.highQC.get();
   }
 }

@@ -64,8 +64,10 @@
 
 package com.radixdlt.rev2.modules;
 
+import com.radixdlt.consensus.LedgerProof;
+
 /**
  * A marker object that can be used as a Guice dependency to ensure that the ledger database has
  * been initialized with the genesis data.
  */
-public record REv2LedgerInitializerToken() {}
+public record REv2LedgerInitializerToken(LedgerProof postGenesisEpochProof) {}

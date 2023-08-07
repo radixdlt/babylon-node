@@ -533,7 +533,7 @@ public final class TxBuilder {
 
   public <T extends ResourceInBucket, X extends Exception> void putFeeReserve(
       REAddr feePayer, UInt256 amount, Function<UInt256, X> exceptionSupplier) throws X {
-    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
     buf.put(feePayer.getBytes());

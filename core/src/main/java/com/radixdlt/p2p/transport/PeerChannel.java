@@ -207,13 +207,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void initHandshake(NodeId remoteNodeId) {
-    final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
-
-    if (log.isTraceEnabled()) {
-      log.trace("Sending auth initiate to {}", this);
+    final var initiatePacketOrError = authHandshaker.initiate(remoteNodeId.getPublicKey());
+    if (initiatePacketOrError.isSuccess()) {
+      if (log.isTraceEnabled()) {
+        log.trace("Sending auth initiate to {}", this);
+      }
+      this.write(Unpooled.wrappedBuffer(initiatePacketOrError.unwrap()));
+    } else {
+      finalizeFailedHandshake(initiatePacketOrError.unwrapError());
     }
-
-    this.write(Unpooled.wrappedBuffer(initiatePacket));
   }
 
   public Flowable<InboundMessage> inboundMessages() {
