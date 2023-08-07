@@ -239,7 +239,7 @@ public class TransactionSizeFeeTest {
         this.engine
             .construct(
                 txBuilder -> {
-                  var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+                  var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
                   buf.put(SubstateTypeId.TOKENS.id());
                   buf.put((byte) 0);
                   buf.put(accountAddr.getBytes());
@@ -280,7 +280,7 @@ public class TransactionSizeFeeTest {
         this.engine
             .construct(
                 txBuilder -> {
-                  var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
+                  var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
                   buf.put(SubstateTypeId.TOKENS.id());
                   buf.put((byte) 0);
                   buf.put(accountAddr.getBytes());

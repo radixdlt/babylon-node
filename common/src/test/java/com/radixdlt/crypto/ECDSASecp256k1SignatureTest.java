@@ -239,8 +239,7 @@ public class ECDSASecp256k1SignatureTest {
       var publicKey = keyPair.getPublicKey();
 
       assertEquals(
-          vector.get("expectedPublicKeyCompressed"),
-          Bytes.toHexString(publicKey.getCompressedBytes()));
+          vector.get("expectedPublicKeyCompressed"), Bytes.toHexString(publicKey.getBytes()));
 
       var messageUnhashedPlaintext = vector.get("message");
       var messageUnhashed = messageUnhashedPlaintext.getBytes(StandardCharsets.UTF_8);

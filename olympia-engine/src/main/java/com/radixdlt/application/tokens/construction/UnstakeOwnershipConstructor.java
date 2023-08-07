@@ -79,12 +79,10 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
   public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
     var buf =
         ByteBuffer.allocate(
-            2
-                + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
-                + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES));
+            2 + ECDSASecp256k1PublicKey.LENGTH + (1 + ECDSASecp256k1PublicKey.LENGTH));
     buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
     buf.put((byte) 0);
-    buf.put(action.fromDelegate().getCompressedBytes());
+    buf.put(action.fromDelegate().getBytes());
     buf.put(action.accountAddr().getBytes());
     if (buf.hasRemaining()) {
       // Sanity

@@ -134,7 +134,7 @@ public final class REFieldSerialization {
         },
         () -> {
           buf.put((byte) 0x0);
-          buf.put(new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES]);
+          buf.put(new byte[ECDSASecp256k1PublicKey.LENGTH]);
         });
   }
 
@@ -142,7 +142,7 @@ public final class REFieldSerialization {
       throws DeserializeException {
     var type = buf.get();
     if (type == 0) {
-      for (int i = 0; i < ECDSASecp256k1PublicKey.COMPRESSED_BYTES; i++) {
+      for (int i = 0; i < ECDSASecp256k1PublicKey.LENGTH; i++) {
         if (buf.get() != 0) {
           throw new DeserializeException("Empty key must have 0 value.");
         }
@@ -270,7 +270,7 @@ public final class REFieldSerialization {
   }
 
   public static void serializeKey(ByteBuffer buf, ECDSASecp256k1PublicKey key) {
-    buf.put(key.getCompressedBytes()); // address
+    buf.put(key.getBytes()); // address
   }
 
   public static ECDSASecp256k1PublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {

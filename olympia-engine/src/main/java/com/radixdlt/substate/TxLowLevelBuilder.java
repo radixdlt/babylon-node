@@ -197,7 +197,7 @@ public final class TxLowLevelBuilder {
 
     if (rawSubstate instanceof ValidatorData validatorData) {
       var b = serialization.classToByte(validatorData.getClass());
-      var k = SystemMapKey.ofSystem(b, validatorData.validatorKey().getCompressedBytes());
+      var k = SystemMapKey.ofSystem(b, validatorData.validatorKey().getBytes());
       this.localMapValues.put(k, localSubstate);
     } else if (rawSubstate instanceof SystemData) {
       var b = serialization.classToByte(rawSubstate.getClass());

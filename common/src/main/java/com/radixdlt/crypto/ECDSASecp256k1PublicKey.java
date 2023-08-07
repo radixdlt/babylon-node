@@ -66,95 +66,92 @@ package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomByteArrayCodec;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.bouncycastle.math.ec.ECPoint;
 
-/** Asymmetric EC public key provider fixed to curve 'secp256k1' */
+/**
+ * A wrapper for EC (fixed to curve 'secp256k1') public key bytes in a compressed format. Note that
+ * this class does NOT verify that the bytes represent a valid point on a curve (except in
+ * `decodePoint()` method).
+ */
 public final class ECDSASecp256k1PublicKey {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ECDSASecp256k1PublicKey.class,
         codecs ->
             new CustomByteArrayCodec<>(
-                ECDSASecp256k1PublicKey::getCompressedBytes,
-                ECDSASecp256k1PublicKey::fromCompressedBytesUnchecked));
+                ECDSASecp256k1PublicKey::getBytes,
+                compressedBytes -> {
+                  try {
+                    return ECDSASecp256k1PublicKey.fromBytes(compressedBytes);
+                  } catch (PublicKeyException e) {
+                    throw new RuntimeException("ECDSASecp256k1PublicKey couldn't be decoded", e);
+                  }
+                }));
   }
 
-  public static final int COMPRESSED_BYTES = 33; // 32 + header byte
-  public static final int UNCOMPRESSED_BYTES = 65; // 64 + header byte
+  public static final int LENGTH = 33; // 32 + header byte
 
-  private final ECPoint ecPoint;
-  private final Supplier<byte[]> uncompressedBytes;
-  private final int hashCode;
-  private final byte[] compressed;
+  private final byte[] compressedBytes;
 
-  private ECDSASecp256k1PublicKey(ECPoint ecPoint) {
-    this.ecPoint = Objects.requireNonNull(ecPoint);
-    this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
-    this.compressed = this.ecPoint.getEncoded(true);
-    this.hashCode = computeHashCode();
-  }
-
-  private int computeHashCode() {
-    return Arrays.hashCode(compressed);
+  private ECDSASecp256k1PublicKey(byte[] compressedBytes) {
+    this.compressedBytes = compressedBytes;
   }
 
   public static ECDSASecp256k1PublicKey fromEcPoint(ECPoint ecPoint) {
-    return new ECDSASecp256k1PublicKey(ecPoint);
-  }
-
-  @JsonCreator
-  public static ECDSASecp256k1PublicKey fromBytes(byte[] key) throws PublicKeyException {
-    ECKeyUtils.validatePublic(key);
-    return new ECDSASecp256k1PublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
-  }
-
-  @JsonCreator
-  public static ECDSASecp256k1PublicKey fromHex(String hex) throws PublicKeyException {
-    return fromBytes(Bytes.fromHexString(hex));
-  }
-
-  public static Option<ECDSASecp256k1PublicKey> tryFromHex(String hex) {
     try {
-      return Option.some(fromBytes(Bytes.fromHexString(hex)));
+      return fromBytes(ecPoint.getEncoded(true));
     } catch (PublicKeyException e) {
-      return Option.empty();
+      throw new IllegalStateException("Encoded ECPoint should always be valid", e);
     }
+  }
+
+  @JsonCreator
+  public static ECDSASecp256k1PublicKey fromBytes(byte[] compressedPublicKeyBytes)
+      throws PublicKeyException {
+    if (compressedPublicKeyBytes.length != LENGTH) {
+      throw new PublicKeyException(
+          String.format(
+              "Compressed public key has invalid size (expected %s, got %s)",
+              LENGTH, compressedPublicKeyBytes.length));
+    }
+    if (compressedPublicKeyBytes[0] != 0x02 && compressedPublicKeyBytes[0] != 0x03) {
+      throw new PublicKeyException("Public key prefix is not a compressed format prefix");
+    }
+    return new ECDSASecp256k1PublicKey(compressedPublicKeyBytes);
+  }
+
+  @JsonCreator
+  public static ECDSASecp256k1PublicKey fromHex(String compressedPublicKeyHex)
+      throws PublicKeyException {
+    return fromBytes(Bytes.fromHexString(compressedPublicKeyHex));
   }
 
   public static Optional<ECDSASecp256k1PublicKey> recoverFrom(
       HashCode hash, ECDSASecp256k1Signature signature) {
     return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
-        .map(ECDSASecp256k1PublicKey::new);
+        .map(ECDSASecp256k1PublicKey::fromEcPoint);
   }
 
-  public ECPoint getEcPoint() {
-    return ecPoint;
+  public ECPoint decodePoint() throws PublicKeyException {
+    try {
+      return ECKeyUtils.spec().getCurve().decodePoint(compressedBytes);
+    } catch (IllegalArgumentException ex) {
+      throw new PublicKeyException(ex);
+    }
   }
 
   @JsonProperty("publicKey")
   @DsonOutput(DsonOutput.Output.ALL)
   public byte[] getBytes() {
-    return uncompressedBytes.get();
-  }
-
-  public byte[] getCompressedBytes() {
-    return compressed;
-  }
-
-  private static ECDSASecp256k1PublicKey fromCompressedBytesUnchecked(byte[] key) {
-    return new ECDSASecp256k1PublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
+    return compressedBytes;
   }
 
   public boolean verify(HashCode hash, ECDSASecp256k1Signature signature) {
@@ -162,11 +159,15 @@ public final class ECDSASecp256k1PublicKey {
   }
 
   public boolean verify(byte[] hash, ECDSASecp256k1Signature signature) {
-    return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, ecPoint);
+    try {
+      return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, decodePoint());
+    } catch (PublicKeyException ex) {
+      return false;
+    }
   }
 
   public String toHex() {
-    return Bytes.toHexString(getCompressedBytes());
+    return Bytes.toHexString(getBytes());
   }
 
   public PublicKey toPublicKey() {
@@ -175,7 +176,7 @@ public final class ECDSASecp256k1PublicKey {
 
   @Override
   public int hashCode() {
-    return this.hashCode;
+    return Arrays.hashCode(compressedBytes);
   }
 
   @Override
@@ -183,9 +184,8 @@ public final class ECDSASecp256k1PublicKey {
     if (object == this) {
       return true;
     }
-    if (object instanceof ECDSASecp256k1PublicKey) {
-      final var that = (ECDSASecp256k1PublicKey) object;
-      return Arrays.equals(this.compressed, that.compressed);
+    if (object instanceof ECDSASecp256k1PublicKey otherKey) {
+      return Arrays.equals(this.compressedBytes, otherKey.compressedBytes);
     }
     return false;
   }
