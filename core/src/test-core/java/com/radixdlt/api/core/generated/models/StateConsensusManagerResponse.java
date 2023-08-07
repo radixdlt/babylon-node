@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateConsensusManagerResponse
  */
 @JsonPropertyOrder({
+  StateConsensusManagerResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateConsensusManagerResponse.JSON_PROPERTY_CONFIG,
   StateConsensusManagerResponse.JSON_PROPERTY_STATE,
   StateConsensusManagerResponse.JSON_PROPERTY_CURRENT_PROPOSAL_STATISTIC,
@@ -41,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateConsensusManagerResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_CONFIG = "config";
   private Substate config;
 
@@ -61,6 +66,32 @@ public class StateConsensusManagerResponse {
 
   public StateConsensusManagerResponse() { 
   }
+
+  public StateConsensusManagerResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateConsensusManagerResponse config(Substate config) {
     this.config = config;
@@ -230,7 +261,8 @@ public class StateConsensusManagerResponse {
       return false;
     }
     StateConsensusManagerResponse stateConsensusManagerResponse = (StateConsensusManagerResponse) o;
-    return Objects.equals(this.config, stateConsensusManagerResponse.config) &&
+    return Objects.equals(this.atLedgerState, stateConsensusManagerResponse.atLedgerState) &&
+        Objects.equals(this.config, stateConsensusManagerResponse.config) &&
         Objects.equals(this.state, stateConsensusManagerResponse.state) &&
         Objects.equals(this.currentProposalStatistic, stateConsensusManagerResponse.currentProposalStatistic) &&
         Objects.equals(this.currentValidatorSet, stateConsensusManagerResponse.currentValidatorSet) &&
@@ -240,13 +272,14 @@ public class StateConsensusManagerResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
+    return Objects.hash(atLedgerState, config, state, currentProposalStatistic, currentValidatorSet, currentTime, currentTimeRoundedToMinutes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateConsensusManagerResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    config: ").append(toIndentedString(config)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    currentProposalStatistic: ").append(toIndentedString(currentProposalStatistic)).append("\n");

@@ -12,21 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StatePackageResponse {
-    #[serde(rename = "at_ledger_state")]
-    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
-    #[serde(rename = "owner_role")]
-    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "royalty", skip_serializing_if = "Option::is_none")]
-    pub royalty: Option<Box<crate::core_api::generated::models::Substate>>,
+pub struct LedgerHashes {
+    /// The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger. 
+    #[serde(rename = "state_tree_hash")]
+    pub state_tree_hash: String,
+    /// The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger. 
+    #[serde(rename = "transaction_tree_hash")]
+    pub transaction_tree_hash: String,
+    /// The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger. 
+    #[serde(rename = "receipt_tree_hash")]
+    pub receipt_tree_hash: String,
 }
 
-impl StatePackageResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
-        StatePackageResponse {
-            at_ledger_state: Box::new(at_ledger_state),
-            owner_role: Option::Some(owner_role),
-            royalty: None,
+impl LedgerHashes {
+    pub fn new(state_tree_hash: String, transaction_tree_hash: String, receipt_tree_hash: String) -> LedgerHashes {
+        LedgerHashes {
+            state_tree_hash,
+            transaction_tree_hash,
+            receipt_tree_hash,
         }
     }
 }

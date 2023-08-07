@@ -22,85 +22,86 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerStateSummary;
-import com.radixdlt.api.core.generated.models.Substate;
+import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateNonFungibleResponse
+ * LedgerStateSummary
  */
 @JsonPropertyOrder({
-  StateNonFungibleResponse.JSON_PROPERTY_AT_LEDGER_STATE,
-  StateNonFungibleResponse.JSON_PROPERTY_NON_FUNGIBLE
+  LedgerStateSummary.JSON_PROPERTY_STATE_VERSION,
+  LedgerStateSummary.JSON_PROPERTY_HEADER_SUMMARY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateNonFungibleResponse {
-  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
-  private LedgerStateSummary atLedgerState;
+public class LedgerStateSummary {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE = "non_fungible";
-  private Substate nonFungible;
+  public static final String JSON_PROPERTY_HEADER_SUMMARY = "header_summary";
+  private LedgerHeaderSummary headerSummary;
 
-  public StateNonFungibleResponse() { 
+  public LedgerStateSummary() { 
   }
 
-  public StateNonFungibleResponse atLedgerState(LedgerStateSummary atLedgerState) {
-    this.atLedgerState = atLedgerState;
+  public LedgerStateSummary stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
     return this;
   }
 
    /**
-   * Get atLedgerState
-   * @return atLedgerState
+   * Get stateVersion
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerStateSummary getAtLedgerState() {
-    return atLedgerState;
+  public Long getStateVersion() {
+    return stateVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
-    this.atLedgerState = atLedgerState;
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
   }
 
 
-  public StateNonFungibleResponse nonFungible(Substate nonFungible) {
-    this.nonFungible = nonFungible;
+  public LedgerStateSummary headerSummary(LedgerHeaderSummary headerSummary) {
+    this.headerSummary = headerSummary;
     return this;
   }
 
    /**
-   * Get nonFungible
-   * @return nonFungible
+   * Get headerSummary
+   * @return headerSummary
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_HEADER_SUMMARY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getNonFungible() {
-    return nonFungible;
+  public LedgerHeaderSummary getHeaderSummary() {
+    return headerSummary;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_HEADER_SUMMARY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungible(Substate nonFungible) {
-    this.nonFungible = nonFungible;
+  public void setHeaderSummary(LedgerHeaderSummary headerSummary) {
+    this.headerSummary = headerSummary;
   }
 
 
   /**
-   * Return true if this StateNonFungibleResponse object is equal to o.
+   * Return true if this LedgerStateSummary object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +111,22 @@ public class StateNonFungibleResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateNonFungibleResponse stateNonFungibleResponse = (StateNonFungibleResponse) o;
-    return Objects.equals(this.atLedgerState, stateNonFungibleResponse.atLedgerState) &&
-        Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
+    LedgerStateSummary ledgerStateSummary = (LedgerStateSummary) o;
+    return Objects.equals(this.stateVersion, ledgerStateSummary.stateVersion) &&
+        Objects.equals(this.headerSummary, ledgerStateSummary.headerSummary);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(atLedgerState, nonFungible);
+    return Objects.hash(stateVersion, headerSummary);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateNonFungibleResponse {\n");
-    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
-    sb.append("    nonFungible: ").append(toIndentedString(nonFungible)).append("\n");
+    sb.append("class LedgerStateSummary {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
+    sb.append("    headerSummary: ").append(toIndentedString(headerSummary)).append("\n");
     sb.append("}");
     return sb.toString();
   }

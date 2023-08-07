@@ -3,7 +3,7 @@ use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 use state_manager::store::traits::QueryableProofStore;
-use state_manager::StateVersion;
+use state_manager::LedgerHeader;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -55,7 +55,10 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         .ok_or_else(|| not_found_error("Account not found".to_string()))?;
     }
 
-    let state_version = database.max_state_version();
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
         database.deref(),
@@ -68,7 +71,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         if account_address.as_node_id().is_global_virtual() {
             return response(
                 &mapping_context,
-                state_version,
+                &header,
                 &account_address,
                 &fungible_resource_address,
                 &Decimal::ZERO,
@@ -104,7 +107,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     response(
         &mapping_context,
-        state_version,
+        &header,
         &account_address,
         &fungible_resource_address,
         &balance,
@@ -113,13 +116,14 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
 fn response(
     context: &MappingContext,
-    state_version: StateVersion,
+    header: &LedgerHeader,
     account_address: &ComponentAddress,
     resource_address: &ResourceAddress,
     amount: &Decimal,
 ) -> Result<Json<models::LtsStateAccountFungibleResourceBalanceResponse>, ResponseError<()>> {
     Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
-        state_version: to_api_state_version(state_version)?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(header)?),
         account_address: to_api_component_address(context, account_address)?,
         fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
             fungible_resource_address: to_api_resource_address(context, resource_address)?,

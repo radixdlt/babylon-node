@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateComponentResponse {
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "info")]
     pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "state")]
@@ -30,8 +32,9 @@ pub struct StateComponentResponse {
 }
 
 impl StateComponentResponse {
-    pub fn new(info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
         StateComponentResponse {
+            at_ledger_state: Box::new(at_ledger_state),
             info: Option::Some(info),
             state: Option::Some(state),
             royalty_accumulator: Option::Some(royalty_accumulator),
