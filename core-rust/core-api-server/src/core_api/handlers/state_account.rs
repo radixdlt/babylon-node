@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 use state_manager::query::{dump_component_state, VaultData};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_account(
@@ -50,7 +51,13 @@ pub(crate) async fn handle_state_account(
         .map(|(vault_id, vault_data)| map_to_vault_balance(&mapping_context, vault_id, vault_data))
         .collect::<Result<Vec<_>, MappingError>>()?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateAccountResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
