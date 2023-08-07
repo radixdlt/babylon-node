@@ -356,6 +356,8 @@ pub mod ledger_hashes;
 pub use self::ledger_hashes::LedgerHashes;
 pub mod ledger_header_summary;
 pub use self::ledger_header_summary::LedgerHeaderSummary;
+pub mod ledger_state_summary;
+pub use self::ledger_state_summary::LedgerStateSummary;
 pub mod ledger_transaction;
 pub use self::ledger_transaction::LedgerTransaction;
 pub mod ledger_transaction_type;

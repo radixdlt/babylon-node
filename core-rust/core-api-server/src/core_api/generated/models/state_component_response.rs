@@ -13,10 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateComponentResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "info")]
     pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "state")]
@@ -34,10 +32,9 @@ pub struct StateComponentResponse {
 }
 
 impl StateComponentResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
         StateComponentResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
+            at_ledger_state: Box::new(at_ledger_state),
             info: Option::Some(info),
             state: Option::Some(state),
             royalty_accumulator: Option::Some(royalty_accumulator),

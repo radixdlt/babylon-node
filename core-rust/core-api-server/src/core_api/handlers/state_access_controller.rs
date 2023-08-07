@@ -50,8 +50,7 @@ pub(crate) async fn handle_state_access_controller(
         .ledger_header;
 
     Ok(models::StateAccessControllerResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_substate,

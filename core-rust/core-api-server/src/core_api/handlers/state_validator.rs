@@ -53,8 +53,7 @@ pub(crate) async fn handle_state_validator(
         .ledger_header;
 
     Ok(models::StateValidatorResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_substate(
             &mapping_context,

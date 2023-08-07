@@ -83,8 +83,7 @@ pub(crate) async fn handle_state_resource(
         .ledger_header;
 
     Ok(models::StateResourceResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

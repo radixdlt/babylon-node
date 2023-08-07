@@ -49,8 +49,7 @@ pub(crate) async fn handle_state_consensus_manager(
         .ledger_header;
 
     Ok(models::StateConsensusManagerResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,

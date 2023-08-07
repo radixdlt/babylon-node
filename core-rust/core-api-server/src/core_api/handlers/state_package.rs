@@ -36,8 +36,7 @@ pub(crate) async fn handle_state_package(
         .ledger_header;
 
     Ok(models::StatePackageResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,

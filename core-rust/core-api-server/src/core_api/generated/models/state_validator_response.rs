@@ -13,10 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateValidatorResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
@@ -33,10 +31,9 @@ pub struct StateValidatorResponse {
 }
 
 impl StateValidatorResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, address: String, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, address: String, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateValidatorResponse {
         StateValidatorResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
+            at_ledger_state: Box::new(at_ledger_state),
             address,
             state: Option::Some(state),
             owner_role: Option::Some(owner_role),

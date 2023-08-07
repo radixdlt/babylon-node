@@ -13,10 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateConsensusManagerResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "config")]
     pub config: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "state")]
@@ -32,10 +30,9 @@ pub struct StateConsensusManagerResponse {
 }
 
 impl StateConsensusManagerResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, config: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, current_proposal_statistic: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate, current_time: crate::core_api::generated::models::Substate, current_time_rounded_to_minutes: crate::core_api::generated::models::Substate) -> StateConsensusManagerResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, config: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, current_proposal_statistic: crate::core_api::generated::models::Substate, current_validator_set: crate::core_api::generated::models::Substate, current_time: crate::core_api::generated::models::Substate, current_time_rounded_to_minutes: crate::core_api::generated::models::Substate) -> StateConsensusManagerResponse {
         StateConsensusManagerResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
+            at_ledger_state: Box::new(at_ledger_state),
             config: Option::Some(config),
             state: Option::Some(state),
             current_proposal_statistic: Option::Some(current_proposal_statistic),

@@ -138,6 +138,15 @@ pub fn to_api_sbor_data_from_bytes(
     })
 }
 
+pub fn to_api_ledger_state_summary(
+    header: &LedgerHeader,
+) -> Result<models::LedgerStateSummary, MappingError> {
+    Ok(models::LedgerStateSummary {
+        state_version: to_api_state_version(header.state_version)?,
+        header_summary: Box::new(to_api_ledger_header_summary(header)?),
+    })
+}
+
 pub fn to_api_ledger_header_summary(
     header: &LedgerHeader,
 ) -> Result<models::LedgerHeaderSummary, MappingError> {

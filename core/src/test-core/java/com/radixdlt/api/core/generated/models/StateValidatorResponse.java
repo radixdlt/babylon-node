@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerHeaderSummary;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
@@ -37,8 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateValidatorResponse
  */
 @JsonPropertyOrder({
-  StateValidatorResponse.JSON_PROPERTY_STATE_VERSION,
-  StateValidatorResponse.JSON_PROPERTY_LEDGER_HEADER_SUMMARY,
+  StateValidatorResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateValidatorResponse.JSON_PROPERTY_ADDRESS,
   StateValidatorResponse.JSON_PROPERTY_STATE,
   StateValidatorResponse.JSON_PROPERTY_OWNER_ROLE,
@@ -47,11 +46,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateValidatorResponse {
-  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
-  private Long stateVersion;
-
-  public static final String JSON_PROPERTY_LEDGER_HEADER_SUMMARY = "ledger_header_summary";
-  private LedgerHeaderSummary ledgerHeaderSummary;
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
 
   public static final String JSON_PROPERTY_ADDRESS = "address";
   private String address;
@@ -71,57 +67,29 @@ public class StateValidatorResponse {
   public StateValidatorResponse() { 
   }
 
-  public StateValidatorResponse stateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
+  public StateValidatorResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
     return this;
   }
 
    /**
-   * Get stateVersion
-   * minimum: 1
-   * maximum: 100000000000000
-   * @return stateVersion
+   * Get atLedgerState
+   * @return atLedgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getStateVersion() {
-    return stateVersion;
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateVersion(Long stateVersion) {
-    this.stateVersion = stateVersion;
-  }
-
-
-  public StateValidatorResponse ledgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
-    this.ledgerHeaderSummary = ledgerHeaderSummary;
-    return this;
-  }
-
-   /**
-   * Get ledgerHeaderSummary
-   * @return ledgerHeaderSummary
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public LedgerHeaderSummary getLedgerHeaderSummary() {
-    return ledgerHeaderSummary;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_LEDGER_HEADER_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerHeaderSummary(LedgerHeaderSummary ledgerHeaderSummary) {
-    this.ledgerHeaderSummary = ledgerHeaderSummary;
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
   }
 
 
@@ -277,8 +245,7 @@ public class StateValidatorResponse {
       return false;
     }
     StateValidatorResponse stateValidatorResponse = (StateValidatorResponse) o;
-    return Objects.equals(this.stateVersion, stateValidatorResponse.stateVersion) &&
-        Objects.equals(this.ledgerHeaderSummary, stateValidatorResponse.ledgerHeaderSummary) &&
+    return Objects.equals(this.atLedgerState, stateValidatorResponse.atLedgerState) &&
         Objects.equals(this.address, stateValidatorResponse.address) &&
         Objects.equals(this.state, stateValidatorResponse.state) &&
         Objects.equals(this.ownerRole, stateValidatorResponse.ownerRole) &&
@@ -288,15 +255,14 @@ public class StateValidatorResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, ledgerHeaderSummary, address, state, ownerRole, vaults, descendentNodes);
+    return Objects.hash(atLedgerState, address, state, ownerRole, vaults, descendentNodes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateValidatorResponse {\n");
-    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
-    sb.append("    ledgerHeaderSummary: ").append(toIndentedString(ledgerHeaderSummary)).append("\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");

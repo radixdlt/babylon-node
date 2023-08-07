@@ -67,8 +67,7 @@ pub(crate) async fn handle_state_non_fungible(
         .ledger_header;
 
     Ok(StateNonFungibleResponse {
-        state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
             &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(

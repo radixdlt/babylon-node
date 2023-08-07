@@ -13,10 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateResourceResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: i64,
-    #[serde(rename = "ledger_header_summary")]
-    pub ledger_header_summary: Box<crate::core_api::generated::models::LedgerHeaderSummary>,
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "manager")]
     pub manager: Option<crate::core_api::generated::models::StateResourceManager>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
@@ -24,10 +22,9 @@ pub struct StateResourceResponse {
 }
 
 impl StateResourceResponse {
-    pub fn new(state_version: i64, ledger_header_summary: crate::core_api::generated::models::LedgerHeaderSummary, manager: crate::core_api::generated::models::StateResourceManager, owner_role: crate::core_api::generated::models::Substate) -> StateResourceResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, manager: crate::core_api::generated::models::StateResourceManager, owner_role: crate::core_api::generated::models::Substate) -> StateResourceResponse {
         StateResourceResponse {
-            state_version,
-            ledger_header_summary: Box::new(ledger_header_summary),
+            at_ledger_state: Box::new(at_ledger_state),
             manager: Option::Some(manager),
             owner_role: Option::Some(owner_role),
         }
