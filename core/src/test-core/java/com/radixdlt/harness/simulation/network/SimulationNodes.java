@@ -81,6 +81,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.harness.simulation.ModuleRunnerStopper;
 import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -364,10 +365,7 @@ public class SimulationNodes {
     }
 
     private void stopNode(Injector injector) {
-      injector
-          .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
-          .values()
-          .forEach(ModuleRunner::stop);
+      injector.getInstance(ModuleRunnerStopper.class).stop();
     }
   }
 }

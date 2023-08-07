@@ -74,7 +74,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use prometheus::Registry;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;

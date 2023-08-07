@@ -145,7 +145,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
     returnSubstateSize += 2; // Substate size
     returnSubstateSize++; // Substate typeId
     returnSubstateSize++; // Reserved
-    returnSubstateSize += ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1; // PubKey addr
+    returnSubstateSize += ECDSASecp256k1PublicKey.LENGTH + 1; // PubKey addr
     returnSubstateSize++; // Native token addr
     returnSubstateSize += UInt256.BYTES; // amount
     return returnSubstateSize;

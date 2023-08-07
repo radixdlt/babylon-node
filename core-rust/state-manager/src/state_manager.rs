@@ -85,7 +85,7 @@ use transaction_scenarios::scenario::DescribedAddress as ScenarioDescribedAddres
 use transaction_scenarios::scenario::*;
 use transaction_scenarios::scenarios::*;
 
-use parking_lot::{Mutex, RwLock};
+use node_common::locks::{LockFactory, Mutex, RwLock};
 use prometheus::Registry;
 use tracing::{info, warn};
 
@@ -136,6 +136,7 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         logging_config: LoggingConfig,
         metric_registry: &Registry,
+        lock_factory: &LockFactory,
     ) -> StateManager<S> {
         let transaction_root = store.read().get_top_ledger_hashes().1.transaction_root;
 
@@ -152,7 +153,9 @@ impl<S: TransactionIdentifierLoader> StateManager<S> {
             mempool_manager,
             execution_configurator,
             pending_transaction_result_cache,
-            execution_cache: parking_lot::const_mutex(ExecutionCache::new(transaction_root)),
+            execution_cache: lock_factory
+                .named("execution_cache")
+                .new_mutex(ExecutionCache::new(transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metric_registry),

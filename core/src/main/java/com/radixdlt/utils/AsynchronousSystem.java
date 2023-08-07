@@ -62,60 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.tokens.construction;
+package com.radixdlt.utils;
 
-import static com.radixdlt.substate.TxAction.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.application.tokens.state.AccountBucket;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.substate.*;
-import com.radixdlt.utils.UInt256;
-import java.nio.ByteBuffer;
+/** An asynchronous counterpart of the {@link System} class. */
+public final class AsynchronousSystem {
+  private static final Logger log = LogManager.getLogger();
 
-public record StakeTokensConstructorV3(UInt256 minimumStake)
-    implements ActionConstructor<StakeTokens> {
+  /**
+   * An asynchronous counterpart of the {@link System#exit(int)} (delegating to the original
+   * implementation in a newly-started thread). This is useful for exits triggered from Rust (via
+   * JNI), which cause shutdown hooks' threads to hang inside native Rust methods after calling the
+   * synchronous {@link System#exit(int)}.
+   */
+  public static void exit(int status) {
+    log.info("Starting a thread for asynchronous System.exit({})", status);
+    new Thread(() -> logAndExitSynchronously(status), "Asynchronous-Exit").start();
+  }
 
-  @Override
-  public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
-    if (action.amount().compareTo(minimumStake) < 0) {
-      throw new MinimumStakeException(minimumStake, action.amount());
-    }
-
-    // TODO: construct this based on substate definition
-    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
-    buf.put(SubstateTypeId.TOKENS.id());
-    buf.put((byte) 0);
-    buf.put(action.fromAddr().getBytes());
-
-    var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
-    var change =
-        builder.downFungible(
-            index,
-            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
-            action.amount(),
-            available -> {
-              var from = AccountBucket.from(REAddr.ofNativeToken(), action.fromAddr());
-              return new NotEnoughResourcesException(from, action.amount(), available);
-            });
-    if (!change.isZero()) {
-      builder.up(new TokensInAccount(action.fromAddr(), REAddr.ofNativeToken(), change));
-    }
-
-    var flag = builder.read(AllowDelegationFlag.class, action.toDelegate());
-    if (!flag.allowsDelegation()) {
-      var validator = builder.read(ValidatorOwnerCopy.class, action.toDelegate());
-      var owner = validator.owner();
-      if (!action.fromAddr().equals(owner)) {
-        throw new DelegateStakePermissionException(owner, action.fromAddr());
-      }
-    }
-    builder.up(new PreparedStake(action.amount(), action.fromAddr(), action.toDelegate()));
-    builder.end();
+  private static void logAndExitSynchronously(int status) {
+    log.info("Invoking a System.exit({})", status);
+    System.exit(status);
   }
 }

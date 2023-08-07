@@ -71,7 +71,7 @@ use crate::transaction::*;
 use crate::*;
 
 use ::transaction::prelude::*;
-use parking_lot::Mutex;
+use node_common::locks::Mutex;
 use radix_engine::transaction::RejectResult;
 
 /// An internal delegate for executing a series of consecutive transactions while tracking their

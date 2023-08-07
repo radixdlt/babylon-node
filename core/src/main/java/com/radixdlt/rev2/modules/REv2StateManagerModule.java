@@ -195,11 +195,13 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Singleton
           private StateManager stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+              FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
               DatabaseFlags databaseFlags) {
             return new StateManager(
                 mempoolRelayDispatcher,
+                fatalPanicHandler,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,

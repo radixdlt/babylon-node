@@ -99,7 +99,7 @@ public final class ConsensusHasher {
           outputStream.writeInt(nextEpoch.getValidators().size()); // 4 bytes
           outputStream.writeLong(nextEpoch.getEpoch()); // 8 bytes
           for (var v : nextEpoch.getValidators().asList()) {
-            var key = v.getValidatorId().getKey().getCompressedBytes();
+            var key = v.getValidatorId().getKey().getBytes();
             outputStream.write(key);
             var power = v.getPower();
             outputStream.write(power.toByteArray());

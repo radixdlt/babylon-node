@@ -76,11 +76,12 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.lang.Result;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
-import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
+import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -98,6 +99,7 @@ import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.math.ec.ECPoint;
 
 /** Handles the auth handshake to create an encrypted communication channel between peers. */
 public final class AuthHandshaker {
@@ -143,8 +145,15 @@ public final class AuthHandshaker {
     this.newestForkName = newestForkName;
   }
 
-  public byte[] initiate(ECDSASecp256k1PublicKey remotePubKey) {
-    final var message = createAuthInitiateMessage(remotePubKey);
+  public Result<byte[], AuthHandshakeError> initiate(ECDSASecp256k1PublicKey remotePubKey) {
+    final ECPoint remotePubKeyPoint;
+    try {
+      remotePubKeyPoint = remotePubKey.decodePoint();
+    } catch (PublicKeyException e) {
+      return Result.error(AuthHandshakeResult.error("Invalid remote public key", Optional.empty()));
+    }
+
+    final var message = createAuthInitiateMessage(remotePubKeyPoint);
     final var encoded = serialization.toDson(message, DsonOutput.Output.WIRE);
     final var padding = randomBytes(secureRandom.nextInt(MAX_PADDING - MIN_PADDING) + MIN_PADDING);
     final var padded = new byte[encoded.length + padding.length];
@@ -153,7 +162,8 @@ public final class AuthHandshaker {
 
     final var encryptedSize = padded.length + ECIESCoder.OVERHEAD_SIZE;
     final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
-    final var encryptedPayload = ECIESCoder.encrypt(remotePubKey.getEcPoint(), padded, sizePrefix);
+
+    final var encryptedPayload = ECIESCoder.encrypt(remotePubKeyPoint, padded, sizePrefix);
     final var packet = new byte[sizePrefix.length + encryptedPayload.length];
     System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
     System.arraycopy(encryptedPayload, 0, packet, sizePrefix.length, encryptedPayload.length);
@@ -162,11 +172,12 @@ public final class AuthHandshaker {
     this.initiatePacketOpt = Optional.of(packet);
     this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-    return packet;
+    return Result.success(packet);
   }
 
-  private AuthInitiateMessage createAuthInitiateMessage(ECDSASecp256k1PublicKey remotePubKey) {
-    final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), NONCE_SIZE);
+  private AuthInitiateMessage createAuthInitiateMessage(ECPoint remotePubKeyPoint) {
+    final var sharedSecret =
+        bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKeyPoint), NONCE_SIZE);
     final var messageToSign = xor(sharedSecret, nonce);
     final var signature = ephemeralKey.sign(messageToSign);
     return new AuthInitiateMessage(
@@ -225,10 +236,11 @@ public final class AuthHandshaker {
               this.capabilities.toRemotePeerCapabilities());
       final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 
+      final var remotePubKeyPoint = remotePubKey.decodePoint();
       final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
       final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
       final var encryptedResponsePayload =
-          ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
+          ECIESCoder.encrypt(remotePubKeyPoint, encodedResponse, sizePrefix);
 
       final var packet = new byte[1 + sizePrefix.length + encryptedResponsePayload.length];
       packet[0] = STATUS_OK;
@@ -241,7 +253,7 @@ public final class AuthHandshaker {
           encryptedResponsePayload.length);
 
       final var remoteEphemeralKey =
-          extractEphemeralKey(message.getSignature(), message.getNonce(), remotePubKey);
+          extractEphemeralKey(message.getSignature(), message.getNonce(), remotePubKeyPoint);
 
       final var initiatePacket = new byte[data.readableBytes()];
       data.getBytes(0, initiatePacket);
@@ -295,14 +307,14 @@ public final class AuthHandshaker {
   }
 
   private ECDSASecp256k1PublicKey extractEphemeralKey(
-      ECDSASecp256k1Signature signature, HashCode nonce, ECDSASecp256k1PublicKey publicKey) {
-    final var sharedSecret = ecKeyOps.ecdhAgreement(publicKey);
+      ECDSASecp256k1Signature signature, HashCode nonce, ECPoint publicKeyPoint) {
+    final var sharedSecret = ecKeyOps.ecdhAgreement(publicKeyPoint);
     final var token = bigIntegerToBytes(sharedSecret, NONCE_SIZE);
     final var signed = xor(token, nonce.asBytes());
     return ECDSASecp256k1PublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
   }
 
-  private AuthHandshakeSuccess finalizeHandshake(
+  private AuthHandshakeResult finalizeHandshake(
       ECDSASecp256k1PublicKey remoteEphemeralKey,
       HashCode remoteNonce,
       Optional<String> remoteNewestForkName,
@@ -311,13 +323,21 @@ public final class AuthHandshaker {
     final var responsePacket = responsePacketOpt.get();
     final var remotePubKey = remotePubKeyOpt.get();
 
+    final ECPoint remoteEphemeralKeyPoint;
+    try {
+      remoteEphemeralKeyPoint = remoteEphemeralKey.decodePoint();
+    } catch (PublicKeyException ex) {
+      return AuthHandshakeResult.error(
+          "Remote ephemeral key is invalid", Optional.of(NodeId.fromPublicKey(remotePubKey)));
+    }
+
     final var agreement = new ECDHBasicAgreement();
     agreement.init(
         new ECPrivateKeyParameters(
             new BigInteger(1, ephemeralKey.getPrivateKey()), ECKeyUtils.domain()));
     final var secretScalar =
         agreement.calculateAgreement(
-            new ECPublicKeyParameters(remoteEphemeralKey.getEcPoint(), ECKeyUtils.domain()));
+            new ECPublicKeyParameters(remoteEphemeralKeyPoint, ECKeyUtils.domain()));
     final var agreedSecret = bigIntegerToBytes(secretScalar, SECRET_SIZE);
 
     final var sharedSecret =

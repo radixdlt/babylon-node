@@ -80,7 +80,7 @@ use crate::store::StateManagerDatabase;
 use crate::transaction::{
     CachedCommittabilityValidator, ForceRecalculation, PrevalidatedCheckMetadata,
 };
-use parking_lot::RwLock;
+use node_common::locks::RwLock;
 use tracing::warn;
 
 /// A high-level API giving a thread-safe access to the `PriorityMempool`.

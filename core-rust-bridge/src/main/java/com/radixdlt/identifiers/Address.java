@@ -77,7 +77,7 @@ public final class Address {
   }
 
   public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey publicKey) {
-    return virtualAccountAddress(publicKey.getCompressedBytes());
+    return virtualAccountAddress(publicKey.getBytes());
   }
 
   public static ComponentAddress virtualAccountAddress(byte[] publicKeyBytes) {

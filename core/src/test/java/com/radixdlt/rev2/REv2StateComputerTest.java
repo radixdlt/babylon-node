@@ -100,6 +100,7 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statemanager.DatabaseFlags;
+import com.radixdlt.statemanager.FatalPanicHandler;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt256;
@@ -147,6 +148,7 @@ public class REv2StateComputerTest {
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(ONLY_VALIDATOR_ID.getKey()));
+            bind(FatalPanicHandler.class).toInstance(() -> {});
           }
 
           @Provides

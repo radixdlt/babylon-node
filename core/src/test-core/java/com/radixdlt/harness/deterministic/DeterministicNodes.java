@@ -84,6 +84,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.statemanager.FatalPanicHandler;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -203,6 +204,7 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
+                bind(FatalPanicHandler.class).toInstance(() -> shutdownNode(nodeIndex));
                 bind(DeterministicProcessor.class).in(Scopes.SINGLETON);
               }
 

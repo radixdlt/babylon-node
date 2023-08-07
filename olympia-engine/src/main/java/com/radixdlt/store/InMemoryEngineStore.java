@@ -137,7 +137,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
                             var data = (ValidatorData) update.getParsed();
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.validatorKey().getCompressedBytes());
+                                    update.typeByte(), data.validatorKey().getBytes());
                             store.maps.put(mapKey, update.getRawSubstateBytes());
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
@@ -148,7 +148,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
                             var data = (ValidatorData) update.getParsed();
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.validatorKey().getCompressedBytes());
+                                    update.typeByte(), data.validatorKey().getBytes());
                             store.maps.remove(mapKey);
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());

@@ -62,60 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.tokens.construction;
+use jni::errors::Result;
+use jni::objects::{GlobalRef, JObject};
+use jni::{JNIEnv, JavaVM};
+use std::ops::Deref;
+use tracing::error;
+use transaction::prelude::*;
 
-import static com.radixdlt.substate.TxAction.*;
+/// An interface for notifying Java about a fatal panic.
+pub struct FatalPanicHandler {
+    jvm: JavaVM,
+    j_state_manager_ref: GlobalRef,
+}
 
-import com.radixdlt.application.tokens.state.AccountBucket;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.substate.*;
-import com.radixdlt.utils.UInt256;
-import java.nio.ByteBuffer;
+impl FatalPanicHandler {
+    /// Name of the "handle fatal panic" method on the Java side.
+    const HANDLE_METHOD_NAME: &'static str = "handleFatalPanic";
 
-public record StakeTokensConstructorV3(UInt256 minimumStake)
-    implements ActionConstructor<StakeTokens> {
+    /// The Java handler method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const HANDLE_METHOD_DESCRIPTOR: &'static str = "()V";
 
-  @Override
-  public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
-    if (action.amount().compareTo(minimumStake) < 0) {
-      throw new MinimumStakeException(minimumStake, action.amount());
+    /// Creates a long-lived handler from the given short-lived JNI context and Java state manager
+    /// reference.
+    pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
+        Ok(Self {
+            jvm: env.get_java_vm()?,
+            j_state_manager_ref: env.new_global_ref(j_state_manager)?,
+        })
     }
 
-    // TODO: construct this based on substate definition
-    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.LENGTH);
-    buf.put(SubstateTypeId.TOKENS.id());
-    buf.put((byte) 0);
-    buf.put(action.fromAddr().getBytes());
-
-    var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
-    var change =
-        builder.downFungible(
-            index,
-            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
-            action.amount(),
-            available -> {
-              var from = AccountBucket.from(REAddr.ofNativeToken(), action.fromAddr());
-              return new NotEnoughResourcesException(from, action.amount(), available);
-            });
-    if (!change.isZero()) {
-      builder.up(new TokensInAccount(action.fromAddr(), REAddr.ofNativeToken(), change));
+    /// Calls the Java handler of fatal Rust panics.
+    /// Any `Err` will be logged and ignored.
+    /// Any Java exception will be left untouched - which means: if the current thread originates
+    /// from Java (i.e. went through JNI), then the exception will continue to propagate after
+    /// returning back to Java.
+    pub fn handle_fatal_panic(&self) {
+        if let Err(error) = self.call_java_fatal_panic_handler() {
+            error!("failed to call Java fatal panic handler: {:?}", error);
+        }
     }
 
-    var flag = builder.read(AllowDelegationFlag.class, action.toDelegate());
-    if (!flag.allowsDelegation()) {
-      var validator = builder.read(ValidatorOwnerCopy.class, action.toDelegate());
-      var owner = validator.owner();
-      if (!action.fromAddr().equals(owner)) {
-        throw new DelegateStakePermissionException(owner, action.fromAddr());
-      }
+    fn call_java_fatal_panic_handler(&self) -> Result<()> {
+        let attachment = self.jvm.attach_current_thread()?;
+        let env = attachment.deref();
+        let j_state_manager = self.j_state_manager_ref.as_obj();
+        let result = env.call_method(
+            j_state_manager,
+            FatalPanicHandler::HANDLE_METHOD_NAME,
+            FatalPanicHandler::HANDLE_METHOD_DESCRIPTOR,
+            &[],
+        );
+        result.map(|_| ())
     }
-    builder.up(new PreparedStake(action.amount(), action.fromAddr(), action.toDelegate()));
-    builder.end();
-  }
 }
