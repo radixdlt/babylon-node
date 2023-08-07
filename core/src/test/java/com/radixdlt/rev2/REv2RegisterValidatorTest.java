@@ -73,7 +73,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -92,15 +94,37 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public final class REv2RegisterValidatorTest {
 
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(2);
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() throws PublicKeyException {
+    return List.of(
+        new Object[] {PrivateKeys.ofNumeric(2).getPublicKey()},
+        new Object[] {
+          // This has correct length but does not decode to a valid point on a curve,
+          // and it shouldn't cause any problems on the node side.
+          ECDSASecp256k1PublicKey.fromHex(
+              "02f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7be22351")
+        });
+  }
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private final ECKeyPair ownerKey = PrivateKeys.ofNumeric(2);
+  private final ECDSASecp256k1PublicKey validatorPublicKey;
+
+  public REv2RegisterValidatorTest(ECDSASecp256k1PublicKey validatorPublicKey) {
+    this.validatorPublicKey = validatorPublicKey;
+  }
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -134,11 +158,10 @@ public final class REv2RegisterValidatorTest {
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-      var ownerKey = TEST_KEY;
       var ownerAccount = Address.virtualAccountAddress(ownerKey.getPublicKey());
       var createValidatorTransaction =
           TransactionBuilder.forTests()
-              .manifest(Manifest.createValidator(TEST_KEY.getPublicKey(), ownerAccount))
+              .manifest(Manifest.createValidator(validatorPublicKey, ownerAccount))
               .prepare()
               .raw();
       mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
@@ -193,7 +216,7 @@ public final class REv2RegisterValidatorTest {
                                           v.getValidatorId()
                                               .equals(
                                                   BFTValidatorId.create(
-                                                      validatorAddress, TEST_KEY.getPublicKey()))))
+                                                      validatorAddress, validatorPublicKey))))
                       .orElse(false)),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));
     }

@@ -65,8 +65,13 @@
 package com.radixdlt.harness.simulation;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.statemanager.FatalPanicHandler;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Random;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class MockedSystemModule extends AbstractModule {
   final Random sharedRandom = new Random();
@@ -75,5 +80,30 @@ public class MockedSystemModule extends AbstractModule {
   public void configure() {
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
     bind(Random.class).toInstance(sharedRandom);
+    bind(FatalPanicHandler.class).to(ModuleRunnerStoppingHandler.class);
+  }
+
+  public static class ModuleRunnerStoppingHandler implements FatalPanicHandler {
+
+    private static final Logger log = LogManager.getLogger();
+
+    // Note: the stopper references all modules, and the fatal panic handler is referenced by one of
+    // these modules - hence a provider indirection is needed to break the circular dependency.
+    private final Provider<ModuleRunnerStopper> stopper;
+
+    @Inject
+    public ModuleRunnerStoppingHandler(Provider<ModuleRunnerStopper> stopper) {
+      this.stopper = stopper;
+    }
+
+    @Override
+    public void handleFatalPanic() {
+      log.error(
+          """
+          A fatal Rust panic (e.g. while holding a write lock) happened; stopping the Node modules.
+          The current test should fail as if the tested Node was shut down gracefully.
+          """);
+      this.stopper.get().stop();
+    }
   }
 }

@@ -134,7 +134,7 @@ where
 
             metrics
                 .handle_request
-                .with_two_labels(endpoint.clone(), status.clone())
+                .with_two_labels(endpoint.clone(), status)
                 .observe(duration);
 
             Ok(response)

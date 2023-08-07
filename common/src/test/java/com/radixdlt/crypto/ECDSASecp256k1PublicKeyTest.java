@@ -64,24 +64,12 @@
 
 package com.radixdlt.crypto;
 
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Test;
 
 public class ECDSASecp256k1PublicKeyTest {
   @Test
-  public void equalsContract() throws PublicKeyException {
-    final var p1 = ECKeyPair.generateNew().getPublicKey().getEcPoint();
-    final var p2 = ECKeyPair.generateNew().getPublicKey().getEcPoint();
-    var key = Bytes.fromBase64String("AtuRjZPGw0b0BIYx46e0iKCaFU5EPnPx7/wLk6Vcursg");
-    ECDSASecp256k1PublicKey pk = ECDSASecp256k1PublicKey.fromBytes(key);
-    EqualsVerifier.forClass(ECDSASecp256k1PublicKey.class)
-        .withNonnullFields("ecPoint", "compressed")
-        .withIgnoredFields("ecPoint", "uncompressedBytes") // cached value
-        .withPrefabValues(ECPoint.class, p1, p2)
-        .withCachedHashCode("hashCode", "computeHashCode", pk)
-        .verify();
+  public void equalsContract() {
+    EqualsVerifier.forClass(ECDSASecp256k1PublicKey.class).verify();
   }
 }

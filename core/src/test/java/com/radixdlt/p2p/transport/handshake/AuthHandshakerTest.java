@@ -120,7 +120,7 @@ public final class AuthHandshakerTest {
             "fork1",
             capabilities);
 
-    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey()).unwrap();
     final var handshaker2ResultPair =
         handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
     final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
@@ -165,7 +165,7 @@ public final class AuthHandshakerTest {
             "fork1",
             capabilities);
 
-    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey()).unwrap();
     final var handshaker2ResultPair =
         handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
     final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
@@ -205,7 +205,7 @@ public final class AuthHandshakerTest {
             "fork1",
             capabilities);
 
-    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey()).unwrap();
     final var handshaker2ResultPair =
         handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
     assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);
@@ -236,7 +236,7 @@ public final class AuthHandshakerTest {
             "fork1",
             capabilities);
 
-    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey()).unwrap();
     final var handshaker2ResultPair =
         handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
     assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);

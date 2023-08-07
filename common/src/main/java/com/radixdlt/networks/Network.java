@@ -90,12 +90,14 @@ public enum Network {
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  // - kisharnet = Babylon RCnet-V1, after Kishar (from the Babylonian Creation Story)
-  // - ansharnet = Babylon RCnet-V2, after Anshar (from the Babylonian Creation Story)
+  // - kisharnet = Babylon RCnet v1, after Kishar (from the Babylonian Creation Story)
+  // - ansharnet = Babylon RCnet v2, after Anshar (from the Babylonian Creation Story)
+  // - zabanet = Babylon RCnet v3, after Zababa, a war god from the Mesopotamian city of Kish
   ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_"),
   NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_"),
   KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_"),
   ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_"),
+  ZABANET(14 /* 0x0e */, "zabanet", "tdx_e_"),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Node integration network, after Gilgamesh

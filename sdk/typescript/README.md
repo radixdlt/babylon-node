@@ -30,7 +30,7 @@ import { CoreApiClient } from "@radixdlt/babylon-core-api-sdk";
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "http://127.0.0.1:3333/core", // Note: 127.0.0.1 works better than localhost on Node.JS
-    logicalNetworkName: "ansharnet",
+    logicalNetworkName: "zabanet",
     // Further options - explained below...
 });
 ```
@@ -92,7 +92,7 @@ const basicAuthPassword = "????"; // From your node set-up - provide this secure
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "https://127.0.0.1/core",
-    logicalNetworkName: "ansharnet",
+    logicalNetworkName: "zabanet",
     advanced: {
         agent: new https.Agent({
             keepAlive: true,
@@ -121,7 +121,7 @@ const basicAuthPassword = "????"; // From your node set-up - provide this secure
 
 const coreApiClient = await CoreApiClient.initialize({
     basePath: "https://127.0.0.1/core",
-    logicalNetworkName: "ansharnet",
+    logicalNetworkName: "zabanet",
     advanced: {
         dispatcher: new Agent({
             connect: {

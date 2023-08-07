@@ -90,6 +90,13 @@ public final class RustMempoolTest {
   /** A no-op dispatcher of transactions to be relayed. */
   private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
 
+  /**
+   * A no-op fatal panic handler. Please note that a JNI-invoking test (like this one) will observe
+   * panics as runtime exceptions propagated up the stack (through JNI), which will fail the test
+   * gracefully anyway.
+   */
+  private static final FatalPanicHandler NOOP_HANDLER = () -> {};
+
   private static void initStateComputer(StateManager stateManager) {
     final var metrics = new MetricsInitializer().initialize();
     final var genesisProvider =
@@ -118,7 +125,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -172,7 +179,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -309,7 +316,7 @@ public final class RustMempoolTest {
             false);
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
       initStateComputer(stateManager);
       final var rustMempool = new RustMempool(metrics, stateManager);
       final var transaction1 = constructValidTransaction(0, 0);

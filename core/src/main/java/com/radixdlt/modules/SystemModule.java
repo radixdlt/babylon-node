@@ -66,6 +66,8 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.radixdlt.statemanager.FatalPanicHandler;
+import com.radixdlt.utils.AsynchronousSystem;
 import com.radixdlt.utils.TimeSupplier;
 import java.security.SecureRandom;
 import java.util.Random;
@@ -76,5 +78,6 @@ public class SystemModule extends AbstractModule {
   public void configure() {
     bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+    bind(FatalPanicHandler.class).toInstance(() -> AsynchronousSystem.exit(-1));
   }
 }
