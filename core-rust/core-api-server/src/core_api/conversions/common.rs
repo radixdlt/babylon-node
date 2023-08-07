@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 
 use sbor::representations::*;
+use state_manager::LedgerHeader;
 
 use crate::core_api::*;
 
@@ -134,5 +135,30 @@ pub fn to_api_sbor_data_from_bytes(
                 None
             }
         },
+    })
+}
+
+pub fn to_api_ledger_state_summary(
+    header: &LedgerHeader,
+) -> Result<models::LedgerStateSummary, MappingError> {
+    Ok(models::LedgerStateSummary {
+        state_version: to_api_state_version(header.state_version)?,
+        header_summary: Box::new(to_api_ledger_header_summary(header)?),
+    })
+}
+
+pub fn to_api_ledger_header_summary(
+    header: &LedgerHeader,
+) -> Result<models::LedgerHeaderSummary, MappingError> {
+    let hashes = &header.hashes;
+    Ok(models::LedgerHeaderSummary {
+        ledger_hashes: Box::new(models::LedgerHashes {
+            state_tree_hash: to_api_state_tree_hash(&hashes.state_root),
+            transaction_tree_hash: to_api_transaction_tree_hash(&hashes.transaction_root),
+            receipt_tree_hash: to_api_receipt_tree_hash(&hashes.receipt_root),
+        }),
+        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
+            header.proposer_timestamp_ms,
+        )?),
     })
 }

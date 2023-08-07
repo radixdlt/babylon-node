@@ -2,6 +2,7 @@ use crate::core_api::*;
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::map_to_vault_balance;
@@ -59,7 +60,13 @@ pub(crate) async fn handle_state_component(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateComponentResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
             &type_info_substate,

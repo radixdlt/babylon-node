@@ -12,21 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StatePackageResponse {
-    #[serde(rename = "at_ledger_state")]
-    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
-    #[serde(rename = "owner_role")]
-    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "royalty", skip_serializing_if = "Option::is_none")]
-    pub royalty: Option<Box<crate::core_api::generated::models::Substate>>,
+pub struct CommittedStateIdentifierAllOf {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
 }
 
-impl StatePackageResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
-        StatePackageResponse {
-            at_ledger_state: Box::new(at_ledger_state),
-            owner_role: Option::Some(owner_role),
-            royalty: None,
+impl CommittedStateIdentifierAllOf {
+    pub fn new(state_version: i64) -> CommittedStateIdentifierAllOf {
+        CommittedStateIdentifierAllOf {
+            state_version,
         }
     }
 }

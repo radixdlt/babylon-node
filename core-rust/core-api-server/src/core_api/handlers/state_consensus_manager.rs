@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -42,7 +43,13 @@ pub(crate) async fn handle_state_consensus_manager(
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
     )?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateConsensusManagerResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,
