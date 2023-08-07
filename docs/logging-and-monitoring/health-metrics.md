@@ -79,19 +79,19 @@ Additional indicators of a healthy-but-still-syncing Node:
 - `rn_sync_current_state_version` is `< rn_sync_target_state_version` but approaches it.
   - This shows how many transactions still need to be ingested to become synced.
 
-- `rn_ledger_last_update_proposer_epoch_second` is `< rn_sync_target_proposer_epoch_second` but
-  approaches it.
+- `rn_ledger_last_update_proposer_epoch_second` is `< rn_sync_target_proposer_timestamp_epoch_second`
+  but approaches it.
   - This shows how much "Ledger time" still needs to be ingested.
-  - In case of healthy Validator Set, the `rn_sync_target_proposer_epoch_second` should be very
-    close to the wallclock.
-  - However, in case of liveness break, the `rn_sync_target_proposer_epoch_second` will lag behind
-    the wallclock, and even a healthy Node cannot sync past that value. Technically, a condition for
-    a synced Node is `rn_ledger_last_update_proposer_epoch_second == rn_sync_target_proposer_epoch_second`
+  - In case of healthy Validator Set, the `rn_sync_target_proposer_timestamp_epoch_second` should be
+    very close to the wallclock.
+  - However, in case of liveness break, the `rn_sync_target_proposer_timestamp_epoch_second` will
+    lag behind the wallclock, and even a healthy Node cannot sync past that value. Technically, a 
+    condition for a synced Node is `rn_ledger_last_update_proposer_epoch_second == rn_sync_target_proposer_timestamp_epoch_second`
     (or less ambiguously: `rn_sync_current_state_version == rn_sync_target_state_version`).
 
-Please bear in mind that both `rn_sync_target_proposer_epoch_second` and `rn_sync_target_state_version`
-come from the Node's peers and are not verified in any way, so the "synced node" condition described
-above cannot be trusted blindly.
+Please bear in mind that both `rn_sync_target_proposer_timestamp_epoch_second` and
+`rn_sync_target_state_version` come from the Node's peers and are not verified in any way, so the
+"synced node" condition described above cannot be trusted blindly.
 
 #### State: Synced
 
@@ -112,9 +112,9 @@ being healthy.
 Of course, a local connectivity loss can be hard to distinguish from the Network's liveness break,
 but some other metrics can narrow it down:
 
-- A non-progressing `rn_sync_target_proposer_epoch_second` and `rn_sync_target_state_version` are
-  strong indicators of the Network's liveness problems (unless _all_ connected peers coordinated to 
-  lie to the Node).
+- A non-progressing `rn_sync_target_proposer_timestamp_epoch_second` and `rn_sync_target_state_version`
+  are strong indicators of the Network's liveness problems (unless _all_ connected peers coordinated
+  to lie to the Node).
 - A growing `rn_sync_unexpected_responses_received_total` hints at network latency/timeout issues.
 - A growing `rn_sync_invalid_responses_received_total` (especially when caused by
   `MISMATCHED_TRANSACTION_ROOT`) hints at malformed local Ledger state.
@@ -139,17 +139,17 @@ The labels of `rn_misc_config_info` related to the Node's consensus health:
 - `post_genesis_epoch_state_hash`
   A state hash captured after the execution of all the Genesis Transactions. This should be constant
   throughout the Node's lifetime, and the same across the entire Network. 
-- `component_address`
-  A logical Validator component address (within the Engine). Only present (i.e. non-empty) if this
-  Node is configured to act as a Validator.
+- `configured_validator_address`
+  A logical Validator component address (within the Engine). Only present (i.e. non-empty) if it 
+  was statically configured or resolved from Genesis.
 
 rn_bft_in_validator_set
 : A "boolean" gauge, showing `1.0` when this Node belongs to an active Validator Set of the
 _current_ epoch (or `0.0` otherwise).
-The `1.0` here is only possible when `rn_misc_config_info.component_address` is non-empty.
-Please note that the _current_ here means "according to the
-last epoch header written to the Node's local Ledger" - which makes this reading stale if the Node
-is not synced.
+The `1.0` here is only possible when `rn_misc_config_info.configured_validator_address` is
+non-empty.
+Please note that the _current_ here means "according to the last epoch header written to the Node's
+local Ledger" - which makes this reading stale if the Node is not synced.
 
 rn_bft_proposal_timestamp_difference_seconds { key=..., component_address=... }
 : The difference between the specified Validator's wallclock and this Node's wallclock, as captured

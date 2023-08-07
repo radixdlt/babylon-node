@@ -80,6 +80,9 @@ import javax.annotation.Nullable;
 /**
  * An entry point to metrics tracked by the Java part of the Node application.
  *
+ * <p>Note: Our Java-side metric definitions are not all heavily documented, but the health-related
+ * ones should be carefully detailed at `docs/logging-and-monitoring/health-metrics.md`.
+ *
  * <p>We use the official <a href="https://github.com/prometheus/client_java">Prometheus client</a>,
  * directly referencing its measurement primitives and our light wrappers (i.e. we don't hide
  * Prometheus' presence from our business logic).
