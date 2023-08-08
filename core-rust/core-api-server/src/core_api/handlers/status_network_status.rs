@@ -4,7 +4,7 @@ use radix_engine_interface::prelude::*;
 
 use state_manager::query::TransactionIdentifierLoader;
 use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerProof, StateVersion};
+use state_manager::{LedgerHashes, LedgerHeader, LedgerProof, StateVersion};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -24,7 +24,10 @@ pub(crate) async fn handle_status_network_status(
         genesis_epoch_round: database
             .get_first_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_epoch_round(&mapping_context, &proof)?))
+                Ok(Box::new(to_api_epoch_round(
+                    &mapping_context,
+                    &proof.ledger_header,
+                )?))
             })
             .transpose()?,
         post_genesis_state_identifier: database
@@ -65,7 +68,10 @@ pub(crate) async fn handle_status_network_status(
         current_epoch_round: database
             .get_last_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(to_api_epoch_round(&mapping_context, &proof)?))
+                Ok(Box::new(to_api_epoch_round(
+                    &mapping_context,
+                    &proof.ledger_header,
+                )?))
             })
             .transpose()?,
         current_protocol_version: "babylon".to_string(),
@@ -75,11 +81,11 @@ pub(crate) async fn handle_status_network_status(
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_proof: &LedgerProof,
+    ledger_header: &LedgerHeader,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
-        epoch: to_api_epoch(context, ledger_proof.ledger_header.epoch)?,
-        round: to_api_round(ledger_proof.ledger_header.round)?,
+        epoch: to_api_epoch(context, ledger_header.epoch)?,
+        round: to_api_round(ledger_header.round)?,
     })
 }
 

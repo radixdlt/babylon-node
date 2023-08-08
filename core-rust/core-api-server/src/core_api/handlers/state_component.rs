@@ -66,7 +66,7 @@ pub(crate) async fn handle_state_component(
         .ledger_header;
 
     Ok(models::StateComponentResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
             &type_info_substate,

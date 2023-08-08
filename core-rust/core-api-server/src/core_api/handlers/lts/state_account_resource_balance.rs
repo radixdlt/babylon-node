@@ -123,7 +123,7 @@ fn response(
 ) -> Result<Json<models::LtsStateAccountFungibleResourceBalanceResponse>, ResponseError<()>> {
     Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
         state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(header)?),
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
         account_address: to_api_component_address(context, account_address)?,
         fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
             fungible_resource_address: to_api_resource_address(context, resource_address)?,
