@@ -166,8 +166,10 @@ jobs:
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - name: Setup tags for docker image
-        id: setup_tags
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
   build_push_container_private:
