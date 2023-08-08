@@ -168,6 +168,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
+      tag: ${{ needs.build.outputs.tag }}
       tags: |
         type=ref,event=branch
         type=ref,event=pr
@@ -286,7 +287,7 @@ jobs:
           parse_json: true
           snyk_org_id: ${{ secrets.SNYK_ORG_ID }}
           #image: docker.io/radixdlt/babylon-node:${{ github.event.release.tag_name }}
-          image: docker.io/radixdlt/private-babylon-node:sha-${{ steps.vars.outputs.short_sha }}
+          image: docker.io/radixdlt/private-babylon-node:pr-588
           target_ref: ${{ github.ref_name }}
 
   snyk_monitor:
