@@ -42,7 +42,7 @@ pub(crate) async fn handle_stream_transactions(
 
     let limit = limit.try_into().expect("limit out of usize bounds");
 
-    let database = state.radix_node.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

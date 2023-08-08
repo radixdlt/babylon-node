@@ -62,25 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rustglobalcontext;
+package com.radixdlt.environment;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 
-public record RadixNodeConfig(
-    NetworkDefinition networkDefinition,
-    Option<RustMempoolConfig> mempoolConfigOpt,
-    Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-    DatabaseBackendConfig databaseBackendConfig,
-    DatabaseFlags databaseFlags,
-    LoggingConfig loggingConfig,
-    boolean noFees) {
+public record CoreApiServerConfig(String bindInterface, UInt32 port) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        RadixNodeConfig.class,
-        codecs -> StructCodec.fromRecordComponents(RadixNodeConfig.class, codecs));
+        CoreApiServerConfig.class,
+        codecs -> StructCodec.fromRecordComponents(CoreApiServerConfig.class, codecs));
   }
 }

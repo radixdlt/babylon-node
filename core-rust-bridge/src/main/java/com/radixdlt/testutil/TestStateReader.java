@@ -65,34 +65,34 @@
 package com.radixdlt.testutil;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.GlobalAddress;
-import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.utils.UInt64;
 
 public final class TestStateReader {
-  public TestStateReader(RustGlobalContext rustGlobalContext) {
+  public TestStateReader(NodeRustEnvironment nodeRustEnvironment) {
     this.getTransactionAtStateVersionFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::getTransactionAtStateVersion)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getTransactionAtStateVersion)
             .build(new TypeToken<>() {});
     this.getTransactionDetailsAtStateVersionFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::getTransactionDetailsAtStateVersion)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getTransactionDetailsAtStateVersion)
             .build(new TypeToken<>() {});
     this.componentXrdAmountFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::componentXrdAmount)
+        Natives.builder(nodeRustEnvironment, TestStateReader::componentXrdAmount)
             .build(new TypeToken<>() {});
     this.validatorInfoFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::validatorInfo)
+        Natives.builder(nodeRustEnvironment, TestStateReader::validatorInfo)
             .build(new TypeToken<>() {});
     this.epochFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::epoch).build(new TypeToken<>() {});
+        Natives.builder(nodeRustEnvironment, TestStateReader::epoch).build(new TypeToken<>() {});
     this.getNodeGlobalRootFunc =
-        Natives.builder(rustGlobalContext, TestStateReader::getNodeGlobalRoot)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getNodeGlobalRoot)
             .build(new TypeToken<>() {});
   }
 
@@ -113,12 +113,12 @@ public final class TestStateReader {
       getTransactionDetailsAtStateVersionFunc;
 
   private static native byte[] getTransactionAtStateVersion(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
 
   private static native byte[] getTransactionDetailsAtStateVersion(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
 
@@ -127,7 +127,7 @@ public final class TestStateReader {
   }
 
   private static native byte[] componentXrdAmount(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
 
@@ -135,7 +135,7 @@ public final class TestStateReader {
     return epochFunc.call(Tuple.tuple());
   }
 
-  private static native byte[] epoch(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] epoch(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
 
@@ -143,10 +143,11 @@ public final class TestStateReader {
     return validatorInfoFunc.call(validatorAddress);
   }
 
-  private static native byte[] validatorInfo(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] validatorInfo(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<InternalAddress, Option<GlobalAddress>> getNodeGlobalRootFunc;
 
   private static native byte[] getNodeGlobalRoot(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

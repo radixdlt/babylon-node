@@ -43,7 +43,7 @@ pub(crate) async fn handle_transaction_parse(
         user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(
             state.network.id,
         )),
-        committability_validator: state.radix_node.committability_validator.deref(),
+        committability_validator: state.state_manager.committability_validator.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);

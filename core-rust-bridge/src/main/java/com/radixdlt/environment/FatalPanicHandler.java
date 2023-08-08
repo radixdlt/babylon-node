@@ -62,28 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rustglobalcontext;
+package com.radixdlt.environment;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
+/**
+ * A handler of fatal Rust panics, responsible for graceful shutdown of a Node. In production, this
+ * currently means invoking a Java shutdown (i.e. running shutdown hooks and terminating the host
+ * process). In tests, this should cause a test failure, <b>without</b> terminating the process (in
+ * order to properly report the test result to the test infra).
+ */
+public interface FatalPanicHandler {
 
-/** REv2 Database configuration options */
-public sealed interface DatabaseBackendConfig {
-  static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        DatabaseBackendConfig.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseBackendConfig.class, codecs));
-  }
-
-  static DatabaseBackendConfig inMemory() {
-    return new InMemory();
-  }
-
-  static DatabaseBackendConfig rocksDB(String databasePath) {
-    return new RocksDB(databasePath);
-  }
-
-  record InMemory() implements DatabaseBackendConfig {}
-
-  record RocksDB(String databasePath) implements DatabaseBackendConfig {}
+  /** Handles a fatal panic. */
+  void handleFatalPanic();
 }

@@ -62,126 +62,140 @@
  * permissions under this License.
  */
 
-use crate::LedgerProof;
+use std::sync::Arc;
+
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, EpochChangeCondition,
-};
+use node_common::environment::setup_tracing;
+use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
+use node_common::locks::*;
+use prometheus::Registry;
+use radix_engine_common::prelude::NetworkDefinition;
+use tokio::runtime::Runtime;
 
-use node_common::java::*;
+use crate::mempool_manager::MempoolManager;
+use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
+use crate::priority_mempool::PriorityMempool;
+use crate::store::StateManagerDatabase;
+use crate::{StateComputer, StateManager, StateManagerConfig};
 
-use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
+use super::fatal_panic_handler::FatalPanicHandler;
 
-use radix_engine::system::bootstrap::GenesisDataChunk;
-
-use super::node_rust_environment::JNINodeRustEnvironment;
-
-//
-// JNI Interface
-//
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaGenesisData {
-    pub initial_epoch: Epoch,
-    pub initial_timestamp_ms: i64,
-    pub initial_config: JavaConsensusManagerConfig,
-    pub chunks: Vec<GenesisDataChunk>,
-    pub faucet_supply: Decimal,
-    pub scenarios_to_run: Vec<String>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaConsensusManagerConfig {
-    pub max_validators: u32,
-    pub epoch_min_round_count: u64,
-    pub epoch_max_round_count: u64,
-    pub epoch_target_duration_millis: u64,
-    pub num_unstake_epochs: u64,
-    pub total_emission_xrd_per_epoch: Decimal,
-    pub min_validator_reliability: Decimal,
-    pub num_owner_stake_units_unlock_epochs: u64,
-    pub num_fee_increase_delay_epochs: u64,
-    pub validator_creation_usd_cost: Decimal,
-}
+const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
+extern "system" fn Java_com_radixdlt_environment_NodeRustEnvironment_init(
     env: JNIEnv,
     _class: JClass,
     j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_fallible_call(
-        &env,
-        request_payload,
-        |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            let genesis_data_hash = hash(&raw_genesis_data);
-            let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
-                .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
-            let config = genesis_data.initial_config;
-            let resultant_proof = state_computer.execute_genesis(
-                genesis_data.chunks,
-                genesis_data.initial_epoch,
-                ConsensusManagerConfig {
-                    max_validators: config.max_validators,
-                    epoch_change_condition: EpochChangeCondition {
-                        min_round_count: config.epoch_min_round_count,
-                        max_round_count: config.epoch_max_round_count,
-                        target_duration_millis: config.epoch_target_duration_millis,
-                    },
-                    num_unstake_epochs: config.num_unstake_epochs,
-                    total_emission_xrd_per_epoch: config.total_emission_xrd_per_epoch,
-                    min_validator_reliability: config.min_validator_reliability,
-                    num_owner_stake_units_unlock_epochs: config.num_owner_stake_units_unlock_epochs,
-                    num_fee_increase_delay_epochs: config.num_fee_increase_delay_epochs,
-                    validator_creation_usd_cost: config.validator_creation_usd_cost,
-                },
-                genesis_data.initial_timestamp_ms,
-                genesis_data_hash,
-                genesis_data.faucet_supply,
-                genesis_data.scenarios_to_run,
-            );
-            Ok(resultant_proof)
-        },
-    )
+    j_config: jbyteArray,
+) {
+    jni_call(&env, || {
+        JNINodeRustEnvironment::init(&env, j_node_rust_env, j_config)
+    });
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
+extern "system" fn Java_com_radixdlt_environment_NodeRustEnvironment_cleanup(
     env: JNIEnv,
     _class: JClass,
     j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |prepare_request: PrepareRequest| -> PrepareResult {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.prepare(prepare_request)
-        },
-    )
+) {
+    jni_call(&env, || {
+        JNINodeRustEnvironment::cleanup(&env, j_node_rust_env)
+    });
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.commit(commit_request)
-        },
-    )
+pub struct JNINodeRustEnvironment {
+    pub runtime: Arc<Runtime>,
+    pub network: NetworkDefinition,
+    pub state_manager: StateManager,
+    pub metric_registry: Arc<Registry>,
+}
+
+impl JNINodeRustEnvironment {
+    pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
+        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
+        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
+
+        let network = config.network_definition.clone();
+
+        let runtime = Runtime::new().unwrap();
+
+        setup_tracing(&runtime, std::env::var("JAEGER_AGENT_ENDPOINT").ok());
+
+        let fatal_panic_handler = FatalPanicHandler::new(env, j_node_rust_env).unwrap();
+        let lock_factory = LockFactory::new(move || fatal_panic_handler.handle_fatal_panic());
+        let metric_registry = Arc::new(Registry::new());
+
+        let state_manager = StateManager::new(
+            config,
+            Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
+            &lock_factory,
+            &metric_registry,
+        );
+
+        let jni_node_rust_env = JNINodeRustEnvironment {
+            runtime: Arc::new(runtime),
+            network,
+            state_manager,
+            metric_registry,
+        };
+
+        env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)
+            .unwrap();
+    }
+
+    pub fn cleanup(env: &JNIEnv, j_node_rust_env: JObject) {
+        let jni_node_rust_env: JNINodeRustEnvironment = env
+            .take_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+
+        drop(jni_node_rust_env);
+    }
+
+    pub fn get<'a>(
+        env: &'a JNIEnv<'a>,
+        j_node_rust_env: JObject<'a>,
+    ) -> std::sync::MutexGuard<'a, JNINodeRustEnvironment> {
+        env.get_rust_field::<_, _, JNINodeRustEnvironment>(j_node_rust_env, POINTER_JNI_FIELD_NAME)
+            .unwrap()
+    }
+
+    pub fn get_state_computer(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<StateComputer<StateManagerDatabase>> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .state_computer
+            .clone()
+    }
+
+    pub fn get_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<RwLock<StateManagerDatabase>> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .database
+            .clone()
+    }
+
+    pub fn get_mempool(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<RwLock<PriorityMempool>> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .mempool
+            .clone()
+    }
+
+    pub fn get_mempool_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<MempoolManager> {
+        Self::get(env, j_node_rust_env)
+            .state_manager
+            .mempool_manager
+            .clone()
+    }
 }
 
 pub fn export_extern_functions() {}

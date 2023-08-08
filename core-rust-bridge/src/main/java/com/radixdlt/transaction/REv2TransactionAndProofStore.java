@@ -65,12 +65,12 @@
 package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.utils.UInt32;
@@ -78,25 +78,25 @@ import com.radixdlt.utils.UInt64;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(Metrics metrics, RustGlobalContext rustGlobalContext) {
+  public REv2TransactionAndProofStore(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.getTxnsAndProof =
-        Natives.builder(rustGlobalContext, REv2TransactionAndProofStore::getTxnsAndProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getTxnsAndProof)
             .measure(
                 timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
             .build(new TypeToken<>() {});
     this.getLastProofFunc =
-        Natives.builder(rustGlobalContext, REv2TransactionAndProofStore::getLastProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getLastProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
     this.getPostGenesisEpochProofFunc =
-        Natives.builder(rustGlobalContext, REv2TransactionAndProofStore::getPostGenesisEpochProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getPostGenesisEpochProof)
             .measure(
                 timer.label(
                     new MethodId(REv2TransactionAndProofStore.class, "getPostGenesisEpochProof")))
             .build(new TypeToken<>() {});
     this.getEpochProofFunc =
-        Natives.builder(rustGlobalContext, REv2TransactionAndProofStore::getEpochProof)
+        Natives.builder(nodeRustEnvironment, REv2TransactionAndProofStore::getEpochProof)
             .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
             .build(new TypeToken<>() {});
   }
@@ -126,18 +126,21 @@ public final class REv2TransactionAndProofStore {
 
   private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
 
-  private static native byte[] getTxnsAndProof(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] getTxnsAndProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
-  private static native byte[] getLastProof(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] getLastProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getPostGenesisEpochProofFunc;
 
   private static native byte[] getPostGenesisEpochProof(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 
-  private static native byte[] getEpochProof(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] getEpochProof(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

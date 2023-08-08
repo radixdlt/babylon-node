@@ -62,73 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rustglobalcontext;
+package com.radixdlt.environment;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.mempool.MempoolRelayDispatcher;
-import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-public final class RustGlobalContext implements AutoCloseable {
-
-  static {
-    System.loadLibrary("corerust");
+/** REv2 Database configuration options */
+public sealed interface DatabaseBackendConfig {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        DatabaseBackendConfig.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseBackendConfig.class, codecs));
   }
 
-  /**
-   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the StateManager "owning" the rust state manager memory. On each call into Rust,
-   * we map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses
-   * that to access all state and make calls.
-   */
-  @SuppressWarnings("unused")
-  private final long rustRustGlobalContextPointer = 0;
-
-  private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
-  private final FatalPanicHandler fatalPanicHandler;
-
-  public RustGlobalContext(
-      MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
-      FatalPanicHandler fatalPanicHandler,
-      RadixNodeConfig config) {
-    this.mempoolRelayDispatcher = mempoolRelayDispatcher;
-    this.fatalPanicHandler = fatalPanicHandler;
-    final var encodedConfig =
-        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
+  static DatabaseBackendConfig inMemory() {
+    return new InMemory();
   }
 
-  @Override
-  public void close() {
-    shutdown();
+  static DatabaseBackendConfig rocksDB(String databasePath) {
+    return new RocksDB(databasePath);
   }
 
-  public void shutdown() {
-    cleanup(this);
-  }
+  record InMemory() implements DatabaseBackendConfig {}
 
-  /**
-   * Delegates the dispatch of an "immediately relay new transaction from Core API" event. This
-   * method is called from Rust via JNI.
-   */
-  @SuppressWarnings("unused")
-  public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
-    this.mempoolRelayDispatcher.dispatchRelay(
-        RawNotarizedTransaction.create(notarizedTransactionPayload));
-  }
-
-  /**
-   * Delegates the handling of a fatal Rust panic (e.g. happening while any write lock is held).
-   * This method is called from Rust via JNI. In production, it is critical to shut down the Node's
-   * process gracefully (which must be driven by the "host" Java side) in such case, to avoid data
-   * corruption.
-   */
-  @SuppressWarnings("unused")
-  public void handleFatalPanic() {
-    this.fatalPanicHandler.handleFatalPanic();
-  }
-
-  private static native void init(RustGlobalContext rustGlobalContext, byte[] config);
-
-  private static native void cleanup(RustGlobalContext rustGlobalContext);
+  record RocksDB(String databasePath) implements DatabaseBackendConfig {}
 }

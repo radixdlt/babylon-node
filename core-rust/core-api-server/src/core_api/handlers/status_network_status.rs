@@ -14,7 +14,7 @@ pub(crate) async fn handle_status_network_status(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let database = state.radix_node.database.read();
+    let database = state.state_manager.database.read();
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     Ok(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(

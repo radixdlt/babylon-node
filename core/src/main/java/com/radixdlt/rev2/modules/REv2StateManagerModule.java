@@ -71,6 +71,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -83,7 +84,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
-import com.radixdlt.rustglobalcontext.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -193,16 +193,16 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          private RustGlobalContext stateManager(
+          private NodeRustEnvironment stateManager(
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
               DatabaseFlags databaseFlags) {
-            return new RustGlobalContext(
+            return new NodeRustEnvironment(
                 mempoolRelayDispatcher,
                 fatalPanicHandler,
-                new RadixNodeConfig(
+                new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
@@ -237,19 +237,19 @@ public final class REv2StateManagerModule extends AbstractModule {
 
           @Provides
           REv2TransactionAndProofStore transactionAndProofStore(
-              Metrics metrics, RustGlobalContext rustGlobalContext) {
-            return new REv2TransactionAndProofStore(metrics, rustGlobalContext);
+              Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+            return new REv2TransactionAndProofStore(metrics, nodeRustEnvironment);
           }
 
           @Provides
           VertexStoreRecovery rEv2VertexStoreRecovery(
-              Metrics metrics, RustGlobalContext rustGlobalContext) {
-            return new VertexStoreRecovery(metrics, rustGlobalContext);
+              Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+            return new VertexStoreRecovery(metrics, nodeRustEnvironment);
           }
 
           @Provides
-          TestStateReader testStateReader(RustGlobalContext rustGlobalContext) {
-            return new TestStateReader(rustGlobalContext);
+          TestStateReader testStateReader(NodeRustEnvironment nodeRustEnvironment) {
+            return new TestStateReader(nodeRustEnvironment);
           }
 
           @Provides
@@ -286,8 +286,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  NodeAutoCloseable closeable(RustGlobalContext rustGlobalContext) {
-    return rustGlobalContext::shutdown;
+  NodeAutoCloseable closeable(NodeRustEnvironment nodeRustEnvironment) {
+    return nodeRustEnvironment::shutdown;
   }
 
   public LoggingConfig getLoggingConfig() {
@@ -297,13 +297,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   @Singleton
   private RustStateComputer rustStateComputer(
-      Metrics metrics, RustGlobalContext rustGlobalContext) {
-    return new RustStateComputer(metrics, rustGlobalContext);
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustStateComputer(metrics, nodeRustEnvironment);
   }
 
   @Provides
   @Singleton
-  private RustMempool rustMempool(Metrics metrics, RustGlobalContext rustGlobalContext) {
-    return new RustMempool(metrics, rustGlobalContext);
+  private RustMempool rustMempool(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustMempool(metrics, nodeRustEnvironment);
   }
 }

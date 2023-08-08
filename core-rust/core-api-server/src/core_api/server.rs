@@ -80,7 +80,7 @@ use axum::{
 use prometheus::Registry;
 use radix_engine::types::{Categorize, Decode, Encode};
 use radix_engine_common::network::NetworkDefinition;
-use state_manager::jni::rust_global_context::RadixNode;
+use state_manager::StateManager;
 use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{debug, error, info, trace, warn, Level};
 
@@ -93,7 +93,7 @@ use handle_status_network_configuration as handle_provide_info_at_root_path;
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
-    pub radix_node: RadixNode,
+    pub state_manager: StateManager,
 }
 
 pub async fn create_server<F>(

@@ -65,12 +65,12 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
 import java.util.Objects;
@@ -78,19 +78,19 @@ import java.util.Objects;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class RustStateComputer {
 
-  public RustStateComputer(Metrics metrics, RustGlobalContext rustGlobalContext) {
-    Objects.requireNonNull(rustGlobalContext);
+  public RustStateComputer(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    Objects.requireNonNull(nodeRustEnvironment);
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.executeGenesisFunc =
-        Natives.builder(rustGlobalContext, RustStateComputer::executeGenesis)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::executeGenesis)
             .measure(timer.label(new MethodId(RustStateComputer.class, "executeGenesis")))
             .build(new TypeToken<>() {});
     this.prepareFunc =
-        Natives.builder(rustGlobalContext, RustStateComputer::prepare)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::prepare)
             .measure(timer.label(new MethodId(RustStateComputer.class, "prepare")))
             .build(new TypeToken<>() {});
     this.commitFunc =
-        Natives.builder(rustGlobalContext, RustStateComputer::commit)
+        Natives.builder(nodeRustEnvironment, RustStateComputer::commit)
             .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
             .build(new TypeToken<>() {});
   }
@@ -101,7 +101,8 @@ public class RustStateComputer {
 
   private final Natives.Call1<byte[], LedgerProof> executeGenesisFunc;
 
-  private static native byte[] executeGenesis(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] executeGenesis(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);
@@ -109,7 +110,7 @@ public class RustStateComputer {
 
   private final Natives.Call1<PrepareRequest, PrepareResult> prepareFunc;
 
-  private static native byte[] prepare(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] prepare(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   public Result<Tuple.Tuple0, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
     return commitFunc.call(commitRequest);
@@ -118,5 +119,5 @@ public class RustStateComputer {
   private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>>
       commitFunc;
 
-  private static native byte[] commit(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] commit(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

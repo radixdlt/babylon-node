@@ -65,7 +65,7 @@
 package com.radixdlt.consensus;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.rustglobalcontext.VertexLimitsConfig;
+import com.radixdlt.environment.VertexLimitsConfig;
 
 /**
  * [`maxTransactionCount`]: Maximum number of transactions to include in a proposal.

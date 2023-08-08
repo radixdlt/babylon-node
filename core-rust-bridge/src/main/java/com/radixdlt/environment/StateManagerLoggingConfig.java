@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rustglobalcontext;
+package com.radixdlt.environment;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;

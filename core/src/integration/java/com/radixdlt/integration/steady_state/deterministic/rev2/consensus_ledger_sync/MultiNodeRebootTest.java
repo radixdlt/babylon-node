@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -86,7 +87,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;

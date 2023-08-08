@@ -87,7 +87,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.WrappedByteArray;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -336,8 +336,8 @@ public final class RadixNodeBootstrapper {
               ({} data chunks). Initializing the Babylon node...""",
                   genesisData.chunks().size());
               final var encodedGenesisData =
-                  StateManagerSbor.encode(
-                      genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+                  NodeSborCodecs.encode(
+                      genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
               final var genesisDataHash = hasher.hashBytes(encodedGenesisData);
               genesisStore.saveGenesisData(
                   new RawGenesisDataWithHash(

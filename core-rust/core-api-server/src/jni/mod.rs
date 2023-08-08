@@ -70,12 +70,12 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use prometheus::*;
+use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
 use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
 
 use node_common::java::*;
-use state_manager::jni::rust_global_context::JNIRustGlobalContext;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
@@ -100,17 +100,17 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     j_config: jbyteArray,
 ) {
     jni_sbor_coded_call(&env, j_config, |config: CoreApiServerConfig| {
-        let jni_rust_global_context = JNIRustGlobalContext::get(&env, j_rust_global_context);
+        let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
 
         let jni_core_api_server = JNICoreApiServer {
             config,
-            runtime: jni_rust_global_context.runtime.clone(),
+            runtime: jni_node_rust_env.runtime.clone(),
             state: CoreApiState {
-                network: jni_rust_global_context.network.clone(),
-                radix_node: jni_rust_global_context.radix_node.clone(),
+                network: jni_node_rust_env.network.clone(),
+                state_manager: jni_node_rust_env.state_manager.clone(),
             },
             running_server: None,
-            metric_registry: jni_rust_global_context.metric_registry.clone(),
+            metric_registry: jni_node_rust_env.metric_registry.clone(),
         };
 
         env.set_rust_field(

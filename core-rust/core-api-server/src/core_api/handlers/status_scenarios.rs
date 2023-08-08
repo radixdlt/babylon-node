@@ -15,7 +15,7 @@ pub(crate) async fn handle_status_scenarios(
     assert_matching_network(&request.network, &state.network)?;
     let context = MappingContext::new(&state.network);
 
-    let database = state.radix_node.database.read();
+    let database = state.state_manager.database.read();
     let scenarios = database.list_all_scenarios();
 
     Ok(models::ScenariosResponse {

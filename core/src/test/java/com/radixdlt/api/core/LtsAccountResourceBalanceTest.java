@@ -69,10 +69,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.rustglobalcontext.DatabaseFlags;
 import java.util.List;
 import org.junit.Test;
 

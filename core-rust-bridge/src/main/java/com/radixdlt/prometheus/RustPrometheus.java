@@ -66,16 +66,16 @@ package com.radixdlt.prometheus;
 
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
 
 public class RustPrometheus {
 
   @Inject
-  public RustPrometheus(RustGlobalContext rustGlobalContext) {
+  public RustPrometheus(NodeRustEnvironment nodeRustEnvironment) {
     this.prometheusMetricsFunc =
-        Natives.builder(rustGlobalContext, RustPrometheus::prometheusMetrics)
+        Natives.builder(nodeRustEnvironment, RustPrometheus::prometheusMetrics)
             .build(new TypeToken<>() {});
   }
 
@@ -85,5 +85,6 @@ public class RustPrometheus {
 
   private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
-  private static native byte[] prometheusMetrics(RustGlobalContext rustGlobalContext, byte[] args);
+  private static native byte[] prometheusMetrics(
+      NodeRustEnvironment nodeRustEnvironment, byte[] args);
 }

@@ -65,12 +65,12 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.rustglobalcontext.RustGlobalContext;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
@@ -84,27 +84,27 @@ public class RustMempool
         MempoolInserter<RawNotarizedTransaction>,
         MempoolReevaluator {
 
-  public RustMempool(Metrics metrics, RustGlobalContext rustGlobalContext) {
+  public RustMempool(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     addFunc =
-        Natives.builder(rustGlobalContext, RustMempool::add)
+        Natives.builder(nodeRustEnvironment, RustMempool::add)
             .measure(timer.label(new MethodId(RustMempool.class, "add")))
             .build(new TypeToken<>() {});
     getTransactionsForProposalFunc =
-        Natives.builder(rustGlobalContext, RustMempool::getTransactionsForProposal)
+        Natives.builder(nodeRustEnvironment, RustMempool::getTransactionsForProposal)
             .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsForProposal")))
             .build(new TypeToken<>() {});
     getTransactionsToRelayFunc =
-        Natives.builder(rustGlobalContext, RustMempool::getTransactionsToRelay)
+        Natives.builder(nodeRustEnvironment, RustMempool::getTransactionsToRelay)
             .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsToRelay")))
             .build(new TypeToken<>() {});
     reevaluateTransactionCommittabilityFunc =
-        Natives.builder(rustGlobalContext, RustMempool::reevaluateTransactionCommittability)
+        Natives.builder(nodeRustEnvironment, RustMempool::reevaluateTransactionCommittability)
             .measure(
                 timer.label(new MethodId(RustMempool.class, "reevaluateTransactionCommittability")))
             .build(new TypeToken<>() {});
     getCountFunc =
-        Natives.builder(rustGlobalContext, RustMempool::getCount)
+        Natives.builder(nodeRustEnvironment, RustMempool::getCount)
             .measure(timer.label(new MethodId(RustMempool.class, "getCount")))
             .build(new TypeToken<>() {});
   }
@@ -173,18 +173,18 @@ public class RustMempool
     return getCountFunc.call(Tuple.Tuple0.of());
   }
 
-  private static native byte[] add(RustGlobalContext rustGlobalContext, byte[] payload);
+  private static native byte[] add(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<RawNotarizedTransaction, Result<Tuple.Tuple0, MempoolError>> addFunc;
 
   private static native byte[] getTransactionsForProposal(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ProposalTransactionsRequest, List<PreparedNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<PreparedNotarizedTransaction>>
       getTransactionsToRelayFunc;
@@ -192,7 +192,7 @@ public class RustMempool
   private final Natives.Call1<UInt32, Tuple.Tuple0> reevaluateTransactionCommittabilityFunc;
 
   private static native byte[] reevaluateTransactionCommittability(
-      RustGlobalContext rustGlobalContext, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
 

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::rust_global_context::JNIRustGlobalContext;
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::store::traits::{RecoverableVertexStore, WriteableVertexStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -77,7 +77,7 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<Vec<u8>> {
-        let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let txns_and_proof = database.read().get_vertex_store();
         txns_and_proof
     })
@@ -91,7 +91,7 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_saveVertexStor
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |vertex_store_bytes: Vec<u8>| {
-        let database = JNIRustGlobalContext::get_database(&env, j_rust_global_context);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         database.write().save_vertex_store(vertex_store_bytes);
     })
 }

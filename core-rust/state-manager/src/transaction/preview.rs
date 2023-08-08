@@ -110,8 +110,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
 #[cfg(test)]
 mod tests {
-    use crate::jni::rust_global_context::{RadixNode, RadixNodeConfig};
-    use crate::PreviewRequest;
+    use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use prometheus::Registry;
     use transaction::builder::ManifestBuilder;
@@ -121,18 +120,20 @@ mod tests {
     fn test_preview_processed_substate_changes() {
         let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
-        let radix_node = RadixNode::new(
-            RadixNodeConfig::new_for_testing(),
+        let state_manager = StateManager::new(
+            StateManagerConfig::new_for_testing(),
             None,
             &lock_factory,
             &metrics_registry,
         );
 
-        radix_node.state_manager.execute_genesis_for_unit_tests();
+        state_manager
+            .state_computer
+            .execute_genesis_for_unit_tests();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = radix_node.transaction_previewer.preview(PreviewRequest {
+        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
             manifest: preview_manifest,
             explicit_epoch_range: None,
             notary_public_key: None,

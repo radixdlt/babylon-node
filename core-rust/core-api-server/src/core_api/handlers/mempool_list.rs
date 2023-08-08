@@ -6,7 +6,7 @@ pub(crate) async fn handle_mempool_list(
     Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
-    let mempool = state.radix_node.mempool.read();
+    let mempool = state.state_manager.mempool.read();
     Ok(models::MempoolListResponse {
         contents: mempool
             .all_hashes_iter()
