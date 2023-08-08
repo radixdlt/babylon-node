@@ -62,46 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.recovery;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use node_common::java::jni_sbor_coded_call;
+use prometheus::*;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.environment.NodeRustEnvironment;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.monitoring.LabelledTimer;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.sbor.Natives;
-import java.util.Optional;
+use super::node_rust_environment::JNINodeRustEnvironment;
 
-public final class VertexStoreRecovery {
-  public VertexStoreRecovery(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
-    LabelledTimer<Metrics.MethodId> timer = metrics.stateManager().nativeCall();
-    this.getVertexStore =
-        Natives.builder(nodeRustEnvironment, VertexStoreRecovery::getVertexStore)
-            .measure(timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "getVertexStore")))
-            .build(new TypeToken<>() {});
-    this.saveVertexStoreFunc =
-        Natives.builder(nodeRustEnvironment, VertexStoreRecovery::saveVertexStore)
-            .measure(
-                timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "saveVertexStore")))
-            .build(new TypeToken<>() {});
-  }
-
-  public Optional<byte[]> recoverVertexStore() {
-    return this.getVertexStore.call(Tuple.tuple()).toOptional();
-  }
-
-  private static native byte[] getVertexStore(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, Option<byte[]>> getVertexStore;
-
-  public void saveVertexStore(byte[] vertexStoreBytes) {
-    this.saveVertexStoreFunc.call(vertexStoreBytes);
-  }
-
-  private static native byte[] saveVertexStore(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Natives.Call1<byte[], Tuple.Tuple0> saveVertexStoreFunc;
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
+        let registry = &JNINodeRustEnvironment::get(&env, j_node_rust_env).metric_registry;
+        let encoder = TextEncoder::new();
+        let mut buffer = vec![];
+        encoder.encode(&registry.gather(), &mut buffer).unwrap();
+        String::from_utf8(buffer).unwrap()
+    })
 }
+
+pub fn export_extern_functions() {}

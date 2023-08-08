@@ -26,7 +26,7 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let validator_substate = read_optional_main_field_substate(
         database.deref(),

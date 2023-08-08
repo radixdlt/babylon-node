@@ -26,6 +26,7 @@ pub(crate) async fn handle_transaction_preview(
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
+        .state_manager
         .transaction_previewer
         .preview(preview_request)
         .map_err(|err| match err {

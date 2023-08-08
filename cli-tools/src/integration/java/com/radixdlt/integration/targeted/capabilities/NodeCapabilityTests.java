@@ -76,7 +76,7 @@ import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.shell.RadixShell;
 import com.radixdlt.utils.Compress;
 import io.prometheus.client.Counter;
@@ -308,7 +308,7 @@ public class NodeCapabilityTests {
         GenesisBuilder.createTestGenesisWithNumValidators(
             1, Decimal.of(1), GenesisConsensusManagerConfig.Builder.testDefaults());
     final var encodedGenesisData =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var genesisDataBase64 =
         Base64.getEncoder().encodeToString(Compress.compress(encodedGenesisData));
     return nodeBuilder()

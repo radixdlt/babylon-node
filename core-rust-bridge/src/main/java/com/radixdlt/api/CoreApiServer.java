@@ -65,9 +65,9 @@
 package com.radixdlt.api;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.StateManagerSbor;
-import com.radixdlt.statemanager.CoreApiServerConfig;
-import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.environment.CoreApiServerConfig;
+import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.sbor.NodeSborCodecs;
 
 public final class CoreApiServer {
 
@@ -84,14 +84,15 @@ public final class CoreApiServer {
   @SuppressWarnings("unused")
   private final long rustCoreApiServerPointer = 0;
 
-  public static CoreApiServer create(StateManager stateManager, CoreApiServerConfig config) {
-    return new CoreApiServer(stateManager, config);
+  public static CoreApiServer create(
+      NodeRustEnvironment nodeRustEnvironment, CoreApiServerConfig config) {
+    return new CoreApiServer(nodeRustEnvironment, config);
   }
 
-  CoreApiServer(StateManager stateManager, CoreApiServerConfig config) {
+  CoreApiServer(NodeRustEnvironment nodeRustEnvironment, CoreApiServerConfig config) {
     final var encodedConfig =
-        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(stateManager, this, encodedConfig);
+        NodeSborCodecs.encode(config, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    init(nodeRustEnvironment, this, encodedConfig);
   }
 
   public void start() {
@@ -103,7 +104,7 @@ public final class CoreApiServer {
   }
 
   private static native void init(
-      StateManager stateManager, CoreApiServer coreApiServer, byte[] config);
+      NodeRustEnvironment nodeRustEnvironment, CoreApiServer coreApiServer, byte[] config);
 
   private static native void start(CoreApiServer coreApiServer);
 

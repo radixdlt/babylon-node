@@ -24,7 +24,7 @@ pub(crate) async fn handle_state_access_controller(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let access_controller_substate = read_optional_main_field_substate(
         database.deref(),

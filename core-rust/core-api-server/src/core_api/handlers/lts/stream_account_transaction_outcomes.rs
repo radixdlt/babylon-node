@@ -42,7 +42,7 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         )));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(

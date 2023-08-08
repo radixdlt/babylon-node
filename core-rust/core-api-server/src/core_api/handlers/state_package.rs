@@ -14,7 +14,7 @@ pub(crate) async fn handle_state_package(
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let owner_role_substate = read_optional_substate(
         database.deref(),

@@ -117,9 +117,9 @@ public interface Natives {
     public <P1, R> Call1<P1, R> build(TypeToken<Call1<P1, R>> typeCapture) {
       ParameterizedType callType = (ParameterizedType) typeCapture.getType();
       Type[] types = callType.getActualTypeArguments();
-      Codec<P1> p1Codec = StateManagerSbor.resolveCodec((TypeToken<P1>) TypeToken.of(types[0]));
+      Codec<P1> p1Codec = NodeSborCodecs.resolveCodec((TypeToken<P1>) TypeToken.of(types[0]));
       Codec<Result<R, StateManagerRuntimeError>> wrapperCodec =
-          StateManagerSbor.resolveCodec(
+          NodeSborCodecs.resolveCodec(
               new TypeToken<Result<R, StateManagerRuntimeError>>() {}.where(
                   new TypeParameter<>() {}, (TypeToken<R>) TypeToken.of(types[1])));
       return new Call1<>(this.callable, p1Codec, wrapperCodec);
@@ -158,10 +158,10 @@ public interface Natives {
 
     /** Calls the underlying native function with the given parameter and returns its result. */
     public R call(P1 p1) {
-      final byte[] encodedP1 = StateManagerSbor.encode(p1, p1Codec);
+      final byte[] encodedP1 = NodeSborCodecs.encode(p1, p1Codec);
       final byte[] encodedWrapper = callable.apply(encodedP1);
       final Result<R, StateManagerRuntimeError> wrapper =
-          StateManagerSbor.decode(encodedWrapper, wrapperCodec);
+          NodeSborCodecs.decode(encodedWrapper, wrapperCodec);
       return wrapper.unwrap(StateManagerRuntimeException::new);
     }
   }
