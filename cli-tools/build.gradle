@@ -229,25 +229,6 @@ tasks.getByName("createGenerateGenesisScripts") {
 }
 tasks.getByName("startScripts").dependsOn createGenerateGenesisScripts
 
-task createGenerateNodeKeyScripts(type: CreateStartScripts) {
-    mainClassName = 'com.radixdlt.keygen.KeyGenerator'
-    applicationName = 'keygen'
-}
-
-tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir
-tasks.getByName("createGenerateNodeKeyScripts").classpath = tasks.getByName("startScripts").classpath
-tasks.getByName("createGenerateNodeKeyScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
-tasks.getByName("createGenerateNodeKeyScripts") {
-    // Make sure all scripts have consistent classpath
-    doLast {
-        def windowsScriptFile = file getWindowsScript()
-        def unixScriptFile = file getUnixScript()
-        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
-        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
-    }
-}
-tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
-
 task runTargetedIntegrationTests(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.targeted.*"

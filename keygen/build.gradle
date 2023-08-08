@@ -63,8 +63,6 @@
  */
 
 apply plugin: 'java'
-apply plugin: 'org.sonarqube'
-apply plugin: 'project-report'
 apply plugin: 'application'
 
 
@@ -72,3 +70,8 @@ dependencies {
     implementation project(':common')
     implementation 'commons-cli:commons-cli'
 }
+
+application {
+    mainClass = 'com.radixdlt.keygen.KeyGenerator'
+}
+
