@@ -177,7 +177,7 @@ public final class OlympiaStateIRDeserializer {
     }
 
     private HashCode readPublicKeyBytes() {
-      return HashCode.fromBytes(readNBytes(ECDSASecp256k1PublicKey.COMPRESSED_BYTES));
+      return HashCode.fromBytes(readNBytes(ECDSASecp256k1PublicKey.LENGTH));
     }
 
     private Optional<Integer> readOptionalInt() {

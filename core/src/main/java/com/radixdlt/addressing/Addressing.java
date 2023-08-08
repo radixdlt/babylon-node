@@ -139,7 +139,7 @@ public final class Addressing {
   }
 
   public String encodeNodeAddress(ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getCompressedBytes());
+    return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getBytes());
   }
 
   public ECDSASecp256k1PublicKey decodeNodeAddress(String address) throws DeserializeException {
@@ -152,7 +152,7 @@ public final class Addressing {
   }
 
   public static String encodeNodeAddressWithHrp(String hrp, ECDSASecp256k1PublicKey publicKey) {
-    return Bech32mCoder.encode(hrp, publicKey.getCompressedBytes());
+    return Bech32mCoder.encode(hrp, publicKey.getBytes());
   }
 
   public static Pair<String, ECDSASecp256k1PublicKey> decodeNodeAddressUnknownHrp(String address)

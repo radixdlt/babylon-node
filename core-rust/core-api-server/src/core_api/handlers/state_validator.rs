@@ -2,6 +2,7 @@ use crate::core_api::*;
 use radix_engine::types::*;
 
 use state_manager::query::dump_component_state;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::component_dump_to_vaults_and_nodes;
@@ -46,7 +47,13 @@ pub(crate) async fn handle_state_validator(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateValidatorResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_substate(
             &mapping_context,

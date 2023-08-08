@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateAccessControllerResponse
  */
 @JsonPropertyOrder({
+  StateAccessControllerResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateAccessControllerResponse.JSON_PROPERTY_STATE,
   StateAccessControllerResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccessControllerResponse.JSON_PROPERTY_VAULTS,
@@ -43,6 +45,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateAccessControllerResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
 
@@ -57,6 +62,32 @@ public class StateAccessControllerResponse {
 
   public StateAccessControllerResponse() { 
   }
+
+  public StateAccessControllerResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateAccessControllerResponse state(Substate state) {
     this.state = state;
@@ -184,7 +215,8 @@ public class StateAccessControllerResponse {
       return false;
     }
     StateAccessControllerResponse stateAccessControllerResponse = (StateAccessControllerResponse) o;
-    return Objects.equals(this.state, stateAccessControllerResponse.state) &&
+    return Objects.equals(this.atLedgerState, stateAccessControllerResponse.atLedgerState) &&
+        Objects.equals(this.state, stateAccessControllerResponse.state) &&
         Objects.equals(this.ownerRole, stateAccessControllerResponse.ownerRole) &&
         Objects.equals(this.vaults, stateAccessControllerResponse.vaults) &&
         Objects.equals(this.descendentNodes, stateAccessControllerResponse.descendentNodes);
@@ -192,13 +224,14 @@ public class StateAccessControllerResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, ownerRole, vaults, descendentNodes);
+    return Objects.hash(atLedgerState, state, ownerRole, vaults, descendentNodes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccessControllerResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    vaults: ").append(toIndentedString(vaults)).append("\n");

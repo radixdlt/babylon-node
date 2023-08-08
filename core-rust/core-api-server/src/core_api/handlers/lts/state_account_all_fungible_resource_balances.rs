@@ -32,6 +32,10 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     }
 
     let database = state.state_manager.database.read();
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
 
     let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
         database.deref(),
@@ -43,7 +47,8 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     if type_info.is_none() {
         if component_address.as_node_id().is_global_virtual() {
             return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-                state_version: to_api_state_version(database.max_state_version())?,
+                state_version: to_api_state_version(header.state_version)?,
+                ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
                 account_address: to_api_component_address(&mapping_context, &component_address)?,
                 fungible_resource_balances: vec![],
             })
@@ -89,7 +94,8 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         .collect::<Result<Vec<_>, MappingError>>()?;
 
     Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-        state_version: to_api_state_version(database.max_state_version())?,
+        state_version: to_api_state_version(header.state_version)?,
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
         account_address: to_api_component_address(&mapping_context, &component_address)?,
         fungible_resource_balances,
     })

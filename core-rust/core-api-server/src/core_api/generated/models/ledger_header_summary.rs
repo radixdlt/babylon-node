@@ -12,21 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct StatePackageResponse {
-    #[serde(rename = "at_ledger_state")]
-    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
-    #[serde(rename = "owner_role")]
-    pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "royalty", skip_serializing_if = "Option::is_none")]
-    pub royalty: Option<Box<crate::core_api::generated::models::Substate>>,
+pub struct LedgerHeaderSummary {
+    #[serde(rename = "ledger_hashes")]
+    pub ledger_hashes: Box<crate::core_api::generated::models::LedgerHashes>,
+    #[serde(rename = "proposer_timestamp")]
+    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl StatePackageResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, owner_role: crate::core_api::generated::models::Substate) -> StatePackageResponse {
-        StatePackageResponse {
-            at_ledger_state: Box::new(at_ledger_state),
-            owner_role: Option::Some(owner_role),
-            royalty: None,
+impl LedgerHeaderSummary {
+    pub fn new(ledger_hashes: crate::core_api::generated::models::LedgerHashes, proposer_timestamp: crate::core_api::generated::models::Instant) -> LedgerHeaderSummary {
+        LedgerHeaderSummary {
+            ledger_hashes: Box::new(ledger_hashes),
+            proposer_timestamp: Box::new(proposer_timestamp),
         }
     }
 }

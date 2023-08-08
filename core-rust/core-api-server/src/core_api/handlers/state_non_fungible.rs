@@ -2,6 +2,7 @@ use radix_engine::blueprints::resource::*;
 use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::{TypedMainModuleSubstateKey, TypedSubstateKey};
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use crate::core_api::*;
@@ -60,7 +61,13 @@ pub(crate) async fn handle_state_non_fungible(
         not_found_error("The given non_fungible_id doesn't exist under that resource address")
     })?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(StateNonFungibleResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
             &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(

@@ -22,85 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LedgerStateSummary;
-import com.radixdlt.api.core.generated.models.Substate;
+import com.radixdlt.api.core.generated.models.Instant;
+import com.radixdlt.api.core.generated.models.LedgerHashes;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateNonFungibleResponse
+ * LedgerHeaderSummary
  */
 @JsonPropertyOrder({
-  StateNonFungibleResponse.JSON_PROPERTY_AT_LEDGER_STATE,
-  StateNonFungibleResponse.JSON_PROPERTY_NON_FUNGIBLE
+  LedgerHeaderSummary.JSON_PROPERTY_LEDGER_HASHES,
+  LedgerHeaderSummary.JSON_PROPERTY_PROPOSER_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateNonFungibleResponse {
-  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
-  private LedgerStateSummary atLedgerState;
+public class LedgerHeaderSummary {
+  public static final String JSON_PROPERTY_LEDGER_HASHES = "ledger_hashes";
+  private LedgerHashes ledgerHashes;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE = "non_fungible";
-  private Substate nonFungible;
+  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
+  private Instant proposerTimestamp;
 
-  public StateNonFungibleResponse() { 
+  public LedgerHeaderSummary() { 
   }
 
-  public StateNonFungibleResponse atLedgerState(LedgerStateSummary atLedgerState) {
-    this.atLedgerState = atLedgerState;
+  public LedgerHeaderSummary ledgerHashes(LedgerHashes ledgerHashes) {
+    this.ledgerHashes = ledgerHashes;
     return this;
   }
 
    /**
-   * Get atLedgerState
-   * @return atLedgerState
+   * Get ledgerHashes
+   * @return ledgerHashes
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_HASHES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerStateSummary getAtLedgerState() {
-    return atLedgerState;
+  public LedgerHashes getLedgerHashes() {
+    return ledgerHashes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_HASHES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
-    this.atLedgerState = atLedgerState;
+  public void setLedgerHashes(LedgerHashes ledgerHashes) {
+    this.ledgerHashes = ledgerHashes;
   }
 
 
-  public StateNonFungibleResponse nonFungible(Substate nonFungible) {
-    this.nonFungible = nonFungible;
+  public LedgerHeaderSummary proposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
     return this;
   }
 
    /**
-   * Get nonFungible
-   * @return nonFungible
+   * Get proposerTimestamp
+   * @return proposerTimestamp
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getNonFungible() {
-    return nonFungible;
+  public Instant getProposerTimestamp() {
+    return proposerTimestamp;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE)
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungible(Substate nonFungible) {
-    this.nonFungible = nonFungible;
+  public void setProposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
   }
 
 
   /**
-   * Return true if this StateNonFungibleResponse object is equal to o.
+   * Return true if this LedgerHeaderSummary object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +110,22 @@ public class StateNonFungibleResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateNonFungibleResponse stateNonFungibleResponse = (StateNonFungibleResponse) o;
-    return Objects.equals(this.atLedgerState, stateNonFungibleResponse.atLedgerState) &&
-        Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
+    LedgerHeaderSummary ledgerHeaderSummary = (LedgerHeaderSummary) o;
+    return Objects.equals(this.ledgerHashes, ledgerHeaderSummary.ledgerHashes) &&
+        Objects.equals(this.proposerTimestamp, ledgerHeaderSummary.proposerTimestamp);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(atLedgerState, nonFungible);
+    return Objects.hash(ledgerHashes, proposerTimestamp);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateNonFungibleResponse {\n");
-    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
-    sb.append("    nonFungible: ").append(toIndentedString(nonFungible)).append("\n");
+    sb.append("class LedgerHeaderSummary {\n");
+    sb.append("    ledgerHashes: ").append(toIndentedString(ledgerHashes)).append("\n");
+    sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }

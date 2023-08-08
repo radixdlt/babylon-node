@@ -69,6 +69,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -117,10 +118,18 @@ public final class GenerateGenesis {
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
       Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
-  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
-      ECDSASecp256k1PublicKey.tryFromHex(
-              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
-          .unwrap();
+  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY;
+
+  static {
+    try {
+      GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
+          ECDSASecp256k1PublicKey.fromHex(
+              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c");
+    } catch (PublicKeyException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
       Decimal.of(1); // Allow it to be easily changed in eg tests
 

@@ -106,9 +106,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                           new EcdsaSecp256k1PublicKey()
                               .keyHex(
                                   Bytes.toHexString(
-                                      PrivateKeys.ofNumeric(1)
-                                          .getPublicKey()
-                                          .getCompressedBytes())))
+                                      PrivateKeys.ofNumeric(1).getPublicKey().getBytes())))
                       .addDecryptorsItem(
                           new EncryptedMessageDecryptor()
                               .publicKeyFingerprintHex(Bytes.toHexString(new byte[8]))
