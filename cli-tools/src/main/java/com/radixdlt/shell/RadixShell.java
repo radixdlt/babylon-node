@@ -94,7 +94,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -199,9 +199,9 @@ public final class RadixShell {
       properties.set("network.id", network.getId());
       if (properties.get("network.genesis_data", "").isEmpty()) {
         final var encodedGenesisData =
-            StateManagerSbor.encode(
+            NodeSborCodecs.encode(
                 GenesisData.testingDefaultEmpty(),
-                StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+                NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
         final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
         properties.set("network.genesis_data", genesisDataBase64);
       }

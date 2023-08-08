@@ -110,94 +110,30 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
 
 #[cfg(test)]
 mod tests {
-
-    use crate::mempool_manager::MempoolManager;
-    use crate::priority_mempool::PriorityMempool;
-    use crate::store::{DatabaseFlags, InMemoryStore, StateManagerDatabase};
-    use crate::transaction::{
-        CachedCommittabilityValidator, CommittabilityValidator, ExecutionConfigurator,
-        TransactionPreviewer,
-    };
-    use crate::{
-        LoggingConfig, PendingTransactionResultCache, PreviewRequest, StateManager,
-        StateManagerLoggingConfig,
-    };
-    use node_common::config::limits::VertexLimitsConfig;
-    use node_common::config::MempoolConfig;
+    use crate::{PreviewRequest, StateManager, StateManagerConfig};
     use node_common::locks::LockFactory;
     use prometheus::Registry;
-    use radix_engine::transaction::FeeReserveConfig;
-    use radix_engine_common::network::NetworkDefinition;
-    use std::sync::Arc;
     use transaction::builder::ManifestBuilder;
     use transaction::model::{MessageV1, PreviewFlags};
 
     #[test]
     fn test_preview_processed_substate_changes() {
-        // TODO: extract test state manager setup to a method/helper
-        let network = NetworkDefinition::simulator();
-        let logging_config = LoggingConfig {
-            engine_trace: false,
-            state_manager_config: StateManagerLoggingConfig {
-                log_on_transaction_rejection: false,
-            },
-        };
         let lock_factory = LockFactory::new(|| {});
-        let database = Arc::new(lock_factory.new_rwlock(StateManagerDatabase::InMemory(
-            InMemoryStore::new(DatabaseFlags::default()),
-        )));
-        let metric_registry = Registry::new();
-        let execution_configurator = Arc::new(ExecutionConfigurator::new(
-            &logging_config,
-            FeeReserveConfig::default(),
-        ));
-        let pending_transaction_result_cache =
-            Arc::new(lock_factory.new_rwlock(PendingTransactionResultCache::new(10000, 10000)));
-        let committability_validator = Arc::new(CommittabilityValidator::new(
-            &network,
-            database.clone(),
-            execution_configurator.clone(),
-        ));
-        let cached_committability_validator = CachedCommittabilityValidator::new(
-            database.clone(),
-            committability_validator,
-            pending_transaction_result_cache.clone(),
-        );
-        let mempool = Arc::new(lock_factory.new_rwlock(PriorityMempool::new(
-            MempoolConfig {
-                max_total_transactions_size: 10 * 1024 * 1024,
-                max_transaction_count: 10,
-            },
-            &metric_registry,
-        )));
-        let mempool_manager = Arc::new(MempoolManager::new_for_testing(
-            mempool,
-            cached_committability_validator,
-            &metric_registry,
-        ));
+        let metrics_registry = Registry::new();
         let state_manager = StateManager::new(
-            &network,
-            VertexLimitsConfig::default(),
-            database.clone(),
-            mempool_manager,
-            execution_configurator.clone(),
-            pending_transaction_result_cache,
-            logging_config,
-            &metric_registry,
+            StateManagerConfig::new_for_testing(),
+            None,
             &lock_factory,
+            &metrics_registry,
         );
 
-        state_manager.execute_genesis_for_unit_tests();
-
-        let transaction_previewer = Arc::new(TransactionPreviewer::new(
-            &network,
-            database,
-            execution_configurator,
-        ));
+        state_manager
+            .state_computer
+            .execute_genesis_for_unit_tests();
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 
-        let preview_response = transaction_previewer.preview(PreviewRequest {
+        let preview_response = state_manager.transaction_previewer.preview(PreviewRequest {
             manifest: preview_manifest,
             explicit_epoch_range: None,
             notary_public_key: None,

@@ -62,17 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.mempool.MempoolRelayDispatcher;
+import com.radixdlt.sbor.NodeSborCodecs;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
-/** Database configuration options */
-public record DatabaseFlags(
-    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        DatabaseFlags.class,
-        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
+public final class NodeRustEnvironment implements AutoCloseable {
+
+  static {
+    System.loadLibrary("corerust");
   }
+
+  /**
+   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
+   * equivalent to the StateManager "owning" the rust state manager memory. On each call into Rust,
+   * we map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses
+   * that to access all state and make calls.
+   */
+  @SuppressWarnings("unused")
+  private final long rustNodeRustEnvironmentPointer = 0;
+
+  private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
+  private final FatalPanicHandler fatalPanicHandler;
+
+  public NodeRustEnvironment(
+      MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+      FatalPanicHandler fatalPanicHandler,
+      StateManagerConfig config) {
+    this.mempoolRelayDispatcher = mempoolRelayDispatcher;
+    this.fatalPanicHandler = fatalPanicHandler;
+    final var encodedConfig =
+        NodeSborCodecs.encode(config, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    init(this, encodedConfig);
+  }
+
+  @Override
+  public void close() {
+    shutdown();
+  }
+
+  public void shutdown() {
+    cleanup(this);
+  }
+
+  /**
+   * Delegates the dispatch of an "immediately relay new transaction from Core API" event. This
+   * method is called from Rust via JNI.
+   */
+  @SuppressWarnings("unused")
+  public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
+    this.mempoolRelayDispatcher.dispatchRelay(
+        RawNotarizedTransaction.create(notarizedTransactionPayload));
+  }
+
+  /**
+   * Delegates the handling of a fatal Rust panic (e.g. happening while any write lock is held).
+   * This method is called from Rust via JNI. In production, it is critical to shut down the Node's
+   * process gracefully (which must be driven by the "host" Java side) in such case, to avoid data
+   * corruption.
+   */
+  @SuppressWarnings("unused")
+  public void handleFatalPanic() {
+    this.fatalPanicHandler.handleFatalPanic();
+  }
+
+  private static native void init(NodeRustEnvironment nodeRustEnvironment, byte[] config);
+
+  private static native void cleanup(NodeRustEnvironment nodeRustEnvironment);
 }

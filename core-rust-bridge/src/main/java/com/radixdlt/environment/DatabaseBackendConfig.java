@@ -62,23 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.EnumCodec;
 
-public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
-  public static void registerCodec(CodecMap codecMap) {
+/** REv2 Database configuration options */
+public sealed interface DatabaseBackendConfig {
+  static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerLoggingConfig.class,
-        codecs -> StructCodec.fromRecordComponents(StateManagerLoggingConfig.class, codecs));
+        DatabaseBackendConfig.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseBackendConfig.class, codecs));
   }
 
-  public static StateManagerLoggingConfig getDefault() {
-    return new StateManagerLoggingConfig(false);
+  static DatabaseBackendConfig inMemory() {
+    return new InMemory();
   }
 
-  public static StateManagerLoggingConfig getDebug() {
-    return new StateManagerLoggingConfig(true);
+  static DatabaseBackendConfig rocksDB(String databasePath) {
+    return new RocksDB(databasePath);
   }
+
+  record InMemory() implements DatabaseBackendConfig {}
+
+  record RocksDB(String databasePath) implements DatabaseBackendConfig {}
 }

@@ -62,24 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record LoggingConfig(
-    boolean engineTrace, StateManagerLoggingConfig stateManagerLoggingConfig) {
+/** Database configuration options */
+public record DatabaseFlags(
+    boolean enableLocalTransactionExecutionIndex, boolean enableAccountChangeIndex) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        LoggingConfig.class,
-        codecs -> StructCodec.fromRecordComponents(LoggingConfig.class, codecs));
-  }
-
-  public static LoggingConfig getDefault() {
-    return new LoggingConfig(false, StateManagerLoggingConfig.getDefault());
-  }
-
-  public static LoggingConfig getDebug() {
-    return new LoggingConfig(true, StateManagerLoggingConfig.getDebug());
+        DatabaseFlags.class,
+        codecs -> StructCodec.fromRecordComponents(DatabaseFlags.class, codecs));
   }
 }
