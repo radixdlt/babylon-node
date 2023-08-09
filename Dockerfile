@@ -31,13 +31,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     openjdk-17-jdk=17.0.7+7-1~deb11u1 \
   && apt-get clean \
-  && rm -rf /var/lib/apt/lists/* \
-  && wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
-  && unzip gradle-7.2-bin.zip -d /opt \
-  && rm gradle-7.2-bin.zip
+  && rm -rf /var/lib/apt/lists/*
 
-ENV GRADLE_HOME=/opt/gradle-7.2
-ENV PATH=/opt/gradle-7.2/bin:$PATH
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 RUN mkdir -p /radixdlt
@@ -59,13 +54,14 @@ COPY ./core-rust-bridge /radixdlt/core-rust-bridge
 COPY ./olympia-engine /radixdlt/olympia-engine
 COPY ./cli-tools /radixdlt/cli-tools
 COPY ./shell /radixdlt/shell
+COPY ./keygen /radixdlt/keygen
 # Need .git for tag versions - but this can probably be removed soon
 COPY ./.git /radixdlt/.git
 
 WORKDIR /radixdlt
 
 USER root
-RUN SKIP_NATIVE_RUST_BUILD=TRUE gradle clean build -x test -Pci=true -PrustBinaryBuildType=release
+RUN SKIP_NATIVE_RUST_BUILD=TRUE ./gradlew clean build -x test -Pci=true -PrustBinaryBuildType=release
 USER nobody
 
 # =================================================================================================
