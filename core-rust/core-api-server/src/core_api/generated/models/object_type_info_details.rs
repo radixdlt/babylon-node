@@ -15,35 +15,21 @@
 pub struct ObjectTypeInfoDetails {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::TypeInfoType,
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    #[serde(rename = "blueprint_version")]
-    pub blueprint_version: String,
+    #[serde(rename = "module_versions")]
+    pub module_versions: Vec<crate::core_api::generated::models::ModuleVersion>,
+    #[serde(rename = "blueprint_info")]
+    pub blueprint_info: Box<crate::core_api::generated::models::BlueprintInfo>,
     #[serde(rename = "global")]
     pub global: bool,
-    /// The Bech32m-encoded human readable version of any global address
-    #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
-    pub outer_object: Option<String>,
-    #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
-    pub instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
-    #[serde(rename = "features")]
-    pub features: Vec<String>,
 }
 
 impl ObjectTypeInfoDetails {
-    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, package_address: String, blueprint_name: String, blueprint_version: String, global: bool, features: Vec<String>) -> ObjectTypeInfoDetails {
+    pub fn new(_type: crate::core_api::generated::models::TypeInfoType, module_versions: Vec<crate::core_api::generated::models::ModuleVersion>, blueprint_info: crate::core_api::generated::models::BlueprintInfo, global: bool) -> ObjectTypeInfoDetails {
         ObjectTypeInfoDetails {
             _type,
-            package_address,
-            blueprint_name,
-            blueprint_version,
+            module_versions,
+            blueprint_info: Box::new(blueprint_info),
             global,
-            outer_object: None,
-            instance_schema: None,
-            features,
         }
     }
 }

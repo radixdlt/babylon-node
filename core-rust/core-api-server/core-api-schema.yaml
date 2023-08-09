@@ -1442,9 +1442,12 @@ components:
     LedgerHeaderSummary:
       type: object
       required:
+        - epoch_round
         - ledger_hashes
         - proposer_timestamp
       properties:
+        epoch_round:
+          $ref: "#/components/schemas/EpochRound"
         ledger_hashes:
           $ref: "#/components/schemas/LedgerHashes"
         proposer_timestamp:
@@ -1812,7 +1815,7 @@ components:
       enum:
         - TypeInfo
         - Metadata
-        - AccessRules
+        - RoleAssignment
         - Royalty
         - Main
     PartitionKind:
@@ -2008,17 +2011,14 @@ components:
         - $ref: "#/components/schemas/EventEmitterIdentifier"
         - type: object
           required:
-            - entity
-            - object_module_id
+            - package_address
             - blueprint_name
           properties:
-            entity:
-              $ref: "#/components/schemas/EntityReference"
-            object_module_id:
-              $ref: "#/components/schemas/ObjectModuleId"
+            package_address:
+              $ref: "#/components/schemas/PackageAddress"
             blueprint_name:
               type: string
-              description: Blueprint name.
+              description: The blueprint under the package which emitted the event.
     MethodEventEmitterIdentifier:
       allOf:
         - $ref: "#/components/schemas/EventEmitterIdentifier"
@@ -2568,25 +2568,33 @@ components:
       type: object
       required:
         - schema
-        - provided_types
+        - schema_hash
+        - instance_type_lookup
       properties:
         schema:
           $ref: '#/components/schemas/ScryptoSchema'
-        provided_types:
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        instance_type_lookup:
           type: array
-          description: Type indices against the provided schema. These fill holes in the instance's blueprint's partition schemas.
+          description: |
+            This is a vector which is a lookup of the "instance type index" to the local type index
+            which can be used to resolve the instance type in the instance schema.
           items:
             $ref: '#/components/schemas/LocalTypeIndex'
     KeyValueStoreSchema:
       type: object
       required:
         - schema
+        - schema_hash
         - key_type
         - value_type
         - can_own
       properties:
         schema:
           $ref: '#/components/schemas/ScryptoSchema'
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
         key_type:
           $ref: '#/components/schemas/LocalTypeIndex'
           description: |
@@ -2602,22 +2610,43 @@ components:
       type: object
       required:
         - interface
+        - is_transient
         - function_exports
-        - virtual_lazy_load_functions
+        - hook_exports
       properties:
         interface:
           $ref: '#/components/schemas/BlueprintInterface'
+        is_transient:
+          type: boolean
+          description: If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
         function_exports:
           type: object
           description: A map from the function name to its export
           additionalProperties:
             $ref: '#/components/schemas/PackageExport'
-        virtual_lazy_load_functions:
-          type: object
-          description: A map from the engine system's virtualization module's function identifier
-            to the package export of the function.
-          additionalProperties:
-            $ref: '#/components/schemas/PackageExport'
+        hook_exports:
+          type: array
+          description: |
+            A map from certain object lifecycle hooks to a callback "package export".
+            There is at most one callback registered for each `ObjectHook`.
+          items:
+            $ref: '#/components/schemas/HookExport'
+    HookExport:
+      type: object
+      required:
+        - object_hook
+        - export
+      properties:
+        object_hook:
+          $ref: '#/components/schemas/ObjectHook'
+        export:
+          $ref: '#/components/schemas/PackageExport'
+    ObjectHook:
+      type: string
+      enum:
+        - OnVirtualize
+        - OnMove
+        - OnDrop
     BlueprintDependencies:
       type: object
       required:
@@ -2980,15 +3009,39 @@ components:
               $ref: "#/components/schemas/TypePointer"
             can_own:
               type: boolean
-              description: Whether the entries of the key-value store are allowed to own child nodes.
+              description: Whether the entries of the key-value partition are allowed to own child nodes.
     IndexBlueprintCollectionSchema:
       allOf:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
+          required:
+            - key_type_pointer
+            - value_type_pointer
+            - can_own
+          properties:
+            key_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
+            value_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
+            can_own:
+              type: boolean
+              description: Whether the entries of the index partition are allowed to own child nodes.
     SortedIndexBlueprintCollectionSchema:
       allOf:
         - $ref: "#/components/schemas/BlueprintCollectionSchema"
         - type: object
+          required:
+            - key_type_pointer
+            - value_type_pointer
+            - can_own
+          properties:
+            key_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
+            value_type_pointer:
+              $ref: "#/components/schemas/TypePointer"
+            can_own:
+              type: boolean
+              description: Whether the entries of the sorted index partition are allowed to own child nodes.
     BlueprintTypeReference:
       type: object
       required:
@@ -3144,7 +3197,7 @@ components:
         - Main
         - Metadata
         - Royalty
-        - AccessRules
+        - RoleAssignment
     Substate:
       type: object
       required:
@@ -3180,8 +3233,8 @@ components:
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
-          AccessRulesModuleFieldOwnerRole: '#/components/schemas/AccessRulesModuleFieldOwnerRoleSubstate'
-          AccessRulesModuleRuleEntry: '#/components/schemas/AccessRulesModuleRuleEntrySubstate'
+          RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
+          RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
           RoyaltyModuleFieldState: '#/components/schemas/RoyaltyModuleFieldStateSubstate'
           RoyaltyModuleMethodRoyaltyEntry: '#/components/schemas/RoyaltyModuleMethodRoyaltyEntrySubstate'
           MetadataModuleEntry: '#/components/schemas/MetadataModuleEntrySubstate'
@@ -3216,8 +3269,9 @@ components:
           ValidatorFieldState: '#/components/schemas/ValidatorFieldStateSubstate'
           ValidatorFieldProtocolUpdateReadinessSignal: '#/components/schemas/ValidatorFieldProtocolUpdateReadinessSignalSubstate'
           AccountFieldState: '#/components/schemas/AccountFieldStateSubstate'
-          AccountVaultIndexEntry: '#/components/schemas/AccountVaultIndexEntrySubstate'
-          AccountDepositRuleIndexEntry: '#/components/schemas/AccountDepositRuleIndexEntrySubstate'
+          AccountVaultEntry: '#/components/schemas/AccountVaultEntrySubstate'
+          AccountResourcePreferenceEntry: '#/components/schemas/AccountResourcePreferenceEntrySubstate'
+          AccountAuthorizedDepositorEntry: '#/components/schemas/AccountAuthorizedDepositorEntrySubstate'
           AccessControllerFieldState: '#/components/schemas/AccessControllerFieldStateSubstate'
           GenericScryptoComponentFieldState: '#/components/schemas/GenericScryptoComponentFieldStateSubstate'
           GenericKeyValueStoreEntry: '#/components/schemas/GenericKeyValueStoreEntrySubstate'
@@ -3230,9 +3284,9 @@ components:
       type: string
       enum:
         - TypeInfoModuleFieldTypeInfo
-        - AccessRulesModuleFieldOwnerRole
-        - AccessRulesModuleRuleEntry
-        - AccessRulesModuleMutabilityEntry
+        - RoleAssignmentModuleFieldOwnerRole
+        - RoleAssignmentModuleRuleEntry
+        - RoleAssignmentModuleMutabilityEntry
         - RoyaltyModuleFieldState
         - RoyaltyModuleMethodRoyaltyEntry
         - MetadataModuleEntry
@@ -3269,8 +3323,9 @@ components:
         - ValidatorFieldState
         - ValidatorFieldProtocolUpdateReadinessSignal
         - AccountFieldState
-        - AccountVaultIndexEntry
-        - AccountDepositRuleIndexEntry
+        - AccountVaultEntry
+        - AccountResourcePreferenceEntry
+        - AccountAuthorizedDepositorEntry
         - AccessControllerFieldState
         - GenericScryptoComponentFieldState
         - GenericKeyValueStoreEntry
@@ -3362,6 +3417,49 @@ components:
       properties:
         resource_address:
           $ref: '#/components/schemas/ComponentAddress'
+    AuthorizedDepositorKey:
+      type: object
+      required:
+        - badge
+      properties:
+        badge:
+          $ref: '#/components/schemas/AuthorizedDepositorBadge'
+    AuthorizedDepositorBadgeType:
+      type: string
+      enum:
+        - Resource
+        - NonFungible
+    AuthorizedDepositorBadge:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AuthorizedDepositorBadgeType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AuthorizedDepositorBadgeType options above
+          Resource: '#/components/schemas/ResourceAuthorizedDepositorBadge'
+          NonFungible: '#/components/schemas/NonFungibleAuthorizedDepositorBadge'
+    ResourceAuthorizedDepositorBadge:
+      allOf:
+        - $ref: '#/components/schemas/AuthorizedDepositorBadge'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    NonFungibleAuthorizedDepositorBadge:
+      allOf:
+        - $ref: '#/components/schemas/AuthorizedDepositorBadge'
+        - type: object
+          required:
+            - non_fungible_global_id
+          properties:
+            non_fungible_global_id:
+              $ref: '#/components/schemas/NonFungibleGlobalId'
     TransactionIdKey:
       type: object
       required:
@@ -3417,28 +3515,48 @@ components:
         - $ref: '#/components/schemas/TypeInfoDetails'
         - type: object
           required:
-            - package_address
-            - blueprint_name
-            - blueprint_version
+            - module_versions
+            - blueprint_info
             - global
-            - features
           properties:
-            package_address:
-              $ref: '#/components/schemas/PackageAddress'
-            blueprint_name:
-              type: string
-            blueprint_version:
-              type: string
-            global:
-              type: boolean
-            outer_object:
-              $ref: '#/components/schemas/GlobalAddress'
-            instance_schema:
-              $ref: '#/components/schemas/InstanceSchema'
-            features:
+            module_versions:
               type: array
               items:
-                type: string
+                $ref: '#/components/schemas/ModuleVersion'
+            blueprint_info:
+              $ref: '#/components/schemas/BlueprintInfo'
+            global:
+              type: boolean
+    ModuleVersion:
+      type: object
+      required:
+        - module
+        - version
+      properties:
+        module:
+          $ref: '#/components/schemas/ObjectModuleId'
+        version:
+          type: string
+          description: A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
+    BlueprintInfo:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+        - features
+      properties:
+        package_address:
+          $ref: '#/components/schemas/PackageAddress'
+        blueprint_name:
+          type: string
+        outer_object:
+          $ref: '#/components/schemas/GlobalAddress'
+        instance_schema:
+          $ref: '#/components/schemas/InstanceSchema'
+        features:
+          type: array
+          items:
+            type: string
     KeyValueStoreTypeInfoDetails:
       allOf:
         - $ref: '#/components/schemas/TypeInfoDetails'
@@ -3456,7 +3574,7 @@ components:
       properties:
         kv_store_schema:
           $ref: '#/components/schemas/KeyValueStoreSchema'
-    AccessRulesModuleFieldOwnerRoleSubstate:
+    RoleAssignmentModuleFieldOwnerRoleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3464,15 +3582,15 @@ components:
             - value
           properties:
             value:
-              $ref: '#/components/schemas/AccessRulesModuleFieldOwnerRoleValue'
-    AccessRulesModuleFieldOwnerRoleValue:
+              $ref: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleValue'
+    RoleAssignmentModuleFieldOwnerRoleValue:
       type: object
       required:
         - owner_role
       properties:
         owner_role:
           $ref: "#/components/schemas/OwnerRole"
-    AccessRulesModuleRuleEntrySubstate:
+    RoleAssignmentModuleRuleEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3482,8 +3600,8 @@ components:
             key:
               $ref: '#/components/schemas/ObjectRoleKey'
             value:
-              $ref: '#/components/schemas/AccessRulesModuleRuleEntryValue'
-    AccessRulesModuleRuleEntryValue:
+              $ref: '#/components/schemas/RoleAssignmentModuleRuleEntryValue'
+    RoleAssignmentModuleRuleEntryValue:
       type: object
       required:
         - access_rule
@@ -4419,7 +4537,7 @@ components:
         - Accept
         - Reject
         - AllowExisting
-    AccountVaultIndexEntrySubstate:
+    AccountVaultEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -4430,15 +4548,15 @@ components:
             key:
               $ref: '#/components/schemas/ResourceKey'
             value:
-              $ref: '#/components/schemas/AccountVaultIndexEntryValue'
-    AccountVaultIndexEntryValue:
+              $ref: '#/components/schemas/AccountVaultEntryValue'
+    AccountVaultEntryValue:
       type: object
       required:
         - vault
       properties:
         vault:
           $ref: '#/components/schemas/EntityReference'
-    AccountDepositRuleIndexEntrySubstate:
+    AccountResourcePreferenceEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -4448,18 +4566,42 @@ components:
             key:
               $ref: '#/components/schemas/ResourceKey'
             value:
-              $ref: '#/components/schemas/AccountDepositRuleIndexEntryValue'
-    AccountDepositRuleIndexEntryValue:
+              $ref: '#/components/schemas/AccountResourcePreferenceEntryValue'
+    AccountResourcePreferenceEntryValue:
       type: object
+      required:
+        - resource_preference
       properties:
-        deposit_rule:
-          $ref: '#/components/schemas/DepositRule'
-    DepositRule:
+        resource_preference:
+          $ref: '#/components/schemas/ResourcePreference'
+    ResourcePreference:
       type: string
       enum:
-        - Neither
         - Allowed
         - Disallowed
+    AccountAuthorizedDepositorEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              $ref: '#/components/schemas/AuthorizedDepositorKey'
+            value:
+              $ref: '#/components/schemas/AccountAuthorizedDepositorEntryValue'
+    AccountAuthorizedDepositorEntryValue:
+      type: object
+      description: Empty value. The existence of the key implies the depositor is authorized.
+      required:
+        - is_authorized
+      properties:
+        is_authorized:
+          description: |
+            This is always true. This field is just added to ensure we return some data as the value,
+            so a present entry is not confused by clients for a deleted/missing entry (which would imply
+            not authorized).
+          type: boolean
     AccessControllerFieldStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -5224,9 +5366,10 @@ components:
             - transaction_processor_package
             - metadata_module_package
             - royalty_module_package
-            - access_rules_package
+            - role_assignment_module_package
             - genesis_helper_package
             - faucet_package
+            - pool_package
             - consensus_manager
             - genesis_helper
             - faucet
@@ -5269,11 +5412,13 @@ components:
               type: string
             royalty_module_package:
               type: string
-            access_rules_package:
+            role_assignment_module_package:
               type: string
             genesis_helper_package:
               type: string
             faucet_package:
+              type: string
+            pool_package:
               type: string
             consensus_manager:
               type: string
@@ -5976,8 +6121,12 @@ components:
     TransactionCallPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - status
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         status:
           $ref: "#/components/schemas/TransactionStatus"
         output:
@@ -6066,11 +6215,15 @@ components:
     TransactionPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - encoded_receipt
         - receipt
         - instruction_resource_changes
         - logs
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         encoded_receipt:
           type: string
           description: The hex-sbor-encoded receipt
@@ -6379,7 +6532,6 @@ components:
         - at_ledger_state
         - info
         - state
-        - royalty_accumulator
         - owner_role
         - vaults
         - descendent_nodes

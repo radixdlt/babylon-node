@@ -15,12 +15,22 @@
 pub struct IndexBlueprintCollectionSchema {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::BlueprintCollectionSchemaType,
+    #[serde(rename = "key_type_pointer")]
+    pub key_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value_type_pointer")]
+    pub value_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    /// Whether the entries of the index partition are allowed to own child nodes.
+    #[serde(rename = "can_own")]
+    pub can_own: bool,
 }
 
 impl IndexBlueprintCollectionSchema {
-    pub fn new(_type: crate::core_api::generated::models::BlueprintCollectionSchemaType) -> IndexBlueprintCollectionSchema {
+    pub fn new(_type: crate::core_api::generated::models::BlueprintCollectionSchemaType, key_type_pointer: crate::core_api::generated::models::TypePointer, value_type_pointer: crate::core_api::generated::models::TypePointer, can_own: bool) -> IndexBlueprintCollectionSchema {
         IndexBlueprintCollectionSchema {
             _type,
+            key_type_pointer: Option::Some(key_type_pointer),
+            value_type_pointer: Option::Some(value_type_pointer),
+            can_own,
         }
     }
 }

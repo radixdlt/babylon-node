@@ -72,7 +72,7 @@ use transaction::prelude::*;
 /// An interface for notifying Java about a fatal panic.
 pub struct FatalPanicHandler {
     jvm: JavaVM,
-    j_state_manager_ref: GlobalRef,
+    j_rust_global_context_ref: GlobalRef,
 }
 
 impl FatalPanicHandler {
@@ -85,10 +85,10 @@ impl FatalPanicHandler {
 
     /// Creates a long-lived handler from the given short-lived JNI context and Java state manager
     /// reference.
-    pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
+    pub fn new(env: &JNIEnv, j_rust_global_context: JObject) -> Result<Self> {
         Ok(Self {
             jvm: env.get_java_vm()?,
-            j_state_manager_ref: env.new_global_ref(j_state_manager)?,
+            j_rust_global_context_ref: env.new_global_ref(j_rust_global_context)?,
         })
     }
 
@@ -106,9 +106,9 @@ impl FatalPanicHandler {
     fn call_java_fatal_panic_handler(&self) -> Result<()> {
         let attachment = self.jvm.attach_current_thread()?;
         let env = attachment.deref();
-        let j_state_manager = self.j_state_manager_ref.as_obj();
+        let j_rust_global_context = self.j_rust_global_context_ref.as_obj();
         let result = env.call_method(
-            j_state_manager,
+            j_rust_global_context,
             FatalPanicHandler::HANDLE_METHOD_NAME,
             FatalPanicHandler::HANDLE_METHOD_DESCRIPTOR,
             &[],

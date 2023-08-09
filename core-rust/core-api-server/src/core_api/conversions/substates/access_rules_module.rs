@@ -11,7 +11,7 @@ pub fn to_api_owner_role_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate!(
         substate,
-        AccessRulesModuleFieldOwnerRole,
+        RoleAssignmentModuleFieldOwnerRole,
         OwnerRoleSubstate { owner_role_entry },
         Value {
             owner_role: Some(models::OwnerRole {
@@ -31,12 +31,12 @@ pub fn to_api_access_rule_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<AccessRule>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
+    let TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Module Role Key".to_string() });
     };
     Ok(key_value_store_optional_substate!(
         substate,
-        AccessRulesModuleRuleEntry,
+        RoleAssignmentModuleRuleEntry,
         models::ObjectRoleKey {
             object_module_id: to_api_object_module_id(module),
             role_key: key.key.to_string(),

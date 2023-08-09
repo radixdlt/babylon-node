@@ -16,8 +16,8 @@ pub enum EntityModule {
     TypeInfo,
     #[serde(rename = "Metadata")]
     Metadata,
-    #[serde(rename = "AccessRules")]
-    AccessRules,
+    #[serde(rename = "RoleAssignment")]
+    RoleAssignment,
     #[serde(rename = "Royalty")]
     Royalty,
     #[serde(rename = "Main")]
@@ -30,7 +30,7 @@ impl ToString for EntityModule {
         match self {
             Self::TypeInfo => String::from("TypeInfo"),
             Self::Metadata => String::from("Metadata"),
-            Self::AccessRules => String::from("AccessRules"),
+            Self::RoleAssignment => String::from("RoleAssignment"),
             Self::Royalty => String::from("Royalty"),
             Self::Main => String::from("Main"),
         }

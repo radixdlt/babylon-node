@@ -371,7 +371,7 @@ public final class LocalSyncService {
   }
 
   private SyncState processSync(SyncingState currentState) {
-    this.updateSyncTargetDiffCounter(currentState);
+    this.updateCurrentAndTargetMetrics(currentState);
 
     if (isFullySynced(currentState)) {
       log.trace("LocalSync: Fully synced to {}", currentState.getTargetHeader());
@@ -585,7 +585,8 @@ public final class LocalSyncService {
         updatedHeader.getStateVersion() > currentState.getCurrentHeader().getStateVersion();
     if (isNewerState) {
       final var newState = currentState.withCurrentHeader(updatedHeader);
-      return this.updateSyncTargetDiffCounter(newState);
+      updateCurrentAndTargetMetrics(newState);
+      return newState;
     } else {
       return currentState;
     }
@@ -597,29 +598,32 @@ public final class LocalSyncService {
         header.getStateVersion() > currentState.getTargetHeader().getStateVersion();
     if (isNewerState) {
       final var newState = currentState.withTargetHeader(header).addCandidatePeers(peers);
-      return this.updateSyncTargetDiffCounter(newState);
+      this.updateCurrentAndTargetMetrics(newState);
+      return newState;
     } else {
       log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
       return currentState;
     }
   }
 
-  private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
+  private void updateCurrentAndTargetMetrics(SyncState syncState) {
+    this.metrics.sync().currentStateVersion().set(syncState.getCurrentHeader().getStateVersion());
     if (syncState instanceof final SyncingState syncingState) {
-      this.metrics
-          .sync()
-          .currentStateVersion()
-          .set(syncingState.getCurrentHeader().getStateVersion());
       this.metrics
           .sync()
           .targetStateVersion()
           .set(syncingState.getTargetHeader().getStateVersion());
+      this.metrics
+          .sync()
+          .targetProposerTimestampEpochSecond()
+          .set(syncingState.getTargetHeader().getProposerTimestamp() / 1000.0);
     } else {
-      this.metrics.sync().currentStateVersion().set(syncState.getCurrentHeader().getStateVersion());
       this.metrics.sync().targetStateVersion().set(syncState.getCurrentHeader().getStateVersion());
+      this.metrics
+          .sync()
+          .targetProposerTimestampEpochSecond()
+          .set(syncState.getCurrentHeader().getProposerTimestamp() / 1000.0);
     }
-
-    return syncState;
   }
 
   public SyncState getSyncState() {

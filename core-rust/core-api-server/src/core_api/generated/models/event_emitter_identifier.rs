@@ -15,11 +15,10 @@
 pub enum EventEmitterIdentifier {
     #[serde(rename="Function")]
     FunctionEventEmitterIdentifier {
-        #[serde(rename = "entity")]
-        entity: Box<crate::core_api::generated::models::EntityReference>,
-        #[serde(rename = "object_module_id")]
-        object_module_id: crate::core_api::generated::models::ObjectModuleId,
-        /// Blueprint name.
+        /// The Bech32m-encoded human readable version of the package address
+        #[serde(rename = "package_address")]
+        package_address: String,
+        /// The blueprint under the package which emitted the event.
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
     },

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.SborData;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
 import io.swagger.annotations.ApiModel;
@@ -33,12 +34,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionCallPreviewResponse
  */
 @JsonPropertyOrder({
+  TransactionCallPreviewResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   TransactionCallPreviewResponse.JSON_PROPERTY_STATUS,
   TransactionCallPreviewResponse.JSON_PROPERTY_OUTPUT,
   TransactionCallPreviewResponse.JSON_PROPERTY_ERROR_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionCallPreviewResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_STATUS = "status";
   private TransactionStatus status;
 
@@ -50,6 +55,32 @@ public class TransactionCallPreviewResponse {
 
   public TransactionCallPreviewResponse() { 
   }
+
+  public TransactionCallPreviewResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public TransactionCallPreviewResponse status(TransactionStatus status) {
     this.status = status;
@@ -141,20 +172,22 @@ public class TransactionCallPreviewResponse {
       return false;
     }
     TransactionCallPreviewResponse transactionCallPreviewResponse = (TransactionCallPreviewResponse) o;
-    return Objects.equals(this.status, transactionCallPreviewResponse.status) &&
+    return Objects.equals(this.atLedgerState, transactionCallPreviewResponse.atLedgerState) &&
+        Objects.equals(this.status, transactionCallPreviewResponse.status) &&
         Objects.equals(this.output, transactionCallPreviewResponse.output) &&
         Objects.equals(this.errorMessage, transactionCallPreviewResponse.errorMessage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, output, errorMessage);
+    return Objects.hash(atLedgerState, status, output, errorMessage);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionCallPreviewResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");
     sb.append("    errorMessage: ").append(toIndentedString(errorMessage)).append("\n");

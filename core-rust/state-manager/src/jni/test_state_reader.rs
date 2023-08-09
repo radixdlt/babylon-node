@@ -72,7 +72,7 @@ use radix_engine::types::*;
 use radix_engine_queries::query::ResourceAccounter;
 use std::ops::Deref;
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
@@ -99,8 +99,8 @@ struct ExecutedTransaction {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TransactionDetails {
-    new_component_addresses: Vec<ComponentAddress>,
-    new_resource_addresses: Vec<ResourceAddress>,
+    new_component_addresses: IndexSet<ComponentAddress>,
+    new_resource_addresses: IndexSet<ResourceAddress>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -119,7 +119,7 @@ pub struct JavaValidatorInfo {
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
@@ -127,7 +127,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
         request_payload,
         |state_version_number: u64| -> Option<ExecutedTransaction> {
             let state_version = StateVersion::of(state_version_number);
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_database = database.read();
             let committed_transaction = read_database.get_committed_transaction(state_version)?;
             let committed_identifiers =
@@ -161,7 +161,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionDetailsAtStateVersion(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
@@ -169,7 +169,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionDeta
         request_payload,
         |state_version_number: u64| -> Option<TransactionDetails> {
             let state_version = StateVersion::of(state_version_number);
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_database = database.read();
             let committed_local_transaction_execution =
                 read_database.get_committed_local_transaction_execution(state_version)?;
@@ -190,7 +190,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionDeta
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
@@ -198,7 +198,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
         request_payload,
         |component_address: ComponentAddress| -> Decimal {
             let node_id = component_address.as_node_id();
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_store = database.read();
 
             // a quick fix for handling virtual accounts
@@ -214,10 +214,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
                 let mut accounter = ResourceAccounter::new(read_store.deref());
                 accounter.traverse(*node_id);
                 let balances = accounter.close().balances;
-                balances
-                    .get(&RADIX_TOKEN)
-                    .cloned()
-                    .unwrap_or_else(Decimal::zero)
+                balances.get(&XRD).cloned().unwrap_or_else(Decimal::zero)
             } else {
                 Decimal::zero()
             }
@@ -229,14 +226,14 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |validator_address: ComponentAddress| -> JavaValidatorInfo {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_store = database.read();
             let validator_substate: ValidatorSubstate = read_store
                 .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
@@ -260,11 +257,11 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
-        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let read_store = database.read();
         read_store.get_epoch().number()
     })
@@ -274,14 +271,14 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
 extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getNodeGlobalRoot(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(
         &env,
         request_payload,
         |internal_address: InternalAddress| -> Option<GlobalAddress> {
-            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let read_store = database.read();
             let node_ancestry_record = read_store.get_ancestry(internal_address.as_node_id());
             node_ancestry_record.map(|node_ancestry_record| {

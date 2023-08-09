@@ -26,13 +26,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerFieldStateSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesModuleRuleEntrySubstate;
-import com.radixdlt.api.core.generated.models.AccountDepositRuleIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.AccountAuthorizedDepositorEntrySubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.AccountFieldStateSubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountFieldStateValue;
-import com.radixdlt.api.core.generated.models.AccountVaultIndexEntrySubstate;
+import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubstate;
+import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentTimeRoundedToMinutesSubstate;
@@ -66,6 +65,8 @@ import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubsta
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageSchemaEntrySubstate;
+import com.radixdlt.api.core.generated.models.RoleAssignmentModuleFieldOwnerRoleSubstate;
+import com.radixdlt.api.core.generated.models.RoleAssignmentModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleMethodRoyaltyEntrySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -96,11 +97,10 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerFieldStateSubstate.class, name = "AccessControllerFieldState"),
-  @JsonSubTypes.Type(value = AccessRulesModuleFieldOwnerRoleSubstate.class, name = "AccessRulesModuleFieldOwnerRole"),
-  @JsonSubTypes.Type(value = AccessRulesModuleRuleEntrySubstate.class, name = "AccessRulesModuleRuleEntry"),
-  @JsonSubTypes.Type(value = AccountDepositRuleIndexEntrySubstate.class, name = "AccountDepositRuleIndexEntry"),
+  @JsonSubTypes.Type(value = AccountAuthorizedDepositorEntrySubstate.class, name = "AccountAuthorizedDepositorEntry"),
   @JsonSubTypes.Type(value = AccountFieldStateSubstate.class, name = "AccountFieldState"),
-  @JsonSubTypes.Type(value = AccountVaultIndexEntrySubstate.class, name = "AccountVaultIndexEntry"),
+  @JsonSubTypes.Type(value = AccountResourcePreferenceEntrySubstate.class, name = "AccountResourcePreferenceEntry"),
+  @JsonSubTypes.Type(value = AccountVaultEntrySubstate.class, name = "AccountVaultEntry"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentProposalStatisticSubstate.class, name = "ConsensusManagerFieldCurrentProposalStatistic"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldCurrentTimeSubstate.class, name = "ConsensusManagerFieldCurrentTime"),
@@ -134,6 +134,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntry"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageSchemaEntrySubstate.class, name = "PackageSchemaEntry"),
+  @JsonSubTypes.Type(value = RoleAssignmentModuleFieldOwnerRoleSubstate.class, name = "RoleAssignmentModuleFieldOwnerRole"),
+  @JsonSubTypes.Type(value = RoleAssignmentModuleRuleEntrySubstate.class, name = "RoleAssignmentModuleRuleEntry"),
   @JsonSubTypes.Type(value = RoyaltyModuleFieldStateSubstate.class, name = "RoyaltyModuleFieldState"),
   @JsonSubTypes.Type(value = RoyaltyModuleMethodRoyaltyEntrySubstate.class, name = "RoyaltyModuleMethodRoyaltyEntry"),
   @JsonSubTypes.Type(value = TransactionTrackerCollectionEntrySubstate.class, name = "TransactionTrackerCollectionEntry"),
@@ -223,11 +225,10 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessControllerFieldState", AccessControllerFieldStateSubstate.class);
-  mappings.put("AccessRulesModuleFieldOwnerRole", AccessRulesModuleFieldOwnerRoleSubstate.class);
-  mappings.put("AccessRulesModuleRuleEntry", AccessRulesModuleRuleEntrySubstate.class);
-  mappings.put("AccountDepositRuleIndexEntry", AccountDepositRuleIndexEntrySubstate.class);
+  mappings.put("AccountAuthorizedDepositorEntry", AccountAuthorizedDepositorEntrySubstate.class);
   mappings.put("AccountFieldState", AccountFieldStateSubstate.class);
-  mappings.put("AccountVaultIndexEntry", AccountVaultIndexEntrySubstate.class);
+  mappings.put("AccountResourcePreferenceEntry", AccountResourcePreferenceEntrySubstate.class);
+  mappings.put("AccountVaultEntry", AccountVaultEntrySubstate.class);
   mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentProposalStatistic", ConsensusManagerFieldCurrentProposalStatisticSubstate.class);
   mappings.put("ConsensusManagerFieldCurrentTime", ConsensusManagerFieldCurrentTimeSubstate.class);
@@ -261,6 +262,8 @@ static {
   mappings.put("PackageCodeVmTypeEntry", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageSchemaEntry", PackageSchemaEntrySubstate.class);
+  mappings.put("RoleAssignmentModuleFieldOwnerRole", RoleAssignmentModuleFieldOwnerRoleSubstate.class);
+  mappings.put("RoleAssignmentModuleRuleEntry", RoleAssignmentModuleRuleEntrySubstate.class);
   mappings.put("RoyaltyModuleFieldState", RoyaltyModuleFieldStateSubstate.class);
   mappings.put("RoyaltyModuleMethodRoyaltyEntry", RoyaltyModuleMethodRoyaltyEntrySubstate.class);
   mappings.put("TransactionTrackerCollectionEntry", TransactionTrackerCollectionEntrySubstate.class);

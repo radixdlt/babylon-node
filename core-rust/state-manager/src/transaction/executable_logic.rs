@@ -3,7 +3,7 @@ use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -57,7 +57,7 @@ impl ConfigType {
 /// A preconfigured set of execution settings, allowing to turn `Executable` transactions into
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
     pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
@@ -66,7 +66,7 @@ impl ExecutionConfigurator {
     pub fn new(logging_config: &LoggingConfig, fee_reserve_config: FeeReserveConfig) -> Self {
         let trace = logging_config.engine_trace;
         Self {
-            scrypto_interpreter: ScryptoVm::<DefaultWasmEngine>::default(),
+            scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
             fee_reserve_config,
             execution_configs: HashMap::from([
                 (
@@ -154,7 +154,7 @@ impl ExecutionConfigurator {
     ) -> ConfiguredExecutable<'a> {
         ConfiguredExecutable::Transaction {
             executable,
-            scrypto_interpreter: &self.scrypto_interpreter,
+            scrypto_interpreter: &self.scrypto_vm,
             fee_reserve_config: &self.fee_reserve_config,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
@@ -193,7 +193,10 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 let start = Instant::now();
                 let result = execute_transaction(
                     store,
-                    scrypto_interpreter,
+                    Vm {
+                        scrypto_vm: scrypto_interpreter,
+                        native_vm: DefaultNativeVm::new(),
+                    },
                     fee_reserve_config,
                     execution_config,
                     &executable,

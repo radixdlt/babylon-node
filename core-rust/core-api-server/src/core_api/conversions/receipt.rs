@@ -319,13 +319,13 @@ pub fn to_api_event(
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
             emitter: Some(match emitter {
-                Emitter::Function(node_id, object_module_id, blueprint_name) => {
-                    models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
-                        entity: Box::new(to_api_entity_reference(context, &node_id)?),
-                        object_module_id: to_api_object_module_id(&object_module_id),
-                        blueprint_name,
-                    }
-                }
+                Emitter::Function(BlueprintId {
+                    package_address,
+                    blueprint_name,
+                }) => models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
+                    package_address: to_api_package_address(context, &package_address)?,
+                    blueprint_name,
+                },
                 Emitter::Method(node_id, object_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(context, &node_id)?),

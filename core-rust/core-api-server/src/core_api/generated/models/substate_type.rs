@@ -14,12 +14,12 @@
 pub enum SubstateType {
     #[serde(rename = "TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfo,
-    #[serde(rename = "AccessRulesModuleFieldOwnerRole")]
-    AccessRulesModuleFieldOwnerRole,
-    #[serde(rename = "AccessRulesModuleRuleEntry")]
-    AccessRulesModuleRuleEntry,
-    #[serde(rename = "AccessRulesModuleMutabilityEntry")]
-    AccessRulesModuleMutabilityEntry,
+    #[serde(rename = "RoleAssignmentModuleFieldOwnerRole")]
+    RoleAssignmentModuleFieldOwnerRole,
+    #[serde(rename = "RoleAssignmentModuleRuleEntry")]
+    RoleAssignmentModuleRuleEntry,
+    #[serde(rename = "RoleAssignmentModuleMutabilityEntry")]
+    RoleAssignmentModuleMutabilityEntry,
     #[serde(rename = "RoyaltyModuleFieldState")]
     RoyaltyModuleFieldState,
     #[serde(rename = "RoyaltyModuleMethodRoyaltyEntry")]
@@ -92,10 +92,12 @@ pub enum SubstateType {
     ValidatorFieldProtocolUpdateReadinessSignal,
     #[serde(rename = "AccountFieldState")]
     AccountFieldState,
-    #[serde(rename = "AccountVaultIndexEntry")]
-    AccountVaultIndexEntry,
-    #[serde(rename = "AccountDepositRuleIndexEntry")]
-    AccountDepositRuleIndexEntry,
+    #[serde(rename = "AccountVaultEntry")]
+    AccountVaultEntry,
+    #[serde(rename = "AccountResourcePreferenceEntry")]
+    AccountResourcePreferenceEntry,
+    #[serde(rename = "AccountAuthorizedDepositorEntry")]
+    AccountAuthorizedDepositorEntry,
     #[serde(rename = "AccessControllerFieldState")]
     AccessControllerFieldState,
     #[serde(rename = "GenericScryptoComponentFieldState")]
@@ -119,9 +121,9 @@ impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
-            Self::AccessRulesModuleFieldOwnerRole => String::from("AccessRulesModuleFieldOwnerRole"),
-            Self::AccessRulesModuleRuleEntry => String::from("AccessRulesModuleRuleEntry"),
-            Self::AccessRulesModuleMutabilityEntry => String::from("AccessRulesModuleMutabilityEntry"),
+            Self::RoleAssignmentModuleFieldOwnerRole => String::from("RoleAssignmentModuleFieldOwnerRole"),
+            Self::RoleAssignmentModuleRuleEntry => String::from("RoleAssignmentModuleRuleEntry"),
+            Self::RoleAssignmentModuleMutabilityEntry => String::from("RoleAssignmentModuleMutabilityEntry"),
             Self::RoyaltyModuleFieldState => String::from("RoyaltyModuleFieldState"),
             Self::RoyaltyModuleMethodRoyaltyEntry => String::from("RoyaltyModuleMethodRoyaltyEntry"),
             Self::MetadataModuleEntry => String::from("MetadataModuleEntry"),
@@ -158,8 +160,9 @@ impl ToString for SubstateType {
             Self::ValidatorFieldState => String::from("ValidatorFieldState"),
             Self::ValidatorFieldProtocolUpdateReadinessSignal => String::from("ValidatorFieldProtocolUpdateReadinessSignal"),
             Self::AccountFieldState => String::from("AccountFieldState"),
-            Self::AccountVaultIndexEntry => String::from("AccountVaultIndexEntry"),
-            Self::AccountDepositRuleIndexEntry => String::from("AccountDepositRuleIndexEntry"),
+            Self::AccountVaultEntry => String::from("AccountVaultEntry"),
+            Self::AccountResourcePreferenceEntry => String::from("AccountResourcePreferenceEntry"),
+            Self::AccountAuthorizedDepositorEntry => String::from("AccountAuthorizedDepositorEntry"),
             Self::AccessControllerFieldState => String::from("AccessControllerFieldState"),
             Self::GenericScryptoComponentFieldState => String::from("GenericScryptoComponentFieldState"),
             Self::GenericKeyValueStoreEntry => String::from("GenericKeyValueStoreEntry"),

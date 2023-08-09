@@ -36,15 +36,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   InstanceSchema.JSON_PROPERTY_SCHEMA,
-  InstanceSchema.JSON_PROPERTY_PROVIDED_TYPES
+  InstanceSchema.JSON_PROPERTY_SCHEMA_HASH,
+  InstanceSchema.JSON_PROPERTY_INSTANCE_TYPE_LOOKUP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class InstanceSchema {
   public static final String JSON_PROPERTY_SCHEMA = "schema";
   private ScryptoSchema schema;
 
-  public static final String JSON_PROPERTY_PROVIDED_TYPES = "provided_types";
-  private List<LocalTypeIndex> providedTypes = new ArrayList<>();
+  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
+  private String schemaHash;
+
+  public static final String JSON_PROPERTY_INSTANCE_TYPE_LOOKUP = "instance_type_lookup";
+  private List<LocalTypeIndex> instanceTypeLookup = new ArrayList<>();
 
   public InstanceSchema() { 
   }
@@ -75,34 +79,60 @@ public class InstanceSchema {
   }
 
 
-  public InstanceSchema providedTypes(List<LocalTypeIndex> providedTypes) {
-    this.providedTypes = providedTypes;
-    return this;
-  }
-
-  public InstanceSchema addProvidedTypesItem(LocalTypeIndex providedTypesItem) {
-    this.providedTypes.add(providedTypesItem);
+  public InstanceSchema schemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
     return this;
   }
 
    /**
-   * Type indices against the provided schema. These fill holes in the instance&#39;s blueprint&#39;s partition schemas.
-   * @return providedTypes
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
+   * @return schemaHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Type indices against the provided schema. These fill holes in the instance's blueprint's partition schemas.")
-  @JsonProperty(JSON_PROPERTY_PROVIDED_TYPES)
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LocalTypeIndex> getProvidedTypes() {
-    return providedTypes;
+  public String getSchemaHash() {
+    return schemaHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROVIDED_TYPES)
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProvidedTypes(List<LocalTypeIndex> providedTypes) {
-    this.providedTypes = providedTypes;
+  public void setSchemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
+  }
+
+
+  public InstanceSchema instanceTypeLookup(List<LocalTypeIndex> instanceTypeLookup) {
+    this.instanceTypeLookup = instanceTypeLookup;
+    return this;
+  }
+
+  public InstanceSchema addInstanceTypeLookupItem(LocalTypeIndex instanceTypeLookupItem) {
+    this.instanceTypeLookup.add(instanceTypeLookupItem);
+    return this;
+  }
+
+   /**
+   * This is a vector which is a lookup of the \&quot;instance type index\&quot; to the local type index which can be used to resolve the instance type in the instance schema. 
+   * @return instanceTypeLookup
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "This is a vector which is a lookup of the \"instance type index\" to the local type index which can be used to resolve the instance type in the instance schema. ")
+  @JsonProperty(JSON_PROPERTY_INSTANCE_TYPE_LOOKUP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<LocalTypeIndex> getInstanceTypeLookup() {
+    return instanceTypeLookup;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INSTANCE_TYPE_LOOKUP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setInstanceTypeLookup(List<LocalTypeIndex> instanceTypeLookup) {
+    this.instanceTypeLookup = instanceTypeLookup;
   }
 
 
@@ -119,12 +149,13 @@ public class InstanceSchema {
     }
     InstanceSchema instanceSchema = (InstanceSchema) o;
     return Objects.equals(this.schema, instanceSchema.schema) &&
-        Objects.equals(this.providedTypes, instanceSchema.providedTypes);
+        Objects.equals(this.schemaHash, instanceSchema.schemaHash) &&
+        Objects.equals(this.instanceTypeLookup, instanceSchema.instanceTypeLookup);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, providedTypes);
+    return Objects.hash(schema, schemaHash, instanceTypeLookup);
   }
 
   @Override
@@ -132,7 +163,8 @@ public class InstanceSchema {
     StringBuilder sb = new StringBuilder();
     sb.append("class InstanceSchema {\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
-    sb.append("    providedTypes: ").append(toIndentedString(providedTypes)).append("\n");
+    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    instanceTypeLookup: ").append(toIndentedString(instanceTypeLookup)).append("\n");
     sb.append("}");
     return sb.toString();
   }

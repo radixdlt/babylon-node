@@ -24,7 +24,7 @@ pub(crate) async fn handle_state_access_controller(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let access_controller_substate = read_optional_main_field_substate(
         database.deref(),
@@ -36,8 +36,8 @@ pub(crate) async fn handle_state_access_controller(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         controller_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), controller_address);
@@ -50,7 +50,7 @@ pub(crate) async fn handle_state_access_controller(
         .ledger_header;
 
     Ok(models::StateAccessControllerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_substate,

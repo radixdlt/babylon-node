@@ -43,7 +43,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !account_address.as_node_id().is_global_virtual() {
         read_optional_substate::<TypeInfoSubstate>(
@@ -86,7 +86,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         let substate = read_optional_collection_substate::<KeyValueEntrySubstate<Own>>(
             database.deref(),
             account_address.as_node_id(),
-            ACCOUNT_VAULT_INDEX,
+            ACCOUNT_VAULT_COLLECTION_INDEX,
             &SubstateKey::Map(encoded_key),
         );
         match substate {
@@ -123,7 +123,7 @@ fn response(
 ) -> Result<Json<models::LtsStateAccountFungibleResourceBalanceResponse>, ResponseError<()>> {
     Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
         state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(header)?),
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(context, header)?),
         account_address: to_api_component_address(context, account_address)?,
         fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
             fungible_resource_address: to_api_resource_address(context, resource_address)?,
