@@ -8,7 +8,7 @@ use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
-use crate::{PreviewRequest, ProcessedCommitResult, SubstateChange};
+use crate::{BySubstate, ChangeAction, PreviewRequest, ProcessedCommitResult};
 use radix_engine_common::prelude::*;
 use transaction::model::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -24,7 +24,7 @@ pub struct TransactionPreviewer<S> {
 
 pub struct ProcessedPreviewResult {
     pub receipt: TransactionReceipt,
-    pub substate_changes: Vec<SubstateChange>,
+    pub substate_changes: BySubstate<ChangeAction>,
 }
 
 impl<S> TransactionPreviewer<S> {
@@ -66,7 +66,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
                     &commit.state_updates.system_updates,
                 )
             }
-            _ => Vec::new(),
+            _ => BySubstate::default(),
         };
 
         Ok(ProcessedPreviewResult {

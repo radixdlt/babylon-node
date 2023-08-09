@@ -76,6 +76,10 @@ use transaction::prelude::*;
 
 use transaction::signing::secp256k1::Secp256k1Signature;
 
+/// A complete ID of a Substate.
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
+
 define_wrapped_hash!(SubstateChangeHash);
 
 impl Display for SubstateChangeHash {
@@ -86,7 +90,7 @@ impl Display for SubstateChangeHash {
 
 impl SubstateChangeHash {
     pub fn from_substate_change(substate_change: &SubstateChange) -> SubstateChangeHash {
-        SubstateChangeHash(hash(scrypto_encode(&substate_change).unwrap()))
+        SubstateChangeHash(hash(scrypto_encode(substate_change).unwrap()))
     }
 }
 

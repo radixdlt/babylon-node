@@ -6,8 +6,8 @@ use radix_engine::{
 use state_manager::store::traits::SubstateNodeAncestryStore;
 use state_manager::store::StateManagerDatabase;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    StateVersion, SubstateChange, TransactionTreeHash,
+    BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
+    LocalTransactionReceipt, StateVersion, TransactionTreeHash,
 };
 use std::ops::SubAssign;
 use transaction::prelude::*;
@@ -367,7 +367,7 @@ pub fn to_api_lts_fungible_resource_balance_change(
 pub fn to_api_lts_resultant_account_fungible_balances(
     _context: &MappingContext,
     _balance_changes: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-    _substate_changes: &[SubstateChange],
+    _substate_changes: &BySubstate<ChangeAction>,
 ) -> Vec<models::LtsResultantAccountFungibleBalances> {
     // TODO - until we have the proper information from the engine, we need to do some guessing here about
     // how to match up vault changes with balance changes.
