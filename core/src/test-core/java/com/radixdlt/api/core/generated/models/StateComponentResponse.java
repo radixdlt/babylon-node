@@ -127,10 +127,10 @@ public class StateComponentResponse {
    * Get royaltyAccumulator
    * @return royaltyAccumulator
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Substate getRoyaltyAccumulator() {
     return royaltyAccumulator;
@@ -138,7 +138,7 @@ public class StateComponentResponse {
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
     this.royaltyAccumulator = royaltyAccumulator;
   }
