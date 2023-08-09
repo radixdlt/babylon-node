@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.InstructionResourceChanges;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponseLogsInner;
 import com.radixdlt.api.core.generated.models.TransactionReceipt;
 import io.swagger.annotations.ApiModel;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionPreviewResponse
  */
 @JsonPropertyOrder({
+  TransactionPreviewResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   TransactionPreviewResponse.JSON_PROPERTY_ENCODED_RECEIPT,
   TransactionPreviewResponse.JSON_PROPERTY_RECEIPT,
   TransactionPreviewResponse.JSON_PROPERTY_INSTRUCTION_RESOURCE_CHANGES,
@@ -43,6 +45,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionPreviewResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_ENCODED_RECEIPT = "encoded_receipt";
   private String encodedReceipt;
 
@@ -57,6 +62,32 @@ public class TransactionPreviewResponse {
 
   public TransactionPreviewResponse() { 
   }
+
+  public TransactionPreviewResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public TransactionPreviewResponse encodedReceipt(String encodedReceipt) {
     this.encodedReceipt = encodedReceipt;
@@ -184,7 +215,8 @@ public class TransactionPreviewResponse {
       return false;
     }
     TransactionPreviewResponse transactionPreviewResponse = (TransactionPreviewResponse) o;
-    return Objects.equals(this.encodedReceipt, transactionPreviewResponse.encodedReceipt) &&
+    return Objects.equals(this.atLedgerState, transactionPreviewResponse.atLedgerState) &&
+        Objects.equals(this.encodedReceipt, transactionPreviewResponse.encodedReceipt) &&
         Objects.equals(this.receipt, transactionPreviewResponse.receipt) &&
         Objects.equals(this.instructionResourceChanges, transactionPreviewResponse.instructionResourceChanges) &&
         Objects.equals(this.logs, transactionPreviewResponse.logs);
@@ -192,13 +224,14 @@ public class TransactionPreviewResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(encodedReceipt, receipt, instructionResourceChanges, logs);
+    return Objects.hash(atLedgerState, encodedReceipt, receipt, instructionResourceChanges, logs);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPreviewResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    encodedReceipt: ").append(toIndentedString(encodedReceipt)).append("\n");
     sb.append("    receipt: ").append(toIndentedString(receipt)).append("\n");
     sb.append("    instructionResourceChanges: ").append(toIndentedString(instructionResourceChanges)).append("\n");

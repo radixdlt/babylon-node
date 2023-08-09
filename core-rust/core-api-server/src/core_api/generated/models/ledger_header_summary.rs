@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LedgerHeaderSummary {
+    #[serde(rename = "epoch_round")]
+    pub epoch_round: Box<crate::core_api::generated::models::EpochRound>,
     #[serde(rename = "ledger_hashes")]
     pub ledger_hashes: Box<crate::core_api::generated::models::LedgerHashes>,
     #[serde(rename = "proposer_timestamp")]
@@ -20,8 +22,9 @@ pub struct LedgerHeaderSummary {
 }
 
 impl LedgerHeaderSummary {
-    pub fn new(ledger_hashes: crate::core_api::generated::models::LedgerHashes, proposer_timestamp: crate::core_api::generated::models::Instant) -> LedgerHeaderSummary {
+    pub fn new(epoch_round: crate::core_api::generated::models::EpochRound, ledger_hashes: crate::core_api::generated::models::LedgerHashes, proposer_timestamp: crate::core_api::generated::models::Instant) -> LedgerHeaderSummary {
         LedgerHeaderSummary {
+            epoch_round: Box::new(epoch_round),
             ledger_hashes: Box::new(ledger_hashes),
             proposer_timestamp: Box::new(proposer_timestamp),
         }

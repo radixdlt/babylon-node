@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionCallPreviewResponse {
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::TransactionStatus,
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
@@ -23,8 +25,9 @@ pub struct TransactionCallPreviewResponse {
 }
 
 impl TransactionCallPreviewResponse {
-    pub fn new(status: crate::core_api::generated::models::TransactionStatus) -> TransactionCallPreviewResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, status: crate::core_api::generated::models::TransactionStatus) -> TransactionCallPreviewResponse {
         TransactionCallPreviewResponse {
+            at_ledger_state: Box::new(at_ledger_state),
             status,
             output: None,
             error_message: None,

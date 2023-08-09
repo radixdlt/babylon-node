@@ -57,7 +57,7 @@ pub(crate) async fn handle_state_account(
         .ledger_header;
 
     Ok(models::StateAccountResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

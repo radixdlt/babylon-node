@@ -8,7 +8,7 @@ use crate::query::{StateManagerSubstateQueries, TransactionIdentifierLoader};
 use crate::staging::ReadableStore;
 use crate::store::traits::QueryableProofStore;
 use crate::transaction::*;
-use crate::{PreviewRequest, ProcessedCommitResult, SubstateChange};
+use crate::{LedgerHeader, PreviewRequest, ProcessedCommitResult, SubstateChange};
 use radix_engine_common::prelude::*;
 use transaction::model::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -23,6 +23,7 @@ pub struct TransactionPreviewer<S> {
 }
 
 pub struct ProcessedPreviewResult {
+    pub base_ledger_header: LedgerHeader,
     pub receipt: TransactionReceipt,
     pub substate_changes: Vec<SubstateChange>,
 }
@@ -69,7 +70,13 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             _ => Vec::new(),
         };
 
+        let base_ledger_header = read_store
+            .get_last_proof()
+            .expect("proof for preview's base state")
+            .ledger_header;
+
         Ok(ProcessedPreviewResult {
+            base_ledger_header,
             receipt,
             substate_changes,
         })

@@ -1442,9 +1442,12 @@ components:
     LedgerHeaderSummary:
       type: object
       required:
+        - epoch_round
         - ledger_hashes
         - proposer_timestamp
       properties:
+        epoch_round:
+          $ref: "#/components/schemas/EpochRound"
         ledger_hashes:
           $ref: "#/components/schemas/LedgerHashes"
         proposer_timestamp:
@@ -5976,8 +5979,12 @@ components:
     TransactionCallPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - status
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         status:
           $ref: "#/components/schemas/TransactionStatus"
         output:
@@ -6066,11 +6073,15 @@ components:
     TransactionPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - encoded_receipt
         - receipt
         - instruction_resource_changes
         - logs
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         encoded_receipt:
           type: string
           description: The hex-sbor-encoded receipt
