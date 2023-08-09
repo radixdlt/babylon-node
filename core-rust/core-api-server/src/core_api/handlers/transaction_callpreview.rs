@@ -152,6 +152,10 @@ pub(crate) async fn handle_transaction_callpreview(
     };
 
     Ok(TransactionCallPreviewResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &result.base_ledger_header,
+        )?),
         error_message: error,
         output: output.map(Box::new),
         status,
