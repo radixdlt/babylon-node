@@ -72,7 +72,8 @@ pub(crate) async fn handle_state_component(
         )?),
         royalty_accumulator: component_royalty_substate
             .map(|substate| to_api_component_royalty_substate(&mapping_context, &substate))
-            .transpose()?,
+            .transpose()?
+            .map(Box::new),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,
