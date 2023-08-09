@@ -74,4 +74,3 @@ dependencies {
 application {
     mainClass = 'com.radixdlt.keygen.KeyGenerator'
 }
-
