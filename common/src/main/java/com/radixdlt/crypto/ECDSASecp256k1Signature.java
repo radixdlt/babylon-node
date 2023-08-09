@@ -220,13 +220,33 @@ public final class ECDSASecp256k1Signature {
     return Objects.hash(r, s, v);
   }
 
-  // WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit
-  // necessary for recovery.
-  public static ECDSASecp256k1Signature decodeFromHexDer(String input) {
-    return decodeFromDER(Hex.decode(input));
+  /**
+   * The DER format does not include the recovery byte, so this function uses a (likely incorrect)
+   * placeholder of 0 - so this signature is non-recoverable.
+   *
+   * <p>A non-recoverable signature *cannot* be used for signing Babylon transactions, because the
+   * public key can't be extracted from the signature - but such signatures can still be useful in
+   * the node where the public key is known.
+   *
+   * <p>If you need to use a DER signature for a Babylon transaction, you will need to calculate /
+   * set the correct recovery byte by using the public key.
+   */
+  public static ECDSASecp256k1Signature decodeNonRecoverableFromHexDer(String input) {
+    return decodeNonRecoverableFromDer(Hex.decode(input));
   }
 
-  public static ECDSASecp256k1Signature decodeFromDER(byte[] bytes) {
+  /**
+   * The DER format does not include the recovery byte, so this function uses a (likely incorrect)
+   * placeholder of 0 - so this signature is non-recoverable.
+   *
+   * <p>A non-recoverable signature *cannot* be used for signing Babylon transactions, because the
+   * public key can't be extracted from the signature - but such signatures can still be useful in
+   * the node where the public key is known.
+   *
+   * <p>If you need to use a DER signature for a Babylon transaction, you will need to calculate /
+   * set the correct recovery byte by using the public key.
+   */
+  public static ECDSASecp256k1Signature decodeNonRecoverableFromDer(byte[] bytes) {
     try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
       var seq = (DLSequence) decoder.readObject();
       var r = (ASN1Integer) seq.getObjectAt(0);

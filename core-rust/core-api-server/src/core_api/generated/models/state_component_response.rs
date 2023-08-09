@@ -19,8 +19,8 @@ pub struct StateComponentResponse {
     pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "state")]
     pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "royalty_accumulator")]
-    pub royalty_accumulator: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "royalty_accumulator", skip_serializing_if = "Option::is_none")]
+    pub royalty_accumulator: Option<Box<crate::core_api::generated::models::Substate>>,
     #[serde(rename = "owner_role")]
     pub owner_role: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
@@ -32,12 +32,12 @@ pub struct StateComponentResponse {
 }
 
 impl StateComponentResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>, descendent_nodes: Vec<crate::core_api::generated::models::StateComponentDescendentNode>) -> StateComponentResponse {
         StateComponentResponse {
             at_ledger_state: Box::new(at_ledger_state),
             info: Option::Some(info),
             state: Option::Some(state),
-            royalty_accumulator: Option::Some(royalty_accumulator),
+            royalty_accumulator: None,
             owner_role: Option::Some(owner_role),
             vaults,
             descendent_nodes,

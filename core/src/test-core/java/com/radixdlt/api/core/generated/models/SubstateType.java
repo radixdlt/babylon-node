@@ -30,11 +30,11 @@ public enum SubstateType {
   
   TYPEINFOMODULEFIELDTYPEINFO("TypeInfoModuleFieldTypeInfo"),
   
-  ACCESSRULESMODULEFIELDOWNERROLE("AccessRulesModuleFieldOwnerRole"),
+  ROLEASSIGNMENTMODULEFIELDOWNERROLE("RoleAssignmentModuleFieldOwnerRole"),
   
-  ACCESSRULESMODULERULEENTRY("AccessRulesModuleRuleEntry"),
+  ROLEASSIGNMENTMODULERULEENTRY("RoleAssignmentModuleRuleEntry"),
   
-  ACCESSRULESMODULEMUTABILITYENTRY("AccessRulesModuleMutabilityEntry"),
+  ROLEASSIGNMENTMODULEMUTABILITYENTRY("RoleAssignmentModuleMutabilityEntry"),
   
   ROYALTYMODULEFIELDSTATE("RoyaltyModuleFieldState"),
   
@@ -108,9 +108,11 @@ public enum SubstateType {
   
   ACCOUNTFIELDSTATE("AccountFieldState"),
   
-  ACCOUNTVAULTINDEXENTRY("AccountVaultIndexEntry"),
+  ACCOUNTVAULTENTRY("AccountVaultEntry"),
   
-  ACCOUNTDEPOSITRULEINDEXENTRY("AccountDepositRuleIndexEntry"),
+  ACCOUNTRESOURCEPREFERENCEENTRY("AccountResourcePreferenceEntry"),
+  
+  ACCOUNTAUTHORIZEDDEPOSITORENTRY("AccountAuthorizedDepositorEntry"),
   
   ACCESSCONTROLLERFIELDSTATE("AccessControllerFieldState"),
   

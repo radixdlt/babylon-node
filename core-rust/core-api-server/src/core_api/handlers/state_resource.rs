@@ -73,8 +73,8 @@ pub(crate) async fn handle_state_resource(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let header = database

@@ -32,7 +32,7 @@ public enum EntityModule {
   
   METADATA("Metadata"),
   
-  ACCESSRULES("AccessRules"),
+  ROLEASSIGNMENT("RoleAssignment"),
   
   ROYALTY("Royalty"),
   

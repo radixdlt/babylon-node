@@ -83,9 +83,7 @@ use crate::transaction::{LedgerTransactionHash, TransactionLogic};
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, SubstateDatabase,
 };
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, PartitionPayload, ReadableTreeStore, TreeNode,
-};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
@@ -333,22 +331,10 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<PartitionPayload>> ReadableTreeStore<PartitionPayload>
-    for StagedStore<'s, S>
-{
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<PartitionPayload>> {
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.overlay
-            .re_node_layer_nodes
-            .get(key)
-            .cloned()
-            .or_else(|| self.root.get_node(key))
-    }
-}
-
-impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<()>> {
-        self.overlay
-            .substate_layer_nodes
+            .state_tree_nodes
             .get(key)
             .cloned()
             .or_else(|| self.root.get_node(key))
@@ -403,7 +389,7 @@ impl HashStructuresDiff {
 
 impl StateHashTreeDiff {
     pub fn weight(&self) -> usize {
-        self.new_re_node_layer_nodes.len() + self.new_substate_layer_nodes.len()
+        self.new_nodes.len()
     }
 }
 
@@ -422,8 +408,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     substate_updates: ImmutableOrdMap<(DbPartitionKey, DbSortKey), DatabaseUpdate>,
-    re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<PartitionPayload>>,
-    substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<()>>,
+    state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
 }
@@ -432,8 +417,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
             substate_updates: ImmutableOrdMap::new(),
-            re_node_layer_nodes: ImmutableHashMap::new(),
-            substate_layer_nodes: ImmutableHashMap::new(),
+            state_tree_nodes: ImmutableHashMap::new(),
             transaction_tree_slices: ImmutableHashMap::new(),
             receipt_tree_slices: ImmutableHashMap::new(),
         }
@@ -450,10 +434,8 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             }
             let hash_structures_diff = &commit.hash_structures_diff;
             let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
-            self.re_node_layer_nodes
-                .extend(state_tree_diff.new_re_node_layer_nodes.iter().cloned());
-            self.substate_layer_nodes
-                .extend(state_tree_diff.new_substate_layer_nodes.iter().cloned());
+            self.state_tree_nodes
+                .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;
             self.transaction_tree_slices.insert(
                 transaction_tree_diff.key,

@@ -12,7 +12,6 @@ transaction-scenarios = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-radix-engine-constants = { workspace = true }
 radix-engine-stores = { workspace = true }
 radix-engine-store-interface = { workspace = true }
 radix-engine-queries = { workspace = true }

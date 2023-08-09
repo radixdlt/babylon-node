@@ -34,11 +34,11 @@ After the spin-up, one of the Node's primary goals is to keep its local Ledger "
 constantly exchange their Ledger status information with one another and compare the following two
 metrics:
 
-rn_sync_current_state_version
+`rn_sync_current_state_version`
 : The state version of the last transaction written to the local Ledger (either coming from a BFT
   or from a Ledger sync).
 
-rn_sync_target_state_version
+`rn_sync_target_state_version`
 : A maximum state version among those received in the status responses from the Node's peers. It
   becomes a target which the Node will try to achieve via Ledger sync process. _Please note that
   this information is not trusted (i.e. a single malicious peer can make all Nodes believe that
@@ -50,13 +50,13 @@ Applying consecutive batches of these transactions moves the Node's "local Ledge
 `rn_ledger_last_update_proposer_epoch_second`) towards the wallclock (assuming the clocks of current
 active Validator Set are accurate).
 
-rn_ledger_last_update_epoch_second
+`rn_ledger_last_update_epoch_second`
 : A wallclock timestamp captured at the last write to the local persistent Ledger (either coming
 from a BFT commit or from a Ledger sync). If this reading grows - or, equivalently, if its value
 is regularly being bumped to the current wallclock - then it means that the Node manages to
 receive regular updates from the Network.
 
-rn_ledger_last_update_proposer_epoch_second
+`rn_ledger_last_update_proposer_epoch_second`
 : A proposer timestamp contained by the last Proof written to the local persistent Ledger (either
 coming from a BFT commit or from a Ledger sync).
 
@@ -97,8 +97,8 @@ Please bear in mind that both `rn_sync_target_proposer_timestamp_epoch_second` a
 
 On a healthy synced Node, the `rn_ledger_last_update_proposer_epoch_second` should always stay
 close to the wallclock, since a healthy Network always keeps committing to the Ledger (even in case
-of no "business" transactions, the consensus epoch/round updates are being committed - otherwise
-there must be a liveness break).
+of no user transactions, the consensus epoch/round updates are being committed - otherwise there
+must be a liveness break).
 
 A synced Node may either belong to an active Validator Set (and perform BFT commits), or receive
 timely Ledger sync updates.
@@ -126,13 +126,13 @@ but some other metrics can narrow it down:
 The consensus health is harder to categorize into distinct states. It may be required to interpret
 each related metric individually: 
 
-rn_misc_wallclock_epoch_second
+`rn_misc_wallclock_epoch_second`
 : A current wallclock, as seen by the Node precisely at the moment of rendering the Prometheus
 endpoint response. All metrics which record timestamps (i.e. named `*_epoch_second`) should be
 interpreted as relative to this one. A Node with a seriously misconfigured clock will most
 likely not be a healthy Validator, since timestamps from BFT messages are verified against it.
 
-rn_misc_config_info
+`rn_misc_config_info`
 : A Prometheus `info` metric containing a few items related to the Node's resolved configuration.
 
 The labels of `rn_misc_config_info` related to the Node's consensus health:
@@ -143,7 +143,7 @@ The labels of `rn_misc_config_info` related to the Node's consensus health:
   A logical Validator component address (within the Engine). Only present (i.e. non-empty) if it 
   was statically configured or resolved from Genesis.
 
-rn_bft_in_validator_set
+`rn_bft_in_validator_set`
 : A "boolean" gauge, showing `1.0` when this Node belongs to an active Validator Set of the
 _current_ epoch (or `0.0` otherwise).
 The `1.0` here is only possible when `rn_misc_config_info.configured_validator_address` is
@@ -151,17 +151,18 @@ non-empty.
 Please note that the _current_ here means "according to the last epoch header written to the Node's
 local Ledger" - which makes this reading stale if the Node is not synced.
 
-rn_bft_proposal_timestamp_difference_seconds { key=..., component_address=... }
+`rn_bft_proposal_timestamp_difference_seconds { key=..., component_address=... }`
 : The difference between the specified Validator's wallclock and this Node's wallclock, as captured
 during the proposal creation / proposal handling.
 This "clock skew" actually includes the network delay too - but this is the number we care about,
 since we accept/reject proposals based on this clock difference. The protocol defines the acceptable
-bounds.
+bounds (they are defined in `com.radixdlt.consensus.bft.processor.ProposalTimestampVerifier`, as
+`MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS`/`MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS`).
 If all the numbers observed here exceed the upper bound, then the Node's clock may be delayed.
 If all the numbers observed here exceed the lower bound, then either the Node's clock is rushing, or
 the Node's latency to its peers is too high.
 
-rn_ledger_consensus_rounds_committed { leader_component_address=..., round_resolution=... }
+`rn_ledger_consensus_rounds_committed { leader_component_address=..., round_resolution=... }`
 : A historical record of the specified Validator's proposal reliability. Each round has a leader
 responsible for the corresponding proposal, and may resolve as `Successful`, `MissedByFallback` or
 `MissedByGap`. If the Node belonged to the active Validator Set of a certain Epoch, then it was a
