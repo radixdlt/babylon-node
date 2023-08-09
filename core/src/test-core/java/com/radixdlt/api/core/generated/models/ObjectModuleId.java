@@ -34,7 +34,7 @@ public enum ObjectModuleId {
   
   ROYALTY("Royalty"),
   
-  ACCESSRULES("AccessRules");
+  ROLEASSIGNMENT("RoleAssignment");
 
   private String value;
 

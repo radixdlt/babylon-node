@@ -94,7 +94,8 @@ public final class KeyVerifyTestScenarioRunner
       throw new AssertionError("Failed to construct public key from hex", e);
     }
     ECDSASecp256k1Signature signature =
-        ECDSASecp256k1Signature.decodeFromDER(fromHexString(testVector.input.signatureDerEncoded));
+        ECDSASecp256k1Signature.decodeNonRecoverableFromDer(
+            fromHexString(testVector.input.signatureDerEncoded));
 
     byte[] hashedMessageToVerify = sha256Hash(fromHexString(testVector.input.msg));
 

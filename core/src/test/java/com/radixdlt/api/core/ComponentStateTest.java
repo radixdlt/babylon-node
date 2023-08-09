@@ -91,7 +91,7 @@ public final class ComponentStateTest extends DeterministicCoreApiTestBase {
               ((TypeInfoModuleFieldTypeInfoSubstate) stateResp.getInfo()).getValue().getDetails();
 
       // Assert that the component state request succeeds
-      assertThat(substateDetails.getBlueprintName()).isEqualTo("Faucet");
+      assertThat(substateDetails.getBlueprintInfo().getBlueprintName()).isEqualTo("Faucet");
     }
   }
 }

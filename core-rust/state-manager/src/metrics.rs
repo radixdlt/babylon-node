@@ -71,8 +71,7 @@ use node_common::config::limits::*;
 use node_common::metrics::*;
 use prometheus::*;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine_common::types::ComponentAddress;
-use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
+use radix_engine_common::prelude::*;
 
 pub struct LedgerMetrics {
     pub state_version: IntGauge,
@@ -188,7 +187,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_size",
                     "Size in bytes of committed transactions.",
                 ),
-                higher_resolution_for_lower_values_buckets_for_limit(DEFAULT_MAX_TRANSACTION_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
             )
             .registered_at(registry),
             execution_cost_units_consumed: new_histogram(

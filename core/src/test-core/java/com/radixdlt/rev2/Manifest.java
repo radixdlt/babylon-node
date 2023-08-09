@@ -121,7 +121,7 @@ public class Manifest {
   public static ResourceAddress XRD = ScryptoConstants.XRD_RESOURCE_ADDRESS;
 
   public static Functions.Func1<Parameters, String> validButReject() {
-    return (_params) -> "CLEAR_AUTH_ZONE;";
+    return (_params) -> "DROP_ALL_PROOFS;";
   }
 
   public static Functions.Func1<Parameters, String> valid() {
@@ -129,7 +129,7 @@ public class Manifest {
         String.format(
             """
             %s
-            CLEAR_AUTH_ZONE;
+            DROP_ALL_PROOFS;
             """,
             params.faucetLockFeeLine());
   }
@@ -163,7 +163,7 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.lockFeeLine(fromAccount),
             params.encode(fromAccount),
@@ -201,7 +201,7 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(),
             params.encode(fromAccount),
@@ -216,7 +216,7 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "free";
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(), params.encode(FAUCET), params.encode(toAccount));
   }
@@ -231,7 +231,7 @@ public class Manifest {
             """
             %s
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("%s");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.lockFeeLine(account),
             params.encode(account),
@@ -249,7 +249,7 @@ public class Manifest {
             CALL_METHOD Address("%s") "free";
             TAKE_FROM_WORKTOP Address("%s") Decimal("1000") Bucket("validator_creation_fee");
             CREATE_VALIDATOR Bytes("%s") Decimal("0") Bucket("validator_creation_fee");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(),
             params.encode(FAUCET),
@@ -297,7 +297,7 @@ public class Manifest {
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
             CALL_METHOD Address("%s") "stake" Bucket("xrd");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(),
             params.encode(FAUCET),
@@ -318,7 +318,7 @@ public class Manifest {
             CALL_METHOD Address("%s") "free";
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("xrd");
             CALL_METHOD Address("%s") "stake_as_owner" Bucket("xrd");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(),
             params.createProofOfValidatorOwnerBadge(ownerAccount, validatorAddress),
@@ -339,7 +339,7 @@ public class Manifest {
             CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("1");
             TAKE_ALL_FROM_WORKTOP Address("%s") Bucket("stake_units");
             CALL_METHOD Address("%s") "unstake" Bucket("stake_units");
-            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+            CALL_METHOD Address("%s") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
             """,
             params.faucetLockFeeLine(),
             params.encode(stakingAccount),

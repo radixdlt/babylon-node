@@ -129,11 +129,11 @@ public class KeyValueBlueprintCollectionSchema extends BlueprintCollectionSchema
   }
 
    /**
-   * Whether the entries of the key-value store are allowed to own child nodes.
+   * Whether the entries of the key-value partition are allowed to own child nodes.
    * @return canOwn
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Whether the entries of the key-value store are allowed to own child nodes.")
+  @ApiModelProperty(required = true, value = "Whether the entries of the key-value partition are allowed to own child nodes.")
   @JsonProperty(JSON_PROPERTY_CAN_OWN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

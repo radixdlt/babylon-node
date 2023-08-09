@@ -75,7 +75,7 @@ use node_common::utils::IsAccountExt;
 use radix_engine::types::*;
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
+    encode_key, NodeKey, ReadableTreeStore, TreeNode,
 };
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBIteratorWithThreadMode, Direction, IteratorMode,
@@ -517,14 +517,7 @@ impl CommitStore for RocksDBStore {
         }
 
         let state_hash_tree_update = commit_bundle.state_tree_update;
-        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
-            batch.put_cf(
-                self.cf_handle(&StateHashTreeNodes),
-                encode_key(&key),
-                scrypto_encode(&node).unwrap(),
-            );
-        }
-        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
+        for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
                 self.cf_handle(&StateHashTreeNodes),
                 encode_key(&key),
@@ -1023,8 +1016,8 @@ impl SubstateNodeAncestryStore for RocksDBStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl ReadableTreeStore for RocksDBStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.get_by_key(&StateHashTreeNodes, &encode_key(key))
     }
 }
@@ -1065,22 +1058,32 @@ impl RecoverableVertexStore for RocksDBStore {
 }
 
 fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(1 + partition_key.0.len() + sort_key.0.len());
+    let mut buffer = Vec::with_capacity(1 + partition_key.node_key.len() + 1 + sort_key.0.len());
     buffer.push(
-        u8::try_from(partition_key.0.len())
-            .expect("Partition key length is effectively constant 32 so should fit in a u8"),
+        u8::try_from(partition_key.node_key.len())
+            .expect("Node key length is effectively constant 32 so should fit in a u8"),
     );
-    buffer.extend_from_slice(&partition_key.0);
-    buffer.extend_from_slice(&sort_key.0);
+    buffer.extend(partition_key.node_key.clone());
+    buffer.push(partition_key.partition_num);
+    buffer.extend(sort_key.0.clone());
     buffer
 }
 
-fn decode_from_rocksdb_bytes(buffer: &[u8]) -> (DbPartitionKey, DbSortKey) {
-    let partition_key_start: usize = 1usize;
-    let sort_key_start = 1 + usize::from(buffer[0]);
-    let partition_key = buffer[partition_key_start..sort_key_start].to_vec();
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
+    let node_key_start: usize = 1usize;
+    let partition_key_start = 1 + usize::from(buffer[0]);
+    let sort_key_start = 1 + partition_key_start;
+
+    let node_key = buffer[node_key_start..partition_key_start].to_vec();
+    let partition_num = buffer[partition_key_start];
     let sort_key = buffer[sort_key_start..].to_vec();
-    (DbPartitionKey(partition_key), DbSortKey(sort_key))
+    (
+        DbPartitionKey {
+            node_key,
+            partition_num,
+        },
+        DbSortKey(sort_key),
+    )
 }
 
 impl RocksDBStore {
@@ -1292,7 +1295,10 @@ mod tests {
 
     #[test]
     fn rocksdb_key_encoding_is_invertible() {
-        let partition_key = DbPartitionKey(vec![1, 2, 3, 4, 132]);
+        let partition_key = DbPartitionKey {
+            node_key: vec![1, 2, 3, 4, 132],
+            partition_num: 224,
+        };
         let sort_key = DbSortKey(vec![13, 5]);
         let buffer = encode_to_rocksdb_bytes(&partition_key, &sort_key);
 
@@ -1305,7 +1311,10 @@ mod tests {
     /// This is needed for the iteration to work correctly
     #[test]
     fn rocksdb_key_encoding_respects_lexicographic_ordering_on_sort_keys() {
-        let partition_key = DbPartitionKey(vec![73, 85]);
+        let partition_key = DbPartitionKey {
+            node_key: vec![73, 85],
+            partition_num: 1,
+        };
         let sort_key = DbSortKey(vec![0, 4]);
         let iterator_start = encode_to_rocksdb_bytes(&partition_key, &sort_key);
 

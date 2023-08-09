@@ -6,14 +6,15 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 
-pub fn to_api_registered_validator_set_substate(
+pub fn to_api_registered_validators_by_stake_index_entry_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &EpochRegisteredValidatorByStakeEntry,
+    substate: &Validator,
 ) -> Result<models::Substate, MappingError> {
     let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey { divided_stake, validator_address })) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "ValidatorByStakeKey".to_string() });
     };
+    let validator = substate;
     Ok(index_substate!(
         substate,
         ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
@@ -24,10 +25,10 @@ pub fn to_api_registered_validator_set_substate(
         {
             active_validator: Box::new(to_api_active_validator(
                 context,
-                &substate.component_address,
-                &substate.validator,
+                validator_address,
+                validator,
             )?),
-        }
+        },
     ))
 }
 
@@ -293,8 +294,7 @@ pub fn to_api_consensus_manager_config_substate(
             )?,
             validator_creation_usd_equivalent_cost: to_api_decimal(validator_creation_usd_cost),
             validator_creation_xrd_cost: to_api_decimal(
-                &(*validator_creation_usd_cost
-                    * Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap())
+                &(*validator_creation_usd_cost * Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
             ),
         }
     ))
