@@ -119,8 +119,92 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   }
 
   @Test
+  public void test_transaction_rejected_when_same_payload_previously_committed() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var transaction = TransactionBuilder.forTests().prepare();
+
+      // Submit transaction
+      getTransactionApi()
+          .transactionSubmitPost(
+              new TransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(transaction.hexPayloadBytes()));
+
+      // Ensure it is committed
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
+
+      // Submit the same transaction again
+      var errorResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .forceRecalculate(true)
+                              .notarizedTransactionHex(transaction.hexPayloadBytes())),
+              TransactionSubmitErrorResponse.class);
+
+      assertThat(errorResponse.getCode()).isEqualTo(400);
+      var details = (TransactionSubmitRejectedErrorDetails) errorResponse.getDetails();
+      assertThat(details.getIsIntentRejectionPermanent()).isTrue();
+      assertThat(details.getIsPayloadRejectionPermanent()).isTrue();
+      assertThat(details.getIsRejectedBecauseIntentAlreadyCommitted()).isTrue();
+      var committedAs = details.getIntentAlreadyCommittedAs();
+      assertThat(committedAs.getPayloadHash()).isEqualTo(transaction.hexNotarizedTransactionHash());
+      assertThat(committedAs.getIsSameTransaction()).isTrue();
+    }
+  }
+
+  @Test
+  public void test_transaction_rejected_when_same_intent_previously_committed() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
+      var transaction1 = TransactionBuilder.forTests().nonce(1337).signatories(1).prepare();
+      var transaction2 = TransactionBuilder.forTests().nonce(1337).signatories(2).prepare();
+
+      // Submit transaction
+      getTransactionApi()
+          .transactionSubmitPost(
+              new TransactionSubmitRequest()
+                  .network(networkLogicalName)
+                  .notarizedTransactionHex(transaction1.hexPayloadBytes()));
+
+      // Ensure it is committed
+      test.runUntilState(allCommittedTransactionSuccess(transaction1.raw()), 1000);
+
+      // Submit the same transaction again
+      var errorResponse =
+          assertErrorResponseOfType(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .forceRecalculate(true)
+                              .notarizedTransactionHex(transaction2.hexPayloadBytes())),
+              TransactionSubmitErrorResponse.class);
+
+      assertThat(errorResponse.getCode()).isEqualTo(400);
+      var details = (TransactionSubmitRejectedErrorDetails) errorResponse.getDetails();
+      assertThat(details.getIsIntentRejectionPermanent()).isTrue();
+      assertThat(details.getIsPayloadRejectionPermanent()).isTrue();
+      assertThat(details.getIsRejectedBecauseIntentAlreadyCommitted()).isTrue();
+      var committedAs = details.getIntentAlreadyCommittedAs();
+      assertThat(committedAs.getPayloadHash())
+          .isEqualTo(transaction1.hexNotarizedTransactionHash());
+      assertThat(committedAs.getIsSameTransaction()).isFalse();
+    }
+  }
+
+  @Test
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
-    try (var ignored = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest()) {
+      test.suppressUnusedWarning();
+
       var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
 
       var response =

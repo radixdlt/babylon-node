@@ -195,6 +195,7 @@ fn map_rejected_payloads_due_to_known_commit(
                 .most_applicable_status()
                 .map(|reason| reason.to_string())
                 .unwrap_or_else(|| {
+                    // TODO(resolve during review): do we ever encounter this?
                     RejectionReason::FromExecution(Box::new(
                         RejectionError::IntentHashPreviouslyCommitted,
                     ))
