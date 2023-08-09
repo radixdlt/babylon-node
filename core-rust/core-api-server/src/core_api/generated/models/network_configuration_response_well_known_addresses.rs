@@ -52,12 +52,14 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
     pub metadata_module_package: String,
     #[serde(rename = "royalty_module_package")]
     pub royalty_module_package: String,
-    #[serde(rename = "access_rules_package")]
-    pub access_rules_package: String,
+    #[serde(rename = "role_assignment_module_package")]
+    pub role_assignment_module_package: String,
     #[serde(rename = "genesis_helper_package")]
     pub genesis_helper_package: String,
     #[serde(rename = "faucet_package")]
     pub faucet_package: String,
+    #[serde(rename = "pool_package")]
+    pub pool_package: String,
     #[serde(rename = "consensus_manager")]
     pub consensus_manager: String,
     #[serde(rename = "genesis_helper")]
@@ -68,7 +70,7 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
 
 impl NetworkConfigurationResponseWellKnownAddresses {
     /// Key addresses for this network.
-    pub fn new(xrd: String, secp256k1_signature_virtual_badge: String, ed25519_signature_virtual_badge: String, package_of_direct_caller_virtual_badge: String, global_caller_virtual_badge: String, system_transaction_badge: String, package_owner_badge: String, validator_owner_badge: String, account_owner_badge: String, identity_owner_badge: String, package_package: String, resource_package: String, account_package: String, identity_package: String, consensus_manager_package: String, access_controller_package: String, transaction_processor_package: String, metadata_module_package: String, royalty_module_package: String, access_rules_package: String, genesis_helper_package: String, faucet_package: String, consensus_manager: String, genesis_helper: String, faucet: String) -> NetworkConfigurationResponseWellKnownAddresses {
+    pub fn new(xrd: String, secp256k1_signature_virtual_badge: String, ed25519_signature_virtual_badge: String, package_of_direct_caller_virtual_badge: String, global_caller_virtual_badge: String, system_transaction_badge: String, package_owner_badge: String, validator_owner_badge: String, account_owner_badge: String, identity_owner_badge: String, package_package: String, resource_package: String, account_package: String, identity_package: String, consensus_manager_package: String, access_controller_package: String, transaction_processor_package: String, metadata_module_package: String, royalty_module_package: String, role_assignment_module_package: String, genesis_helper_package: String, faucet_package: String, pool_package: String, consensus_manager: String, genesis_helper: String, faucet: String) -> NetworkConfigurationResponseWellKnownAddresses {
         NetworkConfigurationResponseWellKnownAddresses {
             xrd,
             secp256k1_signature_virtual_badge,
@@ -89,9 +91,10 @@ impl NetworkConfigurationResponseWellKnownAddresses {
             transaction_processor_package,
             metadata_module_package,
             royalty_module_package,
-            access_rules_package,
+            role_assignment_module_package,
             genesis_helper_package,
             faucet_package,
+            pool_package,
             consensus_manager,
             genesis_helper,
             faucet,

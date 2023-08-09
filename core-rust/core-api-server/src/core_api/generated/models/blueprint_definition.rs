@@ -15,20 +15,24 @@
 pub struct BlueprintDefinition {
     #[serde(rename = "interface")]
     pub interface: Box<crate::core_api::generated::models::BlueprintInterface>,
+    /// If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
+    #[serde(rename = "is_transient")]
+    pub is_transient: bool,
     /// A map from the function name to its export
     #[serde(rename = "function_exports")]
     pub function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>,
-    /// A map from the engine system's virtualization module's function identifier to the package export of the function.
-    #[serde(rename = "virtual_lazy_load_functions")]
-    pub virtual_lazy_load_functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>,
+    /// A map from certain object lifecycle hooks to a callback \"package export\". There is at most one callback registered for each `ObjectHook`. 
+    #[serde(rename = "hook_exports")]
+    pub hook_exports: Vec<crate::core_api::generated::models::HookExport>,
 }
 
 impl BlueprintDefinition {
-    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, virtual_lazy_load_functions: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>) -> BlueprintDefinition {
+    pub fn new(interface: crate::core_api::generated::models::BlueprintInterface, is_transient: bool, function_exports: ::utils::rust::prelude::IndexMap<String, crate::core_api::generated::models::PackageExport>, hook_exports: Vec<crate::core_api::generated::models::HookExport>) -> BlueprintDefinition {
         BlueprintDefinition {
             interface: Box::new(interface),
+            is_transient,
             function_exports,
-            virtual_lazy_load_functions,
+            hook_exports,
         }
     }
 }

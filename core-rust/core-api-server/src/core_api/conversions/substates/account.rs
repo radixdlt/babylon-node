@@ -18,10 +18,9 @@ pub fn to_api_account_state_substate(
         },
         Value {
             default_deposit_rule: match default_deposit_rule {
-                AccountDefaultDepositRule::Accept => models::DefaultDepositRule::Accept,
-                AccountDefaultDepositRule::Reject => models::DefaultDepositRule::Reject,
-                AccountDefaultDepositRule::AllowExisting =>
-                    models::DefaultDepositRule::AllowExisting,
+                DefaultDepositRule::Accept => models::DefaultDepositRule::Accept,
+                DefaultDepositRule::Reject => models::DefaultDepositRule::Reject,
+                DefaultDepositRule::AllowExisting => models::DefaultDepositRule::AllowExisting,
             },
         }
     ))
@@ -30,43 +29,83 @@ pub fn to_api_account_state_substate(
 pub fn to_api_account_vault_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<Own>,
+    substate: &KeyValueEntrySubstate<Vault>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(resource_address)) = typed_key else {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(resource_address)) = typed_key else {
         return Err(MappingError::MismatchedSubstateKeyType { message: "Account Vault Key".to_string() });
     };
     Ok(key_value_store_mandatory_substate!(
         substate,
-        AccountVaultIndexEntry,
+        AccountVaultEntry,
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
         value => {
-            vault: Box::new(to_api_entity_reference(context, value.as_node_id())?),
+            vault: Box::new(to_api_entity_reference(context, value.0.as_node_id())?),
         }
     ))
 }
 
-pub fn to_api_account_deposit_rule_entry(
+pub fn to_api_account_resource_preference_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<AccountResourceDepositRuleEntry>,
+    substate: &KeyValueEntrySubstate<ResourcePreference>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(resource_address)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Account Deposit Rule Key".to_string() });
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(resource_address)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "AccountResourcePreferenceKey".to_string() });
     };
     Ok(key_value_store_optional_substate!(
         substate,
-        AccountDepositRuleIndexEntry,
+        AccountResourcePreferenceEntry,
         models::ResourceKey {
             resource_address: to_api_resource_address(context, resource_address)?,
         },
-        value => {
-            deposit_rule: value.map(|rule| match rule {
-                ResourceDepositRule::Neither => models::DepositRule::Neither,
-                ResourceDepositRule::Allowed => models::DepositRule::Allowed,
-                ResourceDepositRule::Disallowed => models::DepositRule::Disallowed,
-            }),
+        resource_preference => {
+            resource_preference: match resource_preference {
+                ResourcePreference::Allowed => models::ResourcePreference::Allowed,
+                ResourcePreference::Disallowed => models::ResourcePreference::Disallowed,
+            },
         }
     ))
+}
+
+pub fn to_api_account_authorized_depositor_entry(
+    context: &MappingContext,
+    typed_key: &TypedSubstateKey,
+    substate: &KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>,
+) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(authorized_depositor_badge)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "AccountAuthorizedDepositorKey".to_string() });
+    };
+    Ok(key_value_store_optional_substate!(
+        substate,
+        AccountAuthorizedDepositorEntry,
+        models::AuthorizedDepositorKey {
+            badge: Some(to_api_authorized_depositor_badge(context, authorized_depositor_badge)?),
+        },
+        () => {
+            is_authorized: true,
+        },
+    ))
+}
+
+pub fn to_api_authorized_depositor_badge(
+    context: &MappingContext,
+    resource_or_non_fungible: &ResourceOrNonFungible,
+) -> Result<models::AuthorizedDepositorBadge, MappingError> {
+    Ok(match resource_or_non_fungible {
+        ResourceOrNonFungible::Resource(resource_address) => {
+            models::AuthorizedDepositorBadge::ResourceAuthorizedDepositorBadge {
+                resource_address: to_api_resource_address(context, resource_address)?,
+            }
+        }
+        ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
+            models::AuthorizedDepositorBadge::NonFungibleAuthorizedDepositorBadge {
+                non_fungible_global_id: Box::new(to_api_non_fungible_global_id(
+                    context,
+                    non_fungible_global_id,
+                )?),
+            }
+        }
+    })
 }

@@ -126,7 +126,7 @@ public final class AccountStateTest extends DeterministicCoreApiTestBase {
               ((TypeInfoModuleFieldTypeInfoSubstate) stateResp.getInfo()).getValue().getDetails();
 
       // Assert that the component state request succeeds
-      assertThat(substateDetails.getBlueprintName()).isEqualTo("Account");
+      assertThat(substateDetails.getBlueprintInfo().getBlueprintName()).isEqualTo("Account");
     }
   }
 }

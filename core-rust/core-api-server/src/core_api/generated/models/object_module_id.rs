@@ -18,8 +18,8 @@ pub enum ObjectModuleId {
     Metadata,
     #[serde(rename = "Royalty")]
     Royalty,
-    #[serde(rename = "AccessRules")]
-    AccessRules,
+    #[serde(rename = "RoleAssignment")]
+    RoleAssignment,
 
 }
 
@@ -29,7 +29,7 @@ impl ToString for ObjectModuleId {
             Self::Main => String::from("Main"),
             Self::Metadata => String::from("Metadata"),
             Self::Royalty => String::from("Royalty"),
-            Self::AccessRules => String::from("AccessRules"),
+            Self::RoleAssignment => String::from("RoleAssignment"),
         }
     }
 }

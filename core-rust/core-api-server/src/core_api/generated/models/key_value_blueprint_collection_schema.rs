@@ -19,7 +19,7 @@ pub struct KeyValueBlueprintCollectionSchema {
     pub key_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "value_type_pointer")]
     pub value_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
-    /// Whether the entries of the key-value store are allowed to own child nodes.
+    /// Whether the entries of the key-value partition are allowed to own child nodes.
     #[serde(rename = "can_own")]
     pub can_own: bool,
 }

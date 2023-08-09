@@ -15,16 +15,20 @@
 pub struct InstanceSchema {
     #[serde(rename = "schema")]
     pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
-    /// Type indices against the provided schema. These fill holes in the instance's blueprint's partition schemas.
-    #[serde(rename = "provided_types")]
-    pub provided_types: Vec<crate::core_api::generated::models::LocalTypeIndex>,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "schema_hash")]
+    pub schema_hash: String,
+    /// This is a vector which is a lookup of the \"instance type index\" to the local type index which can be used to resolve the instance type in the instance schema. 
+    #[serde(rename = "instance_type_lookup")]
+    pub instance_type_lookup: Vec<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
 impl InstanceSchema {
-    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, provided_types: Vec<crate::core_api::generated::models::LocalTypeIndex>) -> InstanceSchema {
+    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, schema_hash: String, instance_type_lookup: Vec<crate::core_api::generated::models::LocalTypeIndex>) -> InstanceSchema {
         InstanceSchema {
             schema: Box::new(schema),
-            provided_types,
+            schema_hash,
+            instance_type_lookup,
         }
     }
 }

@@ -20,30 +20,14 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccessControllerFieldStateValue>,
     },
-    #[serde(rename="AccessRulesModuleFieldOwnerRole")]
-    AccessRulesModuleFieldOwnerRoleSubstate {
-        #[serde(rename = "is_locked")]
-        is_locked: bool,
-        #[serde(rename = "value")]
-        value: Box<crate::core_api::generated::models::AccessRulesModuleFieldOwnerRoleValue>,
-    },
-    #[serde(rename="AccessRulesModuleRuleEntry")]
-    AccessRulesModuleRuleEntrySubstate {
+    #[serde(rename="AccountAuthorizedDepositorEntry")]
+    AccountAuthorizedDepositorEntrySubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "key")]
-        key: Box<crate::core_api::generated::models::ObjectRoleKey>,
+        key: Box<crate::core_api::generated::models::AuthorizedDepositorKey>,
         #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
-        value: Option<Box<crate::core_api::generated::models::AccessRulesModuleRuleEntryValue>>,
-    },
-    #[serde(rename="AccountDepositRuleIndexEntry")]
-    AccountDepositRuleIndexEntrySubstate {
-        #[serde(rename = "is_locked")]
-        is_locked: bool,
-        #[serde(rename = "key")]
-        key: Box<crate::core_api::generated::models::ResourceKey>,
-        #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
-        value: Option<Box<crate::core_api::generated::models::AccountDepositRuleIndexEntryValue>>,
+        value: Option<Box<crate::core_api::generated::models::AccountAuthorizedDepositorEntryValue>>,
     },
     #[serde(rename="AccountFieldState")]
     AccountFieldStateSubstate {
@@ -52,14 +36,23 @@ pub enum Substate {
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::AccountFieldStateValue>,
     },
-    #[serde(rename="AccountVaultIndexEntry")]
-    AccountVaultIndexEntrySubstate {
+    #[serde(rename="AccountResourcePreferenceEntry")]
+    AccountResourcePreferenceEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ResourceKey>,
+        #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+        value: Option<Box<crate::core_api::generated::models::AccountResourcePreferenceEntryValue>>,
+    },
+    #[serde(rename="AccountVaultEntry")]
+    AccountVaultEntrySubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "key")]
         key: Box<crate::core_api::generated::models::ResourceKey>,
         #[serde(rename = "value")]
-        value: Box<crate::core_api::generated::models::AccountVaultIndexEntryValue>,
+        value: Box<crate::core_api::generated::models::AccountVaultEntryValue>,
     },
     #[serde(rename="ConsensusManagerFieldConfig")]
     ConsensusManagerFieldConfigSubstate {
@@ -317,6 +310,22 @@ pub enum Substate {
         key: Box<crate::core_api::generated::models::SchemaKey>,
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::PackageSchemaEntryValue>,
+    },
+    #[serde(rename="RoleAssignmentModuleFieldOwnerRole")]
+    RoleAssignmentModuleFieldOwnerRoleSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "value")]
+        value: Box<crate::core_api::generated::models::RoleAssignmentModuleFieldOwnerRoleValue>,
+    },
+    #[serde(rename="RoleAssignmentModuleRuleEntry")]
+    RoleAssignmentModuleRuleEntrySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "key")]
+        key: Box<crate::core_api::generated::models::ObjectRoleKey>,
+        #[serde(rename = "value", skip_serializing_if = "Option::is_none")]
+        value: Option<Box<crate::core_api::generated::models::RoleAssignmentModuleRuleEntryValue>>,
     },
     #[serde(rename="RoyaltyModuleFieldState")]
     RoyaltyModuleFieldStateSubstate {
