@@ -228,6 +228,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - gettext-base is needed for envsubst in config_radixdlt.sh
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
+  && apt-get -y install ca-certificates-java \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
     unzip=6.0-28 \
