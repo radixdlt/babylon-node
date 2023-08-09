@@ -13,20 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FunctionEventEmitterIdentifierAllOf {
-    #[serde(rename = "entity")]
-    pub entity: Box<crate::core_api::generated::models::EntityReference>,
-    #[serde(rename = "object_module_id")]
-    pub object_module_id: crate::core_api::generated::models::ObjectModuleId,
-    /// Blueprint name.
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    /// The blueprint under the package which emitted the event.
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
 }
 
 impl FunctionEventEmitterIdentifierAllOf {
-    pub fn new(entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ObjectModuleId, blueprint_name: String) -> FunctionEventEmitterIdentifierAllOf {
+    pub fn new(package_address: String, blueprint_name: String) -> FunctionEventEmitterIdentifierAllOf {
         FunctionEventEmitterIdentifierAllOf {
-            entity: Box::new(entity),
-            object_module_id,
+            package_address,
             blueprint_name,
         }
     }

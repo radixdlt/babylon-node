@@ -26,7 +26,7 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let validator_substate = read_optional_main_field_substate(
         database.deref(),
@@ -38,8 +38,8 @@ pub(crate) async fn handle_state_validator(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         validator_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), validator_address);
@@ -53,7 +53,7 @@ pub(crate) async fn handle_state_validator(
         .ledger_header;
 
     Ok(models::StateValidatorResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         address: to_api_component_address(&mapping_context, &validator_address)?,
         state: Some(to_api_validator_substate(
             &mapping_context,

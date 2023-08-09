@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use state_manager::query::{dump_component_state, ComponentStateDump, DescendantParentOpt};
 use state_manager::store::traits::QueryableProofStore;
@@ -24,7 +25,7 @@ pub(crate) async fn handle_state_component(
         return Err(client_error("Only component addresses starting component_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
     let type_info_substate = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
@@ -39,20 +40,21 @@ pub(crate) async fn handle_state_component(
         &ComponentField::State0.into(),
     )?;
 
-    let component_royalty_substate = read_mandatory_substate(
-        database.deref(),
-        component_address.as_node_id(),
-        ROYALTY_BASE_PARTITION
-            .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-            .unwrap(),
-        &RoyaltyField::RoyaltyAccumulator.into(),
-    )?;
+    let component_royalty_substate =
+        read_optional_substate::<FieldSubstate<ComponentRoyaltySubstate>>(
+            database.deref(),
+            component_address.as_node_id(),
+            ROYALTY_BASE_PARTITION
+                .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
+            &RoyaltyField::RoyaltyAccumulator.into(),
+        );
 
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let component_dump = dump_component_state(database.deref(), component_address);
@@ -66,7 +68,7 @@ pub(crate) async fn handle_state_component(
         .ledger_header;
 
     Ok(models::StateComponentResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(
             &mapping_context,
             &type_info_substate,
@@ -75,10 +77,10 @@ pub(crate) async fn handle_state_component(
             &mapping_context,
             &component_state_substate,
         )?),
-        royalty_accumulator: Some(to_api_component_royalty_substate(
-            &mapping_context,
-            &component_royalty_substate,
-        )?),
+        royalty_accumulator: component_royalty_substate
+            .map(|substate| to_api_component_royalty_substate(&mapping_context, &substate))
+            .transpose()?
+            .map(Box::new),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,

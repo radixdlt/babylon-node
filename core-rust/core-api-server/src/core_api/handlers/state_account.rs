@@ -21,7 +21,7 @@ pub(crate) async fn handle_state_account(
         return Err(client_error("Only account addresses starting account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
     let type_info = read_optional_substate(
         database.deref(),
         component_address.as_node_id(),
@@ -33,8 +33,8 @@ pub(crate) async fn handle_state_account(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         component_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let state_substate = read_mandatory_main_field_substate(
@@ -57,7 +57,7 @@ pub(crate) async fn handle_state_account(
         .ledger_header;
 
     Ok(models::StateAccountResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

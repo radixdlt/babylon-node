@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EpochRound;
 import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.LedgerHashes;
 import io.swagger.annotations.ApiModel;
@@ -33,11 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LedgerHeaderSummary
  */
 @JsonPropertyOrder({
+  LedgerHeaderSummary.JSON_PROPERTY_EPOCH_ROUND,
   LedgerHeaderSummary.JSON_PROPERTY_LEDGER_HASHES,
   LedgerHeaderSummary.JSON_PROPERTY_PROPOSER_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LedgerHeaderSummary {
+  public static final String JSON_PROPERTY_EPOCH_ROUND = "epoch_round";
+  private EpochRound epochRound;
+
   public static final String JSON_PROPERTY_LEDGER_HASHES = "ledger_hashes";
   private LedgerHashes ledgerHashes;
 
@@ -46,6 +51,32 @@ public class LedgerHeaderSummary {
 
   public LedgerHeaderSummary() { 
   }
+
+  public LedgerHeaderSummary epochRound(EpochRound epochRound) {
+    this.epochRound = epochRound;
+    return this;
+  }
+
+   /**
+   * Get epochRound
+   * @return epochRound
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EpochRound getEpochRound() {
+    return epochRound;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EPOCH_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEpochRound(EpochRound epochRound) {
+    this.epochRound = epochRound;
+  }
+
 
   public LedgerHeaderSummary ledgerHashes(LedgerHashes ledgerHashes) {
     this.ledgerHashes = ledgerHashes;
@@ -111,19 +142,21 @@ public class LedgerHeaderSummary {
       return false;
     }
     LedgerHeaderSummary ledgerHeaderSummary = (LedgerHeaderSummary) o;
-    return Objects.equals(this.ledgerHashes, ledgerHeaderSummary.ledgerHashes) &&
+    return Objects.equals(this.epochRound, ledgerHeaderSummary.epochRound) &&
+        Objects.equals(this.ledgerHashes, ledgerHeaderSummary.ledgerHashes) &&
         Objects.equals(this.proposerTimestamp, ledgerHeaderSummary.proposerTimestamp);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerHashes, proposerTimestamp);
+    return Objects.hash(epochRound, ledgerHashes, proposerTimestamp);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LedgerHeaderSummary {\n");
+    sb.append("    epochRound: ").append(toIndentedString(epochRound)).append("\n");
     sb.append("    ledgerHashes: ").append(toIndentedString(ledgerHashes)).append("\n");
     sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("}");

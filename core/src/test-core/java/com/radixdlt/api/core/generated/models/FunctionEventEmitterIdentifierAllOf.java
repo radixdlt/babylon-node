@@ -22,8 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ObjectModuleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,17 +31,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * FunctionEventEmitterIdentifierAllOf
  */
 @JsonPropertyOrder({
-  FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_ENTITY,
-  FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_OBJECT_MODULE_ID,
+  FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
   FunctionEventEmitterIdentifierAllOf.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FunctionEventEmitterIdentifierAllOf {
-  public static final String JSON_PROPERTY_ENTITY = "entity";
-  private EntityReference entity;
-
-  public static final String JSON_PROPERTY_OBJECT_MODULE_ID = "object_module_id";
-  private ObjectModuleId objectModuleId;
+  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
+  private String packageAddress;
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
@@ -51,55 +45,29 @@ public class FunctionEventEmitterIdentifierAllOf {
   public FunctionEventEmitterIdentifierAllOf() { 
   }
 
-  public FunctionEventEmitterIdentifierAllOf entity(EntityReference entity) {
-    this.entity = entity;
+  public FunctionEventEmitterIdentifierAllOf packageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
     return this;
   }
 
    /**
-   * Get entity
-   * @return entity
+   * The Bech32m-encoded human readable version of the package address
+   * @return packageAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getEntity() {
-    return entity;
+  public String getPackageAddress() {
+    return packageAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY)
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntity(EntityReference entity) {
-    this.entity = entity;
-  }
-
-
-  public FunctionEventEmitterIdentifierAllOf objectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
-    return this;
-  }
-
-   /**
-   * Get objectModuleId
-   * @return objectModuleId
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ObjectModuleId getObjectModuleId() {
-    return objectModuleId;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_OBJECT_MODULE_ID)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setObjectModuleId(ObjectModuleId objectModuleId) {
-    this.objectModuleId = objectModuleId;
+  public void setPackageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
   }
 
 
@@ -109,11 +77,11 @@ public class FunctionEventEmitterIdentifierAllOf {
   }
 
    /**
-   * Blueprint name.
+   * The blueprint under the package which emitted the event.
    * @return blueprintName
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Blueprint name.")
+  @ApiModelProperty(required = true, value = "The blueprint under the package which emitted the event.")
   @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -141,22 +109,20 @@ public class FunctionEventEmitterIdentifierAllOf {
       return false;
     }
     FunctionEventEmitterIdentifierAllOf functionEventEmitterIdentifierAllOf = (FunctionEventEmitterIdentifierAllOf) o;
-    return Objects.equals(this.entity, functionEventEmitterIdentifierAllOf.entity) &&
-        Objects.equals(this.objectModuleId, functionEventEmitterIdentifierAllOf.objectModuleId) &&
+    return Objects.equals(this.packageAddress, functionEventEmitterIdentifierAllOf.packageAddress) &&
         Objects.equals(this.blueprintName, functionEventEmitterIdentifierAllOf.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entity, objectModuleId, blueprintName);
+    return Objects.hash(packageAddress, blueprintName);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FunctionEventEmitterIdentifierAllOf {\n");
-    sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
-    sb.append("    objectModuleId: ").append(toIndentedString(objectModuleId)).append("\n");
+    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -67,8 +67,8 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.AccessRulesModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.DenyAllAccessRule;
+import com.radixdlt.api.core.generated.models.RoleAssignmentModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.StatePackageRequest;
 import org.junit.Test;
 
@@ -97,7 +97,7 @@ public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
                       .packageAddress(faucetPackageAddress));
       // Note: this asserts on a random well-known field (not specific to Faucet package)
       final var ownerRoleSubstate =
-          (AccessRulesModuleFieldOwnerRoleSubstate) packageResponse.getOwnerRole();
+          (RoleAssignmentModuleFieldOwnerRoleSubstate) packageResponse.getOwnerRole();
       assertThat(ownerRoleSubstate.getValue().getOwnerRole().getRule())
           .isInstanceOf(DenyAllAccessRule.class);
     }

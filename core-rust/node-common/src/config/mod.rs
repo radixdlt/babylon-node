@@ -85,6 +85,13 @@ impl MempoolConfig {
             max_transaction_count: DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
         }
     }
+
+    pub fn new_for_testing() -> Self {
+        Self {
+            max_total_transactions_size: 10 * 1024 * 1024,
+            max_transaction_count: 10,
+        }
+    }
 }
 
 impl Default for MempoolConfig {

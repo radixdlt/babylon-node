@@ -10,7 +10,7 @@ pub(crate) async fn handle_state_consensus_manager(
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let config_substate = read_mandatory_main_field_substate(
         database.deref(),
@@ -49,7 +49,7 @@ pub(crate) async fn handle_state_consensus_manager(
         .ledger_header;
 
     Ok(models::StateConsensusManagerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,

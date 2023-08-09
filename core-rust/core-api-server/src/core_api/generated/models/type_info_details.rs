@@ -20,22 +20,12 @@ pub enum TypeInfoDetails {
     },
     #[serde(rename="Object")]
     ObjectTypeInfoDetails {
-        /// The Bech32m-encoded human readable version of the package address
-        #[serde(rename = "package_address")]
-        package_address: String,
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-        #[serde(rename = "blueprint_version")]
-        blueprint_version: String,
+        #[serde(rename = "module_versions")]
+        module_versions: Vec<crate::core_api::generated::models::ModuleVersion>,
+        #[serde(rename = "blueprint_info")]
+        blueprint_info: Box<crate::core_api::generated::models::BlueprintInfo>,
         #[serde(rename = "global")]
         global: bool,
-        /// The Bech32m-encoded human readable version of any global address
-        #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
-        outer_object: Option<String>,
-        #[serde(rename = "instance_schema", skip_serializing_if = "Option::is_none")]
-        instance_schema: Option<Box<crate::core_api::generated::models::InstanceSchema>>,
-        #[serde(rename = "features")]
-        features: Vec<String>,
     },
 }
 

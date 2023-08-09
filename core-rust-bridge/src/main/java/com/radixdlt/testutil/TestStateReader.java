@@ -65,33 +65,34 @@
 package com.radixdlt.testutil;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.GlobalAddress;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.utils.UInt64;
 
 public final class TestStateReader {
-  public TestStateReader(StateManager stateManager) {
+  public TestStateReader(NodeRustEnvironment nodeRustEnvironment) {
     this.getTransactionAtStateVersionFunc =
-        Natives.builder(stateManager, TestStateReader::getTransactionAtStateVersion)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getTransactionAtStateVersion)
             .build(new TypeToken<>() {});
     this.getTransactionDetailsAtStateVersionFunc =
-        Natives.builder(stateManager, TestStateReader::getTransactionDetailsAtStateVersion)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getTransactionDetailsAtStateVersion)
             .build(new TypeToken<>() {});
     this.componentXrdAmountFunc =
-        Natives.builder(stateManager, TestStateReader::componentXrdAmount)
+        Natives.builder(nodeRustEnvironment, TestStateReader::componentXrdAmount)
             .build(new TypeToken<>() {});
     this.validatorInfoFunc =
-        Natives.builder(stateManager, TestStateReader::validatorInfo).build(new TypeToken<>() {});
+        Natives.builder(nodeRustEnvironment, TestStateReader::validatorInfo)
+            .build(new TypeToken<>() {});
     this.epochFunc =
-        Natives.builder(stateManager, TestStateReader::epoch).build(new TypeToken<>() {});
+        Natives.builder(nodeRustEnvironment, TestStateReader::epoch).build(new TypeToken<>() {});
     this.getNodeGlobalRootFunc =
-        Natives.builder(stateManager, TestStateReader::getNodeGlobalRoot)
+        Natives.builder(nodeRustEnvironment, TestStateReader::getNodeGlobalRoot)
             .build(new TypeToken<>() {});
   }
 
@@ -112,12 +113,12 @@ public final class TestStateReader {
       getTransactionDetailsAtStateVersionFunc;
 
   private static native byte[] getTransactionAtStateVersion(
-      StateManager stateManager, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
 
   private static native byte[] getTransactionDetailsAtStateVersion(
-      StateManager stateManager, byte[] payload);
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
 
@@ -125,7 +126,8 @@ public final class TestStateReader {
     return componentXrdAmountFunc.call(componentAddress);
   }
 
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+  private static native byte[] componentXrdAmount(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
 
@@ -133,7 +135,7 @@ public final class TestStateReader {
     return epochFunc.call(Tuple.tuple());
   }
 
-  private static native byte[] epoch(StateManager stateManager, byte[] payload);
+  private static native byte[] epoch(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
 
@@ -141,9 +143,11 @@ public final class TestStateReader {
     return validatorInfoFunc.call(validatorAddress);
   }
 
-  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
+  private static native byte[] validatorInfo(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<InternalAddress, Option<GlobalAddress>> getNodeGlobalRootFunc;
 
-  private static native byte[] getNodeGlobalRoot(StateManager stateManager, byte[] payload);
+  private static native byte[] getNodeGlobalRoot(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

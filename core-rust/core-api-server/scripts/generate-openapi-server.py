@@ -140,6 +140,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "FieldSchemaFeatureCondition")
         fix_for_enum_not_implementing_default(file_path, "TransactionMessage")
         fix_for_enum_not_implementing_default(file_path, "PlaintextMessageContent")
+        fix_for_enum_not_implementing_default(file_path, "AuthorizedDepositorBadge")
 
     logging.info("Successfully fixed up rust models.")
 

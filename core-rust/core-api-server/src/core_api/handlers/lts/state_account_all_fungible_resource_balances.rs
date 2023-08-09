@@ -31,7 +31,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         ));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
     let header = database
         .get_last_proof()
         .expect("proof for outputted state must exist")
@@ -48,7 +48,10 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         if component_address.as_node_id().is_global_virtual() {
             return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
                 state_version: to_api_state_version(header.state_version)?,
-                ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+                ledger_header_summary: Box::new(to_api_ledger_header_summary(
+                    &mapping_context,
+                    &header,
+                )?),
                 account_address: to_api_component_address(&mapping_context, &component_address)?,
                 fungible_resource_balances: vec![],
             })
@@ -95,7 +98,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
 
     Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
         state_version: to_api_state_version(header.state_version)?,
-        ledger_header_summary: Box::new(to_api_ledger_header_summary(&header)?),
+        ledger_header_summary: Box::new(to_api_ledger_header_summary(&mapping_context, &header)?),
         account_address: to_api_component_address(&mapping_context, &component_address)?,
         fungible_resource_balances,
     })

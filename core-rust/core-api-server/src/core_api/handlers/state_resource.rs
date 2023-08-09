@@ -30,7 +30,7 @@ pub(crate) async fn handle_state_resource(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let resource_node_id = resource_address.as_node_id();
     let is_fungible =
@@ -73,8 +73,8 @@ pub(crate) async fn handle_state_resource(
     let owner_role_substate = read_mandatory_substate(
         database.deref(),
         resource_address.as_node_id(),
-        ACCESS_RULES_FIELDS_PARTITION,
-        &AccessRulesField::OwnerRole.into(),
+        ROLE_ASSIGNMENT_FIELDS_PARTITION,
+        &RoleAssignmentField::OwnerRole.into(),
     )?;
 
     let header = database
@@ -83,7 +83,7 @@ pub(crate) async fn handle_state_resource(
         .ledger_header;
 
     Ok(models::StateResourceResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

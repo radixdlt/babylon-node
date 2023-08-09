@@ -15,6 +15,9 @@
 pub struct KeyValueStoreSchema {
     #[serde(rename = "schema")]
     pub schema: Box<crate::core_api::generated::models::ScryptoSchema>,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "schema_hash")]
+    pub schema_hash: String,
     #[serde(rename = "key_type")]
     pub key_type: Box<crate::core_api::generated::models::LocalTypeIndex>,
     #[serde(rename = "value_type")]
@@ -25,9 +28,10 @@ pub struct KeyValueStoreSchema {
 }
 
 impl KeyValueStoreSchema {
-    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, key_type: crate::core_api::generated::models::LocalTypeIndex, value_type: crate::core_api::generated::models::LocalTypeIndex, can_own: bool) -> KeyValueStoreSchema {
+    pub fn new(schema: crate::core_api::generated::models::ScryptoSchema, schema_hash: String, key_type: crate::core_api::generated::models::LocalTypeIndex, value_type: crate::core_api::generated::models::LocalTypeIndex, can_own: bool) -> KeyValueStoreSchema {
         KeyValueStoreSchema {
             schema: Box::new(schema),
+            schema_hash,
             key_type: Box::new(key_type),
             value_type: Box::new(value_type),
             can_own,
