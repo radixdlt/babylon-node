@@ -1058,7 +1058,7 @@ impl RecoverableVertexStore for RocksDBStore {
 }
 
 fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(2 + partition_key.node_key.len() + sort_key.0.len());
+    let mut buffer = Vec::with_capacity(1 + partition_key.node_key.len() + 1 + sort_key.0.len());
     buffer.push(
         u8::try_from(partition_key.node_key.len())
             .expect("Node key length is effectively constant 32 so should fit in a u8"),
