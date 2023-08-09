@@ -1302,9 +1302,12 @@ mod tests {
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
-                    .try_deposit_batch_or_abort(ComponentAddress::virtual_account_from_public_key(
-                        &sig_1_private_key.public_key(),
-                    ))
+                    .try_deposit_batch_or_abort(
+                        ComponentAddress::virtual_account_from_public_key(
+                            &sig_1_private_key.public_key(),
+                        ),
+                        None,
+                    )
                     .build(),
             )
             .sign(&sig_1_private_key)
