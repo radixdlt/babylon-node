@@ -2,6 +2,7 @@ use crate::core_api::*;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use radix_engine_common::types::EntityType;
@@ -29,7 +30,7 @@ pub(crate) async fn handle_state_resource(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let resource_node_id = resource_address.as_node_id();
     let is_fungible =
@@ -76,7 +77,13 @@ pub(crate) async fn handle_state_resource(
         &AccessRulesField::OwnerRole.into(),
     )?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateResourceResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         manager: Some(to_api_resource_manager(&mapping_context, &manager)?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,

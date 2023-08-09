@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::store::traits::{RecoverableVertexStore, WriteableVertexStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -73,11 +73,11 @@ use node_common::java::*;
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<Vec<u8>> {
-        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let txns_and_proof = database.read().get_vertex_store();
         txns_and_proof
     })
@@ -87,11 +87,11 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_saveVertexStore(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |vertex_store_bytes: Vec<u8>| {
-        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         database.write().save_vertex_store(vertex_store_bytes);
     })
 }

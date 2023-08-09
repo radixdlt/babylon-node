@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -32,15 +33,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateNonFungibleResponse
  */
 @JsonPropertyOrder({
+  StateNonFungibleResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateNonFungibleResponse.JSON_PROPERTY_NON_FUNGIBLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateNonFungibleResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_NON_FUNGIBLE = "non_fungible";
   private Substate nonFungible;
 
   public StateNonFungibleResponse() { 
   }
+
+  public StateNonFungibleResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateNonFungibleResponse nonFungible(Substate nonFungible) {
     this.nonFungible = nonFungible;
@@ -80,18 +111,20 @@ public class StateNonFungibleResponse {
       return false;
     }
     StateNonFungibleResponse stateNonFungibleResponse = (StateNonFungibleResponse) o;
-    return Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
+    return Objects.equals(this.atLedgerState, stateNonFungibleResponse.atLedgerState) &&
+        Objects.equals(this.nonFungible, stateNonFungibleResponse.nonFungible);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungible);
+    return Objects.hash(atLedgerState, nonFungible);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateNonFungibleResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    nonFungible: ").append(toIndentedString(nonFungible)).append("\n");
     sb.append("}");
     return sb.toString();

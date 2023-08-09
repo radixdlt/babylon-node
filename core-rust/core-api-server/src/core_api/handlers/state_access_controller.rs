@@ -2,6 +2,7 @@ use crate::core_api::*;
 
 use radix_engine::types::*;
 use state_manager::query::dump_component_state;
+use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
 
 use super::component_dump_to_vaults_and_nodes;
@@ -23,7 +24,7 @@ pub(crate) async fn handle_state_access_controller(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     let access_controller_substate = read_optional_main_field_substate(
         database.deref(),
@@ -43,7 +44,13 @@ pub(crate) async fn handle_state_access_controller(
     let (vaults, descendent_nodes) =
         component_dump_to_vaults_and_nodes(&mapping_context, component_dump)?;
 
+    let header = database
+        .get_last_proof()
+        .expect("proof for outputted state must exist")
+        .ledger_header;
+
     Ok(models::StateAccessControllerResponse {
+        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
         state: Some(to_api_access_controller_substate(
             &mapping_context,
             &access_controller_substate,

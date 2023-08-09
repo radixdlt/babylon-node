@@ -76,7 +76,7 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.PrivateKeys;
@@ -189,7 +189,7 @@ public final class GenerateGenesis {
     final var validators = validatorsBuilder.build();
     final var genesisData = createGenesisData(network, validators);
     final var encodedGenesisData =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var compressedGenesisData = Compress.compress(encodedGenesisData);
     final var compressedGenesisDataBase64 =
         Base64.getEncoder().encodeToString(compressedGenesisData);

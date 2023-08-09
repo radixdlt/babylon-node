@@ -67,6 +67,7 @@ package com.radixdlt.sbor;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
+import com.radixdlt.environment.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.TID;
@@ -79,7 +80,6 @@ import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.*;
-import com.radixdlt.statemanager.*;
 import com.radixdlt.testutil.InternalAddress;
 import com.radixdlt.testutil.TransactionDetails;
 import com.radixdlt.testutil.ValidatorInfo;
@@ -89,14 +89,14 @@ import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
-public final class StateManagerSbor {
+public final class NodeSborCodecs {
   private static final ScryptoSbor sbor = createSborForStateManager();
 
   private static ScryptoSbor createSborForStateManager() {
     return new ScryptoSbor(
         new CodecMap()
-            .register(StateManagerSbor::registerCodecsWithCodecMap)
-            .register(StateManagerSbor::registerCodecsForExistingTypes));
+            .register(NodeSborCodecs::registerCodecsWithCodecMap)
+            .register(NodeSborCodecs::registerCodecsForExistingTypes));
   }
 
   public static <T> byte[] encode(T value, Codec<T> codec) {

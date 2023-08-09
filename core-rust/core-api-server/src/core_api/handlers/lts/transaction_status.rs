@@ -22,12 +22,13 @@ pub(crate) async fn handle_lts_transaction_status(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let pending_transaction_result_cache = state.pending_transaction_result_cache.read();
+    let pending_transaction_result_cache =
+        state.state_manager.pending_transaction_result_cache.read();
     let mut known_pending_payloads =
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -110,7 +111,7 @@ pub(crate) async fn handle_lts_transaction_status(
         }).map(Json);
     }
 
-    let mempool = state.mempool.read();
+    let mempool = state.state_manager.mempool.read();
     let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
     drop(mempool);
 

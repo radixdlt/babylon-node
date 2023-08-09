@@ -62,16 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
-/**
- * A handler of fatal Rust panics, responsible for graceful shutdown of a Node. In production, this
- * currently means invoking a Java shutdown (i.e. running shutdown hooks and terminating the host
- * process). In tests, this should cause a test failure, <b>without</b> terminating the process (in
- * order to properly report the test result to the test infra).
- */
-public interface FatalPanicHandler {
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-  /** Handles a fatal panic. */
-  void handleFatalPanic();
+public record LoggingConfig(
+    boolean engineTrace, StateManagerLoggingConfig stateManagerLoggingConfig) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LoggingConfig.class,
+        codecs -> StructCodec.fromRecordComponents(LoggingConfig.class, codecs));
+  }
+
+  public static LoggingConfig getDefault() {
+    return new LoggingConfig(false, StateManagerLoggingConfig.getDefault());
+  }
+
+  public static LoggingConfig getDebug() {
+    return new LoggingConfig(true, StateManagerLoggingConfig.getDebug());
+  }
 }
