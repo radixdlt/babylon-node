@@ -10,10 +10,10 @@
 # LAYER: java-build-stage
 # The base for building the Java application
 # =================================================================================================
-FROM debian:11-slim AS java-build-stage
+FROM debian:12.1-slim AS java-build-stage
 
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
-LABEL org.opencontainers.image.description="Java + Debian 11 (OpenJDK)"
+LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -21,15 +21,14 @@ CMD ["/bin/bash"]
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.5+dfsg1-1+deb11u2 \
-    libssl-dev=1.1.1n-0+deb11u5 \
-    pkg-config=0.29.2-1 \
-    unzip=6.0-26+deb11u1 \
-    wget=1.21-1+deb11u1 \
-    software-properties-common=0.96.20.2-2.1 \
-  && add-apt-repository -y ppa:openjdk-r/ppa \
+    docker.io=20.10.24+dfsg1-1+b3 \
+    libssl-dev=3.0.9-1 \
+    pkg-config=1.8.1-1 \
+    unzip=6.0-28 \
+    wget=1.21.3-1+b1 \
+    software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.7+7-1~deb11u1 \
+    openjdk-17-jdk=17.0.7+7-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
   && wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
@@ -105,7 +104,7 @@ COPY --from=java-build-stage /radixdlt/core/build/distributions /
 # LAYER: library-build-stage-base
 # Creates the base image for building the rust library
 # =================================================================================================
-FROM debian:11-slim as library-build-stage-base
+FROM debian:12.1-slim as library-build-stage-base
 WORKDIR /app
 
 # Install dependencies needed for building the Rust library
@@ -115,13 +114,13 @@ RUN apt-get update \
   && apt-get -y --no-install-recommends install \
     ca-certificates \
     build-essential=12.9 \
-    curl=7.74.0-1.3+deb11u7 \
+    curl=7.88.1-10+deb12u1 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
-    libc6-dev-arm64-cross=2.31-9cross4 \
-    libclang-dev=1:11.0-51+nmu5 \
-    libssl-dev=1.1.1n-0+deb11u5 \
-    pkg-config=0.29.2-1 \
+    libc6-dev-arm64-cross=2.36-8cross1 \
+    libclang-dev=1:14.0-55.6 \
+    libssl-dev=3.0.9-1 \
+    pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
@@ -218,7 +217,7 @@ COPY --from=library-build-stage /libcorerust.so /
 # LAYER: app-container
 # The application container which will actually run the application
 # =================================================================================================
-FROM debian:11-slim as app-container
+FROM debian:12.1-slim as app-container
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 
 # Install dependencies needed for building the image or running the application
@@ -230,13 +229,13 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.7+7-1~deb11u1 \
-    unzip=6.0-26+deb11u1 \
-    daemontools=1:0.76-7 \
-    libssl-dev=1.1.1n-0+deb11u5 \
-    software-properties-common=0.96.20.2-2.1 \
-    curl=7.74.0-1.3+deb11u7 \
-    gettext-base=0.21-4 \
+    openjdk-17-jre-headless=17.0.7+7-1~deb12u1 \
+    unzip=6.0-28 \
+    daemontools=1:0.76-8.1 \
+    libssl-dev=3.0.9-1 \
+    software-properties-common=0.99.30-4 \
+    curl=7.88.1-10+deb12u1 \
+    gettext-base=0.21-12 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
