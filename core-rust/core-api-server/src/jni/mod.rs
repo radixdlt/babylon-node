@@ -70,12 +70,12 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use prometheus::*;
+use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
 use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
 
 use node_common::java::*;
-use state_manager::jni::state_manager::JNIStateManager;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
@@ -95,28 +95,22 @@ pub struct JNICoreApiServer {
 extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     env: JNIEnv,
     _class: JClass,
-    j_state_manager: JObject,
+    j_rust_global_context: JObject,
     j_core_api_server: JObject,
     j_config: jbyteArray,
 ) {
     jni_sbor_coded_call(&env, j_config, |config: CoreApiServerConfig| {
-        let state = JNIStateManager::get_state(&env, j_state_manager);
+        let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
 
         let jni_core_api_server = JNICoreApiServer {
             config,
-            runtime: state.runtime.clone(),
+            runtime: jni_node_rust_env.runtime.clone(),
             state: CoreApiState {
-                network: state.network.clone(),
-                state_manager: state.state_manager.clone(),
-                database: state.database.clone(),
-                pending_transaction_result_cache: state.pending_transaction_result_cache.clone(),
-                mempool: state.mempool.clone(),
-                mempool_manager: state.mempool_manager.clone(),
-                committability_validator: state.committability_validator.clone(),
-                transaction_previewer: state.transaction_previewer.clone(),
+                network: jni_node_rust_env.network.clone(),
+                state_manager: jni_node_rust_env.state_manager.clone(),
             },
             running_server: None,
-            metric_registry: state.metric_registry.clone(),
+            metric_registry: jni_node_rust_env.metric_registry.clone(),
         };
 
         env.set_rust_field(

@@ -65,6 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Info;
@@ -232,7 +233,8 @@ public record Metrics(
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
-      Gauge targetStateVersion,
+      Gauge targetStateVersion, // UNTRUSTED: comes from a single peer Node and is not verified
+      Gauge targetProposerTimestampEpochSecond, // UNTRUSTED: same as `targetStateVersion`
       LabelledCounter<UnexpectedSyncResponse> unexpectedResponsesReceived,
       LabelledCounter<InvalidSyncResponse> invalidResponsesReceived) {
 
@@ -371,5 +373,9 @@ public record Metrics(
     }
   }
 
-  public record Config(String branchAndCommit, String key) {}
+  public record Config(
+      String branchAndCommit,
+      String key,
+      @Nullable String configuredValidatorAddress, // null when not configured as validator
+      HashCode postGenesisEpochStateHash) {}
 }

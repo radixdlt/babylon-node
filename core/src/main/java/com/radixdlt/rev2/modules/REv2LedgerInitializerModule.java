@@ -67,6 +67,7 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.rev2.REv2LedgerInitializer;
@@ -83,8 +84,8 @@ public final class REv2LedgerInitializerModule extends AbstractModule {
   @Provides
   @Singleton
   REv2LedgerInitializerToken initializeLedger(REv2LedgerInitializer ledgerInitializer) {
-    ledgerInitializer.initialize(genesisProvider);
-    return new REv2LedgerInitializerToken();
+    LedgerProof postGenesisEpochProof = ledgerInitializer.initialize(genesisProvider);
+    return new REv2LedgerInitializerToken(postGenesisEpochProof);
   }
 
   @Provides

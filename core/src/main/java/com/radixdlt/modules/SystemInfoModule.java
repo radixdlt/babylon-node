@@ -108,25 +108,4 @@ public class SystemInfoModule extends AbstractModule {
         EpochRoundUpdate.class,
         v -> inMemorySystemInfo.processEpochRound(v.getEpochRound()));
   }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, EpochLocalTimeoutOccurrence.class, inMemorySystemInfo::processTimeout);
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> committedUpdateEventProcessor(
-      InMemorySystemInfo inMemorySystemInfo) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO,
-        BFTCommittedUpdate.class,
-        inMemorySystemInfo.bftCommittedUpdateEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, BFTHighQCUpdate.class, inMemorySystemInfo.bftHighQCEventProcessor());
-  }
 }

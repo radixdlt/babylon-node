@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.StateResourceManager;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
@@ -33,11 +34,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateResourceResponse
  */
 @JsonPropertyOrder({
+  StateResourceResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateResourceResponse.JSON_PROPERTY_MANAGER,
   StateResourceResponse.JSON_PROPERTY_OWNER_ROLE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateResourceResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_MANAGER = "manager";
   private StateResourceManager manager;
 
@@ -46,6 +51,32 @@ public class StateResourceResponse {
 
   public StateResourceResponse() { 
   }
+
+  public StateResourceResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateResourceResponse manager(StateResourceManager manager) {
     this.manager = manager;
@@ -111,19 +142,21 @@ public class StateResourceResponse {
       return false;
     }
     StateResourceResponse stateResourceResponse = (StateResourceResponse) o;
-    return Objects.equals(this.manager, stateResourceResponse.manager) &&
+    return Objects.equals(this.atLedgerState, stateResourceResponse.atLedgerState) &&
+        Objects.equals(this.manager, stateResourceResponse.manager) &&
         Objects.equals(this.ownerRole, stateResourceResponse.ownerRole);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, ownerRole);
+    return Objects.hash(atLedgerState, manager, ownerRole);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateResourceResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("}");

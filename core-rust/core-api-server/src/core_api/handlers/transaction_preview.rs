@@ -26,6 +26,7 @@ pub(crate) async fn handle_transaction_preview(
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
+        .state_manager
         .transaction_previewer
         .preview(preview_request)
         .map_err(|err| match err {
@@ -102,6 +103,11 @@ fn to_api_response(
     let receipt = result.receipt;
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
+    let at_ledger_state = Box::new(to_api_ledger_state_summary(
+        context,
+        &result.base_ledger_header,
+    )?);
+
     let response = match receipt.transaction_result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
@@ -148,6 +154,7 @@ fn to_api_response(
                 LocalTransactionReceipt::from((commit_result, result.substate_changes));
 
             models::TransactionPreviewResponse {
+                at_ledger_state,
                 encoded_receipt,
                 receipt: Box::new(to_api_receipt(context, local_receipt)?),
                 instruction_resource_changes,
@@ -155,6 +162,7 @@ fn to_api_response(
             }
         }
         TransactionResult::Reject(reject_result) => models::TransactionPreviewResponse {
+            at_ledger_state,
             encoded_receipt,
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,

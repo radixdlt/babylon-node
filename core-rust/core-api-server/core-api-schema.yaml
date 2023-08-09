@@ -1427,6 +1427,56 @@ components:
       format: int32
       minimum: 0
       maximum: 255
+    LedgerStateSummary:
+      type: object
+      required:
+        - state_version
+        - header_summary
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: The version at which the state was read.
+        header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
+    LedgerHeaderSummary:
+      type: object
+      required:
+        - epoch_round
+        - ledger_hashes
+        - proposer_timestamp
+      properties:
+        epoch_round:
+          $ref: "#/components/schemas/EpochRound"
+        ledger_hashes:
+          $ref: "#/components/schemas/LedgerHashes"
+        proposer_timestamp:
+          $ref: '#/components/schemas/Instant'
+    LedgerHashes:
+      type: object
+      required:
+        - state_tree_hash
+        - transaction_tree_hash
+        - receipt_tree_hash
+      properties:
+        state_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
+        transaction_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
+        receipt_tree_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
     StateVersion:
       type: integer
       format: int64
@@ -4931,12 +4981,16 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - account_address
         - fungible_resource_balances
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -4979,12 +5033,16 @@ components:
       type: object
       required:
         - state_version
+        - ledger_header_summary
         - account_address
         - fungible_resource_balance
       properties:
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: The state version at which the query was performed.
+        ledger_header_summary:
+          $ref: "#/components/schemas/LedgerHeaderSummary"
+          description: The excerpt from the ledger header committed at the `state_version`.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -5461,34 +5519,15 @@ components:
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current round in an epoch
     CommittedStateIdentifier:
-      type: object
-      required:
-        - state_version
-        - state_tree_hash
-        - transaction_tree_hash
-        - receipt_tree_hash
-      properties:
-        state_version:
-          $ref: "#/components/schemas/StateVersion"
-          description: The state version, which increments with each transaction, starting at `0` pre-genesis.
-        state_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the state tree. This captures the current state of the state on the ledger.
-        transaction_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the transaction tree. This captures the ledger transactions committed to the ledger.
-        receipt_tree_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded root hash of the receipt tree. This captures the consensus-agreed output of each transaction on the ledger.
+      allOf:
+        - type: object
+          required:
+            - state_version
+          properties:
+            state_version:
+              $ref: "#/components/schemas/StateVersion"
+              description: The state version, which increments with each transaction, starting at `0` pre-genesis.
+        - $ref: "#/components/schemas/LedgerHashes"
 ##############################
 # REQUEST: /status/scenarios #
 ##############################
@@ -6082,8 +6121,12 @@ components:
     TransactionCallPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - status
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         status:
           $ref: "#/components/schemas/TransactionStatus"
         output:
@@ -6172,11 +6215,15 @@ components:
     TransactionPreviewResponse:
       type: object
       required:
+        - at_ledger_state
         - encoded_receipt
         - receipt
         - instruction_resource_changes
         - logs
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
         encoded_receipt:
           type: string
           description: The hex-sbor-encoded receipt
@@ -6395,6 +6442,7 @@ components:
     StateConsensusManagerResponse:
       type: object
       required:
+        - at_ledger_state
         - config
         - state
         - current_proposal_statistic
@@ -6402,6 +6450,9 @@ components:
         - current_time
         - current_time_rounded_to_minutes
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         config:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6431,11 +6482,15 @@ components:
     StateAccountResponse:
       type: object
       required:
+        - at_ledger_state
         - info
         - owner_role
         - state
         - vaults
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         info:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6474,12 +6529,16 @@ components:
     StateComponentResponse:
       type: object
       required:
+        - at_ledger_state
         - info
         - state
         - owner_role
         - vaults
         - descendent_nodes
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         info:
           $ref: "#/components/schemas/Substate"
         state:
@@ -6545,12 +6604,16 @@ components:
     StateValidatorResponse:
       type: object
       required:
+        - at_ledger_state
         - address
         - state
         - owner_role
         - vaults
         - descendent_nodes
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         address:
           $ref: '#/components/schemas/ComponentAddress'
         state:
@@ -6583,11 +6646,15 @@ components:
     StateAccessControllerResponse:
       type: object
       required:
+        - at_ledger_state
         - state
         - owner_role
         - vaults
         - descendent_nodes
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         state:
           $ref: "#/components/schemas/Substate"
         owner_role:
@@ -6619,9 +6686,13 @@ components:
     StateResourceResponse:
       type: object
       required:
+        - at_ledger_state
         - manager
         - owner_role
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         manager:
           $ref: "#/components/schemas/StateResourceManager"
         owner_role:
@@ -6684,8 +6755,12 @@ components:
     StateNonFungibleResponse:
       type: object
       required:
+        - at_ledger_state
         - non_fungible
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         non_fungible:
           $ref: "#/components/schemas/Substate"
 ###########################
@@ -6705,8 +6780,12 @@ components:
     StatePackageResponse:
       type: object
       required:
+        - at_ledger_state
         - owner_role
       properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger at which the query was performed.
         owner_role:
           $ref: "#/components/schemas/Substate"
         royalty:

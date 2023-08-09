@@ -70,7 +70,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.WrappedByteArray;
 import java.io.IOException;
@@ -86,7 +86,7 @@ public final class GenesisFileStoreTest {
     final var genesisFileStore = new GenesisFileStore(tmpFolder.newFolder());
     final var genesisData = GenesisData.testingDefaultEmpty();
     final var encodedGenesisData =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var rawGenesisData = new WrappedByteArray(encodedGenesisData);
     final var genesisDataHash =
         new Blake2b256Hasher(DefaultSerialization.getInstance()).hashBytes(encodedGenesisData);

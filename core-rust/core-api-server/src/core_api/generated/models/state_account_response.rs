@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateAccountResponse {
+    #[serde(rename = "at_ledger_state")]
+    pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
     #[serde(rename = "info")]
     pub info: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "owner_role")]
@@ -25,8 +27,9 @@ pub struct StateAccountResponse {
 }
 
 impl StateAccountResponse {
-    pub fn new(info: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>) -> StateAccountResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, info: crate::core_api::generated::models::Substate, owner_role: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, vaults: Vec<crate::core_api::generated::models::VaultBalance>) -> StateAccountResponse {
         StateAccountResponse {
+            at_ledger_state: Box::new(at_ledger_state),
             info: Option::Some(info),
             owner_role: Option::Some(owner_role),
             state: Option::Some(state),
