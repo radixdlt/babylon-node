@@ -28,7 +28,7 @@ RUN apt-get update \
     wget=1.21.3-1+b1 \
     software-properties-common=0.99.30-4 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.7+7-1~deb12u1 \
+    openjdk-17-jdk=17.0.8+7-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
   && wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
@@ -229,7 +229,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.7+7-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
     unzip=6.0-28 \
     daemontools=1:0.76-8.1 \
     libssl-dev=3.0.9-1 \
