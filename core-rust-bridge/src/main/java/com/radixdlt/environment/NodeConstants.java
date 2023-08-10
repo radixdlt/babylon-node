@@ -62,46 +62,87 @@
  * permissions under this License.
  */
 
-use radix_engine_constants::DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
+package com.radixdlt.environment;
 
-// TODO: revisit & tune before Babylon
-pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = (3.8 * 1024.0 * 1024.0) as usize;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-pub struct VertexLimitsConfig {
-    pub max_transaction_count: u32,
-    pub max_total_transactions_size: usize,
-    pub max_total_execution_cost_units_consumed: u32,
-    pub max_total_substate_read_size: usize,
-    pub max_total_substate_read_count: usize,
-    pub max_total_substate_write_size: usize,
-    pub max_total_substate_write_count: usize,
-}
+public final class NodeConstants {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
 
-impl VertexLimitsConfig {
-    pub fn standard() -> Self {
-        Self {
-            max_transaction_count: DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
-            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
-            max_total_execution_cost_units_consumed:
-                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
-        }
-    }
-}
+  public static final int DEFAULT_MAX_VERTEX_TRANSACTION_COUNT =
+      Natives.builder(NodeConstants::getDefaultMaxVertexTransactionCount)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
 
-impl Default for VertexLimitsConfig {
-    fn default() -> Self {
-        VertexLimitsConfig::standard()
-    }
+  public static final long DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE =
+      Natives.builder(NodeConstants::getDefaultMaxTotalVertexTransactionsSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED =
+      Natives.builder(NodeConstants::getDefaultMaxTotalVertexExecutionCostUnitsConsumed)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final long DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE =
+      Natives.builder(NodeConstants::getDefaultMempoolMaxTotalTransactionsSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT =
+      Natives.builder(NodeConstants::getDefaultMempoolMaxTransactionCount)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final long DEFAULT_MAX_TRANSACTION_SIZE =
+      Natives.builder(NodeConstants::getDefaultMaxTransactionSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_COST_UNIT_LIMIT =
+      Natives.builder(NodeConstants::getDefaultCostUnitLimit)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final int MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT =
+      Natives.builder(NodeConstants::getMempoolTransactionOverheadFactorPercent)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR =
+      (double) (MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT) / 100.0;
+
+  private static native byte[] getDefaultMaxVertexTransactionCount(byte[] unused);
+
+  private static native byte[] getDefaultMaxTotalVertexTransactionsSize(byte[] unused);
+
+  private static native byte[] getDefaultMaxTotalVertexExecutionCostUnitsConsumed(byte[] unused);
+
+  private static native byte[] getDefaultMempoolMaxTotalTransactionsSize(byte[] unused);
+
+  private static native byte[] getDefaultMempoolMaxTransactionCount(byte[] unused);
+
+  private static native byte[] getDefaultMaxTransactionSize(byte[] unused);
+
+  private static native byte[] getDefaultCostUnitLimit(byte[] unused);
+
+  private static native byte[] getMempoolTransactionOverheadFactorPercent(byte[] unused);
 }

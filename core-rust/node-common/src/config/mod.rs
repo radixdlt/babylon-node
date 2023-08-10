@@ -69,8 +69,8 @@ pub mod limits;
 // Note: this is a hard limit on the raw network size of all transactions represented by the mempool.
 // However, the implementation may keep extra information (i.e. the same transaction but validated/prepared)
 // which doubles the effective memory usage.
-const DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE: u64 = 512 * 1024 * 1024;
-const DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT: u32 = 10_000;
+pub const DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE: u64 = 512 * 1024 * 1024;
+pub const DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT: u32 = 10_000;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct MempoolConfig {

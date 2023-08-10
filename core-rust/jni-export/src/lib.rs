@@ -62,11 +62,15 @@
  * permissions under this License.
  */
 
+mod constants;
+
 /// A workaround for including the symbols defined in state_manager / core_api_server
 /// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
 /// I truly have no idea why this works, but it does.
 #[no_mangle]
 fn export_extern_functions() {
+    constants::export_extern_functions();
+
     // node-common
     node_common::jni::addressing::export_extern_functions();
     node_common::jni::scrypto_constants::export_extern_functions();

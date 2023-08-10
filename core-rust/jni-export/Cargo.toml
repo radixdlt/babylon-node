@@ -8,6 +8,8 @@ node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
 core-api-server = { path = "../core-api-server" }
 
+radix-engine-constants = { workspace = true }
+
 jni = { workspace = true }
 
 [lib]

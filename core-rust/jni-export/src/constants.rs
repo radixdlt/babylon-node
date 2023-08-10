@@ -62,46 +62,103 @@
  * permissions under this License.
  */
 
-use radix_engine_constants::DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-// TODO: revisit & tune before Babylon
-pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = (3.8 * 1024.0 * 1024.0) as usize;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
+use node_common::config::limits::{
+    DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
+    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE, DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
+};
+use node_common::config::{
+    DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
+};
+use node_common::java::jni_sbor_coded_call;
+use radix_engine_constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_MAX_TRANSACTION_SIZE};
+use state_manager::priority_mempool::MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT;
 
-pub struct VertexLimitsConfig {
-    pub max_transaction_count: u32,
-    pub max_total_transactions_size: usize,
-    pub max_total_execution_cost_units_consumed: u32,
-    pub max_total_substate_read_size: usize,
-    pub max_total_substate_read_count: usize,
-    pub max_total_substate_write_size: usize,
-    pub max_total_substate_write_count: usize,
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxVertexTransactionCount(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_VERTEX_TRANSACTION_COUNT
+    })
 }
 
-impl VertexLimitsConfig {
-    pub fn standard() -> Self {
-        Self {
-            max_transaction_count: DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
-            max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
-            max_total_execution_cost_units_consumed:
-                DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
-        }
-    }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTotalVertexTransactionsSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE
+    })
 }
 
-impl Default for VertexLimitsConfig {
-    fn default() -> Self {
-        VertexLimitsConfig::standard()
-    }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTotalVertexExecutionCostUnitsConsumed(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED
+    })
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMempoolMaxTotalTransactionsSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMempoolMaxTransactionCount(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTransactionSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| DEFAULT_MAX_TRANSACTION_SIZE)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultCostUnitLimit(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| DEFAULT_COST_UNIT_LIMIT)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getMempoolTransactionOverheadFactorPercent(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT
+    })
+}
+
+pub fn export_extern_functions() {}

@@ -892,6 +892,7 @@ dependencies = [
  "core-api-server",
  "jni",
  "node-common",
+ "radix-engine-constants",
  "state-manager",
 ]
 
