@@ -74,13 +74,17 @@ pub fn to_api_non_fungible_vault_frozen_status_substate(
 
 pub fn to_api_non_fungible_vault_contents_entry_substate(
     _context: &MappingContext,
-    non_fungible_id: &NonFungibleLocalId,
+    typed_key: &TypedSubstateKey,
+    _substate: &(),
 ) -> Result<models::Substate, MappingError> {
+    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(non_fungible_local_id)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "NonFungibleVaultContentsIndexKey".to_string() });
+    };
     Ok(index_substate!(
         substate,
         NonFungibleVaultContentsIndexEntry,
         models::LocalNonFungibleKey {
-            non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_id)),
+            non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_local_id)),
         },
         {
             is_present: true,

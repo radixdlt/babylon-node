@@ -114,7 +114,7 @@ public final class EpochManagerValidatorNonFungibleResourceAndDataStateTest
                       .validatorAddress(validatorAddress));
 
       final var ownerRoleSubstate =
-          (AccessRulesModuleFieldOwnerRoleSubstate) validatorResponse.getOwnerRole();
+          (RoleAssignmentModuleFieldOwnerRoleSubstate) validatorResponse.getOwnerRole();
       final var ownerRole = ownerRoleSubstate.getValue().getOwnerRole();
       final var accessRule = (ProtectedAccessRule) ownerRole.getRule();
       final var proofRuleNode = (ProofAccessRuleNode) accessRule.getAccessRule();

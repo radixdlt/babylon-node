@@ -275,8 +275,8 @@ impl SubstateNodeAncestryStore for InMemoryStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for InMemoryStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl ReadableTreeStore for InMemoryStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.tree_node_store.get_node(key)
     }
 }
@@ -326,10 +326,7 @@ impl CommitStore for InMemoryStore {
         }
 
         let state_hash_tree_update = commit_bundle.state_tree_update;
-        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
-            self.tree_node_store.insert_node(key, node);
-        }
-        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
+        for (key, node) in state_hash_tree_update.new_nodes {
             self.tree_node_store.insert_node(key, node);
         }
 

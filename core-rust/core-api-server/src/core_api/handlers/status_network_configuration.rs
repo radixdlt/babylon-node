@@ -27,7 +27,7 @@ pub(crate) async fn handle_status_network_configuration(
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            xrd: bech32_encoder.encode(RADIX_TOKEN.as_ref()).unwrap(),
+            xrd: bech32_encoder.encode(XRD.as_ref()).unwrap(),
             secp256k1_signature_virtual_badge: bech32_encoder
                 .encode(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
                 .unwrap(),
@@ -70,13 +70,14 @@ pub(crate) async fn handle_status_network_configuration(
             royalty_module_package: bech32_encoder
                 .encode(ROYALTY_MODULE_PACKAGE.as_ref())
                 .unwrap(),
-            access_rules_package: bech32_encoder
-                .encode(ACCESS_RULES_MODULE_PACKAGE.as_ref())
+            role_assignment_module_package: bech32_encoder
+                .encode(ROLE_ASSIGNMENT_MODULE_PACKAGE.as_ref())
                 .unwrap(),
             genesis_helper_package: bech32_encoder
                 .encode(GENESIS_HELPER_PACKAGE.as_ref())
                 .unwrap(),
             faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
+            pool_package: bech32_encoder.encode(POOL_PACKAGE.as_ref()).unwrap(),
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),

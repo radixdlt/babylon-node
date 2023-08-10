@@ -62,8 +62,7 @@ macro_rules! field_substate {
 }
 pub(crate) use field_substate;
 
-// TODO - remove this when TypeInfo is properly wrapped in a FieldSubstate<..> wrapper
-macro_rules! fake_field_substate {
+macro_rules! system_field_substate {
     (
         $substate:ident,
         $substate_type:ident,
@@ -89,7 +88,7 @@ macro_rules! fake_field_substate {
         }
     };
 }
-pub(crate) use fake_field_substate;
+pub(crate) use system_field_substate;
 
 macro_rules! key_value_store_optional_substate {
     (

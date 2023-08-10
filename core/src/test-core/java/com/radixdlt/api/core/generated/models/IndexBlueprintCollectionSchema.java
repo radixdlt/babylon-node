@@ -28,8 +28,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.BlueprintCollectionSchemaType;
 import com.radixdlt.api.core.generated.models.IndexBlueprintCollectionSchema;
+import com.radixdlt.api.core.generated.models.IndexBlueprintCollectionSchemaAllOf;
 import com.radixdlt.api.core.generated.models.KeyValueBlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.SortedIndexBlueprintCollectionSchema;
+import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -40,6 +42,9 @@ import com.radixdlt.api.core.generated.client.JSON;
  * IndexBlueprintCollectionSchema
  */
 @JsonPropertyOrder({
+  IndexBlueprintCollectionSchema.JSON_PROPERTY_KEY_TYPE_POINTER,
+  IndexBlueprintCollectionSchema.JSON_PROPERTY_VALUE_TYPE_POINTER,
+  IndexBlueprintCollectionSchema.JSON_PROPERTY_CAN_OWN
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -54,8 +59,95 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class IndexBlueprintCollectionSchema extends BlueprintCollectionSchema {
+  public static final String JSON_PROPERTY_KEY_TYPE_POINTER = "key_type_pointer";
+  private TypePointer keyTypePointer;
+
+  public static final String JSON_PROPERTY_VALUE_TYPE_POINTER = "value_type_pointer";
+  private TypePointer valueTypePointer;
+
+  public static final String JSON_PROPERTY_CAN_OWN = "can_own";
+  private Boolean canOwn;
+
   public IndexBlueprintCollectionSchema() { 
   }
+
+  public IndexBlueprintCollectionSchema keyTypePointer(TypePointer keyTypePointer) {
+    this.keyTypePointer = keyTypePointer;
+    return this;
+  }
+
+   /**
+   * Get keyTypePointer
+   * @return keyTypePointer
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TypePointer getKeyTypePointer() {
+    return keyTypePointer;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setKeyTypePointer(TypePointer keyTypePointer) {
+    this.keyTypePointer = keyTypePointer;
+  }
+
+
+  public IndexBlueprintCollectionSchema valueTypePointer(TypePointer valueTypePointer) {
+    this.valueTypePointer = valueTypePointer;
+    return this;
+  }
+
+   /**
+   * Get valueTypePointer
+   * @return valueTypePointer
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TypePointer getValueTypePointer() {
+    return valueTypePointer;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValueTypePointer(TypePointer valueTypePointer) {
+    this.valueTypePointer = valueTypePointer;
+  }
+
+
+  public IndexBlueprintCollectionSchema canOwn(Boolean canOwn) {
+    this.canOwn = canOwn;
+    return this;
+  }
+
+   /**
+   * Whether the entries of the index partition are allowed to own child nodes.
+   * @return canOwn
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether the entries of the index partition are allowed to own child nodes.")
+  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getCanOwn() {
+    return canOwn;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCanOwn(Boolean canOwn) {
+    this.canOwn = canOwn;
+  }
+
 
   /**
    * Return true if this IndexBlueprintCollectionSchema object is equal to o.
@@ -68,12 +160,16 @@ public class IndexBlueprintCollectionSchema extends BlueprintCollectionSchema {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    IndexBlueprintCollectionSchema indexBlueprintCollectionSchema = (IndexBlueprintCollectionSchema) o;
+    return Objects.equals(this.keyTypePointer, indexBlueprintCollectionSchema.keyTypePointer) &&
+        Objects.equals(this.valueTypePointer, indexBlueprintCollectionSchema.valueTypePointer) &&
+        Objects.equals(this.canOwn, indexBlueprintCollectionSchema.canOwn) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(keyTypePointer, valueTypePointer, canOwn, super.hashCode());
   }
 
   @Override
@@ -81,6 +177,9 @@ public class IndexBlueprintCollectionSchema extends BlueprintCollectionSchema {
     StringBuilder sb = new StringBuilder();
     sb.append("class IndexBlueprintCollectionSchema {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    keyTypePointer: ").append(toIndentedString(keyTypePointer)).append("\n");
+    sb.append("    valueTypePointer: ").append(toIndentedString(valueTypePointer)).append("\n");
+    sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");
     sb.append("}");
     return sb.toString();
   }
