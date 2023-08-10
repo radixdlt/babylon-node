@@ -2,9 +2,6 @@
 
 set -ex
 
-# Need this to run on Alpine (grsec) kernels without crashing
-find /usr -type f -name java -exec setfattr -n user.pax.flags -v em {} \;
-
 # Sets USER_ID to LOCAL_USER_ID if provided, else set it to 999
 USER_ID=${LOCAL_USER_ID:-999}
 USER_NAME=radixdlt
