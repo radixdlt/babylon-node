@@ -1,19 +1,5 @@
 #!/bin/bash
-
 set -ex
-
-# Need this to run on Alpine (grsec) kernels without crashing
-find /usr -type f -name java -exec setfattr -n user.pax.flags -v em {} \;
-
-# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 999
-USER_ID=${LOCAL_USER_ID:-999}
-USER_NAME=radixdlt
-
-# Check and delete the user that is created in postinstall action of deb package
-getent group $USER_NAME >/dev/null && groupmod -g $USER_ID radixdlt || groupadd -r $USER_NAME -g $USER_ID
-getent passwd $USER_NAME >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $USER_NAME $USER_NAME
-chown -R radixdlt:radixdlt /home/radixdlt/
-chmod u=xr /opt/radixdlt/bin/core
 
 # Check for test network configs
 TEST_CONFIGS="${RADIXDLT_HOME:?}"/test.config
