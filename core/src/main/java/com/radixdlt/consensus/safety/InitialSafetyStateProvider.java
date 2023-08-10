@@ -62,66 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.consensus.safety;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 
-public final class EpochsSafetyRecoveryModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-
-  @Provides
-  @Singleton
-  private InitialSafetyStateProvider initialSafetyStateProvider(
-      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
-    return selfValidatorId -> {
-      final var maybePersistedState = safetyStore.get();
-      if (maybePersistedState.isEmpty()) {
-        final var newSafetyState = SafetyState.initialState(selfValidatorId);
-        log.info("Initial Safety State (new): {}", newSafetyState);
-        return newSafetyState;
-      }
-
-      final var persistedState = maybePersistedState.orElseThrow();
-      if (!persistedState.getValidatorId().equals(selfValidatorId)) {
-        final var newSafetyState = SafetyState.initialState(selfValidatorId);
-        log.warn(
-            "A persisted Safety State exists that is not associated with this node's configured"
-                + " validator address. Safety State validator is {}, while this node is configured"
-                + " for {}. This is likely caused by a misconfiguration or using a wrong"
-                + " backup/restore strategy. Your `consensus_safety_store` data directory should"
-                + " NOT be copied across different validators. The node will start with a fresh"
-                + " Safety State and the one loaded from the database will be ignored.",
-            persistedState.getValidatorId(),
-            selfValidatorId);
-        log.info("Initial Safety State (new): {}", newSafetyState);
-        return newSafetyState;
-      }
-
-      final long persistedStateEpoch = persistedState.getLastVote().map(Vote::getEpoch).orElse(0L);
-
-      if (persistedStateEpoch > initialEpoch.getNextEpoch()) {
-        throw new IllegalStateException(
-            String.format(
-                "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                persistedStateEpoch, initialEpoch.getNextEpoch()));
-      } else if (persistedStateEpoch == initialEpoch.getNextEpoch()) {
-        log.info("Initial Safety State (loaded): {}", persistedState);
-        return persistedState;
-      } else {
-        // Outdated SafetyState for an old epoch, ignore
-        final var newSafetyState = SafetyState.initialState(selfValidatorId);
-        log.info("Initial Safety State (new): {}", newSafetyState);
-        return newSafetyState;
-      }
-    };
-  }
+public interface InitialSafetyStateProvider {
+  SafetyState initialSafetyState(BFTValidatorId validatorId);
 }

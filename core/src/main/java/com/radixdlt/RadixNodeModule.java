@@ -276,6 +276,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Recovery
     install(new BerkeleySafetyStoreModule());
+    install(new EpochsSafetyRecoveryModule());
     install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());
 

@@ -151,10 +151,14 @@ public class SafetyRulesTest {
     final var hashVerifier = mock(HashVerifier.class);
     final var validatorSet = mock(BFTValidatorSet.class);
 
+    final var validatorId = BFTValidatorId.random();
     final var safetyRules =
         new SafetyRules(
-            BFTValidatorId.random(),
-            new SafetyState(Round.of(2), Optional.of(lastVote)),
+            validatorId,
+            SafetyState.initialState(validatorId).toBuilder()
+                .lockedRound(Round.of(2))
+                .lastVote(lastVote)
+                .build(),
             mock(PersistentSafetyStateStore.class),
             hasher,
             hashSigner,
