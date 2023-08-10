@@ -66,6 +66,7 @@ package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.Guice;
+import com.google.inject.util.Modules;
 import com.radixdlt.bootstrap.RadixNodeBootstrapper;
 import com.radixdlt.bootstrap.RadixNodeBootstrapperModule;
 import com.radixdlt.monitoring.ApplicationVersion;
@@ -101,7 +102,10 @@ public final class RadixNodeApplication {
   private static void bootstrapRadixNode(RuntimeProperties properties) {
     final var nodeBootStopwatch = Stopwatch.createStarted();
     final var bootstrapperModule =
-        Guice.createInjector(new RadixNodeBootstrapperModule(properties));
+        Guice.createInjector(
+            Modules.requireAtInjectOnConstructorsModule(),
+            Modules.disableCircularProxiesModule(),
+            new RadixNodeBootstrapperModule(properties));
     final var bootstrapper = bootstrapperModule.getInstance(RadixNodeBootstrapper.class);
     final var radixNodeBootstrapperHandle = bootstrapper.bootstrapRadixNode();
     /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
