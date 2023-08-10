@@ -200,6 +200,34 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(
             "mempool.relayer.max_message_payload_size",
             MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+    if (mempoolRelayerMaxPeers <= 0) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: mempool.relayer.max_peers ("
+              + mempoolRelayerMaxPeers
+              + ") must be a non zero positive number.");
+    }
+    if (mempoolRelayerMaxMessageTransactionCount <= 0) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: mempool.relayer.max_message_transaction_count ("
+              + mempoolRelayerMaxMessageTransactionCount
+              + ") must be a non zero positive number.");
+    }
+    if (mempoolRelayerMaxMessagePayloadSize < NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: mempool.relayer.max_message_payload_size ("
+              + mempoolRelayerMaxMessagePayloadSize
+              + ") must be at least the maximum transaction size ("
+              + NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE
+              + ").");
+    }
+    if (mempoolRelayerMaxRelayedSize < mempoolRelayerMaxMessagePayloadSize) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: mempool.relayer.max_relayed_size ("
+              + mempoolRelayerMaxRelayedSize
+              + ") must be at least mempool.relayer.max_message_payload_size ("
+              + mempoolRelayerMaxMessagePayloadSize
+              + ").");
+    }
     install(
         new MempoolRelayerModule(
             new MempoolRelayerConfig(
@@ -239,6 +267,19 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolMaxTransactionCount =
         properties.get(
             "mempool.max_transaction_count", NodeConstants.DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT);
+    if (mempoolMaxTransactionCount <= 0) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: mempool.max_transaction_count ("
+              + mempoolMaxTransactionCount
+              + ") must be a non zero positive number.");
+    }
+    if (mempoolMaxTotalTransactionsSize < NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: Computed mempool total transactions size is lower than the"
+              + " maximum transaction size ("
+              + NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE
+              + "). Please increase mempool.max_memory.");
+    }
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
     var enableLocalTransactionExecutionIndex =
@@ -261,6 +302,28 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(
             "protocol.vertex.max_total_execution_cost_units_consumed",
             NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED);
+    if (vertexMaxTransactionCount <= 0) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: protocol.vertex.max_transaction_count ("
+              + vertexMaxTransactionCount
+              + ") must be a non zero positive number.");
+    }
+    if (vertexMaxTotalTransactionsSize < NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: protocol.vertex.max_total_transactions_size ("
+              + vertexMaxTotalTransactionsSize
+              + ") must be at least the maximum transaction size ("
+              + NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE
+              + ").");
+    }
+    if (vertexMaxTotalExecutionCostUnitsConsumed < NodeConstants.DEFAULT_COST_UNIT_LIMIT) {
+      throw new IllegalArgumentException(
+          "Invalid configuration: protocol.vertex.max_total_execution_cost_units_consumed ("
+              + vertexMaxTotalExecutionCostUnitsConsumed
+              + ") must be at least the transaction cost unit limit ("
+              + NodeConstants.DEFAULT_COST_UNIT_LIMIT
+              + ").");
+    }
     var vertexLimitsConfig =
         new VertexLimitsConfig(
             vertexMaxTransactionCount,
