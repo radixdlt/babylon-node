@@ -3,7 +3,7 @@
 set -ex
 
 # Sets USER_ID to LOCAL_USER_ID if provided, else set it to 999
-USER_ID=${LOCAL_USER_ID:-999}
+USER_ID=${LOCAL_USER_ID:-996}
 USER_NAME=radixdlt
 
 # Check and delete the user that is created in postinstall action of deb package
