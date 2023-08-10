@@ -12,15 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageFieldRoyaltyAccumulatorValue {
-    #[serde(rename = "vault_entity")]
-    pub vault_entity: Box<crate::core_api::generated::models::OwnedEntity>,
+pub struct OwnedEntity {
+    #[serde(rename = "entity_type")]
+    pub entity_type: crate::core_api::generated::models::EntityType,
+    #[serde(rename = "is_global")]
+    pub is_global: bool,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
 }
 
-impl PackageFieldRoyaltyAccumulatorValue {
-    pub fn new(vault_entity: crate::core_api::generated::models::OwnedEntity) -> PackageFieldRoyaltyAccumulatorValue {
-        PackageFieldRoyaltyAccumulatorValue {
-            vault_entity: Box::new(vault_entity),
+impl OwnedEntity {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, is_global: bool, entity_address: String) -> OwnedEntity {
+        OwnedEntity {
+            entity_type,
+            is_global,
+            entity_address,
         }
     }
 }

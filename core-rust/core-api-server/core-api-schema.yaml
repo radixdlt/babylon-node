@@ -1782,6 +1782,10 @@ components:
           type: boolean
         entity_address:
           $ref: "#/components/schemas/EntityAddress"
+    OwnedEntity:
+      # NOTE: We are fine with the same representation; we only want some distinction in the schema.
+      allOf:
+        - $ref: "#/components/schemas/EntityReference"
     SubstateId:
       type: object
       required:
@@ -2481,7 +2485,7 @@ components:
         owned_entities:
           type: array
           items:
-            $ref: '#/components/schemas/EntityReference'
+            $ref: '#/components/schemas/OwnedEntity'
         referenced_entities:
           type: array
           items:
@@ -3626,7 +3630,7 @@ components:
         is_enabled:
           type: boolean
         vault_entity:
-          $ref: "#/components/schemas/EntityReference"
+          $ref: "#/components/schemas/OwnedEntity"
     RoyaltyModuleMethodRoyaltyEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3747,7 +3751,7 @@ components:
         - vault_entity
       properties:
         vault_entity:
-          $ref: "#/components/schemas/EntityReference"
+          $ref: "#/components/schemas/OwnedEntity"
     PackageCodeVmTypeEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4228,7 +4232,7 @@ components:
           items:
             $ref: '#/components/schemas/ProposerReward'
         rewards_vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
     EpochChangeCondition:
       type: object
       required:
@@ -4448,15 +4452,15 @@ components:
         stake_unit_resource_address:
           $ref: '#/components/schemas/ResourceAddress'
         stake_xrd_vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         unstake_claim_token_resource_address:
           $ref: '#/components/schemas/ResourceAddress'
         pending_xrd_withdraw_vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         locked_owner_stake_unit_vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         pending_owner_stake_unit_unlock_vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         pending_owner_stake_unit_withdrawals:
           type: array
           items:
@@ -4555,7 +4559,7 @@ components:
         - vault
       properties:
         vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
     AccountResourcePreferenceEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -4669,7 +4673,7 @@ components:
         - pool_unit_resource_address
       properties:
         vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         pool_unit_resource_address:
           $ref: '#/components/schemas/ResourceAddress'
     TwoResourcePoolFieldStateSubstate:
@@ -4724,7 +4728,7 @@ components:
         - resource_address
       properties:
         vault:
-          $ref: '#/components/schemas/EntityReference'
+          $ref: '#/components/schemas/OwnedEntity'
         resource_address:
           $ref: '#/components/schemas/ResourceAddress'
 ##########################################

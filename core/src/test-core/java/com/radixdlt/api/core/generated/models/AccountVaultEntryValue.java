@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OwnedEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class AccountVaultEntryValue {
   public static final String JSON_PROPERTY_VAULT = "vault";
-  private EntityReference vault;
+  private OwnedEntity vault;
 
   public AccountVaultEntryValue() { 
   }
 
-  public AccountVaultEntryValue vault(EntityReference vault) {
+  public AccountVaultEntryValue vault(OwnedEntity vault) {
     this.vault = vault;
     return this;
   }
@@ -56,14 +56,14 @@ public class AccountVaultEntryValue {
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVault() {
+  public OwnedEntity getVault() {
     return vault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVault(EntityReference vault) {
+  public void setVault(OwnedEntity vault) {
     this.vault = vault;
   }
 

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OwnedEntity;
 import com.radixdlt.api.core.generated.models.ProposerReward;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -44,7 +44,7 @@ public class ConsensusManagerFieldValidatorRewardsValue {
   private List<ProposerReward> proposerRewards = new ArrayList<>();
 
   public static final String JSON_PROPERTY_REWARDS_VAULT = "rewards_vault";
-  private EntityReference rewardsVault;
+  private OwnedEntity rewardsVault;
 
   public ConsensusManagerFieldValidatorRewardsValue() { 
   }
@@ -80,7 +80,7 @@ public class ConsensusManagerFieldValidatorRewardsValue {
   }
 
 
-  public ConsensusManagerFieldValidatorRewardsValue rewardsVault(EntityReference rewardsVault) {
+  public ConsensusManagerFieldValidatorRewardsValue rewardsVault(OwnedEntity rewardsVault) {
     this.rewardsVault = rewardsVault;
     return this;
   }
@@ -94,14 +94,14 @@ public class ConsensusManagerFieldValidatorRewardsValue {
   @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getRewardsVault() {
+  public OwnedEntity getRewardsVault() {
     return rewardsVault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_REWARDS_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRewardsVault(EntityReference rewardsVault) {
+  public void setRewardsVault(OwnedEntity rewardsVault) {
     this.rewardsVault = rewardsVault;
   }
 

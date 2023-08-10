@@ -574,6 +574,8 @@ pub mod outer_object_only_method_accessibility;
 pub use self::outer_object_only_method_accessibility::OuterObjectOnlyMethodAccessibility;
 pub mod own_package_only_method_accessibility;
 pub use self::own_package_only_method_accessibility::OwnPackageOnlyMethodAccessibility;
+pub mod owned_entity;
+pub use self::owned_entity::OwnedEntity;
 pub mod owner_role;
 pub use self::owner_role::OwnerRole;
 pub mod owner_role_updater;

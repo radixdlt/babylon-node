@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountVaultEntryValue {
     #[serde(rename = "vault")]
-    pub vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub vault: Box<crate::core_api::generated::models::OwnedEntity>,
 }
 
 impl AccountVaultEntryValue {
-    pub fn new(vault: crate::core_api::generated::models::EntityReference) -> AccountVaultEntryValue {
+    pub fn new(vault: crate::core_api::generated::models::OwnedEntity) -> AccountVaultEntryValue {
         AccountVaultEntryValue {
             vault: Box::new(vault),
         }

@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PoolVault {
     #[serde(rename = "vault")]
-    pub vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub vault: Box<crate::core_api::generated::models::OwnedEntity>,
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
 }
 
 impl PoolVault {
-    pub fn new(vault: crate::core_api::generated::models::EntityReference, resource_address: String) -> PoolVault {
+    pub fn new(vault: crate::core_api::generated::models::OwnedEntity, resource_address: String) -> PoolVault {
         PoolVault {
             vault: Box::new(vault),
             resource_address,

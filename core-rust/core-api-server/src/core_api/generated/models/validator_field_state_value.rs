@@ -30,16 +30,16 @@ pub struct ValidatorFieldStateValue {
     #[serde(rename = "stake_unit_resource_address")]
     pub stake_unit_resource_address: String,
     #[serde(rename = "stake_xrd_vault")]
-    pub stake_xrd_vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub stake_xrd_vault: Box<crate::core_api::generated::models::OwnedEntity>,
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "unstake_claim_token_resource_address")]
     pub unstake_claim_token_resource_address: String,
     #[serde(rename = "pending_xrd_withdraw_vault")]
-    pub pending_xrd_withdraw_vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub pending_xrd_withdraw_vault: Box<crate::core_api::generated::models::OwnedEntity>,
     #[serde(rename = "locked_owner_stake_unit_vault")]
-    pub locked_owner_stake_unit_vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub locked_owner_stake_unit_vault: Box<crate::core_api::generated::models::OwnedEntity>,
     #[serde(rename = "pending_owner_stake_unit_unlock_vault")]
-    pub pending_owner_stake_unit_unlock_vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub pending_owner_stake_unit_unlock_vault: Box<crate::core_api::generated::models::OwnedEntity>,
     #[serde(rename = "pending_owner_stake_unit_withdrawals")]
     pub pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>,
     /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
@@ -48,7 +48,7 @@ pub struct ValidatorFieldStateValue {
 }
 
 impl ValidatorFieldStateValue {
-    pub fn new(public_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, is_registered: bool, accepts_delegated_stake: bool, validator_fee_factor: String, stake_unit_resource_address: String, stake_xrd_vault: crate::core_api::generated::models::EntityReference, unstake_claim_token_resource_address: String, pending_xrd_withdraw_vault: crate::core_api::generated::models::EntityReference, locked_owner_stake_unit_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_unlock_vault: crate::core_api::generated::models::EntityReference, pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>, already_unlocked_owner_stake_unit_amount: String) -> ValidatorFieldStateValue {
+    pub fn new(public_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, is_registered: bool, accepts_delegated_stake: bool, validator_fee_factor: String, stake_unit_resource_address: String, stake_xrd_vault: crate::core_api::generated::models::OwnedEntity, unstake_claim_token_resource_address: String, pending_xrd_withdraw_vault: crate::core_api::generated::models::OwnedEntity, locked_owner_stake_unit_vault: crate::core_api::generated::models::OwnedEntity, pending_owner_stake_unit_unlock_vault: crate::core_api::generated::models::OwnedEntity, pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>, already_unlocked_owner_stake_unit_amount: String) -> ValidatorFieldStateValue {
         ValidatorFieldStateValue {
             sorted_key: None,
             public_key: Box::new(public_key),

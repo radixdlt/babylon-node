@@ -17,7 +17,7 @@ pub fn to_api_one_resource_pool_substate(
             pool_unit_resource_manager,
         },
         Value {
-            vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
+            vault: Box::new(to_api_owned_entity(context, &vault.0)?),
             pool_unit_resource_address: to_api_resource_address(
                 context,
                 &pool_unit_resource_manager.0,
@@ -88,7 +88,7 @@ pub fn to_api_pool_vault(
     vault: &Vault,
 ) -> Result<models::PoolVault, MappingError> {
     Ok(models::PoolVault {
-        vault: Box::new(to_api_entity_reference(context, vault.0.as_node_id())?),
+        vault: Box::new(to_api_owned_entity(context, &vault.0)?),
         resource_address: to_api_resource_address(context, resource_address)?,
     })
 }

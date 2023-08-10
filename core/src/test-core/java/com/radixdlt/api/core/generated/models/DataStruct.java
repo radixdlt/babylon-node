@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OwnedEntity;
 import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -45,7 +46,7 @@ public class DataStruct {
   private SborData structData;
 
   public static final String JSON_PROPERTY_OWNED_ENTITIES = "owned_entities";
-  private List<EntityReference> ownedEntities = new ArrayList<>();
+  private List<OwnedEntity> ownedEntities = new ArrayList<>();
 
   public static final String JSON_PROPERTY_REFERENCED_ENTITIES = "referenced_entities";
   private List<EntityReference> referencedEntities = new ArrayList<>();
@@ -79,12 +80,12 @@ public class DataStruct {
   }
 
 
-  public DataStruct ownedEntities(List<EntityReference> ownedEntities) {
+  public DataStruct ownedEntities(List<OwnedEntity> ownedEntities) {
     this.ownedEntities = ownedEntities;
     return this;
   }
 
-  public DataStruct addOwnedEntitiesItem(EntityReference ownedEntitiesItem) {
+  public DataStruct addOwnedEntitiesItem(OwnedEntity ownedEntitiesItem) {
     this.ownedEntities.add(ownedEntitiesItem);
     return this;
   }
@@ -98,14 +99,14 @@ public class DataStruct {
   @JsonProperty(JSON_PROPERTY_OWNED_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EntityReference> getOwnedEntities() {
+  public List<OwnedEntity> getOwnedEntities() {
     return ownedEntities;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OWNED_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOwnedEntities(List<EntityReference> ownedEntities) {
+  public void setOwnedEntities(List<OwnedEntity> ownedEntities) {
     this.ownedEntities = ownedEntities;
   }
 

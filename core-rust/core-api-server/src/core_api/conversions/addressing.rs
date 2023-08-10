@@ -57,6 +57,22 @@ pub fn to_api_entity_reference(
     })
 }
 
+pub fn to_api_owned_entity(
+    context: &MappingContext,
+    owned: &Own,
+) -> Result<models::OwnedEntity, MappingError> {
+    let models::EntityReference {
+        entity_type,
+        is_global,
+        entity_address,
+    } = to_api_entity_reference(context, owned.as_node_id())?;
+    Ok(models::OwnedEntity {
+        entity_type,
+        is_global,
+        entity_address,
+    })
+}
+
 pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
     match entity_type {
         EntityType::GlobalPackage => models::EntityType::GlobalPackage,

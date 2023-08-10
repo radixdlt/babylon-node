@@ -22,54 +22,115 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.OwnedEntity;
+import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.EntityType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageFieldRoyaltyAccumulatorValue
+ * OwnedEntity
  */
 @JsonPropertyOrder({
-  PackageFieldRoyaltyAccumulatorValue.JSON_PROPERTY_VAULT_ENTITY
+  OwnedEntity.JSON_PROPERTY_ENTITY_TYPE,
+  OwnedEntity.JSON_PROPERTY_IS_GLOBAL,
+  OwnedEntity.JSON_PROPERTY_ENTITY_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageFieldRoyaltyAccumulatorValue {
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private OwnedEntity vaultEntity;
+public class OwnedEntity {
+  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
+  private EntityType entityType;
 
-  public PackageFieldRoyaltyAccumulatorValue() { 
+  public static final String JSON_PROPERTY_IS_GLOBAL = "is_global";
+  private Boolean isGlobal;
+
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
+
+  public OwnedEntity() { 
   }
 
-  public PackageFieldRoyaltyAccumulatorValue vaultEntity(OwnedEntity vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public OwnedEntity entityType(EntityType entityType) {
+    this.entityType = entityType;
     return this;
   }
 
    /**
-   * Get vaultEntity
-   * @return vaultEntity
+   * Get entityType
+   * @return entityType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public OwnedEntity getVaultEntity() {
-    return vaultEntity;
+  public EntityType getEntityType() {
+    return entityType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(OwnedEntity vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public void setEntityType(EntityType entityType) {
+    this.entityType = entityType;
+  }
+
+
+  public OwnedEntity isGlobal(Boolean isGlobal) {
+    this.isGlobal = isGlobal;
+    return this;
+  }
+
+   /**
+   * Get isGlobal
+   * @return isGlobal
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsGlobal() {
+    return isGlobal;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsGlobal(Boolean isGlobal) {
+    this.isGlobal = isGlobal;
+  }
+
+
+  public OwnedEntity entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
+    return this;
+  }
+
+   /**
+   * Bech32m-encoded human readable version of the entity&#39;s address (ie the entity&#39;s node id)
+   * @return entityAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Bech32m-encoded human readable version of the entity's address (ie the entity's node id)")
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getEntityAddress() {
+    return entityAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
   /**
-   * Return true if this PackageFieldRoyaltyAccumulatorValue object is equal to o.
+   * Return true if this OwnedEntity object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +140,24 @@ public class PackageFieldRoyaltyAccumulatorValue {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageFieldRoyaltyAccumulatorValue packageFieldRoyaltyAccumulatorValue = (PackageFieldRoyaltyAccumulatorValue) o;
-    return Objects.equals(this.vaultEntity, packageFieldRoyaltyAccumulatorValue.vaultEntity);
+    OwnedEntity ownedEntity = (OwnedEntity) o;
+    return Objects.equals(this.entityType, ownedEntity.entityType) &&
+        Objects.equals(this.isGlobal, ownedEntity.isGlobal) &&
+        Objects.equals(this.entityAddress, ownedEntity.entityAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(vaultEntity);
+    return Objects.hash(entityType, isGlobal, entityAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageFieldRoyaltyAccumulatorValue {\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("class OwnedEntity {\n");
+    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
+    sb.append("    isGlobal: ").append(toIndentedString(isGlobal)).append("\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

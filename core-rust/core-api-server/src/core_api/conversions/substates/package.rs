@@ -14,10 +14,7 @@ pub fn to_api_package_royalty_accumulator_substate(
         PackageFieldRoyaltyAccumulator,
         PackageRoyaltyAccumulatorSubstate { royalty_vault },
         Value {
-            vault_entity: Box::new(to_api_entity_reference(
-                context,
-                royalty_vault.0.as_node_id(),
-            )?),
+            vault_entity: Box::new(to_api_owned_entity(context, &royalty_vault.0)?),
         }
     ))
 }

@@ -60,7 +60,7 @@ pub fn to_api_data_struct_from_indexed_scrypto_value(
 }
 
 struct Entities {
-    pub owned_entities: Vec<models::EntityReference>,
+    pub owned_entities: Vec<models::OwnedEntity>,
     pub referenced_entities: Vec<models::EntityReference>,
 }
 
@@ -71,7 +71,7 @@ fn extract_entities(
     let owned_entities = struct_scrypto_value
         .owned_nodes()
         .iter()
-        .map(|node_id| to_api_entity_reference(context, node_id))
+        .map(|node_id| to_api_owned_entity(context, &Own(*node_id)))
         .collect::<Result<Vec<_>, _>>()?;
 
     let referenced_entities = struct_scrypto_value

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OwnedEntity;
 import com.radixdlt.api.core.generated.models.PendingOwnerStakeWithdrawal;
 import com.radixdlt.api.core.generated.models.SubstateKey;
 import com.radixdlt.api.core.generated.models.ValidatorFeeChangeRequest;
@@ -77,19 +77,19 @@ public class ValidatorFieldStateValue {
   private String stakeUnitResourceAddress;
 
   public static final String JSON_PROPERTY_STAKE_XRD_VAULT = "stake_xrd_vault";
-  private EntityReference stakeXrdVault;
+  private OwnedEntity stakeXrdVault;
 
   public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
   private String unstakeClaimTokenResourceAddress;
 
   public static final String JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT = "pending_xrd_withdraw_vault";
-  private EntityReference pendingXrdWithdrawVault;
+  private OwnedEntity pendingXrdWithdrawVault;
 
   public static final String JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT = "locked_owner_stake_unit_vault";
-  private EntityReference lockedOwnerStakeUnitVault;
+  private OwnedEntity lockedOwnerStakeUnitVault;
 
   public static final String JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT = "pending_owner_stake_unit_unlock_vault";
-  private EntityReference pendingOwnerStakeUnitUnlockVault;
+  private OwnedEntity pendingOwnerStakeUnitUnlockVault;
 
   public static final String JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_WITHDRAWALS = "pending_owner_stake_unit_withdrawals";
   private List<PendingOwnerStakeWithdrawal> pendingOwnerStakeUnitWithdrawals = new ArrayList<>();
@@ -282,7 +282,7 @@ public class ValidatorFieldStateValue {
   }
 
 
-  public ValidatorFieldStateValue stakeXrdVault(EntityReference stakeXrdVault) {
+  public ValidatorFieldStateValue stakeXrdVault(OwnedEntity stakeXrdVault) {
     this.stakeXrdVault = stakeXrdVault;
     return this;
   }
@@ -296,14 +296,14 @@ public class ValidatorFieldStateValue {
   @JsonProperty(JSON_PROPERTY_STAKE_XRD_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getStakeXrdVault() {
+  public OwnedEntity getStakeXrdVault() {
     return stakeXrdVault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_STAKE_XRD_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStakeXrdVault(EntityReference stakeXrdVault) {
+  public void setStakeXrdVault(OwnedEntity stakeXrdVault) {
     this.stakeXrdVault = stakeXrdVault;
   }
 
@@ -334,7 +334,7 @@ public class ValidatorFieldStateValue {
   }
 
 
-  public ValidatorFieldStateValue pendingXrdWithdrawVault(EntityReference pendingXrdWithdrawVault) {
+  public ValidatorFieldStateValue pendingXrdWithdrawVault(OwnedEntity pendingXrdWithdrawVault) {
     this.pendingXrdWithdrawVault = pendingXrdWithdrawVault;
     return this;
   }
@@ -348,19 +348,19 @@ public class ValidatorFieldStateValue {
   @JsonProperty(JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getPendingXrdWithdrawVault() {
+  public OwnedEntity getPendingXrdWithdrawVault() {
     return pendingXrdWithdrawVault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_PENDING_XRD_WITHDRAW_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPendingXrdWithdrawVault(EntityReference pendingXrdWithdrawVault) {
+  public void setPendingXrdWithdrawVault(OwnedEntity pendingXrdWithdrawVault) {
     this.pendingXrdWithdrawVault = pendingXrdWithdrawVault;
   }
 
 
-  public ValidatorFieldStateValue lockedOwnerStakeUnitVault(EntityReference lockedOwnerStakeUnitVault) {
+  public ValidatorFieldStateValue lockedOwnerStakeUnitVault(OwnedEntity lockedOwnerStakeUnitVault) {
     this.lockedOwnerStakeUnitVault = lockedOwnerStakeUnitVault;
     return this;
   }
@@ -374,19 +374,19 @@ public class ValidatorFieldStateValue {
   @JsonProperty(JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getLockedOwnerStakeUnitVault() {
+  public OwnedEntity getLockedOwnerStakeUnitVault() {
     return lockedOwnerStakeUnitVault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_LOCKED_OWNER_STAKE_UNIT_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLockedOwnerStakeUnitVault(EntityReference lockedOwnerStakeUnitVault) {
+  public void setLockedOwnerStakeUnitVault(OwnedEntity lockedOwnerStakeUnitVault) {
     this.lockedOwnerStakeUnitVault = lockedOwnerStakeUnitVault;
   }
 
 
-  public ValidatorFieldStateValue pendingOwnerStakeUnitUnlockVault(EntityReference pendingOwnerStakeUnitUnlockVault) {
+  public ValidatorFieldStateValue pendingOwnerStakeUnitUnlockVault(OwnedEntity pendingOwnerStakeUnitUnlockVault) {
     this.pendingOwnerStakeUnitUnlockVault = pendingOwnerStakeUnitUnlockVault;
     return this;
   }
@@ -400,14 +400,14 @@ public class ValidatorFieldStateValue {
   @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getPendingOwnerStakeUnitUnlockVault() {
+  public OwnedEntity getPendingOwnerStakeUnitUnlockVault() {
     return pendingOwnerStakeUnitUnlockVault;
   }
 
 
   @JsonProperty(JSON_PROPERTY_PENDING_OWNER_STAKE_UNIT_UNLOCK_VAULT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPendingOwnerStakeUnitUnlockVault(EntityReference pendingOwnerStakeUnitUnlockVault) {
+  public void setPendingOwnerStakeUnitUnlockVault(OwnedEntity pendingOwnerStakeUnitUnlockVault) {
     this.pendingOwnerStakeUnitUnlockVault = pendingOwnerStakeUnitUnlockVault;
   }
 

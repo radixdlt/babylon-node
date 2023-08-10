@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct OneResourcePoolFieldStateValue {
     #[serde(rename = "vault")]
-    pub vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub vault: Box<crate::core_api::generated::models::OwnedEntity>,
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "pool_unit_resource_address")]
     pub pool_unit_resource_address: String,
 }
 
 impl OneResourcePoolFieldStateValue {
-    pub fn new(vault: crate::core_api::generated::models::EntityReference, pool_unit_resource_address: String) -> OneResourcePoolFieldStateValue {
+    pub fn new(vault: crate::core_api::generated::models::OwnedEntity, pool_unit_resource_address: String) -> OneResourcePoolFieldStateValue {
         OneResourcePoolFieldStateValue {
             vault: Box::new(vault),
             pool_unit_resource_address,

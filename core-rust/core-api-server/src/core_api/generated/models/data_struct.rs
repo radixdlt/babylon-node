@@ -16,13 +16,13 @@ pub struct DataStruct {
     #[serde(rename = "struct_data")]
     pub struct_data: Box<crate::core_api::generated::models::SborData>,
     #[serde(rename = "owned_entities")]
-    pub owned_entities: Vec<crate::core_api::generated::models::EntityReference>,
+    pub owned_entities: Vec<crate::core_api::generated::models::OwnedEntity>,
     #[serde(rename = "referenced_entities")]
     pub referenced_entities: Vec<crate::core_api::generated::models::EntityReference>,
 }
 
 impl DataStruct {
-    pub fn new(struct_data: crate::core_api::generated::models::SborData, owned_entities: Vec<crate::core_api::generated::models::EntityReference>, referenced_entities: Vec<crate::core_api::generated::models::EntityReference>) -> DataStruct {
+    pub fn new(struct_data: crate::core_api::generated::models::SborData, owned_entities: Vec<crate::core_api::generated::models::OwnedEntity>, referenced_entities: Vec<crate::core_api::generated::models::EntityReference>) -> DataStruct {
         DataStruct {
             struct_data: Box::new(struct_data),
             owned_entities,

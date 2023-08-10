@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.OwnedEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -41,7 +41,7 @@ public class RoyaltyModuleFieldStateValue {
   private Boolean isEnabled;
 
   public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  private OwnedEntity vaultEntity;
 
   public RoyaltyModuleFieldStateValue() { 
   }
@@ -72,7 +72,7 @@ public class RoyaltyModuleFieldStateValue {
   }
 
 
-  public RoyaltyModuleFieldStateValue vaultEntity(EntityReference vaultEntity) {
+  public RoyaltyModuleFieldStateValue vaultEntity(OwnedEntity vaultEntity) {
     this.vaultEntity = vaultEntity;
     return this;
   }
@@ -86,14 +86,14 @@ public class RoyaltyModuleFieldStateValue {
   @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVaultEntity() {
+  public OwnedEntity getVaultEntity() {
     return vaultEntity;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(EntityReference vaultEntity) {
+  public void setVaultEntity(OwnedEntity vaultEntity) {
     this.vaultEntity = vaultEntity;
   }
 

@@ -91,10 +91,7 @@ pub fn to_api_validator_rewards_substate(
                     to_api_proposer_reward(context, validator_index, xrd_amount)
                 })
                 .collect::<Result<Vec<_>, MappingError>>()?,
-            rewards_vault: Box::new(to_api_entity_reference(
-                context,
-                rewards_vault.0.as_node_id(),
-            )?),
+            rewards_vault: Box::new(to_api_owned_entity(context, &rewards_vault.0)?),
         },
     ))
 }
@@ -170,22 +167,19 @@ pub fn to_api_validator_substate(
                 })
                 .transpose()?,
             stake_unit_resource_address: to_api_resource_address(context, stake_unit_resource)?,
-            stake_xrd_vault: Box::new(to_api_entity_reference(
-                context,
-                stake_xrd_vault_id.as_node_id(),
-            )?),
+            stake_xrd_vault: Box::new(to_api_owned_entity(context, stake_xrd_vault_id)?),
             unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft)?,
-            pending_xrd_withdraw_vault: Box::new(to_api_entity_reference(
+            pending_xrd_withdraw_vault: Box::new(to_api_owned_entity(
                 context,
-                pending_xrd_withdraw_vault_id.as_node_id(),
+                pending_xrd_withdraw_vault_id,
             )?),
-            locked_owner_stake_unit_vault: Box::new(to_api_entity_reference(
+            locked_owner_stake_unit_vault: Box::new(to_api_owned_entity(
                 context,
-                locked_owner_stake_unit_vault_id.as_node_id(),
+                locked_owner_stake_unit_vault_id,
             )?),
-            pending_owner_stake_unit_unlock_vault: Box::new(to_api_entity_reference(
+            pending_owner_stake_unit_unlock_vault: Box::new(to_api_owned_entity(
                 context,
-                pending_owner_stake_unit_unlock_vault_id.as_node_id(),
+                pending_owner_stake_unit_unlock_vault_id,
             )?),
             pending_owner_stake_unit_withdrawals: pending_owner_stake_unit_withdrawals
                 .iter()

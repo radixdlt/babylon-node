@@ -18,10 +18,7 @@ pub fn to_api_component_royalty_substate(
         },
         Value {
             is_enabled: *enabled,
-            vault_entity: Box::new(to_api_entity_reference(
-                context,
-                royalty_vault.0.as_node_id(),
-            )?),
+            vault_entity: Box::new(to_api_owned_entity(context, &royalty_vault.0)?),
         }
     ))
 }

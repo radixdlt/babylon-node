@@ -16,11 +16,11 @@ pub struct ConsensusManagerFieldValidatorRewardsValue {
     #[serde(rename = "proposer_rewards")]
     pub proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>,
     #[serde(rename = "rewards_vault")]
-    pub rewards_vault: Box<crate::core_api::generated::models::EntityReference>,
+    pub rewards_vault: Box<crate::core_api::generated::models::OwnedEntity>,
 }
 
 impl ConsensusManagerFieldValidatorRewardsValue {
-    pub fn new(proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>, rewards_vault: crate::core_api::generated::models::EntityReference) -> ConsensusManagerFieldValidatorRewardsValue {
+    pub fn new(proposer_rewards: Vec<crate::core_api::generated::models::ProposerReward>, rewards_vault: crate::core_api::generated::models::OwnedEntity) -> ConsensusManagerFieldValidatorRewardsValue {
         ConsensusManagerFieldValidatorRewardsValue {
             proposer_rewards,
             rewards_vault: Box::new(rewards_vault),

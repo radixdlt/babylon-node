@@ -41,7 +41,7 @@ pub fn to_api_account_vault_entry(
             resource_address: to_api_resource_address(context, resource_address)?,
         },
         value => {
-            vault: Box::new(to_api_entity_reference(context, value.0.as_node_id())?),
+            vault: Box::new(to_api_owned_entity(context, &value.0)?),
         }
     ))
 }
