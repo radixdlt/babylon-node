@@ -68,6 +68,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransactionSuccess;
 import static org.assertj.core.api.Assertions.*;
 
+import com.google.common.collect.MoreCollectors;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.Manifest;
@@ -115,6 +116,13 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
+      assertThat(
+              statusResponse2.getKnownPayloads().stream()
+                  .filter(
+                      payload -> payload.getStatus() == TransactionPayloadStatus.COMMITTEDSUCCESS)
+                  .collect(MoreCollectors.onlyElement())
+                  .getStateVersion())
+          .isNotNull();
     }
   }
 
