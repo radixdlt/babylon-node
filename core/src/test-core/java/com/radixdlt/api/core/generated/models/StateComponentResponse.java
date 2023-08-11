@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.StateComponentDescendentNode;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateComponentResponse
  */
 @JsonPropertyOrder({
+  StateComponentResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateComponentResponse.JSON_PROPERTY_INFO,
   StateComponentResponse.JSON_PROPERTY_STATE,
   StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
@@ -45,6 +47,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateComponentResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
@@ -65,6 +70,32 @@ public class StateComponentResponse {
 
   public StateComponentResponse() { 
   }
+
+  public StateComponentResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateComponentResponse info(Substate info) {
     this.info = info;
@@ -127,10 +158,10 @@ public class StateComponentResponse {
    * Get royaltyAccumulator
    * @return royaltyAccumulator
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Substate getRoyaltyAccumulator() {
     return royaltyAccumulator;
@@ -138,7 +169,7 @@ public class StateComponentResponse {
 
 
   @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
     this.royaltyAccumulator = royaltyAccumulator;
   }
@@ -244,7 +275,8 @@ public class StateComponentResponse {
       return false;
     }
     StateComponentResponse stateComponentResponse = (StateComponentResponse) o;
-    return Objects.equals(this.info, stateComponentResponse.info) &&
+    return Objects.equals(this.atLedgerState, stateComponentResponse.atLedgerState) &&
+        Objects.equals(this.info, stateComponentResponse.info) &&
         Objects.equals(this.state, stateComponentResponse.state) &&
         Objects.equals(this.royaltyAccumulator, stateComponentResponse.royaltyAccumulator) &&
         Objects.equals(this.ownerRole, stateComponentResponse.ownerRole) &&
@@ -254,13 +286,14 @@ public class StateComponentResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
+    return Objects.hash(atLedgerState, info, state, royaltyAccumulator, ownerRole, vaults, descendentNodes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateComponentResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");

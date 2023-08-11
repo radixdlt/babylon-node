@@ -236,23 +236,26 @@ impl ProcessedCommitResult {
         system_updates: &SystemUpdates,
     ) -> BySubstate<ChangeAction> {
         let mut substate_changes = BySubstate::default();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
+        for ((node_id, partition_num), substate_updates) in system_updates {
+            for (substate_key, update) in substate_updates {
+                let partition_key = D::to_db_partition_key(node_id, *partition_num);
                 let sort_key = D::to_db_sort_key(substate_key);
-                let change_action = match update {
+                let change_action_opt = match update {
                     DatabaseUpdate::Set(value) => {
                         match store.get_substate(&partition_key, &sort_key) {
-                            Some(previous) => ChangeAction::Update {
+                            Some(previous) if previous != *value => Some(ChangeAction::Update {
                                 new: value.clone(),
                                 previous,
-                            },
-                            None => ChangeAction::Create(value.clone()),
+                            }),
+                            Some(_) => None, /* Same value as before, ignore */
+                            None => Some(ChangeAction::Create(value.clone())),
                         }
                     }
-                    DatabaseUpdate::Delete => ChangeAction::Delete,
+                    DatabaseUpdate::Delete => Some(ChangeAction::Delete),
                 };
-                substate_changes.add(node_id, module_id, substate_key, change_action);
+                if let Some(change_action) = change_action_opt {
+                    substate_changes.add(node_id, partition_num, substate_key, change_action);
+                }
             }
         }
         substate_changes

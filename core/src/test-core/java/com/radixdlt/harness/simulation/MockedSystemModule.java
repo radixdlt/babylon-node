@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.statemanager.FatalPanicHandler;
+import com.radixdlt.environment.FatalPanicHandler;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Random;
 import javax.inject.Inject;

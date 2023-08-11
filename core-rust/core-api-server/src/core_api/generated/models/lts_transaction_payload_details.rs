@@ -16,6 +16,8 @@ pub struct LtsTransactionPayloadDetails {
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
+    #[serde(rename = "state_version", skip_serializing_if = "Option::is_none")]
+    pub state_version: Option<i64>,
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::LtsTransactionPayloadStatus,
     /// An explanation for the error, if failed or rejected
@@ -27,6 +29,7 @@ impl LtsTransactionPayloadDetails {
     pub fn new(payload_hash: String, status: crate::core_api::generated::models::LtsTransactionPayloadStatus) -> LtsTransactionPayloadDetails {
         LtsTransactionPayloadDetails {
             payload_hash,
+            state_version: None,
             status,
             error_message: None,
         }

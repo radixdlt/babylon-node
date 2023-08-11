@@ -22,12 +22,13 @@ pub(crate) async fn handle_lts_transaction_status(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let pending_transaction_result_cache = state.pending_transaction_result_cache.read();
+    let pending_transaction_result_cache =
+        state.state_manager.pending_transaction_result_cache.read();
     let mut known_pending_payloads =
         pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
     drop(pending_transaction_result_cache);
 
-    let database = state.database.read();
+    let database = state.state_manager.database.read();
 
     if !database.is_local_transaction_execution_index_enabled() {
         return Err(client_error(
@@ -92,6 +93,7 @@ pub(crate) async fn handle_lts_transaction_status(
             payload_hash: to_api_notarized_transaction_hash(
                 user_identifiers.notarized_transaction_hash,
             ),
+            state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
             error_message,
         };
@@ -110,7 +112,7 @@ pub(crate) async fn handle_lts_transaction_status(
         }).map(Json);
     }
 
-    let mempool = state.mempool.read();
+    let mempool = state.state_manager.mempool.read();
     let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
     drop(mempool);
 
@@ -119,6 +121,7 @@ pub(crate) async fn handle_lts_transaction_status(
             .iter()
             .map(|payload_hash| models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(payload_hash),
+                state_version: None,
                 status: models::LtsTransactionPayloadStatus::InMempool,
                 error_message: None,
             })
@@ -202,6 +205,7 @@ fn map_rejected_payloads_due_to_known_commit(
                 });
             models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                state_version: None,
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(error_string_to_use),
             }
@@ -218,6 +222,7 @@ fn map_pending_payloads_not_in_mempool(
             match transaction_record.most_applicable_status() {
                 Some(reason) => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    state_version: None,
                     status: if reason.is_permanent_for_payload() {
                         models::LtsTransactionPayloadStatus::PermanentlyRejected
                     } else {
@@ -227,6 +232,7 @@ fn map_pending_payloads_not_in_mempool(
                 },
                 None => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    state_version: None,
                     status: models::LtsTransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },

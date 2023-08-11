@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;

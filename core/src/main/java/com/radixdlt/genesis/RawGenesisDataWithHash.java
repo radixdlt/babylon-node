@@ -68,7 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.WrappedByteArray;
 
@@ -78,7 +78,7 @@ public record RawGenesisDataWithHash(WrappedByteArray genesisData, HashCode gene
 
   public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData) {
     final var genesisDataBytes =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     return new RawGenesisDataWithHash(
         new WrappedByteArray(genesisDataBytes), HASHER.hashBytes(genesisDataBytes));
   }

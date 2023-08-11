@@ -76,7 +76,7 @@ import com.radixdlt.genesis.*;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.UInt64;
@@ -249,7 +249,7 @@ public final class RadixNodeBootstrapperTest {
     final var genesisFile = tmpFolder.newFile();
     final var genesisData = GenesisData.testingDefaultEmpty();
     final var genesisDataBytes =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var compressedGenesisDataBytes = Compress.compress(genesisDataBytes);
     try (var outputStream = new FileOutputStream(genesisFile)) {
       outputStream.write(compressedGenesisDataBytes);
@@ -333,7 +333,7 @@ public final class RadixNodeBootstrapperTest {
 
   private String encodeToCompressedBase64(GenesisData genesisData) throws IOException {
     final var encoded =
-        StateManagerSbor.encode(genesisData, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var compressed = Compress.compress(encoded);
     return Base64.getEncoder().encodeToString(compressed);
   }

@@ -72,18 +72,15 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.modules.REv2LedgerInitializerToken;
-import com.radixdlt.sync.TransactionsAndProofReader;
 
 public final class SelfValidatorInfoFromGenesisModule extends AbstractModule {
   @Provides
   @Singleton
   private SelfValidatorInfo self(
       // Require the token to ensure ledger genesis init
-      REv2LedgerInitializerToken rev2LedgerInitializerToken,
-      @Self ECDSASecp256k1PublicKey key,
-      TransactionsAndProofReader transactionsAndProofReader) {
-    var genesisProof = transactionsAndProofReader.getPostGenesisEpochProof().orElseThrow();
-    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
+      REv2LedgerInitializerToken rev2LedgerInitializerToken, @Self ECDSASecp256k1PublicKey key) {
+    var genesisValidatorSet =
+        rev2LedgerInitializerToken.postGenesisEpochProof().getNextValidatorSet().orElseThrow();
     var potentialBFTValidators =
         genesisValidatorSet.getValidators().stream()
             .map(BFTValidator::getValidatorId)

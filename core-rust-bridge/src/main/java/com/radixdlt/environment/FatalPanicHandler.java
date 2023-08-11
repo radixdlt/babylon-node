@@ -62,36 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.environment;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt32;
+/**
+ * A handler of fatal Rust panics, responsible for graceful shutdown of a Node. In production, this
+ * currently means invoking a Java shutdown (i.e. running shutdown hooks and terminating the host
+ * process). In tests, this should cause a test failure, <b>without</b> terminating the process (in
+ * order to properly report the test result to the test infra).
+ */
+public interface FatalPanicHandler {
 
-public record VertexLimitsConfig(
-    UInt32 maxTransactionCount,
-    UInt32 maxTotalTransactionsSize,
-    UInt32 maxTotalExecutionCostUnitsConsumed) {
-  // TODO(follow-up refactor): expose these (and other relevant) Rust constants to Java so we keep a
-  // single source of truth
-  // Values are copied from core-rust/node-common/src/config/limits.rs
-  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 10;
-  public static final int DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE = (int) (3.8 * 1024 * 1024);
-  public static final int DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED = 200_000_000;
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        VertexLimitsConfig.class,
-        codecs -> StructCodec.fromRecordComponents(VertexLimitsConfig.class, codecs));
-  }
-
-  public VertexLimitsConfig(
-      int maxTransactionCount,
-      int maxTotalTransactionsSize,
-      int maxTotalExecutionCostUnitsConsumed) {
-    this(
-        UInt32.fromNonNegativeInt(maxTransactionCount),
-        UInt32.fromNonNegativeInt(maxTotalTransactionsSize),
-        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed));
-  }
+  /** Handles a fatal panic. */
+  void handleFatalPanic();
 }

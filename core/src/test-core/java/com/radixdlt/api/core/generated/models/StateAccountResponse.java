@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LedgerStateSummary;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.VaultBalance;
 import io.swagger.annotations.ApiModel;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * StateAccountResponse
  */
 @JsonPropertyOrder({
+  StateAccountResponse.JSON_PROPERTY_AT_LEDGER_STATE,
   StateAccountResponse.JSON_PROPERTY_INFO,
   StateAccountResponse.JSON_PROPERTY_OWNER_ROLE,
   StateAccountResponse.JSON_PROPERTY_STATE,
@@ -42,6 +44,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StateAccountResponse {
+  public static final String JSON_PROPERTY_AT_LEDGER_STATE = "at_ledger_state";
+  private LedgerStateSummary atLedgerState;
+
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
@@ -56,6 +61,32 @@ public class StateAccountResponse {
 
   public StateAccountResponse() { 
   }
+
+  public StateAccountResponse atLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+    return this;
+  }
+
+   /**
+   * Get atLedgerState
+   * @return atLedgerState
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LedgerStateSummary getAtLedgerState() {
+    return atLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_AT_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAtLedgerState(LedgerStateSummary atLedgerState) {
+    this.atLedgerState = atLedgerState;
+  }
+
 
   public StateAccountResponse info(Substate info) {
     this.info = info;
@@ -178,7 +209,8 @@ public class StateAccountResponse {
       return false;
     }
     StateAccountResponse stateAccountResponse = (StateAccountResponse) o;
-    return Objects.equals(this.info, stateAccountResponse.info) &&
+    return Objects.equals(this.atLedgerState, stateAccountResponse.atLedgerState) &&
+        Objects.equals(this.info, stateAccountResponse.info) &&
         Objects.equals(this.ownerRole, stateAccountResponse.ownerRole) &&
         Objects.equals(this.state, stateAccountResponse.state) &&
         Objects.equals(this.vaults, stateAccountResponse.vaults);
@@ -186,13 +218,14 @@ public class StateAccountResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, ownerRole, state, vaults);
+    return Objects.hash(atLedgerState, info, ownerRole, state, vaults);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateAccountResponse {\n");
+    sb.append("    atLedgerState: ").append(toIndentedString(atLedgerState)).append("\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    ownerRole: ").append(toIndentedString(ownerRole)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");

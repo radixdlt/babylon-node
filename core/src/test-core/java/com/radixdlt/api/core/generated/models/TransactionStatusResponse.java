@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.TransactionIntentStatus;
-import com.radixdlt.api.core.generated.models.TransactionPayloadStatus;
+import com.radixdlt.api.core.generated.models.TransactionPayloadDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class TransactionStatusResponse {
   private Long invalidFromEpoch;
 
   public static final String JSON_PROPERTY_KNOWN_PAYLOADS = "known_payloads";
-  private List<TransactionPayloadStatus> knownPayloads = new ArrayList<>();
+  private List<TransactionPayloadDetails> knownPayloads = new ArrayList<>();
 
   public TransactionStatusResponse() { 
   }
@@ -137,12 +137,12 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse knownPayloads(List<TransactionPayloadStatus> knownPayloads) {
+  public TransactionStatusResponse knownPayloads(List<TransactionPayloadDetails> knownPayloads) {
     this.knownPayloads = knownPayloads;
     return this;
   }
 
-  public TransactionStatusResponse addKnownPayloadsItem(TransactionPayloadStatus knownPayloadsItem) {
+  public TransactionStatusResponse addKnownPayloadsItem(TransactionPayloadDetails knownPayloadsItem) {
     this.knownPayloads.add(knownPayloadsItem);
     return this;
   }
@@ -156,14 +156,14 @@ public class TransactionStatusResponse {
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<TransactionPayloadStatus> getKnownPayloads() {
+  public List<TransactionPayloadDetails> getKnownPayloads() {
     return knownPayloads;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKnownPayloads(List<TransactionPayloadStatus> knownPayloads) {
+  public void setKnownPayloads(List<TransactionPayloadDetails> knownPayloads) {
     this.knownPayloads = knownPayloads;
   }
 
