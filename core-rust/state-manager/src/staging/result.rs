@@ -235,7 +235,7 @@ impl ProcessedCommitResult {
         store: &S,
         system_updates: &SystemUpdates,
     ) -> BySubstate<ChangeAction> {
-        let mut substate_changes = BySubstate::default();
+        let mut substate_changes = BySubstate::new();
         for ((node_id, partition_num), substate_updates) in system_updates {
             for (substate_key, update) in substate_updates {
                 let partition_key = D::to_db_partition_key(node_id, *partition_num);

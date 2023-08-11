@@ -231,6 +231,10 @@ pub struct BySubstate<T> {
 }
 
 impl<T> BySubstate<T> {
+    pub fn new() -> Self {
+        Self::wrap(index_map_new())
+    }
+
     pub fn add(
         &mut self,
         node_id: &NodeId,
@@ -292,7 +296,7 @@ impl<T> BySubstate<T> {
 
 impl<T> Default for BySubstate<T> {
     fn default() -> Self {
-        Self::wrap(index_map_new())
+        Self::new()
     }
 }
 
