@@ -93,6 +93,7 @@ pub(crate) async fn handle_lts_transaction_status(
             payload_hash: to_api_notarized_transaction_hash(
                 user_identifiers.notarized_transaction_hash,
             ),
+            state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
             error_message,
         };
@@ -120,6 +121,7 @@ pub(crate) async fn handle_lts_transaction_status(
             .iter()
             .map(|payload_hash| models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(payload_hash),
+                state_version: None,
                 status: models::LtsTransactionPayloadStatus::InMempool,
                 error_message: None,
             })
@@ -203,6 +205,7 @@ fn map_rejected_payloads_due_to_known_commit(
                 });
             models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                state_version: None,
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(error_string_to_use),
             }
@@ -219,6 +222,7 @@ fn map_pending_payloads_not_in_mempool(
             match transaction_record.most_applicable_status() {
                 Some(reason) => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    state_version: None,
                     status: if reason.is_permanent_for_payload() {
                         models::LtsTransactionPayloadStatus::PermanentlyRejected
                     } else {
@@ -228,6 +232,7 @@ fn map_pending_payloads_not_in_mempool(
                 },
                 None => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    state_version: None,
                     status: models::LtsTransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },

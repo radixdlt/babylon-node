@@ -5,8 +5,6 @@ use crate::core_api::*;
 
 use state_manager::{DetailedTransactionOutcome, RejectionReason};
 
-use models::transaction_payload_status::Status as PayloadStatus;
-use models::TransactionIntentStatus as IntentStatus;
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
@@ -78,23 +76,24 @@ pub(crate) async fn handle_transaction_status(
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
-                IntentStatus::CommittedSuccess,
-                PayloadStatus::CommittedSuccess,
+                models::TransactionIntentStatus::CommittedSuccess,
+                models::TransactionPayloadStatus::CommittedSuccess,
                 "SUCCESS",
                 None,
             ),
             DetailedTransactionOutcome::Failure(reason) => (
-                IntentStatus::CommittedFailure,
-                PayloadStatus::CommittedFailure,
+                models::TransactionIntentStatus::CommittedFailure,
+                models::TransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
                 Some(format!("{reason:?}")),
             ),
         };
 
-        let committed_payload = models::TransactionPayloadStatus {
+        let committed_payload = models::TransactionPayloadDetails {
             payload_hash: to_api_notarized_transaction_hash(
                 user_identifiers.notarized_transaction_hash,
             ),
+            state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
             error_message,
         };
@@ -119,9 +118,10 @@ pub(crate) async fn handle_transaction_status(
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes
             .iter()
-            .map(|payload_hash| models::TransactionPayloadStatus {
+            .map(|payload_hash| models::TransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(payload_hash),
-                status: PayloadStatus::InMempool,
+                state_version: None,
+                status: models::TransactionPayloadStatus::InMempool,
                 error_message: None,
             })
             .collect::<Vec<_>>();
@@ -139,7 +139,7 @@ pub(crate) async fn handle_transaction_status(
         ));
 
         return Ok(models::TransactionStatusResponse {
-            intent_status: IntentStatus::InMempool,
+            intent_status: models::TransactionIntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
@@ -150,7 +150,7 @@ pub(crate) async fn handle_transaction_status(
 
     let response = if intent_is_permanently_rejected {
         models::TransactionStatusResponse {
-            intent_status: IntentStatus::PermanentRejection,
+            intent_status: models::TransactionIntentStatus::PermanentRejection,
             status_description: "Based on the results from executing a payload for this intent, the node believes the intent is permanently rejected - this means that any transaction payload containing the intent should never be able to be committed.".to_owned(),
             invalid_from_epoch: None,
             known_payloads,
@@ -158,17 +158,23 @@ pub(crate) async fn handle_transaction_status(
     } else {
         let (status, description) = if known_payloads.is_empty() {
             (
-                IntentStatus::NotSeen,
+                models::TransactionIntentStatus::NotSeen,
                 "No payloads for this intent have been seen recently by this node.",
             )
         } else {
             let any_payloads_not_rejected = known_payloads
                 .iter()
-                .any(|p| p.status == PayloadStatus::NotInMempool);
+                .any(|p| p.status == models::TransactionPayloadStatus::NotInMempool);
             if any_payloads_not_rejected {
-                (IntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
+                (
+                    models::TransactionIntentStatus::FateUncertain,
+                    "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not."
+                )
             } else {
-                (IntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
+                (
+                    models::TransactionIntentStatus::FateUncertainButLikelyRejection,
+                    "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed."
+                )
             }
         };
         models::TransactionStatusResponse {
@@ -186,7 +192,7 @@ pub(crate) async fn handle_transaction_status(
 
 fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
-) -> Vec<models::TransactionPayloadStatus> {
+) -> Vec<models::TransactionPayloadDetails> {
     known_rejected_payloads
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
@@ -199,9 +205,10 @@ fn map_rejected_payloads_due_to_known_commit(
                     ))
                     .to_string()
                 });
-            models::TransactionPayloadStatus {
+            models::TransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&payload_hash),
-                status: PayloadStatus::PermanentlyRejected,
+                state_version: None,
+                status: models::TransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(error_string_to_use),
             }
         })
@@ -210,23 +217,25 @@ fn map_rejected_payloads_due_to_known_commit(
 
 fn map_pending_payloads_not_in_mempool(
     known_payloads_not_in_mempool: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
-) -> Vec<models::TransactionPayloadStatus> {
+) -> Vec<models::TransactionPayloadDetails> {
     known_payloads_not_in_mempool
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
             match transaction_record.most_applicable_status() {
-                Some(reason) => models::TransactionPayloadStatus {
+                Some(reason) => models::TransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                    state_version: None,
                     status: if reason.is_permanent_for_payload() {
-                        PayloadStatus::PermanentlyRejected
+                        models::TransactionPayloadStatus::PermanentlyRejected
                     } else {
-                        PayloadStatus::TransientlyRejected
+                        models::TransactionPayloadStatus::TransientlyRejected
                     },
                     error_message: Some(reason.to_string()),
                 },
-                None => models::TransactionPayloadStatus {
+                None => models::TransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
-                    status: PayloadStatus::NotInMempool,
+                    state_version: None,
+                    status: models::TransactionPayloadStatus::NotInMempool,
                     error_message: None,
                 },
             }

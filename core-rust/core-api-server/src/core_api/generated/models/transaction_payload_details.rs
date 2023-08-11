@@ -12,22 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsTransactionPayloadDetails {
+pub struct TransactionPayloadDetails {
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
     #[serde(rename = "state_version", skip_serializing_if = "Option::is_none")]
     pub state_version: Option<i64>,
     #[serde(rename = "status")]
-    pub status: crate::core_api::generated::models::LtsTransactionPayloadStatus,
+    pub status: crate::core_api::generated::models::TransactionPayloadStatus,
     /// An explanation for the error, if failed or rejected
     #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }
 
-impl LtsTransactionPayloadDetails {
-    pub fn new(payload_hash: String, status: crate::core_api::generated::models::LtsTransactionPayloadStatus) -> LtsTransactionPayloadDetails {
-        LtsTransactionPayloadDetails {
+impl TransactionPayloadDetails {
+    pub fn new(payload_hash: String, status: crate::core_api::generated::models::TransactionPayloadStatus) -> TransactionPayloadDetails {
+        TransactionPayloadDetails {
             payload_hash,
             state_version: None,
             status,
