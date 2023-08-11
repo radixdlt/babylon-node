@@ -904,6 +904,8 @@ pub mod transaction_parse_request;
 pub use self::transaction_parse_request::TransactionParseRequest;
 pub mod transaction_parse_response;
 pub use self::transaction_parse_response::TransactionParseResponse;
+pub mod transaction_payload_details;
+pub use self::transaction_payload_details::TransactionPayloadDetails;
 pub mod transaction_payload_status;
 pub use self::transaction_payload_status::TransactionPayloadStatus;
 pub mod transaction_preview_request;

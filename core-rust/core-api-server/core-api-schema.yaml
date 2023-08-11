@@ -4811,6 +4811,11 @@ components:
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            State version of a committed transaction.
+            This field will be present only if the `status` is `Committed*`.
         status:
           $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
@@ -6001,8 +6006,8 @@ components:
         known_payloads:
           type: array
           items:
-            $ref: "#/components/schemas/TransactionPayloadStatus"
-    TransactionPayloadStatus:
+            $ref: "#/components/schemas/TransactionPayloadDetails"
+    TransactionPayloadDetails:
       type: object
       required:
         - payload_hash
@@ -6010,21 +6015,28 @@ components:
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            State version of a committed transaction.
+            This field will be present only if the `status` is `Committed*`.
         status:
-          type: string
+          $ref: "#/components/schemas/TransactionPayloadStatus"
           description: |
             The status of the transaction payload, as per this node.
             A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentlyRejected
-            - TransientlyRejected
-            - InMempool
-            - NotInMempool
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
+    TransactionPayloadStatus:
+      type: string
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentlyRejected
+        - TransientlyRejected
+        - InMempool
+        - NotInMempool
     TransactionIntentStatus:
       type: string
       description: |

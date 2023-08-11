@@ -17,202 +17,53 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
- * TransactionPayloadStatus
+ * Gets or Sets TransactionPayloadStatus
  */
-@JsonPropertyOrder({
-  TransactionPayloadStatus.JSON_PROPERTY_PAYLOAD_HASH,
-  TransactionPayloadStatus.JSON_PROPERTY_STATUS,
-  TransactionPayloadStatus.JSON_PROPERTY_ERROR_MESSAGE
-})
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionPayloadStatus {
-  public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
-  private String payloadHash;
+public enum TransactionPayloadStatus {
+  
+  COMMITTEDSUCCESS("CommittedSuccess"),
+  
+  COMMITTEDFAILURE("CommittedFailure"),
+  
+  PERMANENTLYREJECTED("PermanentlyRejected"),
+  
+  TRANSIENTLYREJECTED("TransientlyRejected"),
+  
+  INMEMPOOL("InMempool"),
+  
+  NOTINMEMPOOL("NotInMempool");
 
-  /**
-   * The status of the transaction payload, as per this node. A NotInMempool status means that it wasn&#39;t rejected at last execution attempt, but it&#39;s not currently in the mempool either. 
-   */
-  public enum StatusEnum {
-    COMMITTEDSUCCESS("CommittedSuccess"),
-    
-    COMMITTEDFAILURE("CommittedFailure"),
-    
-    PERMANENTLYREJECTED("PermanentlyRejected"),
-    
-    TRANSIENTLYREJECTED("TransientlyRejected"),
-    
-    INMEMPOOL("InMempool"),
-    
-    NOTINMEMPOOL("NotInMempool");
+  private String value;
 
-    private String value;
-
-    StatusEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static StatusEnum fromValue(String value) {
-      for (StatusEnum b : StatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+  TransactionPayloadStatus(String value) {
+    this.value = value;
   }
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private StatusEnum status;
-
-  public static final String JSON_PROPERTY_ERROR_MESSAGE = "error_message";
-  private String errorMessage;
-
-  public TransactionPayloadStatus() { 
-  }
-
-  public TransactionPayloadStatus payloadHash(String payloadHash) {
-    this.payloadHash = payloadHash;
-    return this;
-  }
-
-   /**
-   * The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
-   * @return payloadHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. ")
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPayloadHash() {
-    return payloadHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPayloadHash(String payloadHash) {
-    this.payloadHash = payloadHash;
-  }
-
-
-  public TransactionPayloadStatus status(StatusEnum status) {
-    this.status = status;
-    return this;
-  }
-
-   /**
-   * The status of the transaction payload, as per this node. A NotInMempool status means that it wasn&#39;t rejected at last execution attempt, but it&#39;s not currently in the mempool either. 
-   * @return status
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. ")
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public StatusEnum getStatus() {
-    return status;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(StatusEnum status) {
-    this.status = status;
-  }
-
-
-  public TransactionPayloadStatus errorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-    return this;
-  }
-
-   /**
-   * An explanation for the error, if failed or rejected
-   * @return errorMessage
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "An explanation for the error, if failed or rejected")
-  @JsonProperty(JSON_PROPERTY_ERROR_MESSAGE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ERROR_MESSAGE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-
-  /**
-   * Return true if this TransactionPayloadStatus object is equal to o.
-   */
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    TransactionPayloadStatus transactionPayloadStatus = (TransactionPayloadStatus) o;
-    return Objects.equals(this.payloadHash, transactionPayloadStatus.payloadHash) &&
-        Objects.equals(this.status, transactionPayloadStatus.status) &&
-        Objects.equals(this.errorMessage, transactionPayloadStatus.errorMessage);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(payloadHash, status, errorMessage);
+  @JsonValue
+  public String getValue() {
+    return value;
   }
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionPayloadStatus {\n");
-    sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    errorMessage: ").append(toIndentedString(errorMessage)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return String.valueOf(value);
   }
 
-  /**
-   * Convert the given object to string with each line indented by 4 spaces
-   * (except the first line).
-   */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
+  @JsonCreator
+  public static TransactionPayloadStatus fromValue(String value) {
+    for (TransactionPayloadStatus b : TransactionPayloadStatus.values()) {
+      if (b.value.equals(value)) {
+        return b;
+      }
     }
-    return o.toString().replace("\n", "\n    ");
+    throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
-
 }
 

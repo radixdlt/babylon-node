@@ -22,23 +22,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsTransactionPayloadStatus;
+import com.radixdlt.api.core.generated.models.TransactionPayloadStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsTransactionPayloadDetails
+ * TransactionPayloadDetails
  */
 @JsonPropertyOrder({
-  LtsTransactionPayloadDetails.JSON_PROPERTY_PAYLOAD_HASH,
-  LtsTransactionPayloadDetails.JSON_PROPERTY_STATE_VERSION,
-  LtsTransactionPayloadDetails.JSON_PROPERTY_STATUS,
-  LtsTransactionPayloadDetails.JSON_PROPERTY_ERROR_MESSAGE
+  TransactionPayloadDetails.JSON_PROPERTY_PAYLOAD_HASH,
+  TransactionPayloadDetails.JSON_PROPERTY_STATE_VERSION,
+  TransactionPayloadDetails.JSON_PROPERTY_STATUS,
+  TransactionPayloadDetails.JSON_PROPERTY_ERROR_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsTransactionPayloadDetails {
+public class TransactionPayloadDetails {
   public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
   private String payloadHash;
 
@@ -46,15 +46,15 @@ public class LtsTransactionPayloadDetails {
   private Long stateVersion;
 
   public static final String JSON_PROPERTY_STATUS = "status";
-  private LtsTransactionPayloadStatus status;
+  private TransactionPayloadStatus status;
 
   public static final String JSON_PROPERTY_ERROR_MESSAGE = "error_message";
   private String errorMessage;
 
-  public LtsTransactionPayloadDetails() { 
+  public TransactionPayloadDetails() { 
   }
 
-  public LtsTransactionPayloadDetails payloadHash(String payloadHash) {
+  public TransactionPayloadDetails payloadHash(String payloadHash) {
     this.payloadHash = payloadHash;
     return this;
   }
@@ -80,7 +80,7 @@ public class LtsTransactionPayloadDetails {
   }
 
 
-  public LtsTransactionPayloadDetails stateVersion(Long stateVersion) {
+  public TransactionPayloadDetails stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -108,7 +108,7 @@ public class LtsTransactionPayloadDetails {
   }
 
 
-  public LtsTransactionPayloadDetails status(LtsTransactionPayloadStatus status) {
+  public TransactionPayloadDetails status(TransactionPayloadStatus status) {
     this.status = status;
     return this;
   }
@@ -122,19 +122,19 @@ public class LtsTransactionPayloadDetails {
   @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LtsTransactionPayloadStatus getStatus() {
+  public TransactionPayloadStatus getStatus() {
     return status;
   }
 
 
   @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(LtsTransactionPayloadStatus status) {
+  public void setStatus(TransactionPayloadStatus status) {
     this.status = status;
   }
 
 
-  public LtsTransactionPayloadDetails errorMessage(String errorMessage) {
+  public TransactionPayloadDetails errorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
     return this;
   }
@@ -161,7 +161,7 @@ public class LtsTransactionPayloadDetails {
 
 
   /**
-   * Return true if this LtsTransactionPayloadDetails object is equal to o.
+   * Return true if this TransactionPayloadDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -171,11 +171,11 @@ public class LtsTransactionPayloadDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsTransactionPayloadDetails ltsTransactionPayloadDetails = (LtsTransactionPayloadDetails) o;
-    return Objects.equals(this.payloadHash, ltsTransactionPayloadDetails.payloadHash) &&
-        Objects.equals(this.stateVersion, ltsTransactionPayloadDetails.stateVersion) &&
-        Objects.equals(this.status, ltsTransactionPayloadDetails.status) &&
-        Objects.equals(this.errorMessage, ltsTransactionPayloadDetails.errorMessage);
+    TransactionPayloadDetails transactionPayloadDetails = (TransactionPayloadDetails) o;
+    return Objects.equals(this.payloadHash, transactionPayloadDetails.payloadHash) &&
+        Objects.equals(this.stateVersion, transactionPayloadDetails.stateVersion) &&
+        Objects.equals(this.status, transactionPayloadDetails.status) &&
+        Objects.equals(this.errorMessage, transactionPayloadDetails.errorMessage);
   }
 
   @Override
@@ -186,7 +186,7 @@ public class LtsTransactionPayloadDetails {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsTransactionPayloadDetails {\n");
+    sb.append("class TransactionPayloadDetails {\n");
     sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
