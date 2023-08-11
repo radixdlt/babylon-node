@@ -4807,6 +4807,11 @@ components:
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: |
+            State version of a committed transaction.
+            This field will be present only if the `status` is `Committed*`.
         status:
           $ref: "#/components/schemas/LtsTransactionPayloadStatus"
         error_message:
