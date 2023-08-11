@@ -22,11 +22,11 @@ pub struct TransactionStatusResponse {
     #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
     pub invalid_from_epoch: Option<i64>,
     #[serde(rename = "known_payloads")]
-    pub known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>,
+    pub known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadDetails>,
 }
 
 impl TransactionStatusResponse {
-    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
+    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadDetails>) -> TransactionStatusResponse {
         TransactionStatusResponse {
             intent_status,
             status_description,

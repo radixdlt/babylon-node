@@ -9,34 +9,9 @@
  */
 
 
-
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionPayloadStatus {
-    /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
-    #[serde(rename = "payload_hash")]
-    pub payload_hash: String,
-    /// The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. 
-    #[serde(rename = "status")]
-    pub status: Status,
-    /// An explanation for the error, if failed or rejected
-    #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
-    pub error_message: Option<String>,
-}
-
-impl TransactionPayloadStatus {
-    pub fn new(payload_hash: String, status: Status) -> TransactionPayloadStatus {
-        TransactionPayloadStatus {
-            payload_hash,
-            status,
-            error_message: None,
-        }
-    }
-}
-
-/// The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. 
+/// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Status {
+pub enum TransactionPayloadStatus {
     #[serde(rename = "CommittedSuccess")]
     CommittedSuccess,
     #[serde(rename = "CommittedFailure")]
@@ -49,11 +24,28 @@ pub enum Status {
     InMempool,
     #[serde(rename = "NotInMempool")]
     NotInMempool,
+
 }
 
-impl Default for Status {
-    fn default() -> Status {
+impl ToString for TransactionPayloadStatus {
+    fn to_string(&self) -> String {
+        match self {
+            Self::CommittedSuccess => String::from("CommittedSuccess"),
+            Self::CommittedFailure => String::from("CommittedFailure"),
+            Self::PermanentlyRejected => String::from("PermanentlyRejected"),
+            Self::TransientlyRejected => String::from("TransientlyRejected"),
+            Self::InMempool => String::from("InMempool"),
+            Self::NotInMempool => String::from("NotInMempool"),
+        }
+    }
+}
+
+impl Default for TransactionPayloadStatus {
+    fn default() -> TransactionPayloadStatus {
         Self::CommittedSuccess
     }
 }
+
+
+
 
