@@ -172,7 +172,7 @@ impl InMemoryStore {
             .insert(identifiers.payload.ledger_payload_hash, state_version);
 
         for (node_ids, record) in
-            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
+            NodeAncestryResolver::batch_resolve(self, receipt.on_ledger.substate_changes.iter())
         {
             for node_id in node_ids {
                 self.node_ancestry_records.insert(node_id, record.clone());

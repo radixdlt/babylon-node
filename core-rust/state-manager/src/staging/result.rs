@@ -68,9 +68,9 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
-    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
+    StateHash, StateVersion, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
@@ -234,11 +234,11 @@ impl ProcessedCommitResult {
     pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
         system_updates: &SystemUpdates,
-    ) -> Vec<SubstateChange> {
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
+    ) -> BySubstate<ChangeAction> {
+        let mut substate_changes = BySubstate::new();
+        for ((node_id, partition_num), substate_updates) in system_updates {
+            for (substate_key, update) in substate_updates {
+                let partition_key = D::to_db_partition_key(node_id, *partition_num);
                 let sort_key = D::to_db_sort_key(substate_key);
                 let change_action_opt = match update {
                     DatabaseUpdate::Set(value) => {
@@ -254,12 +254,7 @@ impl ProcessedCommitResult {
                     DatabaseUpdate::Delete => Some(ChangeAction::Delete),
                 };
                 if let Some(change_action) = change_action_opt {
-                    substate_changes.push(SubstateChange {
-                        node_id: *node_id,
-                        partition_number: *module_id,
-                        substate_key: substate_key.clone(),
-                        action: change_action,
-                    });
+                    substate_changes.add(node_id, partition_num, substate_key, change_action);
                 }
             }
         }

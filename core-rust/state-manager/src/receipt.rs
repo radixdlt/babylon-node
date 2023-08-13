@@ -3,8 +3,11 @@ use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 
 use radix_engine::errors::RuntimeError;
 use radix_engine::system::system_modules::costing::FeeSummary;
-use radix_engine::system::system_modules::execution_trace::ResourceChange;
-use radix_engine::transaction::{CommitResult, StateUpdateSummary, TransactionOutcome};
+
+use radix_engine::transaction::{
+    CommitResult, EventSystemStructure, StateUpdateSummary, SubstateSystemStructure,
+    TransactionOutcome,
+};
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
@@ -15,7 +18,7 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::limits::ExecutionMetrics;
 use crate::transaction::PayloadIdentifiers;
-use crate::{ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash};
+use crate::{ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash, SubstateReference};
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiers {
@@ -29,6 +32,18 @@ pub struct SubstateChange {
     pub partition_number: PartitionNumber,
     pub substate_key: SubstateKey,
     pub action: ChangeAction,
+}
+
+impl From<(SubstateReference, ChangeAction)> for SubstateChange {
+    fn from((substate_reference, action): (SubstateReference, ChangeAction)) -> Self {
+        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
+        Self {
+            node_id,
+            partition_number,
+            substate_key,
+            action,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -129,7 +144,7 @@ pub struct LedgerTransactionReceipt {
     /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
     /// The substate changes resulting from the transaction.
-    pub substate_changes: Vec<SubstateChange>,
+    pub substate_changes: BySubstate<ChangeAction>,
     /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<ApplicationEvent>,
 }
@@ -144,8 +159,8 @@ pub struct LocalTransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
-    // These can be removed once we have the parent_map for the toolkit to use
-    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
+    pub substates_system_structure: BySubstate<SubstateSystemStructure>,
+    pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
 }
 
@@ -161,8 +176,9 @@ impl LedgerTransactionReceipt {
             substate_change_root: compute_merkle_root(
                 substate_changes
                     .iter()
+                    .map(|(sub_ref, action)| SubstateChange::from((sub_ref, action.clone())))
                     .map(|substate_change| {
-                        SubstateChangeHash::from_substate_change(substate_change)
+                        SubstateChangeHash::from_substate_change(&substate_change)
                     })
                     .collect(),
             ),
@@ -176,9 +192,10 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
-    fn from((commit_result, substate_changes): (CommitResult, Vec<SubstateChange>)) -> Self {
+impl From<(CommitResult, BySubstate<ChangeAction>)> for LocalTransactionReceipt {
+    fn from((commit_result, substate_changes): (CommitResult, BySubstate<ChangeAction>)) -> Self {
         let next_epoch = commit_result.next_epoch();
+        let system_structure = commit_result.system_structure;
         Self {
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
@@ -195,10 +212,91 @@ impl From<(CommitResult, Vec<SubstateChange>)> for LocalTransactionReceipt {
                 fee_summary: commit_result.fee_summary,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
-                resource_changes: commit_result.execution_trace.resource_changes,
+                substates_system_structure: BySubstate::wrap(
+                    system_structure.substate_system_structures,
+                ),
+                events_system_structure: system_structure.event_system_structures,
                 next_epoch,
             },
         }
+    }
+}
+
+/// A container of items associated with a specific substate.
+/// This simply offers a less wasteful representation of a `Vec<(SubstateReference, T)>`, by
+/// avoiding the repeated [`NodeId`]s and [`PartitionNumber`]s (within [`SubstateReference`]s).
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct BySubstate<T> {
+    by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, T>>>,
+}
+
+impl<T> BySubstate<T> {
+    pub fn new() -> Self {
+        Self::wrap(index_map_new())
+    }
+
+    pub fn add(
+        &mut self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+        item: T,
+    ) {
+        self.by_node_id
+            .entry(*node_id)
+            .or_insert(index_map_new())
+            .entry(*partition_number)
+            .or_insert(index_map_new())
+            .insert(substate_key.clone(), item);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (SubstateReference, &T)> + '_ {
+        self.by_node_id
+            .iter()
+            .flat_map(|(node_id, by_partition_number)| {
+                by_partition_number
+                    .iter()
+                    .flat_map(|(partition_number, by_substate_key)| {
+                        by_substate_key.iter().map(|(substate_key, action)| {
+                            (
+                                SubstateReference(
+                                    *node_id,
+                                    *partition_number,
+                                    substate_key.clone(),
+                                ),
+                                action,
+                            )
+                        })
+                    })
+            })
+    }
+
+    pub fn len(&self) -> usize {
+        self.by_node_id
+            .values()
+            .map(|by_partition_number| {
+                by_partition_number
+                    .values()
+                    .map(|by_substate_key| by_substate_key.len())
+                    .sum::<usize>()
+            })
+            .sum()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.by_node_id.is_empty()
+    }
+
+    fn wrap(
+        by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, T>>>,
+    ) -> Self {
+        Self { by_node_id }
+    }
+}
+
+impl<T> Default for BySubstate<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

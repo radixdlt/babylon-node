@@ -7,7 +7,7 @@ use radix_engine_queries::typed_substate_layout::*;
 
 use state_manager::{
     ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
-    SubstateChange,
+    SubstateReference,
 };
 
 pub fn to_api_receipt(
@@ -52,20 +52,15 @@ pub fn to_api_receipt(
     let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for SubstateChange {
-        node_id,
-        partition_number,
-        substate_key,
-        action,
-    } in receipt.on_ledger.substate_changes
-    {
+    for (substate_reference, action) in receipt.on_ledger.substate_changes.iter() {
+        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
         let typed_substate_key =
             create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
 
-        match action {
+        match action.clone() {
             ChangeAction::Create(value) => {
                 created_substates.push(to_api_created_substate(
                     context,
