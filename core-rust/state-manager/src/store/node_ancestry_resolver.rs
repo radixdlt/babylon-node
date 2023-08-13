@@ -64,6 +64,7 @@
 
 use crate::store::traits::*;
 use crate::{ChangeAction, SubstateReference};
+use std::borrow::Borrow;
 use std::collections::hash_map::Entry;
 
 use radix_engine::types::*;
@@ -86,7 +87,7 @@ impl NodeAncestryResolver {
     /// by many child [`NodeId`]s).
     pub fn batch_resolve<S: SubstateNodeAncestryStore>(
         ancestry_store: &S,
-        substate_changes: impl Iterator<Item = (SubstateReference, ChangeAction)>,
+        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
     ) -> impl Iterator<Item = (Vec<NodeId>, SubstateNodeAncestryRecord)> {
         // Gather the Nodes owned by upserted parent Substates (using `IndexedScryptoValue`).
         // This effectively builds a forest of upserted nodes, using a "parent to child-list map" representation.
@@ -149,10 +150,10 @@ impl NodeAncestryResolver {
     /// Inspects the given substate changes (using the [`IndexedScryptoValue`]) to find the Nodes
     /// *directly* owned by each upserted Substate.
     fn extract_owned_node_sets(
-        substate_changes: impl Iterator<Item = (SubstateReference, ChangeAction)>,
+        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
     ) -> impl Iterator<Item = OwnedNodeSet> {
         substate_changes.filter_map(|(substate_reference, action)| {
-            let created_directly_owned_nodes = match &action {
+            let created_directly_owned_nodes = match action.borrow() {
                 ChangeAction::Create(new) => {
                     IndexedScryptoValue::from_slice(new).unwrap().unpack().1
                 }
