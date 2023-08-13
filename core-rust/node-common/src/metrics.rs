@@ -65,6 +65,7 @@
 use prometheus::core::*;
 use prometheus::*;
 use radix_engine_common::types::ComponentAddress;
+use std::mem;
 
 /// A syntactic sugar trait allowing for an inline "create + register" metric definition.
 pub trait AtDefaultRegistryExt<R> {
@@ -228,5 +229,33 @@ impl MetricLabel for String {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         self.clone()
+    }
+}
+
+/// A classic, bounded, non-thread-safe ring-buffer.
+pub struct RingBuffer<T, const N: usize> {
+    array: [T; N],
+    head: usize,
+}
+
+impl<T: Copy, const N: usize> RingBuffer<T, N> {
+    /// Creates a buffer of length [`N`], pre-filled with copies of the given element.
+    pub fn new(initial_fill_element: T) -> Self {
+        if N == 0 {
+            panic!("ring-buffer behavior is undefined for 0 len");
+        }
+        Self {
+            array: [initial_fill_element; N],
+            head: 0,
+        }
+    }
+}
+
+impl<T, const N: usize> RingBuffer<T, N> {
+    /// Adds the given newest element to the buffer while removing and returning the oldest one.
+    pub fn put(&mut self, element: T) -> T {
+        let previous_head = self.head;
+        self.head = (previous_head + 1) % N;
+        mem::replace(&mut self.array[previous_head], element)
     }
 }

@@ -115,6 +115,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
+            Option.none(),
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
@@ -169,6 +170,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
+            Option.none(),
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
@@ -306,6 +308,7 @@ public final class RustMempoolTest {
     final var mempoolMaxTransactionCount = 20;
     final var config =
         new StateManagerConfig(
+            Option.none(),
             NetworkDefinition.INT_TEST_NET,
             Option.some(
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),

@@ -160,7 +160,10 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
-            ledger_metrics: LedgerMetrics::new(metrics_registry),
+            ledger_metrics: LedgerMetrics::new(
+                &lock_factory.named("ledger_metrics"),
+                metrics_registry,
+            ),
             committed_transactions_metrics,
         }
     }
@@ -1127,6 +1130,7 @@ where
             commit_state_version,
             round_counters,
             proposer_timestamp_ms,
+            commit_request.self_validator_address,
         );
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
@@ -1187,6 +1191,7 @@ where
             resultant_state_version,
             Vec::new(),
             proposer_timestamp_ms,
+            None,
         );
     }
 
