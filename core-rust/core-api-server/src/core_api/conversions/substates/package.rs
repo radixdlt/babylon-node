@@ -336,11 +336,13 @@ pub fn to_api_blueprint_definition(
 ) -> Result<models::BlueprintDefinition, MappingError> {
     let BlueprintDefinition {
         interface,
+        is_transient,
         function_exports,
-        virtual_lazy_load_functions,
+        hook_exports,
     } = blueprint_definition;
     Ok(models::BlueprintDefinition {
         interface: Box::new(to_api_blueprint_interface(context, interface)?),
+        is_transient: *is_transient,
         function_exports: function_exports
             .iter()
             .map(|(function_name, package_export)| {
@@ -350,13 +352,17 @@ pub fn to_api_blueprint_definition(
                 ))
             })
             .collect::<Result<_, _>>()?,
-        virtual_lazy_load_functions: virtual_lazy_load_functions
+        hook_exports: hook_exports
             .iter()
-            .map(|(function_id, package_export)| {
-                Ok((
-                    function_id.to_string(),
-                    to_api_package_export(context, package_export)?,
-                ))
+            .map(|(blueprint_hook, package_export)| {
+                Ok(models::HookExport {
+                    object_hook: match blueprint_hook {
+                        BlueprintHook::OnVirtualize => models::ObjectHook::OnVirtualize,
+                        BlueprintHook::OnMove => models::ObjectHook::OnMove,
+                        BlueprintHook::OnDrop => models::ObjectHook::OnDrop,
+                    },
+                    export: Box::new(to_api_package_export(context, package_export)?),
+                })
             })
             .collect::<Result<_, _>>()?,
     })
@@ -473,10 +479,12 @@ pub fn to_api_type_pointer(
     type_pointer: &TypePointer,
 ) -> Result<models::TypePointer, MappingError> {
     Ok(match type_pointer {
-        TypePointer::Package(hash, local_type_index) => models::TypePointer::PackageTypePointer {
-            schema_hash: to_api_hash(hash),
-            local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
-        },
+        TypePointer::Package(TypeIdentifier(schema_hash, local_type_index)) => {
+            models::TypePointer::PackageTypePointer {
+                schema_hash: to_api_hash(schema_hash),
+                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+            }
+        }
         TypePointer::Instance(index) => models::TypePointer::InstanceTypePointer {
             index: to_api_u8_as_i32(*index),
         },
@@ -593,7 +601,7 @@ pub fn to_api_blueprint_collection_schema(
     collection_schema: &BlueprintCollectionSchema<TypePointer>,
 ) -> Result<models::BlueprintCollectionSchema, MappingError> {
     Ok(match collection_schema {
-        BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueStoreSchema {
+        BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema::<TypePointer> {
             key,
             value,
             can_own,
@@ -602,12 +610,24 @@ pub fn to_api_blueprint_collection_schema(
             value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
             can_own: *can_own,
         },
-        BlueprintCollectionSchema::Index(BlueprintIndexSchema {}) => {
-            models::BlueprintCollectionSchema::IndexBlueprintCollectionSchema {}
-        }
-        BlueprintCollectionSchema::SortedIndex(BlueprintSortedIndexSchema {}) => {
-            models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {}
-        }
+        BlueprintCollectionSchema::Index(BlueprintKeyValueSchema::<TypePointer> {
+            key,
+            value,
+            can_own,
+        }) => models::BlueprintCollectionSchema::IndexBlueprintCollectionSchema {
+            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
+            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
+            can_own: *can_own,
+        },
+        BlueprintCollectionSchema::SortedIndex(BlueprintKeyValueSchema::<TypePointer> {
+            key,
+            value,
+            can_own,
+        }) => models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {
+            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
+            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
+            can_own: *can_own,
+        },
     })
 }
 

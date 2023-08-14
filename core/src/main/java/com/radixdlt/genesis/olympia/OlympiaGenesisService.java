@@ -174,7 +174,8 @@ public final class OlympiaGenesisService {
           return;
         }
 
-        final var signature = ECDSASecp256k1Signature.decodeFromHexDer(readyResponse.signature());
+        final var signature =
+            ECDSASecp256k1Signature.decodeNonRecoverableFromHexDer(readyResponse.signature());
         if (!this.olympiaGenesisConfig.nodePublicKey().verify(contentHash, signature)) {
           completableFuture.completeExceptionally(signatureErr());
           return;
@@ -241,7 +242,8 @@ public final class OlympiaGenesisService {
           }
 
           final var signature =
-              ECDSASecp256k1Signature.decodeFromHexDer(notReadyResponse.signature().get());
+              ECDSASecp256k1Signature.decodeNonRecoverableFromHexDer(
+                  notReadyResponse.signature().get());
 
           if (!this.olympiaGenesisConfig.nodePublicKey().verify(calculatedTestHash, signature)) {
             completableFuture.completeExceptionally(signatureErr());

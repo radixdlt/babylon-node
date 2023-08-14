@@ -99,8 +99,8 @@ struct ExecutedTransaction {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TransactionDetails {
-    new_component_addresses: Vec<ComponentAddress>,
-    new_resource_addresses: Vec<ResourceAddress>,
+    new_component_addresses: IndexSet<ComponentAddress>,
+    new_resource_addresses: IndexSet<ResourceAddress>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -214,10 +214,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
                 let mut accounter = ResourceAccounter::new(read_store.deref());
                 accounter.traverse(*node_id);
                 let balances = accounter.close().balances;
-                balances
-                    .get(&RADIX_TOKEN)
-                    .cloned()
-                    .unwrap_or_else(Decimal::zero)
+                balances.get(&XRD).cloned().unwrap_or_else(Decimal::zero)
             } else {
                 Decimal::zero()
             }

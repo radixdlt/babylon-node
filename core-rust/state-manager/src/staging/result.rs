@@ -68,9 +68,9 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
-    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
+    StateHash, StateVersion, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
@@ -84,7 +84,7 @@ use radix_engine::track::SystemUpdates;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
+    NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 
@@ -234,11 +234,11 @@ impl ProcessedCommitResult {
     pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
         system_updates: &SystemUpdates,
-    ) -> Vec<SubstateChange> {
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
+    ) -> BySubstate<ChangeAction> {
+        let mut substate_changes = BySubstate::new();
+        for ((node_id, partition_num), substate_updates) in system_updates {
+            for (substate_key, update) in substate_updates {
+                let partition_key = D::to_db_partition_key(node_id, *partition_num);
                 let sort_key = D::to_db_sort_key(substate_key);
                 let change_action_opt = match update {
                     DatabaseUpdate::Set(value) => {
@@ -254,12 +254,7 @@ impl ProcessedCommitResult {
                     DatabaseUpdate::Delete => Some(ChangeAction::Delete),
                 };
                 if let Some(change_action) = change_action_opt {
-                    substate_changes.push(SubstateChange {
-                        node_id: *node_id,
-                        partition_number: *module_id,
-                        substate_key: substate_key.clone(),
-                        action: change_action,
-                    });
+                    substate_changes.add(node_id, partition_num, substate_key, change_action);
                 }
             }
         }
@@ -326,8 +321,7 @@ pub struct HashStructuresDiff {
 #[derive(Clone, Debug)]
 pub struct StateHashTreeDiff {
     pub new_root: StateHash,
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
+    pub new_nodes: Vec<(NodeKey, TreeNode)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
@@ -335,8 +329,7 @@ impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_root: StateHash::from(Hash([0; Hash::LENGTH])),
-            new_re_node_layer_nodes: Vec::new(),
-            new_substate_layer_nodes: Vec::new(),
+            new_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),
         }
     }
@@ -409,25 +402,15 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S> WriteableTreeStore<PartitionPayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<PartitionPayload>) {
-        self.diff.new_re_node_layer_nodes.push((key, node));
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
-    }
-}
-
-impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
-        self.diff.new_substate_layer_nodes.push((key, node));
+impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.diff.new_nodes.push((key, node));
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {

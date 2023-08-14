@@ -15,21 +15,19 @@
 pub struct FunctionEventEmitterIdentifier {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::EventEmitterIdentifierType,
-    #[serde(rename = "entity")]
-    pub entity: Box<crate::core_api::generated::models::EntityReference>,
-    #[serde(rename = "object_module_id")]
-    pub object_module_id: crate::core_api::generated::models::ObjectModuleId,
-    /// Blueprint name.
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    /// The blueprint under the package which emitted the event.
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
 }
 
 impl FunctionEventEmitterIdentifier {
-    pub fn new(_type: crate::core_api::generated::models::EventEmitterIdentifierType, entity: crate::core_api::generated::models::EntityReference, object_module_id: crate::core_api::generated::models::ObjectModuleId, blueprint_name: String) -> FunctionEventEmitterIdentifier {
+    pub fn new(_type: crate::core_api::generated::models::EventEmitterIdentifierType, package_address: String, blueprint_name: String) -> FunctionEventEmitterIdentifier {
         FunctionEventEmitterIdentifier {
             _type,
-            entity: Box::new(entity),
-            object_module_id,
+            package_address,
             blueprint_name,
         }
     }

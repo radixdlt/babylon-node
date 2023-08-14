@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CommittedIntentMetadata;
 import com.radixdlt.api.core.generated.models.Instant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_PAYLOAD_REJECTION_PERMANENT,
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
+  LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS,
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_FROM_TIMESTAMP,
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_FROM_EPOCH,
   LtsTransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_INVALID_FROM_EPOCH
@@ -57,6 +59,9 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
 
   public static final String JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED = "is_rejected_because_intent_already_committed";
   private Boolean isRejectedBecauseIntentAlreadyCommitted;
+
+  public static final String JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS = "intent_already_committed_as";
+  private CommittedIntentMetadata intentAlreadyCommittedAs;
 
   public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
   private Instant retryFromTimestamp;
@@ -200,6 +205,32 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
   }
 
 
+  public LtsTransactionSubmitRejectedErrorDetailsAllOf intentAlreadyCommittedAs(CommittedIntentMetadata intentAlreadyCommittedAs) {
+    this.intentAlreadyCommittedAs = intentAlreadyCommittedAs;
+    return this;
+  }
+
+   /**
+   * Get intentAlreadyCommittedAs
+   * @return intentAlreadyCommittedAs
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public CommittedIntentMetadata getIntentAlreadyCommittedAs() {
+    return intentAlreadyCommittedAs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_ALREADY_COMMITTED_AS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setIntentAlreadyCommittedAs(CommittedIntentMetadata intentAlreadyCommittedAs) {
+    this.intentAlreadyCommittedAs = intentAlreadyCommittedAs;
+  }
+
+
   public LtsTransactionSubmitRejectedErrorDetailsAllOf retryFromTimestamp(Instant retryFromTimestamp) {
     this.retryFromTimestamp = retryFromTimestamp;
     return this;
@@ -299,6 +330,7 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
         Objects.equals(this.isPayloadRejectionPermanent, ltsTransactionSubmitRejectedErrorDetailsAllOf.isPayloadRejectionPermanent) &&
         Objects.equals(this.isIntentRejectionPermanent, ltsTransactionSubmitRejectedErrorDetailsAllOf.isIntentRejectionPermanent) &&
         Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, ltsTransactionSubmitRejectedErrorDetailsAllOf.isRejectedBecauseIntentAlreadyCommitted) &&
+        Objects.equals(this.intentAlreadyCommittedAs, ltsTransactionSubmitRejectedErrorDetailsAllOf.intentAlreadyCommittedAs) &&
         Objects.equals(this.retryFromTimestamp, ltsTransactionSubmitRejectedErrorDetailsAllOf.retryFromTimestamp) &&
         Objects.equals(this.retryFromEpoch, ltsTransactionSubmitRejectedErrorDetailsAllOf.retryFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, ltsTransactionSubmitRejectedErrorDetailsAllOf.invalidFromEpoch);
@@ -306,7 +338,7 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, retryFromTimestamp, retryFromEpoch, invalidFromEpoch);
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, intentAlreadyCommittedAs, retryFromTimestamp, retryFromEpoch, invalidFromEpoch);
   }
 
   @Override
@@ -318,6 +350,7 @@ public class LtsTransactionSubmitRejectedErrorDetailsAllOf {
     sb.append("    isPayloadRejectionPermanent: ").append(toIndentedString(isPayloadRejectionPermanent)).append("\n");
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
     sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
+    sb.append("    intentAlreadyCommittedAs: ").append(toIndentedString(intentAlreadyCommittedAs)).append("\n");
     sb.append("    retryFromTimestamp: ").append(toIndentedString(retryFromTimestamp)).append("\n");
     sb.append("    retryFromEpoch: ").append(toIndentedString(retryFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");

@@ -86,7 +86,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
         let substate = read_optional_collection_substate::<KeyValueEntrySubstate<Own>>(
             database.deref(),
             account_address.as_node_id(),
-            ACCOUNT_VAULT_INDEX,
+            ACCOUNT_VAULT_COLLECTION_INDEX,
             &SubstateKey::Map(encoded_key),
         );
         match substate {

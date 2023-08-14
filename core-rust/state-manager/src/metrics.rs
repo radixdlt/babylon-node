@@ -71,10 +71,10 @@ use node_common::config::limits::*;
 use node_common::metrics::*;
 use prometheus::*;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine_common::types::ComponentAddress;
-use radix_engine_constants::DEFAULT_MAX_TRANSACTION_SIZE;
+use radix_engine_common::prelude::*;
 
 pub struct LedgerMetrics {
+    address_encoder: AddressBech32Encoder, // for label rendering only
     pub state_version: IntGauge,
     pub transactions_committed: IntCounter,
     pub consensus_rounds_committed: IntCounterVec,
@@ -100,8 +100,9 @@ pub struct VertexPrepareMetrics {
 }
 
 impl LedgerMetrics {
-    pub fn new(registry: &Registry) -> Self {
+    pub fn new(network: &NetworkDefinition, registry: &Registry) -> Self {
         Self {
+            address_encoder: AddressBech32Encoder::new(network),
             state_version: IntGauge::with_opts(opts(
                 "ledger_state_version",
                 "Version of the ledger state.",
@@ -144,6 +145,11 @@ impl LedgerMetrics {
         self.transactions_committed
             .inc_by(added_transactions as u64);
         for (validator_address, counter) in validator_proposal_counters {
+            let encoded_validator_address = self
+                .address_encoder
+                .encode(validator_address.as_ref())
+                // a fallback for an unlikely encoding error:
+                .unwrap_or_else(|_| validator_address.to_hex());
             for (round_resolution, count) in [
                 (ConsensusRoundResolution::Successful, counter.successful),
                 (
@@ -153,7 +159,7 @@ impl LedgerMetrics {
                 (ConsensusRoundResolution::MissedByGap, counter.missed_by_gap),
             ] {
                 self.consensus_rounds_committed
-                    .with_two_labels(validator_address, round_resolution)
+                    .with_two_labels(&encoded_validator_address, round_resolution)
                     .inc_by(count as u64);
             }
         }
@@ -188,7 +194,7 @@ impl CommittedTransactionsMetrics {
                     "committed_transactions_size",
                     "Size in bytes of committed transactions.",
                 ),
-                higher_resolution_for_lower_values_buckets_for_limit(DEFAULT_MAX_TRANSACTION_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
             )
             .registered_at(registry),
             execution_cost_units_consumed: new_histogram(

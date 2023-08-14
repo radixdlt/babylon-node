@@ -162,9 +162,10 @@ pub mod vertex {
 pub mod substate {
     use super::*;
     use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-    use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
+    use radix_engine_common::types::NodeId;
     use std::slice;
 
+    use crate::SubstateReference;
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
@@ -213,12 +214,6 @@ pub mod substate {
         /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
         pub root: SubstateReference,
     }
-
-    /// A complete ID of Substate.
-    #[derive(
-        Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-    )]
-    pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 }
 
 pub mod transactions {
@@ -304,7 +299,7 @@ pub mod commit {
     use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
     use radix_engine_store_interface::interface::DatabaseUpdates;
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, PartitionPayload, TreeNode};
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, TreeNode};
     use utils::rust::collections::IndexMap;
 
     pub struct CommitBundle {
@@ -358,24 +353,21 @@ pub mod commit {
     }
 
     pub struct HashTreeUpdate {
-        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
-        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
+        pub new_nodes: Vec<(NodeKey, TreeNode)>,
         pub stale_node_keys_at_state_version: Vec<(StateVersion, Vec<NodeKey>)>,
     }
 
     impl HashTreeUpdate {
         pub fn new() -> Self {
             Self {
-                new_re_node_layer_nodes: Vec::new(),
-                new_substate_layer_nodes: Vec::new(),
+                new_nodes: Vec::new(),
                 stale_node_keys_at_state_version: Vec::new(),
             }
         }
 
         pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
             Self {
-                new_re_node_layer_nodes: diff.new_re_node_layer_nodes,
-                new_substate_layer_nodes: diff.new_substate_layer_nodes,
+                new_nodes: diff.new_nodes,
                 stale_node_keys_at_state_version: vec![(
                     at_state_version,
                     diff.stale_hash_tree_node_keys,
@@ -384,10 +376,7 @@ pub mod commit {
         }
 
         pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
-            self.new_re_node_layer_nodes
-                .extend(diff.new_re_node_layer_nodes);
-            self.new_substate_layer_nodes
-                .extend(diff.new_substate_layer_nodes);
+            self.new_nodes.extend(diff.new_nodes);
             self.stale_node_keys_at_state_version
                 .push((at_state_version, diff.stale_hash_tree_node_keys));
         }

@@ -17,10 +17,10 @@ pub fn to_api_substate(
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, type_info_substate)?,
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::OwnerRole(
-            substate,
-        )) => to_api_owner_role_substate(context, substate)?,
-        TypedSubstateValue::AccessRulesModule(TypedAccessRulesModuleSubstateValue::Rule(
+        TypedSubstateValue::RoleAssignmentModule(
+            TypedRoleAssignmentModuleSubstateValue::OwnerRole(substate),
+        ) => to_api_owner_role_substate(context, substate)?,
+        TypedSubstateValue::RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue::Rule(
             substate,
         )) => to_api_access_rule_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::RoyaltyModule(TypedRoyaltyModuleSubstateValue::ComponentRoyalty(
@@ -90,7 +90,7 @@ pub fn to_api_substate(
         )) => to_api_non_fungible_vault_frozen_status_substate(context, substate)?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(entry),
-        ) => to_api_non_fungible_vault_contents_entry_substate(context, entry)?,
+        ) => to_api_non_fungible_vault_contents_entry_substate(context, typed_substate_key, entry)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
             TypedConsensusManagerFieldValue::ConsensusManager(substate),
         )) => to_api_consensus_manager_state_substate(context, substate)?,
@@ -114,9 +114,13 @@ pub fn to_api_substate(
         )) => to_api_validator_rewards_substate(context, substate)?,
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
-                entry,
+                substate,
             ),
-        ) => to_api_registered_validator_set_substate(context, typed_substate_key, entry)?,
+        ) => to_api_registered_validators_by_stake_index_entry_substate(
+            context,
+            typed_substate_key,
+            substate,
+        )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
             TypedValidatorFieldValue::Validator(validator_substate),
         )) => to_api_validator_substate(context, validator_substate)?,
@@ -126,21 +130,24 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
             TypedAccountFieldValue::Account(substate),
         )) => to_api_account_state_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountVaultIndex(
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountVaultEntry(
             substate,
         )) => to_api_account_vault_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(substate),
-        ) => to_api_account_deposit_rule_entry(context, typed_substate_key, substate)?,
+            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(substate),
+        ) => to_api_account_resource_preference_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(substate),
+        ) => to_api_account_authorized_depositor_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccessController(
             TypedAccessControllerFieldValue::AccessController(access_controller_substate),
         )) => to_api_access_controller_substate(context, access_controller_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericScryptoComponent(
             GenericScryptoComponentFieldValue::State(substate),
         )) => to_api_generic_scrypto_component_state_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericKeyValueStore(
-            substate,
-        )) => to_api_generic_key_value_store_substate(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(substate),
+        ) => to_api_generic_key_value_store_substate(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::OneResourcePool(
             TypedOneResourcePoolFieldValue::OneResourcePool(substate),
         )) => to_api_one_resource_pool_substate(context, substate)?,

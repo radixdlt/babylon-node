@@ -111,14 +111,14 @@ pub fn to_api_substate_id(
             SubstateType::TypeInfoModuleFieldTypeInfo,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
-            AccessRulesField::OwnerRole,
-        )) => (
-            SubstateType::AccessRulesModuleFieldOwnerRole,
+        TypedSubstateKey::RoleAssignmentModule(
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(RoleAssignmentField::OwnerRole),
+        ) => (
+            SubstateType::RoleAssignmentModuleFieldOwnerRole,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(_)) => (
-            SubstateType::AccessRulesModuleRuleEntry,
+        TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(_)) => (
+            SubstateType::RoleAssignmentModuleRuleEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(
@@ -287,14 +287,20 @@ pub fn to_api_substate_id(
             SubstateType::AccountFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultIndexKey(_)) => (
-            SubstateType::AccountVaultIndexEntry,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(_)) => (
+            SubstateType::AccountVaultEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
+            _,
+        )) => (
+            SubstateType::AccountResourcePreferenceEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_),
+            TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_),
         ) => (
-            SubstateType::AccountDepositRuleIndexEntry,
+            SubstateType::AccountAuthorizedDepositorEntry,
             models::PartitionKind::KeyValue,
         ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessControllerField(
@@ -378,7 +384,7 @@ pub fn to_api_substate_id(
 
     let entity_module = match typed_substate_key {
         TypedSubstateKey::TypeInfoModule(_) => models::EntityModule::TypeInfo,
-        TypedSubstateKey::AccessRulesModule(_) => models::EntityModule::AccessRules,
+        TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
         TypedSubstateKey::MetadataModule(_) => models::EntityModule::Metadata,
         TypedSubstateKey::MainModule(_) => models::EntityModule::Main,
@@ -457,6 +463,6 @@ pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::Obj
         ObjectModuleId::Main => models::ObjectModuleId::Main,
         ObjectModuleId::Metadata => models::ObjectModuleId::Metadata,
         ObjectModuleId::Royalty => models::ObjectModuleId::Royalty,
-        ObjectModuleId::AccessRules => models::ObjectModuleId::AccessRules,
+        ObjectModuleId::RoleAssignment => models::ObjectModuleId::RoleAssignment,
     }
 }

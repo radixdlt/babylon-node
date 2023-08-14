@@ -64,7 +64,6 @@
 
 use prometheus::core::*;
 use prometheus::*;
-use radix_engine_common::types::ComponentAddress;
 
 /// A syntactic sugar trait allowing for an inline "create + register" metric definition.
 pub trait AtDefaultRegistryExt<R> {
@@ -212,14 +211,6 @@ impl<T: MetricLabel> MetricLabel for &T {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         T::prometheus_label_name(self)
-    }
-}
-
-impl MetricLabel for ComponentAddress {
-    type StringReturnType = String;
-
-    fn prometheus_label_name(&self) -> Self::StringReturnType {
-        self.to_hex()
     }
 }
 
