@@ -110,6 +110,8 @@ pub mod blueprint_type_reference_kind;
 pub use self::blueprint_type_reference_kind::BlueprintTypeReferenceKind;
 pub mod blueprint_version_key;
 pub use self::blueprint_version_key::BlueprintVersionKey;
+pub mod committed_intent_metadata;
+pub use self::committed_intent_metadata::CommittedIntentMetadata;
 pub mod committed_state_identifier;
 pub use self::committed_state_identifier::CommittedStateIdentifier;
 pub mod committed_state_identifier_all_of;

@@ -1,9 +1,10 @@
-use radix_engine::errors::RejectionError;
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
 
-use state_manager::{DetailedTransactionOutcome, RejectionReason};
+use state_manager::{
+    AlreadyCommittedError, DetailedTransactionOutcome, RejectionReason, StateVersion,
+};
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
@@ -70,9 +71,10 @@ pub(crate) async fn handle_lts_transaction_status(
         let user_identifiers = identifiers
             .user()
             .expect("Only user transactions should be able to be looked up by intent hash");
+        let notarized_transaction_hash = user_identifiers.notarized_transaction_hash;
 
         // Remove the committed payload from the rejection list if it's present
-        known_pending_payloads.remove(user_identifiers.notarized_transaction_hash);
+        known_pending_payloads.remove(notarized_transaction_hash);
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
@@ -101,6 +103,8 @@ pub(crate) async fn handle_lts_transaction_status(
         let mut known_payloads = vec![committed_payload];
         known_payloads.append(&mut map_rejected_payloads_due_to_known_commit(
             known_pending_payloads,
+            txn_state_version,
+            notarized_transaction_hash,
         ));
 
         return Ok(models::LtsTransactionStatusResponse {
@@ -190,21 +194,30 @@ pub(crate) async fn handle_lts_transaction_status(
 
 fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads: HashMap<NotarizedTransactionHash, PendingTransactionRecord>,
+    committed_state_version: StateVersion,
+    committed_notarized_transaction_hash: &NotarizedTransactionHash,
 ) -> Vec<models::LtsTransactionPayloadDetails> {
     known_rejected_payloads
         .into_iter()
-        .map(|(payload_hash, transaction_record)| {
+        .map(|(notarized_transaction_hash, transaction_record)| {
             let error_string_to_use = transaction_record
                 .most_applicable_status()
                 .map(|reason| reason.to_string())
+                // Note: in theory, we should not see the "no rejection" for any transaction here,
+                // since we only enter this method after seeing their intent hash committed by a
+                // different payload. However, the cache update happens asynchronously after the
+                // commit, and we may see a "not-yet-updated" entry - luckily, in such case, we can
+                // precisely tell the transaction's status ourselves:
                 .unwrap_or_else(|| {
-                    RejectionReason::FromExecution(Box::new(
-                        RejectionError::IntentHashPreviouslyCommitted,
-                    ))
+                    RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                        notarized_transaction_hash,
+                        committed_state_version,
+                        committed_notarized_transaction_hash: *committed_notarized_transaction_hash,
+                    })
                     .to_string()
                 });
             models::LtsTransactionPayloadDetails {
-                payload_hash: to_api_notarized_transaction_hash(&payload_hash),
+                payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
                 state_version: None,
                 status: models::LtsTransactionPayloadStatus::PermanentlyRejected,
                 error_message: Some(error_string_to_use),

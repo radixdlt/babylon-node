@@ -1029,7 +1029,7 @@ where
         );
         let mut transaction_tree_slice_merger = epoch_accu_trees.create_merger();
         let mut receipt_tree_slice_merger = epoch_accu_trees.create_merger();
-        let mut intent_hashes = Vec::new();
+        let mut committed_user_transactions = Vec::new();
 
         // Step 3.: Actually execute the transactions, collect their results into DB structures
         for (raw, prepared) in commit_request
@@ -1048,8 +1048,12 @@ where
                 .execute_and_update_state(&validated, "prepared")
                 .expect("cannot execute transaction to be committed");
 
-            if let Some(intent_hash) = validated.intent_hash_if_user() {
-                intent_hashes.push((series_executor.latest_state_version(), intent_hash));
+            if let ValidatedLedgerTransactionInner::UserV1(user_transaction) = &validated.inner {
+                committed_user_transactions.push(CommittedUserTransactionIdentifiers {
+                    state_version: series_executor.latest_state_version(),
+                    intent_hash: user_transaction.intent_hash(),
+                    notarized_transaction_hash: user_transaction.notarized_transaction_hash(),
+                });
             }
 
             substate_store_update.apply(commit.database_updates);
@@ -1116,11 +1120,14 @@ where
         });
         drop(write_store);
 
-        self.mempool_manager
-            .remove_committed(intent_hashes.iter().map(|entry| &entry.1));
+        self.mempool_manager.remove_committed(
+            committed_user_transactions
+                .iter()
+                .map(|txn| &txn.intent_hash),
+        );
         self.pending_transaction_result_cache
             .write()
-            .track_committed_transactions(SystemTime::now(), intent_hashes);
+            .track_committed_transactions(SystemTime::now(), committed_user_transactions);
 
         self.ledger_metrics.update(
             commit_transactions_len,
@@ -1228,6 +1235,12 @@ where
         );
         *transaction_tree_diff.slice.root()
     }
+}
+
+pub struct CommittedUserTransactionIdentifiers {
+    pub state_version: StateVersion,
+    pub intent_hash: IntentHash,
+    pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 struct PendingTransactionResult {
