@@ -142,6 +142,7 @@ impl MetricLabel for MempoolAddError {
         match self {
             MempoolAddError::PriorityThresholdNotMet { .. } => "PriorityThresholdNotMet",
             MempoolAddError::Rejected(rejection) => match &rejection.reason {
+                RejectionReason::AlreadyCommitted(_) => "AlreadyCommitted",
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
             },

@@ -1147,7 +1147,7 @@ components:
           description: Whether to return the typed substate information (default true)
           type: boolean
         previous:
-          description: Whether to return the previous substate value for updates (default false)
+          description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
@@ -1525,6 +1525,25 @@ components:
       description: |
         The hex-encoded ledger payload transaction hash.
         This is a wrapper for both user transactions, and system transactions such as genesis and round changes.
+    CommittedIntentMetadata:
+      type: object
+      required:
+        - state_version
+        - payload_hash
+        - is_same_transaction
+      properties:
+        state_version:
+          $ref: "#/components/schemas/StateVersion"
+          description: State version of a committed transaction which had the same intent.
+        payload_hash:
+          $ref: "#/components/schemas/NotarizedTransactionHash"
+          description: Payload hash of a committed transaction which had the same intent.
+        is_same_transaction:
+          type: boolean
+          description: |
+            Whether the intent was committed in a transaction with the same payload.
+            This is a convenience field, which can also be computed using `payload_hash` by a client
+            knowing the payload of the submitted transaction.
     ErrorResponseType:
       type: string
       enum:
@@ -1769,6 +1788,9 @@ components:
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
+        previous_value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
     EntityReference:
       type: object
       required:
@@ -4947,6 +4969,11 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
+            intent_already_committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
+                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
@@ -5944,6 +5971,11 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
+            intent_already_committed_as:
+              $ref: "#/components/schemas/CommittedIntentMetadata"
+              description: |
+                Details of an already-committed transaction that had the same intent.
+                This field is present when `is_rejected_because_intent_already_committed` is true.
             retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |

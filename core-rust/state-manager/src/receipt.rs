@@ -48,12 +48,16 @@ impl From<(SubstateReference, ChangeAction)> for SubstateChange {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ChangeAction {
-    Create(DbSubstateValue),
+    Create {
+        new: DbSubstateValue,
+    },
     Update {
         new: DbSubstateValue,
         previous: DbSubstateValue,
     },
-    Delete,
+    Delete {
+        previous: DbSubstateValue,
+    },
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

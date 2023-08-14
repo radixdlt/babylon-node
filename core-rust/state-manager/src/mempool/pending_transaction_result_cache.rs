@@ -3,7 +3,7 @@ use transaction::{errors::TransactionValidationError, model::*};
 
 use crate::{
     transaction::{CheckMetadata, StaticValidation},
-    MempoolAddRejection, StateVersion,
+    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
 };
 
 use lru::LruCache;
@@ -18,8 +18,16 @@ use std::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionReason {
+    AlreadyCommitted(AlreadyCommittedError),
     FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlreadyCommittedError {
+    pub notarized_transaction_hash: NotarizedTransactionHash,
+    pub committed_state_version: StateVersion,
+    pub committed_notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 impl From<TransactionValidationError> for RejectionReason {
@@ -39,6 +47,7 @@ impl RejectionReason {
 
     pub fn is_rejected_because_intent_already_committed(&self) -> bool {
         match self {
+            RejectionReason::AlreadyCommitted(_) => true,
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 RejectionError::SuccessButFeeLoanNotRepaid => false,
                 RejectionError::ErrorBeforeFeeLoanRepaid(_) => false,
@@ -51,8 +60,20 @@ impl RejectionReason {
         }
     }
 
+    pub fn already_committed_error(&self) -> Option<&AlreadyCommittedError> {
+        match self {
+            RejectionReason::AlreadyCommitted(error) => Some(error),
+            _ => None,
+        }
+    }
+
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
+            RejectionReason::AlreadyCommitted(_) => {
+                // This is permanent for the intent - because even other, non-committed transactions
+                // of the same intent will fail with `RejectionError::IntentHashPreviouslyCommitted`
+                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+            }
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary {
                     retry: RetrySettings::AfterDelay {
@@ -151,6 +172,7 @@ pub enum RetrySettings {
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            RejectionReason::AlreadyCommitted(error) => write!(f, "Already committed: {error:?}"),
             RejectionReason::FromExecution(rejection_error) => write!(f, "{rejection_error}"),
             RejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
@@ -406,7 +428,7 @@ const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 pub struct PendingTransactionResultCache {
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
-    recently_committed_intents: LruCache<IntentHash, (StateVersion, SystemTime)>,
+    recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
 }
 
 impl PendingTransactionResultCache {
@@ -426,11 +448,13 @@ impl PendingTransactionResultCache {
     pub fn track_transaction_result(
         &mut self,
         intent_hash: IntentHash,
-        payload_hash: NotarizedTransactionHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
-        let existing_record = self.pending_transaction_records.get_mut(&payload_hash);
+        let existing_record = self
+            .pending_transaction_records
+            .get_mut(&notarized_transaction_hash);
 
         if let Some(record) = existing_record {
             record.track_attempt(attempt);
@@ -442,9 +466,9 @@ impl PendingTransactionResultCache {
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
         let removed = self
             .pending_transaction_records
-            .push(payload_hash, new.clone());
+            .push(notarized_transaction_hash, new.clone());
 
-        self.handled_added(intent_hash, payload_hash);
+        self.handled_added(intent_hash, notarized_transaction_hash);
         if let Some((p, r)) = removed {
             self.handled_removed(p, r);
         }
@@ -455,15 +479,24 @@ impl PendingTransactionResultCache {
     pub fn track_committed_transactions(
         &mut self,
         current_timestamp: SystemTime,
-        hashes: Vec<(StateVersion, IntentHash)>,
+        committed_transactions: Vec<CommittedUserTransactionIdentifiers>,
     ) {
-        for (state_version, intent_hash) in hashes {
+        for committed_transaction in committed_transactions {
+            let committed_intent_hash = committed_transaction.intent_hash;
+            let committed_notarized_transaction_hash =
+                committed_transaction.notarized_transaction_hash;
             // Note - we keep the relevant statuses of all known payloads for the intent in the cache
             // so that we can still serve status responses for them - we just ensure we mark them as rejected
-            self.recently_committed_intents
-                .push(intent_hash, (state_version, current_timestamp));
+            self.recently_committed_intents.push(
+                committed_intent_hash,
+                CommittedIntentRecord {
+                    state_version: committed_transaction.state_version,
+                    notarized_transaction_hash: committed_notarized_transaction_hash,
+                    timestamp: current_timestamp,
+                },
+            );
 
-            if let Some(payload_hashes) = self.intent_lookup.get(&intent_hash) {
+            if let Some(payload_hashes) = self.intent_lookup.get(&committed_intent_hash) {
                 for cached_payload_hash in payload_hashes {
                     let record = self
                         .pending_transaction_records
@@ -473,10 +506,14 @@ impl PendingTransactionResultCache {
                     // We even overwrite the record for transaction which got committed here
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
-                        rejection: Some(RejectionReason::FromExecution(Box::new(
-                            RejectionError::IntentHashPreviouslyCommitted,
-                        ))),
-                        against_state: AtState::Committed { state_version },
+                        rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                            notarized_transaction_hash: *cached_payload_hash,
+                            committed_state_version: committed_transaction.state_version,
+                            committed_notarized_transaction_hash,
+                        })),
+                        against_state: AtState::Committed {
+                            state_version: committed_transaction.state_version,
+                        },
                         timestamp: current_timestamp,
                     })
                 }
@@ -487,27 +524,31 @@ impl PendingTransactionResultCache {
     pub fn get_pending_transaction_record(
         &mut self,
         intent_hash: &IntentHash,
-        payload_hash: &NotarizedTransactionHash,
+        notarized_transaction_hash: &NotarizedTransactionHash,
     ) -> Option<PendingTransactionRecord> {
-        if let Some(x) = self.pending_transaction_records.get(payload_hash) {
+        if let Some(x) = self
+            .pending_transaction_records
+            .get(notarized_transaction_hash)
+        {
             return Some(x.clone());
         }
         // We might not have a pending transaction record for this, but we know it has to be rejected due to the committed intent cache
         // So let's create and return a transient committed record for it
-        if let Some((committed_at_state_version, timestamp)) =
-            self.recently_committed_intents.get(intent_hash)
-        {
+        if let Some(committed_intent_record) = self.recently_committed_intents.get(intent_hash) {
             return Some(PendingTransactionRecord::new(
                 *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(RejectionReason::FromExecution(Box::new(
-                        RejectionError::IntentHashPreviouslyCommitted,
-                    ))),
+                    rejection: Some(RejectionReason::AlreadyCommitted(AlreadyCommittedError {
+                        notarized_transaction_hash: *notarized_transaction_hash,
+                        committed_state_version: committed_intent_record.state_version,
+                        committed_notarized_transaction_hash: committed_intent_record
+                            .notarized_transaction_hash,
+                    })),
                     against_state: AtState::Committed {
-                        state_version: *committed_at_state_version,
+                        state_version: committed_intent_record.state_version,
                     },
-                    timestamp: *timestamp,
+                    timestamp: committed_intent_record.timestamp,
                 },
             ));
         }
@@ -534,21 +575,25 @@ impl PendingTransactionResultCache {
         }
     }
 
-    fn handled_added(&mut self, intent_hash: IntentHash, payload_hash: NotarizedTransactionHash) {
+    fn handled_added(
+        &mut self,
+        intent_hash: IntentHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
+    ) {
         // Add the intent hash <-> payload hash lookup
         match self.intent_lookup.entry(intent_hash) {
             Entry::Occupied(mut e) => {
-                e.get_mut().insert(payload_hash);
+                e.get_mut().insert(notarized_transaction_hash);
             }
             Entry::Vacant(e) => {
-                e.insert(HashSet::from([payload_hash]));
+                e.insert(HashSet::from([notarized_transaction_hash]));
             }
         }
     }
 
     fn handled_removed(
         &mut self,
-        payload_hash: NotarizedTransactionHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
         rejection_record: PendingTransactionRecord,
     ) {
         // Remove the intent hash <-> payload hash lookup
@@ -558,7 +603,7 @@ impl PendingTransactionResultCache {
                 e.remove_entry();
             }
             Entry::Occupied(mut e) if e.get().len() > 1 => {
-                e.get_mut().remove(&payload_hash);
+                e.get_mut().remove(&notarized_transaction_hash);
             }
             Entry::Occupied(_) => {
                 // num_payload_hashes == 0
@@ -569,6 +614,12 @@ impl PendingTransactionResultCache {
             }
         }
     }
+}
+
+struct CommittedIntentRecord {
+    state_version: StateVersion,
+    notarized_transaction_hash: NotarizedTransactionHash,
+    timestamp: SystemTime,
 }
 
 #[cfg(test)]
@@ -745,7 +796,14 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
         let intent_hash_2 = intent_hash(2);
 
-        cache.track_committed_transactions(now, vec![(StateVersion::of(1), intent_hash_1)]);
+        cache.track_committed_transactions(
+            now,
+            vec![CommittedUserTransactionIdentifiers {
+                state_version: StateVersion::of(1),
+                intent_hash: intent_hash_1,
+                notarized_transaction_hash: payload_hash_1,
+            }],
+        );
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         assert!(record.is_some());
 

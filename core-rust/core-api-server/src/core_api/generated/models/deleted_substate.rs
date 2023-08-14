@@ -15,12 +15,15 @@
 pub struct DeletedSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
+    #[serde(rename = "previous_value", skip_serializing_if = "Option::is_none")]
+    pub previous_value: Option<Box<crate::core_api::generated::models::SubstateValue>>,
 }
 
 impl DeletedSubstate {
     pub fn new(substate_id: crate::core_api::generated::models::SubstateId) -> DeletedSubstate {
         DeletedSubstate {
             substate_id: Box::new(substate_id),
+            previous_value: None,
         }
     }
 }

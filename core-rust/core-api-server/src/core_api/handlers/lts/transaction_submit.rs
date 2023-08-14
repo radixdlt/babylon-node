@@ -1,5 +1,6 @@
 use crate::core_api::*;
 
+use crate::core_api::handlers::to_api_committed_intent_metadata;
 use hyper::StatusCode;
 use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
@@ -48,6 +49,12 @@ pub(crate) async fn handle_lts_transaction_submit(
                 is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                 is_rejected_because_intent_already_committed: rejection
                     .is_rejected_because_intent_already_committed(),
+                intent_already_committed_as: rejection
+                    .reason
+                    .already_committed_error()
+                    .map(to_api_committed_intent_metadata)
+                    .transpose()?
+                    .map(Box::new),
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
                 retry_from_timestamp: match rejection.retry_from {
                     state_manager::RetryFrom::Never => None,
