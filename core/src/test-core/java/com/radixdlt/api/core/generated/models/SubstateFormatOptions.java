@@ -138,11 +138,11 @@ public class SubstateFormatOptions {
   }
 
    /**
-   * Whether to return the previous substate value for updates (default false)
+   * Whether to return the previous substate value for updates and deletes (default false)
    * @return previous
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether to return the previous substate value for updates (default false)")
+  @ApiModelProperty(value = "Whether to return the previous substate value for updates and deletes (default false)")
   @JsonProperty(JSON_PROPERTY_PREVIOUS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

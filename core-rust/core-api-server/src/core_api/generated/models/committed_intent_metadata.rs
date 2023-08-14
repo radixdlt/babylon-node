@@ -12,26 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsTransactionPayloadDetails {
+pub struct CommittedIntentMetadata {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
-    #[serde(rename = "state_version", skip_serializing_if = "Option::is_none")]
-    pub state_version: Option<i64>,
-    #[serde(rename = "status")]
-    pub status: crate::core_api::generated::models::LtsTransactionPayloadStatus,
-    /// An explanation for the error, if failed or rejected
-    #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
-    pub error_message: Option<String>,
+    /// Whether the intent was committed in a transaction with the same payload. This is a convenience field, which can also be computed using `payload_hash` by a client knowing the payload of the submitted transaction. 
+    #[serde(rename = "is_same_transaction")]
+    pub is_same_transaction: bool,
 }
 
-impl LtsTransactionPayloadDetails {
-    pub fn new(payload_hash: String, status: crate::core_api::generated::models::LtsTransactionPayloadStatus) -> LtsTransactionPayloadDetails {
-        LtsTransactionPayloadDetails {
+impl CommittedIntentMetadata {
+    pub fn new(state_version: i64, payload_hash: String, is_same_transaction: bool) -> CommittedIntentMetadata {
+        CommittedIntentMetadata {
+            state_version,
             payload_hash,
-            state_version: None,
-            status,
-            error_message: None,
+            is_same_transaction,
         }
     }
 }

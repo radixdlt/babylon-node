@@ -351,7 +351,7 @@ impl RocksDBStore {
         );
 
         for (node_ids, record) in
-            NodeAncestryResolver::batch_resolve(self, &receipt.on_ledger.substate_changes)
+            NodeAncestryResolver::batch_resolve(self, receipt.on_ledger.substate_changes.iter())
         {
             let encoded_record = scrypto_encode(&record).unwrap();
             for node_id in node_ids {

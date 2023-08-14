@@ -7,7 +7,7 @@ use radix_engine_queries::typed_substate_layout::*;
 
 use state_manager::{
     ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
-    SubstateChange,
+    SubstateReference,
 };
 
 pub fn to_api_receipt(
@@ -52,28 +52,23 @@ pub fn to_api_receipt(
     let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for SubstateChange {
-        node_id,
-        partition_number,
-        substate_key,
-        action,
-    } in receipt.on_ledger.substate_changes
-    {
+    for (substate_reference, action) in receipt.on_ledger.substate_changes.iter() {
+        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
         let typed_substate_key =
             create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
         if !typed_substate_key.value_is_mappable() {
             continue;
         }
 
-        match action {
-            ChangeAction::Create(value) => {
+        match action.clone() {
+            ChangeAction::Create { new } => {
                 created_substates.push(to_api_created_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
                     &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, value)?,
+                    &ValueRepresentations::new(&typed_substate_key, new)?,
                 )?);
             }
             ChangeAction::Update { previous, new } => {
@@ -87,13 +82,14 @@ pub fn to_api_receipt(
                     &ValueRepresentations::new(&typed_substate_key, previous)?,
                 )?);
             }
-            ChangeAction::Delete => {
+            ChangeAction::Delete { previous } => {
                 deleted_substates.push(to_api_deleted_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
                     &typed_substate_key,
+                    &ValueRepresentations::new(&typed_substate_key, previous)?,
                 )?);
             }
         }
@@ -274,6 +270,7 @@ pub fn to_api_deleted_substate(
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
+    previous_value_representations: &ValueRepresentations,
 ) -> Result<models::DeletedSubstate, MappingError> {
     let substate_id = to_api_substate_id(
         context,
@@ -284,6 +281,15 @@ pub fn to_api_deleted_substate(
     )?;
     Ok(models::DeletedSubstate {
         substate_id: Box::new(substate_id),
+        previous_value: if context.substate_options.include_previous {
+            Some(Box::new(to_api_substate_value(
+                context,
+                typed_substate_key,
+                previous_value_representations,
+            )?))
+        } else {
+            None
+        },
     })
 }
 
