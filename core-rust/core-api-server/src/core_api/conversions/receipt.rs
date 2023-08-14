@@ -61,14 +61,14 @@ pub fn to_api_receipt(
         }
 
         match action.clone() {
-            ChangeAction::Create(value) => {
+            ChangeAction::Create { new } => {
                 created_substates.push(to_api_created_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
                     &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, value)?,
+                    &ValueRepresentations::new(&typed_substate_key, new)?,
                 )?);
             }
             ChangeAction::Update { previous, new } => {
@@ -82,13 +82,14 @@ pub fn to_api_receipt(
                     &ValueRepresentations::new(&typed_substate_key, previous)?,
                 )?);
             }
-            ChangeAction::Delete => {
+            ChangeAction::Delete { previous } => {
                 deleted_substates.push(to_api_deleted_substate(
                     context,
                     &node_id,
                     partition_number,
                     &substate_key,
                     &typed_substate_key,
+                    &ValueRepresentations::new(&typed_substate_key, previous)?,
                 )?);
             }
         }
@@ -269,6 +270,7 @@ pub fn to_api_deleted_substate(
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
+    previous_value_representations: &ValueRepresentations,
 ) -> Result<models::DeletedSubstate, MappingError> {
     let substate_id = to_api_substate_id(
         context,
@@ -279,6 +281,15 @@ pub fn to_api_deleted_substate(
     )?;
     Ok(models::DeletedSubstate {
         substate_id: Box::new(substate_id),
+        previous_value: if context.substate_options.include_previous {
+            Some(Box::new(to_api_substate_value(
+                context,
+                typed_substate_key,
+                previous_value_representations,
+            )?))
+        } else {
+            None
+        },
     })
 }
 

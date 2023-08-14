@@ -154,7 +154,7 @@ impl NodeAncestryResolver {
     ) -> impl Iterator<Item = OwnedNodeSet> {
         substate_changes.filter_map(|(substate_reference, action)| {
             let created_directly_owned_nodes = match action.borrow() {
-                ChangeAction::Create(new) => {
+                ChangeAction::Create { new } => {
                     IndexedScryptoValue::from_slice(new).unwrap().unpack().1
                 }
                 ChangeAction::Update { new, previous } => {
@@ -171,7 +171,7 @@ impl NodeAncestryResolver {
                         .filter(|node| !previous_directly_owned_node_set.contains(node))
                         .collect::<Vec<_>>()
                 }
-                ChangeAction::Delete => Vec::new(),
+                ChangeAction::Delete { .. } => Vec::new(),
             };
             if created_directly_owned_nodes.is_empty() {
                 return None;
@@ -585,7 +585,9 @@ mod tests {
     }
 
     fn create(new_value: impl ScryptoEncode) -> ChangeAction {
-        ChangeAction::Create(scrypto_encode(&new_value).unwrap())
+        ChangeAction::Create {
+            new: scrypto_encode(&new_value).unwrap(),
+        }
     }
 
     fn update(new_value: impl ScryptoEncode, previous_value: impl ScryptoEncode) -> ChangeAction {
