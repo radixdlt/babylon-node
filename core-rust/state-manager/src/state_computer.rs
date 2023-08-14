@@ -160,7 +160,7 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
-            ledger_metrics: LedgerMetrics::new(metrics_registry),
+            ledger_metrics: LedgerMetrics::new(network, metrics_registry),
             committed_transactions_metrics,
         }
     }
