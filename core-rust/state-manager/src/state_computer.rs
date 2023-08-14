@@ -161,6 +161,7 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
             ledger_metrics: LedgerMetrics::new(
+                network,
                 &lock_factory.named("ledger_metrics"),
                 metrics_registry,
             ),
