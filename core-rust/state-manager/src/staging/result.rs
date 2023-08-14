@@ -247,11 +247,13 @@ impl ProcessedCommitResult {
                                 new: value.clone(),
                                 previous,
                             }),
-                            Some(_) => None, /* Same value as before, ignore */
-                            None => Some(ChangeAction::Create(value.clone())),
+                            Some(_) => None, /* Same value as before (i.e. not updated), ignore */
+                            None => Some(ChangeAction::Create { new: value.clone() }),
                         }
                     }
-                    DatabaseUpdate::Delete => Some(ChangeAction::Delete),
+                    DatabaseUpdate::Delete => store
+                        .get_substate(&partition_key, &sort_key)
+                        .map(|previous| ChangeAction::Delete { previous }),
                 };
                 if let Some(change_action) = change_action_opt {
                     substate_changes.add(node_id, partition_num, substate_key, change_action);

@@ -1147,7 +1147,7 @@ components:
           description: Whether to return the typed substate information (default true)
           type: boolean
         previous:
-          description: Whether to return the previous substate value for updates (default false)
+          description: Whether to return the previous substate value for updates and deletes (default false)
           type: boolean
 ###########################################################
 # GENERAL / SHARED MODELS - General / Numeric / Utilities #
@@ -1769,6 +1769,9 @@ components:
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
+        previous_value:
+          $ref: "#/components/schemas/SubstateValue"
+          description: The previous value of the substate. Only returned if enabled in SubstateFormatOptions on your request (default false).
     EntityReference:
       type: object
       required:
