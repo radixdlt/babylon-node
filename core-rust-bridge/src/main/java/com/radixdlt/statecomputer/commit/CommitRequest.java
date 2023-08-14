@@ -77,7 +77,9 @@ public record CommitRequest(
     List<RawLedgerTransaction> transactions,
     LedgerProof proof,
     Option<byte[]> postCommitVertexStoreBytes,
-    // for metrics calculation only
+    // TODO(after removing validator resolution from genesis): it should be possible to inject this
+    // field to the Rust StateManager's constructor instead of passing it in every commit request.
+    // It is only needed for metrics calculation.
     Option<ComponentAddress> selfValidatorAddress) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
