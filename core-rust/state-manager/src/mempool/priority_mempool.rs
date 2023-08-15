@@ -71,6 +71,7 @@ use transaction::model::*;
 use utils::prelude::indexmap::IndexMap;
 
 use crate::mempool::*;
+use itertools::Itertools;
 
 use std::cmp::{max, min, Ordering};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -111,6 +112,16 @@ impl MempoolTransaction {
             .header
             .inner
             .tip_percentage
+    }
+
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        self.validated
+            .prepared
+            .signed_intent
+            .intent
+            .header
+            .inner
+            .end_epoch_exclusive
     }
 }
 
@@ -173,19 +184,46 @@ impl PartialOrd for MempoolDataProposalPriorityOrdering {
     }
 }
 
+/// A wrapper around an [`Arc<MempoolData>`] which implements ordering traits by end epoch (exclusive).
+#[derive(Clone, Eq, PartialEq)]
+pub struct MempoolDataEndEpochExclusiveOrdering(pub Arc<MempoolData>);
+
+impl Ord for MempoolDataEndEpochExclusiveOrdering {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0
+            .transaction
+            .end_epoch_exclusive()
+            .cmp(&other.0.transaction.end_epoch_exclusive())
+            .then_with(|| {
+                self.0
+                    .transaction
+                    .notarized_transaction_hash()
+                    .cmp(&other.0.transaction.notarized_transaction_hash())
+            })
+    }
+}
+
+impl PartialOrd for MempoolDataEndEpochExclusiveOrdering {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 pub struct PriorityMempool {
     /// Max number of different (by [`NotarizedTransactionHash`]) transactions that can live at any moment of time in the mempool.
     remaining_transaction_count: u32,
     /// Max sum of transactions size that can live in [`self.data`].
     remaining_total_transactions_size: u64,
-    /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and longest time in mempool)
-    proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
     /// Mapping from [`NotarizedTransactionHash`] to [`Arc<MempoolData>`] containing [`MempoolTransaction`] with said payload hash.
     /// We use [`IndexMap`] for it's O(1) [`get_index`] needed for efficient random sampling.
     data: IndexMap<NotarizedTransactionHash, Arc<MempoolData>>,
     /// Mapping from [`IntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
     intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
-    /// Various metrics
+    /// Keeps ordering of the transactions by proposal priority (best transaction is highest tip percentage and longest time in mempool).
+    proposal_priority_index: BTreeSet<MempoolDataProposalPriorityOrdering>,
+    /// Keeps ordering of the transactions by end epoch.
+    end_epoch_exclusive_index: BTreeSet<MempoolDataEndEpochExclusiveOrdering>,
+    /// Various metrics.
     metrics: MempoolMetrics,
 }
 
@@ -194,9 +232,10 @@ impl PriorityMempool {
         PriorityMempool {
             remaining_transaction_count: config.max_transaction_count,
             remaining_total_transactions_size: config.max_total_transactions_size,
-            proposal_priority_index: BTreeSet::new(),
             data: IndexMap::new(),
             intent_lookup: HashMap::new(),
+            proposal_priority_index: BTreeSet::new(),
+            end_epoch_exclusive_index: BTreeSet::new(),
             metrics: MempoolMetrics::new(metric_registry),
         }
     }
@@ -286,12 +325,20 @@ impl PriorityMempool {
         self.metrics.submission_added.with_label(source).inc();
 
         // Add new MempoolData
-        if self.data.insert(payload_hash, transaction_data).is_some() {
+        if self
+            .data
+            .insert(payload_hash, transaction_data.clone())
+            .is_some()
+        {
             panic!("Broken precondition: Transaction already inside mempool");
         }
 
         // Add proposal priority index
         self.proposal_priority_index.insert(new_order_data);
+
+        // Add end epoch exclusive index
+        self.end_epoch_exclusive_index
+            .insert(MempoolDataEndEpochExclusiveOrdering(transaction_data));
 
         // Add intent lookup
         self.intent_lookup
@@ -339,9 +386,16 @@ impl PriorityMempool {
 
         if !self
             .proposal_priority_index
-            .remove(&MempoolDataProposalPriorityOrdering(data))
+            .remove(&MempoolDataProposalPriorityOrdering(data.clone()))
         {
             panic!("Mempool priority index out of sync on remove");
+        }
+
+        if !self
+            .end_epoch_exclusive_index
+            .remove(&MempoolDataEndEpochExclusiveOrdering(data))
+        {
+            panic!("Mempool end epoch index out of sync on remove");
         }
     }
 
@@ -375,6 +429,28 @@ impl PriorityMempool {
                 self.remove_data(data.clone());
                 data
             })
+            .collect()
+    }
+
+    pub fn remove_before_epoch(&mut self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+        let mempool_data = self.get_transactions_before_epoch(epoch);
+        mempool_data
+            .iter()
+            .for_each(|data| self.remove_data(data.clone()));
+        mempool_data
+    }
+
+    pub fn get_transactions_before_epoch(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+        self.end_epoch_exclusive_index
+            .iter()
+            .take_while_ref(|&mempool_data_end_epoch_order| {
+                mempool_data_end_epoch_order
+                    .0
+                    .transaction
+                    .end_epoch_exclusive()
+                    < epoch
+            })
+            .map(|mempool_data_end_epoch_order| mempool_data_end_epoch_order.0.clone())
             .collect()
     }
 

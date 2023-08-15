@@ -893,6 +893,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1526,7 +1535,7 @@ version = "0.12.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fig-715722bf65#715722bf65a5c18302894b7a9c6a823e67e1e22c"
 dependencies = [
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "paste",
  "radix-engine",
  "radix-engine-interface",
@@ -1542,7 +1551,7 @@ version = "0.12.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fig-715722bf65#715722bf65a5c18302894b7a9c6a823e67e1e22c"
 dependencies = [
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "radix-engine-common",
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1556,7 +1565,7 @@ version = "0.12.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fig-715722bf65#715722bf65a5c18302894b7a9c6a823e67e1e22c"
 dependencies = [
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "radix-engine-common",
  "radix-engine-derive",
  "radix-engine-store-interface",
@@ -1768,7 +1777,7 @@ version = "0.12.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fig-715722bf65#715722bf65a5c18302894b7a9c6a823e67e1e22c"
 dependencies = [
  "const-sha1",
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -2023,6 +2032,7 @@ dependencies = [
  "enum_dispatch",
  "hex",
  "im",
+ "itertools 0.11.0",
  "jni",
  "lru",
  "node-common",
@@ -2341,7 +2351,7 @@ version = "0.12.0"
 source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fig-715722bf65#715722bf65a5c18302894b7a9c6a823e67e1e22c"
 dependencies = [
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "radix-engine",
  "radix-engine-interface",
  "radix-engine-store-interface",
