@@ -118,7 +118,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .transactionPreviewPost(baseRequest)
               .getReceipt()
               .getFeeSummary()
-              .getCostUnitsConsumed();
+              .getExecutionCostUnitsConsumed();
 
       // Ask for costing of a preview request with a large message
       var largeEncryptedMessageCost =
@@ -126,7 +126,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .transactionPreviewPost(baseRequest.message(largeEncryptedMessage))
               .getReceipt()
               .getFeeSummary()
-              .getCostUnitsConsumed();
+              .getExecutionCostUnitsConsumed();
 
       // Message should add some cost
       assertThat(largeEncryptedMessageCost).isGreaterThan(noMessageCost);

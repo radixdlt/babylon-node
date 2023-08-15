@@ -69,7 +69,7 @@ use node_common::{
     locks::*,
 };
 use prometheus::Registry;
-use radix_engine::transaction::FeeReserveConfig;
+use radix_engine::transaction::CostingParameters;
 use radix_engine_common::prelude::*;
 
 use crate::{
@@ -164,14 +164,14 @@ impl StateManager {
             ),
         ));
 
-        let mut fee_reserve_config = FeeReserveConfig::default();
+        let mut costing_parameters = CostingParameters::default();
         if config.no_fees {
-            fee_reserve_config.cost_unit_price = Decimal::ZERO;
-            fee_reserve_config.state_expansion_price = Decimal::ZERO;
+            costing_parameters.execution_cost_unit_price = Decimal::ZERO;
+            costing_parameters.storage_price = Decimal::ZERO;
         }
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
             &logging_config,
-            fee_reserve_config,
+            costing_parameters,
         ));
         let pending_transaction_result_cache = Arc::new(
             lock_factory

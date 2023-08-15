@@ -114,7 +114,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })?;
 
     let (status, output, error) = {
-        match result.receipt.transaction_result {
+        match result.receipt.result {
             TransactionResult::Commit(c) => match c.outcome {
                 TransactionOutcome::Success(data) => {
                     let output = match data

@@ -27,11 +27,11 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.BlueprintCollectionSchemaType;
+import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.IndexBlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.KeyValueBlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.SortedIndexBlueprintCollectionSchema;
 import com.radixdlt.api.core.generated.models.SortedIndexBlueprintCollectionSchemaAllOf;
-import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -42,9 +42,9 @@ import com.radixdlt.api.core.generated.client.JSON;
  * SortedIndexBlueprintCollectionSchema
  */
 @JsonPropertyOrder({
-  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_KEY_TYPE_POINTER,
-  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_VALUE_TYPE_POINTER,
-  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_CAN_OWN
+  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_KEY_TYPE_REF,
+  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_VALUE_TYPE_REF,
+  SortedIndexBlueprintCollectionSchema.JSON_PROPERTY_ALLOW_OWNERSHIP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -59,93 +59,93 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class SortedIndexBlueprintCollectionSchema extends BlueprintCollectionSchema {
-  public static final String JSON_PROPERTY_KEY_TYPE_POINTER = "key_type_pointer";
-  private TypePointer keyTypePointer;
+  public static final String JSON_PROPERTY_KEY_TYPE_REF = "key_type_ref";
+  private BlueprintPayloadDef keyTypeRef;
 
-  public static final String JSON_PROPERTY_VALUE_TYPE_POINTER = "value_type_pointer";
-  private TypePointer valueTypePointer;
+  public static final String JSON_PROPERTY_VALUE_TYPE_REF = "value_type_ref";
+  private BlueprintPayloadDef valueTypeRef;
 
-  public static final String JSON_PROPERTY_CAN_OWN = "can_own";
-  private Boolean canOwn;
+  public static final String JSON_PROPERTY_ALLOW_OWNERSHIP = "allow_ownership";
+  private Boolean allowOwnership;
 
   public SortedIndexBlueprintCollectionSchema() { 
   }
 
-  public SortedIndexBlueprintCollectionSchema keyTypePointer(TypePointer keyTypePointer) {
-    this.keyTypePointer = keyTypePointer;
+  public SortedIndexBlueprintCollectionSchema keyTypeRef(BlueprintPayloadDef keyTypeRef) {
+    this.keyTypeRef = keyTypeRef;
     return this;
   }
 
    /**
-   * Get keyTypePointer
-   * @return keyTypePointer
+   * Get keyTypeRef
+   * @return keyTypeRef
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getKeyTypePointer() {
-    return keyTypePointer;
+  public BlueprintPayloadDef getKeyTypeRef() {
+    return keyTypeRef;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyTypePointer(TypePointer keyTypePointer) {
-    this.keyTypePointer = keyTypePointer;
+  public void setKeyTypeRef(BlueprintPayloadDef keyTypeRef) {
+    this.keyTypeRef = keyTypeRef;
   }
 
 
-  public SortedIndexBlueprintCollectionSchema valueTypePointer(TypePointer valueTypePointer) {
-    this.valueTypePointer = valueTypePointer;
+  public SortedIndexBlueprintCollectionSchema valueTypeRef(BlueprintPayloadDef valueTypeRef) {
+    this.valueTypeRef = valueTypeRef;
     return this;
   }
 
    /**
-   * Get valueTypePointer
-   * @return valueTypePointer
+   * Get valueTypeRef
+   * @return valueTypeRef
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getValueTypePointer() {
-    return valueTypePointer;
+  public BlueprintPayloadDef getValueTypeRef() {
+    return valueTypeRef;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueTypePointer(TypePointer valueTypePointer) {
-    this.valueTypePointer = valueTypePointer;
+  public void setValueTypeRef(BlueprintPayloadDef valueTypeRef) {
+    this.valueTypeRef = valueTypeRef;
   }
 
 
-  public SortedIndexBlueprintCollectionSchema canOwn(Boolean canOwn) {
-    this.canOwn = canOwn;
+  public SortedIndexBlueprintCollectionSchema allowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
     return this;
   }
 
    /**
    * Whether the entries of the sorted index partition are allowed to own child nodes.
-   * @return canOwn
+   * @return allowOwnership
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Whether the entries of the sorted index partition are allowed to own child nodes.")
-  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getCanOwn() {
-    return canOwn;
+  public Boolean getAllowOwnership() {
+    return allowOwnership;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCanOwn(Boolean canOwn) {
-    this.canOwn = canOwn;
+  public void setAllowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
   }
 
 
@@ -161,15 +161,15 @@ public class SortedIndexBlueprintCollectionSchema extends BlueprintCollectionSch
       return false;
     }
     SortedIndexBlueprintCollectionSchema sortedIndexBlueprintCollectionSchema = (SortedIndexBlueprintCollectionSchema) o;
-    return Objects.equals(this.keyTypePointer, sortedIndexBlueprintCollectionSchema.keyTypePointer) &&
-        Objects.equals(this.valueTypePointer, sortedIndexBlueprintCollectionSchema.valueTypePointer) &&
-        Objects.equals(this.canOwn, sortedIndexBlueprintCollectionSchema.canOwn) &&
+    return Objects.equals(this.keyTypeRef, sortedIndexBlueprintCollectionSchema.keyTypeRef) &&
+        Objects.equals(this.valueTypeRef, sortedIndexBlueprintCollectionSchema.valueTypeRef) &&
+        Objects.equals(this.allowOwnership, sortedIndexBlueprintCollectionSchema.allowOwnership) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyTypePointer, valueTypePointer, canOwn, super.hashCode());
+    return Objects.hash(keyTypeRef, valueTypeRef, allowOwnership, super.hashCode());
   }
 
   @Override
@@ -177,9 +177,9 @@ public class SortedIndexBlueprintCollectionSchema extends BlueprintCollectionSch
     StringBuilder sb = new StringBuilder();
     sb.append("class SortedIndexBlueprintCollectionSchema {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    keyTypePointer: ").append(toIndentedString(keyTypePointer)).append("\n");
-    sb.append("    valueTypePointer: ").append(toIndentedString(valueTypePointer)).append("\n");
-    sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");
+    sb.append("    keyTypeRef: ").append(toIndentedString(keyTypeRef)).append("\n");
+    sb.append("    valueTypeRef: ").append(toIndentedString(valueTypeRef)).append("\n");
+    sb.append("    allowOwnership: ").append(toIndentedString(allowOwnership)).append("\n");
     sb.append("}");
     return sb.toString();
   }

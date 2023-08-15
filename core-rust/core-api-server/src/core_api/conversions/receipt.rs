@@ -3,7 +3,11 @@ use crate::core_api::*;
 use radix_engine::types::*;
 
 use radix_engine::system::system_modules::costing::*;
+use radix_engine::transaction::{
+    CostingParameters, FeeDestination, FeeSource, TransactionFeeSummary,
+};
 use radix_engine_queries::typed_substate_layout::*;
+use transaction::prelude::TransactionCostingParameters;
 
 use state_manager::{
     ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
@@ -14,7 +18,8 @@ pub fn to_api_receipt(
     context: &MappingContext,
     receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let (status, output, error_message) = match receipt.local_execution.outcome {
+    let local_execution = receipt.local_execution;
+    let (status, output, error_message) = match local_execution.outcome {
         DetailedTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
@@ -25,7 +30,7 @@ pub fn to_api_receipt(
         ),
     };
 
-    let state_update_summary = receipt.local_execution.state_update_summary;
+    let state_update_summary = local_execution.state_update_summary;
     let mut new_global_entities = Vec::new();
 
     for package_address in state_update_summary.new_packages {
@@ -49,10 +54,11 @@ pub fn to_api_receipt(
         )?);
     }
 
+    let on_ledger = receipt.on_ledger;
     let mut created_substates = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
-    for (substate_reference, action) in receipt.on_ledger.substate_changes.iter() {
+    for (substate_reference, action) in on_ledger.substate_changes.iter() {
         let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
         let typed_substate_key =
             create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
@@ -102,10 +108,16 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(context, &receipt.local_execution.fee_summary)?;
+    let api_fee_summary = to_api_fee_summary(context, &local_execution.fee_summary)?;
+    let api_costing_parameters = to_api_costing_parameters(
+        context,
+        &local_execution.engine_costing_parameters,
+        &local_execution.transaction_costing_parameters,
+    )?;
+    let api_fee_source = to_api_fee_source(context, &local_execution.fee_source)?;
+    let api_fee_destination = to_api_fee_destination(context, &local_execution.fee_destination)?;
 
-    let api_events = receipt
-        .on_ledger
+    let api_events = on_ledger
         .application_events
         .into_iter()
         .map(|event| to_api_event(context, event))
@@ -120,8 +132,7 @@ pub fn to_api_receipt(
         })
         .transpose()?;
 
-    let next_epoch = receipt
-        .local_execution
+    let next_epoch = local_execution
         .next_epoch
         .map(|epoch_change_event| to_api_next_epoch(context, epoch_change_event))
         .transpose()?
@@ -129,7 +140,10 @@ pub fn to_api_receipt(
 
     Ok(models::TransactionReceipt {
         status,
-        fee_summary: Some(Box::new(api_fee_summary)),
+        fee_summary: Box::new(api_fee_summary),
+        costing_parameters: Box::new(api_costing_parameters),
+        fee_source: Some(Box::new(api_fee_source)),
+        fee_destination: Some(Box::new(api_fee_destination)),
         state_updates: Box::new(api_state_updates),
         events: Some(api_events),
         output: api_output,
@@ -301,6 +315,7 @@ pub fn to_api_next_epoch(
     let EpochChangeEvent {
         epoch,
         validator_set,
+        .. // TODO: expose `significant_protocol_update_readiness` when it becomes more important
     } = epoch_change_event;
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(context, epoch)?,
@@ -319,7 +334,7 @@ pub fn to_api_event(
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
     let ApplicationEvent {
-        type_id: EventTypeIdentifier(emitter, type_pointer),
+        type_id: EventTypeIdentifier(emitter, name),
         data,
     } = event;
     Ok(models::Event {
@@ -339,7 +354,7 @@ pub fn to_api_event(
                     }
                 }
             }),
-            type_pointer: Some(to_api_type_pointer(context, &type_pointer)?),
+            name,
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })
@@ -347,43 +362,90 @@ pub fn to_api_event(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
-    context: &MappingContext,
-    fee_summary: &FeeSummary,
+    _context: &MappingContext,
+    fee_summary: &TransactionFeeSummary,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
-        cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
-        tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
-        cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
-        cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
-        xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
-        xrd_total_state_expansion_cost: to_api_decimal(&fee_summary.total_state_expansion_cost_xrd),
-        xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
-        xrd_total_tipped: to_api_decimal(&fee_summary.total_tipping_cost_xrd),
-        cost_unit_execution_breakdown: fee_summary
-            .execution_cost_breakdown
-            .iter()
-            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(*cost_unit_amount)))
-            .collect(),
-        xrd_vault_payments: fee_summary
-            .fee_payments
+        execution_cost_units_consumed: to_api_u32_as_i64(
+            fee_summary.total_execution_cost_units_consumed,
+        ),
+        finalization_cost_units_consumed: to_api_u32_as_i64(
+            fee_summary.total_finalization_cost_units_consumed,
+        ),
+        xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_in_xrd),
+        xrd_total_finalization_cost: to_api_decimal(&fee_summary.total_finalization_cost_in_xrd),
+        xrd_total_tipping_cost: to_api_decimal(&fee_summary.total_tipping_cost_in_xrd),
+        xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_in_xrd),
+        xrd_total_storage_cost: to_api_decimal(&fee_summary.total_storage_cost_in_xrd),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_costing_parameters(
+    _context: &MappingContext,
+    engine_costing_parameters: &CostingParameters,
+    transaction_costing_parameters: &TransactionCostingParameters,
+) -> Result<models::CostingParameters, MappingError> {
+    Ok(models::CostingParameters {
+        execution_cost_unit_price: to_api_decimal(
+            &engine_costing_parameters.execution_cost_unit_price,
+        ),
+        execution_cost_unit_limit: to_api_u32_as_i64(
+            engine_costing_parameters.execution_cost_unit_limit,
+        ),
+        execution_cost_unit_loan: to_api_u32_as_i64(
+            engine_costing_parameters.execution_cost_unit_loan,
+        ),
+        finalization_cost_unit_price: to_api_decimal(
+            &engine_costing_parameters.finalization_cost_unit_price,
+        ),
+        finalization_cost_unit_limit: to_api_u32_as_i64(
+            engine_costing_parameters.finalization_cost_unit_limit,
+        ),
+        xrd_usd_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
+        xrd_storage_price: to_api_decimal(&engine_costing_parameters.finalization_cost_unit_price),
+        tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_fee_source(
+    context: &MappingContext,
+    fee_source: &FeeSource,
+) -> Result<models::FeeSource, MappingError> {
+    Ok(models::FeeSource {
+        from_vaults: fee_source
+            .paying_vaults
             .iter()
             .map(|(vault_id, xrd_amount)| {
-                Ok(models::VaultPayment {
+                Ok(models::PaymentFromVault {
                     vault_entity: Box::new(to_api_entity_reference(context, vault_id)?),
                     xrd_amount: to_api_decimal(xrd_amount),
                 })
             })
             .collect::<Result<_, _>>()?,
-        xrd_royalty_receivers: fee_summary
-            .royalty_cost_breakdown
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_fee_destination(
+    context: &MappingContext,
+    fee_destination: &FeeDestination,
+) -> Result<models::FeeDestination, MappingError> {
+    Ok(models::FeeDestination {
+        to_proposer: to_api_decimal(&fee_destination.to_proposer),
+        to_validator_set: to_api_decimal(&fee_destination.to_validator_set),
+        to_burn: to_api_decimal(&fee_destination.to_burn),
+        to_royalty_recipients: fee_destination
+            .to_royalty_recipients
             .iter()
-            .map(|(receiver, (_, xrd_amount))| {
-                let global_address: GlobalAddress = match receiver {
-                    RoyaltyRecipient::Package(address) => (*address).into(),
-                    RoyaltyRecipient::Component(address) => (*address).into(),
+            .map(|(recipient, xrd_amount)| {
+                let global_address: GlobalAddress = match recipient {
+                    RoyaltyRecipient::Package(address, _) => (*address).into(),
+                    RoyaltyRecipient::Component(address, _) => (*address).into(),
                 };
-                Ok(models::RoyaltyPayment {
-                    royalty_receiver: Box::new(to_api_entity_reference(
+                Ok(models::PaymentToRoyaltyRecipient {
+                    royalty_recipient: Box::new(to_api_entity_reference(
                         context,
                         global_address.as_node_id(),
                     )?),

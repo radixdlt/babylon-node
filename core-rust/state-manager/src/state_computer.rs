@@ -140,12 +140,8 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
     ) -> StateComputer<S> {
         let transaction_root = store.read().get_top_ledger_hashes().1.transaction_root;
 
-        let regular_execution_config = execution_configurator
-            .execution_configs
-            .get(&ConfigType::Regular)
-            .unwrap();
         let committed_transactions_metrics =
-            CommittedTransactionsMetrics::new(metrics_registry, regular_execution_config);
+            CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
 
         StateComputer {
             network: network.clone(),
@@ -571,19 +567,19 @@ where
                         }
                     }
                 }
-                Err(RejectResult { error }) => {
+                Err(RejectResult { reason }) => {
                     rejected_transactions.push(RejectedTransaction {
                         index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
                         ledger_transaction_hash: Some(ledger_transaction_hash),
-                        error: format!("{:?}", &error),
+                        error: format!("{:?}", &reason),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(error))),
+                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(reason))),
                     });
                 }
             }

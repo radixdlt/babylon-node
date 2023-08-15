@@ -68,9 +68,6 @@ pub enum MappingError {
     InternalIndexDataMismatch {
         message: String,
     },
-    ExpectedDataInvariantBroken {
-        message: String,
-    },
 }
 
 impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {

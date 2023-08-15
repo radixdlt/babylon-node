@@ -14,8 +14,8 @@
 pub enum MethodAuthType {
     #[serde(rename = "AllowAll")]
     AllowAll,
-    #[serde(rename = "StaticRoles")]
-    StaticRoles,
+    #[serde(rename = "StaticRoleDefinition")]
+    StaticRoleDefinition,
 
 }
 
@@ -23,7 +23,7 @@ impl ToString for MethodAuthType {
     fn to_string(&self) -> String {
         match self {
             Self::AllowAll => String::from("AllowAll"),
-            Self::StaticRoles => String::from("StaticRoles"),
+            Self::StaticRoleDefinition => String::from("StaticRoleDefinition"),
         }
     }
 }

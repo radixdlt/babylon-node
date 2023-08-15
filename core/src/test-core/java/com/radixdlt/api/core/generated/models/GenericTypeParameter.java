@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.GenericTypeParameterContraints;
+import com.radixdlt.api.core.generated.models.GenericTypeParameterConstraints;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class GenericTypeParameter {
   public static final String JSON_PROPERTY_CONSTRAINTS = "constraints";
-  private GenericTypeParameterContraints constraints;
+  private GenericTypeParameterConstraints constraints;
 
   public GenericTypeParameter() { 
   }
 
-  public GenericTypeParameter constraints(GenericTypeParameterContraints constraints) {
+  public GenericTypeParameter constraints(GenericTypeParameterConstraints constraints) {
     this.constraints = constraints;
     return this;
   }
@@ -56,14 +56,14 @@ public class GenericTypeParameter {
   @JsonProperty(JSON_PROPERTY_CONSTRAINTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public GenericTypeParameterContraints getConstraints() {
+  public GenericTypeParameterConstraints getConstraints() {
     return constraints;
   }
 
 
   @JsonProperty(JSON_PROPERTY_CONSTRAINTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setConstraints(GenericTypeParameterContraints constraints) {
+  public void setConstraints(GenericTypeParameterConstraints constraints) {
     this.constraints = constraints;
   }
 

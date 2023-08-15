@@ -13,16 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FieldSchema {
-    #[serde(rename = "field_type_pointer")]
-    pub field_type_pointer: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "field_type_ref")]
+    pub field_type_ref: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "condition", skip_serializing_if = "Option::is_none")]
     pub condition: Option<Box<crate::core_api::generated::models::FieldSchemaFeatureCondition>>,
 }
 
 impl FieldSchema {
-    pub fn new(field_type_pointer: crate::core_api::generated::models::TypePointer) -> FieldSchema {
+    pub fn new(field_type_ref: crate::core_api::generated::models::BlueprintPayloadDef) -> FieldSchema {
         FieldSchema {
-            field_type_pointer: Option::Some(field_type_pointer),
+            field_type_ref: Option::Some(field_type_ref),
             condition: None,
         }
     }

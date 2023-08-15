@@ -39,7 +39,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   BlueprintDefinition.JSON_PROPERTY_INTERFACE,
-  BlueprintDefinition.JSON_PROPERTY_IS_TRANSIENT,
   BlueprintDefinition.JSON_PROPERTY_FUNCTION_EXPORTS,
   BlueprintDefinition.JSON_PROPERTY_HOOK_EXPORTS
 })
@@ -47,9 +46,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class BlueprintDefinition {
   public static final String JSON_PROPERTY_INTERFACE = "interface";
   private BlueprintInterface _interface;
-
-  public static final String JSON_PROPERTY_IS_TRANSIENT = "is_transient";
-  private Boolean isTransient;
 
   public static final String JSON_PROPERTY_FUNCTION_EXPORTS = "function_exports";
   private Map<String, PackageExport> functionExports = new HashMap<>();
@@ -83,32 +79,6 @@ public class BlueprintDefinition {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setInterface(BlueprintInterface _interface) {
     this._interface = _interface;
-  }
-
-
-  public BlueprintDefinition isTransient(Boolean isTransient) {
-    this.isTransient = isTransient;
-    return this;
-  }
-
-   /**
-   * If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
-   * @return isTransient
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.")
-  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getIsTransient() {
-    return isTransient;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsTransient(Boolean isTransient) {
-    this.isTransient = isTransient;
   }
 
 
@@ -187,14 +157,13 @@ public class BlueprintDefinition {
     }
     BlueprintDefinition blueprintDefinition = (BlueprintDefinition) o;
     return Objects.equals(this._interface, blueprintDefinition._interface) &&
-        Objects.equals(this.isTransient, blueprintDefinition.isTransient) &&
         Objects.equals(this.functionExports, blueprintDefinition.functionExports) &&
         Objects.equals(this.hookExports, blueprintDefinition.hookExports);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(_interface, isTransient, functionExports, hookExports);
+    return Objects.hash(_interface, functionExports, hookExports);
   }
 
   @Override
@@ -202,7 +171,6 @@ public class BlueprintDefinition {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintDefinition {\n");
     sb.append("    _interface: ").append(toIndentedString(_interface)).append("\n");
-    sb.append("    isTransient: ").append(toIndentedString(isTransient)).append("\n");
     sb.append("    functionExports: ").append(toIndentedString(functionExports)).append("\n");
     sb.append("    hookExports: ").append(toIndentedString(hookExports)).append("\n");
     sb.append("}");

@@ -16,8 +16,14 @@
 pub struct TransactionReceipt {
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::TransactionStatus,
-    #[serde(rename = "fee_summary", skip_serializing_if = "Option::is_none")]
-    pub fee_summary: Option<Box<crate::core_api::generated::models::FeeSummary>>,
+    #[serde(rename = "fee_summary")]
+    pub fee_summary: Box<crate::core_api::generated::models::FeeSummary>,
+    #[serde(rename = "costing_parameters")]
+    pub costing_parameters: Box<crate::core_api::generated::models::CostingParameters>,
+    #[serde(rename = "fee_source", skip_serializing_if = "Option::is_none")]
+    pub fee_source: Option<Box<crate::core_api::generated::models::FeeSource>>,
+    #[serde(rename = "fee_destination", skip_serializing_if = "Option::is_none")]
+    pub fee_destination: Option<Box<crate::core_api::generated::models::FeeDestination>>,
     #[serde(rename = "state_updates")]
     pub state_updates: Box<crate::core_api::generated::models::StateUpdates>,
     #[serde(rename = "events", skip_serializing_if = "Option::is_none")]
@@ -34,10 +40,13 @@ pub struct TransactionReceipt {
 
 impl TransactionReceipt {
     /// The transaction execution receipt
-    pub fn new(status: crate::core_api::generated::models::TransactionStatus, state_updates: crate::core_api::generated::models::StateUpdates) -> TransactionReceipt {
+    pub fn new(status: crate::core_api::generated::models::TransactionStatus, fee_summary: crate::core_api::generated::models::FeeSummary, costing_parameters: crate::core_api::generated::models::CostingParameters, state_updates: crate::core_api::generated::models::StateUpdates) -> TransactionReceipt {
         TransactionReceipt {
             status,
-            fee_summary: None,
+            fee_summary: Box::new(fee_summary),
+            costing_parameters: Box::new(costing_parameters),
+            fee_source: None,
+            fee_destination: None,
             state_updates: Box::new(state_updates),
             events: None,
             next_epoch: None,

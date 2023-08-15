@@ -74,7 +74,8 @@ use crate::{
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionReceipt, TransactionResult,
+    AbortResult, CommitResult, CostingParameters, RejectResult, TransactionFeeSummary,
+    TransactionReceipt, TransactionResult,
 };
 use radix_engine_interface::prelude::*;
 
@@ -87,6 +88,7 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
@@ -108,15 +110,29 @@ pub struct HashUpdateContext<'s, S> {
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
+pub struct ExecutionFeeData {
+    pub fee_summary: TransactionFeeSummary,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParameters,
+}
+
 impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
-        transaction_receipt: TransactionReceipt,
+        receipt: TransactionReceipt,
     ) -> Self {
-        match transaction_receipt.transaction_result {
-            TransactionResult::Commit(commit) => ProcessedTransactionReceipt::Commit(
-                ProcessedCommitResult::process::<_, D>(hash_update_context, commit),
-            ),
+        match receipt.result {
+            TransactionResult::Commit(commit) => {
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
+                    hash_update_context,
+                    commit,
+                    ExecutionFeeData {
+                        fee_summary: receipt.fee_summary,
+                        engine_costing_parameters: receipt.costing_parameters,
+                        transaction_costing_parameters: receipt.transaction_costing_parameters,
+                    },
+                ))
+            }
             TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
@@ -160,6 +176,7 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
+        execution_fee_data: ExecutionFeeData,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -184,7 +201,8 @@ impl ProcessedCommitResult {
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
-        let local_receipt = LocalTransactionReceipt::from((commit_result, substate_changes));
+        let local_receipt =
+            LocalTransactionReceipt::new(commit_result, substate_changes, execution_fee_data);
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(

@@ -254,7 +254,7 @@ public final class RandomValidatorsTest {
               txn =
                   TransactionBuilder.forTests()
                       .manifest(
-                          Manifest.claimXrdFromUnstakeReceipt(
+                          Manifest.claimXrdFromClaimReceipt(
                               stakingAccount, validatorAddress, validatorInfo.unstakeResource()))
                       .signatories(List.of(stakingAccountKeyPair))
                       .prepare()

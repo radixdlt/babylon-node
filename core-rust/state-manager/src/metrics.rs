@@ -65,12 +65,12 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::limits::{ExecutionMetrics, VertexLimitsExceeded};
-use crate::transaction::LeaderRoundCounter;
+use crate::transaction::{ConfigType, ExecutionConfigurator, LeaderRoundCounter};
 use crate::StateVersion;
 use node_common::config::limits::*;
 use node_common::metrics::*;
 use prometheus::*;
-use radix_engine::transaction::ExecutionConfig;
+
 use radix_engine_common::prelude::*;
 
 pub struct LedgerMetrics {
@@ -187,7 +187,7 @@ impl TransactionMetricsData {
 
 // TODO: update buckets limits when default values are overwritten
 impl CommittedTransactionsMetrics {
-    pub fn new(registry: &Registry, execution_config: &ExecutionConfig) -> Self {
+    pub fn new(registry: &Registry, execution_configurator: &ExecutionConfigurator) -> Self {
         Self {
             size: new_histogram(
                 opts(
@@ -203,7 +203,9 @@ impl CommittedTransactionsMetrics {
                     "Execution cost units consumed per committed transactions.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    execution_config.cost_unit_limit as usize,
+                    execution_configurator
+                        .costing_parameters
+                        .execution_cost_unit_limit as usize,
                 ),
             )
             .registered_at(registry),
@@ -265,7 +267,11 @@ impl CommittedTransactionsMetrics {
                     "Maximum invoke payload size in bytes per committed transaction.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    execution_config.max_invoke_input_size,
+                    execution_configurator
+                        .execution_configs
+                        .get(&ConfigType::Regular)
+                        .unwrap()
+                        .max_invoke_input_size,
                 ),
             )
             .registered_at(registry),

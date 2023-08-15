@@ -22,156 +22,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.RoyaltyPayment;
-import com.radixdlt.api.core.generated.models.VaultPayment;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Fees paid
+ * FeeSummary
  */
-@ApiModel(description = "Fees paid")
 @JsonPropertyOrder({
-  FeeSummary.JSON_PROPERTY_COST_UNIT_PRICE,
-  FeeSummary.JSON_PROPERTY_TIP_PERCENTAGE,
-  FeeSummary.JSON_PROPERTY_COST_UNIT_LIMIT,
-  FeeSummary.JSON_PROPERTY_COST_UNITS_CONSUMED,
-  FeeSummary.JSON_PROPERTY_COST_UNIT_EXECUTION_BREAKDOWN,
+  FeeSummary.JSON_PROPERTY_EXECUTION_COST_UNITS_CONSUMED,
+  FeeSummary.JSON_PROPERTY_FINALIZATION_COST_UNITS_CONSUMED,
   FeeSummary.JSON_PROPERTY_XRD_TOTAL_EXECUTION_COST,
+  FeeSummary.JSON_PROPERTY_XRD_TOTAL_FINALIZATION_COST,
   FeeSummary.JSON_PROPERTY_XRD_TOTAL_ROYALTY_COST,
-  FeeSummary.JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST,
-  FeeSummary.JSON_PROPERTY_XRD_TOTAL_TIPPED,
-  FeeSummary.JSON_PROPERTY_XRD_VAULT_PAYMENTS,
-  FeeSummary.JSON_PROPERTY_XRD_ROYALTY_RECEIVERS
+  FeeSummary.JSON_PROPERTY_XRD_TOTAL_STORAGE_COST,
+  FeeSummary.JSON_PROPERTY_XRD_TOTAL_TIPPING_COST
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FeeSummary {
-  public static final String JSON_PROPERTY_COST_UNIT_PRICE = "cost_unit_price";
-  private String costUnitPrice;
+  public static final String JSON_PROPERTY_EXECUTION_COST_UNITS_CONSUMED = "execution_cost_units_consumed";
+  private Long executionCostUnitsConsumed;
 
-  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
-  private Integer tipPercentage;
-
-  public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
-  private Long costUnitLimit;
-
-  public static final String JSON_PROPERTY_COST_UNITS_CONSUMED = "cost_units_consumed";
-  private Long costUnitsConsumed;
-
-  public static final String JSON_PROPERTY_COST_UNIT_EXECUTION_BREAKDOWN = "cost_unit_execution_breakdown";
-  private Map<String, Long> costUnitExecutionBreakdown = new HashMap<>();
+  public static final String JSON_PROPERTY_FINALIZATION_COST_UNITS_CONSUMED = "finalization_cost_units_consumed";
+  private Long finalizationCostUnitsConsumed;
 
   public static final String JSON_PROPERTY_XRD_TOTAL_EXECUTION_COST = "xrd_total_execution_cost";
   private String xrdTotalExecutionCost;
 
+  public static final String JSON_PROPERTY_XRD_TOTAL_FINALIZATION_COST = "xrd_total_finalization_cost";
+  private String xrdTotalFinalizationCost;
+
   public static final String JSON_PROPERTY_XRD_TOTAL_ROYALTY_COST = "xrd_total_royalty_cost";
   private String xrdTotalRoyaltyCost;
 
-  public static final String JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST = "xrd_total_state_expansion_cost";
-  private String xrdTotalStateExpansionCost;
+  public static final String JSON_PROPERTY_XRD_TOTAL_STORAGE_COST = "xrd_total_storage_cost";
+  private String xrdTotalStorageCost;
 
-  public static final String JSON_PROPERTY_XRD_TOTAL_TIPPED = "xrd_total_tipped";
-  private String xrdTotalTipped;
-
-  public static final String JSON_PROPERTY_XRD_VAULT_PAYMENTS = "xrd_vault_payments";
-  private List<VaultPayment> xrdVaultPayments = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_XRD_ROYALTY_RECEIVERS = "xrd_royalty_receivers";
-  private List<RoyaltyPayment> xrdRoyaltyReceivers = new ArrayList<>();
+  public static final String JSON_PROPERTY_XRD_TOTAL_TIPPING_COST = "xrd_total_tipping_cost";
+  private String xrdTotalTippingCost;
 
   public FeeSummary() { 
   }
 
-  public FeeSummary costUnitPrice(String costUnitPrice) {
-    this.costUnitPrice = costUnitPrice;
-    return this;
-  }
-
-   /**
-   * The string-encoded decimal representing the XRD price of a single cost unit. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return costUnitPrice
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the XRD price of a single cost unit. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_PRICE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getCostUnitPrice() {
-    return costUnitPrice;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_PRICE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitPrice(String costUnitPrice) {
-    this.costUnitPrice = costUnitPrice;
-  }
-
-
-  public FeeSummary tipPercentage(Integer tipPercentage) {
-    this.tipPercentage = tipPercentage;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;255&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
-   * minimum: 0
-   * maximum: 255
-   * @return tipPercentage
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
-  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Integer getTipPercentage() {
-    return tipPercentage;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTipPercentage(Integer tipPercentage) {
-    this.tipPercentage = tipPercentage;
-  }
-
-
-  public FeeSummary costUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the maximum amount of cost units available for the transaction execution.
-   * minimum: 0
-   * maximum: 4294967295
-   * @return costUnitLimit
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCostUnitLimit() {
-    return costUnitLimit;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_LIMIT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitLimit(Long costUnitLimit) {
-    this.costUnitLimit = costUnitLimit;
-  }
-
-
-  public FeeSummary costUnitsConsumed(Long costUnitsConsumed) {
-    this.costUnitsConsumed = costUnitsConsumed;
+  public FeeSummary executionCostUnitsConsumed(Long executionCostUnitsConsumed) {
+    this.executionCostUnitsConsumed = executionCostUnitsConsumed;
     return this;
   }
 
@@ -179,53 +74,50 @@ public class FeeSummary {
    * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the amount of cost units consumed by the transaction execution.
    * minimum: 0
    * maximum: 4294967295
-   * @return costUnitsConsumed
+   * @return executionCostUnitsConsumed
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.")
-  @JsonProperty(JSON_PROPERTY_COST_UNITS_CONSUMED)
+  @JsonProperty(JSON_PROPERTY_EXECUTION_COST_UNITS_CONSUMED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getCostUnitsConsumed() {
-    return costUnitsConsumed;
+  public Long getExecutionCostUnitsConsumed() {
+    return executionCostUnitsConsumed;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COST_UNITS_CONSUMED)
+  @JsonProperty(JSON_PROPERTY_EXECUTION_COST_UNITS_CONSUMED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitsConsumed(Long costUnitsConsumed) {
-    this.costUnitsConsumed = costUnitsConsumed;
+  public void setExecutionCostUnitsConsumed(Long executionCostUnitsConsumed) {
+    this.executionCostUnitsConsumed = executionCostUnitsConsumed;
   }
 
 
-  public FeeSummary costUnitExecutionBreakdown(Map<String, Long> costUnitExecutionBreakdown) {
-    this.costUnitExecutionBreakdown = costUnitExecutionBreakdown;
-    return this;
-  }
-
-  public FeeSummary putCostUnitExecutionBreakdownItem(String key, Long costUnitExecutionBreakdownItem) {
-    this.costUnitExecutionBreakdown.put(key, costUnitExecutionBreakdownItem);
+  public FeeSummary finalizationCostUnitsConsumed(Long finalizationCostUnitsConsumed) {
+    this.finalizationCostUnitsConsumed = finalizationCostUnitsConsumed;
     return this;
   }
 
    /**
-   * A breakdown of where the execution cost went. 
-   * @return costUnitExecutionBreakdown
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, representing the amount of cost units consumed by the transaction finalization.
+   * minimum: 0
+   * maximum: 4294967295
+   * @return finalizationCostUnitsConsumed
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A breakdown of where the execution cost went. ")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_EXECUTION_BREAKDOWN)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction finalization.")
+  @JsonProperty(JSON_PROPERTY_FINALIZATION_COST_UNITS_CONSUMED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, Long> getCostUnitExecutionBreakdown() {
-    return costUnitExecutionBreakdown;
+  public Long getFinalizationCostUnitsConsumed() {
+    return finalizationCostUnitsConsumed;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_EXECUTION_BREAKDOWN)
+  @JsonProperty(JSON_PROPERTY_FINALIZATION_COST_UNITS_CONSUMED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCostUnitExecutionBreakdown(Map<String, Long> costUnitExecutionBreakdown) {
-    this.costUnitExecutionBreakdown = costUnitExecutionBreakdown;
+  public void setFinalizationCostUnitsConsumed(Long finalizationCostUnitsConsumed) {
+    this.finalizationCostUnitsConsumed = finalizationCostUnitsConsumed;
   }
 
 
@@ -255,6 +147,32 @@ public class FeeSummary {
   }
 
 
+  public FeeSummary xrdTotalFinalizationCost(String xrdTotalFinalizationCost) {
+    this.xrdTotalFinalizationCost = xrdTotalFinalizationCost;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal representing the total amount of XRD burned in the transaction as part of finalization costs. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return xrdTotalFinalizationCost
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total amount of XRD burned in the transaction as part of finalization costs. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_FINALIZATION_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getXrdTotalFinalizationCost() {
+    return xrdTotalFinalizationCost;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_FINALIZATION_COST)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setXrdTotalFinalizationCost(String xrdTotalFinalizationCost) {
+    this.xrdTotalFinalizationCost = xrdTotalFinalizationCost;
+  }
+
+
   public FeeSummary xrdTotalRoyaltyCost(String xrdTotalRoyaltyCost) {
     this.xrdTotalRoyaltyCost = xrdTotalRoyaltyCost;
     return this;
@@ -281,117 +199,55 @@ public class FeeSummary {
   }
 
 
-  public FeeSummary xrdTotalStateExpansionCost(String xrdTotalStateExpansionCost) {
-    this.xrdTotalStateExpansionCost = xrdTotalStateExpansionCost;
+  public FeeSummary xrdTotalStorageCost(String xrdTotalStorageCost) {
+    this.xrdTotalStorageCost = xrdTotalStorageCost;
     return this;
   }
 
    /**
    * The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return xrdTotalStateExpansionCost
+   * @return xrdTotalStorageCost
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total amount of XRD paid in state expansion costs as part of the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST)
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STORAGE_COST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getXrdTotalStateExpansionCost() {
-    return xrdTotalStateExpansionCost;
+  public String getXrdTotalStorageCost() {
+    return xrdTotalStorageCost;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STATE_EXPANSION_COST)
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_STORAGE_COST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdTotalStateExpansionCost(String xrdTotalStateExpansionCost) {
-    this.xrdTotalStateExpansionCost = xrdTotalStateExpansionCost;
+  public void setXrdTotalStorageCost(String xrdTotalStorageCost) {
+    this.xrdTotalStorageCost = xrdTotalStorageCost;
   }
 
 
-  public FeeSummary xrdTotalTipped(String xrdTotalTipped) {
-    this.xrdTotalTipped = xrdTotalTipped;
+  public FeeSummary xrdTotalTippingCost(String xrdTotalTippingCost) {
+    this.xrdTotalTippingCost = xrdTotalTippingCost;
     return this;
   }
 
    /**
    * The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return xrdTotalTipped
+   * @return xrdTotalTippingCost
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_TIPPED)
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_TIPPING_COST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getXrdTotalTipped() {
-    return xrdTotalTipped;
+  public String getXrdTotalTippingCost() {
+    return xrdTotalTippingCost;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_TIPPED)
+  @JsonProperty(JSON_PROPERTY_XRD_TOTAL_TIPPING_COST)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdTotalTipped(String xrdTotalTipped) {
-    this.xrdTotalTipped = xrdTotalTipped;
-  }
-
-
-  public FeeSummary xrdVaultPayments(List<VaultPayment> xrdVaultPayments) {
-    this.xrdVaultPayments = xrdVaultPayments;
-    return this;
-  }
-
-  public FeeSummary addXrdVaultPaymentsItem(VaultPayment xrdVaultPaymentsItem) {
-    this.xrdVaultPayments.add(xrdVaultPaymentsItem);
-    return this;
-  }
-
-   /**
-   * A breakdown of which vaults were used to pay the fee. 
-   * @return xrdVaultPayments
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A breakdown of which vaults were used to pay the fee. ")
-  @JsonProperty(JSON_PROPERTY_XRD_VAULT_PAYMENTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<VaultPayment> getXrdVaultPayments() {
-    return xrdVaultPayments;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD_VAULT_PAYMENTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdVaultPayments(List<VaultPayment> xrdVaultPayments) {
-    this.xrdVaultPayments = xrdVaultPayments;
-  }
-
-
-  public FeeSummary xrdRoyaltyReceivers(List<RoyaltyPayment> xrdRoyaltyReceivers) {
-    this.xrdRoyaltyReceivers = xrdRoyaltyReceivers;
-    return this;
-  }
-
-  public FeeSummary addXrdRoyaltyReceiversItem(RoyaltyPayment xrdRoyaltyReceiversItem) {
-    this.xrdRoyaltyReceivers.add(xrdRoyaltyReceiversItem);
-    return this;
-  }
-
-   /**
-   * A breakdown of where the royalties were paid to. 
-   * @return xrdRoyaltyReceivers
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A breakdown of where the royalties were paid to. ")
-  @JsonProperty(JSON_PROPERTY_XRD_ROYALTY_RECEIVERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<RoyaltyPayment> getXrdRoyaltyReceivers() {
-    return xrdRoyaltyReceivers;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD_ROYALTY_RECEIVERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdRoyaltyReceivers(List<RoyaltyPayment> xrdRoyaltyReceivers) {
-    this.xrdRoyaltyReceivers = xrdRoyaltyReceivers;
+  public void setXrdTotalTippingCost(String xrdTotalTippingCost) {
+    this.xrdTotalTippingCost = xrdTotalTippingCost;
   }
 
 
@@ -407,39 +263,31 @@ public class FeeSummary {
       return false;
     }
     FeeSummary feeSummary = (FeeSummary) o;
-    return Objects.equals(this.costUnitPrice, feeSummary.costUnitPrice) &&
-        Objects.equals(this.tipPercentage, feeSummary.tipPercentage) &&
-        Objects.equals(this.costUnitLimit, feeSummary.costUnitLimit) &&
-        Objects.equals(this.costUnitsConsumed, feeSummary.costUnitsConsumed) &&
-        Objects.equals(this.costUnitExecutionBreakdown, feeSummary.costUnitExecutionBreakdown) &&
+    return Objects.equals(this.executionCostUnitsConsumed, feeSummary.executionCostUnitsConsumed) &&
+        Objects.equals(this.finalizationCostUnitsConsumed, feeSummary.finalizationCostUnitsConsumed) &&
         Objects.equals(this.xrdTotalExecutionCost, feeSummary.xrdTotalExecutionCost) &&
+        Objects.equals(this.xrdTotalFinalizationCost, feeSummary.xrdTotalFinalizationCost) &&
         Objects.equals(this.xrdTotalRoyaltyCost, feeSummary.xrdTotalRoyaltyCost) &&
-        Objects.equals(this.xrdTotalStateExpansionCost, feeSummary.xrdTotalStateExpansionCost) &&
-        Objects.equals(this.xrdTotalTipped, feeSummary.xrdTotalTipped) &&
-        Objects.equals(this.xrdVaultPayments, feeSummary.xrdVaultPayments) &&
-        Objects.equals(this.xrdRoyaltyReceivers, feeSummary.xrdRoyaltyReceivers);
+        Objects.equals(this.xrdTotalStorageCost, feeSummary.xrdTotalStorageCost) &&
+        Objects.equals(this.xrdTotalTippingCost, feeSummary.xrdTotalTippingCost);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(costUnitPrice, tipPercentage, costUnitLimit, costUnitsConsumed, costUnitExecutionBreakdown, xrdTotalExecutionCost, xrdTotalRoyaltyCost, xrdTotalStateExpansionCost, xrdTotalTipped, xrdVaultPayments, xrdRoyaltyReceivers);
+    return Objects.hash(executionCostUnitsConsumed, finalizationCostUnitsConsumed, xrdTotalExecutionCost, xrdTotalFinalizationCost, xrdTotalRoyaltyCost, xrdTotalStorageCost, xrdTotalTippingCost);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FeeSummary {\n");
-    sb.append("    costUnitPrice: ").append(toIndentedString(costUnitPrice)).append("\n");
-    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
-    sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
-    sb.append("    costUnitsConsumed: ").append(toIndentedString(costUnitsConsumed)).append("\n");
-    sb.append("    costUnitExecutionBreakdown: ").append(toIndentedString(costUnitExecutionBreakdown)).append("\n");
+    sb.append("    executionCostUnitsConsumed: ").append(toIndentedString(executionCostUnitsConsumed)).append("\n");
+    sb.append("    finalizationCostUnitsConsumed: ").append(toIndentedString(finalizationCostUnitsConsumed)).append("\n");
     sb.append("    xrdTotalExecutionCost: ").append(toIndentedString(xrdTotalExecutionCost)).append("\n");
+    sb.append("    xrdTotalFinalizationCost: ").append(toIndentedString(xrdTotalFinalizationCost)).append("\n");
     sb.append("    xrdTotalRoyaltyCost: ").append(toIndentedString(xrdTotalRoyaltyCost)).append("\n");
-    sb.append("    xrdTotalStateExpansionCost: ").append(toIndentedString(xrdTotalStateExpansionCost)).append("\n");
-    sb.append("    xrdTotalTipped: ").append(toIndentedString(xrdTotalTipped)).append("\n");
-    sb.append("    xrdVaultPayments: ").append(toIndentedString(xrdVaultPayments)).append("\n");
-    sb.append("    xrdRoyaltyReceivers: ").append(toIndentedString(xrdRoyaltyReceivers)).append("\n");
+    sb.append("    xrdTotalStorageCost: ").append(toIndentedString(xrdTotalStorageCost)).append("\n");
+    sb.append("    xrdTotalTippingCost: ").append(toIndentedString(xrdTotalTippingCost)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -63,7 +63,8 @@
  */
 
 use node_common::config::limits::VertexLimitsConfig;
-use radix_engine::{system::system_modules::costing::FeeSummary, types::*};
+use radix_engine::transaction::TransactionFeeSummary;
+use radix_engine::types::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
@@ -123,12 +124,12 @@ impl ExecutionMetrics {
 }
 
 impl ExecutionMetrics {
-    pub fn new_from_commit(fee_summary: &FeeSummary) -> Self {
+    pub fn new_from_commit(fee_summary: &TransactionFeeSummary) -> Self {
         // TODO(RCnet-V3): Fix this abstraction in light of changes upstream
         // This class used to be in the engine until being removed shortly before launch, so adding it back in
         // (with faked values) to decrease churn in the Node before RCnet-V2 release
         Self {
-            execution_cost_units_consumed: fee_summary.execution_cost_sum,
+            execution_cost_units_consumed: fee_summary.total_execution_cost_units_consumed,
             substate_read_size: 0,
             substate_read_count: 0,
             substate_write_size: 0,

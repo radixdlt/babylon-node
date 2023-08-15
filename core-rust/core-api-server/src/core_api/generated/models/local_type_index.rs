@@ -13,18 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LocalTypeIndex {
-    /// The location against which to resolve this type reference against a given schema. WellKnown indicates the index is a pointer to a well known scrypto type with that id. SchemaLocal indicates the index is a pointer into the given schema. 
+    /// The location against which to resolve this type reference.
     #[serde(rename = "kind")]
     pub kind: Kind,
-    /// Either the well known identifier, of the schema-local index, depending on the kind. 
+    /// A reference to a type, interpreted according to `kind`: - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID, - if `SchemaLocal`, then it is a pointer into the given schema. 
     #[serde(rename = "index")]
-    pub index: i32,
+    pub index: i64,
     #[serde(rename = "as_sbor")]
     pub as_sbor: Box<crate::core_api::generated::models::SborData>,
 }
 
 impl LocalTypeIndex {
-    pub fn new(kind: Kind, index: i32, as_sbor: crate::core_api::generated::models::SborData) -> LocalTypeIndex {
+    pub fn new(kind: Kind, index: i64, as_sbor: crate::core_api::generated::models::SborData) -> LocalTypeIndex {
         LocalTypeIndex {
             kind,
             index,
@@ -33,7 +33,7 @@ impl LocalTypeIndex {
     }
 }
 
-/// The location against which to resolve this type reference against a given schema. WellKnown indicates the index is a pointer to a well known scrypto type with that id. SchemaLocal indicates the index is a pointer into the given schema. 
+/// The location against which to resolve this type reference.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Kind {
     #[serde(rename = "WellKnown")]

@@ -1,6 +1,7 @@
 use radix_engine_common::math::*;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::prelude::*;
+use sbor::WellKnownTypeIndex;
 use state_manager::store::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
@@ -52,6 +53,15 @@ pub fn to_api_active_validator_index(index: ValidatorIndex) -> models::ActiveVal
     models::ActiveValidatorIndex {
         index: index as i32,
     }
+}
+
+pub fn to_api_well_known_type_index(index: &WellKnownTypeIndex) -> Result<i64, MappingError> {
+    index
+        .as_index()
+        .try_into()
+        .map_err(|_| MappingError::IntegerError {
+            message: "Well-known type index too large".to_string(),
+        })
 }
 
 #[tracing::instrument(skip_all)]

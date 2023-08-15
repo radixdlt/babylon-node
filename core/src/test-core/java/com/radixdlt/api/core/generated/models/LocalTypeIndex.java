@@ -39,7 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LocalTypeIndex {
   /**
-   * The location against which to resolve this type reference against a given schema. WellKnown indicates the index is a pointer to a well known scrypto type with that id. SchemaLocal indicates the index is a pointer into the given schema. 
+   * The location against which to resolve this type reference.
    */
   public enum KindEnum {
     WELLKNOWN("WellKnown"),
@@ -77,7 +77,7 @@ public class LocalTypeIndex {
   private KindEnum kind;
 
   public static final String JSON_PROPERTY_INDEX = "index";
-  private Integer index;
+  private Long index;
 
   public static final String JSON_PROPERTY_AS_SBOR = "as_sbor";
   private SborData asSbor;
@@ -91,11 +91,11 @@ public class LocalTypeIndex {
   }
 
    /**
-   * The location against which to resolve this type reference against a given schema. WellKnown indicates the index is a pointer to a well known scrypto type with that id. SchemaLocal indicates the index is a pointer into the given schema. 
+   * The location against which to resolve this type reference.
    * @return kind
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The location against which to resolve this type reference against a given schema. WellKnown indicates the index is a pointer to a well known scrypto type with that id. SchemaLocal indicates the index is a pointer into the given schema. ")
+  @ApiModelProperty(required = true, value = "The location against which to resolve this type reference.")
   @JsonProperty(JSON_PROPERTY_KIND)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -111,28 +111,30 @@ public class LocalTypeIndex {
   }
 
 
-  public LocalTypeIndex index(Integer index) {
+  public LocalTypeIndex index(Long index) {
     this.index = index;
     return this;
   }
 
    /**
-   * Either the well known identifier, of the schema-local index, depending on the kind. 
+   * A reference to a type, interpreted according to &#x60;kind&#x60;: - if &#x60;WellKnown&#x60;, then it is a pointer to a well known scrypto type with that ID, - if &#x60;SchemaLocal&#x60;, then it is a pointer into the given schema. 
+   * minimum: 0
+   * maximum: 4294967295
    * @return index
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Either the well known identifier, of the schema-local index, depending on the kind. ")
+  @ApiModelProperty(required = true, value = "A reference to a type, interpreted according to `kind`: - if `WellKnown`, then it is a pointer to a well known scrypto type with that ID, - if `SchemaLocal`, then it is a pointer into the given schema. ")
   @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getIndex() {
+  public Long getIndex() {
     return index;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIndex(Integer index) {
+  public void setIndex(Long index) {
     this.index = index;
   }
 

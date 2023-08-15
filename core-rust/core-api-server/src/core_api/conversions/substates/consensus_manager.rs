@@ -138,7 +138,7 @@ pub fn to_api_validator_substate(
             validator_fee_change_request,
             stake_unit_resource,
             stake_xrd_vault_id,
-            unstake_nft,
+            claim_nft,
             pending_xrd_withdraw_vault_id,
             locked_owner_stake_unit_vault_id,
             pending_owner_stake_unit_unlock_vault_id,
@@ -174,7 +174,7 @@ pub fn to_api_validator_substate(
                 context,
                 stake_xrd_vault_id.as_node_id(),
             )?),
-            unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft)?,
+            claim_token_resource_address: to_api_resource_address(context, claim_nft)?,
             pending_xrd_withdraw_vault: Box::new(to_api_entity_reference(
                 context,
                 pending_xrd_withdraw_vault_id.as_node_id(),

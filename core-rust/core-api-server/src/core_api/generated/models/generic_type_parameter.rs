@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GenericTypeParameter {
     #[serde(rename = "constraints")]
-    pub constraints: crate::core_api::generated::models::GenericTypeParameterContraints,
+    pub constraints: crate::core_api::generated::models::GenericTypeParameterConstraints,
 }
 
 impl GenericTypeParameter {
-    pub fn new(constraints: crate::core_api::generated::models::GenericTypeParameterContraints) -> GenericTypeParameter {
+    pub fn new(constraints: crate::core_api::generated::models::GenericTypeParameterConstraints) -> GenericTypeParameter {
         GenericTypeParameter {
             constraints,
         }

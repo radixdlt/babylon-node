@@ -1,5 +1,5 @@
 use radix_engine::{
-    system::system_modules::costing::{FeeSummary, RoyaltyRecipient},
+    system::system_modules::costing::RoyaltyRecipient,
     transaction::BalanceChange,
     types::{Decimal, GlobalAddress, IndexMap, ResourceAddress},
 };
@@ -10,6 +10,8 @@ use state_manager::{
     LocalTransactionReceipt, StateVersion, TransactionTreeHash,
 };
 use std::ops::SubAssign;
+
+use radix_engine::transaction::{FeeDestination, FeeSource, TransactionFeeSummary};
 use transaction::prelude::*;
 
 use crate::core_api::*;
@@ -27,14 +29,7 @@ pub fn to_api_lts_committed_transaction_outcome(
         LedgerTransactionOutcome::Failure => models::LtsCommittedTransactionStatus::Failure,
     };
 
-    let total_fee = receipt.local_execution.fee_summary.total_royalty_cost_xrd
-        + receipt.local_execution.fee_summary.total_execution_cost_xrd
-        + receipt
-            .local_execution
-            .fee_summary
-            .total_state_expansion_cost_xrd
-        + receipt.local_execution.fee_summary.total_tipping_cost_xrd;
-
+    let local_execution = &receipt.local_execution;
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(state_version)?,
         accumulator_hash: to_lts_api_accumulator_hash(
@@ -51,29 +46,33 @@ pub fn to_api_lts_committed_transaction_outcome(
         fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
             database,
             context,
-            &receipt.local_execution.fee_summary,
-            &receipt.local_execution.state_update_summary.balance_changes,
+            &local_execution.fee_summary,
+            &local_execution.fee_source,
+            &local_execution.fee_destination,
+            &local_execution.state_update_summary.balance_changes,
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
             context,
-            &receipt.local_execution.state_update_summary.balance_changes,
+            &local_execution.state_update_summary.balance_changes,
             &receipt.on_ledger.substate_changes,
         ),
-        total_fee: to_api_decimal(&total_fee),
+        total_fee: to_api_decimal(&local_execution.fee_summary.total_cost()),
     })
 }
 
 pub fn to_api_lts_fungible_balance_changes(
     database: &StateManagerDatabase,
     context: &MappingContext,
-    fee_summary: &FeeSummary,
+    fee_summary: &TransactionFeeSummary,
+    fee_source: &FeeSource,
+    fee_destination: &FeeDestination,
     balance_changes: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
 ) -> Result<Vec<models::LtsEntityFungibleBalanceChanges>, MappingError> {
-    let fee_balance_changes =
-        resolve_global_fee_balance_changes(database, &fee_summary.fee_payments)?;
+    let fee_balance_changes = resolve_global_fee_balance_changes(database, fee_source)?;
     FeePaymentComputer::compute(FeePaymentComputationInputs {
         fee_balance_changes,
         fee_summary,
+        fee_destination,
         balance_changes,
     })
     .resolve_fungible_balance_changes(context)
@@ -83,11 +82,12 @@ pub fn to_api_lts_fungible_balance_changes(
 /// `vault ID -> payment` map into a `global address -> balance change` map.
 fn resolve_global_fee_balance_changes(
     database: &StateManagerDatabase,
-    fee_payments: &IndexMap<NodeId, Decimal>,
+    fee_source: &FeeSource,
 ) -> Result<IndexMap<GlobalAddress, Decimal>, MappingError> {
-    let ancestries = database.batch_get_ancestry(fee_payments.keys());
+    let paying_vaults = &fee_source.paying_vaults;
+    let ancestries = database.batch_get_ancestry(paying_vaults.keys());
     let mut fee_balance_changes = index_map_new();
-    for ((vault_id, paid_fee_amount_xrd), ancestry) in fee_payments.iter().zip(ancestries) {
+    for ((vault_id, paid_fee_amount_xrd), ancestry) in paying_vaults.iter().zip(ancestries) {
         let ancestry = ancestry.ok_or_else(|| MappingError::InternalIndexDataMismatch {
             message: format!("no ancestry record for vault {}", vault_id.to_hex()),
         })?;
@@ -106,11 +106,12 @@ struct FeePaymentComputer<'a> {
 }
 
 struct FeePaymentComputationInputs<'a> {
-    /// The balance changes caused by [`FeeSummary#fee_payments`] (resolved to global ancestors).
+    /// The balance changes caused by [`FeeSource#paying_vaults`] (resolved to global ancestors).
     /// Note: this information is logically of the same type as [`balance_changes`], but the actual
     /// signature is simpler, since all fees are necessarily XRD and thus have fungible balances.
     fee_balance_changes: IndexMap<GlobalAddress, Decimal>,
-    fee_summary: &'a FeeSummary,
+    fee_summary: &'a TransactionFeeSummary,
+    fee_destination: &'a FeeDestination,
     /// The total balance changes (i.e. including the [`fee_balance_changes`]).
     balance_changes: &'a IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
 }
@@ -168,42 +169,23 @@ impl<'a> FeePaymentComputer<'a> {
     }
 
     fn track_fee_distributions(&mut self) {
-        // TODO: Improve the fee calculation once the right values are on the FeeSummary
-        // - Because "fee distributed" isn't on the fee summary, we have to calculate it instead, by assuming the consensus manager
-        //   has no other fee changes
-        // - Once "fee distributed" is on the summary, we can use that directly instead
-        let tip_distributed = self.inputs.fee_summary.total_tipping_cost_xrd;
-        let consensus_manager_xrd_balance_change = self
-            .inputs
-            .balance_changes
-            .get(&GlobalAddress::from(CONSENSUS_MANAGER))
-            .and_then(|balance_changes| balance_changes.get(&XRD))
-            .map(|balance_change| {
-                get_fungible_balance(balance_change).expect("Expected XRD to be fungible")
-            })
-            .unwrap_or_default();
-        let assumed_consensus_manager_non_fee_xrd_balance_change = Decimal::ZERO;
-        let fee_distributed = consensus_manager_xrd_balance_change
-            - assumed_consensus_manager_non_fee_xrd_balance_change
-            - tip_distributed;
-
         self.record_fee_balance_change_if_non_zero(
             CONSENSUS_MANAGER.into(),
-            fee_distributed,
+            self.inputs.fee_summary.network_fees() - self.inputs.fee_destination.to_burn,
             models::LtsFeeFungibleResourceBalanceChangeType::FeeDistributed,
         );
         self.record_fee_balance_change_if_non_zero(
             CONSENSUS_MANAGER.into(),
-            tip_distributed,
+            self.inputs.fee_summary.total_tipping_cost_in_xrd,
             models::LtsFeeFungibleResourceBalanceChangeType::TipDistributed,
         );
     }
 
     fn track_royalty_distributions(&mut self) {
-        for (recipient, (_, amount)) in &self.inputs.fee_summary.royalty_cost_breakdown {
+        for (recipient, amount) in &self.inputs.fee_destination.to_royalty_recipients {
             let recipient: GlobalAddress = match recipient {
-                RoyaltyRecipient::Package(address) => (*address).into(),
-                RoyaltyRecipient::Component(address) => (*address).into(),
+                RoyaltyRecipient::Package(address, _) => (*address).into(),
+                RoyaltyRecipient::Component(address, _) => (*address).into(),
             };
             self.record_fee_balance_change_if_non_zero(
                 recipient,
