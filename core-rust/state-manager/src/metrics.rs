@@ -452,21 +452,19 @@ impl SelfProposalMissTracker {
             counter.missed(),
             PROPOSAL_HISTORY_LEN + (counter.missed() % PROPOSAL_HISTORY_LEN),
         ) as i64;
-        // We are not actually getting a time-ordered history - only a statistic. However, we know
-        // that at least one successful round must have happened last (otherwise we would not learn
-        // about it yet!).
-        let mut outdated_missed_count = 0;
+        // We are not actually getting a time-ordered history - only a statistic. We have to invent
+        // the order, so we put the successes first...
         let mut buffer = self.buffer.lock();
-        for _ in 0..new_missed_count {
-            let outdated = buffer.put(RoundSlot::Missed);
+        let mut outdated_missed_count = 0;
+        for _ in 0..counter.successful {
+            let outdated = buffer.put(RoundSlot::Success);
             if outdated == RoundSlot::Missed {
                 outdated_missed_count += 1;
             }
         }
-        // As a heuristic, we put all the successful rounds at the end. For a self validator, this
-        // will be always valid, since there will be exactly one successful round.
-        for _ in 0..counter.successful {
-            let outdated = buffer.put(RoundSlot::Success);
+        // ... and the misses later (so that they stay in the buffer longer).
+        for _ in 0..new_missed_count {
+            let outdated = buffer.put(RoundSlot::Missed);
             if outdated == RoundSlot::Missed {
                 outdated_missed_count += 1;
             }
