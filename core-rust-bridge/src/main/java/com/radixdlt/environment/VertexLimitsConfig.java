@@ -72,13 +72,6 @@ public record VertexLimitsConfig(
     UInt32 maxTransactionCount,
     UInt32 maxTotalTransactionsSize,
     UInt32 maxTotalExecutionCostUnitsConsumed) {
-  // TODO(follow-up refactor): expose these (and other relevant) Rust constants to Java so we keep a
-  // single source of truth
-  // Values are copied from core-rust/node-common/src/config/limits.rs
-  public static final int DEFAULT_MAX_TRANSACTION_COUNT = 10;
-  public static final int DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE = (int) (3.8 * 1024 * 1024);
-  public static final int DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED = 200_000_000;
-
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         VertexLimitsConfig.class,
