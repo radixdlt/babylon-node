@@ -64,6 +64,7 @@
 
 package com.radixdlt;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
@@ -75,6 +76,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.DatabaseFlags;
+import com.radixdlt.environment.NodeConstants;
 import com.radixdlt.environment.VertexLimitsConfig;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.genesis.GenesisProvider;
@@ -108,14 +110,6 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
-
-  // Memory overhead of transactions living in the mempool. This does not take into account the
-  // (cached) results.
-  // For current implementation core-rust/state-manager/src/mempool/priority_mempool.rs, for each
-  // transaction we keep
-  // both the raw transaction and the parsed one (2x overhead) plus a very generous 30% overhead for
-  // the indexes.
-  public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR = 2.3;
 
   private final RuntimeProperties properties;
   private final Network network;
@@ -207,6 +201,28 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(
             "mempool.relayer.max_message_payload_size",
             MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxPeers > 0,
+        "Invalid configuration: mempool.relayer.max_peers ("
+            + mempoolRelayerMaxPeers
+            + ") must be a non zero positive number.");
+    Preconditions.checkArgument(
+        mempoolRelayerMaxMessageTransactionCount > 0,
+        "Invalid configuration: mempool.relayer.max_message_transaction_count (%s) must be a non"
+            + " zero positive number.",
+        mempoolRelayerMaxMessageTransactionCount);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxMessagePayloadSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: mempool.relayer.max_message_payload_size (%s) must be at least the"
+            + " maximum transaction size (%s).",
+        mempoolRelayerMaxMessagePayloadSize,
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
+    Preconditions.checkArgument(
+        mempoolRelayerMaxRelayedSize >= mempoolRelayerMaxMessagePayloadSize,
+        "Invalid configuration: mempool.relayer.max_relayed_size (%s) must be at least"
+            + " mempool.relayer.max_message_payload_size (%s).",
+        mempoolRelayerMaxRelayedSize,
+        mempoolRelayerMaxMessagePayloadSize);
     install(
         new MempoolRelayerModule(
             new MempoolRelayerConfig(
@@ -235,10 +251,27 @@ public final class RadixNodeModule extends AbstractModule {
     // Storage directory
     install(new NodeStorageLocationFromPropertiesModule());
     // State Computer
-    var mempoolMaxMemory = properties.get("mempool.max_memory", 100 * 1024 * 1024);
+    var mempoolMaxMemory =
+        properties.get(
+            "mempool.max_memory",
+            (int)
+                (NodeConstants.DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE
+                    * NodeConstants.MEMPOOL_TRANSACTION_OVERHEAD_FACTOR));
     var mempoolMaxTotalTransactionsSize =
-        (int) (mempoolMaxMemory / MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
-    var mempoolMaxTransactionCount = properties.get("mempool.max_transaction_count", 10_000);
+        (int) (mempoolMaxMemory / NodeConstants.MEMPOOL_TRANSACTION_OVERHEAD_FACTOR);
+    var mempoolMaxTransactionCount =
+        properties.get(
+            "mempool.max_transaction_count", NodeConstants.DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT);
+    Preconditions.checkArgument(
+        mempoolMaxTransactionCount > 0,
+        "Invalid configuration: mempool.max_transaction_count (%s) must be a non zero positive"
+            + " number.",
+        mempoolMaxTransactionCount);
+    Preconditions.checkArgument(
+        mempoolMaxTotalTransactionsSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: Computed mempool total transactions size is lower than the maximum"
+            + " transaction size (%s). Please increase mempool.max_memory.",
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     var mempoolConfig =
         new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount);
     var enableLocalTransactionExecutionIndex =
@@ -252,15 +285,32 @@ public final class RadixNodeModule extends AbstractModule {
     var vertexMaxTransactionCount =
         properties.get(
             "protocol.vertex.max_transaction_count",
-            VertexLimitsConfig.DEFAULT_MAX_TRANSACTION_COUNT);
+            NodeConstants.DEFAULT_MAX_VERTEX_TRANSACTION_COUNT);
     var vertexMaxTotalTransactionsSize =
         properties.get(
             "protocol.vertex.max_total_transactions_size",
-            VertexLimitsConfig.DEFAULT_MAX_TOTAL_TRANSACTIONS_SIZE);
+            (int) NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE);
     var vertexMaxTotalExecutionCostUnitsConsumed =
         properties.get(
             "protocol.vertex.max_total_execution_cost_units_consumed",
-            VertexLimitsConfig.DEFAULT_MAX_TOTAL_EXECUTION_COST_UNITS_CONSUMED);
+            NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED);
+    Preconditions.checkArgument(
+        vertexMaxTransactionCount > 0,
+        "Invalid configuration: protocol.vertex.max_transaction_count (%s) must be a non zero"
+            + " positive number.",
+        vertexMaxTransactionCount);
+    Preconditions.checkArgument(
+        vertexMaxTotalTransactionsSize >= NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE,
+        "Invalid configuration: protocol.vertex.max_total_transactions_size (%s) must be at least"
+            + " the maximum transaction size (%s).",
+        vertexMaxTotalTransactionsSize,
+        NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
+    Preconditions.checkArgument(
+        vertexMaxTotalExecutionCostUnitsConsumed >= NodeConstants.DEFAULT_COST_UNIT_LIMIT,
+        "Invalid configuration: protocol.vertex.max_total_execution_cost_units_consumed (%s) must"
+            + " be at least the transaction cost unit limit (%s).",
+        vertexMaxTotalExecutionCostUnitsConsumed,
+        NodeConstants.DEFAULT_COST_UNIT_LIMIT);
     var vertexLimitsConfig =
         new VertexLimitsConfig(
             vertexMaxTransactionCount,

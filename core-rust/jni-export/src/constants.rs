@@ -62,28 +62,103 @@
  * permissions under this License.
  */
 
-mod constants;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
+use node_common::config::limits::{
+    DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
+    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE, DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
+};
+use node_common::config::{
+    DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
+};
+use node_common::java::jni_sbor_coded_call;
+use radix_engine_common::prelude::{COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE};
+use state_manager::priority_mempool::MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT;
+
 #[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
-
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
-
-    // state-manager
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxVertexTransactionCount(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_VERTEX_TRANSACTION_COUNT
+    })
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTotalVertexTransactionsSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTotalVertexExecutionCostUnitsConsumed(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMempoolMaxTotalTransactionsSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMempoolMaxTransactionCount(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTransactionSize(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| MAX_TRANSACTION_SIZE)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultCostUnitLimit(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| COST_UNIT_LIMIT)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getMempoolTransactionOverheadFactorPercent(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT
+    })
+}
+
+pub fn export_extern_functions() {}
