@@ -317,6 +317,7 @@ pub struct CommitRequest {
     pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
+    pub self_validator_address: Option<ComponentAddress>, // for metrics calculation only
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
