@@ -222,7 +222,8 @@ public final class REv2StateManagerModule extends AbstractModule {
               EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               Serialization serialization,
               BFTConfiguration initialBftConfiguration,
-              Metrics metrics) {
+              Metrics metrics,
+              SelfValidatorInfo selfValidatorInfo) {
             return new REv2StateComputer(
                 stateComputer,
                 mempool,
@@ -232,7 +233,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                 mempoolAddSuccessEventDispatcher,
                 serialization,
                 initialBftConfiguration.getProposerElection(),
-                metrics);
+                metrics,
+                selfValidatorInfo);
           }
 
           @Provides

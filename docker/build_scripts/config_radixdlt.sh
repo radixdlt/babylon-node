@@ -1,8 +1,7 @@
 #!/bin/bash
-
 set -ex
 
-# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 999
+# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 996
 USER_ID=${LOCAL_USER_ID:-996}
 USER_NAME=radixdlt
 
@@ -18,9 +17,7 @@ if test -f "$TEST_CONFIGS"; then
     echo >> default.config.envsubst
     cat $TEST_CONFIGS >> default.config.envsubst
 fi
-
 env | sort
-
 envsubst <"${RADIXDLT_HOME:?}"/default.config.envsubst >"${RADIXDLT_HOME:?}"/default.config
 
 # This command changes the process from executing this script to executing the argument to the script,

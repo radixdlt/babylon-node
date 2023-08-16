@@ -919,7 +919,17 @@ dependencies = [
  "core-api-server",
  "jni",
  "node-common",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "radix-engine-queries",
+ "radix-engine-store-interface",
+ "radix-engine-stores",
+ "sbor",
  "state-manager",
+ "transaction",
+ "transaction-scenarios",
+ "utils",
 ]
 
 [[package]]

@@ -72,6 +72,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ProposerElections;
@@ -94,6 +95,7 @@ import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -115,6 +117,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final Serialization serialization;
   private final Hasher hasher;
   private final Metrics metrics;
+  private final Optional<ComponentAddress> selfValidatorAddress;
   private final AtomicReference<ProposerElection> currentProposerElection;
 
   public REv2StateComputer(
@@ -126,7 +129,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       Serialization serialization,
       ProposerElection initialProposerElection,
-      Metrics metrics) {
+      Metrics metrics,
+      SelfValidatorInfo selfValidatorInfo) {
     this.stateComputer = stateComputer;
     this.mempool = mempool;
     this.proposalLimitsConfig = proposalLimitsConfig;
@@ -136,6 +140,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.serialization = serialization;
     this.currentProposerElection = new AtomicReference<>(initialProposerElection);
     this.metrics = metrics;
+    this.selfValidatorAddress =
+        selfValidatorInfo.bftValidatorId().map(BFTValidatorId::getValidatorAddress);
   }
 
   @Override
@@ -285,7 +291,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             ledgerExtension.getTransactions(),
             REv2ToConsensus.ledgerProof(proof),
-            vertexStoreBytes);
+            vertexStoreBytes,
+            Option.from(selfValidatorAddress));
 
     var result = stateComputer.commit(commitRequest);
     result.onError(
