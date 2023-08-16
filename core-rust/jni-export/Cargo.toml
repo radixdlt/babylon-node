@@ -8,6 +8,18 @@ node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
 core-api-server = { path = "../core-api-server" }
 
+sbor = { workspace = true }
+transaction = { workspace = true }
+transaction-scenarios = { workspace = true }
+radix-engine-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-engine = { workspace = true }
+radix-engine-stores = { workspace = true }
+radix-engine-store-interface = { workspace = true }
+radix-engine-queries = { workspace = true }
+utils = { workspace = true }
+
+# Non-Radix Engine Dependencies:
 jni = { workspace = true }
 
 [lib]

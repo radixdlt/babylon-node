@@ -62,28 +62,87 @@
  * permissions under this License.
  */
 
-mod constants;
+package com.radixdlt.environment;
 
-/// A workaround for including the symbols defined in state_manager / core_api_server
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+public final class NodeConstants {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
 
-    // state-manager
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+  public static final int DEFAULT_MAX_VERTEX_TRANSACTION_COUNT =
+      Natives.builder(NodeConstants::getDefaultMaxVertexTransactionCount)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+  public static final long DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE =
+      Natives.builder(NodeConstants::getDefaultMaxTotalVertexTransactionsSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED =
+      Natives.builder(NodeConstants::getDefaultMaxTotalVertexExecutionCostUnitsConsumed)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final long DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE =
+      Natives.builder(NodeConstants::getDefaultMempoolMaxTotalTransactionsSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT =
+      Natives.builder(NodeConstants::getDefaultMempoolMaxTransactionCount)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final long DEFAULT_MAX_TRANSACTION_SIZE =
+      Natives.builder(NodeConstants::getDefaultMaxTransactionSize)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt64>>() {})
+          .call(Tuple.Tuple0.of())
+          .toNonNegativeLong()
+          .unwrap();
+
+  public static final int DEFAULT_COST_UNIT_LIMIT =
+      Natives.builder(NodeConstants::getDefaultCostUnitLimit)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final int MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT =
+      Natives.builder(NodeConstants::getMempoolTransactionOverheadFactorPercent)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
+          .call(Tuple.Tuple0.of())
+          .toInt();
+
+  public static final double MEMPOOL_TRANSACTION_OVERHEAD_FACTOR =
+      (double) (MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT) / 100.0;
+
+  private static native byte[] getDefaultMaxVertexTransactionCount(byte[] unused);
+
+  private static native byte[] getDefaultMaxTotalVertexTransactionsSize(byte[] unused);
+
+  private static native byte[] getDefaultMaxTotalVertexExecutionCostUnitsConsumed(byte[] unused);
+
+  private static native byte[] getDefaultMempoolMaxTotalTransactionsSize(byte[] unused);
+
+  private static native byte[] getDefaultMempoolMaxTransactionCount(byte[] unused);
+
+  private static native byte[] getDefaultMaxTransactionSize(byte[] unused);
+
+  private static native byte[] getDefaultCostUnitLimit(byte[] unused);
+
+  private static native byte[] getMempoolTransactionOverheadFactorPercent(byte[] unused);
 }

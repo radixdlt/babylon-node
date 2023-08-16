@@ -128,7 +128,7 @@ RUN apt-get update \
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.68.2-aarch64-unknown-linux-gnu 1.68.2-x86_64-unknown-linux-gnu
+  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
 
 RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.3.3
 
@@ -282,11 +282,6 @@ COPY --from=library-container /libcorerust.so /usr/lib/jni/libcorerust.so
 
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
-
-RUN groupadd -r radixdlt \
-    && useradd -r -m -d /home/radixdlt -s /bin/bash -g radixdlt radixdlt \
-    && chown -R radixdlt:radixdlt /home/radixdlt/ \
-    && chmod u=xr /opt/radixdlt/bin/core
 
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
 # See https://docs.docker.com/engine/reference/builder/#entrypoint

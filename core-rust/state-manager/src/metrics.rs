@@ -62,12 +62,15 @@
  * permissions under this License.
  */
 
+use std::cmp::min;
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::limits::{ExecutionMetrics, VertexLimitsExceeded};
 use crate::transaction::{ConfigType, ExecutionConfigurator, LeaderRoundCounter};
 use crate::StateVersion;
 use node_common::config::limits::*;
+use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
 use prometheus::*;
 
@@ -80,6 +83,7 @@ pub struct LedgerMetrics {
     pub consensus_rounds_committed: IntCounterVec,
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
+    pub recent_self_proposal_miss_count: SelfProposalMissTracker,
 }
 
 pub struct CommittedTransactionsMetrics {
@@ -100,7 +104,11 @@ pub struct VertexPrepareMetrics {
 }
 
 impl LedgerMetrics {
-    pub fn new(network: &NetworkDefinition, registry: &Registry) -> Self {
+    pub fn new(
+        network: &NetworkDefinition,
+        lock_factory: &LockFactory,
+        registry: &Registry,
+    ) -> Self {
         Self {
             address_encoder: AddressBech32Encoder::new(network),
             state_version: IntGauge::with_opts(opts(
@@ -131,6 +139,14 @@ impl LedgerMetrics {
                 "Proposer timestamp from the last proof written to the ledger.",
             ))
             .registered_at(registry),
+            recent_self_proposal_miss_count: SelfProposalMissTracker::new(
+                opts(
+                    "ledger_recent_self_proposal_miss_count",
+                    &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
+                ),
+                &lock_factory.named("self_proposal_miss_tracker"),
+                registry,
+            ),
         }
     }
 
@@ -140,6 +156,7 @@ impl LedgerMetrics {
         new_state_version: StateVersion,
         validator_proposal_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
         proposer_timestamp_ms: i64,
+        self_validator_address: Option<ComponentAddress>,
     ) {
         self.state_version.set(new_state_version.number() as i64);
         self.transactions_committed
@@ -161,6 +178,9 @@ impl LedgerMetrics {
                 self.consensus_rounds_committed
                     .with_two_labels(&encoded_validator_address, round_resolution)
                     .inc_by(count as u64);
+            }
+            if self_validator_address == Some(validator_address) {
+                self.recent_self_proposal_miss_count.track(&counter);
             }
         }
         self.last_update_epoch_second.set(
@@ -398,5 +418,64 @@ impl MetricLabel for VertexPrepareStopReason {
                 VertexLimitsExceeded::SubstateWriteCount => "SubstateWriteCountLimitReached",
             },
         }
+    }
+}
+
+/// A number of most recent [`RoundSlot`]s of a single validator to track for metrics purposes.
+const PROPOSAL_HISTORY_LEN: usize = 100;
+
+/// An indication of (any kind of) missed round vs successful round of a validator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RoundSlot {
+    Success,
+    Missed,
+}
+
+/// A higher-level metric helper, tracking a number of recent proposal misses of a specific
+/// validator.
+pub struct SelfProposalMissTracker {
+    buffer: Mutex<RingBuffer<RoundSlot, PROPOSAL_HISTORY_LEN>>,
+    gauge: IntGauge,
+}
+
+impl SelfProposalMissTracker {
+    /// Creates a new tracker and registers its resulting [`IntGauge`] (with the given options) at
+    /// the given registry.
+    /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
+    /// for history tracking.
+    pub fn new(opts: Opts, lock_factory: &LockFactory, registry: &Registry) -> Self {
+        Self {
+            buffer: lock_factory.new_mutex(RingBuffer::new(RoundSlot::Success)),
+            gauge: IntGauge::with_opts(opts).registered_at(registry),
+        }
+    }
+
+    /// Interprets the newest round history of the scoped validator and updates the managed gauge of
+    /// recent proposal misses.
+    pub fn track(&self, counter: &LeaderRoundCounter) {
+        // Optimization: even if lots of rounds were missed, we track only the "recent" number.
+        let new_missed_count = min(
+            counter.missed(),
+            PROPOSAL_HISTORY_LEN + (counter.missed() % PROPOSAL_HISTORY_LEN),
+        ) as i64;
+        // We are not actually getting a time-ordered history - only a statistic. We have to invent
+        // the order, so we put the successes first...
+        let mut buffer = self.buffer.lock();
+        let mut outdated_missed_count = 0;
+        for _ in 0..counter.successful {
+            let outdated = buffer.put(RoundSlot::Success);
+            if outdated == RoundSlot::Missed {
+                outdated_missed_count += 1;
+            }
+        }
+        // ... and the misses later (so that they stay in the buffer longer).
+        for _ in 0..new_missed_count {
+            let outdated = buffer.put(RoundSlot::Missed);
+            if outdated == RoundSlot::Missed {
+                outdated_missed_count += 1;
+            }
+        }
+        // We update the gauge with a delta of new observed misses vs those that ceased to be recent
+        self.gauge.add(new_missed_count - outdated_missed_count);
     }
 }

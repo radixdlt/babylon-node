@@ -1,6 +1,16 @@
 #!/bin/bash
 set -ex
 
+# Sets USER_ID to LOCAL_USER_ID if provided, else set it to 996
+USER_ID=${LOCAL_USER_ID:-996}
+USER_NAME=radixdlt
+
+# Check and delete the user that is created in postinstall action of deb package
+getent group $USER_NAME >/dev/null && groupmod -g $USER_ID radixdlt || groupadd -r $USER_NAME -g $USER_ID
+getent passwd $USER_NAME >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $USER_NAME $USER_NAME
+chown -R radixdlt:radixdlt /home/radixdlt/
+chmod u=xr /opt/radixdlt/bin/core
+
 # Check for test network configs
 TEST_CONFIGS="${RADIXDLT_HOME:?}"/test.config
 if test -f "$TEST_CONFIGS"; then
@@ -17,10 +27,4 @@ envsubst <"${RADIXDLT_HOME:?}"/default.config.envsubst >"${RADIXDLT_HOME:?}"/def
 # - The exec command replaces the shell with the given command without creating a new process
 # - The setuidgid command runs another program under a specified account's uid and gid
 # - And the $* command is a special variable that contains all the positional parameters 
-if [[ -z "${LOCAL_USER_ID}" ]]; then
-    echo "Running with default uid and gid..."
-else
-    usermod -u $LOCAL_USER_ID radixdlt    
-    groupmod -g $LOCAL_USER_ID radixdlt  
-fi
 exec setuidgid radixdlt $*

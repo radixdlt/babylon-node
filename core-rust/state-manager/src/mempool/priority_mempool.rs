@@ -79,6 +79,14 @@ use std::time::Instant;
 
 use super::metrics::MempoolMetrics;
 
+// Memory overhead of transactions living in the mempool. This does not take into account the
+// (cached) results.
+// Current implementation: for each transaction we keep both the raw transaction and the
+// parsed one (2x overhead) plus a very generous 30% overhead for the indexes.
+// Note: this value is needed in Java (at setup) and in order to circumvent the lack of
+// f64 <-> double SBOR encoding, we keep it as an u32 percent.
+pub const MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT: u32 = 230;
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct MempoolData {
     /// The mempool transaction.

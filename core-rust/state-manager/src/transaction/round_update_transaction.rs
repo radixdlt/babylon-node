@@ -236,7 +236,13 @@ pub struct LeaderRoundCounter {
 }
 
 impl LeaderRoundCounter {
-    fn is_non_zero(&self) -> bool {
+    /// Returns a sum of both kinds of missed rounds.
+    pub fn missed(&self) -> usize {
+        self.missed_by_fallback + self.missed_by_gap
+    }
+
+    /// Returns true if *any* of the counters is non-zero.
+    pub fn is_non_zero(&self) -> bool {
         self.successful != 0 || self.missed_by_fallback != 0 || self.missed_by_gap != 0
     }
 }
