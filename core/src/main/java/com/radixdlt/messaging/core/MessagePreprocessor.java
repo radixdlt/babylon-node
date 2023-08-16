@@ -64,16 +64,16 @@
 
 package com.radixdlt.messaging.core;
 
-import static com.radixdlt.messaging.core.MessagingErrors.IO_ERROR;
-import static com.radixdlt.messaging.core.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.messaging.core.MessagingErrors.*;
 import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
-import com.radixdlt.lang.Causes;
 import com.radixdlt.lang.Result;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.Messages.DiscardedInboundMessage;
+import com.radixdlt.monitoring.Metrics.Messages.InboundMessageDiscardedReason;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.capability.Capabilities;
@@ -118,37 +118,51 @@ final class MessagePreprocessor {
   Result<MessageFromPeer<Message>, Cause> process(InboundMessage inboundMessage) {
     final byte[] messageBytes = inboundMessage.message();
     this.metrics.networking().bytesReceived().inc(messageBytes.length);
-    final var result =
-        deserialize(inboundMessage, messageBytes)
-            .flatMap(message -> processMessage(inboundMessage.source(), message));
-    this.metrics.messages().inbound().received().inc();
-    return switch (result) {
-      case Result.Success<MessageFromPeer<Message>, Cause> s -> {
-        Class<? extends Message> messageClazz = s.value().message().getClass();
-        if (capabilities.isMessageUnsupported(messageClazz)) {
-          this.metrics.messages().inbound().discarded().inc();
-          yield Result.error(
-              Causes.cause(
-                  String.format("%s is currently not supported.", messageClazz.getSimpleName())));
-        } else {
-          yield result;
-        }
-      }
-      case Result.Error error -> {
-        this.metrics.messages().inbound().discarded().inc();
-        yield error;
-      }
-    };
+    return deserialize(inboundMessage, messageBytes)
+        .onError(
+            err -> {
+              metrics
+                  .messages()
+                  .inbound()
+                  .discarded()
+                  .label(
+                      new DiscardedInboundMessage(
+                          InboundMessageDiscardedReason.DESERIALIZATION_ERROR))
+                  .inc();
+            })
+        .flatMap(message -> processMessage(inboundMessage.source(), message))
+        .map(
+            processedMessage -> {
+              this.metrics.messages().inbound().received().inc();
+              return processedMessage;
+            });
   }
 
   Result<MessageFromPeer<Message>, Cause> processMessage(NodeId source, Message message) {
     final var currentTime = timeSource.currentTime();
 
     if (currentTime - message.getTimestamp() > messageTtlMs) {
+      metrics
+          .messages()
+          .inbound()
+          .discarded()
+          .label(new DiscardedInboundMessage(InboundMessageDiscardedReason.MESSAGE_EXPIRED))
+          .inc();
       return MESSAGE_EXPIRED.result();
-    } else {
-      return Result.success(new MessageFromPeer<>(source, message));
     }
+
+    Class<? extends Message> messageClazz = message.getClass();
+    if (capabilities.isMessageUnsupported(messageClazz)) {
+      metrics
+          .messages()
+          .inbound()
+          .discarded()
+          .label(new DiscardedInboundMessage(InboundMessageDiscardedReason.MESSAGE_UNSUPPORTED))
+          .inc();
+      return MESSAGE_UNSUPPORTED.result();
+    }
+
+    return Result.success(new MessageFromPeer<>(source, message));
   }
 
   private Result<Message, Cause> deserialize(InboundMessage inboundMessage, byte[] in) {

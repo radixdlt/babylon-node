@@ -98,6 +98,7 @@ import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.io.File;
@@ -200,9 +201,10 @@ public final class RadixShell {
       if (properties.get("network.genesis_data", "").isEmpty()) {
         final var encodedGenesisData =
             NodeSborCodecs.encode(
-                GenesisData.testingDefaultEmpty(),
+                GenesisData.testingWithSingleValidator(),
                 NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
-        final var genesisDataBase64 = Base64.getEncoder().encodeToString(encodedGenesisData);
+        final var compressedGenesisData = Compress.compress(encodedGenesisData);
+        final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisData);
         properties.set("network.genesis_data", genesisDataBase64);
       }
 
