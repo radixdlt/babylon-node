@@ -84,6 +84,7 @@ pub struct LedgerMetrics {
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
     pub recent_self_proposal_miss_count: SelfProposalMissTracker,
+    pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
 }
 
 pub struct CommittedTransactionsMetrics {
@@ -108,6 +109,7 @@ impl LedgerMetrics {
         network: &NetworkDefinition,
         lock_factory: &LockFactory,
         registry: &Registry,
+        current_ledger_proposer_timestamp_ms: i64,
     ) -> Self {
         Self {
             address_encoder: AddressBech32Encoder::new(network),
@@ -145,6 +147,15 @@ impl LedgerMetrics {
                     &format!("A number of proposals missed by this validator during its {} most recent rounds.", PROPOSAL_HISTORY_LEN),
                 ),
                 &lock_factory.named("self_proposal_miss_tracker"),
+                registry,
+            ),
+            recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker::new(
+                current_ledger_proposer_timestamp_ms,
+                opts(
+                    "ledger_recent_proposer_timestamp_progress_rate",
+                    &format!("A rate of the proposer timestamp progress (against wall-clock) averaged over {} most recent ledger updates.", PROGRESS_RATE_HISTORY_LEN),
+                ),
+                &lock_factory.named("progress_rate_tracker"),
                 registry,
             ),
         }
@@ -191,6 +202,8 @@ impl LedgerMetrics {
         );
         self.last_update_proposer_epoch_second
             .set(proposer_timestamp_ms as f64 / 1000.0);
+        self.recent_proposer_timestamp_progress_rate
+            .track(proposer_timestamp_ms);
     }
 }
 
@@ -471,5 +484,75 @@ impl SelfProposalMissTracker {
         }
         // We update the gauge with a delta of new observed misses vs those that ceased to be recent
         self.gauge.add(new_missed_count - outdated_missed_count);
+    }
+}
+
+/// A number of most recent [`ProposerTimestampDatapoint`]s to track for metrics purposes.
+const PROGRESS_RATE_HISTORY_LEN: usize = 10;
+
+/// A `proposer_timestamp_ms` captured at a specific `wallclock_epoch_sec`.
+#[derive(Debug, Clone, Copy)]
+struct ProposerTimestampDatapoint {
+    wallclock_epoch_sec: f64,
+    proposer_timestamp_ms: i64,
+}
+
+impl ProposerTimestampDatapoint {
+    /// Captures the given `proposer_timestamp_ms` at the current wall-clock.
+    pub fn at_current_wallclock(proposer_timestamp_ms: i64) -> Self {
+        Self {
+            wallclock_epoch_sec: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs_f64(),
+            proposer_timestamp_ms,
+        }
+    }
+
+    /// Calculates the rate of the `proposer_timestamp_ms` measured relative to the given reference
+    /// point.
+    pub fn proposer_timestamp_rate_since(&self, reference: &ProposerTimestampDatapoint) -> f64 {
+        let delta_proposer_timestamp_ms =
+            self.proposer_timestamp_ms - reference.proposer_timestamp_ms;
+        let delta_proposer_timestamp_sec = (delta_proposer_timestamp_ms as f64) / 1000.0;
+        let delta_wallclock_sec = self.wallclock_epoch_sec - reference.wallclock_epoch_sec;
+        delta_proposer_timestamp_sec / delta_wallclock_sec
+    }
+}
+
+/// A higher-level metric helper, tracking a recent rate of `proposer_timestamp_ms` committed to the
+/// ledger.
+pub struct ProposerTimestampProgressRateTracker {
+    buffer: Mutex<RingBuffer<ProposerTimestampDatapoint, PROGRESS_RATE_HISTORY_LEN>>,
+    gauge: Gauge,
+}
+
+impl ProposerTimestampProgressRateTracker {
+    /// Creates a new tracker and registers its resulting [`Gauge`] (with the given options) at the
+    /// given registry.
+    /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
+    /// for history tracking.
+    pub fn new(
+        initial_proposer_timestamp_ms: i64,
+        opts: Opts,
+        lock_factory: &LockFactory,
+        registry: &Registry,
+    ) -> Self {
+        Self {
+            buffer: lock_factory.new_mutex(RingBuffer::new(
+                ProposerTimestampDatapoint::at_current_wallclock(initial_proposer_timestamp_ms),
+            )),
+            gauge: Gauge::with_opts(opts).registered_at(registry),
+        }
+    }
+
+    /// Records the given currently-committed `proposer_timestamp_ms` and updates the managed gauge
+    /// with its recent rate.
+    pub fn track(&self, proposer_timestamp_ms: i64) {
+        let mut buffer = self.buffer.lock();
+        let current = ProposerTimestampDatapoint::at_current_wallclock(proposer_timestamp_ms);
+        let outdated = buffer.put(current);
+        let recent_rate = current.proposer_timestamp_rate_since(&outdated);
+        self.gauge.set(recent_rate);
     }
 }
