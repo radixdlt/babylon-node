@@ -306,11 +306,11 @@ public final class RadixNodeModule extends AbstractModule {
         vertexMaxTotalTransactionsSize,
         NodeConstants.DEFAULT_MAX_TRANSACTION_SIZE);
     Preconditions.checkArgument(
-        vertexMaxTotalExecutionCostUnitsConsumed >= NodeConstants.DEFAULT_COST_UNIT_LIMIT,
+        vertexMaxTotalExecutionCostUnitsConsumed >= NodeConstants.DEFAULT_EXECUTION_COST_UNIT_LIMIT,
         "Invalid configuration: protocol.vertex.max_total_execution_cost_units_consumed (%s) must"
             + " be at least the transaction cost unit limit (%s).",
         vertexMaxTotalExecutionCostUnitsConsumed,
-        NodeConstants.DEFAULT_COST_UNIT_LIMIT);
+        NodeConstants.DEFAULT_EXECUTION_COST_UNIT_LIMIT);
     var vertexLimitsConfig =
         new VertexLimitsConfig(
             vertexMaxTransactionCount,

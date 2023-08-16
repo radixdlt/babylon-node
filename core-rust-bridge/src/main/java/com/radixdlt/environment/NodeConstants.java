@@ -115,8 +115,8 @@ public final class NodeConstants {
           .toNonNegativeLong()
           .unwrap();
 
-  public static final int DEFAULT_COST_UNIT_LIMIT =
-      Natives.builder(NodeConstants::getDefaultCostUnitLimit)
+  public static final int DEFAULT_EXECUTION_COST_UNIT_LIMIT =
+      Natives.builder(NodeConstants::getDefaultExecutionCostUnitLimit)
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, UInt32>>() {})
           .call(Tuple.Tuple0.of())
           .toInt();
@@ -142,7 +142,7 @@ public final class NodeConstants {
 
   private static native byte[] getDefaultMaxTransactionSize(byte[] unused);
 
-  private static native byte[] getDefaultCostUnitLimit(byte[] unused);
+  private static native byte[] getDefaultExecutionCostUnitLimit(byte[] unused);
 
   private static native byte[] getMempoolTransactionOverheadFactorPercent(byte[] unused);
 }

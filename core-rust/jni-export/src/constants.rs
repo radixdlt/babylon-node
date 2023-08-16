@@ -74,7 +74,7 @@ use node_common::config::{
     DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
 };
 use node_common::java::jni_sbor_coded_call;
-use radix_engine_common::prelude::{COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE};
+use radix_engine_common::prelude::{EXECUTION_COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE};
 use state_manager::priority_mempool::MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT;
 
 #[no_mangle]
@@ -142,12 +142,12 @@ extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTran
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultCostUnitLimit(
+extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultExecutionCostUnitLimit(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| COST_UNIT_LIMIT)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| EXECUTION_COST_UNIT_LIMIT)
 }
 
 #[no_mangle]
