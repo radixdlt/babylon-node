@@ -488,7 +488,9 @@ impl SelfProposalMissTracker {
 }
 
 /// A number of most recent [`ProposerTimestampDatapoint`]s to track for metrics purposes.
-const PROGRESS_RATE_HISTORY_LEN: usize = 10;
+/// We mostly care about the progress rate during ledger-syncing, where Node is capable of ingesting
+/// >100 sync responses a second. The value below should give us at least 1 sec of history.
+const PROGRESS_RATE_HISTORY_LEN: usize = 100;
 
 /// A `proposer_timestamp_ms` captured at a specific `wallclock_epoch_sec`.
 #[derive(Debug, Clone, Copy)]
