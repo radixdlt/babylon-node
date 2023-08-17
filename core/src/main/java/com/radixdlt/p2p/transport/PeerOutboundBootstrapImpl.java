@@ -66,10 +66,9 @@ package com.radixdlt.p2p.transport;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -95,11 +94,9 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-
-  private final NioEventLoopGroup clientWorkerGroup;
   private final Capabilities capabilities;
-  private final int mempoolRelayerMaxMessagePayloadSize;
-  private final int proposalMaxUncommittedTransactionsPayloadSize;
+  private final int maxMessageSize;
+  private final NioEventLoopGroup clientWorkerGroup;
 
   @Inject
   public PeerOutboundBootstrapImpl(
@@ -112,9 +109,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
-      @ProposalMaxUncommittedTransactionsPayloadSize
-          int proposalMaxUncommittedTransactionsPayloadSize) {
+      @MaxMessageSize int maxMessageSize) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.network = network;
@@ -124,12 +119,9 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-
-    this.clientWorkerGroup = new NioEventLoopGroup();
     this.capabilities = capabilities;
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
-    this.proposalMaxUncommittedTransactionsPayloadSize =
-        proposalMaxUncommittedTransactionsPayloadSize;
+    this.maxMessageSize = maxMessageSize;
+    this.clientWorkerGroup = new NioEventLoopGroup();
   }
 
   @Override
@@ -153,8 +145,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 peerEventDispatcher,
                 Optional.of(uri),
                 capabilities,
-                proposalMaxUncommittedTransactionsPayloadSize,
-                mempoolRelayerMaxMessagePayloadSize))
+                maxMessageSize))
         .connect(uri.getHost(), uri.getPort());
   }
 }

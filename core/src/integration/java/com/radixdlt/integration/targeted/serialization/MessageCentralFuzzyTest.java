@@ -130,7 +130,8 @@ public class MessageCentralFuzzyTest {
             () -> peerControl,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             new Capabilities(LedgerSyncCapability.Builder.asDefault().build()),
-            Set.of());
+            Set.of(),
+            1024 * 1024);
 
     var counter = new AtomicLong(0);
 
