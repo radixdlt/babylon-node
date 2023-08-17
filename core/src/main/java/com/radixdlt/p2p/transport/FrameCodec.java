@@ -79,8 +79,15 @@ import org.bouncycastle.crypto.params.ParametersWithIV;
 
 /** Low-level codec for encrypted communication. */
 public final class FrameCodec {
+  // Frame body length is encoded using the first 3 bytes of a header,
+  // so the maximum value is 16777215.
+  public static final int MAX_FRAME_BODY_SIZE = 16777215;
+
   private static final int HEADER_SIZE = 32;
+
   private static final int MAC_SIZE = 16;
+
+  public static final int FRAME_OVERHEAD = HEADER_SIZE + MAC_SIZE;
 
   private final StreamCipher enc;
   private final StreamCipher dec;
@@ -110,7 +117,7 @@ public final class FrameCodec {
   }
 
   public void writeFrame(byte[] frame, OutputStream out) throws IOException {
-    final var headBuffer = new byte[32];
+    final var headBuffer = new byte[HEADER_SIZE];
     headBuffer[0] = (byte) (frame.length >> 16);
     headBuffer[1] = (byte) (frame.length >> 8);
     headBuffer[2] = (byte) (frame.length);

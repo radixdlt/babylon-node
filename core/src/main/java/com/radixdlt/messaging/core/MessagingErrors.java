@@ -68,6 +68,8 @@ import com.radixdlt.lang.Cause;
 
 public enum MessagingErrors implements Cause {
   MESSAGE_EXPIRED("Message expired"),
+  MESSAGE_UNSUPPORTED("Message unsupported"),
+  MESSAGE_TOO_LARGE("Message too large"),
   IO_ERROR("IO Error"),
   SELF_CONNECTION_ATTEMPT("Attempt to connect to self"),
   PEER_BANNED("Peer is banned");

@@ -69,6 +69,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
@@ -120,7 +121,8 @@ public final class MessageCentralImpl implements MessageCentral {
       Provider<PeerControl> peerControl,
       Addressing addressing,
       Capabilities capabilities,
-      Set<OutboundMessageInterceptor> outboundMessageInterceptors) {
+      Set<OutboundMessageInterceptor> outboundMessageInterceptors,
+      @MaxMessageSize int maxMessageSize) {
     this.metrics = Objects.requireNonNull(metrics);
 
     this.outboundQueue =
@@ -134,7 +136,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
     this.messageDispatcher =
         new MessageDispatcher(
-            metrics, config, serialization, timeSupplier, peerManager, addressing);
+            metrics, config, serialization, timeSupplier, peerManager, addressing, maxMessageSize);
 
     this.messagePreprocessor =
         new MessagePreprocessor(

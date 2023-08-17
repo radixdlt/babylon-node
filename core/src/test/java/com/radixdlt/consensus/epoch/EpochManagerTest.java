@@ -79,7 +79,9 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
@@ -231,6 +233,7 @@ public class EpochManagerTest {
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
+        bind(InitialSafetyStateProvider.class).toInstance(SafetyState::initialState);
         bind(ProposalGenerator.class).toInstance(proposalGenerator);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));

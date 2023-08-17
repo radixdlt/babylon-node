@@ -74,12 +74,12 @@ import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
+import com.radixdlt.monitoring.LabelledCounter;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.shell.RadixShell;
 import com.radixdlt.utils.Compress;
-import io.prometheus.client.Counter;
 import java.time.Duration;
 import java.util.*;
 import org.awaitility.core.ConditionTimeoutException;
@@ -379,8 +379,8 @@ public class NodeCapabilityTests {
 
   // Check a specified counter value. The value is checked every 100ms until either the value
   // matches, or the maxWaitTimeSecs expires
-  private Result waitForCounterValueEquals(
-      Counter counter, long expectedValue, int maxWaitTimeSecs) {
+  private <T extends Record> Result waitForCounterValueEquals(
+      LabelledCounter<T> counter, long expectedValue, int maxWaitTimeSecs) {
     var result = new Result();
     result.testOk = false;
 
@@ -388,14 +388,14 @@ public class NodeCapabilityTests {
       await()
           .atMost(Duration.ofSeconds(maxWaitTimeSecs))
           .pollInterval(Duration.ofMillis(100))
-          .until(() -> counter.get() == expectedValue);
+          .until(() -> counter.getSum() == expectedValue);
       result.testOk = true;
       result.message = String.format("%s equals expected value: %s", counter, expectedValue);
     } catch (ConditionTimeoutException e) {
       result.message =
           String.format(
               "%s (%d) does NOT equal expected value: %d within the specified time %d seconds",
-              counter, counter.get(), expectedValue, maxWaitTimeSecs);
+              counter, (long) counter.getSum(), expectedValue, maxWaitTimeSecs);
     }
 
     return result;

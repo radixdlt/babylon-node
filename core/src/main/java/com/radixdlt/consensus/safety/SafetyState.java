@@ -67,6 +67,7 @@ package com.radixdlt.consensus.safety;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -85,21 +86,27 @@ public final class SafetyState {
   @DsonOutput(DsonOutput.Output.ALL)
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
+  private final BFTValidatorId validatorId;
   private final Round lockedRound; // the highest 2-chain head
-
   private final Optional<Vote> lastVote;
 
-  public SafetyState() {
-    this(Round.genesis(), Optional.empty());
+  public static SafetyState initialState(BFTValidatorId validatorId) {
+    return new SafetyState(validatorId, Round.genesis(), Optional.empty());
   }
 
   @JsonCreator
   public SafetyState(
-      @JsonProperty("locked_round") Long lockedRound, @JsonProperty("last_vote") Vote lastVote) {
-    this(Round.of(lockedRound), Optional.ofNullable(lastVote));
+      @JsonProperty("validator_id") String serializedValidatorId,
+      @JsonProperty("locked_round") Long lockedRound,
+      @JsonProperty("last_vote") Vote lastVote) {
+    this(
+        BFTValidatorId.fromSerializedString(serializedValidatorId),
+        Round.of(lockedRound),
+        Optional.ofNullable(lastVote));
   }
 
-  public SafetyState(Round lockedRound, Optional<Vote> lastVote) {
+  private SafetyState(BFTValidatorId validatorId, Round lockedRound, Optional<Vote> lastVote) {
+    this.validatorId = Objects.requireNonNull(validatorId);
     this.lockedRound = Objects.requireNonNull(lockedRound);
     this.lastVote = Objects.requireNonNull(lastVote);
   }
@@ -129,6 +136,7 @@ public final class SafetyState {
     public SafetyState build() {
       if (changed) {
         return new SafetyState(
+            original.validatorId,
             lockedRound == null ? original.lockedRound : lockedRound,
             lastVote == null ? original.lastVote : Optional.of(lastVote));
       } else {
@@ -141,10 +149,6 @@ public final class SafetyState {
     return new Builder(this);
   }
 
-  public static SafetyState initialState() {
-    return new SafetyState();
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -154,17 +158,25 @@ public final class SafetyState {
       return false;
     }
     SafetyState that = (SafetyState) o;
-    return Objects.equals(lockedRound, that.lockedRound) && Objects.equals(lastVote, that.lastVote);
+    return Objects.equals(validatorId, that.validatorId)
+        && Objects.equals(lockedRound, that.lockedRound)
+        && Objects.equals(lastVote, that.lastVote);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(lockedRound, lastVote);
+    return Objects.hash(validatorId, lockedRound, lastVote);
   }
 
   @Override
   public String toString() {
-    return String.format("SafetyState{lockedRound=%s, lastVote=%s}", lockedRound, lastVote);
+    return String.format(
+        "SafetyState{validatorId=%s, lockedRound=%s, lastVote=%s}",
+        validatorId, lockedRound, lastVote);
+  }
+
+  public BFTValidatorId getValidatorId() {
+    return validatorId;
   }
 
   public Round getLastVotedRound() {
@@ -177,6 +189,12 @@ public final class SafetyState {
 
   public Optional<Vote> getLastVote() {
     return lastVote;
+  }
+
+  @JsonProperty("validator_id")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private String getSerializerValidatorId() {
+    return validatorId.toSerializedString();
   }
 
   @JsonProperty("locked_round")

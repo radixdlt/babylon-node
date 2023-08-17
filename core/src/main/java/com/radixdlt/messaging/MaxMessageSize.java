@@ -62,22 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.messaging;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.util.Modules;
-import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.networks.Network;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public record UnstartedRadixNode(
-    RuntimeProperties properties, Network network, GenesisProvider genesisProvider) {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  public Injector instantiateRadixNodeModule() {
-    return Guice.createInjector(
-        Modules.requireAtInjectOnConstructorsModule(),
-        Modules.disableCircularProxiesModule(),
-        new RadixNodeModule(properties, network, genesisProvider));
-  }
-}
+/** Maximum serialized message size */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MaxMessageSize {}

@@ -184,7 +184,8 @@ public class MessageCentralImplTest {
             peerControlMock,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             capabilities,
-            Set.of());
+            Set.of(),
+            1024 * 1024);
     return messageCentral;
   }
 
