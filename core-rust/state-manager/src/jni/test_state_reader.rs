@@ -112,7 +112,7 @@ pub enum TransactionOutcomeJava {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaValidatorInfo {
     pub stake_unit_resource: ResourceAddress,
-    pub claim_receipt_resource: ResourceAddress,
+    pub claim_resource: ResourceAddress,
 }
 
 #[no_mangle]
@@ -247,7 +247,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_substate.stake_unit_resource,
-                claim_receipt_resource: validator_substate.claim_nft,
+                claim_resource: validator_substate.claim_nft,
             }
         },
     )
