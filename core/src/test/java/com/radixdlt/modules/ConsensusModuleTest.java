@@ -137,7 +137,7 @@ public class ConsensusModuleTest {
     this.validatorId =
         BFTValidatorId.withKeyAndFakeDeterministicAddress(this.validatorKeyPair.getPublicKey());
     var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt192.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
     var proposerElection = ProposerElections.defaultRotation(validatorSet);

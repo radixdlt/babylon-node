@@ -73,7 +73,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
@@ -88,7 +88,7 @@ public final class BFTValidator {
   // Power associated with each validator, could e.g. be based on staked tokens
   @JsonProperty("power")
   @DsonOutput({Output.ALL})
-  private final UInt256 power;
+  private final UInt192 power;
 
   // Public key for consensus
   private final BFTValidatorId validatorId;
@@ -96,16 +96,16 @@ public final class BFTValidator {
   @JsonCreator
   private BFTValidator(
       @JsonProperty(value = "id", required = true) String validatorId,
-      @JsonProperty(value = "power", required = true) UInt256 power) {
+      @JsonProperty(value = "power", required = true) UInt192 power) {
     this(BFTValidatorId.fromSerializedString(requireNonNull(validatorId)), power);
   }
 
-  private BFTValidator(BFTValidatorId validatorId, UInt256 power) {
+  private BFTValidator(BFTValidatorId validatorId, UInt192 power) {
     this.validatorId = requireNonNull(validatorId);
     this.power = requireNonNull(power);
   }
 
-  public static BFTValidator from(BFTValidatorId validatorId, UInt256 power) {
+  public static BFTValidator from(BFTValidatorId validatorId, UInt192 power) {
     return new BFTValidator(validatorId, power);
   }
 
@@ -113,7 +113,7 @@ public final class BFTValidator {
     return validatorId;
   }
 
-  public UInt256 getPower() {
+  public UInt192 getPower() {
     return power;
   }
 

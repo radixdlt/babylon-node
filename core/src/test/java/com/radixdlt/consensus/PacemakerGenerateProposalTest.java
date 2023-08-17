@@ -81,7 +81,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -118,9 +118,9 @@ public final class PacemakerGenerateProposalTest {
     this.validatorSet =
         BFTValidatorSet.from(
             Stream.of(
-                BFTValidator.from(validator1, UInt256.ONE),
-                BFTValidator.from(validator2, UInt256.ONE),
-                BFTValidator.from(self, UInt256.ONE)));
+                BFTValidator.from(validator1, UInt192.ONE),
+                BFTValidator.from(validator2, UInt192.ONE),
+                BFTValidator.from(self, UInt192.ONE)));
     this.vertexStore = mock(VertexStoreAdapter.class);
     this.safetyRules = mock(SafetyRules.class);
     this.timeoutDispatcher = rmock(EventDispatcher.class);

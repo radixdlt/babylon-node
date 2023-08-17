@@ -100,7 +100,17 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
             });
   }
 
+  public static final int SIZE = Long.SIZE;
+  public static final int BYTES = Long.BYTES;
+  public static final UInt64 ZERO = new UInt64(0L);
+  public static final UInt64 ONE = new UInt64(1L);
+  public static final UInt64 MAX_VALUE = new UInt64(0xFFFF_FFFF_FFFF_FFFFL);
+
   private final Long underlyingValue;
+
+  public static UInt64 from(byte[] bytes, int offset) {
+    return new UInt64(Longs.fromByteArray(bytes, offset));
+  }
 
   public static UInt64 fromNonNegativeLong(long l) {
     if (l < 0) {
@@ -118,8 +128,53 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
+  public UInt64 add(UInt64 other) {
+    return new UInt64(underlyingValue + other.underlyingValue);
+  }
+
+  public UInt64 subtract(UInt64 other) {
+    return new UInt64(underlyingValue - other.underlyingValue);
+  }
+
+  public boolean isZero() {
+    return underlyingValue == 0;
+  }
+
+  public boolean isOdd() {
+    return underlyingValue % 2 == 1;
+  }
+
+  public UInt64 shiftLeft() {
+    return new UInt64(underlyingValue << 1);
+  }
+
+  public UInt64 shiftRight() {
+    return new UInt64(underlyingValue >> 1);
+  }
+
+  public UInt64 or(UInt64 other) {
+    return new UInt64(underlyingValue | other.underlyingValue);
+  }
+
+  public boolean isHighBitSet() {
+    return underlyingValue < 0;
+  }
+
+  public UInt64 decrement() {
+    return new UInt64(underlyingValue - 1);
+  }
+
   public String toHexString() {
     return Long.toUnsignedString(underlyingValue, 16);
+  }
+
+  public byte[] toByteArray(byte[] bytes, int offset) {
+    Longs.copyTo(this.underlyingValue, bytes, offset);
+    return bytes;
+  }
+
+  public long toLong() {
+    return underlyingValue;
   }
 
   @Override

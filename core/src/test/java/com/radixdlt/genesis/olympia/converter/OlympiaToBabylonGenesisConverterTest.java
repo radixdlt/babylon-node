@@ -222,7 +222,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
               acceptDelegatedStake,
               isRegistered,
               totalStakedXrd,
-              Decimal.fromBigIntegerSubunits(totalStakeUnitAmount).toUInt256(),
+              UInt256.from(totalStakeUnitAmount.toByteArray()),
               1000,
               ownerIndex);
       validatorsBuilder.add(validator);

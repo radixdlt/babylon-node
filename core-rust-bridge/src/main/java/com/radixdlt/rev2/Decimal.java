@@ -69,13 +69,13 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
-/** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
+/** Decimal represents a 192 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
 
@@ -90,24 +90,24 @@ public class Decimal implements Comparable<Decimal> {
                 TypeId.TYPE_CUSTOM_DECIMAL,
                 SBOR_BYTE_LENGTH,
                 decimal -> Arrays.reverse(decimal.underlyingValue.toByteArray()),
-                bytes -> new Decimal(UInt256.from(Arrays.reverse(bytes)))));
+                bytes -> new Decimal(UInt192.from(Arrays.reverse(bytes)))));
   }
 
-  public static final int SBOR_BYTE_LENGTH = 32;
+  public static final int SBOR_BYTE_LENGTH = 24;
 
-  private final UInt256 underlyingValue;
+  private final UInt192 underlyingValue;
 
-  private Decimal(UInt256 underlyingValue) {
+  private Decimal(UInt192 underlyingValue) {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
-  public static Decimal from(UInt256 fixedPointRepresentation) {
+  public static Decimal from(UInt192 fixedPointRepresentation) {
     return new Decimal(fixedPointRepresentation);
   }
 
   /**
    * Creates a Decimal from raw, non-negative BigInteger representation. Note that a BigInteger
-   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt256.
+   * value of 1 translates to 1e-18 Decimal unit, not 1. Throws if the BigInteger exceeds UInt192.
    */
   public static Decimal fromBigIntegerSubunits(BigInteger bigInt) {
     if (bigInt.compareTo(BigInteger.ZERO) < 0) {
@@ -115,18 +115,18 @@ public class Decimal implements Comparable<Decimal> {
           "Can't create a Decimal from a negative BigInteger representation");
     }
     final var bigIntSignedBytes = bigInt.toByteArray();
-    final byte[] uint256Bytes;
-    if (bigIntSignedBytes.length == UInt256.BYTES + 1 && bigIntSignedBytes[0] == 0x00) {
+    final byte[] uint192Bytes;
+    if (bigIntSignedBytes.length == UInt192.BYTES + 1 && bigIntSignedBytes[0] == 0x00) {
       // A signed representation of a positive 32-bytes integer can actually contain
       // 33 bytes (additional 0x00 byte), so we just skip it.
-      uint256Bytes = Arrays.copyOfRange(bigIntSignedBytes, 1, bigIntSignedBytes.length);
-    } else if (bigIntSignedBytes.length > UInt256.BYTES) {
+      uint192Bytes = Arrays.copyOfRange(bigIntSignedBytes, 1, bigIntSignedBytes.length);
+    } else if (bigIntSignedBytes.length > UInt192.BYTES) {
       // Can't fit
       throw new IllegalArgumentException("Decimal overflow");
     } else {
-      uint256Bytes = bigIntSignedBytes;
+      uint192Bytes = bigIntSignedBytes;
     }
-    return Decimal.from(UInt256.from(uint256Bytes));
+    return Decimal.from(UInt192.from(uint192Bytes));
   }
 
   public Decimal add(Decimal other) {
@@ -139,7 +139,7 @@ public class Decimal implements Comparable<Decimal> {
   }
 
   public static Decimal of(long amount) {
-    var underlying = UInt256.from(amount).multiply(UInt256.from(10).pow(SCALE));
+    var underlying = UInt192.from(amount).multiply(UInt192.from(10).pow(SCALE));
     return new Decimal(underlying);
   }
 
@@ -153,11 +153,11 @@ public class Decimal implements Comparable<Decimal> {
   }
 
   public Decimal divide(long divisor) {
-    var newUnderlying = this.underlyingValue.divide(UInt256.from(divisor));
+    var newUnderlying = this.underlyingValue.divide(UInt192.from(divisor));
     return new Decimal(newUnderlying);
   }
 
-  public UInt256 toUInt256() {
+  public UInt192 toUInt192() {
     return underlyingValue;
   }
 

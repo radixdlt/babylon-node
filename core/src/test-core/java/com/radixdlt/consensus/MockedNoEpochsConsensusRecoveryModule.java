@@ -73,7 +73,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 
 public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
   private final int numValidators;
@@ -99,7 +99,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
         PrivateKeys.numeric(1)
             .limit(numValidators)
             .map(k -> BFTValidatorId.withKeyAndFakeDeterministicAddress(k.getPublicKey()))
-            .map(n -> BFTValidator.from(n, UInt256.ONE));
+            .map(n -> BFTValidator.from(n, UInt192.ONE));
     return BFTValidatorSet.from(validators);
   }
 

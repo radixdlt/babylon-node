@@ -72,7 +72,6 @@ import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
@@ -228,7 +227,7 @@ public final class EventLoggerModule extends AbstractModule {
         epochChange.getNextEpoch(),
         included,
         validatorSet.getValidators().size(),
-        Amount.ofSubunits(validatorSet.getTotalPower()));
+        validatorSet.getTotalPower());
   }
 
   /* BAB-TODO: Add something equivalent back in

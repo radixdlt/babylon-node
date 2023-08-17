@@ -100,7 +100,7 @@ import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +158,7 @@ public class REv2StateComputerTest {
             final ProposerElection proposerElection = round -> ONLY_VALIDATOR_ID;
             return new BFTConfiguration(
                 proposerElection,
-                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt256.ONE))),
+                BFTValidatorSet.from(List.of(BFTValidator.from(ONLY_VALIDATOR_ID, UInt192.ONE))),
                 mock(VertexStoreState.class));
           }
         });

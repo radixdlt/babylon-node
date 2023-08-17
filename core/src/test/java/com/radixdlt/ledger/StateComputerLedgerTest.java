@@ -92,7 +92,7 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -165,7 +165,7 @@ public class StateComputerLedgerTest {
             endOfEpoch
                 ? NextEpoch.create(
                     genesisEpoch + 1,
-                    ImmutableSet.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)))
+                    ImmutableSet.of(BFTValidator.from(BFTValidatorId.random(), UInt192.ONE)))
                 : null);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
     this.initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);

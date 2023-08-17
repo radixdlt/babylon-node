@@ -162,6 +162,10 @@ public final class UInt256 implements Comparable<UInt256>, Serializable {
     return from(UInt128.ZERO, value);
   }
 
+  public static UInt256 from(UInt192 value) {
+    return from(UInt128.from(UInt64.ZERO, value.high), value.low);
+  }
+
   /**
    * Factory method for materialising an {@link UInt256} from an {@link UInt128} value.
    *
