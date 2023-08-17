@@ -1118,6 +1118,10 @@ where
 
         let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
         let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms; // for metrics only
+        let next_epoch = commit_ledger_header
+            .next_epoch
+            .as_ref()
+            .map(|next_epoch| next_epoch.epoch);
 
         write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
@@ -1135,6 +1139,9 @@ where
                 .iter()
                 .map(|txn| &txn.intent_hash),
         );
+        if let Some(epoch) = next_epoch {
+            self.mempool_manager.remove_txns_where_end_epoch_expired(epoch);
+        }
         self.pending_transaction_result_cache
             .write()
             .track_committed_transactions(SystemTime::now(), committed_user_transactions);
