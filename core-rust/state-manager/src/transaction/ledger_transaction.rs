@@ -419,6 +419,12 @@ impl LedgerTransactionHash {
     }
 }
 
+impl HashHasHrp for LedgerTransactionHash {
+    fn hrp(hrp_set: &HrpSet) -> &str {
+        &hrp_set.ledger_transaction
+    }
+}
+
 pub trait HasLedgerTransactionHash {
     fn ledger_transaction_hash(&self) -> LedgerTransactionHash;
 }

@@ -12,8 +12,9 @@ pub(crate) async fn handle_transaction_receipt(
     assert_matching_network(&request.network, &state.network)?;
 
     let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
-    let intent_hash = extract_intent_hash(request.intent_hash)
+    let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let database = state.state_manager.database.read();

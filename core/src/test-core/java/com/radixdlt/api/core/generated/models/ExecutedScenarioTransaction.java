@@ -33,7 +33,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ExecutedScenarioTransaction.JSON_PROPERTY_LOGICAL_NAME,
   ExecutedScenarioTransaction.JSON_PROPERTY_STATE_VERSION,
-  ExecutedScenarioTransaction.JSON_PROPERTY_INTENT_HASH
+  ExecutedScenarioTransaction.JSON_PROPERTY_INTENT_HASH,
+  ExecutedScenarioTransaction.JSON_PROPERTY_INTENT_HASH_BECH32M
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ExecutedScenarioTransaction {
@@ -45,6 +46,9 @@ public class ExecutedScenarioTransaction {
 
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
+
+  public static final String JSON_PROPERTY_INTENT_HASH_BECH32M = "intent_hash_bech32m";
+  private String intentHashBech32m;
 
   public ExecutedScenarioTransaction() { 
   }
@@ -129,6 +133,32 @@ public class ExecutedScenarioTransaction {
   }
 
 
+  public ExecutedScenarioTransaction intentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return intentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIntentHashBech32m() {
+    return intentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIntentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+  }
+
+
   /**
    * Return true if this ExecutedScenarioTransaction object is equal to o.
    */
@@ -143,12 +173,13 @@ public class ExecutedScenarioTransaction {
     ExecutedScenarioTransaction executedScenarioTransaction = (ExecutedScenarioTransaction) o;
     return Objects.equals(this.logicalName, executedScenarioTransaction.logicalName) &&
         Objects.equals(this.stateVersion, executedScenarioTransaction.stateVersion) &&
-        Objects.equals(this.intentHash, executedScenarioTransaction.intentHash);
+        Objects.equals(this.intentHash, executedScenarioTransaction.intentHash) &&
+        Objects.equals(this.intentHashBech32m, executedScenarioTransaction.intentHashBech32m);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(logicalName, stateVersion, intentHash);
+    return Objects.hash(logicalName, stateVersion, intentHash, intentHashBech32m);
   }
 
   @Override
@@ -158,6 +189,7 @@ public class ExecutedScenarioTransaction {
     sb.append("    logicalName: ").append(toIndentedString(logicalName)).append("\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    intentHashBech32m: ").append(toIndentedString(intentHashBech32m)).append("\n");
     sb.append("}");
     return sb.toString();
   }

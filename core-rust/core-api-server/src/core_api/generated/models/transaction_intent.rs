@@ -16,6 +16,9 @@ pub struct TransactionIntent {
     /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "hash")]
     pub hash: String,
+    /// The Bech32m-encoded human readable `IntentHash`.
+    #[serde(rename = "hash_bech32m")]
+    pub hash_bech32m: String,
     #[serde(rename = "header")]
     pub header: Box<crate::core_api::generated::models::TransactionHeader>,
     /// The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.
@@ -29,9 +32,10 @@ pub struct TransactionIntent {
 }
 
 impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader) -> TransactionIntent {
+    pub fn new(hash: String, hash_bech32m: String, header: crate::core_api::generated::models::TransactionHeader) -> TransactionIntent {
         TransactionIntent {
             hash,
+            hash_bech32m,
             header: Box::new(header),
             instructions: None,
             blobs_hex: None,

@@ -304,7 +304,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(transaction.hexIntentHash()));
+                      .intentHash(addressing.encode(transaction.intentHash())));
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);

@@ -31,12 +31,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ParsedTransactionIntentIdentifiers
  */
 @JsonPropertyOrder({
-  ParsedTransactionIntentIdentifiers.JSON_PROPERTY_INTENT_HASH
+  ParsedTransactionIntentIdentifiers.JSON_PROPERTY_INTENT_HASH,
+  ParsedTransactionIntentIdentifiers.JSON_PROPERTY_INTENT_HASH_BECH32M
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ParsedTransactionIntentIdentifiers {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
+
+  public static final String JSON_PROPERTY_INTENT_HASH_BECH32M = "intent_hash_bech32m";
+  private String intentHashBech32m;
 
   public ParsedTransactionIntentIdentifiers() { 
   }
@@ -67,6 +71,32 @@ public class ParsedTransactionIntentIdentifiers {
   }
 
 
+  public ParsedTransactionIntentIdentifiers intentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return intentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIntentHashBech32m() {
+    return intentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIntentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+  }
+
+
   /**
    * Return true if this ParsedTransactionIntentIdentifiers object is equal to o.
    */
@@ -79,12 +109,13 @@ public class ParsedTransactionIntentIdentifiers {
       return false;
     }
     ParsedTransactionIntentIdentifiers parsedTransactionIntentIdentifiers = (ParsedTransactionIntentIdentifiers) o;
-    return Objects.equals(this.intentHash, parsedTransactionIntentIdentifiers.intentHash);
+    return Objects.equals(this.intentHash, parsedTransactionIntentIdentifiers.intentHash) &&
+        Objects.equals(this.intentHashBech32m, parsedTransactionIntentIdentifiers.intentHashBech32m);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash);
+    return Objects.hash(intentHash, intentHashBech32m);
   }
 
   @Override
@@ -92,6 +123,7 @@ public class ParsedTransactionIntentIdentifiers {
     StringBuilder sb = new StringBuilder();
     sb.append("class ParsedTransactionIntentIdentifiers {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    intentHashBech32m: ").append(toIndentedString(intentHashBech32m)).append("\n");
     sb.append("}");
     return sb.toString();
   }

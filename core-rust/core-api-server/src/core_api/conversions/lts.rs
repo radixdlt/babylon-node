@@ -34,13 +34,29 @@ pub fn to_api_lts_committed_transaction_outcome(
         accumulator_hash: to_lts_api_accumulator_hash(
             &identifiers.resultant_ledger_hashes.transaction_root,
         ),
-        user_transaction_identifiers: identifiers.payload.typed.user().map(|hashes| {
-            Box::new(models::TransactionIdentifiers {
-                intent_hash: to_api_intent_hash(hashes.intent_hash),
-                signed_intent_hash: to_api_signed_intent_hash(hashes.signed_intent_hash),
-                payload_hash: to_api_notarized_transaction_hash(hashes.notarized_transaction_hash),
+        user_transaction_identifiers: identifiers
+            .payload
+            .typed
+            .user()
+            .map(|hashes| {
+                Ok(Box::new(models::TransactionIdentifiers {
+                    intent_hash: to_api_intent_hash(hashes.intent_hash),
+                    intent_hash_bech32m: to_api_hash_bech32m(context, hashes.intent_hash)?,
+                    signed_intent_hash: to_api_signed_intent_hash(hashes.signed_intent_hash),
+                    signed_intent_hash_bech32m: to_api_hash_bech32m(
+                        context,
+                        hashes.signed_intent_hash,
+                    )?,
+                    payload_hash: to_api_notarized_transaction_hash(
+                        hashes.notarized_transaction_hash,
+                    ),
+                    payload_hash_bech32m: to_api_hash_bech32m(
+                        context,
+                        hashes.notarized_transaction_hash,
+                    )?,
+                }))
             })
-        }),
+            .transpose()?,
         status,
         fungible_entity_balance_changes: to_api_lts_fungible_balance_changes(
             database,

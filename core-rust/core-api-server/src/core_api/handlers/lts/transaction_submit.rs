@@ -52,7 +52,7 @@ pub(crate) async fn handle_lts_transaction_submit(
                 intent_already_committed_as: rejection
                     .reason
                     .already_committed_error()
-                    .map(to_api_committed_intent_metadata)
+                    .map(|err| to_api_committed_intent_metadata(&mapping_context, err))
                     .transpose()?
                     .map(Box::new),
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved

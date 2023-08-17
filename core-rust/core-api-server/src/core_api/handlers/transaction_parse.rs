@@ -217,9 +217,19 @@ fn to_api_parsed_notarized_transaction(
         notarized_transaction: model,
         identifiers: Box::new(models::ParsedNotarizedTransactionIdentifiers {
             intent_hash: to_api_intent_hash(&intent_hash),
+            intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &intent_hash)?,
             signed_intent_hash: to_api_signed_intent_hash(&signed_intent_hash),
+            signed_intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &signed_intent_hash,
+            )?,
             payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
+            payload_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &notarized_transaction_hash,
+            )?,
             ledger_hash: to_api_ledger_hash(&ledger_hash),
+            ledger_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &ledger_hash)?,
         }),
         validation_error,
     })
@@ -250,7 +260,15 @@ fn to_api_parsed_signed_intent(
         signed_intent: model,
         identifiers: Box::new(models::ParsedSignedTransactionIntentIdentifiers {
             intent_hash: to_api_intent_hash(&prepared.intent_hash()),
+            intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.intent_hash(),
+            )?,
             signed_intent_hash: to_api_signed_intent_hash(&prepared.signed_intent_hash()),
+            signed_intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.signed_intent_hash(),
+            )?,
         }),
     })
 }
@@ -265,18 +283,20 @@ fn to_api_parsed_intent(
     context: &ParseContext,
     (model, prepared): (IntentV1, PreparedIntentV1),
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
+    let intent_hash = &prepared.intent_hash();
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_intent(
             &context.mapping_context,
             &model,
-            &prepared.intent_hash(),
+            intent_hash,
         )?)),
     };
     Ok(models::ParsedTransaction::ParsedTransactionIntent {
         intent: model,
         identifiers: Box::new(models::ParsedTransactionIntentIdentifiers {
-            intent_hash: to_api_intent_hash(&prepared.intent_hash()),
+            intent_hash: to_api_intent_hash(intent_hash),
+            intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, intent_hash)?,
         }),
     })
 }
@@ -321,13 +341,33 @@ fn to_api_parsed_ledger_transaction(
             intent_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_intent_hash(hashes.intent_hash)),
+            intent_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| to_api_hash_bech32m(&context.mapping_context, hashes.intent_hash))
+                .transpose()?,
             signed_intent_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_signed_intent_hash(hashes.signed_intent_hash)),
+            signed_intent_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| {
+                    to_api_hash_bech32m(&context.mapping_context, hashes.signed_intent_hash)
+                })
+                .transpose()?,
             payload_hash: user_identifiers
                 .as_ref()
                 .map(|hashes| to_api_notarized_transaction_hash(hashes.notarized_transaction_hash)),
+            payload_hash_bech32m: user_identifiers
+                .as_ref()
+                .map(|hashes| {
+                    to_api_hash_bech32m(&context.mapping_context, hashes.notarized_transaction_hash)
+                })
+                .transpose()?,
             ledger_hash: to_api_ledger_hash(&prepared.ledger_transaction_hash()),
+            ledger_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &prepared.ledger_transaction_hash(),
+            )?,
         }),
     })
 }
