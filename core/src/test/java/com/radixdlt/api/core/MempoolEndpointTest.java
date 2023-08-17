@@ -100,9 +100,11 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
           .contains(
               new MempoolTransactionHashes()
                   .payloadHash(transaction.hexNotarizedTransactionHash())
-                  .intentHash(transaction.hexIntentHash()));
+                  .payloadHashBech32m(addressing.encode(transaction.notarizedTransactionHash()))
+                  .intentHash(transaction.hexIntentHash())
+                  .intentHashBech32m(addressing.encode(transaction.intentHash())));
 
-      var mempoolTransaction =
+      var mempoolTransactionByHex =
           getMempoolApi()
               .mempoolTransactionPost(
                   new MempoolTransactionRequest()
@@ -111,7 +113,19 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
 
       assertThat(
               RawNotarizedTransaction.create(
-                  Bytes.fromHexString(mempoolTransaction.getPayloadHex())))
+                  Bytes.fromHexString(mempoolTransactionByHex.getPayloadHex())))
+          .isEqualTo(transaction.raw());
+
+      var mempoolTransactionByBech32m =
+          getMempoolApi()
+              .mempoolTransactionPost(
+                  new MempoolTransactionRequest()
+                      .network(networkLogicalName)
+                      .payloadHash(addressing.encode(transaction.notarizedTransactionHash())));
+
+      assertThat(
+              RawNotarizedTransaction.create(
+                  Bytes.fromHexString(mempoolTransactionByBech32m.getPayloadHex())))
           .isEqualTo(transaction.raw());
 
       test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);

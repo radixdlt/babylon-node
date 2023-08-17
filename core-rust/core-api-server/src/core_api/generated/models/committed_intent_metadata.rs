@@ -18,16 +18,20 @@ pub struct CommittedIntentMetadata {
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
+    /// The Bech32m-encoded human readable `NotarizedTransactionHash`.
+    #[serde(rename = "payload_hash_bech32m")]
+    pub payload_hash_bech32m: String,
     /// Whether the intent was committed in a transaction with the same payload. This is a convenience field, which can also be computed using `payload_hash` by a client knowing the payload of the submitted transaction. 
     #[serde(rename = "is_same_transaction")]
     pub is_same_transaction: bool,
 }
 
 impl CommittedIntentMetadata {
-    pub fn new(state_version: i64, payload_hash: String, is_same_transaction: bool) -> CommittedIntentMetadata {
+    pub fn new(state_version: i64, payload_hash: String, payload_hash_bech32m: String, is_same_transaction: bool) -> CommittedIntentMetadata {
         CommittedIntentMetadata {
             state_version,
             payload_hash,
+            payload_hash_bech32m,
             is_same_transaction,
         }
     }

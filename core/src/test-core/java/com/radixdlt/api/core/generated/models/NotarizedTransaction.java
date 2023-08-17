@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   NotarizedTransaction.JSON_PROPERTY_HASH,
+  NotarizedTransaction.JSON_PROPERTY_HASH_BECH32M,
   NotarizedTransaction.JSON_PROPERTY_PAYLOAD_HEX,
   NotarizedTransaction.JSON_PROPERTY_SIGNED_INTENT,
   NotarizedTransaction.JSON_PROPERTY_NOTARY_SIGNATURE
@@ -42,6 +43,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class NotarizedTransaction {
   public static final String JSON_PROPERTY_HASH = "hash";
   private String hash;
+
+  public static final String JSON_PROPERTY_HASH_BECH32M = "hash_bech32m";
+  private String hashBech32m;
 
   public static final String JSON_PROPERTY_PAYLOAD_HEX = "payload_hex";
   private String payloadHex;
@@ -78,6 +82,32 @@ public class NotarizedTransaction {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHash(String hash) {
     this.hash = hash;
+  }
+
+
+  public NotarizedTransaction hashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return hashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getHashBech32m() {
+    return hashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
   }
 
 
@@ -172,6 +202,7 @@ public class NotarizedTransaction {
     }
     NotarizedTransaction notarizedTransaction = (NotarizedTransaction) o;
     return Objects.equals(this.hash, notarizedTransaction.hash) &&
+        Objects.equals(this.hashBech32m, notarizedTransaction.hashBech32m) &&
         Objects.equals(this.payloadHex, notarizedTransaction.payloadHex) &&
         Objects.equals(this.signedIntent, notarizedTransaction.signedIntent) &&
         Objects.equals(this.notarySignature, notarizedTransaction.notarySignature);
@@ -179,7 +210,7 @@ public class NotarizedTransaction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, payloadHex, signedIntent, notarySignature);
+    return Objects.hash(hash, hashBech32m, payloadHex, signedIntent, notarySignature);
   }
 
   @Override
@@ -187,6 +218,7 @@ public class NotarizedTransaction {
     StringBuilder sb = new StringBuilder();
     sb.append("class NotarizedTransaction {\n");
     sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    hashBech32m: ").append(toIndentedString(hashBech32m)).append("\n");
     sb.append("    payloadHex: ").append(toIndentedString(payloadHex)).append("\n");
     sb.append("    signedIntent: ").append(toIndentedString(signedIntent)).append("\n");
     sb.append("    notarySignature: ").append(toIndentedString(notarySignature)).append("\n");

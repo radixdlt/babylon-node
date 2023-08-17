@@ -54,12 +54,13 @@ pub fn to_api_executed_scenario(
 }
 
 pub fn to_api_scenario_transaction(
-    _context: &MappingContext,
+    context: &MappingContext,
     transaction: &ExecutedScenarioTransaction,
 ) -> Result<models::ExecutedScenarioTransaction, MappingError> {
     Ok(models::ExecutedScenarioTransaction {
         logical_name: transaction.logical_name.clone(),
         state_version: to_api_state_version(transaction.state_version)?,
         intent_hash: to_api_intent_hash(&transaction.intent_hash),
+        intent_hash_bech32m: to_api_hash_bech32m(context, &transaction.intent_hash)?,
     })
 }

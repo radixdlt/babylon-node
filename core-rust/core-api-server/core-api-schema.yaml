@@ -1199,11 +1199,14 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - signed_intent
         - notary_signature
       properties:
         hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
@@ -1215,11 +1218,14 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - intent
         - intent_signatures
       properties:
         hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -1230,10 +1236,13 @@ components:
       type: object
       required:
         - hash
+        - hash_bech32m
         - header
       properties:
         hash:
           $ref: "#/components/schemas/IntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         header:
           $ref: "#/components/schemas/TransactionHeader"
         instructions:
@@ -1486,15 +1495,24 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
     IntentHash:
       type: string
       minLength: 64
@@ -1503,6 +1521,9 @@ components:
         The hex-encoded intent hash for a user transaction, also known as the transaction id.
         This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
         This hash gets signed by any signatories on the transaction, to create the signed intent.
+    IntentHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `IntentHash`.
     SignedIntentHash:
       type: string
       minLength: 64
@@ -1511,6 +1532,9 @@ components:
         The hex-encoded signed intent hash for a user transaction.
         This hash identifies the transaction intent, plus additional signatures.
         This hash is signed by the notary, to create the submittable NotarizedTransaction.
+    SignedIntentHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `SignedIntentHash`.
     NotarizedTransactionHash:
       type: string
       minLength: 64
@@ -1518,6 +1542,9 @@ components:
       description: |
         The hex-encoded notarized transaction hash for a user transaction.
         This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
+    NotarizedTransactionHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `NotarizedTransactionHash`.
     LedgerPayloadHash:
       type: string
       minLength: 64
@@ -1525,11 +1552,15 @@ components:
       description: |
         The hex-encoded ledger payload transaction hash.
         This is a wrapper for both user transactions, and system transactions such as genesis and round changes.
+    LedgerPayloadHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `LedgerPayloadHash`.
     CommittedIntentMetadata:
       type: object
       required:
         - state_version
         - payload_hash
+        - payload_hash_bech32m
         - is_same_transaction
       properties:
         state_version:
@@ -1537,7 +1568,8 @@ components:
           description: State version of a committed transaction which had the same intent.
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
-          description: Payload hash of a committed transaction which had the same intent.
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         is_same_transaction:
           type: boolean
           description: |
@@ -3486,9 +3518,12 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     GenericKey:
       type: object
       properties:
@@ -4825,10 +4860,13 @@ components:
       type: object
       required:
         - payload_hash
+        - payload_hash_bech32m
         - status
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: |
@@ -5617,6 +5655,7 @@ components:
         - logical_name
         - state_version
         - intent_hash
+        - intent_hash_bech32m
       properties:
         logical_name:
           type: string
@@ -5624,6 +5663,8 @@ components:
           $ref: "#/components/schemas/StateVersion"
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     DescribedAddress:
       type: string
       description: An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
@@ -5650,12 +5691,18 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
 #################################
 # REQUEST: /mempool/transaction #
 #################################
@@ -5791,18 +5838,30 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
         - payload_hash
+        - payload_hash_bech32m
         - ledger_hash
+        - ledger_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         ledger_hash:
           $ref: "#/components/schemas/LedgerPayloadHash"
+        ledger_hash_bech32m:
+          $ref: "#/components/schemas/LedgerPayloadHashBech32m"
     ParsedSignedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5818,12 +5877,18 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
         - signed_intent_hash
+        - signed_intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
     ParsedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5839,9 +5904,12 @@ components:
       type: object
       required:
         - intent_hash
+        - intent_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
     ParsedLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -5857,15 +5925,24 @@ components:
       type: object
       required:
         - ledger_hash
+        - ledger_hash_bech32m
       properties:
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
+        intent_hash_bech32m:
+          $ref: "#/components/schemas/IntentHashBech32m"
         signed_intent_hash:
           $ref: "#/components/schemas/SignedIntentHash"
+        signed_intent_hash_bech32m:
+          $ref: "#/components/schemas/SignedIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         ledger_hash:
           $ref: "#/components/schemas/LedgerPayloadHash"
+        ledger_hash_bech32m:
+          $ref: "#/components/schemas/LedgerPayloadHashBech32m"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -6039,10 +6116,13 @@ components:
       type: object
       required:
         - payload_hash
+        - payload_hash_bech32m
         - status
       properties:
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
         state_version:
           $ref: "#/components/schemas/StateVersion"
           description: |
