@@ -9,7 +9,6 @@ use state_manager::{
     BySubstate, ChangeAction, CommittedTransactionIdentifiers, LedgerTransactionOutcome,
     LocalTransactionReceipt, StateVersion, TransactionTreeHash,
 };
-use std::ops::SubAssign;
 
 use radix_engine::transaction::{FeeDestination, FeeSource, TransactionFeeSummary};
 use transaction::prelude::*;
@@ -92,10 +91,10 @@ fn resolve_global_fee_balance_changes(
             message: format!("no ancestry record for vault {}", vault_id.to_hex()),
         })?;
         let global_ancestor_address = GlobalAddress::new_or_panic(ancestry.root.0.into());
-        fee_balance_changes
+        let fee_balance_change = fee_balance_changes
             .entry(global_ancestor_address)
-            .or_insert_with(Decimal::zero)
-            .sub_assign(*paid_fee_amount_xrd);
+            .or_insert_with(Decimal::zero);
+        *fee_balance_change = fee_balance_change.sub_or_panic(*paid_fee_amount_xrd);
     }
     Ok(fee_balance_changes)
 }
@@ -171,7 +170,10 @@ impl<'a> FeePaymentComputer<'a> {
     fn track_fee_distributions(&mut self) {
         self.record_fee_balance_change_if_non_zero(
             CONSENSUS_MANAGER.into(),
-            self.inputs.fee_summary.network_fees() - self.inputs.fee_destination.to_burn,
+            self.inputs
+                .fee_summary
+                .network_fees()
+                .sub_or_panic(self.inputs.fee_destination.to_burn),
             models::LtsFeeFungibleResourceBalanceChangeType::FeeDistributed,
         );
         self.record_fee_balance_change_if_non_zero(
@@ -221,7 +223,7 @@ impl<'a> FeePaymentComputer<'a> {
                 .computation
                 .fee_balance_changes
                 .get(entity)
-                .map(|fee_payments| fee_payments.iter().map(|p| p.1).sum())
+                .map(|fee_payments| fee_payments.iter().map(|p| p.1).sum_or_panic())
                 .unwrap_or_default();
             let mut non_fee_balance_changes: IndexMap<ResourceAddress, Decimal> = changes
                 .iter()
@@ -230,7 +232,7 @@ impl<'a> FeePaymentComputer<'a> {
                         let total_balance_change = get_fungible_balance(balance_change)
                             .expect("Expected XRD to be fungible");
                         let total_non_fee_balance_change =
-                            total_balance_change - total_fee_balance_changes;
+                            total_balance_change.sub_or_panic(total_fee_balance_changes);
                         if total_non_fee_balance_change == Decimal::ZERO {
                             None
                         } else {
@@ -247,7 +249,7 @@ impl<'a> FeePaymentComputer<'a> {
             if total_fee_balance_changes != Decimal::ZERO && !changes.contains_key(&XRD) {
                 // If there were fee-related balance changes, but XRD is not in the balance change set,
                 // then there must have been an equal-and-opposite non-fee balance change to offset it
-                non_fee_balance_changes.insert(XRD, -total_fee_balance_changes);
+                non_fee_balance_changes.insert(XRD, total_fee_balance_changes.neg_or_panic());
             }
             self.computation
                 .non_fee_balance_changes
@@ -276,7 +278,7 @@ impl FeePaymentComputation {
                             }
                             _ => None,
                         })
-                        .sum::<Decimal>();
+                        .sum_or_panic();
                     let output = if total_fee_payment_balance_change.is_zero() {
                         None
                     } else {
