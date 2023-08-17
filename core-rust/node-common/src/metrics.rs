@@ -63,6 +63,7 @@
  */
 
 use prometheus::core::*;
+use prometheus::proto::{MetricFamily, MetricType};
 use prometheus::*;
 use std::mem;
 
@@ -248,5 +249,40 @@ impl<T, const N: usize> RingBuffer<T, N> {
         let previous_head = self.head;
         self.head = (previous_head + 1) % N;
         mem::replace(&mut self.array[previous_head], element)
+    }
+}
+
+/// A [`Gauge`] counterpart which probes the value on `collect()`.
+pub struct GetterGauge<F> {
+    getter: F,
+    desc: Desc,
+}
+
+impl<F> GetterGauge<F> {
+    /// Creates a gauge with the given `Opts` and the getter function to probe for value.
+    pub fn new(getter: F, opts: Opts) -> Result<Self> {
+        Ok(Self {
+            getter,
+            desc: opts.describe()?,
+        })
+    }
+}
+
+impl<F: Fn() -> f64 + Send + Sync> Collector for GetterGauge<F> {
+    fn desc(&self) -> Vec<&Desc> {
+        vec![&self.desc]
+    }
+
+    fn collect(&self) -> Vec<MetricFamily> {
+        let mut gauge = proto::Gauge::default();
+        gauge.set_value((self.getter)());
+        let mut metric = proto::Metric::default();
+        metric.set_gauge(gauge);
+        let mut family = MetricFamily::default();
+        family.set_name(self.desc.fq_name.clone());
+        family.set_help(self.desc.help.clone());
+        family.set_field_type(MetricType::GAUGE);
+        family.set_metric(vec![metric]);
+        vec![family]
     }
 }

@@ -124,7 +124,7 @@ pub struct StateComputer<S> {
     logging_config: StateComputerLoggingConfig,
 }
 
-impl<S: TransactionIdentifierLoader> StateComputer<S> {
+impl<S: QueryableProofStore> StateComputer<S> {
     // TODO: refactor and maybe make clippy happy too
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -138,7 +138,12 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
         metrics_registry: &Registry,
         lock_factory: &LockFactory,
     ) -> StateComputer<S> {
-        let transaction_root = store.read().get_top_ledger_hashes().1.transaction_root;
+        let (current_transaction_root, current_ledger_proposer_timestamp_ms) = store
+            .read()
+            .get_last_proof()
+            .map(|proof| proof.ledger_header)
+            .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
+            .unwrap_or_else(|| (LedgerHashes::pre_genesis().transaction_root, 0));
 
         let committed_transactions_metrics =
             CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
@@ -151,7 +156,7 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
             pending_transaction_result_cache,
             execution_cache: lock_factory
                 .named("execution_cache")
-                .new_mutex(ExecutionCache::new(transaction_root)),
+                .new_mutex(ExecutionCache::new(current_transaction_root)),
             ledger_transaction_validator: LedgerTransactionValidator::new(network),
             logging_config: logging_config.state_manager_config,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
@@ -160,6 +165,7 @@ impl<S: TransactionIdentifierLoader> StateComputer<S> {
                 network,
                 &lock_factory.named("ledger_metrics"),
                 metrics_registry,
+                current_ledger_proposer_timestamp_ms,
             ),
             committed_transactions_metrics,
         }

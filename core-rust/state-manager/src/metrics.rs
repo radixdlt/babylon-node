@@ -84,6 +84,7 @@ pub struct LedgerMetrics {
     pub last_update_epoch_second: Gauge,
     pub last_update_proposer_epoch_second: Gauge,
     pub recent_self_proposal_miss_count: SelfProposalMissTracker,
+    pub recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker,
 }
 
 pub struct CommittedTransactionsMetrics {
@@ -108,8 +109,9 @@ impl LedgerMetrics {
         network: &NetworkDefinition,
         lock_factory: &LockFactory,
         registry: &Registry,
+        current_ledger_proposer_timestamp_ms: i64,
     ) -> Self {
-        Self {
+        let instance = Self {
             address_encoder: AddressBech32Encoder::new(network),
             state_version: IntGauge::with_opts(opts(
                 "ledger_state_version",
@@ -147,7 +149,25 @@ impl LedgerMetrics {
                 &lock_factory.named("self_proposal_miss_tracker"),
                 registry,
             ),
-        }
+            recent_proposer_timestamp_progress_rate: ProposerTimestampProgressRateTracker::new(
+                current_ledger_proposer_timestamp_ms,
+                opts(
+                    "ledger_recent_proposer_timestamp_progress_rate",
+                    &format!("A rate of the proposer timestamp progress (against wall-clock) averaged over {} most recent ledger updates.", PROGRESS_RATE_HISTORY_LEN),
+                ),
+                &lock_factory.named("progress_rate_tracker"),
+                registry,
+            ),
+        };
+        OverallLedgerHealthFactor::register_direct_collector(
+            &instance,
+            opts(
+                "ledger_overall_health_factor",
+                "A proper fraction representing an overall local ledger health (with 0.0 = critical and 1.0 = healthy).",
+            ),
+            registry
+        );
+        instance
     }
 
     pub fn update(
@@ -191,6 +211,8 @@ impl LedgerMetrics {
         );
         self.last_update_proposer_epoch_second
             .set(proposer_timestamp_ms as f64 / 1000.0);
+        self.recent_proposer_timestamp_progress_rate
+            .track(proposer_timestamp_ms);
     }
 }
 
@@ -477,5 +499,191 @@ impl SelfProposalMissTracker {
         }
         // We update the gauge with a delta of new observed misses vs those that ceased to be recent
         self.gauge.add(new_missed_count - outdated_missed_count);
+    }
+}
+
+/// A number of most recent [`ProposerTimestampDatapoint`]s to track for metrics purposes.
+/// We mostly care about the progress rate during ledger-syncing, where Node is capable of ingesting
+/// >100 sync responses a second. The value below should give us at least 1 sec of history.
+const PROGRESS_RATE_HISTORY_LEN: usize = 100;
+
+/// A `proposer_timestamp_ms` captured at a specific `wallclock_epoch_sec`.
+#[derive(Debug, Clone, Copy)]
+struct ProposerTimestampDatapoint {
+    wallclock_epoch_sec: f64,
+    proposer_timestamp_ms: i64,
+}
+
+impl ProposerTimestampDatapoint {
+    /// Captures the given `proposer_timestamp_ms` at the current wall-clock.
+    pub fn at_current_wallclock(proposer_timestamp_ms: i64) -> Self {
+        Self {
+            wallclock_epoch_sec: current_wallclock_epoch_sec(),
+            proposer_timestamp_ms,
+        }
+    }
+
+    /// Calculates the rate of the `proposer_timestamp_ms` measured relative to the given reference
+    /// point.
+    pub fn proposer_timestamp_rate_since(&self, reference: &ProposerTimestampDatapoint) -> f64 {
+        let delta_proposer_timestamp_ms =
+            self.proposer_timestamp_ms - reference.proposer_timestamp_ms;
+        let delta_proposer_timestamp_sec = (delta_proposer_timestamp_ms as f64) / 1000.0;
+        let delta_wallclock_sec = self.wallclock_epoch_sec - reference.wallclock_epoch_sec;
+        delta_proposer_timestamp_sec / delta_wallclock_sec
+    }
+}
+
+/// A higher-level metric helper, tracking a recent rate of `proposer_timestamp_ms` committed to the
+/// ledger.
+pub struct ProposerTimestampProgressRateTracker {
+    buffer: Mutex<RingBuffer<ProposerTimestampDatapoint, PROGRESS_RATE_HISTORY_LEN>>,
+    gauge: Gauge,
+}
+
+impl ProposerTimestampProgressRateTracker {
+    /// Creates a new tracker and registers its resulting [`Gauge`] (with the given options) at the
+    /// given registry.
+    /// Note: the [`LockFactory`] is required to ensure a thread-safe access to a ring-buffer used
+    /// for history tracking.
+    pub fn new(
+        initial_proposer_timestamp_ms: i64,
+        opts: Opts,
+        lock_factory: &LockFactory,
+        registry: &Registry,
+    ) -> Self {
+        Self {
+            buffer: lock_factory.new_mutex(RingBuffer::new(
+                ProposerTimestampDatapoint::at_current_wallclock(initial_proposer_timestamp_ms),
+            )),
+            gauge: Gauge::with_opts(opts).registered_at(registry),
+        }
+    }
+
+    /// Records the given currently-committed `proposer_timestamp_ms` and updates the managed gauge
+    /// with its recent rate.
+    pub fn track(&self, proposer_timestamp_ms: i64) {
+        let mut buffer = self.buffer.lock();
+        let current = ProposerTimestampDatapoint::at_current_wallclock(proposer_timestamp_ms);
+        let outdated = buffer.put(current);
+        let recent_rate = current.proposer_timestamp_rate_since(&outdated);
+        self.gauge.set(recent_rate);
+    }
+}
+
+/// A maximum delay of latest committed proposer timestamp relative to local wall-clock, in seconds,
+/// up to which a Node considers itself "synced".
+const SYNCED_LEDGER_MAX_DELAY_SEC: f64 = 60.0;
+
+/// A minimum progress rate of the proposer timestamp (see `ProposerTimestampProgressRateTracker`),
+/// below which a syncing Node is considered critically unhealthy.
+const MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 10.0;
+
+/// A progress rate of the proposer timestamp (see `ProposerTimestampProgressRateTracker`) at or
+/// above which a syncing Node is considered fully healthy.
+const HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE: f64 = 50.0;
+
+/// A number of recent proposal misses (see `SelfProposalMissTracker`) at or above which a Validator
+/// is considered critically unhealthy.
+/// Of course, missing no proposals is fully healthy. Missing some small number of proposals (i.e.
+/// less than this constant) results in some proportionally lower health factor.
+/// A Node outside Active Validator Set is considered fully healthy in this aspect (i.e. it misses
+/// no proposals).
+const CRITICAL_RECENT_PROPOSAL_MISS_COUNT: i64 = 2;
+
+/// A top-level health metric helper, aggregating a few lower-level parts of [`LedgerMetrics`] into
+/// one, single-dimensional "overall health factor" [`Gauge`].
+struct OverallLedgerHealthFactor {
+    last_update_proposer_epoch_second: Gauge,
+    recent_proposer_timestamp_progress_rate: Gauge,
+    recent_self_proposal_miss_count: IntGauge,
+}
+
+impl OverallLedgerHealthFactor {
+    /// Creates a direct Prometheus collector (of `OverallLedgerHealthFactor::calculate()`) and
+    /// registers it (with the given options) at the given registry.
+    pub fn register_direct_collector(
+        ledger_metrics: &LedgerMetrics,
+        opts: Opts,
+        registry: &Registry,
+    ) {
+        let health_factor = Self {
+            last_update_proposer_epoch_second: ledger_metrics
+                .last_update_proposer_epoch_second
+                .clone(),
+            recent_proposer_timestamp_progress_rate: ledger_metrics
+                .recent_proposer_timestamp_progress_rate
+                .gauge
+                .clone(),
+            recent_self_proposal_miss_count: ledger_metrics
+                .recent_self_proposal_miss_count
+                .gauge
+                .clone(),
+        };
+        let collector = GetterGauge::new(move || health_factor.calculate(), opts);
+        registry.register(Box::new(collector.unwrap())).unwrap();
+    }
+
+    /// Calculates the current value of the overall ledger health factor.
+    /// This is a proper fraction representation, where:
+    /// - 0.0 means "critically unhealthy",
+    /// - 1.0 means "fully healthy",
+    /// - intermediate fractions mean some level of warning.
+    /// Implementation wise, the result depends on the "syncing rate" and "proposal reliability".
+    fn calculate(&self) -> f64 {
+        self.syncing_factor() * self.proposal_reliability_factor()
+    }
+
+    /// Calculates the health factor part related to ledger-syncing.
+    /// If the ledger is synced (i.e. the latest committed proposer timestamp is close to the
+    /// wall-clock), then the result is "fully healthy" (i.e. 1.0).
+    /// Otherwise, the health factor depends on the proposer timestamp's progress rate (see
+    /// [`HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE`] and [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`]).
+    fn syncing_factor(&self) -> f64 {
+        let proposer_timestamp_delay_sec =
+            current_wallclock_epoch_sec() - self.last_update_proposer_epoch_second.get();
+        if proposer_timestamp_delay_sec < SYNCED_LEDGER_MAX_DELAY_SEC {
+            return 1.0;
+        }
+        let clamped_proposer_timestamp_rate = clamp(
+            MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE,
+            self.recent_proposer_timestamp_progress_rate.get(),
+            HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE,
+        );
+        (clamped_proposer_timestamp_rate - MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE)
+            / (HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE - MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE)
+    }
+
+    /// Calculates the health factor part related to proposal reliability.
+    /// It is "fully healthy" (i.e. 1.0) when no proposals are missed (also in case this Node is not
+    /// in active validator set). Otherwise, it linearly degrades with the number of recently missed
+    /// proposals, potentially down to 0.0 (see [`CRITICAL_RECENT_PROPOSAL_MISS_COUNT`]).
+    fn proposal_reliability_factor(&self) -> f64 {
+        let clamped_recent_proposal_miss_count = min(
+            self.recent_self_proposal_miss_count.get(),
+            CRITICAL_RECENT_PROPOSAL_MISS_COUNT,
+        );
+        1.0 - (clamped_recent_proposal_miss_count as f64)
+            / (CRITICAL_RECENT_PROPOSAL_MISS_COUNT as f64)
+    }
+}
+
+/// Returns the `SystemTime::now()` expressed as a fractional number of seconds since epoch.
+fn current_wallclock_epoch_sec() -> f64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs_f64()
+}
+
+/// A "clamp" implementation for not-strictly-[`Ord`] elements (for which a classic `min()/max()`
+/// idiom cannot be used).
+fn clamp<T: Copy + PartialOrd>(min: T, arg: T, max: T) -> T {
+    if arg < min {
+        min
+    } else if arg > max {
+        max
+    } else {
+        arg
     }
 }
