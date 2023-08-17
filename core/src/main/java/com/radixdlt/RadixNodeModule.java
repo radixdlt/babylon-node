@@ -294,6 +294,10 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(
             "protocol.vertex.max_total_execution_cost_units_consumed",
             NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED);
+    var vertexMaxTotalFinalizationCostUnitsConsumed =
+        properties.get(
+            "protocol.vertex.max_total_finalization_cost_units_consumed",
+            NodeConstants.DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED);
     Preconditions.checkArgument(
         vertexMaxTransactionCount > 0,
         "Invalid configuration: protocol.vertex.max_transaction_count (%s) must be a non zero"
@@ -311,11 +315,19 @@ public final class RadixNodeModule extends AbstractModule {
             + " be at least the transaction cost unit limit (%s).",
         vertexMaxTotalExecutionCostUnitsConsumed,
         NodeConstants.DEFAULT_EXECUTION_COST_UNIT_LIMIT);
+    Preconditions.checkArgument(
+        vertexMaxTotalFinalizationCostUnitsConsumed
+            >= NodeConstants.DEFAULT_FINALIZATION_COST_UNIT_LIMIT,
+        "Invalid configuration: protocol.vertex.max_total_finalization_cost_units_consumed (%s)"
+            + " must be at least the transaction cost unit limit (%s).",
+        vertexMaxTotalFinalizationCostUnitsConsumed,
+        NodeConstants.DEFAULT_FINALIZATION_COST_UNIT_LIMIT);
     var vertexLimitsConfig =
         new VertexLimitsConfig(
             vertexMaxTransactionCount,
             vertexMaxTotalTransactionsSize,
-            vertexMaxTotalExecutionCostUnitsConsumed);
+            vertexMaxTotalExecutionCostUnitsConsumed,
+            vertexMaxTotalFinalizationCostUnitsConsumed);
     install(
         REv2StateManagerModule.create(
             ProposalLimitsConfig.from(vertexLimitsConfig),

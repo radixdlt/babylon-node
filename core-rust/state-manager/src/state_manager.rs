@@ -84,29 +84,11 @@ use crate::{
     LoggingConfig, PendingTransactionResultCache, StateComputer,
 };
 
-#[derive(Debug, ScryptoSbor)]
-pub struct JavaVertexLimitsConfig {
-    pub max_transaction_count: u32,
-    pub max_total_transactions_size: u32,
-    pub max_total_execution_cost_units_consumed: u32,
-}
-
-impl From<JavaVertexLimitsConfig> for VertexLimitsConfig {
-    fn from(val: JavaVertexLimitsConfig) -> Self {
-        VertexLimitsConfig {
-            max_transaction_count: val.max_transaction_count,
-            max_total_transactions_size: val.max_total_transactions_size as usize,
-            max_total_execution_cost_units_consumed: val.max_total_execution_cost_units_consumed,
-            ..VertexLimitsConfig::default()
-        }
-    }
-}
-
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
-    pub vertex_limits_config: Option<JavaVertexLimitsConfig>,
+    pub vertex_limits_config: Option<VertexLimitsConfig>,
     pub database_backend_config: DatabaseBackendConfig,
     pub database_flags: DatabaseFlags,
     pub logging_config: LoggingConfig,
@@ -167,6 +149,7 @@ impl StateManager {
         let mut costing_parameters = CostingParameters::default();
         if config.no_fees {
             costing_parameters.execution_cost_unit_price = Decimal::ZERO;
+            costing_parameters.finalization_cost_unit_price = Decimal::ZERO;
             costing_parameters.storage_price = Decimal::ZERO;
         }
         let execution_configurator = Arc::new(ExecutionConfigurator::new(
@@ -216,7 +199,7 @@ impl StateManager {
         ));
 
         let vertex_limits_config = match config.vertex_limits_config {
-            Some(java_vertex_limits_config) => java_vertex_limits_config.into(),
+            Some(java_vertex_limits_config) => java_vertex_limits_config,
             None => VertexLimitsConfig::default(),
         };
 
