@@ -368,7 +368,7 @@ impl MempoolManager {
     }
 
     /// Removes transactions no longer valid at or after the given epoch.
-    pub fn remove_before_epoch(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
-        self.mempool.write().remove_before_epoch(epoch)
+    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+        self.mempool.write().remove_txns_where_end_epoch_expired(epoch)
     }
 }

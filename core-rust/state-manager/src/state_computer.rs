@@ -1130,7 +1130,7 @@ where
                 .map(|txn| &txn.intent_hash),
         );
         if let Some(epoch) = next_epoch {
-            self.mempool_manager.remove_before_epoch(epoch);
+            self.mempool_manager.remove_txns_where_end_epoch_expired(epoch);
         }
         self.pending_transaction_result_cache
             .write()

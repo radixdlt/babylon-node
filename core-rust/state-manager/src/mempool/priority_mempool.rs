@@ -432,15 +432,15 @@ impl PriorityMempool {
             .collect()
     }
 
-    pub fn remove_before_epoch(&mut self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
-        let mempool_data = self.get_transactions_before_epoch(epoch);
+    pub fn remove_txns_where_end_epoch_expired(&mut self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+        let mempool_data = self.get_txns_where_end_epoch_expired(epoch);
         mempool_data
             .iter()
             .for_each(|data| self.remove_data(data.clone()));
         mempool_data
     }
 
-    pub fn get_transactions_before_epoch(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
+    pub fn get_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<Arc<MempoolData>> {
         self.end_epoch_exclusive_index
             .iter()
             .take_while_ref(|&mempool_data_end_epoch_order| {
