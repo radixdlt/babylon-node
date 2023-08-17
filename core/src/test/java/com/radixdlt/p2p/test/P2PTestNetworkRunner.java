@@ -69,8 +69,6 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.ProposalLimitsConfig;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -83,8 +81,7 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolRelayerConfig;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
@@ -190,12 +187,7 @@ public final class P2PTestNetworkRunner {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bindConstant()
-                        .annotatedWith(ProposalMaxUncommittedTransactionsPayloadSize.class)
-                        .to(ProposalLimitsConfig.DEFAULT_MAX_UNCOMMITTED_TRANSACTIONS_PAYLOAD_SIZE);
-                    bindConstant()
-                        .annotatedWith(MempoolRelayerMaxMessagePayloadSize.class)
-                        .to(MempoolRelayerConfig.DEFAULT_MAX_MESSAGE_PAYLOAD_SIZE);
+                    bindConstant().annotatedWith(MaxMessageSize.class).to(1024 * 1024);
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);

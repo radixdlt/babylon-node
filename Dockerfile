@@ -283,11 +283,6 @@ COPY --from=library-container /libcorerust.so /usr/lib/jni/libcorerust.so
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
 
-RUN groupadd -r radixdlt \
-    && useradd -r -m -d /home/radixdlt -s /bin/bash -g radixdlt radixdlt \
-    && chown -R radixdlt:radixdlt /home/radixdlt/ \
-    && chmod u=xr /opt/radixdlt/bin/core
-
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
 # See https://docs.docker.com/engine/reference/builder/#entrypoint
 CMD ["/opt/radixdlt/bin/core"]

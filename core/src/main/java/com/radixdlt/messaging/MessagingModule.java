@@ -71,6 +71,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -79,6 +80,7 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
 import com.radixdlt.messaging.consensus.MessageCentralBFTNetwork;
 import com.radixdlt.messaging.consensus.MessageCentralValidatorSync;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
@@ -92,6 +94,8 @@ import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;
 import com.radixdlt.p2p.liveness.Ping;
 import com.radixdlt.p2p.liveness.Pong;
+import com.radixdlt.p2p.transport.FrameCodec;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -99,8 +103,11 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.core.Flowable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class MessagingModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
 
   private RuntimeProperties properties;
 
@@ -124,6 +131,38 @@ public final class MessagingModule extends AbstractModule {
     bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 
     install(new MessageCentralModule(this.properties));
+  }
+
+  @Provides
+  @MaxMessageSize
+  private int maxMessageSize(
+      @ProposalMaxUncommittedTransactionsPayloadSize
+          int proposalMaxUncommittedTransactionsPayloadSize,
+      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize) {
+    final var maxMessageSizeBaseline =
+        Math.max(
+            Math.max(
+                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                proposalMaxUncommittedTransactionsPayloadSize),
+            mempoolRelayerMaxMessagePayloadSize);
+
+    // 30% should be more than enough for any vertex/QCs/proofs
+    final var additionalBuffer = (int) (0.3 * maxMessageSizeBaseline);
+
+    final var intendedMaxMessageSize = maxMessageSizeBaseline + additionalBuffer;
+    if (intendedMaxMessageSize > FrameCodec.MAX_FRAME_BODY_SIZE) {
+      log.warn(
+          "Maximum message size was intended to be {} bytes based on available message size "
+              + "indicators, but this value exceeds a frame limit of {}."
+              + "A frame limit will be used instead. "
+              + "This may indicate a misconfiguration of \"protocol.vertex.*\" properties,"
+              + "which for the most part shouldn't be changed.",
+          intendedMaxMessageSize,
+          FrameCodec.MAX_FRAME_BODY_SIZE);
+      return FrameCodec.MAX_FRAME_BODY_SIZE;
+    } else {
+      return intendedMaxMessageSize;
+    }
   }
 
   @ProvidesIntoSet

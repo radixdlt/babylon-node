@@ -62,22 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.consensus.safety;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.util.Modules;
-import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.networks.Network;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 
-public record UnstartedRadixNode(
-    RuntimeProperties properties, Network network, GenesisProvider genesisProvider) {
-
-  public Injector instantiateRadixNodeModule() {
-    return Guice.createInjector(
-        Modules.requireAtInjectOnConstructorsModule(),
-        Modules.disableCircularProxiesModule(),
-        new RadixNodeModule(properties, network, genesisProvider));
-  }
+public interface InitialSafetyStateProvider {
+  SafetyState initialSafetyState(BFTValidatorId validatorId);
 }

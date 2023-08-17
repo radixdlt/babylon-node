@@ -76,6 +76,7 @@ import java.util.Random;
 public class SystemModule extends AbstractModule {
   @Override
   public void configure() {
+    bind(SecureRandom.class).toInstance(new SecureRandom());
     bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
     bind(FatalPanicHandler.class).toInstance(() -> AsynchronousSystem.exit(-1));

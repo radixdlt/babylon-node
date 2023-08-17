@@ -67,21 +67,15 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public final class NoEpochsSafetyRecoveryModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-
   @Provides
   @Singleton
-  private SafetyState initialSafetyState(PersistentSafetyStateStore safetyStore) {
-    var safetyState = safetyStore.get().orElse(new SafetyState());
-
-    log.info("Loaded SafetyState: " + safetyState);
-
-    return safetyState;
+  private InitialSafetyStateProvider initialSafetyStateProvider(
+      PersistentSafetyStateStore safetyStore) {
+    return validatorId -> safetyStore.get().orElse(SafetyState.initialState(validatorId));
   }
 }

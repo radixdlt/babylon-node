@@ -71,6 +71,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.util.Modules;
 import com.radixdlt.UnstartedRadixNode;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.SystemApi;
@@ -301,7 +302,11 @@ public final class RadixNodeBootstrapper {
     private final CompletableFuture<UnstartedRadixNode> radixNodeFuture;
 
     OlympiaGenesisBootstrapper() {
-      this.injector = Guice.createInjector(new GenesisFromOlympiaNodeModule(properties, network));
+      this.injector =
+          Guice.createInjector(
+              Modules.requireAtInjectOnConstructorsModule(),
+              Modules.disableCircularProxiesModule(),
+              new GenesisFromOlympiaNodeModule(properties, network));
       this.radixNodeFuture = new CompletableFuture<>();
     }
 
