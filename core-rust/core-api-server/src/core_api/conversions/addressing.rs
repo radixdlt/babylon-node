@@ -39,7 +39,7 @@ pub fn to_api_entity_address(
     node_id: &NodeId,
 ) -> Result<String, MappingError> {
     context
-        .bech32_encoder
+        .address_encoder
         .encode(node_id.as_ref())
         .map_err(|err| MappingError::InvalidEntityAddress { encode_error: err })
 }
@@ -424,7 +424,7 @@ pub fn extract_global_address(
     extraction_context: &ExtractionContext,
     package_address: &str,
 ) -> Result<GlobalAddress, ExtractionError> {
-    GlobalAddress::try_from_bech32(&extraction_context.bech32_decoder, package_address)
+    GlobalAddress::try_from_bech32(&extraction_context.address_decoder, package_address)
         .ok_or(ExtractionError::InvalidAddress)
 }
 
@@ -432,7 +432,7 @@ pub fn extract_package_address(
     extraction_context: &ExtractionContext,
     package_address: &str,
 ) -> Result<PackageAddress, ExtractionError> {
-    PackageAddress::try_from_bech32(&extraction_context.bech32_decoder, package_address)
+    PackageAddress::try_from_bech32(&extraction_context.address_decoder, package_address)
         .ok_or(ExtractionError::InvalidAddress)
 }
 
@@ -440,7 +440,7 @@ pub fn extract_component_address(
     extraction_context: &ExtractionContext,
     component_address: &str,
 ) -> Result<ComponentAddress, ExtractionError> {
-    ComponentAddress::try_from_bech32(&extraction_context.bech32_decoder, component_address)
+    ComponentAddress::try_from_bech32(&extraction_context.address_decoder, component_address)
         .ok_or(ExtractionError::InvalidAddress)
 }
 
@@ -448,7 +448,7 @@ pub fn extract_resource_address(
     extraction_context: &ExtractionContext,
     resource_address: &str,
 ) -> Result<ResourceAddress, ExtractionError> {
-    ResourceAddress::try_from_bech32(&extraction_context.bech32_decoder, resource_address)
+    ResourceAddress::try_from_bech32(&extraction_context.address_decoder, resource_address)
         .ok_or(ExtractionError::InvalidAddress)
 }
 

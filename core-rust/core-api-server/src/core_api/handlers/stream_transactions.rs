@@ -214,6 +214,7 @@ pub fn to_api_notarized_transaction(
 
     Ok(models::NotarizedTransaction {
         hash: to_api_notarized_transaction_hash(notarized_transaction_hash),
+        hash_bech32m: to_api_hash_bech32m(context, notarized_transaction_hash)?,
         payload_hex,
         signed_intent: Box::new(to_api_signed_intent(
             context,
@@ -234,6 +235,7 @@ pub fn to_api_signed_intent(
 ) -> Result<models::SignedTransactionIntent, MappingError> {
     Ok(models::SignedTransactionIntent {
         hash: to_api_signed_intent_hash(signed_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, signed_intent_hash)?,
         intent: Box::new(to_api_intent(context, &signed_intent.intent, intent_hash)?),
         intent_signatures: signed_intent
             .intent_signatures
@@ -307,6 +309,7 @@ pub fn to_api_intent(
 
     Ok(models::TransactionIntent {
         hash: to_api_intent_hash(intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, intent_hash)?,
         header,
         instructions,
         blobs_hex,

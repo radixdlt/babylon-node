@@ -72,6 +72,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.testutil.InternalAddress;
+import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.utils.Pair;
 
 /** Performs Bech32m encoding/decoding. */
@@ -106,6 +108,14 @@ public final class Addressing {
 
   public String encode(ResourceAddress address) {
     return address.encode(this.networkDefinition);
+  }
+
+  public String encode(IntentHash hash) {
+    return Bech32mCoder.encode(network.getIntentHashHrp(), hash.inner().asBytes());
+  }
+
+  public String encode(NotarizedTransactionHash hash) {
+    return Bech32mCoder.encode(network.getNotarizedTransactionHashHrp(), hash.inner().asBytes());
   }
 
   public PackageAddress decodePackageAddress(String address) {

@@ -5,6 +5,7 @@ use sbor::{DecodeError, EncodeError};
 use state_manager::StateVersion;
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
+use transaction::model::TransactionHashBech32EncodeError;
 
 use crate::core_api::*;
 
@@ -42,6 +43,9 @@ pub enum MappingError {
     },
     InvalidEntityAddress {
         encode_error: AddressBech32EncodeError,
+    },
+    InvalidTransactionHash {
+        encode_error: TransactionHashBech32EncodeError,
     },
     MismatchedSubstateId {
         message: String,

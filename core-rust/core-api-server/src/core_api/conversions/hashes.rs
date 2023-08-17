@@ -3,13 +3,12 @@ use transaction::prelude::*;
 
 use crate::core_api::*;
 
-#[allow(dead_code)]
 pub fn to_api_intent_hash(intent_hash: &IntentHash) -> String {
     to_hex(intent_hash)
 }
 
-pub fn to_api_signed_intent_hash(signatures_hash: &SignedIntentHash) -> String {
-    to_hex(signatures_hash)
+pub fn to_api_signed_intent_hash(signed_intent_hash: &SignedIntentHash) -> String {
+    to_hex(signed_intent_hash)
 }
 
 pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash) -> String {
@@ -18,6 +17,16 @@ pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash
 
 pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
+}
+
+pub fn to_api_hash_bech32m<T: HashHasHrp>(
+    context: &MappingContext,
+    hash: &T,
+) -> Result<String, MappingError> {
+    context
+        .transaction_hash_encoder
+        .encode(hash)
+        .map_err(|err| MappingError::InvalidTransactionHash { encode_error: err })
 }
 
 pub fn to_api_state_tree_hash(state_tree_hash: &StateHash) -> String {
@@ -36,20 +45,36 @@ pub fn to_api_hash(hash: &Hash) -> String {
     to_hex(hash)
 }
 
-pub fn extract_intent_hash(hash_str: String) -> Result<IntentHash, ExtractionError> {
-    Ok(IntentHash::from_hash(Hash(
-        from_hex(hash_str)?
-            .try_into()
-            .map_err(|_| ExtractionError::InvalidHash)?,
-    )))
+pub fn extract_intent_hash(
+    context: &ExtractionContext,
+    hash_str: String,
+) -> Result<IntentHash, ExtractionError> {
+    from_hex(&hash_str)
+        .ok()
+        .and_then(|bytes| Hash::try_from(bytes.as_slice()).ok())
+        .map(IntentHash::from_hash)
+        .or_else(|| {
+            context
+                .transaction_hash_decoder
+                .validate_and_decode(&hash_str)
+                .ok()
+        })
+        .ok_or(ExtractionError::InvalidHash)
 }
 
 pub fn extract_notarized_transaction_hash(
+    context: &ExtractionContext,
     hash_str: String,
 ) -> Result<NotarizedTransactionHash, ExtractionError> {
-    Ok(NotarizedTransactionHash::from_hash(Hash(
-        from_hex(hash_str)?
-            .try_into()
-            .map_err(|_| ExtractionError::InvalidHash)?,
-    )))
+    from_hex(&hash_str)
+        .ok()
+        .and_then(|bytes| Hash::try_from(bytes.as_slice()).ok())
+        .map(NotarizedTransactionHash::from_hash)
+        .or_else(|| {
+            context
+                .transaction_hash_decoder
+                .validate_and_decode(&hash_str)
+                .ok()
+        })
+        .ok_or(ExtractionError::InvalidHash)
 }

@@ -32,15 +32,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ParsedSignedTransactionIntentIdentifiers.JSON_PROPERTY_INTENT_HASH,
-  ParsedSignedTransactionIntentIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH
+  ParsedSignedTransactionIntentIdentifiers.JSON_PROPERTY_INTENT_HASH_BECH32M,
+  ParsedSignedTransactionIntentIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH,
+  ParsedSignedTransactionIntentIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ParsedSignedTransactionIntentIdentifiers {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
 
+  public static final String JSON_PROPERTY_INTENT_HASH_BECH32M = "intent_hash_bech32m";
+  private String intentHashBech32m;
+
   public static final String JSON_PROPERTY_SIGNED_INTENT_HASH = "signed_intent_hash";
   private String signedIntentHash;
+
+  public static final String JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M = "signed_intent_hash_bech32m";
+  private String signedIntentHashBech32m;
 
   public ParsedSignedTransactionIntentIdentifiers() { 
   }
@@ -71,6 +79,32 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
 
+  public ParsedSignedTransactionIntentIdentifiers intentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return intentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIntentHashBech32m() {
+    return intentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIntentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+  }
+
+
   public ParsedSignedTransactionIntentIdentifiers signedIntentHash(String signedIntentHash) {
     this.signedIntentHash = signedIntentHash;
     return this;
@@ -97,6 +131,32 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
 
+  public ParsedSignedTransactionIntentIdentifiers signedIntentHashBech32m(String signedIntentHashBech32m) {
+    this.signedIntentHashBech32m = signedIntentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;SignedIntentHash&#x60;.
+   * @return signedIntentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedIntentHash`.")
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSignedIntentHashBech32m() {
+    return signedIntentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignedIntentHashBech32m(String signedIntentHashBech32m) {
+    this.signedIntentHashBech32m = signedIntentHashBech32m;
+  }
+
+
   /**
    * Return true if this ParsedSignedTransactionIntentIdentifiers object is equal to o.
    */
@@ -110,12 +170,14 @@ public class ParsedSignedTransactionIntentIdentifiers {
     }
     ParsedSignedTransactionIntentIdentifiers parsedSignedTransactionIntentIdentifiers = (ParsedSignedTransactionIntentIdentifiers) o;
     return Objects.equals(this.intentHash, parsedSignedTransactionIntentIdentifiers.intentHash) &&
-        Objects.equals(this.signedIntentHash, parsedSignedTransactionIntentIdentifiers.signedIntentHash);
+        Objects.equals(this.intentHashBech32m, parsedSignedTransactionIntentIdentifiers.intentHashBech32m) &&
+        Objects.equals(this.signedIntentHash, parsedSignedTransactionIntentIdentifiers.signedIntentHash) &&
+        Objects.equals(this.signedIntentHashBech32m, parsedSignedTransactionIntentIdentifiers.signedIntentHashBech32m);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, signedIntentHash);
+    return Objects.hash(intentHash, intentHashBech32m, signedIntentHash, signedIntentHashBech32m);
   }
 
   @Override
@@ -123,7 +185,9 @@ public class ParsedSignedTransactionIntentIdentifiers {
     StringBuilder sb = new StringBuilder();
     sb.append("class ParsedSignedTransactionIntentIdentifiers {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    intentHashBech32m: ").append(toIndentedString(intentHashBech32m)).append("\n");
     sb.append("    signedIntentHash: ").append(toIndentedString(signedIntentHash)).append("\n");
+    sb.append("    signedIntentHashBech32m: ").append(toIndentedString(signedIntentHashBech32m)).append("\n");
     sb.append("}");
     return sb.toString();
   }

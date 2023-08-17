@@ -51,7 +51,7 @@ pub(crate) async fn handle_transaction_submit(
                 intent_already_committed_as: rejection
                     .reason
                     .already_committed_error()
-                    .map(to_api_committed_intent_metadata)
+                    .map(|err| to_api_committed_intent_metadata(&mapping_context, err))
                     .transpose()?
                     .map(Box::new),
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
@@ -88,6 +88,7 @@ pub(crate) async fn handle_transaction_submit(
 }
 
 pub fn to_api_committed_intent_metadata(
+    context: &MappingContext,
     error: &AlreadyCommittedError,
 ) -> Result<models::CommittedIntentMetadata, MappingError> {
     Ok(models::CommittedIntentMetadata {
@@ -95,6 +96,10 @@ pub fn to_api_committed_intent_metadata(
         payload_hash: to_api_notarized_transaction_hash(
             &error.committed_notarized_transaction_hash,
         ),
+        payload_hash_bech32m: to_api_hash_bech32m(
+            context,
+            &error.committed_notarized_transaction_hash,
+        )?,
         is_same_transaction: error.committed_notarized_transaction_hash
             == error.notarized_transaction_hash,
     })

@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionPayloadDetails.JSON_PROPERTY_PAYLOAD_HASH,
+  TransactionPayloadDetails.JSON_PROPERTY_PAYLOAD_HASH_BECH32M,
   TransactionPayloadDetails.JSON_PROPERTY_STATE_VERSION,
   TransactionPayloadDetails.JSON_PROPERTY_STATUS,
   TransactionPayloadDetails.JSON_PROPERTY_ERROR_MESSAGE
@@ -41,6 +42,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionPayloadDetails {
   public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
   private String payloadHash;
+
+  public static final String JSON_PROPERTY_PAYLOAD_HASH_BECH32M = "payload_hash_bech32m";
+  private String payloadHashBech32m;
 
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
@@ -77,6 +81,32 @@ public class TransactionPayloadDetails {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPayloadHash(String payloadHash) {
     this.payloadHash = payloadHash;
+  }
+
+
+  public TransactionPayloadDetails payloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return payloadHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPayloadHashBech32m() {
+    return payloadHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPayloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
   }
 
 
@@ -173,6 +203,7 @@ public class TransactionPayloadDetails {
     }
     TransactionPayloadDetails transactionPayloadDetails = (TransactionPayloadDetails) o;
     return Objects.equals(this.payloadHash, transactionPayloadDetails.payloadHash) &&
+        Objects.equals(this.payloadHashBech32m, transactionPayloadDetails.payloadHashBech32m) &&
         Objects.equals(this.stateVersion, transactionPayloadDetails.stateVersion) &&
         Objects.equals(this.status, transactionPayloadDetails.status) &&
         Objects.equals(this.errorMessage, transactionPayloadDetails.errorMessage);
@@ -180,7 +211,7 @@ public class TransactionPayloadDetails {
 
   @Override
   public int hashCode() {
-    return Objects.hash(payloadHash, stateVersion, status, errorMessage);
+    return Objects.hash(payloadHash, payloadHashBech32m, stateVersion, status, errorMessage);
   }
 
   @Override
@@ -188,6 +219,7 @@ public class TransactionPayloadDetails {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPayloadDetails {\n");
     sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
+    sb.append("    payloadHashBech32m: ").append(toIndentedString(payloadHashBech32m)).append("\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    errorMessage: ").append(toIndentedString(errorMessage)).append("\n");

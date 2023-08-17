@@ -16,24 +16,40 @@ pub struct ParsedLedgerTransactionIdentifiers {
     /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "intent_hash", skip_serializing_if = "Option::is_none")]
     pub intent_hash: Option<String>,
+    /// The Bech32m-encoded human readable `IntentHash`.
+    #[serde(rename = "intent_hash_bech32m", skip_serializing_if = "Option::is_none")]
+    pub intent_hash_bech32m: Option<String>,
     /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
     #[serde(rename = "signed_intent_hash", skip_serializing_if = "Option::is_none")]
     pub signed_intent_hash: Option<String>,
+    /// The Bech32m-encoded human readable `SignedIntentHash`.
+    #[serde(rename = "signed_intent_hash_bech32m", skip_serializing_if = "Option::is_none")]
+    pub signed_intent_hash_bech32m: Option<String>,
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
     #[serde(rename = "payload_hash", skip_serializing_if = "Option::is_none")]
     pub payload_hash: Option<String>,
+    /// The Bech32m-encoded human readable `NotarizedTransactionHash`.
+    #[serde(rename = "payload_hash_bech32m", skip_serializing_if = "Option::is_none")]
+    pub payload_hash_bech32m: Option<String>,
     /// The hex-encoded ledger payload transaction hash. This is a wrapper for both user transactions, and system transactions such as genesis and round changes. 
     #[serde(rename = "ledger_hash")]
     pub ledger_hash: String,
+    /// The Bech32m-encoded human readable `LedgerPayloadHash`.
+    #[serde(rename = "ledger_hash_bech32m")]
+    pub ledger_hash_bech32m: String,
 }
 
 impl ParsedLedgerTransactionIdentifiers {
-    pub fn new(ledger_hash: String) -> ParsedLedgerTransactionIdentifiers {
+    pub fn new(ledger_hash: String, ledger_hash_bech32m: String) -> ParsedLedgerTransactionIdentifiers {
         ParsedLedgerTransactionIdentifiers {
             intent_hash: None,
+            intent_hash_bech32m: None,
             signed_intent_hash: None,
+            signed_intent_hash_bech32m: None,
             payload_hash: None,
+            payload_hash_bech32m: None,
             ledger_hash,
+            ledger_hash_bech32m,
         }
     }
 }

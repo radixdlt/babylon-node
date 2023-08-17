@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   CommittedIntentMetadata.JSON_PROPERTY_STATE_VERSION,
   CommittedIntentMetadata.JSON_PROPERTY_PAYLOAD_HASH,
+  CommittedIntentMetadata.JSON_PROPERTY_PAYLOAD_HASH_BECH32M,
   CommittedIntentMetadata.JSON_PROPERTY_IS_SAME_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -42,6 +43,9 @@ public class CommittedIntentMetadata {
 
   public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
   private String payloadHash;
+
+  public static final String JSON_PROPERTY_PAYLOAD_HASH_BECH32M = "payload_hash_bech32m";
+  private String payloadHashBech32m;
 
   public static final String JSON_PROPERTY_IS_SAME_TRANSACTION = "is_same_transaction";
   private Boolean isSameTransaction;
@@ -103,6 +107,32 @@ public class CommittedIntentMetadata {
   }
 
 
+  public CommittedIntentMetadata payloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return payloadHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPayloadHashBech32m() {
+    return payloadHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPayloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+  }
+
+
   public CommittedIntentMetadata isSameTransaction(Boolean isSameTransaction) {
     this.isSameTransaction = isSameTransaction;
     return this;
@@ -143,12 +173,13 @@ public class CommittedIntentMetadata {
     CommittedIntentMetadata committedIntentMetadata = (CommittedIntentMetadata) o;
     return Objects.equals(this.stateVersion, committedIntentMetadata.stateVersion) &&
         Objects.equals(this.payloadHash, committedIntentMetadata.payloadHash) &&
+        Objects.equals(this.payloadHashBech32m, committedIntentMetadata.payloadHashBech32m) &&
         Objects.equals(this.isSameTransaction, committedIntentMetadata.isSameTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, payloadHash, isSameTransaction);
+    return Objects.hash(stateVersion, payloadHash, payloadHashBech32m, isSameTransaction);
   }
 
   @Override
@@ -157,6 +188,7 @@ public class CommittedIntentMetadata {
     sb.append("class CommittedIntentMetadata {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
+    sb.append("    payloadHashBech32m: ").append(toIndentedString(payloadHashBech32m)).append("\n");
     sb.append("    isSameTransaction: ").append(toIndentedString(isSameTransaction)).append("\n");
     sb.append("}");
     return sb.toString();
