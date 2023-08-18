@@ -99,7 +99,9 @@ jobs:
       image_name: "private-babylon-node"
       tags: |
         type=ref,event=tag
-        type=raw,value={{branch}}-{{sha}}
+        type=semver,pattern=v{{version}}         # v1.0.0 if tag is v1.0.0
+        type=semver,pattern=v{{major}}.{{minor}} # v1.0 if tag is v1.0.0
+        type=semver,pattern=v{{major}}           # v1 if tag is v1.0.0             
         type=sha
       context: "."
       dockerfile: "./Dockerfile"
