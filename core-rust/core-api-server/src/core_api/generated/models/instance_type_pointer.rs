@@ -12,19 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ProposerReward {
-    #[serde(rename = "validator_index")]
-    pub validator_index: Box<crate::core_api::generated::models::ActiveValidatorIndex>,
-    /// The string-encoded decimal representing the amount of reward in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
-    #[serde(rename = "xrd_amount")]
-    pub xrd_amount: String,
+pub struct InstanceTypePointer {
+    #[serde(rename = "pointer_type")]
+    pub pointer_type: crate::core_api::generated::models::TypePointerType,
+    #[serde(rename = "index")]
+    pub index: i32,
 }
 
-impl ProposerReward {
-    pub fn new(validator_index: crate::core_api::generated::models::ActiveValidatorIndex, xrd_amount: String) -> ProposerReward {
-        ProposerReward {
-            validator_index: Box::new(validator_index),
-            xrd_amount,
+impl InstanceTypePointer {
+    pub fn new(pointer_type: crate::core_api::generated::models::TypePointerType, index: i32) -> InstanceTypePointer {
+        InstanceTypePointer {
+            pointer_type,
+            index,
         }
     }
 }

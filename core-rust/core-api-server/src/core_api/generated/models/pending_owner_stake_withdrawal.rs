@@ -16,7 +16,7 @@ pub struct PendingOwnerStakeWithdrawal {
     /// An integer between `0` and `10^10`, marking the epoch when the stake units are unlocked for withdrawal. 
     #[serde(rename = "epoch_unlocked")]
     pub epoch_unlocked: i64,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "stake_unit_amount")]
     pub stake_unit_amount: String,
 }

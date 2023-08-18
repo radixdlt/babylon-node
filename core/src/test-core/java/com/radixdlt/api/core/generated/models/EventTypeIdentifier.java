@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EventEmitterIdentifier;
+import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,12 +35,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @ApiModel(description = "Identifier of a specific event schema.")
 @JsonPropertyOrder({
   EventTypeIdentifier.JSON_PROPERTY_EMITTER,
+  EventTypeIdentifier.JSON_PROPERTY_TYPE_POINTER,
   EventTypeIdentifier.JSON_PROPERTY_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EventTypeIdentifier {
   public static final String JSON_PROPERTY_EMITTER = "emitter";
   private EventEmitterIdentifier emitter;
+
+  public static final String JSON_PROPERTY_TYPE_POINTER = "type_pointer";
+  private TypePointer typePointer;
 
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
@@ -70,6 +75,32 @@ public class EventTypeIdentifier {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEmitter(EventEmitterIdentifier emitter) {
     this.emitter = emitter;
+  }
+
+
+  public EventTypeIdentifier typePointer(TypePointer typePointer) {
+    this.typePointer = typePointer;
+    return this;
+  }
+
+   /**
+   * Get typePointer
+   * @return typePointer
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TypePointer getTypePointer() {
+    return typePointer;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTypePointer(TypePointer typePointer) {
+    this.typePointer = typePointer;
   }
 
 
@@ -112,12 +143,13 @@ public class EventTypeIdentifier {
     }
     EventTypeIdentifier eventTypeIdentifier = (EventTypeIdentifier) o;
     return Objects.equals(this.emitter, eventTypeIdentifier.emitter) &&
+        Objects.equals(this.typePointer, eventTypeIdentifier.typePointer) &&
         Objects.equals(this.name, eventTypeIdentifier.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(emitter, name);
+    return Objects.hash(emitter, typePointer, name);
   }
 
   @Override
@@ -125,6 +157,7 @@ public class EventTypeIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class EventTypeIdentifier {\n");
     sb.append("    emitter: ").append(toIndentedString(emitter)).append("\n");
+    sb.append("    typePointer: ").append(toIndentedString(typePointer)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();

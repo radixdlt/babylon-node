@@ -15,7 +15,7 @@
 pub struct PaymentToRoyaltyRecipient {
     #[serde(rename = "royalty_recipient")]
     pub royalty_recipient: Box<crate::core_api::generated::models::EntityReference>,
-    /// The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_amount")]
     pub xrd_amount: String,
 }

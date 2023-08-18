@@ -21,7 +21,7 @@ pub struct ValidatorFieldStateValue {
     pub is_registered: bool,
     #[serde(rename = "accepts_delegated_stake")]
     pub accepts_delegated_stake: bool,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "validator_fee_factor")]
     pub validator_fee_factor: String,
     #[serde(rename = "validator_fee_change_request", skip_serializing_if = "Option::is_none")]
@@ -42,7 +42,7 @@ pub struct ValidatorFieldStateValue {
     pub pending_owner_stake_unit_unlock_vault: Box<crate::core_api::generated::models::EntityReference>,
     #[serde(rename = "pending_owner_stake_unit_withdrawals")]
     pub pending_owner_stake_unit_withdrawals: Vec<crate::core_api::generated::models::PendingOwnerStakeWithdrawal>,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "already_unlocked_owner_stake_unit_amount")]
     pub already_unlocked_owner_stake_unit_amount: String,
 }

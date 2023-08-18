@@ -22,84 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PaymentToRoyaltyRecipient
+ * PackageTypePointerAllOf
  */
 @JsonPropertyOrder({
-  PaymentToRoyaltyRecipient.JSON_PROPERTY_ROYALTY_RECIPIENT,
-  PaymentToRoyaltyRecipient.JSON_PROPERTY_XRD_AMOUNT
+  PackageTypePointerAllOf.JSON_PROPERTY_SCHEMA_HASH,
+  PackageTypePointerAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PaymentToRoyaltyRecipient {
-  public static final String JSON_PROPERTY_ROYALTY_RECIPIENT = "royalty_recipient";
-  private EntityReference royaltyRecipient;
+public class PackageTypePointerAllOf {
+  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
+  private String schemaHash;
 
-  public static final String JSON_PROPERTY_XRD_AMOUNT = "xrd_amount";
-  private String xrdAmount;
+  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
+  private LocalTypeIndex localTypeIndex;
 
-  public PaymentToRoyaltyRecipient() { 
+  public PackageTypePointerAllOf() { 
   }
 
-  public PaymentToRoyaltyRecipient royaltyRecipient(EntityReference royaltyRecipient) {
-    this.royaltyRecipient = royaltyRecipient;
+  public PackageTypePointerAllOf schemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
     return this;
   }
 
    /**
-   * Get royaltyRecipient
-   * @return royaltyRecipient
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
+   * @return schemaHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSchemaHash() {
+    return schemaHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSchemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
+  }
+
+
+  public PackageTypePointerAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
+    return this;
+  }
+
+   /**
+   * Get localTypeIndex
+   * @return localTypeIndex
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RECIPIENT)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getRoyaltyRecipient() {
-    return royaltyRecipient;
+  public LocalTypeIndex getLocalTypeIndex() {
+    return localTypeIndex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RECIPIENT)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyRecipient(EntityReference royaltyRecipient) {
-    this.royaltyRecipient = royaltyRecipient;
-  }
-
-
-  public PaymentToRoyaltyRecipient xrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
-    return this;
-  }
-
-   /**
-   * The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
-   * @return xrdAmount
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getXrdAmount() {
-    return xrdAmount;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
   }
 
 
   /**
-   * Return true if this PaymentToRoyaltyRecipient object is equal to o.
+   * Return true if this PackageTypePointer_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +109,22 @@ public class PaymentToRoyaltyRecipient {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PaymentToRoyaltyRecipient paymentToRoyaltyRecipient = (PaymentToRoyaltyRecipient) o;
-    return Objects.equals(this.royaltyRecipient, paymentToRoyaltyRecipient.royaltyRecipient) &&
-        Objects.equals(this.xrdAmount, paymentToRoyaltyRecipient.xrdAmount);
+    PackageTypePointerAllOf packageTypePointerAllOf = (PackageTypePointerAllOf) o;
+    return Objects.equals(this.schemaHash, packageTypePointerAllOf.schemaHash) &&
+        Objects.equals(this.localTypeIndex, packageTypePointerAllOf.localTypeIndex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(royaltyRecipient, xrdAmount);
+    return Objects.hash(schemaHash, localTypeIndex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PaymentToRoyaltyRecipient {\n");
-    sb.append("    royaltyRecipient: ").append(toIndentedString(royaltyRecipient)).append("\n");
-    sb.append("    xrdAmount: ").append(toIndentedString(xrdAmount)).append("\n");
+    sb.append("class PackageTypePointerAllOf {\n");
+    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

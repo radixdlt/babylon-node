@@ -4,7 +4,7 @@ use radix_engine::types::*;
 
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::transaction::{
-    CostingParameters, FeeDestination, FeeSource, TransactionFeeSummary,
+    CostingParameters, EventSystemStructure, FeeDestination, FeeSource, TransactionFeeSummary,
 };
 use radix_engine_queries::typed_substate_layout::*;
 use transaction::prelude::TransactionCostingParameters;
@@ -120,7 +120,7 @@ pub fn to_api_receipt(
     let api_events = on_ledger
         .application_events
         .into_iter()
-        .map(|event| to_api_event(context, event))
+        .map(|event| to_api_event(context, &local_execution.events_system_structure, event))
         .collect::<Result<Vec<_>, _>>()?;
 
     let api_output = output
@@ -331,15 +331,24 @@ pub fn to_api_next_epoch(
 #[tracing::instrument(skip_all)]
 pub fn to_api_event(
     context: &MappingContext,
+    events_system_structure: &IndexMap<EventTypeIdentifier, EventSystemStructure>,
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
-    let ApplicationEvent {
-        type_id: EventTypeIdentifier(emitter, name),
-        data,
-    } = event;
+    let ApplicationEvent { type_id, data } = event;
+    let event_system_structure =
+        events_system_structure
+            .get(&type_id)
+            .ok_or(MappingError::MissingSystemStructure {
+                message: format!(
+                    "Missing system structure for event of type ID {:?}",
+                    type_id
+                ),
+            })?;
+    let type_reference = &event_system_structure.package_type_reference;
+
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
-            emitter: Some(match emitter {
+            emitter: Some(match type_id.0 {
                 Emitter::Function(BlueprintId {
                     package_address,
                     blueprint_name,
@@ -354,7 +363,14 @@ pub fn to_api_event(
                     }
                 }
             }),
-            name,
+            type_pointer: Some(models::TypePointer::PackageTypePointer {
+                schema_hash: to_api_hash(&type_reference.schema_hash),
+                local_type_index: Box::new(to_api_local_type_index(
+                    context,
+                    &type_reference.local_type_index,
+                )?),
+            }),
+            name: type_id.1,
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })

@@ -9,24 +9,31 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum TypePointerType {
+    #[serde(rename = "Package")]
+    Package,
+    #[serde(rename = "Instance")]
+    Instance,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ProposerReward {
-    #[serde(rename = "validator_index")]
-    pub validator_index: Box<crate::core_api::generated::models::ActiveValidatorIndex>,
-    /// The string-encoded decimal representing the amount of reward in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
-    #[serde(rename = "xrd_amount")]
-    pub xrd_amount: String,
 }
 
-impl ProposerReward {
-    pub fn new(validator_index: crate::core_api::generated::models::ActiveValidatorIndex, xrd_amount: String) -> ProposerReward {
-        ProposerReward {
-            validator_index: Box::new(validator_index),
-            xrd_amount,
+impl ToString for TypePointerType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Package => String::from("Package"),
+            Self::Instance => String::from("Instance"),
         }
     }
 }
+
+impl Default for TypePointerType {
+    fn default() -> TypePointerType {
+        Self::Package
+    }
+}
+
+
 
 

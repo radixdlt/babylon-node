@@ -22,84 +22,55 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PaymentToRoyaltyRecipient
+ * InstanceTypePointerAllOf
  */
 @JsonPropertyOrder({
-  PaymentToRoyaltyRecipient.JSON_PROPERTY_ROYALTY_RECIPIENT,
-  PaymentToRoyaltyRecipient.JSON_PROPERTY_XRD_AMOUNT
+  InstanceTypePointerAllOf.JSON_PROPERTY_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PaymentToRoyaltyRecipient {
-  public static final String JSON_PROPERTY_ROYALTY_RECIPIENT = "royalty_recipient";
-  private EntityReference royaltyRecipient;
+public class InstanceTypePointerAllOf {
+  public static final String JSON_PROPERTY_INDEX = "index";
+  private Integer index;
 
-  public static final String JSON_PROPERTY_XRD_AMOUNT = "xrd_amount";
-  private String xrdAmount;
-
-  public PaymentToRoyaltyRecipient() { 
+  public InstanceTypePointerAllOf() { 
   }
 
-  public PaymentToRoyaltyRecipient royaltyRecipient(EntityReference royaltyRecipient) {
-    this.royaltyRecipient = royaltyRecipient;
+  public InstanceTypePointerAllOf index(Integer index) {
+    this.index = index;
     return this;
   }
 
    /**
-   * Get royaltyRecipient
-   * @return royaltyRecipient
+   * Get index
+   * minimum: 0
+   * maximum: 255
+   * @return index
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RECIPIENT)
+  @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getRoyaltyRecipient() {
-    return royaltyRecipient;
+  public Integer getIndex() {
+    return index;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_RECIPIENT)
+  @JsonProperty(JSON_PROPERTY_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyRecipient(EntityReference royaltyRecipient) {
-    this.royaltyRecipient = royaltyRecipient;
-  }
-
-
-  public PaymentToRoyaltyRecipient xrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
-    return this;
-  }
-
-   /**
-   * The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(192 - 1) &lt;&#x3D; m &lt; 2^(192 - 1)&#x60;. 
-   * @return xrdAmount
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of fee in XRD paid as royalty to this recipient. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getXrdAmount() {
-    return xrdAmount;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public void setIndex(Integer index) {
+    this.index = index;
   }
 
 
   /**
-   * Return true if this PaymentToRoyaltyRecipient object is equal to o.
+   * Return true if this InstanceTypePointer_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +80,20 @@ public class PaymentToRoyaltyRecipient {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PaymentToRoyaltyRecipient paymentToRoyaltyRecipient = (PaymentToRoyaltyRecipient) o;
-    return Objects.equals(this.royaltyRecipient, paymentToRoyaltyRecipient.royaltyRecipient) &&
-        Objects.equals(this.xrdAmount, paymentToRoyaltyRecipient.xrdAmount);
+    InstanceTypePointerAllOf instanceTypePointerAllOf = (InstanceTypePointerAllOf) o;
+    return Objects.equals(this.index, instanceTypePointerAllOf.index);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(royaltyRecipient, xrdAmount);
+    return Objects.hash(index);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PaymentToRoyaltyRecipient {\n");
-    sb.append("    royaltyRecipient: ").append(toIndentedString(royaltyRecipient)).append("\n");
-    sb.append("    xrdAmount: ").append(toIndentedString(xrdAmount)).append("\n");
+    sb.append("class InstanceTypePointerAllOf {\n");
+    sb.append("    index: ").append(toIndentedString(index)).append("\n");
     sb.append("}");
     return sb.toString();
   }

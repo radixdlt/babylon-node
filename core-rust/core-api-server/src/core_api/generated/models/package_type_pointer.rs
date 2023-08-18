@@ -12,19 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ProposerReward {
-    #[serde(rename = "validator_index")]
-    pub validator_index: Box<crate::core_api::generated::models::ActiveValidatorIndex>,
-    /// The string-encoded decimal representing the amount of reward in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
-    #[serde(rename = "xrd_amount")]
-    pub xrd_amount: String,
+pub struct PackageTypePointer {
+    #[serde(rename = "pointer_type")]
+    pub pointer_type: crate::core_api::generated::models::TypePointerType,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "schema_hash")]
+    pub schema_hash: String,
+    #[serde(rename = "local_type_index")]
+    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl ProposerReward {
-    pub fn new(validator_index: crate::core_api::generated::models::ActiveValidatorIndex, xrd_amount: String) -> ProposerReward {
-        ProposerReward {
-            validator_index: Box::new(validator_index),
-            xrd_amount,
+impl PackageTypePointer {
+    pub fn new(pointer_type: crate::core_api::generated::models::TypePointerType, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypePointer {
+        PackageTypePointer {
+            pointer_type,
+            schema_hash,
+            local_type_index: Box::new(local_type_index),
         }
     }
 }

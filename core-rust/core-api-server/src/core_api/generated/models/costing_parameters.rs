@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CostingParameters {
-    /// The string-encoded decimal representing the XRD price of a single cost unit of transaction execution. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the XRD price of a single cost unit of transaction execution. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "execution_cost_unit_price")]
     pub execution_cost_unit_price: String,
     /// An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
@@ -22,16 +22,16 @@ pub struct CostingParameters {
     /// An integer between `0` and `2^32 - 1`, representing the number of execution cost units loaned from system.
     #[serde(rename = "execution_cost_unit_loan")]
     pub execution_cost_unit_loan: i64,
-    /// The string-encoded decimal representing the XRD price of a single cost unit of transaction finalization. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the XRD price of a single cost unit of transaction finalization. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "finalization_cost_unit_price")]
     pub finalization_cost_unit_price: String,
     /// An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction finalization.
     #[serde(rename = "finalization_cost_unit_limit")]
     pub finalization_cost_unit_limit: i64,
-    /// The string-encoded decimal representing the price of 1 USD, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the price of 1 USD, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_usd_price")]
     pub xrd_usd_price: String,
-    /// The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the price of 1 byte of storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_storage_price")]
     pub xrd_storage_price: String,
     /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
