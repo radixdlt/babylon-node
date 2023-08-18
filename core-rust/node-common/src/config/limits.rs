@@ -62,27 +62,22 @@
  * permissions under this License.
  */
 
-use radix_engine_common::prelude::MAX_NUMBER_OF_SUBSTATES_IN_TRACK;
+use radix_engine_common::prelude::*;
 
 // TODO: revisit & tune before Babylon
 pub const DEFAULT_MAX_VERTEX_TRANSACTION_COUNT: u32 = 10;
 pub const DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE: usize = (3.8 * 1024.0 * 1024.0) as usize;
-pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 = 200_000_000;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE: usize = 40 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT: usize =
-    MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE: usize = 10 * 1024 * 1024;
-pub const DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT: usize =
-    MAX_NUMBER_OF_SUBSTATES_IN_TRACK * 10;
+pub const DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED: u32 =
+    EXECUTION_COST_UNIT_LIMIT * 2;
+pub const DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED: u32 =
+    FINALIZATION_COST_UNIT_LIMIT * 2;
 
+#[derive(Debug, Clone, Copy, ScryptoSbor)]
 pub struct VertexLimitsConfig {
     pub max_transaction_count: u32,
     pub max_total_transactions_size: usize,
     pub max_total_execution_cost_units_consumed: u32,
-    pub max_total_substate_read_size: usize,
-    pub max_total_substate_read_count: usize,
-    pub max_total_substate_write_size: usize,
-    pub max_total_substate_write_count: usize,
+    pub max_total_finalization_cost_units_consumed: u32,
 }
 
 impl VertexLimitsConfig {
@@ -92,10 +87,17 @@ impl VertexLimitsConfig {
             max_total_transactions_size: DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE,
             max_total_execution_cost_units_consumed:
                 DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-            max_total_substate_read_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-            max_total_substate_read_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-            max_total_substate_write_size: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-            max_total_substate_write_count: DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
+            max_total_finalization_cost_units_consumed:
+                DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED,
+        }
+    }
+
+    pub fn max() -> Self {
+        Self {
+            max_total_transactions_size: usize::MAX,
+            max_transaction_count: u32::MAX,
+            max_total_execution_cost_units_consumed: u32::MAX,
+            max_total_finalization_cost_units_consumed: u32::MAX,
         }
     }
 }

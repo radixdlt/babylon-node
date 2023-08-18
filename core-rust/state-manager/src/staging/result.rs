@@ -92,8 +92,14 @@ use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
-    Reject(RejectResult),
+    Reject(ProcessedRejectResult),
     Abort(AbortResult),
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessedRejectResult {
+    pub result: RejectResult,
+    pub fee_summary: TransactionFeeSummary,
 }
 
 #[derive(Clone, Debug)]
@@ -133,7 +139,12 @@ impl ProcessedTransactionReceipt {
                     },
                 ))
             }
-            TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
+            TransactionResult::Reject(reject) => {
+                ProcessedTransactionReceipt::Reject(ProcessedRejectResult {
+                    result: reject,
+                    fee_summary: receipt.fee_summary,
+                })
+            }
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
     }
@@ -153,7 +164,7 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, RejectResult> {
+    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),

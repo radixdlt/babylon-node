@@ -16,7 +16,6 @@ use transaction::prelude::TransactionCostingParameters;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::limits::ExecutionMetrics;
 use crate::transaction::PayloadIdentifiers;
 use crate::{
     ConsensusReceipt, EventHash, ExecutionFeeData, LedgerHashes, SubstateChangeHash,
@@ -162,7 +161,6 @@ pub struct LedgerTransactionReceipt {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
-    pub execution_metrics: ExecutionMetrics,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
@@ -211,7 +209,6 @@ impl LocalTransactionReceipt {
     ) -> Self {
         let next_epoch = commit_result.next_epoch();
         let system_structure = commit_result.system_structure;
-        let execution_metrics = ExecutionMetrics::new_from_commit(&execution_fee_data.fee_summary);
         Self {
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
@@ -223,7 +220,6 @@ impl LocalTransactionReceipt {
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
-                execution_metrics,
                 outcome: commit_result.outcome.into(),
                 fee_summary: execution_fee_data.fee_summary,
                 fee_source: commit_result.fee_source,
