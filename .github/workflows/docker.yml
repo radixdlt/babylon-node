@@ -98,9 +98,9 @@ jobs:
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
       tags: |
-        type=ref,event=tag        # Writes tag 'rcnet-v1' when creating a release for tag 'rcnet-v1'. Value equals tag of the release. This tag has highest priority.
-        type=raw,value={{branch}}-{{sha}} # Writes 'feature-123-54dfge56' for releases on branch 'feature-123' with commit sha '54dfge56'
-        type=sha                  # Writes 'sha-54dfge56' with commit sha '54dfge56'
+        type=ref,event=tag
+        type=raw,value={{branch}}-{{sha}}
+        type=sha
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
