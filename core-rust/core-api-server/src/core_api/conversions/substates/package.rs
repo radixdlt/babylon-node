@@ -1,6 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::transaction::PackageTypeReference;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
@@ -495,6 +496,20 @@ pub fn to_api_type_identifier(
     Ok(models::TypeIdentifier {
         schema_hash: to_api_hash(&type_identifier.0),
         local_type_index: Box::new(to_api_local_type_index(context, &type_identifier.1)?),
+    })
+}
+
+pub fn to_api_package_type_reference(
+    context: &MappingContext,
+    reference: &PackageTypeReference,
+) -> Result<models::PackageTypeReference, MappingError> {
+    Ok(models::PackageTypeReference {
+        package_address: to_api_package_address(context, &reference.package_address)?,
+        schema_hash: to_api_hash(&reference.schema_hash),
+        local_type_index: Box::new(to_api_local_type_index(
+            context,
+            &reference.local_type_index,
+        )?),
     })
 }
 

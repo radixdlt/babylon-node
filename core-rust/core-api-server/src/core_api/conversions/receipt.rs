@@ -344,11 +344,10 @@ pub fn to_api_event(
                     type_id
                 ),
             })?;
-    let type_reference = &event_system_structure.package_type_reference;
-
+    let EventTypeIdentifier(emitter, name) = type_id;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
-            emitter: Some(match type_id.0 {
+            emitter: Some(match emitter {
                 Emitter::Function(BlueprintId {
                     package_address,
                     blueprint_name,
@@ -363,14 +362,11 @@ pub fn to_api_event(
                     }
                 }
             }),
-            type_pointer: Some(models::TypePointer::PackageTypePointer {
-                schema_hash: to_api_hash(&type_reference.schema_hash),
-                local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    &type_reference.local_type_index,
-                )?),
-            }),
-            name: type_id.1,
+            type_reference: Box::new(to_api_package_type_reference(
+                context,
+                &event_system_structure.package_type_reference,
+            )?),
+            name,
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })

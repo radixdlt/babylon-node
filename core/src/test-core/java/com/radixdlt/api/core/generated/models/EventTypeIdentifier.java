@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EventEmitterIdentifier;
-import com.radixdlt.api.core.generated.models.TypePointer;
+import com.radixdlt.api.core.generated.models.PackageTypeReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @ApiModel(description = "Identifier of a specific event schema.")
 @JsonPropertyOrder({
   EventTypeIdentifier.JSON_PROPERTY_EMITTER,
-  EventTypeIdentifier.JSON_PROPERTY_TYPE_POINTER,
+  EventTypeIdentifier.JSON_PROPERTY_TYPE_REFERENCE,
   EventTypeIdentifier.JSON_PROPERTY_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -43,8 +43,8 @@ public class EventTypeIdentifier {
   public static final String JSON_PROPERTY_EMITTER = "emitter";
   private EventEmitterIdentifier emitter;
 
-  public static final String JSON_PROPERTY_TYPE_POINTER = "type_pointer";
-  private TypePointer typePointer;
+  public static final String JSON_PROPERTY_TYPE_REFERENCE = "type_reference";
+  private PackageTypeReference typeReference;
 
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
@@ -78,29 +78,29 @@ public class EventTypeIdentifier {
   }
 
 
-  public EventTypeIdentifier typePointer(TypePointer typePointer) {
-    this.typePointer = typePointer;
+  public EventTypeIdentifier typeReference(PackageTypeReference typeReference) {
+    this.typeReference = typeReference;
     return this;
   }
 
    /**
-   * Get typePointer
-   * @return typePointer
+   * Get typeReference
+   * @return typeReference
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_TYPE_REFERENCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getTypePointer() {
-    return typePointer;
+  public PackageTypeReference getTypeReference() {
+    return typeReference;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_TYPE_REFERENCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTypePointer(TypePointer typePointer) {
-    this.typePointer = typePointer;
+  public void setTypeReference(PackageTypeReference typeReference) {
+    this.typeReference = typeReference;
   }
 
 
@@ -143,13 +143,13 @@ public class EventTypeIdentifier {
     }
     EventTypeIdentifier eventTypeIdentifier = (EventTypeIdentifier) o;
     return Objects.equals(this.emitter, eventTypeIdentifier.emitter) &&
-        Objects.equals(this.typePointer, eventTypeIdentifier.typePointer) &&
+        Objects.equals(this.typeReference, eventTypeIdentifier.typeReference) &&
         Objects.equals(this.name, eventTypeIdentifier.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(emitter, typePointer, name);
+    return Objects.hash(emitter, typeReference, name);
   }
 
   @Override
@@ -157,7 +157,7 @@ public class EventTypeIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class EventTypeIdentifier {\n");
     sb.append("    emitter: ").append(toIndentedString(emitter)).append("\n");
-    sb.append("    typePointer: ").append(toIndentedString(typePointer)).append("\n");
+    sb.append("    typeReference: ").append(toIndentedString(typeReference)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();

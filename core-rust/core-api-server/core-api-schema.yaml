@@ -2179,14 +2179,13 @@ components:
       type: object
       required:
         - emitter
-        - type_pointer
+        - type_reference
         - name
       properties:
         emitter:
           $ref: "#/components/schemas/EventEmitterIdentifier"
-        type_pointer:
-          $ref: '#/components/schemas/TypePointer'
-          description: The type pointer of the event's type in the context of the emitter's SBOR schema.
+        type_reference:
+          $ref: '#/components/schemas/PackageTypeReference'
         name:
           type: string
     EventEmitterIdentifierType:
@@ -2880,48 +2879,19 @@ components:
       description: |
         The constraints on the concrete type provided to fill the generic type parameter.
         Note: currently, we only support the wildcard (i.e. `Any`) generic type.
-    TypePointerType:
-      type: string
-      enum:
-        - Package
-        - Instance
-    TypePointer:
+    PackageTypeReference:
       type: object
       required:
-        - pointer_type
+        - package_address
+        - schema_hash
+        - local_type_index
       properties:
-        pointer_type:
-          $ref: '#/components/schemas/TypePointerType'
-      discriminator:
-        propertyName: pointer_type
-        mapping:
-          # NOTE: These need to match TypePointerType options
-          Package: '#/components/schemas/PackageTypePointer'
-          Instance: '#/components/schemas/InstanceTypePointer'
-    PackageTypePointer:
-      allOf:
-        - $ref: '#/components/schemas/TypePointer'
-        - type: object
-          required:
-            - schema_hash
-            - local_type_index
-          properties:
-            schema_hash:
-              $ref: '#/components/schemas/SchemaHash'
-            local_type_index:
-              $ref: '#/components/schemas/LocalTypeIndex'
-    InstanceTypePointer:
-      allOf:
-        - $ref: '#/components/schemas/TypePointer'
-        - type: object
-          required:
-            - index
-          properties:
-            index:
-              type: integer
-              format: int32
-              minimum: 0
-              maximum: 255
+        package_address:
+          $ref: "#/components/schemas/PackageAddress"
+        schema_hash:
+          $ref: '#/components/schemas/SchemaHash'
+        local_type_index:
+          $ref: "#/components/schemas/LocalTypeIndex"
     PackageExport:
       type: object
       required:
