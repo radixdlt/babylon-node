@@ -3018,7 +3018,7 @@ components:
               $ref: '#/components/schemas/SchemaHash'
             instance_type_index:
               type: integer
-              format: i32
+              format: int32
               minimum: 0
               maximum: 255
             local_type_index:
@@ -3343,7 +3343,7 @@ components:
           properties:
             instance_provided_type_index:
               type: integer
-              format: i32
+              format: int32
               minimum: 0
               maximum: 255
               description: Provided by an instance's schema at the given index in its provided types array.

@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageTypeReferenceAllOf {
+pub struct PackageTypeReference {
     /// The Bech32m-encoded human readable version of the package address
     #[serde(rename = "package_address")]
     pub package_address: String,
@@ -23,9 +23,9 @@ pub struct PackageTypeReferenceAllOf {
     pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl PackageTypeReferenceAllOf {
-    pub fn new(package_address: String, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypeReferenceAllOf {
-        PackageTypeReferenceAllOf {
+impl PackageTypeReference {
+    pub fn new(package_address: String, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypeReference {
+        PackageTypeReference {
             package_address,
             schema_hash,
             local_type_index: Box::new(local_type_index),

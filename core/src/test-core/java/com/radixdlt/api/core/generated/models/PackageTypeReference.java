@@ -29,15 +29,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageTypeReferenceAllOf
+ * PackageTypeReference
  */
 @JsonPropertyOrder({
-  PackageTypeReferenceAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
-  PackageTypeReferenceAllOf.JSON_PROPERTY_SCHEMA_HASH,
-  PackageTypeReferenceAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  PackageTypeReference.JSON_PROPERTY_PACKAGE_ADDRESS,
+  PackageTypeReference.JSON_PROPERTY_SCHEMA_HASH,
+  PackageTypeReference.JSON_PROPERTY_LOCAL_TYPE_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageTypeReferenceAllOf {
+public class PackageTypeReference {
   public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
   private String packageAddress;
 
@@ -47,10 +47,10 @@ public class PackageTypeReferenceAllOf {
   public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
   private LocalTypeIndex localTypeIndex;
 
-  public PackageTypeReferenceAllOf() { 
+  public PackageTypeReference() { 
   }
 
-  public PackageTypeReferenceAllOf packageAddress(String packageAddress) {
+  public PackageTypeReference packageAddress(String packageAddress) {
     this.packageAddress = packageAddress;
     return this;
   }
@@ -76,7 +76,7 @@ public class PackageTypeReferenceAllOf {
   }
 
 
-  public PackageTypeReferenceAllOf schemaHash(String schemaHash) {
+  public PackageTypeReference schemaHash(String schemaHash) {
     this.schemaHash = schemaHash;
     return this;
   }
@@ -102,7 +102,7 @@ public class PackageTypeReferenceAllOf {
   }
 
 
-  public PackageTypeReferenceAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
+  public PackageTypeReference localTypeIndex(LocalTypeIndex localTypeIndex) {
     this.localTypeIndex = localTypeIndex;
     return this;
   }
@@ -129,7 +129,7 @@ public class PackageTypeReferenceAllOf {
 
 
   /**
-   * Return true if this PackageTypeReference_allOf object is equal to o.
+   * Return true if this PackageTypeReference object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -139,10 +139,10 @@ public class PackageTypeReferenceAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageTypeReferenceAllOf packageTypeReferenceAllOf = (PackageTypeReferenceAllOf) o;
-    return Objects.equals(this.packageAddress, packageTypeReferenceAllOf.packageAddress) &&
-        Objects.equals(this.schemaHash, packageTypeReferenceAllOf.schemaHash) &&
-        Objects.equals(this.localTypeIndex, packageTypeReferenceAllOf.localTypeIndex);
+    PackageTypeReference packageTypeReference = (PackageTypeReference) o;
+    return Objects.equals(this.packageAddress, packageTypeReference.packageAddress) &&
+        Objects.equals(this.schemaHash, packageTypeReference.schemaHash) &&
+        Objects.equals(this.localTypeIndex, packageTypeReference.localTypeIndex);
   }
 
   @Override
@@ -153,7 +153,7 @@ public class PackageTypeReferenceAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageTypeReferenceAllOf {\n");
+    sb.append("class PackageTypeReference {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
     sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
