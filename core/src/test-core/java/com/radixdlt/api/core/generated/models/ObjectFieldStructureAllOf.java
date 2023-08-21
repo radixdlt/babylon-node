@@ -22,116 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SubstateId;
-import com.radixdlt.api.core.generated.models.SubstateSystemStructure;
-import com.radixdlt.api.core.generated.models.SubstateValue;
+import com.radixdlt.api.core.generated.models.ObjectSubstateTypeReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CreatedSubstate
+ * ObjectFieldStructureAllOf
  */
 @JsonPropertyOrder({
-  CreatedSubstate.JSON_PROPERTY_SUBSTATE_ID,
-  CreatedSubstate.JSON_PROPERTY_VALUE,
-  CreatedSubstate.JSON_PROPERTY_SYSTEM_STRUCTURE
+  ObjectFieldStructureAllOf.JSON_PROPERTY_VALUE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CreatedSubstate {
-  public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
-  private SubstateId substateId;
+public class ObjectFieldStructureAllOf {
+  public static final String JSON_PROPERTY_VALUE_SCHEMA = "value_schema";
+  private ObjectSubstateTypeReference valueSchema;
 
-  public static final String JSON_PROPERTY_VALUE = "value";
-  private SubstateValue value;
-
-  public static final String JSON_PROPERTY_SYSTEM_STRUCTURE = "system_structure";
-  private SubstateSystemStructure systemStructure;
-
-  public CreatedSubstate() { 
+  public ObjectFieldStructureAllOf() { 
   }
 
-  public CreatedSubstate substateId(SubstateId substateId) {
-    this.substateId = substateId;
+  public ObjectFieldStructureAllOf valueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
     return this;
   }
 
    /**
-   * Get substateId
-   * @return substateId
+   * Get valueSchema
+   * @return valueSchema
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateId getSubstateId() {
-    return substateId;
+  public ObjectSubstateTypeReference getValueSchema() {
+    return valueSchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateId(SubstateId substateId) {
-    this.substateId = substateId;
-  }
-
-
-  public CreatedSubstate value(SubstateValue value) {
-    this.value = value;
-    return this;
-  }
-
-   /**
-   * Get value
-   * @return value
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateValue getValue() {
-    return value;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(SubstateValue value) {
-    this.value = value;
-  }
-
-
-  public CreatedSubstate systemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
-    return this;
-  }
-
-   /**
-   * Get systemStructure
-   * @return systemStructure
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateSystemStructure getSystemStructure() {
-    return systemStructure;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSystemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
+  public void setValueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
   }
 
 
   /**
-   * Return true if this CreatedSubstate object is equal to o.
+   * Return true if this ObjectFieldStructure_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +79,20 @@ public class CreatedSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CreatedSubstate createdSubstate = (CreatedSubstate) o;
-    return Objects.equals(this.substateId, createdSubstate.substateId) &&
-        Objects.equals(this.value, createdSubstate.value) &&
-        Objects.equals(this.systemStructure, createdSubstate.systemStructure);
+    ObjectFieldStructureAllOf objectFieldStructureAllOf = (ObjectFieldStructureAllOf) o;
+    return Objects.equals(this.valueSchema, objectFieldStructureAllOf.valueSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId, value, systemStructure);
+    return Objects.hash(valueSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CreatedSubstate {\n");
-    sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
-    sb.append("    value: ").append(toIndentedString(value)).append("\n");
-    sb.append("    systemStructure: ").append(toIndentedString(systemStructure)).append("\n");
+    sb.append("class ObjectFieldStructureAllOf {\n");
+    sb.append("    valueSchema: ").append(toIndentedString(valueSchema)).append("\n");
     sb.append("}");
     return sb.toString();
   }

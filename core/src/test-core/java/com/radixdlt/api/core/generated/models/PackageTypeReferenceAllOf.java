@@ -22,116 +22,114 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SubstateId;
-import com.radixdlt.api.core.generated.models.SubstateSystemStructure;
-import com.radixdlt.api.core.generated.models.SubstateValue;
+import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CreatedSubstate
+ * PackageTypeReferenceAllOf
  */
 @JsonPropertyOrder({
-  CreatedSubstate.JSON_PROPERTY_SUBSTATE_ID,
-  CreatedSubstate.JSON_PROPERTY_VALUE,
-  CreatedSubstate.JSON_PROPERTY_SYSTEM_STRUCTURE
+  PackageTypeReferenceAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
+  PackageTypeReferenceAllOf.JSON_PROPERTY_SCHEMA_HASH,
+  PackageTypeReferenceAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CreatedSubstate {
-  public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
-  private SubstateId substateId;
+public class PackageTypeReferenceAllOf {
+  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
+  private String packageAddress;
 
-  public static final String JSON_PROPERTY_VALUE = "value";
-  private SubstateValue value;
+  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
+  private String schemaHash;
 
-  public static final String JSON_PROPERTY_SYSTEM_STRUCTURE = "system_structure";
-  private SubstateSystemStructure systemStructure;
+  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
+  private LocalTypeIndex localTypeIndex;
 
-  public CreatedSubstate() { 
+  public PackageTypeReferenceAllOf() { 
   }
 
-  public CreatedSubstate substateId(SubstateId substateId) {
-    this.substateId = substateId;
+  public PackageTypeReferenceAllOf packageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
     return this;
   }
 
    /**
-   * Get substateId
-   * @return substateId
+   * The Bech32m-encoded human readable version of the package address
+   * @return packageAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateId getSubstateId() {
-    return substateId;
+  public String getPackageAddress() {
+    return packageAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateId(SubstateId substateId) {
-    this.substateId = substateId;
+  public void setPackageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
   }
 
 
-  public CreatedSubstate value(SubstateValue value) {
-    this.value = value;
+  public PackageTypeReferenceAllOf schemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
     return this;
   }
 
    /**
-   * Get value
-   * @return value
+   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
+   * @return schemaHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateValue getValue() {
-    return value;
+  public String getSchemaHash() {
+    return schemaHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(SubstateValue value) {
-    this.value = value;
+  public void setSchemaHash(String schemaHash) {
+    this.schemaHash = schemaHash;
   }
 
 
-  public CreatedSubstate systemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
+  public PackageTypeReferenceAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
     return this;
   }
 
    /**
-   * Get systemStructure
-   * @return systemStructure
+   * Get localTypeIndex
+   * @return localTypeIndex
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateSystemStructure getSystemStructure() {
-    return systemStructure;
+  public LocalTypeIndex getLocalTypeIndex() {
+    return localTypeIndex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSystemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
+  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
   }
 
 
   /**
-   * Return true if this CreatedSubstate object is equal to o.
+   * Return true if this PackageTypeReference_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +139,24 @@ public class CreatedSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CreatedSubstate createdSubstate = (CreatedSubstate) o;
-    return Objects.equals(this.substateId, createdSubstate.substateId) &&
-        Objects.equals(this.value, createdSubstate.value) &&
-        Objects.equals(this.systemStructure, createdSubstate.systemStructure);
+    PackageTypeReferenceAllOf packageTypeReferenceAllOf = (PackageTypeReferenceAllOf) o;
+    return Objects.equals(this.packageAddress, packageTypeReferenceAllOf.packageAddress) &&
+        Objects.equals(this.schemaHash, packageTypeReferenceAllOf.schemaHash) &&
+        Objects.equals(this.localTypeIndex, packageTypeReferenceAllOf.localTypeIndex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId, value, systemStructure);
+    return Objects.hash(packageAddress, schemaHash, localTypeIndex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CreatedSubstate {\n");
-    sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
-    sb.append("    value: ").append(toIndentedString(value)).append("\n");
-    sb.append("    systemStructure: ").append(toIndentedString(systemStructure)).append("\n");
+    sb.append("class PackageTypeReferenceAllOf {\n");
+    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
+    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
+    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

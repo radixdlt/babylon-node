@@ -10,25 +10,35 @@
 
 
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedSubstate {
-    #[serde(rename = "substate_id")]
-    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::SubstateValue>,
-    #[serde(rename = "system_structure")]
-    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum ObjectSubstateTypeReference {
+    #[serde(rename="ObjectInstance")]
+    ObjectInstanceTypeReference {
+        /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+        #[serde(rename = "entity_address")]
+        entity_address: String,
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+        #[serde(rename = "schema_hash")]
+        schema_hash: String,
+        #[serde(rename = "instance_type_index")]
+        instance_type_index: i32,
+        #[serde(rename = "local_type_index")]
+        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    },
+    #[serde(rename="Package")]
+    PackageObjectSubstateTypeReference {
+        /// The Bech32m-encoded human readable version of the package address
+        #[serde(rename = "package_address")]
+        package_address: String,
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+        #[serde(rename = "schema_hash")]
+        schema_hash: String,
+        #[serde(rename = "local_type_index")]
+        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    },
 }
 
-impl CreatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> CreatedSubstate {
-        CreatedSubstate {
-            substate_id: Box::new(substate_id),
-            value: Box::new(value),
-            system_structure: Option::Some(system_structure),
-        }
-    }
-}
+
 
 

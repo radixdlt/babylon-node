@@ -1852,12 +1852,16 @@ components:
       required:
         - substate_id
         - value
+        - system_structure
       properties:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         value:
           $ref: "#/components/schemas/SubstateValue"
           description: The initial value assigned to the substate.
+        system_structure:
+          $ref: "#/components/schemas/SubstateSystemStructure"
+          description: A structure with type references describing the substate's schema.
     UpdatedSubstate:
       type: object
       required:
@@ -2879,6 +2883,146 @@ components:
       description: |
         The constraints on the concrete type provided to fill the generic type parameter.
         Note: currently, we only support the wildcard (i.e. `Any`) generic type.
+    SubstateSystemStructureType:
+      type: string
+      enum:
+        - SystemField
+        - SystemSchema
+        - KeyValueStoreEntry
+        - ObjectField
+        - ObjectKeyValuePartitionEntry
+        - ObjectIndexPartitionEntry
+        - ObjectSortedIndexPartitionEntry
+    SubstateSystemStructure:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/SubstateSystemStructureType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match SubstateSystemStructureType
+          SystemField: '#/components/schemas/SystemFieldStructure'
+          SystemSchema: '#/components/schemas/SystemSchemaStructure'
+          KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntryStructure'
+          ObjectField: '#/components/schemas/ObjectFieldStructure'
+          ObjectKeyValuePartitionEntry: '#/components/schemas/ObjectKeyValuePartitionEntryStructure'
+          ObjectIndexPartitionEntry: '#/components/schemas/ObjectIndexPartitionEntryStructure'
+          ObjectSortedIndexPartitionEntry: '#/components/schemas/ObjectSortedIndexPartitionEntryStructure'
+    SystemFieldStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - field_kind
+          properties:
+            field_kind:
+              $ref: "#/components/schemas/SystemFieldKind"
+    SystemSchemaStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+    KeyValueStoreEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - key_value_store_address
+            - key_schema_hash
+            - key_local_type_index
+            - value_schema_hash
+            - value_local_type_index
+          properties:
+            key_value_store_address:
+              $ref: "#/components/schemas/EntityAddress"
+            key_schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            key_local_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+            value_schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            value_local_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+    ObjectFieldStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - type: object
+          required:
+            - value_schema
+          properties:
+            value_schema:
+              $ref: "#/components/schemas/ObjectSubstateTypeReference"
+    ObjectKeyValuePartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    ObjectIndexPartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    ObjectSortedIndexPartitionEntryStructure:
+      allOf:
+        - $ref: "#/components/schemas/SubstateSystemStructure"
+        - $ref: "#/components/schemas/KeyValueBasedStructure"
+    KeyValueBasedStructure:
+      type: object
+      required:
+        - key_schema
+        - value_schema
+      properties:
+        key_schema:
+          $ref: "#/components/schemas/ObjectSubstateTypeReference"
+        value_schema:
+          $ref: "#/components/schemas/ObjectSubstateTypeReference"
+    SystemFieldKind:
+      type: string
+      enum:
+        - TypeInfo
+    ObjectSubstateTypeReferenceType:
+      type: string
+      enum:
+        - Package
+        - ObjectInstance
+    ObjectSubstateTypeReference:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ObjectSubstateTypeReferenceType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ObjectSubstateTypeReferenceType
+          Package: '#/components/schemas/PackageObjectSubstateTypeReference'
+          ObjectInstance: '#/components/schemas/ObjectInstanceTypeReference'
+    PackageObjectSubstateTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/ObjectSubstateTypeReference"
+        - $ref: "#/components/schemas/PackageTypeReference"
+    ObjectInstanceTypeReference:
+      allOf:
+        - $ref: "#/components/schemas/ObjectSubstateTypeReference"
+        - type: object
+          required:
+            - entity_address
+            - schema_hash
+            - instance_type_index
+            - local_type_index
+          properties:
+            entity_address:
+              $ref: "#/components/schemas/EntityAddress"
+            schema_hash:
+              $ref: '#/components/schemas/SchemaHash'
+            instance_type_index:
+              type: integer
+              format: i32
+              minimum: 0
+              maximum: 255
+            local_type_index:
+              $ref: "#/components/schemas/LocalTypeIndex"
     PackageTypeReference:
       type: object
       required:

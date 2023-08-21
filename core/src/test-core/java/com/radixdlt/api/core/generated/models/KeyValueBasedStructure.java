@@ -22,116 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SubstateId;
-import com.radixdlt.api.core.generated.models.SubstateSystemStructure;
-import com.radixdlt.api.core.generated.models.SubstateValue;
+import com.radixdlt.api.core.generated.models.ObjectSubstateTypeReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * CreatedSubstate
+ * KeyValueBasedStructure
  */
 @JsonPropertyOrder({
-  CreatedSubstate.JSON_PROPERTY_SUBSTATE_ID,
-  CreatedSubstate.JSON_PROPERTY_VALUE,
-  CreatedSubstate.JSON_PROPERTY_SYSTEM_STRUCTURE
+  KeyValueBasedStructure.JSON_PROPERTY_KEY_SCHEMA,
+  KeyValueBasedStructure.JSON_PROPERTY_VALUE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CreatedSubstate {
-  public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
-  private SubstateId substateId;
+public class KeyValueBasedStructure {
+  public static final String JSON_PROPERTY_KEY_SCHEMA = "key_schema";
+  private ObjectSubstateTypeReference keySchema;
 
-  public static final String JSON_PROPERTY_VALUE = "value";
-  private SubstateValue value;
+  public static final String JSON_PROPERTY_VALUE_SCHEMA = "value_schema";
+  private ObjectSubstateTypeReference valueSchema;
 
-  public static final String JSON_PROPERTY_SYSTEM_STRUCTURE = "system_structure";
-  private SubstateSystemStructure systemStructure;
-
-  public CreatedSubstate() { 
+  public KeyValueBasedStructure() { 
   }
 
-  public CreatedSubstate substateId(SubstateId substateId) {
-    this.substateId = substateId;
+  public KeyValueBasedStructure keySchema(ObjectSubstateTypeReference keySchema) {
+    this.keySchema = keySchema;
     return this;
   }
 
    /**
-   * Get substateId
-   * @return substateId
+   * Get keySchema
+   * @return keySchema
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateId getSubstateId() {
-    return substateId;
+  public ObjectSubstateTypeReference getKeySchema() {
+    return keySchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_ID)
+  @JsonProperty(JSON_PROPERTY_KEY_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateId(SubstateId substateId) {
-    this.substateId = substateId;
+  public void setKeySchema(ObjectSubstateTypeReference keySchema) {
+    this.keySchema = keySchema;
   }
 
 
-  public CreatedSubstate value(SubstateValue value) {
-    this.value = value;
+  public KeyValueBasedStructure valueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
     return this;
   }
 
    /**
-   * Get value
-   * @return value
+   * Get valueSchema
+   * @return valueSchema
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateValue getValue() {
-    return value;
+  public ObjectSubstateTypeReference getValueSchema() {
+    return valueSchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(SubstateValue value) {
-    this.value = value;
-  }
-
-
-  public CreatedSubstate systemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
-    return this;
-  }
-
-   /**
-   * Get systemStructure
-   * @return systemStructure
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public SubstateSystemStructure getSystemStructure() {
-    return systemStructure;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SYSTEM_STRUCTURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSystemStructure(SubstateSystemStructure systemStructure) {
-    this.systemStructure = systemStructure;
+  public void setValueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
   }
 
 
   /**
-   * Return true if this CreatedSubstate object is equal to o.
+   * Return true if this KeyValueBasedStructure object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +109,22 @@ public class CreatedSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CreatedSubstate createdSubstate = (CreatedSubstate) o;
-    return Objects.equals(this.substateId, createdSubstate.substateId) &&
-        Objects.equals(this.value, createdSubstate.value) &&
-        Objects.equals(this.systemStructure, createdSubstate.systemStructure);
+    KeyValueBasedStructure keyValueBasedStructure = (KeyValueBasedStructure) o;
+    return Objects.equals(this.keySchema, keyValueBasedStructure.keySchema) &&
+        Objects.equals(this.valueSchema, keyValueBasedStructure.valueSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId, value, systemStructure);
+    return Objects.hash(keySchema, valueSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CreatedSubstate {\n");
-    sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
-    sb.append("    value: ").append(toIndentedString(value)).append("\n");
-    sb.append("    systemStructure: ").append(toIndentedString(systemStructure)).append("\n");
+    sb.append("class KeyValueBasedStructure {\n");
+    sb.append("    keySchema: ").append(toIndentedString(keySchema)).append("\n");
+    sb.append("    valueSchema: ").append(toIndentedString(valueSchema)).append("\n");
     sb.append("}");
     return sb.toString();
   }
