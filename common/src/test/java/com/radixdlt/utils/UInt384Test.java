@@ -86,7 +86,7 @@ public class UInt384Test {
 
   /**
    * Exhaustively test construction for all non-negative {@code short} values, from {@code 0} up to
-   * and including {@link Short.MAX_VALUE}.
+   * and including {@link Short#MAX_VALUE}.
    */
   @Test
   public void when_constructing_int384_from_short_values__values_compare_equal() {
@@ -387,7 +387,7 @@ public class UInt384Test {
   }
 
   @Test
-  public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
+  public void when_creating_int384_from_byte_array__the_correct_value_is_created() {
     byte[] m1 = {-1};
     byte[] p1 = {1};
     byte[] bytesArray = new byte[UInt384.BYTES];
@@ -403,7 +403,7 @@ public class UInt384Test {
   }
 
   @Test
-  public void when_converting_int256_to_byte_array__the_correct_values_are_returned() {
+  public void when_converting_int384_to_byte_array__the_correct_values_are_returned() {
     UInt128 bp0 = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
     UInt256 bp1 =
         UInt256.from(

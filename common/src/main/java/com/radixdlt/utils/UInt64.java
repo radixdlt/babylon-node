@@ -105,6 +105,7 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
   public static final UInt64 ZERO = new UInt64(0L);
   public static final UInt64 ONE = new UInt64(1L);
   public static final UInt64 MAX_VALUE = new UInt64(0xFFFF_FFFF_FFFF_FFFFL);
+  public static final UInt64 HIGH_BIT = new UInt64(0x8000_0000_0000_0000L);
 
   private final Long underlyingValue;
 
@@ -141,7 +142,7 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
   }
 
   public boolean isOdd() {
-    return underlyingValue % 2 == 1;
+    return (underlyingValue & 1) == 1;
   }
 
   public UInt64 shiftLeft() {
@@ -149,7 +150,7 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
   }
 
   public UInt64 shiftRight() {
-    return new UInt64(underlyingValue >> 1);
+    return new UInt64(underlyingValue >>> 1);
   }
 
   public UInt64 or(UInt64 other) {
