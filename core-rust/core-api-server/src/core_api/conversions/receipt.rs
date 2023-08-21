@@ -4,14 +4,18 @@ use radix_engine::types::*;
 
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::transaction::{
-    CostingParameters, EventSystemStructure, FeeDestination, FeeSource, TransactionFeeSummary,
+    CostingParameters, EventSystemStructure, FeeDestination, FeeSource,
+    IndexPartitionEntryStructure, KeyValuePartitionEntryStructure, KeyValueStoreEntryStructure,
+    ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
+    SortedIndexPartitionEntryStructure, StateUpdateSummary, SubstateSystemStructure,
+    SystemFieldKind, SystemFieldStructure, TransactionFeeSummary,
 };
 use radix_engine_queries::typed_substate_layout::*;
 use transaction::prelude::TransactionCostingParameters;
 
 use state_manager::{
-    ApplicationEvent, ChangeAction, DetailedTransactionOutcome, LocalTransactionReceipt,
-    SubstateReference,
+    ApplicationEvent, BySubstate, ChangeAction, DetailedTransactionOutcome,
+    LocalTransactionReceipt, SubstateReference,
 };
 
 pub fn to_api_receipt(
@@ -30,83 +34,14 @@ pub fn to_api_receipt(
         ),
     };
 
-    let state_update_summary = local_execution.state_update_summary;
-    let mut new_global_entities = Vec::new();
-
-    for package_address in state_update_summary.new_packages {
-        new_global_entities.push(to_api_entity_reference(
-            context,
-            package_address.as_node_id(),
-        )?);
-    }
-
-    for component_address in state_update_summary.new_components {
-        new_global_entities.push(to_api_entity_reference(
-            context,
-            component_address.as_node_id(),
-        )?);
-    }
-
-    for resource_address in state_update_summary.new_resources {
-        new_global_entities.push(to_api_entity_reference(
-            context,
-            resource_address.as_node_id(),
-        )?);
-    }
-
     let on_ledger = receipt.on_ledger;
-    let mut created_substates = Vec::new();
-    let mut updated_substates = Vec::new();
-    let mut deleted_substates = Vec::new();
-    for (substate_reference, action) in on_ledger.substate_changes.iter() {
-        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
-        let typed_substate_key =
-            create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
-        if !typed_substate_key.value_is_mappable() {
-            continue;
-        }
 
-        match action.clone() {
-            ChangeAction::Create { new } => {
-                created_substates.push(to_api_created_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, new)?,
-                )?);
-            }
-            ChangeAction::Update { previous, new } => {
-                updated_substates.push(to_api_updated_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, new)?,
-                    &ValueRepresentations::new(&typed_substate_key, previous)?,
-                )?);
-            }
-            ChangeAction::Delete { previous } => {
-                deleted_substates.push(to_api_deleted_substate(
-                    context,
-                    &node_id,
-                    partition_number,
-                    &substate_key,
-                    &typed_substate_key,
-                    &ValueRepresentations::new(&typed_substate_key, previous)?,
-                )?);
-            }
-        }
-    }
-
-    let api_state_updates = models::StateUpdates {
-        created_substates,
-        updated_substates,
-        deleted_substates,
-        new_global_entities,
-    };
+    let api_state_updates = to_api_state_updates(
+        context,
+        &local_execution.substates_system_structure,
+        &on_ledger.substate_changes,
+        &local_execution.state_update_summary,
+    )?;
 
     let api_fee_summary = to_api_fee_summary(context, &local_execution.fee_summary)?;
     let api_costing_parameters = to_api_costing_parameters(
@@ -196,6 +131,7 @@ pub fn to_api_created_substate(
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
     value_representations: &ValueRepresentations,
+    system_structure: &SubstateSystemStructure,
 ) -> Result<models::CreatedSubstate, MappingError> {
     Ok(models::CreatedSubstate {
         substate_id: Box::new(to_api_substate_id(
@@ -210,6 +146,7 @@ pub fn to_api_created_substate(
             typed_substate_key,
             value_representations,
         )?),
+        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
     })
 }
 
@@ -308,6 +245,132 @@ pub fn to_api_deleted_substate(
 }
 
 #[tracing::instrument(skip_all)]
+pub fn to_api_substate_system_structure(
+    context: &MappingContext,
+    system_structure: &SubstateSystemStructure,
+) -> Result<models::SubstateSystemStructure, MappingError> {
+    Ok(match system_structure {
+        SubstateSystemStructure::SystemField(SystemFieldStructure { field_kind }) => {
+            models::SubstateSystemStructure::SystemFieldStructure {
+                field_kind: match field_kind {
+                    SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
+                },
+            }
+        }
+        SubstateSystemStructure::SystemSchema => {
+            models::SubstateSystemStructure::SystemSchemaStructure {}
+        }
+        SubstateSystemStructure::KeyValueStoreEntry(entry) => {
+            let KeyValueStoreEntryStructure {
+                key_value_store_address,
+                key_schema_hash,
+                key_local_type_index,
+                value_schema_hash,
+                value_local_type_index,
+            } = entry;
+            models::SubstateSystemStructure::KeyValueStoreEntryStructure {
+                key_value_store_address: to_api_entity_address(
+                    context,
+                    key_value_store_address.as_node_id(),
+                )?,
+                key_schema_hash: to_api_hash(key_schema_hash),
+                key_local_type_index: Box::new(to_api_local_type_index(
+                    context,
+                    key_local_type_index,
+                )?),
+                value_schema_hash: to_api_hash(value_schema_hash),
+                value_local_type_index: Box::new(to_api_local_type_index(
+                    context,
+                    value_local_type_index,
+                )?),
+            }
+        }
+        SubstateSystemStructure::ObjectField(field) => {
+            models::SubstateSystemStructure::ObjectFieldStructure {
+                value_schema: Box::new(to_api_object_substate_type_reference(
+                    context,
+                    &field.value_schema,
+                )?),
+            }
+        }
+        SubstateSystemStructure::ObjectKeyValuePartitionEntry(entry) => {
+            let KeyValuePartitionEntryStructure {
+                key_schema,
+                value_schema,
+            } = entry;
+            models::SubstateSystemStructure::ObjectKeyValuePartitionEntryStructure {
+                key_schema: Box::new(to_api_object_substate_type_reference(context, key_schema)?),
+                value_schema: Box::new(to_api_object_substate_type_reference(
+                    context,
+                    value_schema,
+                )?),
+            }
+        }
+        SubstateSystemStructure::ObjectIndexPartitionEntry(entry) => {
+            let IndexPartitionEntryStructure {
+                key_schema,
+                value_schema,
+            } = entry;
+            models::SubstateSystemStructure::ObjectIndexPartitionEntryStructure {
+                key_schema: Box::new(to_api_object_substate_type_reference(context, key_schema)?),
+                value_schema: Box::new(to_api_object_substate_type_reference(
+                    context,
+                    value_schema,
+                )?),
+            }
+        }
+        SubstateSystemStructure::ObjectSortedIndexPartitionEntry(entry) => {
+            let SortedIndexPartitionEntryStructure {
+                key_schema,
+                value_schema,
+            } = entry;
+            models::SubstateSystemStructure::ObjectSortedIndexPartitionEntryStructure {
+                key_schema: Box::new(to_api_object_substate_type_reference(context, key_schema)?),
+                value_schema: Box::new(to_api_object_substate_type_reference(
+                    context,
+                    value_schema,
+                )?),
+            }
+        }
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_object_substate_type_reference(
+    context: &MappingContext,
+    substate_type_reference: &ObjectSubstateTypeReference,
+) -> Result<models::ObjectSubstateTypeReference, MappingError> {
+    Ok(match substate_type_reference {
+        ObjectSubstateTypeReference::Package(package) => {
+            let PackageTypeReference {
+                package_address,
+                schema_hash,
+                local_type_index,
+            } = package;
+            models::ObjectSubstateTypeReference::PackageObjectSubstateTypeReference {
+                package_address: to_api_entity_address(context, package_address.as_node_id())?,
+                schema_hash: to_api_hash(schema_hash),
+                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+            }
+        }
+        ObjectSubstateTypeReference::ObjectInstance(instance) => {
+            let ObjectInstanceTypeReference {
+                entity_address,
+                schema_hash,
+                instance_type_index,
+                local_type_index,
+            } = instance;
+            models::ObjectSubstateTypeReference::ObjectInstanceTypeReference {
+                entity_address: to_api_entity_address(context, entity_address)?,
+                schema_hash: to_api_hash(schema_hash),
+                instance_type_index: to_api_u8_as_i32(*instance_type_index),
+                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+            }
+        }
+    })
+}
+
+#[tracing::instrument(skip_all)]
 pub fn to_api_next_epoch(
     context: &MappingContext,
     epoch_change_event: EpochChangeEvent,
@@ -329,6 +392,95 @@ pub fn to_api_next_epoch(
 }
 
 #[tracing::instrument(skip_all)]
+pub fn to_api_state_updates(
+    context: &MappingContext,
+    system_structures: &BySubstate<SubstateSystemStructure>,
+    substate_changes: &BySubstate<ChangeAction>,
+    state_update_summary: &StateUpdateSummary,
+) -> Result<models::StateUpdates, MappingError> {
+    let mut created_substates = Vec::new();
+    let mut updated_substates = Vec::new();
+    let mut deleted_substates = Vec::new();
+    for (substate_reference, action) in substate_changes.iter() {
+        let SubstateReference(node_id, partition_number, substate_key) = substate_reference;
+        let typed_substate_key =
+            create_typed_substate_key(context, &node_id, partition_number, &substate_key)?;
+        if !typed_substate_key.value_is_mappable() {
+            continue;
+        }
+        let system_structure = system_structures
+            .get(&node_id, &partition_number, &substate_key)
+            .ok_or(MappingError::MissingSystemStructure {
+                message: format!(
+                    "Missing system structure for substate {:?}:{:?}:{:?}",
+                    node_id, partition_number, substate_key
+                ),
+            })?;
+        match action.clone() {
+            ChangeAction::Create { new } => {
+                created_substates.push(to_api_created_substate(
+                    context,
+                    &node_id,
+                    partition_number,
+                    &substate_key,
+                    &typed_substate_key,
+                    &ValueRepresentations::new(&typed_substate_key, new)?,
+                    system_structure,
+                )?);
+            }
+            ChangeAction::Update { previous, new } => {
+                updated_substates.push(to_api_updated_substate(
+                    context,
+                    &node_id,
+                    partition_number,
+                    &substate_key,
+                    &typed_substate_key,
+                    &ValueRepresentations::new(&typed_substate_key, new)?,
+                    &ValueRepresentations::new(&typed_substate_key, previous)?,
+                )?);
+            }
+            ChangeAction::Delete { previous } => {
+                deleted_substates.push(to_api_deleted_substate(
+                    context,
+                    &node_id,
+                    partition_number,
+                    &substate_key,
+                    &typed_substate_key,
+                    &ValueRepresentations::new(&typed_substate_key, previous)?,
+                )?);
+            }
+        }
+    }
+
+    let mut new_global_entities = Vec::new();
+    for package_address in &state_update_summary.new_packages {
+        new_global_entities.push(to_api_entity_reference(
+            context,
+            package_address.as_node_id(),
+        )?);
+    }
+    for component_address in &state_update_summary.new_components {
+        new_global_entities.push(to_api_entity_reference(
+            context,
+            component_address.as_node_id(),
+        )?);
+    }
+    for resource_address in &state_update_summary.new_resources {
+        new_global_entities.push(to_api_entity_reference(
+            context,
+            resource_address.as_node_id(),
+        )?);
+    }
+
+    Ok(models::StateUpdates {
+        created_substates,
+        updated_substates,
+        deleted_substates,
+        new_global_entities,
+    })
+}
+
+#[tracing::instrument(skip_all)]
 pub fn to_api_event(
     context: &MappingContext,
     events_system_structure: &IndexMap<EventTypeIdentifier, EventSystemStructure>,
@@ -344,11 +496,10 @@ pub fn to_api_event(
                     type_id
                 ),
             })?;
-    let type_reference = &event_system_structure.package_type_reference;
-
+    let EventTypeIdentifier(emitter, name) = type_id;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
-            emitter: Some(match type_id.0 {
+            emitter: Some(match emitter {
                 Emitter::Function(BlueprintId {
                     package_address,
                     blueprint_name,
@@ -363,14 +514,11 @@ pub fn to_api_event(
                     }
                 }
             }),
-            type_pointer: Some(models::TypePointer::PackageTypePointer {
-                schema_hash: to_api_hash(&type_reference.schema_hash),
-                local_type_index: Box::new(to_api_local_type_index(
-                    context,
-                    &type_reference.local_type_index,
-                )?),
-            }),
-            name: type_id.1,
+            type_reference: Box::new(to_api_package_type_reference(
+                context,
+                &event_system_structure.package_type_reference,
+            )?),
+            name,
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })

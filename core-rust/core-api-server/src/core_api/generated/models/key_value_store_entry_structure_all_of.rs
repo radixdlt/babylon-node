@@ -12,21 +12,30 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedSubstate {
-    #[serde(rename = "substate_id")]
-    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::SubstateValue>,
-    #[serde(rename = "system_structure")]
-    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct KeyValueStoreEntryStructureAllOf {
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "key_value_store_address")]
+    pub key_value_store_address: String,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "key_schema_hash")]
+    pub key_schema_hash: String,
+    #[serde(rename = "key_local_type_index")]
+    pub key_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "value_schema_hash")]
+    pub value_schema_hash: String,
+    #[serde(rename = "value_local_type_index")]
+    pub value_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl CreatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> CreatedSubstate {
-        CreatedSubstate {
-            substate_id: Box::new(substate_id),
-            value: Box::new(value),
-            system_structure: Option::Some(system_structure),
+impl KeyValueStoreEntryStructureAllOf {
+    pub fn new(key_value_store_address: String, key_schema_hash: String, key_local_type_index: crate::core_api::generated::models::LocalTypeIndex, value_schema_hash: String, value_local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> KeyValueStoreEntryStructureAllOf {
+        KeyValueStoreEntryStructureAllOf {
+            key_value_store_address,
+            key_schema_hash,
+            key_local_type_index: Box::new(key_local_type_index),
+            value_schema_hash,
+            value_local_type_index: Box::new(value_local_type_index),
         }
     }
 }

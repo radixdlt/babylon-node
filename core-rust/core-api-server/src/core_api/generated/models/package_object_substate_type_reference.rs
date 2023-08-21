@@ -12,21 +12,26 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedSubstate {
-    #[serde(rename = "substate_id")]
-    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::SubstateValue>,
-    #[serde(rename = "system_structure")]
-    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct PackageObjectSubstateTypeReference {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ObjectSubstateTypeReferenceType,
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "schema_hash")]
+    pub schema_hash: String,
+    #[serde(rename = "local_type_index")]
+    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl CreatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> CreatedSubstate {
-        CreatedSubstate {
-            substate_id: Box::new(substate_id),
-            value: Box::new(value),
-            system_structure: Option::Some(system_structure),
+impl PackageObjectSubstateTypeReference {
+    pub fn new(_type: crate::core_api::generated::models::ObjectSubstateTypeReferenceType, package_address: String, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageObjectSubstateTypeReference {
+        PackageObjectSubstateTypeReference {
+            _type,
+            package_address,
+            schema_hash,
+            local_type_index: Box::new(local_type_index),
         }
     }
 }

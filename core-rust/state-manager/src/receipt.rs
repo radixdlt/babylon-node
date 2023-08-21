@@ -266,6 +266,18 @@ impl<T> BySubstate<T> {
             .insert(substate_key.clone(), item);
     }
 
+    pub fn get(
+        &self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&T> {
+        self.by_node_id
+            .get(node_id)
+            .and_then(|by_partition_number| by_partition_number.get(partition_number))
+            .and_then(|by_substate_key| by_substate_key.get(substate_key))
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = (SubstateReference, &T)> + '_ {
         self.by_node_id
             .iter()

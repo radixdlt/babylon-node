@@ -22,84 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalTypeIndex;
+import com.radixdlt.api.core.generated.models.ObjectSubstateTypeReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageTypePointerAllOf
+ * ObjectFieldStructureAllOf
  */
 @JsonPropertyOrder({
-  PackageTypePointerAllOf.JSON_PROPERTY_SCHEMA_HASH,
-  PackageTypePointerAllOf.JSON_PROPERTY_LOCAL_TYPE_INDEX
+  ObjectFieldStructureAllOf.JSON_PROPERTY_VALUE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageTypePointerAllOf {
-  public static final String JSON_PROPERTY_SCHEMA_HASH = "schema_hash";
-  private String schemaHash;
+public class ObjectFieldStructureAllOf {
+  public static final String JSON_PROPERTY_VALUE_SCHEMA = "value_schema";
+  private ObjectSubstateTypeReference valueSchema;
 
-  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
-  private LocalTypeIndex localTypeIndex;
-
-  public PackageTypePointerAllOf() { 
+  public ObjectFieldStructureAllOf() { 
   }
 
-  public PackageTypePointerAllOf schemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
+  public ObjectFieldStructureAllOf valueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
     return this;
   }
 
    /**
-   * The hex-encoded schema hash, capturing the identity of an SBOR schema.
-   * @return schemaHash
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded schema hash, capturing the identity of an SBOR schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getSchemaHash() {
-    return schemaHash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SCHEMA_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaHash(String schemaHash) {
-    this.schemaHash = schemaHash;
-  }
-
-
-  public PackageTypePointerAllOf localTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
-    return this;
-  }
-
-   /**
-   * Get localTypeIndex
-   * @return localTypeIndex
+   * Get valueSchema
+   * @return valueSchema
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalTypeIndex getLocalTypeIndex() {
-    return localTypeIndex;
+  public ObjectSubstateTypeReference getValueSchema() {
+    return valueSchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
+  @JsonProperty(JSON_PROPERTY_VALUE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
-    this.localTypeIndex = localTypeIndex;
+  public void setValueSchema(ObjectSubstateTypeReference valueSchema) {
+    this.valueSchema = valueSchema;
   }
 
 
   /**
-   * Return true if this PackageTypePointer_allOf object is equal to o.
+   * Return true if this ObjectFieldStructure_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +79,20 @@ public class PackageTypePointerAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageTypePointerAllOf packageTypePointerAllOf = (PackageTypePointerAllOf) o;
-    return Objects.equals(this.schemaHash, packageTypePointerAllOf.schemaHash) &&
-        Objects.equals(this.localTypeIndex, packageTypePointerAllOf.localTypeIndex);
+    ObjectFieldStructureAllOf objectFieldStructureAllOf = (ObjectFieldStructureAllOf) o;
+    return Objects.equals(this.valueSchema, objectFieldStructureAllOf.valueSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemaHash, localTypeIndex);
+    return Objects.hash(valueSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageTypePointerAllOf {\n");
-    sb.append("    schemaHash: ").append(toIndentedString(schemaHash)).append("\n");
-    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
+    sb.append("class ObjectFieldStructureAllOf {\n");
+    sb.append("    valueSchema: ").append(toIndentedString(valueSchema)).append("\n");
     sb.append("}");
     return sb.toString();
   }

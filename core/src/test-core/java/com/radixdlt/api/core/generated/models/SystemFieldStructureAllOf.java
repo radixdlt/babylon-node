@@ -22,55 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SystemFieldKind;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * InstanceTypePointerAllOf
+ * SystemFieldStructureAllOf
  */
 @JsonPropertyOrder({
-  InstanceTypePointerAllOf.JSON_PROPERTY_INDEX
+  SystemFieldStructureAllOf.JSON_PROPERTY_FIELD_KIND
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InstanceTypePointerAllOf {
-  public static final String JSON_PROPERTY_INDEX = "index";
-  private Integer index;
+public class SystemFieldStructureAllOf {
+  public static final String JSON_PROPERTY_FIELD_KIND = "field_kind";
+  private SystemFieldKind fieldKind;
 
-  public InstanceTypePointerAllOf() { 
+  public SystemFieldStructureAllOf() { 
   }
 
-  public InstanceTypePointerAllOf index(Integer index) {
-    this.index = index;
+  public SystemFieldStructureAllOf fieldKind(SystemFieldKind fieldKind) {
+    this.fieldKind = fieldKind;
     return this;
   }
 
    /**
-   * Get index
-   * minimum: 0
-   * maximum: 255
-   * @return index
+   * Get fieldKind
+   * @return fieldKind
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INDEX)
+  @JsonProperty(JSON_PROPERTY_FIELD_KIND)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getIndex() {
-    return index;
+  public SystemFieldKind getFieldKind() {
+    return fieldKind;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INDEX)
+  @JsonProperty(JSON_PROPERTY_FIELD_KIND)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIndex(Integer index) {
-    this.index = index;
+  public void setFieldKind(SystemFieldKind fieldKind) {
+    this.fieldKind = fieldKind;
   }
 
 
   /**
-   * Return true if this InstanceTypePointer_allOf object is equal to o.
+   * Return true if this SystemFieldStructure_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +79,20 @@ public class InstanceTypePointerAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InstanceTypePointerAllOf instanceTypePointerAllOf = (InstanceTypePointerAllOf) o;
-    return Objects.equals(this.index, instanceTypePointerAllOf.index);
+    SystemFieldStructureAllOf systemFieldStructureAllOf = (SystemFieldStructureAllOf) o;
+    return Objects.equals(this.fieldKind, systemFieldStructureAllOf.fieldKind);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(index);
+    return Objects.hash(fieldKind);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InstanceTypePointerAllOf {\n");
-    sb.append("    index: ").append(toIndentedString(index)).append("\n");
+    sb.append("class SystemFieldStructureAllOf {\n");
+    sb.append("    fieldKind: ").append(toIndentedString(fieldKind)).append("\n");
     sb.append("}");
     return sb.toString();
   }

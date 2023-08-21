@@ -9,31 +9,34 @@
  */
 
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum TypePointerType {
-    #[serde(rename = "Package")]
-    Package,
-    #[serde(rename = "Instance")]
-    Instance,
 
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct ObjectInstanceTypeReference {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ObjectSubstateTypeReferenceType,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "schema_hash")]
+    pub schema_hash: String,
+    #[serde(rename = "instance_type_index")]
+    pub instance_type_index: i32,
+    #[serde(rename = "local_type_index")]
+    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl ToString for TypePointerType {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Package => String::from("Package"),
-            Self::Instance => String::from("Instance"),
+impl ObjectInstanceTypeReference {
+    pub fn new(_type: crate::core_api::generated::models::ObjectSubstateTypeReferenceType, entity_address: String, schema_hash: String, instance_type_index: i32, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> ObjectInstanceTypeReference {
+        ObjectInstanceTypeReference {
+            _type,
+            entity_address,
+            schema_hash,
+            instance_type_index,
+            local_type_index: Box::new(local_type_index),
         }
     }
 }
-
-impl Default for TypePointerType {
-    fn default() -> TypePointerType {
-        Self::Package
-    }
-}
-
-
 
 

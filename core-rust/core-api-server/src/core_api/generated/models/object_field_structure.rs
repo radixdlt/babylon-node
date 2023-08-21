@@ -12,21 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedSubstate {
-    #[serde(rename = "substate_id")]
-    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::SubstateValue>,
-    #[serde(rename = "system_structure")]
-    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct ObjectFieldStructure {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::SubstateSystemStructureType,
+    #[serde(rename = "value_schema")]
+    pub value_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl CreatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> CreatedSubstate {
-        CreatedSubstate {
-            substate_id: Box::new(substate_id),
-            value: Box::new(value),
-            system_structure: Option::Some(system_structure),
+impl ObjectFieldStructure {
+    pub fn new(_type: crate::core_api::generated::models::SubstateSystemStructureType, value_schema: crate::core_api::generated::models::ObjectSubstateTypeReference) -> ObjectFieldStructure {
+        ObjectFieldStructure {
+            _type,
+            value_schema: Option::Some(value_schema),
         }
     }
 }

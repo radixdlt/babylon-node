@@ -9,26 +9,46 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum SubstateSystemStructureType {
+    #[serde(rename = "SystemField")]
+    SystemField,
+    #[serde(rename = "SystemSchema")]
+    SystemSchema,
+    #[serde(rename = "KeyValueStoreEntry")]
+    KeyValueStoreEntry,
+    #[serde(rename = "ObjectField")]
+    ObjectField,
+    #[serde(rename = "ObjectKeyValuePartitionEntry")]
+    ObjectKeyValuePartitionEntry,
+    #[serde(rename = "ObjectIndexPartitionEntry")]
+    ObjectIndexPartitionEntry,
+    #[serde(rename = "ObjectSortedIndexPartitionEntry")]
+    ObjectSortedIndexPartitionEntry,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct CreatedSubstate {
-    #[serde(rename = "substate_id")]
-    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "value")]
-    pub value: Box<crate::core_api::generated::models::SubstateValue>,
-    #[serde(rename = "system_structure")]
-    pub system_structure: Option<crate::core_api::generated::models::SubstateSystemStructure>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl CreatedSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, value: crate::core_api::generated::models::SubstateValue, system_structure: crate::core_api::generated::models::SubstateSystemStructure) -> CreatedSubstate {
-        CreatedSubstate {
-            substate_id: Box::new(substate_id),
-            value: Box::new(value),
-            system_structure: Option::Some(system_structure),
+impl ToString for SubstateSystemStructureType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::SystemField => String::from("SystemField"),
+            Self::SystemSchema => String::from("SystemSchema"),
+            Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
+            Self::ObjectField => String::from("ObjectField"),
+            Self::ObjectKeyValuePartitionEntry => String::from("ObjectKeyValuePartitionEntry"),
+            Self::ObjectIndexPartitionEntry => String::from("ObjectIndexPartitionEntry"),
+            Self::ObjectSortedIndexPartitionEntry => String::from("ObjectSortedIndexPartitionEntry"),
         }
     }
 }
+
+impl Default for SubstateSystemStructureType {
+    fn default() -> SubstateSystemStructureType {
+        Self::SystemField
+    }
+}
+
+
 
 

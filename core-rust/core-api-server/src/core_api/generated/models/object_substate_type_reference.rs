@@ -10,22 +10,35 @@
 
 
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct InstanceTypePointer {
-    #[serde(rename = "pointer_type")]
-    pub pointer_type: crate::core_api::generated::models::TypePointerType,
-    #[serde(rename = "index")]
-    pub index: i32,
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum ObjectSubstateTypeReference {
+    #[serde(rename="ObjectInstance")]
+    ObjectInstanceTypeReference {
+        /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+        #[serde(rename = "entity_address")]
+        entity_address: String,
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+        #[serde(rename = "schema_hash")]
+        schema_hash: String,
+        #[serde(rename = "instance_type_index")]
+        instance_type_index: i32,
+        #[serde(rename = "local_type_index")]
+        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    },
+    #[serde(rename="Package")]
+    PackageObjectSubstateTypeReference {
+        /// The Bech32m-encoded human readable version of the package address
+        #[serde(rename = "package_address")]
+        package_address: String,
+        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+        #[serde(rename = "schema_hash")]
+        schema_hash: String,
+        #[serde(rename = "local_type_index")]
+        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    },
 }
 
-impl InstanceTypePointer {
-    pub fn new(pointer_type: crate::core_api::generated::models::TypePointerType, index: i32) -> InstanceTypePointer {
-        InstanceTypePointer {
-            pointer_type,
-            index,
-        }
-    }
-}
+
 
 

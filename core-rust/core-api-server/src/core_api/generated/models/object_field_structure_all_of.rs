@@ -10,24 +10,19 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "pointer_type")]
-pub enum TypePointer {
-    #[serde(rename="Instance")]
-    InstanceTypePointer {
-        #[serde(rename = "index")]
-        index: i32,
-    },
-    #[serde(rename="Package")]
-    PackageTypePointer {
-        /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-        #[serde(rename = "schema_hash")]
-        schema_hash: String,
-        #[serde(rename = "local_type_index")]
-        local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct ObjectFieldStructureAllOf {
+    #[serde(rename = "value_schema")]
+    pub value_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-
+impl ObjectFieldStructureAllOf {
+    pub fn new(value_schema: crate::core_api::generated::models::ObjectSubstateTypeReference) -> ObjectFieldStructureAllOf {
+        ObjectFieldStructureAllOf {
+            value_schema: Option::Some(value_schema),
+        }
+    }
+}
 
 

@@ -12,22 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageTypePointer {
-    #[serde(rename = "pointer_type")]
-    pub pointer_type: crate::core_api::generated::models::TypePointerType,
-    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+pub struct KeyValueBasedStructure {
+    #[serde(rename = "key_schema")]
+    pub key_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value_schema")]
+    pub value_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl PackageTypePointer {
-    pub fn new(pointer_type: crate::core_api::generated::models::TypePointerType, schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypePointer {
-        PackageTypePointer {
-            pointer_type,
-            schema_hash,
-            local_type_index: Box::new(local_type_index),
+impl KeyValueBasedStructure {
+    pub fn new(key_schema: crate::core_api::generated::models::ObjectSubstateTypeReference, value_schema: crate::core_api::generated::models::ObjectSubstateTypeReference) -> KeyValueBasedStructure {
+        KeyValueBasedStructure {
+            key_schema: Option::Some(key_schema),
+            value_schema: Option::Some(value_schema),
         }
     }
 }

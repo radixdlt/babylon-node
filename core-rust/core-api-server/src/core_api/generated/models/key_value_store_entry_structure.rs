@@ -12,19 +12,33 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageTypePointerAllOf {
+pub struct KeyValueStoreEntryStructure {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::SubstateSystemStructureType,
+    /// Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    #[serde(rename = "key_value_store_address")]
+    pub key_value_store_address: String,
     /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
-    #[serde(rename = "schema_hash")]
-    pub schema_hash: String,
-    #[serde(rename = "local_type_index")]
-    pub local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "key_schema_hash")]
+    pub key_schema_hash: String,
+    #[serde(rename = "key_local_type_index")]
+    pub key_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
+    /// The hex-encoded schema hash, capturing the identity of an SBOR schema.
+    #[serde(rename = "value_schema_hash")]
+    pub value_schema_hash: String,
+    #[serde(rename = "value_local_type_index")]
+    pub value_local_type_index: Box<crate::core_api::generated::models::LocalTypeIndex>,
 }
 
-impl PackageTypePointerAllOf {
-    pub fn new(schema_hash: String, local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> PackageTypePointerAllOf {
-        PackageTypePointerAllOf {
-            schema_hash,
-            local_type_index: Box::new(local_type_index),
+impl KeyValueStoreEntryStructure {
+    pub fn new(_type: crate::core_api::generated::models::SubstateSystemStructureType, key_value_store_address: String, key_schema_hash: String, key_local_type_index: crate::core_api::generated::models::LocalTypeIndex, value_schema_hash: String, value_local_type_index: crate::core_api::generated::models::LocalTypeIndex) -> KeyValueStoreEntryStructure {
+        KeyValueStoreEntryStructure {
+            _type,
+            key_value_store_address,
+            key_schema_hash,
+            key_local_type_index: Box::new(key_local_type_index),
+            value_schema_hash,
+            value_local_type_index: Box::new(value_local_type_index),
         }
     }
 }

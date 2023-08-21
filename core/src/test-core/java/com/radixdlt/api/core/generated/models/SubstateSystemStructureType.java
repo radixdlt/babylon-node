@@ -24,17 +24,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets TypePointerType
+ * Gets or Sets SubstateSystemStructureType
  */
-public enum TypePointerType {
+public enum SubstateSystemStructureType {
   
-  PACKAGE("Package"),
+  SYSTEMFIELD("SystemField"),
   
-  INSTANCE("Instance");
+  SYSTEMSCHEMA("SystemSchema"),
+  
+  KEYVALUESTOREENTRY("KeyValueStoreEntry"),
+  
+  OBJECTFIELD("ObjectField"),
+  
+  OBJECTKEYVALUEPARTITIONENTRY("ObjectKeyValuePartitionEntry"),
+  
+  OBJECTINDEXPARTITIONENTRY("ObjectIndexPartitionEntry"),
+  
+  OBJECTSORTEDINDEXPARTITIONENTRY("ObjectSortedIndexPartitionEntry");
 
   private String value;
 
-  TypePointerType(String value) {
+  SubstateSystemStructureType(String value) {
     this.value = value;
   }
 
@@ -49,8 +59,8 @@ public enum TypePointerType {
   }
 
   @JsonCreator
-  public static TypePointerType fromValue(String value) {
-    for (TypePointerType b : TypePointerType.values()) {
+  public static SubstateSystemStructureType fromValue(String value) {
+    for (SubstateSystemStructureType b : SubstateSystemStructureType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

@@ -12,15 +12,21 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct InstanceTypePointerAllOf {
-    #[serde(rename = "index")]
-    pub index: i32,
+pub struct ObjectKeyValuePartitionEntryStructure {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::SubstateSystemStructureType,
+    #[serde(rename = "key_schema")]
+    pub key_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "value_schema")]
+    pub value_schema: Option<crate::core_api::generated::models::ObjectSubstateTypeReference>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl InstanceTypePointerAllOf {
-    pub fn new(index: i32) -> InstanceTypePointerAllOf {
-        InstanceTypePointerAllOf {
-            index,
+impl ObjectKeyValuePartitionEntryStructure {
+    pub fn new(_type: crate::core_api::generated::models::SubstateSystemStructureType, key_schema: crate::core_api::generated::models::ObjectSubstateTypeReference, value_schema: crate::core_api::generated::models::ObjectSubstateTypeReference) -> ObjectKeyValuePartitionEntryStructure {
+        ObjectKeyValuePartitionEntryStructure {
+            _type,
+            key_schema: Option::Some(key_schema),
+            value_schema: Option::Some(value_schema),
         }
     }
 }
