@@ -162,7 +162,7 @@ public record Metrics(
     Misc misc) {
 
   public record Bft(
-      Counter successfullyProcessedVotes,
+      LabelledCounter<SuccessfullyProcessedVote> successfullyProcessedVotes,
       LabelledCounter<IgnoredVote> ignoredVotes,
       Counter successfullyProcessedProposals,
       Counter preconditionViolations,
@@ -187,7 +187,10 @@ public record Metrics(
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
-      Summary numSignaturesInCertificate) {
+      Summary numSignaturesInCertificate,
+      Counter divergentVertexExecutions) {
+
+    public record SuccessfullyProcessedVote(boolean isTimeout) {}
 
     public record QuorumResolution(boolean isTimeout) {}
 

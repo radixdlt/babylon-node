@@ -165,7 +165,11 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
       case QuorumReached quorumReached -> this.processQuorum(quorumReached.roundQuorum(), vote);
     }
 
-    metrics.bft().successfullyProcessedVotes().inc();
+    metrics
+        .bft()
+        .successfullyProcessedVotes()
+        .label(new Metrics.Bft.SuccessfullyProcessedVote(vote.isTimeout()))
+        .inc();
   }
 
   private void processQuorum(RoundQuorum roundQuorum, Vote lastVote) {
