@@ -16,16 +16,15 @@ pub struct MempoolTransactionRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
-    #[serde(rename = "payload_hash")]
-    pub payload_hash: String,
+    #[serde(rename = "payload_hashes")]
+    pub payload_hashes: Vec<String>,
 }
 
 impl MempoolTransactionRequest {
-    pub fn new(network: String, payload_hash: String) -> MempoolTransactionRequest {
+    pub fn new(network: String, payload_hashes: Vec<String>) -> MempoolTransactionRequest {
         MempoolTransactionRequest {
             network,
-            payload_hash,
+            payload_hashes,
         }
     }
 }

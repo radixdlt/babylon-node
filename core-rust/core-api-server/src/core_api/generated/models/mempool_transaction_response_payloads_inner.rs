@@ -12,19 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MempoolTransactionResponse {
-    /// An integer giving the total count of payload hashes checked in the returned response.
-    #[serde(rename = "count")]
-    pub count: i32,
-    #[serde(rename = "payloads")]
-    pub payloads: Vec<crate::core_api::generated::models::MempoolTransactionResponsePayloadsInner>,
+pub struct MempoolTransactionResponsePayloadsInner {
+    /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
+    #[serde(rename = "hash")]
+    pub hash: String,
+    /// The hex-encoded full notarized transaction payload - returned only if found in mempool.
+    #[serde(rename = "hex", skip_serializing_if = "Option::is_none")]
+    pub hex: Option<String>,
+    /// Error message why `hex` field is missing: the transaction was not found in the mempool or the provided hash is invalid. 
+    #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
-impl MempoolTransactionResponse {
-    pub fn new(count: i32, payloads: Vec<crate::core_api::generated::models::MempoolTransactionResponsePayloadsInner>) -> MempoolTransactionResponse {
-        MempoolTransactionResponse {
-            count,
-            payloads,
+impl MempoolTransactionResponsePayloadsInner {
+    pub fn new(hash: String) -> MempoolTransactionResponsePayloadsInner {
+        MempoolTransactionResponsePayloadsInner {
+            hash,
+            hex: None,
+            error: None,
         }
     }
 }

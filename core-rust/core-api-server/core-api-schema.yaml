@@ -5932,20 +5932,40 @@ components:
       type: object
       required:
         - network
-        - payload_hash
+        - payload_hashes
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-        payload_hash:
-          $ref: "#/components/schemas/NotarizedTransactionHash"
+        payload_hashes:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotarizedTransactionHash"
     MempoolTransactionResponse:
       type: object
       required:
-        - payload_hex
+        - count
+        - payloads
       properties:
-        payload_hex:
-          type: string
-          description: The hex-encoded full notarized transaction payload.
+        count:
+          type: integer
+          format: int32
+          description: An integer giving the total count of payload hashes checked in the returned response.
+        payloads:
+          type: array
+          items:
+            type: object
+            required:
+              - hash
+            properties:
+              hash:
+                $ref: "#/components/schemas/NotarizedTransactionHash"
+              hex:
+                type: string
+                description: The hex-encoded full notarized transaction payload - returned only if found in mempool.
+              error:
+                type: string
+                description: |
+                  Error message why `hex` field is missing: the transaction was not found in the mempool or the provided hash is invalid.
 ###############################
 # REQUEST: /transaction/parse #
 ###############################
