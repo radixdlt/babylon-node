@@ -76,9 +76,9 @@ import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -203,7 +203,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @Singleton
   private SafetyRules safetyRules(
       SelfValidatorInfo self,
-      SafetyState initialState,
+      InitialSafetyStateProvider initialSafetyStateProvider,
       PersistentSafetyStateStore persistentSafetyStateStore,
       Hasher hasher,
       HashSigner signer,
@@ -211,7 +211,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
       BFTValidatorSet validatorSet) {
     return new SafetyRules(
         self.validatorIdOrFakeForTesting(),
-        initialState,
+        initialSafetyStateProvider.initialSafetyState(self.validatorIdOrFakeForTesting()),
         persistentSafetyStateStore,
         hasher,
         signer,

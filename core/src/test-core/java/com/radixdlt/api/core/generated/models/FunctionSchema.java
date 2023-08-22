@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.ReceiverInfo;
-import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -43,10 +43,10 @@ public class FunctionSchema {
   private ReceiverInfo receiverInfo;
 
   public static final String JSON_PROPERTY_INPUT = "input";
-  private TypePointer input;
+  private BlueprintPayloadDef input;
 
   public static final String JSON_PROPERTY_OUTPUT = "output";
-  private TypePointer output;
+  private BlueprintPayloadDef output;
 
   public FunctionSchema() { 
   }
@@ -77,7 +77,7 @@ public class FunctionSchema {
   }
 
 
-  public FunctionSchema input(TypePointer input) {
+  public FunctionSchema input(BlueprintPayloadDef input) {
     this.input = input;
     return this;
   }
@@ -91,19 +91,19 @@ public class FunctionSchema {
   @JsonProperty(JSON_PROPERTY_INPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getInput() {
+  public BlueprintPayloadDef getInput() {
     return input;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInput(TypePointer input) {
+  public void setInput(BlueprintPayloadDef input) {
     this.input = input;
   }
 
 
-  public FunctionSchema output(TypePointer output) {
+  public FunctionSchema output(BlueprintPayloadDef output) {
     this.output = output;
     return this;
   }
@@ -117,14 +117,14 @@ public class FunctionSchema {
   @JsonProperty(JSON_PROPERTY_OUTPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getOutput() {
+  public BlueprintPayloadDef getOutput() {
     return output;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OUTPUT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOutput(TypePointer output) {
+  public void setOutput(BlueprintPayloadDef output) {
     this.output = output;
   }
 

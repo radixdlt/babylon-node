@@ -65,7 +65,7 @@
 package com.radixdlt.genesis.olympia.converter;
 
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 
 public record OlympiaToBabylonConverterConfig(
     /* Maximum number of validators in a single genesis chunk (transaction) */
@@ -84,5 +84,5 @@ public record OlympiaToBabylonConverterConfig(
     Decimal maxGenesisResourceUnscaledSupply) {
   public static final OlympiaToBabylonConverterConfig DEFAULT =
       new OlympiaToBabylonConverterConfig(
-          100, 1000, 1000, 100, 1000, Decimal.from(UInt256.TWO.pow(160)));
+          100, 1000, 1000, 100, 1000, Decimal.from(UInt192.TWO.pow(160)));
 }

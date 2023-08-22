@@ -16,7 +16,7 @@ pub struct LtsFungibleResourceBalanceChange {
     /// The Bech32m-encoded human readable version of the fungible resource's address 
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    /// The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the amount of change for the fungible resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "balance_change")]
     pub balance_change: String,
 }

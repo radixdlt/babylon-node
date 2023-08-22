@@ -123,7 +123,7 @@ pub fn to_api_sbor_data_from_bytes(
                             .serializable(SerializationParameters::Schemaless {
                                 mode: SerializationMode::Programmatic,
                                 custom_context: ScryptoValueDisplayContext::with_optional_bech32(
-                                    Some(&context.bech32_encoder),
+                                    Some(&context.address_encoder),
                                 ),
                             }),
                     )

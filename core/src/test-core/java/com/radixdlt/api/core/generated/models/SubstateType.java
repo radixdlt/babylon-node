@@ -50,7 +50,7 @@ public enum SubstateType {
   
   PACKAGECODEINSTRUMENTEDCODEENTRY("PackageCodeInstrumentedCodeEntry"),
   
-  PACKAGESCHEMAENTRY("PackageSchemaEntry"),
+  SCHEMAENTRY("SchemaEntry"),
   
   PACKAGEBLUEPRINTDEFINITIONENTRY("PackageBlueprintDefinitionEntry"),
   

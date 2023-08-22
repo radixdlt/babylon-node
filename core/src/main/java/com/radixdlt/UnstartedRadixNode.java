@@ -66,6 +66,7 @@ package com.radixdlt;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.util.Modules;
 import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -74,6 +75,9 @@ public record UnstartedRadixNode(
     RuntimeProperties properties, Network network, GenesisProvider genesisProvider) {
 
   public Injector instantiateRadixNodeModule() {
-    return Guice.createInjector(new RadixNodeModule(properties, network, genesisProvider));
+    return Guice.createInjector(
+        Modules.requireAtInjectOnConstructorsModule(),
+        Modules.disableCircularProxiesModule(),
+        new RadixNodeModule(properties, network, genesisProvider));
   }
 }

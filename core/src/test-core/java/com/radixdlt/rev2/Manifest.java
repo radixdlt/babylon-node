@@ -349,10 +349,10 @@ public class Manifest {
             params.encode(stakingAccount));
   }
 
-  public static Functions.Func1<Parameters, String> claimXrdFromUnstakeReceipt(
+  public static Functions.Func1<Parameters, String> claimXrdFromClaimResource(
       ComponentAddress stakingAccount,
       ComponentAddress validatorAddress,
-      ResourceAddress unstakeReceiptAddress) {
+      ResourceAddress claimResourceAddress) {
     return (params) ->
         String.format(
             """
@@ -365,8 +365,8 @@ public class Manifest {
             """,
             params.faucetLockFeeLine(),
             params.encode(stakingAccount),
-            params.encode(unstakeReceiptAddress),
-            params.encode(unstakeReceiptAddress),
+            params.encode(claimResourceAddress),
+            params.encode(claimResourceAddress),
             params.encode(validatorAddress),
             params.encode(XRD),
             params.encode(stakingAccount));

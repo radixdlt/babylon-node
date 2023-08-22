@@ -262,9 +262,33 @@ public record Metrics(
 
   public record Messages(Inbound inbound, Outbound outbound) {
 
-    public record Inbound(Timer queueWait, Timer process, Counter received, Counter discarded) {}
+    public record Inbound(
+        Timer queueWait,
+        Timer process,
+        Counter received,
+        LabelledCounter<DiscardedInboundMessage> discarded) {}
 
-    public record Outbound(Counter aborted, Gauge queued, Counter processed, Counter sent) {}
+    public record DiscardedInboundMessage(InboundMessageDiscardedReason reason) {}
+
+    public enum InboundMessageDiscardedReason {
+      DESERIALIZATION_ERROR,
+      MESSAGE_EXPIRED,
+      MESSAGE_UNSUPPORTED,
+      MESSAGE_TOO_LARGE
+    }
+
+    public record Outbound(
+        LabelledCounter<AbortedOutboundMessage> aborted,
+        Gauge queued,
+        Counter processed,
+        Counter sent) {}
+
+    public record AbortedOutboundMessage(OutboundMessageAbortedReason reason) {}
+
+    public enum OutboundMessageAbortedReason {
+      MESSAGE_EXPIRED,
+      MESSAGE_TOO_LARGE
+    }
   }
 
   public record Networking(

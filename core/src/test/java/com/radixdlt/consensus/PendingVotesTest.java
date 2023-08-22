@@ -79,7 +79,7 @@ import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.RandomHasher;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -110,7 +110,7 @@ public class PendingVotesTest {
 
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
-            Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt256.ONE)));
+            Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt192.ONE)));
     final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
     VoteData voteData = mock(VoteData.class);
@@ -159,8 +159,8 @@ public class PendingVotesTest {
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
             Arrays.asList(
-                BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-                BFTValidator.from(vote2.getAuthor(), UInt256.ONE)));
+                BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
+                BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
     final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
@@ -255,8 +255,8 @@ public class PendingVotesTest {
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
             Arrays.asList(
-                BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-                BFTValidator.from(vote2.getAuthor(), UInt256.ONE)));
+                BFTValidator.from(vote1.getAuthor(), UInt192.ONE),
+                BFTValidator.from(vote2.getAuthor(), UInt192.ONE)));
 
     final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 

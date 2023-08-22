@@ -66,11 +66,10 @@ package com.radixdlt.p2p.transport;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.ProposalMaxUncommittedTransactionsPayloadSize;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolRelayerMaxMessagePayloadSize;
+import com.radixdlt.messaging.MaxMessageSize;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -106,9 +105,8 @@ public final class PeerServerBootstrap {
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
+  private final int maxMessageSize;
   private final AtomicReference<ServerBootstrap> serverBootstrap;
-  private final int mempoolRelayerMaxMessagePayloadSize;
-  private final int proposalMaxUncommittedTransactionsPayloadSize;
 
   @Inject
   public PeerServerBootstrap(
@@ -122,9 +120,7 @@ public final class PeerServerBootstrap {
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Capabilities capabilities,
-      @MempoolRelayerMaxMessagePayloadSize int mempoolRelayerMaxMessagePayloadSize,
-      @ProposalMaxUncommittedTransactionsPayloadSize
-          int proposalMaxUncommittedTransactionsPayloadSize) {
+      @MaxMessageSize int maxMessageSize) {
     this.self = Objects.requireNonNull(self);
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
@@ -136,10 +132,8 @@ public final class PeerServerBootstrap {
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.capabilities = capabilities;
+    this.maxMessageSize = maxMessageSize;
     this.serverBootstrap = new AtomicReference<>();
-    this.mempoolRelayerMaxMessagePayloadSize = mempoolRelayerMaxMessagePayloadSize;
-    this.proposalMaxUncommittedTransactionsPayloadSize =
-        proposalMaxUncommittedTransactionsPayloadSize;
   }
 
   public void start() {
@@ -165,8 +159,7 @@ public final class PeerServerBootstrap {
                 peerEventDispatcher,
                 Optional.empty(),
                 capabilities,
-                mempoolRelayerMaxMessagePayloadSize,
-                proposalMaxUncommittedTransactionsPayloadSize));
+                maxMessageSize));
 
     serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
     this.serverBootstrap.set(serverBootstrap);

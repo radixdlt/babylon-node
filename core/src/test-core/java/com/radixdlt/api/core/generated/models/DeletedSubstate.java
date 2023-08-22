@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.SubstateId;
+import com.radixdlt.api.core.generated.models.SubstateValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * DeletedSubstate
  */
 @JsonPropertyOrder({
-  DeletedSubstate.JSON_PROPERTY_SUBSTATE_ID
+  DeletedSubstate.JSON_PROPERTY_SUBSTATE_ID,
+  DeletedSubstate.JSON_PROPERTY_PREVIOUS_VALUE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class DeletedSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_ID = "substate_id";
   private SubstateId substateId;
+
+  public static final String JSON_PROPERTY_PREVIOUS_VALUE = "previous_value";
+  private SubstateValue previousValue;
 
   public DeletedSubstate() { 
   }
@@ -68,6 +73,32 @@ public class DeletedSubstate {
   }
 
 
+  public DeletedSubstate previousValue(SubstateValue previousValue) {
+    this.previousValue = previousValue;
+    return this;
+  }
+
+   /**
+   * Get previousValue
+   * @return previousValue
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_PREVIOUS_VALUE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SubstateValue getPreviousValue() {
+    return previousValue;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PREVIOUS_VALUE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPreviousValue(SubstateValue previousValue) {
+    this.previousValue = previousValue;
+  }
+
+
   /**
    * Return true if this DeletedSubstate object is equal to o.
    */
@@ -80,12 +111,13 @@ public class DeletedSubstate {
       return false;
     }
     DeletedSubstate deletedSubstate = (DeletedSubstate) o;
-    return Objects.equals(this.substateId, deletedSubstate.substateId);
+    return Objects.equals(this.substateId, deletedSubstate.substateId) &&
+        Objects.equals(this.previousValue, deletedSubstate.previousValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateId);
+    return Objects.hash(substateId, previousValue);
   }
 
   @Override
@@ -93,6 +125,7 @@ public class DeletedSubstate {
     StringBuilder sb = new StringBuilder();
     sb.append("class DeletedSubstate {\n");
     sb.append("    substateId: ").append(toIndentedString(substateId)).append("\n");
+    sb.append("    previousValue: ").append(toIndentedString(previousValue)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -84,7 +84,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -201,7 +201,7 @@ public class ProposerLoadBalancedTest {
             100,
             150 * proposalChunk,
             EpochNodeWeightMapping.computed(
-                numNodes, index -> UInt256.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
+                numNodes, index -> UInt192.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
             );
 
     assertThat(proposals.subList(0, 50))
@@ -216,15 +216,15 @@ public class ProposerLoadBalancedTest {
   public void when_run_3_nodes_with_large_lcm_weighting__then_proposals_should_be_proportional() {
     final int numNodes = 3;
     final long numProposals = 100_000L;
-    ImmutableList<UInt256> weights =
+    ImmutableList<UInt192> weights =
         ImmutableList.of(
             // Some large primes with product/LCM > 2^64 but < 2^256
-            UInt256.from("941083981"), UInt256.from("961748927"), UInt256.from("982451653"));
-    UInt256 sum = weights.stream().reduce(UInt256.ZERO, UInt256::add);
-    UInt256 numProposals256 = UInt256.from(numProposals);
+            UInt192.from(941083981L), UInt192.from(961748927L), UInt192.from(982451653L));
+    UInt192 sum = weights.stream().reduce(UInt192.ZERO, UInt192::add);
+    UInt192 numProposals192 = UInt192.from(numProposals);
     long[] values =
         weights.stream()
-            .map(w -> w.multiply(numProposals256).divide(sum))
+            .map(w -> w.multiply(numProposals192).divide(sum))
             .mapToLong(v -> v.getLow().getLow())
             .toArray();
     ImmutableList<Long> proposals =
@@ -241,13 +241,13 @@ public class ProposerLoadBalancedTest {
   public void when_run_100_nodes_with_very_large_period__then_proposals_should_be_proportional() {
     final int numNodes = 100;
     final long numProposals = 1_000L;
-    ImmutableList<UInt256> weights =
-        generatePrimes(100).mapToObj(UInt256::from).collect(ImmutableList.toImmutableList());
-    UInt256 sum = weights.stream().reduce(UInt256.ZERO, UInt256::add);
-    UInt256 numProposals256 = UInt256.from(numProposals);
+    ImmutableList<UInt192> weights =
+        generatePrimes(100).mapToObj(UInt192::from).collect(ImmutableList.toImmutableList());
+    UInt192 sum = weights.stream().reduce(UInt192.ZERO, UInt192::add);
+    UInt192 numProposals192 = UInt192.from(numProposals);
     long[] values =
         weights.stream()
-            .map(w -> w.multiply(numProposals256).divide(sum))
+            .map(w -> w.multiply(numProposals192).divide(sum))
             .mapToLong(v -> v.getLow().getLow())
             .toArray();
     ImmutableList<Long> proposals =

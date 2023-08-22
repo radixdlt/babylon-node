@@ -65,6 +65,8 @@ WORKDIR /radixdlt
 
 USER root
 RUN SKIP_NATIVE_RUST_BUILD=TRUE gradle clean build -x test -Pci=true -PrustBinaryBuildType=release
+WORKDIR /radixdlt/core/build/distributions
+RUN unzip -j *.zip
 USER nobody
 
 # =================================================================================================
@@ -126,7 +128,7 @@ RUN apt-get update \
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.68.2-aarch64-unknown-linux-gnu 1.68.2-x86_64-unknown-linux-gnu
+  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu
 
 RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.3.3
 
@@ -223,20 +225,15 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # Install dependencies needed for building the image or running the application
 # - unzip is needed for unpacking the java build artifacts
 # - daemontools is needed at application runtime for async tasks
-# - libssl-dev is needed for encryption methods used in the keystore.ks
 # - software-properties-common is needed for installing debian packages with dpkg
 # - gettext-base is needed for envsubst in config_radixdlt.sh
 # - curl is needed for the docker-healthcheck
 RUN apt-get update -y \
-  && apt-get -y install ca-certificates-java \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=17.0.8+7-1~deb12u1 \
-    unzip=6.0-28 \
-    daemontools=1:0.76-8.1 \
-    libssl-dev=3.0.9-1 \
-    software-properties-common=0.99.30-4 \
     curl=7.88.1-10+deb12u1 \
     gettext-base=0.21-12 \
+    daemontools=1:0.76-8.1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -279,20 +276,13 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
 # Copy in the application artifacts
-COPY --from=java-container / /tmp
-RUN unzip -j /tmp/*.zip && mkdir -p /opt/radixdlt/bin && \
-    mkdir -p /opt/radixdlt/lib && \
-    ls -lah && \
-    pwd && \
-    mv /home/radixdlt/core /opt/radixdlt/bin/core && \
-    mv /home/radixdlt/*.jar /opt/radixdlt/lib/ 
-
+COPY --from=java-container /*.jar /opt/radixdlt/lib/
+COPY --from=java-container /core /opt/radixdlt/bin/core
 COPY --from=library-container /libcorerust.so /usr/lib/jni/libcorerust.so
 
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
 
-# The entrypoint `config_radixdlt.sh` finishes configuration and then runs its parameters (ie CMD) as the radixdlt user
-# See https://docs.docker.com/engine/reference/builder/#entrypoint
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
+# See https://docs.docker.com/engine/reference/builder/#entrypoint
 CMD ["/opt/radixdlt/bin/core"]

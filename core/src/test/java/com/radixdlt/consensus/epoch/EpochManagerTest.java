@@ -79,7 +79,9 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.safety.InitialSafetyStateProvider;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
@@ -110,7 +112,7 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -231,6 +233,7 @@ public class EpochManagerTest {
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
+        bind(InitialSafetyStateProvider.class).toInstance(SafetyState::initialState);
         bind(ProposalGenerator.class).toInstance(proposalGenerator);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
@@ -260,7 +263,7 @@ public class EpochManagerTest {
 
       @Provides
       BFTValidatorSet validatorSet() {
-        return BFTValidatorSet.from(Stream.of(BFTValidator.from(selfValidatorId, UInt256.ONE)));
+        return BFTValidatorSet.from(Stream.of(BFTValidator.from(selfValidatorId, UInt192.ONE)));
       }
 
       @Provides
@@ -308,7 +311,7 @@ public class EpochManagerTest {
     // Arrange
     epochManager.start();
     BFTValidatorSet nextValidatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt192.ONE)));
     LedgerHeader header = LedgerHeader.genesis(0, LedgerHashes.zero(), nextValidatorSet, 0, 0);
     VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =

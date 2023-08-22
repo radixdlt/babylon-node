@@ -32,23 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_INTENT_HASH,
+  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_INTENT_HASH_BECH32M,
   ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH,
+  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M,
   ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_PAYLOAD_HASH,
-  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_LEDGER_HASH
+  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_PAYLOAD_HASH_BECH32M,
+  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_LEDGER_HASH,
+  ParsedNotarizedTransactionIdentifiers.JSON_PROPERTY_LEDGER_HASH_BECH32M
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ParsedNotarizedTransactionIdentifiers {
   public static final String JSON_PROPERTY_INTENT_HASH = "intent_hash";
   private String intentHash;
 
+  public static final String JSON_PROPERTY_INTENT_HASH_BECH32M = "intent_hash_bech32m";
+  private String intentHashBech32m;
+
   public static final String JSON_PROPERTY_SIGNED_INTENT_HASH = "signed_intent_hash";
   private String signedIntentHash;
+
+  public static final String JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M = "signed_intent_hash_bech32m";
+  private String signedIntentHashBech32m;
 
   public static final String JSON_PROPERTY_PAYLOAD_HASH = "payload_hash";
   private String payloadHash;
 
+  public static final String JSON_PROPERTY_PAYLOAD_HASH_BECH32M = "payload_hash_bech32m";
+  private String payloadHashBech32m;
+
   public static final String JSON_PROPERTY_LEDGER_HASH = "ledger_hash";
   private String ledgerHash;
+
+  public static final String JSON_PROPERTY_LEDGER_HASH_BECH32M = "ledger_hash_bech32m";
+  private String ledgerHashBech32m;
 
   public ParsedNotarizedTransactionIdentifiers() { 
   }
@@ -79,6 +95,32 @@ public class ParsedNotarizedTransactionIdentifiers {
   }
 
 
+  public ParsedNotarizedTransactionIdentifiers intentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return intentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getIntentHashBech32m() {
+    return intentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIntentHashBech32m(String intentHashBech32m) {
+    this.intentHashBech32m = intentHashBech32m;
+  }
+
+
   public ParsedNotarizedTransactionIdentifiers signedIntentHash(String signedIntentHash) {
     this.signedIntentHash = signedIntentHash;
     return this;
@@ -102,6 +144,32 @@ public class ParsedNotarizedTransactionIdentifiers {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSignedIntentHash(String signedIntentHash) {
     this.signedIntentHash = signedIntentHash;
+  }
+
+
+  public ParsedNotarizedTransactionIdentifiers signedIntentHashBech32m(String signedIntentHashBech32m) {
+    this.signedIntentHashBech32m = signedIntentHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;SignedIntentHash&#x60;.
+   * @return signedIntentHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedIntentHash`.")
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSignedIntentHashBech32m() {
+    return signedIntentHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignedIntentHashBech32m(String signedIntentHashBech32m) {
+    this.signedIntentHashBech32m = signedIntentHashBech32m;
   }
 
 
@@ -131,6 +199,32 @@ public class ParsedNotarizedTransactionIdentifiers {
   }
 
 
+  public ParsedNotarizedTransactionIdentifiers payloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return payloadHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getPayloadHashBech32m() {
+    return payloadHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPayloadHashBech32m(String payloadHashBech32m) {
+    this.payloadHashBech32m = payloadHashBech32m;
+  }
+
+
   public ParsedNotarizedTransactionIdentifiers ledgerHash(String ledgerHash) {
     this.ledgerHash = ledgerHash;
     return this;
@@ -157,6 +251,32 @@ public class ParsedNotarizedTransactionIdentifiers {
   }
 
 
+  public ParsedNotarizedTransactionIdentifiers ledgerHashBech32m(String ledgerHashBech32m) {
+    this.ledgerHashBech32m = ledgerHashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;LedgerPayloadHash&#x60;.
+   * @return ledgerHashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `LedgerPayloadHash`.")
+  @JsonProperty(JSON_PROPERTY_LEDGER_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getLedgerHashBech32m() {
+    return ledgerHashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerHashBech32m(String ledgerHashBech32m) {
+    this.ledgerHashBech32m = ledgerHashBech32m;
+  }
+
+
   /**
    * Return true if this ParsedNotarizedTransactionIdentifiers object is equal to o.
    */
@@ -170,14 +290,18 @@ public class ParsedNotarizedTransactionIdentifiers {
     }
     ParsedNotarizedTransactionIdentifiers parsedNotarizedTransactionIdentifiers = (ParsedNotarizedTransactionIdentifiers) o;
     return Objects.equals(this.intentHash, parsedNotarizedTransactionIdentifiers.intentHash) &&
+        Objects.equals(this.intentHashBech32m, parsedNotarizedTransactionIdentifiers.intentHashBech32m) &&
         Objects.equals(this.signedIntentHash, parsedNotarizedTransactionIdentifiers.signedIntentHash) &&
+        Objects.equals(this.signedIntentHashBech32m, parsedNotarizedTransactionIdentifiers.signedIntentHashBech32m) &&
         Objects.equals(this.payloadHash, parsedNotarizedTransactionIdentifiers.payloadHash) &&
-        Objects.equals(this.ledgerHash, parsedNotarizedTransactionIdentifiers.ledgerHash);
+        Objects.equals(this.payloadHashBech32m, parsedNotarizedTransactionIdentifiers.payloadHashBech32m) &&
+        Objects.equals(this.ledgerHash, parsedNotarizedTransactionIdentifiers.ledgerHash) &&
+        Objects.equals(this.ledgerHashBech32m, parsedNotarizedTransactionIdentifiers.ledgerHashBech32m);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentHash, signedIntentHash, payloadHash, ledgerHash);
+    return Objects.hash(intentHash, intentHashBech32m, signedIntentHash, signedIntentHashBech32m, payloadHash, payloadHashBech32m, ledgerHash, ledgerHashBech32m);
   }
 
   @Override
@@ -185,9 +309,13 @@ public class ParsedNotarizedTransactionIdentifiers {
     StringBuilder sb = new StringBuilder();
     sb.append("class ParsedNotarizedTransactionIdentifiers {\n");
     sb.append("    intentHash: ").append(toIndentedString(intentHash)).append("\n");
+    sb.append("    intentHashBech32m: ").append(toIndentedString(intentHashBech32m)).append("\n");
     sb.append("    signedIntentHash: ").append(toIndentedString(signedIntentHash)).append("\n");
+    sb.append("    signedIntentHashBech32m: ").append(toIndentedString(signedIntentHashBech32m)).append("\n");
     sb.append("    payloadHash: ").append(toIndentedString(payloadHash)).append("\n");
+    sb.append("    payloadHashBech32m: ").append(toIndentedString(payloadHashBech32m)).append("\n");
     sb.append("    ledgerHash: ").append(toIndentedString(ledgerHash)).append("\n");
+    sb.append("    ledgerHashBech32m: ").append(toIndentedString(ledgerHashBech32m)).append("\n");
     sb.append("}");
     return sb.toString();
   }

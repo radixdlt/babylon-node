@@ -13,14 +13,21 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreInfo {
-    #[serde(rename = "kv_store_schema")]
-    pub kv_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
+    #[serde(rename = "key_generic_substitution")]
+    pub key_generic_substitution: Box<crate::core_api::generated::models::TypeIdentifier>,
+    #[serde(rename = "value_generic_substitution")]
+    pub value_generic_substitution: Box<crate::core_api::generated::models::TypeIdentifier>,
+    /// Whether the entries of the key-value partition are allowed to own child nodes.
+    #[serde(rename = "allow_ownership")]
+    pub allow_ownership: bool,
 }
 
 impl KeyValueStoreInfo {
-    pub fn new(kv_store_schema: crate::core_api::generated::models::KeyValueStoreSchema) -> KeyValueStoreInfo {
+    pub fn new(key_generic_substitution: crate::core_api::generated::models::TypeIdentifier, value_generic_substitution: crate::core_api::generated::models::TypeIdentifier, allow_ownership: bool) -> KeyValueStoreInfo {
         KeyValueStoreInfo {
-            kv_store_schema: Box::new(kv_store_schema),
+            key_generic_substitution: Box::new(key_generic_substitution),
+            value_generic_substitution: Box::new(value_generic_substitution),
+            allow_ownership,
         }
     }
 }

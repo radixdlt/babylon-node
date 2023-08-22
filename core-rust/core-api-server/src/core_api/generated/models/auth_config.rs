@@ -21,7 +21,7 @@ pub struct AuthConfig {
     #[serde(rename = "method_auth_type")]
     pub method_auth_type: crate::core_api::generated::models::MethodAuthType,
     #[serde(rename = "method_roles", skip_serializing_if = "Option::is_none")]
-    pub method_roles: Option<Box<crate::core_api::generated::models::StaticRolesAuthTemplate>>,
+    pub method_roles: Option<Box<crate::core_api::generated::models::StaticRoleDefinitionAuthTemplate>>,
 }
 
 impl AuthConfig {

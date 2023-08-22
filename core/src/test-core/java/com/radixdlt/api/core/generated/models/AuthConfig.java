@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRule;
 import com.radixdlt.api.core.generated.models.FunctionAuthType;
 import com.radixdlt.api.core.generated.models.MethodAuthType;
-import com.radixdlt.api.core.generated.models.StaticRolesAuthTemplate;
+import com.radixdlt.api.core.generated.models.StaticRoleDefinitionAuthTemplate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class AuthConfig {
   private MethodAuthType methodAuthType;
 
   public static final String JSON_PROPERTY_METHOD_ROLES = "method_roles";
-  private StaticRolesAuthTemplate methodRoles;
+  private StaticRoleDefinitionAuthTemplate methodRoles;
 
   public AuthConfig() { 
   }
@@ -146,7 +146,7 @@ public class AuthConfig {
   }
 
 
-  public AuthConfig methodRoles(StaticRolesAuthTemplate methodRoles) {
+  public AuthConfig methodRoles(StaticRoleDefinitionAuthTemplate methodRoles) {
     this.methodRoles = methodRoles;
     return this;
   }
@@ -160,14 +160,14 @@ public class AuthConfig {
   @JsonProperty(JSON_PROPERTY_METHOD_ROLES)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public StaticRolesAuthTemplate getMethodRoles() {
+  public StaticRoleDefinitionAuthTemplate getMethodRoles() {
     return methodRoles;
   }
 
 
   @JsonProperty(JSON_PROPERTY_METHOD_ROLES)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setMethodRoles(StaticRolesAuthTemplate methodRoles) {
+  public void setMethodRoles(StaticRoleDefinitionAuthTemplate methodRoles) {
     this.methodRoles = methodRoles;
   }
 

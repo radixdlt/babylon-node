@@ -76,11 +76,10 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         .fold(
             IndexMap::new(),
             |mut index, (fungible_resource_address, amount)| {
-                {
-                    *index
-                        .entry(fungible_resource_address)
-                        .or_insert(Decimal::zero()) += amount;
-                }
+                let sum = index
+                    .entry(fungible_resource_address)
+                    .or_insert(Decimal::zero());
+                *sum = sum.add_or_panic(amount);
                 index
             },
         )

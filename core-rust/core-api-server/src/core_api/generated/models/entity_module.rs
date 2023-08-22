@@ -22,6 +22,8 @@ pub enum EntityModule {
     Royalty,
     #[serde(rename = "Main")]
     Main,
+    #[serde(rename = "Schema")]
+    Schema,
 
 }
 
@@ -33,6 +35,7 @@ impl ToString for EntityModule {
             Self::RoleAssignment => String::from("RoleAssignment"),
             Self::Royalty => String::from("Royalty"),
             Self::Main => String::from("Main"),
+            Self::Schema => String::from("Schema"),
         }
     }
 }

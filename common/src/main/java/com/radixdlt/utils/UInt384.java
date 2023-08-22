@@ -85,7 +85,7 @@ public final class UInt384 implements Comparable<UInt384> {
   /** Highest bit. */
   public static final UInt384 HIGH_BIT = new UInt384(UInt128.HIGH_BIT, UInt256.ZERO);
 
-  /** A constant holding the maximum value an {@code Int256} can have, 2<sup>384</sup>-1. */
+  /** A constant holding the maximum value an {@code Int384} can have, 2<sup>384</sup>-1. */
   public static final UInt384 MAX_VALUE = new UInt384(UInt128.MAX_VALUE, UInt256.MAX_VALUE);
 
   // Some commonly used values
@@ -134,7 +134,7 @@ public final class UInt384 implements Comparable<UInt384> {
 
   /**
    * Factory method for materialising an {@link UInt384} from a {@code long} value. Note that values
-   * are zero extended into the 256 bit value.
+   * are zero extended into the 384 bit value.
    *
    * @param value The value to be represented as an {@link UInt384}.
    * @return {@code value} as an {@link UInt384} type.
@@ -145,13 +145,17 @@ public final class UInt384 implements Comparable<UInt384> {
 
   /**
    * Factory method for materialising an {@link UInt384} from an {@link UInt128} value. Note that
-   * values are zero extended into the 256 bit value.
+   * values are zero extended into the 384 bit value.
    *
    * @param value The least significant half-word of the value.
    * @return the specified value as an {@link UInt384} type.
    */
   public static UInt384 from(UInt128 value) {
     return from(UInt256.from(value));
+  }
+
+  public static UInt384 from(UInt192 value) {
+    return from(UInt128.ZERO, UInt256.from(UInt128.from(UInt64.ZERO, value.high), value.low));
   }
 
   /**
@@ -369,6 +373,10 @@ public final class UInt384 implements Comparable<UInt384> {
             : UInt128.ZERO;
     UInt128 newHigh = this.high.subtract(other.high).subtract(carry);
     return UInt384.from(newHigh, newLow);
+  }
+
+  public UInt384 subtract(UInt192 other) {
+    return subtract(from(other));
   }
 
   /**

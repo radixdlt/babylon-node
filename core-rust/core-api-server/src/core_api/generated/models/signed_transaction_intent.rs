@@ -16,6 +16,9 @@ pub struct SignedTransactionIntent {
     /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
     #[serde(rename = "hash")]
     pub hash: String,
+    /// The Bech32m-encoded human readable `SignedIntentHash`.
+    #[serde(rename = "hash_bech32m")]
+    pub hash_bech32m: String,
     #[serde(rename = "intent")]
     pub intent: Box<crate::core_api::generated::models::TransactionIntent>,
     #[serde(rename = "intent_signatures")]
@@ -23,9 +26,10 @@ pub struct SignedTransactionIntent {
 }
 
 impl SignedTransactionIntent {
-    pub fn new(hash: String, intent: crate::core_api::generated::models::TransactionIntent, intent_signatures: Vec<crate::core_api::generated::models::SignatureWithPublicKey>) -> SignedTransactionIntent {
+    pub fn new(hash: String, hash_bech32m: String, intent: crate::core_api::generated::models::TransactionIntent, intent_signatures: Vec<crate::core_api::generated::models::SignatureWithPublicKey>) -> SignedTransactionIntent {
         SignedTransactionIntent {
             hash,
+            hash_bech32m,
             intent: Box::new(intent),
             intent_signatures,
         }

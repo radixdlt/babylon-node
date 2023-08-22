@@ -163,9 +163,6 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::PackageBlueprintDependencies(substate),
         ) => to_api_package_blueprint_dependencies_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageSchema(substate)) => {
-            to_api_package_schema_entry(context, typed_substate_key, substate)?
-        }
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::PackageVmType(substate)) => {
             to_api_package_code_vm_type_entry_substate(context, typed_substate_key, substate)?
         }
@@ -193,5 +190,8 @@ pub fn to_api_substate(
         TypedSubstateValue::MainModule(
             TypedMainModuleSubstateValue::TransactionTrackerCollectionEntry(substate),
         ) => to_api_transaction_tracker_collection_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::Schema(substate) => {
+            to_api_schema_entry_substate(context, typed_substate_key, substate)?
+        }
     })
 }

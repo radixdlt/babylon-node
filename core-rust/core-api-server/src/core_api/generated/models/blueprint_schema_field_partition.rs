@@ -14,9 +14,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintSchemaFieldPartition {
-    /// The partition's offset from the Main module base (64)
-    #[serde(rename = "partition_offset")]
-    pub partition_offset: i32,
+    #[serde(rename = "partition_description")]
+    pub partition_description: Box<crate::core_api::generated::models::PartitionDescription>,
     /// The field substates for this blueprint.
     #[serde(rename = "fields")]
     pub fields: Vec<crate::core_api::generated::models::FieldSchema>,
@@ -24,9 +23,9 @@ pub struct BlueprintSchemaFieldPartition {
 
 impl BlueprintSchemaFieldPartition {
     /// The fields partition of the blueprint.
-    pub fn new(partition_offset: i32, fields: Vec<crate::core_api::generated::models::FieldSchema>) -> BlueprintSchemaFieldPartition {
+    pub fn new(partition_description: crate::core_api::generated::models::PartitionDescription, fields: Vec<crate::core_api::generated::models::FieldSchema>) -> BlueprintSchemaFieldPartition {
         BlueprintSchemaFieldPartition {
-            partition_offset,
+            partition_description: Box::new(partition_description),
             fields,
         }
     }

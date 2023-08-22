@@ -37,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionIntent.JSON_PROPERTY_HASH,
+  TransactionIntent.JSON_PROPERTY_HASH_BECH32M,
   TransactionIntent.JSON_PROPERTY_HEADER,
   TransactionIntent.JSON_PROPERTY_INSTRUCTIONS,
   TransactionIntent.JSON_PROPERTY_BLOBS_HEX,
@@ -46,6 +47,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class TransactionIntent {
   public static final String JSON_PROPERTY_HASH = "hash";
   private String hash;
+
+  public static final String JSON_PROPERTY_HASH_BECH32M = "hash_bech32m";
+  private String hashBech32m;
 
   public static final String JSON_PROPERTY_HEADER = "header";
   private TransactionHeader header;
@@ -85,6 +89,32 @@ public class TransactionIntent {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHash(String hash) {
     this.hash = hash;
+  }
+
+
+  public TransactionIntent hashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * @return hashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getHashBech32m() {
+    return hashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
   }
 
 
@@ -213,6 +243,7 @@ public class TransactionIntent {
     }
     TransactionIntent transactionIntent = (TransactionIntent) o;
     return Objects.equals(this.hash, transactionIntent.hash) &&
+        Objects.equals(this.hashBech32m, transactionIntent.hashBech32m) &&
         Objects.equals(this.header, transactionIntent.header) &&
         Objects.equals(this.instructions, transactionIntent.instructions) &&
         Objects.equals(this.blobsHex, transactionIntent.blobsHex) &&
@@ -221,7 +252,7 @@ public class TransactionIntent {
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, header, instructions, blobsHex, message);
+    return Objects.hash(hash, hashBech32m, header, instructions, blobsHex, message);
   }
 
   @Override
@@ -229,6 +260,7 @@ public class TransactionIntent {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionIntent {\n");
     sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    hashBech32m: ").append(toIndentedString(hashBech32m)).append("\n");
     sb.append("    header: ").append(toIndentedString(header)).append("\n");
     sb.append("    instructions: ").append(toIndentedString(instructions)).append("\n");
     sb.append("    blobsHex: ").append(toIndentedString(blobsHex)).append("\n");

@@ -68,7 +68,7 @@ import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress unstakeResource) {
+public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress claimResource) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ValidatorInfo.class,

@@ -18,6 +18,7 @@ radix-engine-queries = { workspace = true }
 utils = { workspace = true }
 
 # Non-Radix Engine Dependencies:
+itertools = { workspace = true }
 jni = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }

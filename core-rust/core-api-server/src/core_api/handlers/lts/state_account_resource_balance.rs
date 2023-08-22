@@ -1,4 +1,5 @@
 use crate::core_api::*;
+use radix_engine::blueprints::account::ACCOUNT_VAULT_COLLECTION_INDEX;
 use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;

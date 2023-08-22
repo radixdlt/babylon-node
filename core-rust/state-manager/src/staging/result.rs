@@ -68,13 +68,14 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
-    ActiveValidatorInfo, ChangeAction, DetailedTransactionOutcome, EpochTransactionIdentifiers,
-    LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChange, TransactionTreeHash,
+    ActiveValidatorInfo, BySubstate, ChangeAction, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LocalTransactionReceipt, NextEpoch, ReceiptTreeHash,
+    StateHash, StateVersion, TransactionTreeHash,
 };
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionReceipt, TransactionResult,
+    AbortResult, CommitResult, CostingParameters, RejectResult, TransactionFeeSummary,
+    TransactionReceipt, TransactionResult,
 };
 use radix_engine_interface::prelude::*;
 
@@ -87,11 +88,18 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use transaction::prelude::TransactionCostingParameters;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
-    Reject(RejectResult),
+    Reject(ProcessedRejectResult),
     Abort(AbortResult),
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessedRejectResult {
+    pub result: RejectResult,
+    pub fee_summary: TransactionFeeSummary,
 }
 
 #[derive(Clone, Debug)]
@@ -108,16 +116,35 @@ pub struct HashUpdateContext<'s, S> {
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
 }
 
+pub struct ExecutionFeeData {
+    pub fee_summary: TransactionFeeSummary,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParameters,
+}
+
 impl ProcessedTransactionReceipt {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
-        transaction_receipt: TransactionReceipt,
+        receipt: TransactionReceipt,
     ) -> Self {
-        match transaction_receipt.transaction_result {
-            TransactionResult::Commit(commit) => ProcessedTransactionReceipt::Commit(
-                ProcessedCommitResult::process::<_, D>(hash_update_context, commit),
-            ),
-            TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
+        match receipt.result {
+            TransactionResult::Commit(commit) => {
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
+                    hash_update_context,
+                    commit,
+                    ExecutionFeeData {
+                        fee_summary: receipt.fee_summary,
+                        engine_costing_parameters: receipt.costing_parameters,
+                        transaction_costing_parameters: receipt.transaction_costing_parameters,
+                    },
+                ))
+            }
+            TransactionResult::Reject(reject) => {
+                ProcessedTransactionReceipt::Reject(ProcessedRejectResult {
+                    result: reject,
+                    fee_summary: receipt.fee_summary,
+                })
+            }
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
     }
@@ -137,7 +164,7 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, RejectResult> {
+    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
@@ -160,6 +187,7 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
+        execution_fee_data: ExecutionFeeData,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
@@ -184,7 +212,8 @@ impl ProcessedCommitResult {
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
 
-        let local_receipt = LocalTransactionReceipt::from((commit_result, substate_changes));
+        let local_receipt =
+            LocalTransactionReceipt::new(commit_result, substate_changes, execution_fee_data);
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
@@ -234,32 +263,33 @@ impl ProcessedCommitResult {
     pub fn compute_substate_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
         store: &S,
         system_updates: &SystemUpdates,
-    ) -> Vec<SubstateChange> {
-        let mut substate_changes = Vec::new();
-        for ((node_id, module_id), node_module_updates) in system_updates {
-            for (substate_key, update) in node_module_updates {
-                let partition_key = D::to_db_partition_key(node_id, *module_id);
+    ) -> BySubstate<ChangeAction> {
+        let mut substate_changes = BySubstate::new();
+        for ((node_id, partition_num), substate_updates) in system_updates {
+            for (substate_key, update) in substate_updates {
+                let partition_key = D::to_db_partition_key(node_id, *partition_num);
                 let sort_key = D::to_db_sort_key(substate_key);
-                let change_action_opt = match update {
-                    DatabaseUpdate::Set(value) => {
-                        match store.get_substate(&partition_key, &sort_key) {
-                            Some(previous) if previous != *value => Some(ChangeAction::Update {
-                                new: value.clone(),
-                                previous,
-                            }),
-                            Some(_) => None, /* Same value as before, ignore */
-                            None => Some(ChangeAction::Create(value.clone())),
-                        }
+
+                let previous_opt = store.get_substate(&partition_key, &sort_key);
+                let change_action_opt = match (update, previous_opt) {
+                    (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
+                        Some(ChangeAction::Update {
+                            new: new.clone(),
+                            previous,
+                        })
                     }
-                    DatabaseUpdate::Delete => Some(ChangeAction::Delete),
+                    (DatabaseUpdate::Set(_new), Some(_previous)) => None, // Same value as before (i.e. not really updated), ignore
+                    (DatabaseUpdate::Set(value), None) => {
+                        Some(ChangeAction::Create { new: value.clone() })
+                    }
+                    (DatabaseUpdate::Delete, Some(previous)) => {
+                        Some(ChangeAction::Delete { previous })
+                    }
+                    (DatabaseUpdate::Delete, None) => None, // No value before (i.e. not really deleted), ignore
                 };
+
                 if let Some(change_action) = change_action_opt {
-                    substate_changes.push(SubstateChange {
-                        node_id: *node_id,
-                        partition_number: *module_id,
-                        substate_key: substate_key.clone(),
-                        action: change_action,
-                    });
+                    substate_changes.add(node_id, partition_num, substate_key, change_action);
                 }
             }
         }

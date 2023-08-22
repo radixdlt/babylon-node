@@ -162,9 +162,10 @@ pub mod vertex {
 pub mod substate {
     use super::*;
     use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-    use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
+    use radix_engine_common::types::NodeId;
     use std::slice;
 
+    use crate::SubstateReference;
     pub use radix_engine_store_interface::interface::{
         CommittableSubstateDatabase, SubstateDatabase,
     };
@@ -213,12 +214,6 @@ pub mod substate {
         /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
         pub root: SubstateReference,
     }
-
-    /// A complete ID of Substate.
-    #[derive(
-        Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-    )]
-    pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 }
 
 pub mod transactions {

@@ -30,7 +30,7 @@ public enum MethodAuthType {
   
   ALLOWALL("AllowAll"),
   
-  STATICROLES("StaticRoles");
+  STATICROLEDEFINITION("StaticRoleDefinition");
 
   private String value;
 

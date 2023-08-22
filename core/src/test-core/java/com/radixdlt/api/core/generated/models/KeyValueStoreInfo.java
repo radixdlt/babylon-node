@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.KeyValueStoreSchema;
+import com.radixdlt.api.core.generated.models.TypeIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,39 +32,99 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreInfo
  */
 @JsonPropertyOrder({
-  KeyValueStoreInfo.JSON_PROPERTY_KV_STORE_SCHEMA
+  KeyValueStoreInfo.JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION,
+  KeyValueStoreInfo.JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION,
+  KeyValueStoreInfo.JSON_PROPERTY_ALLOW_OWNERSHIP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreInfo {
-  public static final String JSON_PROPERTY_KV_STORE_SCHEMA = "kv_store_schema";
-  private KeyValueStoreSchema kvStoreSchema;
+  public static final String JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION = "key_generic_substitution";
+  private TypeIdentifier keyGenericSubstitution;
+
+  public static final String JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION = "value_generic_substitution";
+  private TypeIdentifier valueGenericSubstitution;
+
+  public static final String JSON_PROPERTY_ALLOW_OWNERSHIP = "allow_ownership";
+  private Boolean allowOwnership;
 
   public KeyValueStoreInfo() { 
   }
 
-  public KeyValueStoreInfo kvStoreSchema(KeyValueStoreSchema kvStoreSchema) {
-    this.kvStoreSchema = kvStoreSchema;
+  public KeyValueStoreInfo keyGenericSubstitution(TypeIdentifier keyGenericSubstitution) {
+    this.keyGenericSubstitution = keyGenericSubstitution;
     return this;
   }
 
    /**
-   * Get kvStoreSchema
-   * @return kvStoreSchema
+   * Get keyGenericSubstitution
+   * @return keyGenericSubstitution
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KV_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public KeyValueStoreSchema getKvStoreSchema() {
-    return kvStoreSchema;
+  public TypeIdentifier getKeyGenericSubstitution() {
+    return keyGenericSubstitution;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KV_STORE_SCHEMA)
+  @JsonProperty(JSON_PROPERTY_KEY_GENERIC_SUBSTITUTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKvStoreSchema(KeyValueStoreSchema kvStoreSchema) {
-    this.kvStoreSchema = kvStoreSchema;
+  public void setKeyGenericSubstitution(TypeIdentifier keyGenericSubstitution) {
+    this.keyGenericSubstitution = keyGenericSubstitution;
+  }
+
+
+  public KeyValueStoreInfo valueGenericSubstitution(TypeIdentifier valueGenericSubstitution) {
+    this.valueGenericSubstitution = valueGenericSubstitution;
+    return this;
+  }
+
+   /**
+   * Get valueGenericSubstitution
+   * @return valueGenericSubstitution
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TypeIdentifier getValueGenericSubstitution() {
+    return valueGenericSubstitution;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALUE_GENERIC_SUBSTITUTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValueGenericSubstitution(TypeIdentifier valueGenericSubstitution) {
+    this.valueGenericSubstitution = valueGenericSubstitution;
+  }
+
+
+  public KeyValueStoreInfo allowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
+    return this;
+  }
+
+   /**
+   * Whether the entries of the key-value partition are allowed to own child nodes.
+   * @return allowOwnership
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Whether the entries of the key-value partition are allowed to own child nodes.")
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getAllowOwnership() {
+    return allowOwnership;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAllowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
   }
 
 
@@ -80,19 +140,23 @@ public class KeyValueStoreInfo {
       return false;
     }
     KeyValueStoreInfo keyValueStoreInfo = (KeyValueStoreInfo) o;
-    return Objects.equals(this.kvStoreSchema, keyValueStoreInfo.kvStoreSchema);
+    return Objects.equals(this.keyGenericSubstitution, keyValueStoreInfo.keyGenericSubstitution) &&
+        Objects.equals(this.valueGenericSubstitution, keyValueStoreInfo.valueGenericSubstitution) &&
+        Objects.equals(this.allowOwnership, keyValueStoreInfo.allowOwnership);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(kvStoreSchema);
+    return Objects.hash(keyGenericSubstitution, valueGenericSubstitution, allowOwnership);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreInfo {\n");
-    sb.append("    kvStoreSchema: ").append(toIndentedString(kvStoreSchema)).append("\n");
+    sb.append("    keyGenericSubstitution: ").append(toIndentedString(keyGenericSubstitution)).append("\n");
+    sb.append("    valueGenericSubstitution: ").append(toIndentedString(valueGenericSubstitution)).append("\n");
+    sb.append("    allowOwnership: ").append(toIndentedString(allowOwnership)).append("\n");
     sb.append("}");
     return sb.toString();
   }

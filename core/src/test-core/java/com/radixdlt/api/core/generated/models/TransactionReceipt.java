@@ -22,7 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.CostingParameters;
 import com.radixdlt.api.core.generated.models.Event;
+import com.radixdlt.api.core.generated.models.FeeDestination;
+import com.radixdlt.api.core.generated.models.FeeSource;
 import com.radixdlt.api.core.generated.models.FeeSummary;
 import com.radixdlt.api.core.generated.models.NextEpoch;
 import com.radixdlt.api.core.generated.models.SborData;
@@ -42,6 +45,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   TransactionReceipt.JSON_PROPERTY_STATUS,
   TransactionReceipt.JSON_PROPERTY_FEE_SUMMARY,
+  TransactionReceipt.JSON_PROPERTY_COSTING_PARAMETERS,
+  TransactionReceipt.JSON_PROPERTY_FEE_SOURCE,
+  TransactionReceipt.JSON_PROPERTY_FEE_DESTINATION,
   TransactionReceipt.JSON_PROPERTY_STATE_UPDATES,
   TransactionReceipt.JSON_PROPERTY_EVENTS,
   TransactionReceipt.JSON_PROPERTY_NEXT_EPOCH,
@@ -55,6 +61,15 @@ public class TransactionReceipt {
 
   public static final String JSON_PROPERTY_FEE_SUMMARY = "fee_summary";
   private FeeSummary feeSummary;
+
+  public static final String JSON_PROPERTY_COSTING_PARAMETERS = "costing_parameters";
+  private CostingParameters costingParameters;
+
+  public static final String JSON_PROPERTY_FEE_SOURCE = "fee_source";
+  private FeeSource feeSource;
+
+  public static final String JSON_PROPERTY_FEE_DESTINATION = "fee_destination";
+  private FeeDestination feeDestination;
 
   public static final String JSON_PROPERTY_STATE_UPDATES = "state_updates";
   private StateUpdates stateUpdates;
@@ -109,10 +124,10 @@ public class TransactionReceipt {
    * Get feeSummary
    * @return feeSummary
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_FEE_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public FeeSummary getFeeSummary() {
     return feeSummary;
@@ -120,9 +135,87 @@ public class TransactionReceipt {
 
 
   @JsonProperty(JSON_PROPERTY_FEE_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setFeeSummary(FeeSummary feeSummary) {
     this.feeSummary = feeSummary;
+  }
+
+
+  public TransactionReceipt costingParameters(CostingParameters costingParameters) {
+    this.costingParameters = costingParameters;
+    return this;
+  }
+
+   /**
+   * Get costingParameters
+   * @return costingParameters
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_COSTING_PARAMETERS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public CostingParameters getCostingParameters() {
+    return costingParameters;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_COSTING_PARAMETERS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCostingParameters(CostingParameters costingParameters) {
+    this.costingParameters = costingParameters;
+  }
+
+
+  public TransactionReceipt feeSource(FeeSource feeSource) {
+    this.feeSource = feeSource;
+    return this;
+  }
+
+   /**
+   * Get feeSource
+   * @return feeSource
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_FEE_SOURCE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public FeeSource getFeeSource() {
+    return feeSource;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEE_SOURCE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFeeSource(FeeSource feeSource) {
+    this.feeSource = feeSource;
+  }
+
+
+  public TransactionReceipt feeDestination(FeeDestination feeDestination) {
+    this.feeDestination = feeDestination;
+    return this;
+  }
+
+   /**
+   * Get feeDestination
+   * @return feeDestination
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_FEE_DESTINATION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public FeeDestination getFeeDestination() {
+    return feeDestination;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEE_DESTINATION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFeeDestination(FeeDestination feeDestination) {
+    this.feeDestination = feeDestination;
   }
 
 
@@ -286,6 +379,9 @@ public class TransactionReceipt {
     TransactionReceipt transactionReceipt = (TransactionReceipt) o;
     return Objects.equals(this.status, transactionReceipt.status) &&
         Objects.equals(this.feeSummary, transactionReceipt.feeSummary) &&
+        Objects.equals(this.costingParameters, transactionReceipt.costingParameters) &&
+        Objects.equals(this.feeSource, transactionReceipt.feeSource) &&
+        Objects.equals(this.feeDestination, transactionReceipt.feeDestination) &&
         Objects.equals(this.stateUpdates, transactionReceipt.stateUpdates) &&
         Objects.equals(this.events, transactionReceipt.events) &&
         Objects.equals(this.nextEpoch, transactionReceipt.nextEpoch) &&
@@ -295,7 +391,7 @@ public class TransactionReceipt {
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, feeSummary, stateUpdates, events, nextEpoch, output, errorMessage);
+    return Objects.hash(status, feeSummary, costingParameters, feeSource, feeDestination, stateUpdates, events, nextEpoch, output, errorMessage);
   }
 
   @Override
@@ -304,6 +400,9 @@ public class TransactionReceipt {
     sb.append("class TransactionReceipt {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    feeSummary: ").append(toIndentedString(feeSummary)).append("\n");
+    sb.append("    costingParameters: ").append(toIndentedString(costingParameters)).append("\n");
+    sb.append("    feeSource: ").append(toIndentedString(feeSource)).append("\n");
+    sb.append("    feeDestination: ").append(toIndentedString(feeDestination)).append("\n");
     sb.append("    stateUpdates: ").append(toIndentedString(stateUpdates)).append("\n");
     sb.append("    events: ").append(toIndentedString(events)).append("\n");
     sb.append("    nextEpoch: ").append(toIndentedString(nextEpoch)).append("\n");

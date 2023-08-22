@@ -110,9 +110,9 @@ public record ProposalLimitsConfig(
         // even though we would like to fill the vertex transaction count to the maximum possible,
         // we want to keep
         // bandwidth strict
-        vertexLimitsConfig.maxTotalTransactionsSize().toInt(),
+        (int) vertexLimitsConfig.maxTotalTransactionsSize().toLong(),
         // we multiply by 3 for the 3-chain rule
-        vertexLimitsConfig.maxTotalTransactionsSize().toInt() * 3);
+        (int) vertexLimitsConfig.maxTotalTransactionsSize().toLong() * 3);
   }
 
   public AbstractModule asModule() {

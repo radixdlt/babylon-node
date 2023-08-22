@@ -63,7 +63,8 @@
  */
 
 use crate::store::traits::*;
-use crate::{ChangeAction, SubstateChange};
+use crate::{ChangeAction, SubstateReference};
+use std::borrow::Borrow;
 use std::collections::hash_map::Entry;
 
 use radix_engine::types::*;
@@ -78,15 +79,15 @@ pub struct NodeAncestryResolver {}
 
 impl NodeAncestryResolver {
     /// Resolves the [`SubstateNodeAncestryRecord`] for all newly-created Nodes found in the given
-    /// [`SubstateChange`]s.
+    /// substate changes.
     /// The resolution considers the trees (or rather: potentially-incomplete bottom-up tree
-    /// fragments) constructed within the given [`SubstateChange`]s, and the top fragments of these
+    /// fragments) constructed within the given [`ChangeAction`]s, and the top fragments of these
     /// trees already-existing in the given [`SubstateNodeAncestryStore`].
     /// API note: the results are grouped by [`SubstateNodeAncestryRecord`] (since it may be shared
     /// by many child [`NodeId`]s).
     pub fn batch_resolve<S: SubstateNodeAncestryStore>(
         ancestry_store: &S,
-        substate_changes: &[SubstateChange],
+        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
     ) -> impl Iterator<Item = (Vec<NodeId>, SubstateNodeAncestryRecord)> {
         // Gather the Nodes owned by upserted parent Substates (using `IndexedScryptoValue`).
         // This effectively builds a forest of upserted nodes, using a "parent to child-list map" representation.
@@ -146,14 +147,14 @@ impl NodeAncestryResolver {
             })
     }
 
-    /// Inspects the given [`SubstateChange`]s (using the [`IndexedScryptoValue`]) to find the
-    /// Nodes *directly* owned by each upserted Substate.
-    fn extract_owned_node_sets<'a>(
-        substate_changes: impl IntoIterator<Item = &'a SubstateChange> + 'a,
-    ) -> impl Iterator<Item = OwnedNodeSet> + 'a {
-        substate_changes.into_iter().filter_map(|substate_change| {
-            let created_directly_owned_nodes = match &substate_change.action {
-                ChangeAction::Create(new) => {
+    /// Inspects the given substate changes (using the [`IndexedScryptoValue`]) to find the Nodes
+    /// *directly* owned by each upserted Substate.
+    fn extract_owned_node_sets(
+        substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
+    ) -> impl Iterator<Item = OwnedNodeSet> {
+        substate_changes.filter_map(|(substate_reference, action)| {
+            let created_directly_owned_nodes = match action.borrow() {
+                ChangeAction::Create { new } => {
                     IndexedScryptoValue::from_slice(new).unwrap().unpack().1
                 }
                 ChangeAction::Update { new, previous } => {
@@ -170,17 +171,12 @@ impl NodeAncestryResolver {
                         .filter(|node| !previous_directly_owned_node_set.contains(node))
                         .collect::<Vec<_>>()
                 }
-                ChangeAction::Delete => Vec::new(),
+                ChangeAction::Delete { .. } => Vec::new(),
             };
             if created_directly_owned_nodes.is_empty() {
                 return None;
             }
-            let parent = SubstateReference(
-                substate_change.node_id,
-                substate_change.partition_number,
-                substate_change.substate_key.clone(),
-            );
-            Some((parent, created_directly_owned_nodes))
+            Some((substate_reference, created_directly_owned_nodes))
         })
     }
 
@@ -317,28 +313,28 @@ mod tests {
         );
         let substate_changes = [
             // some new grand-grand-child Node ID = 4 (under Node ID = 3):
-            create(
+            (
                 substate(3, 12, 23),
-                Value::Custom {
+                create(Value::Custom {
                     value: ScryptoCustomValue::Own(Own(node_id(4))),
-                },
+                }),
             ),
             // some new child Node ID = 5 (right under a root Node ID = 1):
-            create(
+            (
                 substate(1, 14, 24),
-                Value::Custom {
+                create(Value::Custom {
                     value: ScryptoCustomValue::Own(Own(node_id(5))),
-                },
+                }),
             ),
         ];
 
         // Act
-        let new_index_entries =
-            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
-                .flat_map(|(key_batch, value)| {
-                    key_batch.into_iter().map(move |key| (key, value.clone()))
-                })
-                .collect::<HashMap<_, _>>();
+        let new_index_entries = NodeAncestryResolver::batch_resolve(
+            &existing_index_entries,
+            substate_changes.into_iter(),
+        )
+        .flat_map(|(key_batch, value)| key_batch.into_iter().map(move |key| (key, value.clone())))
+        .collect::<HashMap<_, _>>();
 
         // Assert
         assert_eq!(
@@ -358,28 +354,28 @@ mod tests {
         );
         let substate_changes = [
             // some new grand-grand-child Node ID = 7 (under the new Node ID = 6 seen *below*):
-            create(
+            (
                 substate(6, 10, 29),
-                Value::Custom {
+                create(Value::Custom {
                     value: ScryptoCustomValue::Own(Own(node_id(7))),
-                },
+                }),
             ),
             // some new grand-child Node ID = 6 (under an existing non-root Node ID = 2):
-            create(
+            (
                 substate(2, 14, 24),
-                Value::Custom {
+                create(Value::Custom {
                     value: ScryptoCustomValue::Own(Own(node_id(6))),
-                },
+                }),
             ),
         ];
 
         // Act
-        let new_index_entries =
-            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
-                .flat_map(|(key_batch, value)| {
-                    key_batch.into_iter().map(move |key| (key, value.clone()))
-                })
-                .collect::<HashMap<_, _>>();
+        let new_index_entries = NodeAncestryResolver::batch_resolve(
+            &existing_index_entries,
+            substate_changes.into_iter(),
+        )
+        .flat_map(|(key_batch, value)| key_batch.into_iter().map(move |key| (key, value.clone())))
+        .collect::<HashMap<_, _>>();
 
         // Assert
         assert_eq!(
@@ -399,9 +395,9 @@ mod tests {
         );
         let substate_changes = [
             // a simpler "create" case - both nodes owned here were definitely just created:
-            create(
+            (
                 substate(1, 12, 23),
-                Value::Tuple {
+                create(Value::Tuple {
                     fields: vec![
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own(node_id(2))),
@@ -410,41 +406,43 @@ mod tests {
                             value: ScryptoCustomValue::Own(Own(node_id(3))),
                         },
                     ],
-                },
+                }),
             ),
             // an "update" case - Node ID = 5 has existed before under the same parent:
-            update(
+            (
                 substate(4, 11, 21),
-                Value::Tuple {
-                    fields: vec![
-                        Value::Custom {
-                            value: ScryptoCustomValue::Own(Own(node_id(5))),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Own(Own(node_id(6))),
-                        },
-                    ],
-                },
-                Value::Tuple {
-                    fields: vec![
-                        Value::Custom {
-                            value: ScryptoCustomValue::Own(Own(node_id(5))),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Own(Own(node_id(7))),
-                        },
-                    ],
-                },
+                update(
+                    Value::Tuple {
+                        fields: vec![
+                            Value::Custom {
+                                value: ScryptoCustomValue::Own(Own(node_id(5))),
+                            },
+                            Value::Custom {
+                                value: ScryptoCustomValue::Own(Own(node_id(6))),
+                            },
+                        ],
+                    },
+                    Value::Tuple {
+                        fields: vec![
+                            Value::Custom {
+                                value: ScryptoCustomValue::Own(Own(node_id(5))),
+                            },
+                            Value::Custom {
+                                value: ScryptoCustomValue::Own(Own(node_id(7))),
+                            },
+                        ],
+                    },
+                ),
             ),
         ];
 
         // Act
-        let new_index_entries =
-            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
-                .flat_map(|(key_batch, value)| {
-                    key_batch.into_iter().map(move |key| (key, value.clone()))
-                })
-                .collect::<HashMap<_, _>>();
+        let new_index_entries = NodeAncestryResolver::batch_resolve(
+            &existing_index_entries,
+            substate_changes.into_iter(),
+        )
+        .flat_map(|(key_batch, value)| key_batch.into_iter().map(move |key| (key, value.clone())))
+        .collect::<HashMap<_, _>>();
 
         // Assert
         assert_eq!(
@@ -469,11 +467,14 @@ mod tests {
         );
         let substate_changes = [
             // some new root Node ID = 6 (which does not own any other Node):
-            create(substate(6, 10, 29), ScryptoValue::I16 { value: 666 }),
+            (
+                substate(6, 10, 29),
+                create(ScryptoValue::I16 { value: 666 }),
+            ),
             // some new root Node ID = 7 (which owns a leaf Node ID = 8 and a mid-parent Node ID = 9):
-            create(
+            (
                 substate(7, 11, 23),
-                Value::Tuple {
+                create(Value::Tuple {
                     fields: vec![
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own(node_id(8))),
@@ -482,24 +483,24 @@ mod tests {
                             value: ScryptoCustomValue::Own(Own(node_id(9))),
                         },
                     ],
-                },
+                }),
             ),
             // an arbitrary parent ID = 9 (just so that root Node ID = 7 can own a non-trivial tree):
-            create(
+            (
                 substate(9, 12, 25),
-                Value::Custom {
+                create(Value::Custom {
                     value: ScryptoCustomValue::Own(Own(node_id(10))),
-                },
+                }),
             ),
         ];
 
         // Act
-        let new_index_entries =
-            NodeAncestryResolver::batch_resolve(&existing_index_entries, &substate_changes)
-                .flat_map(|(key_batch, value)| {
-                    key_batch.into_iter().map(move |key| (key, value.clone()))
-                })
-                .collect::<HashMap<_, _>>();
+        let new_index_entries = NodeAncestryResolver::batch_resolve(
+            &existing_index_entries,
+            substate_changes.into_iter(),
+        )
+        .flat_map(|(key_batch, value)| key_batch.into_iter().map(move |key| (key, value.clone())))
+        .collect::<HashMap<_, _>>();
 
         // Assert
         assert_eq!(
@@ -583,28 +584,16 @@ mod tests {
         SubstateNodeAncestryRecord { parent, root }
     }
 
-    fn create(substate: SubstateReference, new_value: impl ScryptoEncode) -> SubstateChange {
-        SubstateChange {
-            node_id: substate.0,
-            partition_number: substate.1,
-            substate_key: substate.2,
-            action: ChangeAction::Create(scrypto_encode(&new_value).unwrap()),
+    fn create(new_value: impl ScryptoEncode) -> ChangeAction {
+        ChangeAction::Create {
+            new: scrypto_encode(&new_value).unwrap(),
         }
     }
 
-    fn update(
-        substate: SubstateReference,
-        new_value: impl ScryptoEncode,
-        previous_value: impl ScryptoEncode,
-    ) -> SubstateChange {
-        SubstateChange {
-            node_id: substate.0,
-            partition_number: substate.1,
-            substate_key: substate.2,
-            action: ChangeAction::Update {
-                new: scrypto_encode(&new_value).unwrap(),
-                previous: scrypto_encode(&previous_value).unwrap(),
-            },
+    fn update(new_value: impl ScryptoEncode, previous_value: impl ScryptoEncode) -> ChangeAction {
+        ChangeAction::Update {
+            new: scrypto_encode(&new_value).unwrap(),
+            previous: scrypto_encode(&previous_value).unwrap(),
         }
     }
 

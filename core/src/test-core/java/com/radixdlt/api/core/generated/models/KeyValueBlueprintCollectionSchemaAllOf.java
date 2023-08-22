@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TypePointer;
+import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,99 +32,99 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueBlueprintCollectionSchemaAllOf
  */
 @JsonPropertyOrder({
-  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_KEY_TYPE_POINTER,
-  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_VALUE_TYPE_POINTER,
-  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_CAN_OWN
+  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_KEY_TYPE_REF,
+  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_VALUE_TYPE_REF,
+  KeyValueBlueprintCollectionSchemaAllOf.JSON_PROPERTY_ALLOW_OWNERSHIP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueBlueprintCollectionSchemaAllOf {
-  public static final String JSON_PROPERTY_KEY_TYPE_POINTER = "key_type_pointer";
-  private TypePointer keyTypePointer;
+  public static final String JSON_PROPERTY_KEY_TYPE_REF = "key_type_ref";
+  private BlueprintPayloadDef keyTypeRef;
 
-  public static final String JSON_PROPERTY_VALUE_TYPE_POINTER = "value_type_pointer";
-  private TypePointer valueTypePointer;
+  public static final String JSON_PROPERTY_VALUE_TYPE_REF = "value_type_ref";
+  private BlueprintPayloadDef valueTypeRef;
 
-  public static final String JSON_PROPERTY_CAN_OWN = "can_own";
-  private Boolean canOwn;
+  public static final String JSON_PROPERTY_ALLOW_OWNERSHIP = "allow_ownership";
+  private Boolean allowOwnership;
 
   public KeyValueBlueprintCollectionSchemaAllOf() { 
   }
 
-  public KeyValueBlueprintCollectionSchemaAllOf keyTypePointer(TypePointer keyTypePointer) {
-    this.keyTypePointer = keyTypePointer;
+  public KeyValueBlueprintCollectionSchemaAllOf keyTypeRef(BlueprintPayloadDef keyTypeRef) {
+    this.keyTypeRef = keyTypeRef;
     return this;
   }
 
    /**
-   * Get keyTypePointer
-   * @return keyTypePointer
+   * Get keyTypeRef
+   * @return keyTypeRef
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getKeyTypePointer() {
-    return keyTypePointer;
+  public BlueprintPayloadDef getKeyTypeRef() {
+    return keyTypeRef;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_KEY_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKeyTypePointer(TypePointer keyTypePointer) {
-    this.keyTypePointer = keyTypePointer;
+  public void setKeyTypeRef(BlueprintPayloadDef keyTypeRef) {
+    this.keyTypeRef = keyTypeRef;
   }
 
 
-  public KeyValueBlueprintCollectionSchemaAllOf valueTypePointer(TypePointer valueTypePointer) {
-    this.valueTypePointer = valueTypePointer;
+  public KeyValueBlueprintCollectionSchemaAllOf valueTypeRef(BlueprintPayloadDef valueTypeRef) {
+    this.valueTypeRef = valueTypeRef;
     return this;
   }
 
    /**
-   * Get valueTypePointer
-   * @return valueTypePointer
+   * Get valueTypeRef
+   * @return valueTypeRef
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TypePointer getValueTypePointer() {
-    return valueTypePointer;
+  public BlueprintPayloadDef getValueTypeRef() {
+    return valueTypeRef;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_POINTER)
+  @JsonProperty(JSON_PROPERTY_VALUE_TYPE_REF)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValueTypePointer(TypePointer valueTypePointer) {
-    this.valueTypePointer = valueTypePointer;
+  public void setValueTypeRef(BlueprintPayloadDef valueTypeRef) {
+    this.valueTypeRef = valueTypeRef;
   }
 
 
-  public KeyValueBlueprintCollectionSchemaAllOf canOwn(Boolean canOwn) {
-    this.canOwn = canOwn;
+  public KeyValueBlueprintCollectionSchemaAllOf allowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
     return this;
   }
 
    /**
    * Whether the entries of the key-value partition are allowed to own child nodes.
-   * @return canOwn
+   * @return allowOwnership
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Whether the entries of the key-value partition are allowed to own child nodes.")
-  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getCanOwn() {
-    return canOwn;
+  public Boolean getAllowOwnership() {
+    return allowOwnership;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CAN_OWN)
+  @JsonProperty(JSON_PROPERTY_ALLOW_OWNERSHIP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCanOwn(Boolean canOwn) {
-    this.canOwn = canOwn;
+  public void setAllowOwnership(Boolean allowOwnership) {
+    this.allowOwnership = allowOwnership;
   }
 
 
@@ -140,23 +140,23 @@ public class KeyValueBlueprintCollectionSchemaAllOf {
       return false;
     }
     KeyValueBlueprintCollectionSchemaAllOf keyValueBlueprintCollectionSchemaAllOf = (KeyValueBlueprintCollectionSchemaAllOf) o;
-    return Objects.equals(this.keyTypePointer, keyValueBlueprintCollectionSchemaAllOf.keyTypePointer) &&
-        Objects.equals(this.valueTypePointer, keyValueBlueprintCollectionSchemaAllOf.valueTypePointer) &&
-        Objects.equals(this.canOwn, keyValueBlueprintCollectionSchemaAllOf.canOwn);
+    return Objects.equals(this.keyTypeRef, keyValueBlueprintCollectionSchemaAllOf.keyTypeRef) &&
+        Objects.equals(this.valueTypeRef, keyValueBlueprintCollectionSchemaAllOf.valueTypeRef) &&
+        Objects.equals(this.allowOwnership, keyValueBlueprintCollectionSchemaAllOf.allowOwnership);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyTypePointer, valueTypePointer, canOwn);
+    return Objects.hash(keyTypeRef, valueTypeRef, allowOwnership);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueBlueprintCollectionSchemaAllOf {\n");
-    sb.append("    keyTypePointer: ").append(toIndentedString(keyTypePointer)).append("\n");
-    sb.append("    valueTypePointer: ").append(toIndentedString(valueTypePointer)).append("\n");
-    sb.append("    canOwn: ").append(toIndentedString(canOwn)).append("\n");
+    sb.append("    keyTypeRef: ").append(toIndentedString(keyTypeRef)).append("\n");
+    sb.append("    valueTypeRef: ").append(toIndentedString(valueTypeRef)).append("\n");
+    sb.append("    allowOwnership: ").append(toIndentedString(allowOwnership)).append("\n");
     sb.append("}");
     return sb.toString();
   }

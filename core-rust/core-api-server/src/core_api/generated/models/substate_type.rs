@@ -34,8 +34,8 @@ pub enum SubstateType {
     PackageCodeOriginalCodeEntry,
     #[serde(rename = "PackageCodeInstrumentedCodeEntry")]
     PackageCodeInstrumentedCodeEntry,
-    #[serde(rename = "PackageSchemaEntry")]
-    PackageSchemaEntry,
+    #[serde(rename = "SchemaEntry")]
+    SchemaEntry,
     #[serde(rename = "PackageBlueprintDefinitionEntry")]
     PackageBlueprintDefinitionEntry,
     #[serde(rename = "PackageBlueprintDependenciesEntry")]
@@ -131,7 +131,7 @@ impl ToString for SubstateType {
             Self::PackageCodeVmTypeEntry => String::from("PackageCodeVmTypeEntry"),
             Self::PackageCodeOriginalCodeEntry => String::from("PackageCodeOriginalCodeEntry"),
             Self::PackageCodeInstrumentedCodeEntry => String::from("PackageCodeInstrumentedCodeEntry"),
-            Self::PackageSchemaEntry => String::from("PackageSchemaEntry"),
+            Self::SchemaEntry => String::from("SchemaEntry"),
             Self::PackageBlueprintDefinitionEntry => String::from("PackageBlueprintDefinitionEntry"),
             Self::PackageBlueprintDependenciesEntry => String::from("PackageBlueprintDependenciesEntry"),
             Self::PackageBlueprintRoyaltyEntry => String::from("PackageBlueprintRoyaltyEntry"),

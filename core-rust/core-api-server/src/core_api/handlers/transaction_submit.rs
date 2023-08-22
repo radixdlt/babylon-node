@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use hyper::StatusCode;
 use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
-use state_manager::{MempoolAddError, MempoolAddSource};
+use state_manager::{AlreadyCommittedError, MempoolAddError, MempoolAddSource};
 use transaction::prelude::*;
 
 #[tracing::instrument(level = "debug", skip(state))]
@@ -48,6 +48,12 @@ pub(crate) async fn handle_transaction_submit(
                 is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                 is_rejected_because_intent_already_committed: rejection
                     .is_rejected_because_intent_already_committed(),
+                intent_already_committed_as: rejection
+                    .reason
+                    .already_committed_error()
+                    .map(|err| to_api_committed_intent_metadata(&mapping_context, err))
+                    .transpose()?
+                    .map(Box::new),
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
                 retry_from_timestamp: match rejection.retry_from {
                     state_manager::RetryFrom::Never => None,
@@ -79,4 +85,22 @@ pub(crate) async fn handle_transaction_submit(
         )),
     }
     .map(Json)
+}
+
+pub fn to_api_committed_intent_metadata(
+    context: &MappingContext,
+    error: &AlreadyCommittedError,
+) -> Result<models::CommittedIntentMetadata, MappingError> {
+    Ok(models::CommittedIntentMetadata {
+        state_version: to_api_state_version(error.committed_state_version)?,
+        payload_hash: to_api_notarized_transaction_hash(
+            &error.committed_notarized_transaction_hash,
+        ),
+        payload_hash_bech32m: to_api_hash_bech32m(
+            context,
+            &error.committed_notarized_transaction_hash,
+        )?,
+        is_same_transaction: error.committed_notarized_transaction_hash
+            == error.notarized_transaction_hash,
+    })
 }

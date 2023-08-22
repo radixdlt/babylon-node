@@ -16,7 +16,7 @@ pub struct ValidatorFeeChangeRequest {
     /// An integer between `0` and `10^10`, marking the epoch at which the fee change becomes effective. 
     #[serde(rename = "epoch_effective")]
     pub epoch_effective: i64,
-    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// A string-encoded fixed-precision decimal to 18 decimal places. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "new_fee_factor")]
     pub new_fee_factor: String,
 }

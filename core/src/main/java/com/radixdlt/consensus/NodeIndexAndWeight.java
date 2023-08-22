@@ -64,25 +64,25 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Objects;
 
-/** A node index, together with its weight. */
 /**
- * This class has been temporarily moved from the tests to main as code has been moved from tests to
- * MockedConsensusRecoveryModule and this module lives in main for now.
+ * A node index, together with its weight. This class has been temporarily moved from the tests to
+ * main as code has been moved from tests to MockedConsensusRecoveryModule and this module lives in
+ * main for now.
  */
 public final class NodeIndexAndWeight {
   private final int index;
-  private final UInt256 weight;
+  private final UInt192 weight;
 
-  private NodeIndexAndWeight(int index, UInt256 weight) {
+  private NodeIndexAndWeight(int index, UInt192 weight) {
     this.index = index;
     this.weight = Objects.requireNonNull(weight);
   }
 
   /** Returns a {@code NodeIndexAndWeight} from specified values. */
-  public static NodeIndexAndWeight from(int index, UInt256 weight) {
+  public static NodeIndexAndWeight from(int index, UInt192 weight) {
     return new NodeIndexAndWeight(index, weight);
   }
 
@@ -90,7 +90,7 @@ public final class NodeIndexAndWeight {
     return this.index;
   }
 
-  public UInt256 weight() {
+  public UInt192 weight() {
     return this.weight;
   }
 

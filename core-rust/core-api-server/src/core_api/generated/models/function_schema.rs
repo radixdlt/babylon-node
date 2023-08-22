@@ -16,13 +16,13 @@ pub struct FunctionSchema {
     #[serde(rename = "receiver_info", skip_serializing_if = "Option::is_none")]
     pub receiver_info: Option<Box<crate::core_api::generated::models::ReceiverInfo>>,
     #[serde(rename = "input")]
-    pub input: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    pub input: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "output")]
-    pub output: Option<crate::core_api::generated::models::TypePointer>, // Using Option permits Default trait; Will always be Some in normal use
+    pub output: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl FunctionSchema {
-    pub fn new(input: crate::core_api::generated::models::TypePointer, output: crate::core_api::generated::models::TypePointer) -> FunctionSchema {
+    pub fn new(input: crate::core_api::generated::models::BlueprintPayloadDef, output: crate::core_api::generated::models::BlueprintPayloadDef) -> FunctionSchema {
         FunctionSchema {
             receiver_info: None,
             input: Option::Some(input),

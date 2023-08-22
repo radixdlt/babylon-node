@@ -1,6 +1,6 @@
 use radix_engine::system::bootstrap::{create_substate_flash_for_genesis, FlashReceipt};
 use radix_engine::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, CostingParameters, ExecutionConfig, TransactionReceipt,
 };
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
@@ -58,16 +58,16 @@ impl ConfigType {
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    fee_reserve_config: FeeReserveConfig,
+    pub(crate) costing_parameters: CostingParameters,
     pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {
-    pub fn new(logging_config: &LoggingConfig, fee_reserve_config: FeeReserveConfig) -> Self {
+    pub fn new(logging_config: &LoggingConfig, costing_parameters: CostingParameters) -> Self {
         let trace = logging_config.engine_trace;
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
-            fee_reserve_config,
+            costing_parameters,
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
@@ -155,7 +155,7 @@ impl ExecutionConfigurator {
         ConfiguredExecutable::Transaction {
             executable,
             scrypto_interpreter: &self.scrypto_vm,
-            fee_reserve_config: &self.fee_reserve_config,
+            costing_parameters: &self.costing_parameters,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
             description,
@@ -171,7 +171,7 @@ pub enum ConfiguredExecutable<'a> {
     Transaction {
         executable: Executable<'a>,
         scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
-        fee_reserve_config: &'a FeeReserveConfig,
+        costing_parameters: &'a CostingParameters,
         execution_config: &'a ExecutionConfig,
         threshold: Duration,
         description: String,
@@ -185,7 +185,7 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
-                fee_reserve_config,
+                costing_parameters,
                 execution_config,
                 threshold,
                 description,
@@ -197,7 +197,7 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                         scrypto_vm: scrypto_interpreter,
                         native_vm: DefaultNativeVm::new(),
                     },
-                    fee_reserve_config,
+                    costing_parameters,
                     execution_config,
                     &executable,
                 );
