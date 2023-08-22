@@ -86,7 +86,7 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt256());
+        BFTValidatorId.create(validator.address(), validator.key()), validator.stake().toUInt192());
   }
 
   public static ActiveValidatorInfo validator(BFTValidator validator) {

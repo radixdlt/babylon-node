@@ -14,18 +14,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintSchemaCollectionPartition {
-    /// The partition's offset from the Main module base (64)
-    #[serde(rename = "partition_offset")]
-    pub partition_offset: i32,
+    #[serde(rename = "partition_description")]
+    pub partition_description: Box<crate::core_api::generated::models::PartitionDescription>,
     #[serde(rename = "collection_schema")]
     pub collection_schema: Option<crate::core_api::generated::models::BlueprintCollectionSchema>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl BlueprintSchemaCollectionPartition {
     /// The fields partition of the blueprint.
-    pub fn new(partition_offset: i32, collection_schema: crate::core_api::generated::models::BlueprintCollectionSchema) -> BlueprintSchemaCollectionPartition {
+    pub fn new(partition_description: crate::core_api::generated::models::PartitionDescription, collection_schema: crate::core_api::generated::models::BlueprintCollectionSchema) -> BlueprintSchemaCollectionPartition {
         BlueprintSchemaCollectionPartition {
-            partition_offset,
+            partition_description: Box::new(partition_description),
             collection_schema: Option::Some(collection_schema),
         }
     }

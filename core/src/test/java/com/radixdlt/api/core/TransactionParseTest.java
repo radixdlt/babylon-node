@@ -101,7 +101,8 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
       assertThat(validationError).isNotNull();
       assertThat(validationError.getReason())
           .isEqualTo(
-              "FromExecution(ErrorBeforeFeeLoanRepaid(SystemModuleError(CostingError(FeeReserveError(LoanRepaymentFailed)))))");
+              "FromExecution(ErrorBeforeFeeLoanRepaid(SystemModuleError(CostingError(FeeReserveError(LoanRepaymentFailed"
+                  + " { xrd_owed: 0.00847164 })))))");
     }
   }
 

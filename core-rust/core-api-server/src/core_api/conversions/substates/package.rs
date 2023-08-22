@@ -1,6 +1,7 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::transaction::PackageTypeReference;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
@@ -87,17 +88,17 @@ pub fn to_api_package_code_instrumented_code_entry_substate(
     ))
 }
 
-pub fn to_api_package_schema_entry(
+pub fn to_api_schema_entry_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<ScryptoSchema>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Package Schema Key".to_string() });
+    let TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(hash)) = typed_key else {
+        return Err(MappingError::MismatchedSubstateKeyType { message: "Schema Key".to_string() });
     };
     Ok(key_value_store_mandatory_substate!(
         substate,
-        PackageSchemaEntry,
+        SchemaEntry,
         models::SchemaKey {
             schema_hash: to_api_hash(hash),
         },
@@ -237,10 +238,10 @@ pub fn to_api_auth_config(
     };
     let (method_auth_type, method_roles) = match method_auth {
         MethodAuthTemplate::AllowAll => (models::MethodAuthType::AllowAll, None),
-        MethodAuthTemplate::StaticRoles(roles) => {
-            let static_roles = to_api_static_roles(context, roles)?;
+        MethodAuthTemplate::StaticRoleDefinition(definition) => {
+            let static_roles = to_api_static_role_definition(context, definition)?;
             (
-                models::MethodAuthType::StaticRoles,
+                models::MethodAuthType::StaticRoleDefinition,
                 Some(Box::new(static_roles)),
             )
         }
@@ -263,11 +264,11 @@ fn to_api_blueprint_version_key(
     })
 }
 
-pub fn to_api_static_roles(
+pub fn to_api_static_role_definition(
     context: &MappingContext,
-    static_roles: &StaticRoles,
-) -> Result<models::StaticRolesAuthTemplate, MappingError> {
-    let StaticRoles { roles, methods } = static_roles;
+    definition: &StaticRoleDefinition,
+) -> Result<models::StaticRoleDefinitionAuthTemplate, MappingError> {
+    let StaticRoleDefinition { roles, methods } = definition;
 
     let (role_specification, roles) = match roles {
         RoleSpecification::Normal(roles) => {
@@ -299,7 +300,7 @@ pub fn to_api_static_roles(
             ))
         })
         .collect::<Result<_, _>>()?;
-    Ok(models::StaticRolesAuthTemplate {
+    Ok(models::StaticRoleDefinitionAuthTemplate {
         role_specification,
         roles,
         method_accessibility_map,
@@ -336,13 +337,11 @@ pub fn to_api_blueprint_definition(
 ) -> Result<models::BlueprintDefinition, MappingError> {
     let BlueprintDefinition {
         interface,
-        is_transient,
         function_exports,
         hook_exports,
     } = blueprint_definition;
     Ok(models::BlueprintDefinition {
         interface: Box::new(to_api_blueprint_interface(context, interface)?),
-        is_transient: *is_transient,
         function_exports: function_exports
             .iter()
             .map(|(function_name, package_export)| {
@@ -401,6 +400,7 @@ pub fn to_api_blueprint_interface(
 ) -> Result<models::BlueprintInterface, MappingError> {
     let BlueprintInterface {
         blueprint_type,
+        is_transient,
         generics,
         state,
         functions,
@@ -412,11 +412,12 @@ pub fn to_api_blueprint_interface(
             BlueprintType::Outer => None,
             BlueprintType::Inner { outer_blueprint } => Some(outer_blueprint.to_string()),
         },
+        is_transient: *is_transient,
         generic_type_parameters: generics
             .iter()
             .map(|generic| match generic {
-                Generic::Any => models::GenericTypeParameter {
-                    constraints: models::GenericTypeParameterContraints::Any,
+                GenericBound::Any => models::GenericTypeParameter {
+                    constraints: models::GenericTypeParameterConstraints::Any,
                 },
             })
             .collect::<Vec<_>>(),
@@ -433,10 +434,10 @@ pub fn to_api_blueprint_interface(
             .collect::<Result<_, _>>()?,
         events: events
             .iter()
-            .map(|(event_name, type_pointer)| {
+            .map(|(event_name, blueprint_payload_def)| {
                 Ok((
                     event_name.to_string(),
-                    to_api_type_pointer(context, type_pointer)?,
+                    to_api_blueprint_payload_def(context, blueprint_payload_def)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
@@ -450,44 +451,65 @@ pub fn to_api_indexed_state_schema(
     let IndexedStateSchema {
         fields,
         collections,
-        num_partitions,
+        num_logical_partitions,
     } = indexed_state_schema;
     Ok(models::IndexedStateSchema {
         fields: fields
             .as_ref()
-            .map(|(partition_offset, fields)| {
-                to_api_blueprint_schema_fields_partition(context, *partition_offset, fields)
+            .map(|(partition_description, schemas)| {
+                to_api_blueprint_schema_fields_partition(context, partition_description, schemas)
             })
             .transpose()?
             .map(Box::new),
         collections: collections
             .iter()
-            .map(|(partition_offset, collection_schema)| {
-                to_api_blueprint_schema_collection_partition(
-                    context,
-                    *partition_offset,
-                    collection_schema,
-                )
+            .map(|(partition_description, schema)| {
+                to_api_blueprint_schema_collection_partition(context, partition_description, schema)
             })
             .collect::<Result<_, _>>()?,
-        num_partitions: to_api_u8_as_i32(*num_partitions),
+        num_partitions: to_api_u8_as_i32(*num_logical_partitions),
     })
 }
 
-pub fn to_api_type_pointer(
+pub fn to_api_blueprint_payload_def(
     context: &MappingContext,
-    type_pointer: &TypePointer,
-) -> Result<models::TypePointer, MappingError> {
-    Ok(match type_pointer {
-        TypePointer::Package(TypeIdentifier(schema_hash, local_type_index)) => {
-            models::TypePointer::PackageTypePointer {
-                schema_hash: to_api_hash(schema_hash),
-                local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
+    blueprint_payload_def: &BlueprintPayloadDef,
+) -> Result<models::BlueprintPayloadDef, MappingError> {
+    Ok(match blueprint_payload_def {
+        BlueprintPayloadDef::Static(type_identifier) => {
+            models::BlueprintPayloadDef::StaticBlueprintPayloadDef {
+                type_id: Box::new(to_api_type_identifier(context, type_identifier)?),
             }
         }
-        TypePointer::Instance(index) => models::TypePointer::InstanceTypePointer {
-            index: to_api_u8_as_i32(*index),
-        },
+        BlueprintPayloadDef::Generic(index) => {
+            models::BlueprintPayloadDef::GenericBlueprintPayloadDef {
+                generic_index: i64::from(*index),
+            }
+        }
+    })
+}
+
+pub fn to_api_type_identifier(
+    context: &MappingContext,
+    type_identifier: &TypeIdentifier,
+) -> Result<models::TypeIdentifier, MappingError> {
+    Ok(models::TypeIdentifier {
+        schema_hash: to_api_hash(&type_identifier.0),
+        local_type_index: Box::new(to_api_local_type_index(context, &type_identifier.1)?),
+    })
+}
+
+pub fn to_api_package_type_reference(
+    context: &MappingContext,
+    reference: &PackageTypeReference,
+) -> Result<models::PackageTypeReference, MappingError> {
+    Ok(models::PackageTypeReference {
+        package_address: to_api_package_address(context, &reference.package_address)?,
+        schema_hash: to_api_hash(&reference.schema_hash),
+        local_type_index: Box::new(to_api_local_type_index(
+            context,
+            &reference.local_type_index,
+        )?),
     })
 }
 
@@ -498,16 +520,14 @@ pub fn to_api_local_type_index(
     Ok(match local_type_index {
         LocalTypeIndex::WellKnown(index) => models::LocalTypeIndex {
             kind: models::local_type_index::Kind::WellKnown,
-            index: to_api_u8_as_i32(*index),
+            index: to_api_well_known_type_index(index)?,
             as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
         },
         LocalTypeIndex::SchemaLocalIndex(index) => models::LocalTypeIndex {
             kind: models::local_type_index::Kind::SchemaLocal,
-            index: to_api_u16_as_i32((*index).try_into().map_err(|_| {
-                MappingError::IntegerError {
-                    message: "Type index too large".to_string(),
-                }
-            })?),
+            index: i64::try_from(*index).map_err(|_| MappingError::IntegerError {
+                message: "Schema-local type index too large".to_string(),
+            })?,
             as_sbor: Box::new(to_api_sbor_data_from_encodable(context, local_type_index)?),
         },
     })
@@ -526,8 +546,8 @@ pub fn to_api_function_schema(
         receiver_info: receiver
             .as_ref()
             .map(|receiver_info| Box::new(to_api_receiver_info(receiver_info))),
-        input: Some(to_api_type_pointer(context, input)?),
-        output: Some(to_api_type_pointer(context, output)?),
+        input: Some(to_api_blueprint_payload_def(context, input)?),
+        output: Some(to_api_blueprint_payload_def(context, output)?),
     })
 }
 
@@ -551,25 +571,25 @@ pub fn to_api_receiver_info(receiver_info: &ReceiverInfo) -> models::ReceiverInf
 
 pub fn to_api_blueprint_schema_fields_partition(
     context: &MappingContext,
-    partition_offset: PartitionOffset,
-    fields: &[FieldSchema<TypePointer>],
+    partition_description: &PartitionDescription,
+    schemas: &[FieldSchema<BlueprintPayloadDef>],
 ) -> Result<models::BlueprintSchemaFieldPartition, MappingError> {
     Ok(models::BlueprintSchemaFieldPartition {
-        partition_offset: to_api_u8_as_i32(partition_offset.0),
-        fields: fields
+        partition_description: Box::new(to_api_partition_description(partition_description)?),
+        fields: schemas
             .iter()
-            .map(|field| to_api_blueprint_field_schema(context, field))
+            .map(|schema| to_api_blueprint_field_schema(context, schema))
             .collect::<Result<_, MappingError>>()?,
     })
 }
 
 pub fn to_api_blueprint_field_schema(
     context: &MappingContext,
-    field_schema: &FieldSchema<TypePointer>,
+    field_schema: &FieldSchema<BlueprintPayloadDef>,
 ) -> Result<models::FieldSchema, MappingError> {
     let FieldSchema { field, condition } = field_schema;
     Ok(models::FieldSchema {
-        field_type_pointer: Some(to_api_type_pointer(context, field)?),
+        field_type_ref: Some(to_api_blueprint_payload_def(context, field)?),
         condition: Some(Box::new(match condition {
             Condition::Always => models::FieldSchemaFeatureCondition::FieldSchemaFeatureConditionAlways {},
             Condition::IfFeature(feature) => models::FieldSchemaFeatureCondition::FieldSchemaFeatureConditionIfOwnFeature {
@@ -584,11 +604,11 @@ pub fn to_api_blueprint_field_schema(
 
 pub fn to_api_blueprint_schema_collection_partition(
     context: &MappingContext,
-    partition_offset: PartitionOffset,
-    collection_schema: &BlueprintCollectionSchema<TypePointer>,
+    partition_description: &PartitionDescription,
+    collection_schema: &BlueprintCollectionSchema<BlueprintPayloadDef>,
 ) -> Result<models::BlueprintSchemaCollectionPartition, MappingError> {
     Ok(models::BlueprintSchemaCollectionPartition {
-        partition_offset: to_api_u8_as_i32(partition_offset.0),
+        partition_description: Box::new(to_api_partition_description(partition_description)?),
         collection_schema: Some(to_api_blueprint_collection_schema(
             context,
             collection_schema,
@@ -596,37 +616,58 @@ pub fn to_api_blueprint_schema_collection_partition(
     })
 }
 
+pub fn to_api_partition_description(
+    partition_description: &PartitionDescription,
+) -> Result<models::PartitionDescription, MappingError> {
+    let (description_type, value) = match partition_description {
+        PartitionDescription::Logical(logical) => {
+            (models::PartitionDescriptionType::Logical, logical.0)
+        }
+        PartitionDescription::Physical(physical) => {
+            (models::PartitionDescriptionType::Physical, physical.0)
+        }
+    };
+    Ok(models::PartitionDescription {
+        _type: description_type,
+        value: to_api_u8_as_i32(value),
+    })
+}
+
 pub fn to_api_blueprint_collection_schema(
     context: &MappingContext,
-    collection_schema: &BlueprintCollectionSchema<TypePointer>,
+    collection_schema: &BlueprintCollectionSchema<BlueprintPayloadDef>,
 ) -> Result<models::BlueprintCollectionSchema, MappingError> {
     Ok(match collection_schema {
-        BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema::<TypePointer> {
+        BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema::<
+            BlueprintPayloadDef,
+        > {
             key,
             value,
-            can_own,
+            allow_ownership,
         }) => models::BlueprintCollectionSchema::KeyValueBlueprintCollectionSchema {
-            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
-            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
-            can_own: *can_own,
+            key_type_ref: Box::new(to_api_blueprint_payload_def(context, key)?),
+            value_type_ref: Box::new(to_api_blueprint_payload_def(context, value)?),
+            allow_ownership: *allow_ownership,
         },
-        BlueprintCollectionSchema::Index(BlueprintKeyValueSchema::<TypePointer> {
+        BlueprintCollectionSchema::Index(BlueprintKeyValueSchema::<BlueprintPayloadDef> {
             key,
             value,
-            can_own,
+            allow_ownership,
         }) => models::BlueprintCollectionSchema::IndexBlueprintCollectionSchema {
-            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
-            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
-            can_own: *can_own,
+            key_type_ref: Box::new(to_api_blueprint_payload_def(context, key)?),
+            value_type_ref: Box::new(to_api_blueprint_payload_def(context, value)?),
+            allow_ownership: *allow_ownership,
         },
-        BlueprintCollectionSchema::SortedIndex(BlueprintKeyValueSchema::<TypePointer> {
-            key,
-            value,
-            can_own,
-        }) => models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {
-            key_type_pointer: Box::new(to_api_type_pointer(context, key)?),
-            value_type_pointer: Box::new(to_api_type_pointer(context, value)?),
-            can_own: *can_own,
+        BlueprintCollectionSchema::SortedIndex(
+            BlueprintKeyValueSchema::<BlueprintPayloadDef> {
+                key,
+                value,
+                allow_ownership,
+            },
+        ) => models::BlueprintCollectionSchema::SortedIndexBlueprintCollectionSchema {
+            key_type_ref: Box::new(to_api_blueprint_payload_def(context, key)?),
+            value_type_ref: Box::new(to_api_blueprint_payload_def(context, value)?),
+            allow_ownership: *allow_ownership,
         },
     })
 }

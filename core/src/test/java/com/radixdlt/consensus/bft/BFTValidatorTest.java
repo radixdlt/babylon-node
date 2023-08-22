@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -90,6 +90,6 @@ public class BFTValidatorTest {
   }
 
   private static BFTValidator create() {
-    return BFTValidator.from(mock(BFTValidatorId.class), UInt256.ONE);
+    return BFTValidator.from(mock(BFTValidatorId.class), UInt192.ONE);
   }
 }

@@ -72,7 +72,7 @@ pub enum MappingError {
     InternalIndexDataMismatch {
         message: String,
     },
-    ExpectedDataInvariantBroken {
+    MissingSystemStructure {
         message: String,
     },
 }

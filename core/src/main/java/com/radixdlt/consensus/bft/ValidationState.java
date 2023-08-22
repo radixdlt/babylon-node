@@ -69,7 +69,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -84,8 +84,8 @@ public final class ValidationState {
 
   private final BFTValidatorSet validatorSet;
   private final Map<BFTValidatorId, TimestampedECDSASignature> signedValidators;
-  private transient UInt256 signedPower;
-  private final transient UInt256 threshold;
+  private transient UInt192 signedPower;
+  private final transient UInt192 threshold;
 
   /**
    * Construct empty validation state for given hash and set of validator keys.
@@ -99,7 +99,7 @@ public final class ValidationState {
   private ValidationState(BFTValidatorSet validatorSet) {
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.signedValidators = new HashMap<>();
-    this.signedPower = UInt256.ZERO;
+    this.signedPower = UInt192.ZERO;
     this.threshold = threshold(validatorSet.getTotalPower());
   }
 
@@ -135,7 +135,7 @@ public final class ValidationState {
       this.signedValidators.computeIfAbsent(
           validatorId,
           k -> {
-            UInt256 weight = this.validatorSet.getPower(validatorId);
+            UInt192 weight = this.validatorSet.getPower(validatorId);
             this.signedPower = this.signedPower.add(weight);
             return TimestampedECDSASignature.from(timestamp, signature);
           });
@@ -162,15 +162,15 @@ public final class ValidationState {
   }
 
   @VisibleForTesting
-  static UInt256 threshold(UInt256 n) {
+  static UInt192 threshold(UInt192 n) {
     return n.subtract(acceptableFaults(n));
   }
 
   @VisibleForTesting
-  static UInt256 acceptableFaults(UInt256 n) {
+  static UInt192 acceptableFaults(UInt192 n) {
     // Compute acceptable faults based on Byzantine limit n = 3f + 1
     // i.e. f = (n - 1) / 3
-    return n.isZero() ? n : n.decrement().divide(UInt256.THREE);
+    return n.isZero() ? n : n.decrement().divide(UInt192.THREE);
   }
 
   @Override

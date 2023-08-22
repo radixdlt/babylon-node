@@ -66,15 +66,15 @@ use std::cmp::min;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::limits::{ExecutionMetrics, VertexLimitsExceeded};
-use crate::transaction::LeaderRoundCounter;
+use crate::limits::VertexLimitsExceeded;
+use crate::transaction::{ExecutionConfigurator, LeaderRoundCounter};
 use crate::StateVersion;
 use node_common::config::limits::*;
 use node_common::locks::{LockFactory, Mutex};
 use node_common::metrics::*;
 use prometheus::*;
 
-use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine_common::prelude::*;
 
 pub struct LedgerMetrics {
@@ -91,12 +91,7 @@ pub struct LedgerMetrics {
 pub struct CommittedTransactionsMetrics {
     pub size: Histogram,
     pub execution_cost_units_consumed: Histogram,
-    pub substate_read_size: Histogram,
-    pub substate_read_count: Histogram,
-    pub substate_write_size: Histogram,
-    pub substate_write_count: Histogram,
-    pub max_wasm_memory_used: Histogram,
-    pub max_invoke_payload_size: Histogram,
+    pub finalization_cost_units_consumed: Histogram,
 }
 
 pub struct VertexPrepareMetrics {
@@ -219,18 +214,17 @@ impl LedgerMetrics {
 
 pub struct TransactionMetricsData {
     size: usize,
-    execution: ExecutionMetrics,
+    fee_summary: TransactionFeeSummary,
 }
 
 impl TransactionMetricsData {
-    pub fn new(size: usize, execution: ExecutionMetrics) -> Self {
-        TransactionMetricsData { size, execution }
+    pub fn new(size: usize, fee_summary: TransactionFeeSummary) -> Self {
+        TransactionMetricsData { size, fee_summary }
     }
 }
 
-// TODO: update buckets limits when default values are overwritten
 impl CommittedTransactionsMetrics {
-    pub fn new(registry: &Registry, execution_config: &ExecutionConfig) -> Self {
+    pub fn new(registry: &Registry, execution_configurator: &ExecutionConfigurator) -> Self {
         Self {
             size: new_histogram(
                 opts(
@@ -246,69 +240,21 @@ impl CommittedTransactionsMetrics {
                     "Execution cost units consumed per committed transactions.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    execution_config.cost_unit_limit as usize,
+                    execution_configurator
+                        .costing_parameters
+                        .execution_cost_unit_limit as usize,
                 ),
             )
             .registered_at(registry),
-            substate_read_size: new_histogram(
+            finalization_cost_units_consumed: new_histogram(
                 opts(
-                    "committed_transactions_substate_read_size",
-                    "Total (per committed transaction) substate read size in bytes.",
-                ),
-                // TODO(RC): update once max substate reads can be limited at execution
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_SIZE,
-                ),
-            )
-            .registered_at(registry),
-            substate_read_count: new_histogram(
-                opts(
-                    "committed_transactions_substate_read_count",
-                    "Number of substate reads per committed transactions.",
+                    "committed_transactions_finalization_cost_units_consumed",
+                    "Finalization cost units consumed per committed transactions.",
                 ),
                 higher_resolution_for_lower_values_buckets_for_limit(
-                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_READ_COUNT,
-                ),
-            )
-            .registered_at(registry),
-            substate_write_size: new_histogram(
-                opts(
-                    "committed_transactions_substate_write_size",
-                    "Total (per committed transaction) substate write size in bytes.",
-                ),
-                // TODO(RCnet-V3): update once max substate writes can be limited at execution
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_SIZE,
-                ),
-            )
-            .registered_at(registry),
-            substate_write_count: new_histogram(
-                opts(
-                    "committed_transactions_substate_write_count",
-                    "Number of substate writes per committed transactions.",
-                ),
-                // TODO(RCnet-V3): update once max substate writes can be limited at execution
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    DEFAULT_MAX_TOTAL_VERTEX_SUBSTATE_WRITE_COUNT,
-                ),
-            )
-            .registered_at(registry),
-            max_wasm_memory_used: new_histogram(
-                opts(
-                    "committed_transactions_max_wasm_memory_used",
-                    "Maximum WASM memory used in bytes per committed transaction.",
-                ),
-                // TODO(RCnet-V3): Just a placeholder until we figure out ExecutionMetrics.
-                higher_resolution_for_lower_values_buckets_for_limit(10 * 1024 * 1024),
-            )
-            .registered_at(registry),
-            max_invoke_payload_size: new_histogram(
-                opts(
-                    "committed_transactions_max_invoke_payload_size",
-                    "Maximum invoke payload size in bytes per committed transaction.",
-                ),
-                higher_resolution_for_lower_values_buckets_for_limit(
-                    execution_config.max_invoke_input_size,
+                    execution_configurator
+                        .costing_parameters
+                        .finalization_cost_unit_limit as usize,
                 ),
             )
             .registered_at(registry),
@@ -320,21 +266,14 @@ impl CommittedTransactionsMetrics {
             self.size.observe(transaction_metrics_data.size as f64);
             self.execution_cost_units_consumed.observe(
                 transaction_metrics_data
-                    .execution
-                    .execution_cost_units_consumed as f64,
+                    .fee_summary
+                    .total_execution_cost_units_consumed as f64,
             );
-            self.substate_read_size
-                .observe(transaction_metrics_data.execution.substate_read_size as f64);
-            self.substate_read_count
-                .observe(transaction_metrics_data.execution.substate_read_count as f64);
-            self.substate_write_size
-                .observe(transaction_metrics_data.execution.substate_write_size as f64);
-            self.substate_write_count
-                .observe(transaction_metrics_data.execution.substate_write_count as f64);
-            self.max_wasm_memory_used
-                .observe(transaction_metrics_data.execution.max_wasm_memory_used as f64);
-            self.max_invoke_payload_size
-                .observe(transaction_metrics_data.execution.max_invoke_payload_size as f64);
+            self.finalization_cost_units_consumed.observe(
+                transaction_metrics_data
+                    .fee_summary
+                    .total_finalization_cost_units_consumed as f64,
+            );
         }
     }
 }
@@ -429,10 +368,9 @@ impl MetricLabel for VertexPrepareStopReason {
                 VertexLimitsExceeded::ExecutionCostUnitsConsumed => {
                     "ExecutionCostUnitsConsumedLimitReached"
                 }
-                VertexLimitsExceeded::SubstateReadSize => "SubstateReadSizeLimitReached",
-                VertexLimitsExceeded::SubstateReadCount => "SubstateReadCountLimitReached",
-                VertexLimitsExceeded::SubstateWriteSize => "SubstateWriteSizeLimitReached",
-                VertexLimitsExceeded::SubstateWriteCount => "SubstateWriteCountLimitReached",
+                VertexLimitsExceeded::FinalizationCostUnitsConsumed => {
+                    "FinalizationCostUnitsConsumedLimitReached"
+                }
             },
         }
     }

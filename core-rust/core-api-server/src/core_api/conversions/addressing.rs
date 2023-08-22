@@ -341,10 +341,6 @@ pub fn to_api_substate_id(
             SubstateType::PackageBlueprintDependenciesEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageSchemaKey(_)) => (
-            SubstateType::PackageSchemaEntry,
-            models::PartitionKind::KeyValue,
-        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(_)) => (
             SubstateType::PackageCodeVmTypeEntry,
             models::PartitionKind::KeyValue,
@@ -380,6 +376,9 @@ pub fn to_api_substate_id(
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerField(_)) => {
             (SubstateType::ConsensusManager, models::PartitionKind::Field)
         }
+        TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(_)) => {
+            (SubstateType::SchemaEntry, models::PartitionKind::KeyValue)
+        }
     };
 
     let entity_module = match typed_substate_key {
@@ -388,6 +387,7 @@ pub fn to_api_substate_id(
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
         TypedSubstateKey::MetadataModule(_) => models::EntityModule::Metadata,
         TypedSubstateKey::MainModule(_) => models::EntityModule::Main,
+        TypedSubstateKey::Schema(_) => models::EntityModule::Schema,
     };
 
     Ok(models::SubstateId {

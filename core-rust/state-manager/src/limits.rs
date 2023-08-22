@@ -63,17 +63,15 @@
  */
 
 use node_common::config::limits::VertexLimitsConfig;
-use radix_engine::{system::system_modules::costing::FeeSummary, types::*};
+use radix_engine::transaction::TransactionFeeSummary;
+use radix_engine::types::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {
     TransactionsCount,
     TransactionsSize,
     ExecutionCostUnitsConsumed,
-    SubstateReadSize,
-    SubstateReadCount,
-    SubstateWriteSize,
-    SubstateWriteCount,
+    FinalizationCostUnitsConsumed,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -82,61 +80,12 @@ pub enum VertexLimitsAdvanceSuccess {
     VertexFilled(VertexLimitsExceeded),
 }
 
-// TODO(RCnet-V3): Fix what's tracked here in light of changes upstream
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct VertexLimitsTracker {
     pub remaining_transactions_count: u32,
     pub remaining_transactions_size: usize,
-    pub remaining_execution_cost_units_consumed: u32,
-    pub remaining_substate_read_size: usize,
-    pub remaining_substate_read_count: usize,
-    pub remaining_substate_write_size: usize,
-    pub remaining_substate_write_count: usize,
-}
-
-// TODO(RCnet-V3): Fix this abstraction in light of changes upstream
-// This class used to be in the engine until being removed shortly before launch, so adding it back in
-// (with faked values) to decrease churn in the Node before RCnet-V2 release
-#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
-pub struct ExecutionMetrics {
-    pub execution_cost_units_consumed: u32,
-    pub substate_read_size: usize,
-    pub substate_read_count: usize,
-    pub substate_write_size: usize,
-    pub substate_write_count: usize,
-    pub max_wasm_memory_used: usize,
-    pub max_invoke_payload_size: usize,
-}
-
-impl ExecutionMetrics {
-    fn minimum_for_transaction() -> Self {
-        Self {
-            execution_cost_units_consumed: 1,
-            substate_read_size: 1,
-            substate_read_count: 1,
-            substate_write_size: 1,
-            substate_write_count: 1,
-            max_wasm_memory_used: 0,
-            max_invoke_payload_size: 0,
-        }
-    }
-}
-
-impl ExecutionMetrics {
-    pub fn new_from_commit(fee_summary: &FeeSummary) -> Self {
-        // TODO(RCnet-V3): Fix this abstraction in light of changes upstream
-        // This class used to be in the engine until being removed shortly before launch, so adding it back in
-        // (with faked values) to decrease churn in the Node before RCnet-V2 release
-        Self {
-            execution_cost_units_consumed: fee_summary.execution_cost_sum,
-            substate_read_size: 0,
-            substate_read_count: 0,
-            substate_write_size: 0,
-            substate_write_count: 0,
-            max_wasm_memory_used: 0,
-            max_invoke_payload_size: 0,
-        }
-    }
+    pub remaining_execution_cost_units: u32,
+    pub remaining_finalization_cost_units: u32,
 }
 
 impl VertexLimitsTracker {
@@ -144,11 +93,8 @@ impl VertexLimitsTracker {
         Self {
             remaining_transactions_count: config.max_transaction_count,
             remaining_transactions_size: config.max_total_transactions_size,
-            remaining_execution_cost_units_consumed: config.max_total_execution_cost_units_consumed,
-            remaining_substate_read_size: config.max_total_substate_read_size,
-            remaining_substate_read_count: config.max_total_substate_read_count,
-            remaining_substate_write_size: config.max_total_substate_write_size,
-            remaining_substate_write_count: config.max_total_substate_write_count,
+            remaining_execution_cost_units: config.max_total_execution_cost_units_consumed,
+            remaining_finalization_cost_units: config.max_total_finalization_cost_units_consumed,
         }
     }
 
@@ -166,28 +112,16 @@ impl VertexLimitsTracker {
 
     fn check_post_execution(
         &self,
-        execution_metrics: &ExecutionMetrics,
+        fee_summary: &TransactionFeeSummary,
     ) -> Result<(), VertexLimitsExceeded> {
-        if self.remaining_execution_cost_units_consumed
-            < execution_metrics.execution_cost_units_consumed
-        {
+        if self.remaining_execution_cost_units < fee_summary.total_execution_cost_units_consumed {
             return Err(VertexLimitsExceeded::ExecutionCostUnitsConsumed);
         }
 
-        if self.remaining_substate_read_size < execution_metrics.substate_read_size {
-            return Err(VertexLimitsExceeded::SubstateReadSize);
-        }
-
-        if self.remaining_substate_read_count < execution_metrics.substate_read_count {
-            return Err(VertexLimitsExceeded::SubstateReadCount);
-        }
-
-        if self.remaining_substate_write_size < execution_metrics.substate_write_size {
-            return Err(VertexLimitsExceeded::SubstateWriteSize);
-        }
-
-        if self.remaining_substate_write_count < execution_metrics.substate_write_count {
-            return Err(VertexLimitsExceeded::SubstateWriteCount);
+        if self.remaining_finalization_cost_units
+            < fee_summary.total_finalization_cost_units_consumed
+        {
+            return Err(VertexLimitsExceeded::FinalizationCostUnitsConsumed);
         }
 
         Ok(())
@@ -198,7 +132,7 @@ impl VertexLimitsTracker {
             Ok(_) => {}
             Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
         }
-        match self.check_post_execution(&ExecutionMetrics::minimum_for_transaction()) {
+        match self.check_post_execution(&TransactionFeeSummary::minimum_for_transaction()) {
             Ok(_) => {}
             Err(limit) => return VertexLimitsAdvanceSuccess::VertexFilled(limit),
         }
@@ -208,19 +142,46 @@ impl VertexLimitsTracker {
     pub fn try_next_transaction(
         &mut self,
         transaction_size: usize,
-        execution_metrics: &ExecutionMetrics,
+        fee_summary: &TransactionFeeSummary,
     ) -> Result<VertexLimitsAdvanceSuccess, VertexLimitsExceeded> {
-        self.check_post_execution(execution_metrics)?;
+        self.check_post_execution(fee_summary)?;
 
         self.remaining_transactions_count -= 1;
         self.remaining_transactions_size -= transaction_size;
-        self.remaining_execution_cost_units_consumed -=
-            execution_metrics.execution_cost_units_consumed;
-        self.remaining_substate_read_count -= execution_metrics.substate_read_count;
-        self.remaining_substate_read_size -= execution_metrics.substate_read_size;
-        self.remaining_substate_write_count -= execution_metrics.substate_write_count;
-        self.remaining_substate_write_size -= execution_metrics.substate_write_size;
+        self.remaining_execution_cost_units -= fee_summary.total_execution_cost_units_consumed;
+        self.remaining_finalization_cost_units -=
+            fee_summary.total_finalization_cost_units_consumed;
 
         Ok(self.check_filled())
+    }
+
+    pub fn count_rejected_transaction(
+        &mut self,
+        fee_summary: &TransactionFeeSummary,
+    ) -> Result<VertexLimitsAdvanceSuccess, VertexLimitsExceeded> {
+        self.check_post_execution(fee_summary)?;
+
+        // We do not count finalization cost because it is "payed" at commit time.
+        self.remaining_execution_cost_units -= fee_summary.total_execution_cost_units_consumed;
+
+        Ok(self.check_filled())
+    }
+}
+
+trait MinimumForTransactionExt {
+    fn minimum_for_transaction() -> Self;
+}
+
+impl MinimumForTransactionExt for TransactionFeeSummary {
+    fn minimum_for_transaction() -> Self {
+        TransactionFeeSummary {
+            total_execution_cost_units_consumed: 1,
+            total_finalization_cost_units_consumed: 1,
+            total_execution_cost_in_xrd: Decimal::ZERO,
+            total_finalization_cost_in_xrd: Decimal::ZERO,
+            total_tipping_cost_in_xrd: Decimal::ZERO,
+            total_storage_cost_in_xrd: Decimal::ZERO,
+            total_royalty_cost_in_xrd: Decimal::ZERO,
+        }
     }
 }

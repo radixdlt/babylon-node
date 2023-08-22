@@ -148,7 +148,7 @@ impl PreparedRoundUpdateTransactionV1 {
                     initial_proofs: btreeset!(AuthAddresses::validator_role()),
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment {
+                costing_parameters: TransactionCostingParameters {
                     tip_percentage: 0,
                     free_credit_in_xrd: Decimal::ZERO,
                 },

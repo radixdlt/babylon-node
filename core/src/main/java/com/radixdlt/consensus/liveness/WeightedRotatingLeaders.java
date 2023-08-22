@@ -68,10 +68,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt256s;
-import com.radixdlt.utils.UInt384;
+import com.radixdlt.utils.*;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -124,14 +121,14 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       this.weights = new HashMap<>();
       this.cache = new BFTValidator[cacheSize];
 
-      UInt256[] powerArray =
-          validatorSet.getValidators().stream().map(BFTValidator::getPower).toArray(UInt256[]::new);
+      UInt192[] powerArray =
+          validatorSet.getValidators().stream().map(BFTValidator::getPower).toArray(UInt192[]::new);
       // after cappedLCM is executed, the following invariant will be true:
       // (lcm > 0 && lcm < 2^63 -1 ) || lcm == null
       // This is due to use of 2^63 - 1 cap and also the invariant from ValidatorSet
       // that powerArray will always be non-zero
-      UInt256 lcm256 = UInt256s.cappedLCM(UInt256.from(Long.MAX_VALUE), powerArray);
-      this.lcm = lcm256 == null ? null : lcm256.getLow().getLow();
+      UInt192 lcm192 = UInt192.cappedLCM(UInt192.from(Long.MAX_VALUE), powerArray);
+      this.lcm = lcm192 == null ? null : lcm192.getLow().getLow();
 
       this.resetToRound(Round.of(0));
     }

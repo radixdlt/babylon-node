@@ -67,11 +67,13 @@ package com.radixdlt.environment;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
 public record VertexLimitsConfig(
     UInt32 maxTransactionCount,
-    UInt32 maxTotalTransactionsSize,
-    UInt32 maxTotalExecutionCostUnitsConsumed) {
+    UInt64 maxTotalTransactionsSize,
+    UInt32 maxTotalExecutionCostUnitsConsumed,
+    UInt32 maxTotalFinalizationCostUnitsConsumed) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         VertexLimitsConfig.class,
@@ -80,11 +82,13 @@ public record VertexLimitsConfig(
 
   public VertexLimitsConfig(
       int maxTransactionCount,
-      int maxTotalTransactionsSize,
-      int maxTotalExecutionCostUnitsConsumed) {
+      long maxTotalTransactionsSize,
+      int maxTotalExecutionCostUnitsConsumed,
+      int maxTotalFinalizationCostUnitsConsumed) {
     this(
         UInt32.fromNonNegativeInt(maxTransactionCount),
-        UInt32.fromNonNegativeInt(maxTotalTransactionsSize),
-        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed));
+        UInt64.fromNonNegativeLong(maxTotalTransactionsSize),
+        UInt32.fromNonNegativeInt(maxTotalExecutionCostUnitsConsumed),
+        UInt32.fromNonNegativeInt(maxTotalFinalizationCostUnitsConsumed));
   }
 }

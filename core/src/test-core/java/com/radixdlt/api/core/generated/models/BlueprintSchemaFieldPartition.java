@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.FieldSchema;
+import com.radixdlt.api.core.generated.models.PartitionDescription;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -35,13 +36,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "The fields partition of the blueprint.")
 @JsonPropertyOrder({
-  BlueprintSchemaFieldPartition.JSON_PROPERTY_PARTITION_OFFSET,
+  BlueprintSchemaFieldPartition.JSON_PROPERTY_PARTITION_DESCRIPTION,
   BlueprintSchemaFieldPartition.JSON_PROPERTY_FIELDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchemaFieldPartition {
-  public static final String JSON_PROPERTY_PARTITION_OFFSET = "partition_offset";
-  private Integer partitionOffset;
+  public static final String JSON_PROPERTY_PARTITION_DESCRIPTION = "partition_description";
+  private PartitionDescription partitionDescription;
 
   public static final String JSON_PROPERTY_FIELDS = "fields";
   private List<FieldSchema> fields = new ArrayList<>();
@@ -49,31 +50,29 @@ public class BlueprintSchemaFieldPartition {
   public BlueprintSchemaFieldPartition() { 
   }
 
-  public BlueprintSchemaFieldPartition partitionOffset(Integer partitionOffset) {
-    this.partitionOffset = partitionOffset;
+  public BlueprintSchemaFieldPartition partitionDescription(PartitionDescription partitionDescription) {
+    this.partitionDescription = partitionDescription;
     return this;
   }
 
    /**
-   * The partition&#39;s offset from the Main module base (64)
-   * minimum: 0
-   * maximum: 191
-   * @return partitionOffset
+   * Get partitionDescription
+   * @return partitionDescription
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The partition's offset from the Main module base (64)")
-  @JsonProperty(JSON_PROPERTY_PARTITION_OFFSET)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PARTITION_DESCRIPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getPartitionOffset() {
-    return partitionOffset;
+  public PartitionDescription getPartitionDescription() {
+    return partitionDescription;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PARTITION_OFFSET)
+  @JsonProperty(JSON_PROPERTY_PARTITION_DESCRIPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPartitionOffset(Integer partitionOffset) {
-    this.partitionOffset = partitionOffset;
+  public void setPartitionDescription(PartitionDescription partitionDescription) {
+    this.partitionDescription = partitionDescription;
   }
 
 
@@ -120,20 +119,20 @@ public class BlueprintSchemaFieldPartition {
       return false;
     }
     BlueprintSchemaFieldPartition blueprintSchemaFieldPartition = (BlueprintSchemaFieldPartition) o;
-    return Objects.equals(this.partitionOffset, blueprintSchemaFieldPartition.partitionOffset) &&
+    return Objects.equals(this.partitionDescription, blueprintSchemaFieldPartition.partitionDescription) &&
         Objects.equals(this.fields, blueprintSchemaFieldPartition.fields);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(partitionOffset, fields);
+    return Objects.hash(partitionDescription, fields);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintSchemaFieldPartition {\n");
-    sb.append("    partitionOffset: ").append(toIndentedString(partitionOffset)).append("\n");
+    sb.append("    partitionDescription: ").append(toIndentedString(partitionDescription)).append("\n");
     sb.append("    fields: ").append(toIndentedString(fields)).append("\n");
     sb.append("}");
     return sb.toString();

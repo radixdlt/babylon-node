@@ -78,7 +78,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -137,7 +137,7 @@ public class RotateOnceDecoratorTest {
     return BFTValidatorId.create(address, key);
   }
 
-  private static UInt256 power(int value) {
-    return UInt256.from(value);
+  private static UInt192 power(int value) {
+    return UInt192.from(value);
   }
 }

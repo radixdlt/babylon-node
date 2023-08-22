@@ -1,5 +1,4 @@
 use node_common::locks::RwLock;
-use radix_engine::errors::RejectionError;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -14,8 +13,8 @@ use crate::staging::ReadableStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
-    AlreadyCommittedError, AtState, PendingTransactionRecord, PendingTransactionResultCache,
-    RejectionReason, TransactionAttempt,
+    AlreadyCommittedError, AtState, ExecutionRejectionReason, PendingTransactionRecord,
+    PendingTransactionResultCache, RejectionReason, TransactionAttempt,
 };
 
 use transaction::prelude::*;
@@ -238,15 +237,18 @@ where
         }
 
         let receipt = self.test_execute_transaction_up_to_fee_loan(read_store.deref(), transaction);
-        let result = match receipt.transaction_result {
-            TransactionResult::Reject(RejectResult { error }) => {
-                if matches!(error, RejectionError::IntentHashPreviouslyCommitted) {
+        let result = match receipt.result {
+            TransactionResult::Reject(RejectResult { reason }) => {
+                if matches!(
+                    reason,
+                    ExecutionRejectionReason::IntentHashPreviouslyCommitted
+                ) {
                     panic!(
                         "intent {:?} not found by Node, but reported as committed by Engine",
                         transaction.prepared.intent_hash()
                     );
                 }
-                Err(RejectionReason::FromExecution(Box::new(error)))
+                Err(RejectionReason::FromExecution(Box::new(reason)))
             }
             TransactionResult::Commit(..) => Ok(()),
             TransactionResult::Abort(abort_result) => {

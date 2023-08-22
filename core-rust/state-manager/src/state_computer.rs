@@ -77,7 +77,7 @@ use ::transaction::prelude::*;
 use node_common::config::limits::VertexLimitsConfig;
 
 use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::{RejectResult, TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, EpochChangeCondition,
 };
@@ -145,12 +145,8 @@ impl<S: QueryableProofStore> StateComputer<S> {
             .map(|header| (header.hashes.transaction_root, header.proposer_timestamp_ms))
             .unwrap_or_else(|| (LedgerHashes::pre_genesis().transaction_root, 0));
 
-        let regular_execution_config = execution_configurator
-            .execution_configs
-            .get(&ConfigType::Regular)
-            .unwrap();
         let committed_transactions_metrics =
-            CommittedTransactionsMetrics::new(metrics_registry, regular_execution_config);
+            CommittedTransactionsMetrics::new(metrics_registry, &execution_configurator);
 
         StateComputer {
             network: network.clone(),
@@ -411,7 +407,7 @@ where
                 &round_update_result
                     .local_receipt
                     .local_execution
-                    .execution_metrics,
+                    .fee_summary,
             )
             .expect("round update transaction should not trigger vertex limits");
 
@@ -535,7 +531,7 @@ where
                         &processed_commit_result
                             .local_receipt
                             .local_execution
-                            .execution_metrics,
+                            .fee_summary,
                     ) {
                         Ok(success) => {
                             // We're including the transaction, so updating the executor state
@@ -581,20 +577,36 @@ where
                         }
                     }
                 }
-                Err(RejectResult { error }) => {
+                Err(ProcessedRejectResult {
+                    result,
+                    fee_summary,
+                }) => {
                     rejected_transactions.push(RejectedTransaction {
                         index: index as u32,
                         intent_hash: Some(intent_hash),
                         notarized_transaction_hash: Some(notarized_transaction_hash),
                         ledger_transaction_hash: Some(ledger_transaction_hash),
-                        error: format!("{:?}", &error),
+                        error: format!("{:?}", &result.reason),
                     });
                     pending_transaction_results.push(PendingTransactionResult {
                         intent_hash,
                         notarized_transaction_hash,
                         invalid_at_epoch,
-                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(error))),
+                        rejection_reason: Some(RejectionReason::FromExecution(Box::new(
+                            result.reason,
+                        ))),
                     });
+
+                    // We want to account for rejected execution costs too and stop accordingly since
+                    // executing the maximum number of (rejected) transactions in a proposal for the
+                    // maximum amount of execution units per transaction is considerably higher than
+                    // the vertex execution limit.
+                    if let Err(error) =
+                        vertex_limits_tracker.count_rejected_transaction(&fee_summary)
+                    {
+                        stop_reason = VertexPrepareStopReason::LimitExceeded(error);
+                        break;
+                    }
                 }
             }
         }
@@ -1077,11 +1089,7 @@ where
 
             transactions_metrics_data.push(TransactionMetricsData::new(
                 raw.0.len(),
-                commit
-                    .local_receipt
-                    .local_execution
-                    .execution_metrics
-                    .clone(),
+                commit.local_receipt.local_execution.fee_summary.clone(),
             ));
             committed_transaction_bundles.push(CommittedTransactionBundle {
                 state_version: series_executor.latest_state_version(),
@@ -1140,7 +1148,8 @@ where
                 .map(|txn| &txn.intent_hash),
         );
         if let Some(epoch) = next_epoch {
-            self.mempool_manager.remove_txns_where_end_epoch_expired(epoch);
+            self.mempool_manager
+                .remove_txns_where_end_epoch_expired(epoch);
         }
         self.pending_transaction_result_cache
             .write()
@@ -1275,9 +1284,9 @@ mod tests {
 
     use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
     use crate::{
-        JavaVertexLimitsConfig, LedgerProof, PrepareRequest, PrepareResult, RoundHistory,
-        StateManager, StateManagerConfig,
+        LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
     };
+    use node_common::config::limits::VertexLimitsConfig;
     use node_common::locks::LockFactory;
     use prometheus::Registry;
     use radix_engine_common::prelude::NetworkDefinition;
@@ -1372,7 +1381,7 @@ mod tests {
     }
 
     fn setup_state_manager(
-        vertex_limits_config: JavaVertexLimitsConfig,
+        vertex_limits_config: VertexLimitsConfig,
     ) -> (LedgerProof, StateManager) {
         let lock_factory = LockFactory::new(|| {});
         let metrics_registry = Registry::new();
@@ -1391,7 +1400,7 @@ mod tests {
     }
 
     fn prepare_with_vertex_limits(
-        vertex_limits_config: JavaVertexLimitsConfig,
+        vertex_limits_config: VertexLimitsConfig,
         proposed_transactions: Vec<RawNotarizedTransaction>,
     ) -> PrepareResult {
         let (proof, state_manager) = setup_state_manager(vertex_limits_config);
@@ -1401,14 +1410,6 @@ mod tests {
                 &proof,
                 proposed_transactions,
             ))
-    }
-
-    fn no_limit() -> JavaVertexLimitsConfig {
-        JavaVertexLimitsConfig {
-            max_total_transactions_size: u32::MAX,
-            max_transaction_count: u32::MAX,
-            max_total_execution_cost_units_consumed: u32::MAX,
-        }
     }
 
     fn compute_consumed_execution_units(
@@ -1438,7 +1439,7 @@ mod tests {
         prepare_request
             .proposed_transactions
             .iter()
-            .filter_map(|raw_user_transaction| {
+            .map(|raw_user_transaction| {
                 let (_, prepared_transaction) = state_manager
                     .state_computer
                     .try_prepare_ledger_transaction_from_user_transaction(raw_user_transaction)
@@ -1453,25 +1454,28 @@ mod tests {
                 let execute_result =
                     series_executor.execute_and_update_state(&validated, "cost computation");
 
-                execute_result.ok().map(|result| {
-                    result
-                        .local_receipt
-                        .local_execution
-                        .execution_metrics
-                        .execution_cost_units_consumed
-                })
+                match execute_result {
+                    Ok(commit) => {
+                        commit
+                            .local_receipt
+                            .local_execution
+                            .fee_summary
+                            .total_execution_cost_units_consumed
+                    }
+                    Err(reject) => reject.fee_summary.total_execution_cost_units_consumed,
+                }
             })
             .sum::<u32>()
             + round_update_result
                 .local_receipt
                 .local_execution
-                .execution_metrics
-                .execution_cost_units_consumed
+                .fee_summary
+                .total_execution_cost_units_consumed
     }
 
     #[test]
     fn test_prepare_vertex_limits() {
-        let (proof, state_manager) = setup_state_manager(no_limit());
+        let (proof, state_manager) = setup_state_manager(VertexLimitsConfig::max());
 
         let mut proposed_transactions = Vec::new();
         let epoch = proof.ledger_header.epoch;
@@ -1500,9 +1504,9 @@ mod tests {
         assert_eq!(prepare_result.rejected.len(), 5); // 5 rejected transactions
 
         let prepare_result = prepare_with_vertex_limits(
-            JavaVertexLimitsConfig {
+            VertexLimitsConfig {
                 max_transaction_count: 6,
-                ..no_limit()
+                ..VertexLimitsConfig::max()
             },
             proposed_transactions.clone(),
         );
@@ -1514,22 +1518,24 @@ mod tests {
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
 
         // We now compute PrepareResult only for the first 7 transactions in order to test that indeed resultant states are the same.
-        let prepare_result =
-            prepare_with_vertex_limits(no_limit(), proposed_transactions.clone()[0..7].to_vec());
+        let prepare_result = prepare_with_vertex_limits(
+            VertexLimitsConfig::max(),
+            proposed_transactions.clone()[0..7].to_vec(),
+        );
         assert_eq!(prepare_result.committed.len(), 6);
         assert_eq!(prepare_result.rejected.len(), 2);
         assert_eq!(prepare_result.ledger_hashes, limited_proposal_ledger_hashes);
 
         // Transaction size/count only tests `check_pre_execution`. We also need to test `try_next_transaction`.
         let cost_for_first_9_user_transactions = compute_consumed_execution_units(
-            &setup_state_manager(no_limit()).1,
+            &setup_state_manager(VertexLimitsConfig::max()).1,
             build_unit_test_prepare_request(&proof, proposed_transactions.clone()[0..9].to_vec()),
         );
         let prepare_result = prepare_with_vertex_limits(
-            JavaVertexLimitsConfig {
+            VertexLimitsConfig {
                 // We add an extra cost unit in order to not trigger the LimitExceeded right at 9th transaction.
                 max_total_execution_cost_units_consumed: cost_for_first_9_user_transactions + 1,
-                ..no_limit()
+                ..VertexLimitsConfig::max()
             },
             proposed_transactions.clone(),
         );
@@ -1537,8 +1543,10 @@ mod tests {
         assert_eq!(prepare_result.rejected.len(), 4); // 3 rejected transactions + last one that is committable but gets discarded due to limits
 
         let limited_proposal_ledger_hashes = prepare_result.ledger_hashes;
-        let prepare_result =
-            prepare_with_vertex_limits(no_limit(), proposed_transactions.clone()[0..9].to_vec());
+        let prepare_result = prepare_with_vertex_limits(
+            VertexLimitsConfig::max(),
+            proposed_transactions.clone()[0..9].to_vec(),
+        );
 
         // Should be identical to previous prepare run (cost limited)
         assert_eq!(prepare_result.committed.len(), 7);

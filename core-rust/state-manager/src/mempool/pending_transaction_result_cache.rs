@@ -7,7 +7,6 @@ use crate::{
 };
 
 use lru::LruCache;
-use radix_engine::errors::RejectionError;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,
@@ -16,10 +15,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+pub type ExecutionRejectionReason = radix_engine::errors::RejectionReason;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionReason {
     AlreadyCommitted(AlreadyCommittedError),
-    FromExecution(Box<RejectionError>),
+    FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
 }
 
@@ -48,13 +49,13 @@ impl RejectionReason {
     pub fn is_rejected_because_intent_already_committed(&self) -> bool {
         match self {
             RejectionReason::AlreadyCommitted(_) => true,
-            RejectionReason::FromExecution(rejection_error) => match **rejection_error {
-                RejectionError::SuccessButFeeLoanNotRepaid => false,
-                RejectionError::ErrorBeforeFeeLoanRepaid(_) => false,
-                RejectionError::TransactionEpochNotYetValid { .. } => false,
-                RejectionError::TransactionEpochNoLongerValid { .. } => false,
-                RejectionError::IntentHashPreviouslyCommitted => true,
-                RejectionError::IntentHashPreviouslyCancelled => true,
+            RejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
+                ExecutionRejectionReason::ErrorBeforeFeeLoanRepaid(_) => false,
+                ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
+                ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
             },
             RejectionReason::ValidationError(_) => false,
         }
@@ -71,32 +72,36 @@ impl RejectionReason {
         match self {
             RejectionReason::AlreadyCommitted(_) => {
                 // This is permanent for the intent - because even other, non-committed transactions
-                // of the same intent will fail with `RejectionError::IntentHashPreviouslyCommitted`
+                // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
                 RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
-                RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary {
-                    retry: RetrySettings::AfterDelay {
-                        base_delay: Duration::from_secs(2 * 60),
-                    },
-                },
-                RejectionError::ErrorBeforeFeeLoanRepaid(_) => RejectionPermanence::Temporary {
-                    retry: RetrySettings::AfterDelay {
-                        base_delay: Duration::from_secs(2 * 60),
-                    },
-                },
-                RejectionError::TransactionEpochNotYetValid { valid_from, .. } => {
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
+                    RejectionPermanence::Temporary {
+                        retry: RetrySettings::AfterDelay {
+                            base_delay: Duration::from_secs(2 * 60),
+                        },
+                    }
+                }
+                ExecutionRejectionReason::ErrorBeforeFeeLoanRepaid(_) => {
+                    RejectionPermanence::Temporary {
+                        retry: RetrySettings::AfterDelay {
+                            base_delay: Duration::from_secs(2 * 60),
+                        },
+                    }
+                }
+                ExecutionRejectionReason::TransactionEpochNotYetValid { valid_from, .. } => {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::FromEpoch { epoch: valid_from },
                     }
                 }
-                RejectionError::TransactionEpochNoLongerValid { .. } => {
+                ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
-                RejectionError::IntentHashPreviouslyCommitted => {
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
-                RejectionError::IntentHashPreviouslyCancelled => {
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
@@ -665,7 +670,7 @@ mod tests {
 
         let example_attempt_2 = TransactionAttempt {
             rejection: Some(RejectionReason::FromExecution(Box::new(
-                RejectionError::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
             against_state: AtState::Committed {
                 state_version: StateVersion::pre_genesis(),
@@ -833,7 +838,7 @@ mod tests {
 
         let attempt_with_temporary_rejection = TransactionAttempt {
             rejection: Some(RejectionReason::FromExecution(Box::new(
-                RejectionError::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
             ))),
             against_state: AtState::Committed {
                 state_version: StateVersion::pre_genesis(),
@@ -842,7 +847,7 @@ mod tests {
         };
         let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
             rejection: Some(RejectionReason::FromExecution(Box::new(
-                RejectionError::TransactionEpochNotYetValid {
+                ExecutionRejectionReason::TransactionEpochNotYetValid {
                     valid_from: Epoch::of(10),
                     current_epoch: Epoch::of(9),
                 },

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.InstanceSchema;
+import com.radixdlt.api.core.generated.models.TypeIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -37,8 +37,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   BlueprintInfo.JSON_PROPERTY_PACKAGE_ADDRESS,
   BlueprintInfo.JSON_PROPERTY_BLUEPRINT_NAME,
   BlueprintInfo.JSON_PROPERTY_OUTER_OBJECT,
-  BlueprintInfo.JSON_PROPERTY_INSTANCE_SCHEMA,
-  BlueprintInfo.JSON_PROPERTY_FEATURES
+  BlueprintInfo.JSON_PROPERTY_FEATURES,
+  BlueprintInfo.JSON_PROPERTY_GENERIC_SUBSTITUTIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintInfo {
@@ -51,11 +51,11 @@ public class BlueprintInfo {
   public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
   private String outerObject;
 
-  public static final String JSON_PROPERTY_INSTANCE_SCHEMA = "instance_schema";
-  private InstanceSchema instanceSchema;
-
   public static final String JSON_PROPERTY_FEATURES = "features";
   private List<String> features = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_GENERIC_SUBSTITUTIONS = "generic_substitutions";
+  private List<TypeIdentifier> genericSubstitutions = new ArrayList<>();
 
   public BlueprintInfo() { 
   }
@@ -138,32 +138,6 @@ public class BlueprintInfo {
   }
 
 
-  public BlueprintInfo instanceSchema(InstanceSchema instanceSchema) {
-    this.instanceSchema = instanceSchema;
-    return this;
-  }
-
-   /**
-   * Get instanceSchema
-   * @return instanceSchema
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public InstanceSchema getInstanceSchema() {
-    return instanceSchema;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_INSTANCE_SCHEMA)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setInstanceSchema(InstanceSchema instanceSchema) {
-    this.instanceSchema = instanceSchema;
-  }
-
-
   public BlueprintInfo features(List<String> features) {
     this.features = features;
     return this;
@@ -195,6 +169,37 @@ public class BlueprintInfo {
   }
 
 
+  public BlueprintInfo genericSubstitutions(List<TypeIdentifier> genericSubstitutions) {
+    this.genericSubstitutions = genericSubstitutions;
+    return this;
+  }
+
+  public BlueprintInfo addGenericSubstitutionsItem(TypeIdentifier genericSubstitutionsItem) {
+    this.genericSubstitutions.add(genericSubstitutionsItem);
+    return this;
+  }
+
+   /**
+   * Get genericSubstitutions
+   * @return genericSubstitutions
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_GENERIC_SUBSTITUTIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<TypeIdentifier> getGenericSubstitutions() {
+    return genericSubstitutions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GENERIC_SUBSTITUTIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGenericSubstitutions(List<TypeIdentifier> genericSubstitutions) {
+    this.genericSubstitutions = genericSubstitutions;
+  }
+
+
   /**
    * Return true if this BlueprintInfo object is equal to o.
    */
@@ -210,13 +215,13 @@ public class BlueprintInfo {
     return Objects.equals(this.packageAddress, blueprintInfo.packageAddress) &&
         Objects.equals(this.blueprintName, blueprintInfo.blueprintName) &&
         Objects.equals(this.outerObject, blueprintInfo.outerObject) &&
-        Objects.equals(this.instanceSchema, blueprintInfo.instanceSchema) &&
-        Objects.equals(this.features, blueprintInfo.features);
+        Objects.equals(this.features, blueprintInfo.features) &&
+        Objects.equals(this.genericSubstitutions, blueprintInfo.genericSubstitutions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, outerObject, instanceSchema, features);
+    return Objects.hash(packageAddress, blueprintName, outerObject, features, genericSubstitutions);
   }
 
   @Override
@@ -226,8 +231,8 @@ public class BlueprintInfo {
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
-    sb.append("    instanceSchema: ").append(toIndentedString(instanceSchema)).append("\n");
     sb.append("    features: ").append(toIndentedString(features)).append("\n");
+    sb.append("    genericSubstitutions: ").append(toIndentedString(genericSubstitutions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,10 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.BlueprintPayloadDef;
 import com.radixdlt.api.core.generated.models.FunctionSchema;
 import com.radixdlt.api.core.generated.models.GenericTypeParameter;
 import com.radixdlt.api.core.generated.models.IndexedStateSchema;
-import com.radixdlt.api.core.generated.models.TypePointer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -41,6 +41,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   BlueprintInterface.JSON_PROPERTY_OUTER_BLUEPRINT,
   BlueprintInterface.JSON_PROPERTY_GENERIC_TYPE_PARAMETERS,
+  BlueprintInterface.JSON_PROPERTY_IS_TRANSIENT,
   BlueprintInterface.JSON_PROPERTY_FEATURES,
   BlueprintInterface.JSON_PROPERTY_STATE,
   BlueprintInterface.JSON_PROPERTY_FUNCTIONS,
@@ -54,6 +55,9 @@ public class BlueprintInterface {
   public static final String JSON_PROPERTY_GENERIC_TYPE_PARAMETERS = "generic_type_parameters";
   private List<GenericTypeParameter> genericTypeParameters = new ArrayList<>();
 
+  public static final String JSON_PROPERTY_IS_TRANSIENT = "is_transient";
+  private Boolean isTransient;
+
   public static final String JSON_PROPERTY_FEATURES = "features";
   private List<String> features = new ArrayList<>();
 
@@ -64,7 +68,7 @@ public class BlueprintInterface {
   private Map<String, FunctionSchema> functions = new HashMap<>();
 
   public static final String JSON_PROPERTY_EVENTS = "events";
-  private Map<String, TypePointer> events = new HashMap<>();
+  private Map<String, BlueprintPayloadDef> events = new HashMap<>();
 
   public BlueprintInterface() { 
   }
@@ -123,6 +127,32 @@ public class BlueprintInterface {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setGenericTypeParameters(List<GenericTypeParameter> genericTypeParameters) {
     this.genericTypeParameters = genericTypeParameters;
+  }
+
+
+  public BlueprintInterface isTransient(Boolean isTransient) {
+    this.isTransient = isTransient;
+    return this;
+  }
+
+   /**
+   * If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.
+   * @return isTransient
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "If true, an instantiation of this blueprint cannot be persisted. EG buckets and proofs are transient.")
+  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsTransient() {
+    return isTransient;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_TRANSIENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsTransient(Boolean isTransient) {
+    this.isTransient = isTransient;
   }
 
 
@@ -214,33 +244,33 @@ public class BlueprintInterface {
   }
 
 
-  public BlueprintInterface events(Map<String, TypePointer> events) {
+  public BlueprintInterface events(Map<String, BlueprintPayloadDef> events) {
     this.events = events;
     return this;
   }
 
-  public BlueprintInterface putEventsItem(String key, TypePointer eventsItem) {
+  public BlueprintInterface putEventsItem(String key, BlueprintPayloadDef eventsItem) {
     this.events.put(key, eventsItem);
     return this;
   }
 
    /**
-   * A map from the event name to the local type index for the event payload under the blueprint schema.
+   * A map from the event name to the event payload type reference.
    * @return events
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the event name to the local type index for the event payload under the blueprint schema.")
+  @ApiModelProperty(required = true, value = "A map from the event name to the event payload type reference.")
   @JsonProperty(JSON_PROPERTY_EVENTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, TypePointer> getEvents() {
+  public Map<String, BlueprintPayloadDef> getEvents() {
     return events;
   }
 
 
   @JsonProperty(JSON_PROPERTY_EVENTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEvents(Map<String, TypePointer> events) {
+  public void setEvents(Map<String, BlueprintPayloadDef> events) {
     this.events = events;
   }
 
@@ -259,6 +289,7 @@ public class BlueprintInterface {
     BlueprintInterface blueprintInterface = (BlueprintInterface) o;
     return Objects.equals(this.outerBlueprint, blueprintInterface.outerBlueprint) &&
         Objects.equals(this.genericTypeParameters, blueprintInterface.genericTypeParameters) &&
+        Objects.equals(this.isTransient, blueprintInterface.isTransient) &&
         Objects.equals(this.features, blueprintInterface.features) &&
         Objects.equals(this.state, blueprintInterface.state) &&
         Objects.equals(this.functions, blueprintInterface.functions) &&
@@ -267,7 +298,7 @@ public class BlueprintInterface {
 
   @Override
   public int hashCode() {
-    return Objects.hash(outerBlueprint, genericTypeParameters, features, state, functions, events);
+    return Objects.hash(outerBlueprint, genericTypeParameters, isTransient, features, state, functions, events);
   }
 
   @Override
@@ -276,6 +307,7 @@ public class BlueprintInterface {
     sb.append("class BlueprintInterface {\n");
     sb.append("    outerBlueprint: ").append(toIndentedString(outerBlueprint)).append("\n");
     sb.append("    genericTypeParameters: ").append(toIndentedString(genericTypeParameters)).append("\n");
+    sb.append("    isTransient: ").append(toIndentedString(isTransient)).append("\n");
     sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    functions: ").append(toIndentedString(functions)).append("\n");

@@ -2,23 +2,25 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 
 use radix_engine::errors::RuntimeError;
-use radix_engine::system::system_modules::costing::FeeSummary;
 
 use radix_engine::transaction::{
-    CommitResult, EventSystemStructure, StateUpdateSummary, SubstateSystemStructure,
-    TransactionOutcome,
+    CommitResult, CostingParameters, EventSystemStructure, FeeDestination, FeeSource,
+    StateUpdateSummary, SubstateSystemStructure, TransactionFeeSummary, TransactionOutcome,
 };
 use radix_engine::types::*;
 
 use radix_engine_interface::types::EventTypeIdentifier;
 use radix_engine_store_interface::interface::DbSubstateValue;
 use sbor::rust::collections::IndexMap;
+use transaction::prelude::TransactionCostingParameters;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::limits::ExecutionMetrics;
 use crate::transaction::PayloadIdentifiers;
-use crate::{ConsensusReceipt, EventHash, LedgerHashes, SubstateChangeHash, SubstateReference};
+use crate::{
+    ConsensusReceipt, EventHash, ExecutionFeeData, LedgerHashes, SubstateChangeHash,
+    SubstateReference,
+};
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiers {
@@ -159,8 +161,11 @@ pub struct LedgerTransactionReceipt {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
-    pub execution_metrics: ExecutionMetrics,
-    pub fee_summary: FeeSummary,
+    pub fee_summary: TransactionFeeSummary,
+    pub fee_source: FeeSource,
+    pub fee_destination: FeeDestination,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParameters,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
@@ -196,8 +201,12 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl From<(CommitResult, BySubstate<ChangeAction>)> for LocalTransactionReceipt {
-    fn from((commit_result, substate_changes): (CommitResult, BySubstate<ChangeAction>)) -> Self {
+impl LocalTransactionReceipt {
+    pub fn new(
+        commit_result: CommitResult,
+        substate_changes: BySubstate<ChangeAction>,
+        execution_fee_data: ExecutionFeeData,
+    ) -> Self {
         let next_epoch = commit_result.next_epoch();
         let system_structure = commit_result.system_structure;
         Self {
@@ -211,9 +220,12 @@ impl From<(CommitResult, BySubstate<ChangeAction>)> for LocalTransactionReceipt 
                     .collect(),
             },
             local_execution: LocalTransactionExecution {
-                execution_metrics: ExecutionMetrics::new_from_commit(&commit_result.fee_summary),
                 outcome: commit_result.outcome.into(),
-                fee_summary: commit_result.fee_summary,
+                fee_summary: execution_fee_data.fee_summary,
+                fee_source: commit_result.fee_source,
+                fee_destination: commit_result.fee_destination,
+                engine_costing_parameters: execution_fee_data.engine_costing_parameters,
+                transaction_costing_parameters: execution_fee_data.transaction_costing_parameters,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
                 substates_system_structure: BySubstate::wrap(
@@ -252,6 +264,18 @@ impl<T> BySubstate<T> {
             .entry(*partition_number)
             .or_insert(index_map_new())
             .insert(substate_key.clone(), item);
+    }
+
+    pub fn get(
+        &self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&T> {
+        self.by_node_id
+            .get(node_id)
+            .and_then(|by_partition_number| by_partition_number.get(partition_number))
+            .and_then(|by_substate_key| by_substate_key.get(substate_key))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (SubstateReference, &T)> + '_ {

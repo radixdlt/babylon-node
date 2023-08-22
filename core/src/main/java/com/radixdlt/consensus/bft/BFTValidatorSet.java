@@ -66,7 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt192;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -83,7 +83,7 @@ public final class BFTValidatorSet {
 
   // Because we will base power on tokens and because tokens have a max limit
   // of 2^256 this should never overflow
-  private final transient UInt256 totalPower;
+  private final transient UInt192 totalPower;
 
   private BFTValidatorSet(Collection<BFTValidator> validators) {
     this(validators.stream());
@@ -98,15 +98,15 @@ public final class BFTValidatorSet {
     this.totalPower =
         this.validators.values().stream()
             .map(BFTValidator::getPower)
-            .reduce(UInt256::add)
-            .orElse(UInt256.ZERO);
+            .reduce(UInt192::add)
+            .orElse(UInt192.ZERO);
   }
 
   /**
    * Create a validator set from a collection of validators. The sum of power of all validator
-   * should not exceed UInt256.MAX_VALUE otherwise the resulting ValidatorSet will perform in an
+   * should not exceed UInt192.MAX_VALUE otherwise the resulting ValidatorSet will perform in an
    * undefined way. This invariant should be upheld within the system due to max number of tokens
-   * being constrained to UInt256.MAX_VALUE.
+   * being constrained to UInt192.MAX_VALUE.
    *
    * @param validators the collection of validators
    * @return The new {@code ValidatorSet}.
@@ -117,9 +117,9 @@ public final class BFTValidatorSet {
 
   /**
    * Create a validator set from a stream of validators. The sum of power of all validator should
-   * not exceed UInt256.MAX_VALUE otherwise the resulting ValidatorSet will perform in an undefined
+   * not exceed UInt192.MAX_VALUE otherwise the resulting ValidatorSet will perform in an undefined
    * way. This invariant should be upheld within the system due to max number of tokens being
-   * constrained to UInt256.MAX_VALUE.
+   * constrained to UInt192.MAX_VALUE.
    *
    * @param validators the stream of validators
    * @return The new {@code ValidatorSet}.
@@ -141,11 +141,11 @@ public final class BFTValidatorSet {
     return validators.containsKey(validatorId);
   }
 
-  public UInt256 getPower(BFTValidatorId validatorId) {
+  public UInt192 getPower(BFTValidatorId validatorId) {
     return validators.get(validatorId).getPower();
   }
 
-  public UInt256 getTotalPower() {
+  public UInt192 getTotalPower() {
     return totalPower;
   }
 

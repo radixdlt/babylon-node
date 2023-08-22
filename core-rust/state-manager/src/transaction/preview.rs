@@ -60,7 +60,7 @@ impl<S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader> Trans
             .wrap_preview_transaction(&validated);
 
         let receipt = transaction_logic.execute_on(read_store.deref());
-        let substate_changes = match &receipt.transaction_result {
+        let substate_changes = match &receipt.result {
             TransactionResult::Commit(commit) => {
                 ProcessedCommitResult::compute_substate_changes::<S, SpreadPrefixKeyMapper>(
                     read_store.deref(),
