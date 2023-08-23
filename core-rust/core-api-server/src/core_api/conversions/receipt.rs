@@ -159,6 +159,7 @@ pub fn to_api_updated_substate(
     typed_substate_key: &TypedSubstateKey,
     new_value_representations: &ValueRepresentations,
     previous_value_representations: &ValueRepresentations,
+    system_structure: &SubstateSystemStructure,
 ) -> Result<models::UpdatedSubstate, MappingError> {
     Ok(models::UpdatedSubstate {
         substate_id: Box::new(to_api_substate_id(
@@ -182,6 +183,7 @@ pub fn to_api_updated_substate(
         } else {
             None
         },
+        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
     })
 }
 
@@ -222,6 +224,7 @@ pub fn to_api_deleted_substate(
     substate_key: &SubstateKey,
     typed_substate_key: &TypedSubstateKey,
     previous_value_representations: &ValueRepresentations,
+    system_structure: &SubstateSystemStructure,
 ) -> Result<models::DeletedSubstate, MappingError> {
     let substate_id = to_api_substate_id(
         context,
@@ -241,6 +244,7 @@ pub fn to_api_deleted_substate(
         } else {
             None
         },
+        system_structure: Some(to_api_substate_system_structure(context, system_structure)?),
     })
 }
 
@@ -437,6 +441,7 @@ pub fn to_api_state_updates(
                     &typed_substate_key,
                     &ValueRepresentations::new(&typed_substate_key, new)?,
                     &ValueRepresentations::new(&typed_substate_key, previous)?,
+                    system_structure,
                 )?);
             }
             ChangeAction::Delete { previous } => {
@@ -447,6 +452,7 @@ pub fn to_api_state_updates(
                     &substate_key,
                     &typed_substate_key,
                     &ValueRepresentations::new(&typed_substate_key, previous)?,
+                    system_structure,
                 )?);
             }
         }
