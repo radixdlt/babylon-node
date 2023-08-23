@@ -321,6 +321,12 @@ pub struct CommitRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct CommitSummary {
+    pub validator_round_counters: Vec<(ComponentAddress, LeaderRoundCounter)>,
+    pub num_user_transactions: u32,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
     pub committed_ledger_hashes: LedgerHashes,
     pub ancestor_transactions: Vec<RawLedgerTransaction>,

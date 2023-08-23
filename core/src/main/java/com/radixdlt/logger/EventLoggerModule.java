@@ -66,6 +66,7 @@ package com.radixdlt.logger;
 
 import static org.apache.logging.log4j.Level.*;
 
+import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
@@ -79,14 +80,12 @@ import com.radixdlt.consensus.bft.SelfValidatorInfo;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.constraintmachine.REEvent;
-import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
-import com.radixdlt.constraintmachine.REEvent.ValidatorMissedProposalsEvent;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.utils.Bytes;
-import java.util.function.Function;
+import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,57 +105,47 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   @Provides
-  @Singleton
-  Function<ECDSASecp256k1PublicKey, String> nodeKeyToStringFn(EventLoggerConfig eventLoggerConfig) {
-    return eventLoggerConfig.nodeKeyToString();
-  }
-
-  @Provides
   @Self
-  String name(
-      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
-    return nodeToString.apply(key);
+  String name(@Self ECDSASecp256k1PublicKey selfKey) {
+    return eventLoggerConfig.formatNodeAddress().apply(selfKey);
   }
 
   @ProvidesIntoSet
-  EventProcessorOnDispatch<?> logByzantineEvents(Function<BFTValidatorId, String> nodeString) {
+  EventProcessorOnDispatch<?> logByzantineEvents() {
     return new EventProcessorOnDispatch<>(
         ConsensusByzantineEvent.class,
-        event -> logger.warn("Byzantine Behavior detected: {}", event));
+        event -> {
+          final var authorStr =
+              switch (event) {
+                case ConsensusByzantineEvent.ConflictingGenesis
+                conflictingGenesis -> eventLoggerConfig
+                    .formatNodeAddress()
+                    .apply(conflictingGenesis.author().getPublicKey());
+                case ConsensusByzantineEvent.DoubleVote doubleVote -> eventLoggerConfig
+                    .formatBftValidatorId()
+                    .apply(doubleVote.author());
+              };
+          logger.warn("Byzantine Behavior detected: {} (author: {})", event, authorStr);
+        });
   }
-
-  @Provides
-  Function<BFTValidatorId, String> loggingFormatterForNode(
-      Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey) {
-    return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
-  }
-
-  /* BAB-TODO: Add something equivalent back in
-  @ProvidesIntoSet
-  EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
-    return new EventProcessorOnDispatch<>(
-        InvalidProposedTxn.class,
-        i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer())));
-  }
-  */
 
   @ProvidesIntoSet
-  EventProcessorOnDispatch<?> logTimeouts(Function<BFTValidatorId, String> nodeString) {
+  EventProcessorOnDispatch<?> logTimeouts() {
     return new EventProcessorOnDispatch<>(
         EpochLocalTimeoutOccurrence.class,
         t ->
             logger.warn(
-                "bft_timeout{epoch={} round={} leader={} nextLeader={} count={}}",
+                "bft_timeout{epoch={} round={} leader={} next_leader={} count={}}",
                 t.getEpochRound().getEpoch(),
                 t.getEpochRound().getRound().number(),
-                nodeString.apply(t.getLeader()),
-                nodeString.apply(t.getNextLeader()),
+                eventLoggerConfig.formatBftValidatorId().apply(t.getLeader()),
+                eventLoggerConfig.formatBftValidatorId().apply(t.getNextLeader()),
                 t.getBase().timeout().count()));
   }
 
   @ProvidesIntoSet
   @SuppressWarnings("UnstableApiUsage")
-  EventProcessorOnDispatch<?> logRounds(Function<BFTValidatorId, String> nodeString) {
+  EventProcessorOnDispatch<?> logRounds() {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         EpochRoundUpdate.class,
@@ -164,11 +153,11 @@ public final class EventLoggerModule extends AbstractModule {
           var logLevel = logLimiter.tryAcquire() ? INFO : TRACE;
           logger.log(
               logLevel,
-              "bft_nxtrnd{epoch={} round={} leader={} nextLeader={}}",
+              "bft_nxtrnd{epoch={} round={} leader={} next_leader={}}",
               u.getEpoch(),
               u.getEpochRound().getRound().number(),
-              nodeString.apply(u.getRoundUpdate().getLeader()),
-              nodeString.apply(u.getRoundUpdate().getNextLeader()));
+              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getLeader()),
+              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getNextLeader()));
         });
   }
 
@@ -177,46 +166,36 @@ public final class EventLoggerModule extends AbstractModule {
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
       // The `Provider` indirection is needed here to break an unexpected circular dependency.
-      Provider<SelfValidatorInfo> self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
-    final var logLimiter = RateLimiter.create(1.0);
+      Provider<SelfValidatorInfo> self) {
+    final var ledgerUpdateLogLimtier = RateLimiter.create(1.0);
+    final var missedProposalsLogLimtier = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
-        ledgerUpdate -> processLedgerUpdate(self.get(), nodeString, logLimiter, ledgerUpdate));
+        ledgerUpdate ->
+            processLedgerUpdate(
+                self.get(), ledgerUpdateLogLimtier, missedProposalsLogLimtier, ledgerUpdate));
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  private static void processLedgerUpdate(
+  private void processLedgerUpdate(
       SelfValidatorInfo self,
-      Function<ECDSASecp256k1PublicKey, String> nodeString,
-      RateLimiter logLimiter,
+      RateLimiter ledgerUpdateLogLimiter,
+      RateLimiter missedProposalsLogLimiter,
       LedgerUpdate ledgerUpdate) {
 
-    /* BAB-TODO: Add something equivalent back in
-     var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
-    */
-    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-
-    /* BAB-TODO: Add something equivalent back in
-     logLedgerUpdate(
-         ledgerUpdate, countUserTxns(output), calculateLoggingLevel(logLimiter, epochChange));
-    */
-    long fakeUserTransactionCount = 0;
     logLedgerUpdate(
-        ledgerUpdate, fakeUserTransactionCount, calculateLoggingLevel(logLimiter, epochChange));
+        ledgerUpdate,
+        ledgerUpdate.commitSummary().numUserTransactions().toInt(),
+        calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.maybeEpochChange()));
 
-    if (epochChange != null) {
-      logEpochChange(self, epochChange);
-    }
+    ledgerUpdate.maybeEpochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
 
-    /* BAB-TODO: Add something equivalent back in
-     if (output == null) {
-       return;
-     }
-
-     output.getProcessedTxns().stream()
-         .flatMap(t -> t.getEvents().stream())
-         .forEach(e -> logValidatorEvents(self, nodeString, e));
-    */
+    self.bftValidatorId()
+        .ifPresent(
+            selfValidatorId -> {
+              logSelfMissedProposals(
+                  selfValidatorId, ledgerUpdate.commitSummary(), missedProposalsLogLimiter);
+            });
   }
 
   private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
@@ -230,65 +209,59 @@ public final class EventLoggerModule extends AbstractModule {
         validatorSet.getTotalPower());
   }
 
-  /* BAB-TODO: Add something equivalent back in
-  private static long countUserTxns(REOutput output) {
-    return output != null
-        ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count()
-        : 0;
-  }
-  */
-
-  private static void logLedgerUpdate(
-      LedgerUpdate ledgerUpdate, long userTransactionsCount, Level logLevel) {
+  private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long txnCount, Level logLevel) {
     if (!logger.isEnabled(logLevel)) {
       return;
     }
 
-    var proof = ledgerUpdate.getTail();
+    final var proof = ledgerUpdate.proof();
+    final var ledgerHashes = proof.getLedgerHashes();
     logger.log(
         logLevel,
-        "lgr_commit{epoch={} round={} version={} txn_root={} user_txns={}}",
+        "lgr_commit{epoch={} round={} version={} num_txns={}, ts={}, state_root={}, txn_root={},"
+            + " receipt_root={}}",
         proof.getEpoch(),
         proof.getRound().number(),
         proof.getStateVersion(),
-        Bytes.toHexString(proof.getLedgerHashes().getTransactionRoot().asBytes()).substring(0, 16),
-        userTransactionsCount);
+        txnCount,
+        proof.getProposerTimestamp(),
+        shortFormatLedgerHash(ledgerHashes.getStateRoot()),
+        shortFormatLedgerHash(ledgerHashes.getTransactionRoot()),
+        shortFormatLedgerHash(ledgerHashes.getReceiptRoot()));
+  }
+
+  private static String shortFormatLedgerHash(HashCode hash) {
+    return Bytes.toHexString(hash.asBytes()).substring(0, 16);
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  private static Level calculateLoggingLevel(RateLimiter logLimiter, EpochChange epochChange) {
-    return (epochChange != null || logLimiter.tryAcquire()) ? INFO : TRACE;
+  private static Level calculateLoggingLevel(
+      RateLimiter logLimiter, Optional<EpochChange> epochChange) {
+    return (epochChange.isPresent() || logLimiter.tryAcquire()) ? INFO : TRACE;
   }
 
-  private static void logValidatorEvents(
-      BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
-    if (e instanceof ValidatorBFTDataEvent event) {
-      var level = event.missedProposals() > 0 ? WARN : INFO;
+  @SuppressWarnings("UnstableApiUsage")
+  private void logSelfMissedProposals(
+      BFTValidatorId self, CommitSummary commitSummary, RateLimiter logLimiter) {
+    final var maybeSelfCounters =
+        commitSummary.validatorRoundCounters().stream()
+            .filter(c -> c.first().equals(self.getValidatorAddress()))
+            .findFirst();
+    if (maybeSelfCounters.isEmpty()) {
+      return;
+    }
+    final var selfCounters = maybeSelfCounters.orElseThrow().last();
 
-      if (!logger.isEnabled(level)) {
-        return;
-      }
+    final var totalMissed =
+        selfCounters.missedByFallback().toLong() + selfCounters.missedByGap().toLong();
 
-      logger.log(
-          level,
-          "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
-          nodeString.apply(event.validatorKey()),
-          event.completedProposals(),
-          event.missedProposals());
-    } else if (e instanceof ValidatorMissedProposalsEvent event) {
-      var you = event.validatorKey().equals(self.getKey());
-      var level = you ? ERROR : WARN;
-
-      if (!logger.isEnabled(level)) {
-        return;
-      }
-
-      logger.log(
-          level,
-          "{}_failed{validator={} missed_proposals={}}",
-          you ? "you" : "vdr",
-          nodeString.apply(event.validatorKey()),
-          event.missedProposals());
+    if (totalMissed > 0 && logLimiter.tryAcquire()) {
+      logger.warn(
+          "proposals_missed{total_missed={} by_fallback_qc={} by_timeout={} validator={}",
+          totalMissed,
+          selfCounters.missedByFallback().toLong(),
+          selfCounters.missedByGap().toLong(),
+          eventLoggerConfig.formatBftValidatorId().apply(self));
     }
   }
 }

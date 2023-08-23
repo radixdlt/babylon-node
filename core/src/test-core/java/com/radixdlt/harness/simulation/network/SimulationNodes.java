@@ -274,8 +274,8 @@ public class SimulationNodes {
       final var epochChangeObservable =
           ledgerUpdateObservable.flatMapMaybe(
               ledgerUpdate -> {
-                final var e = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-                return e == null ? Maybe.empty() : Maybe.just(Pair.of(node, e));
+                final var e = ledgerUpdate.maybeEpochChange();
+                return e.isEmpty() ? Maybe.empty() : Maybe.just(Pair.of(node, e.orElseThrow()));
               });
       epochChangeObservables.onNext(epochChangeObservable);
     }

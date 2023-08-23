@@ -69,7 +69,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
@@ -108,11 +108,13 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.rev2.LastProof;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt192;
+import com.radixdlt.utils.UInt32;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -340,7 +342,9 @@ public class EpochManagerTest {
     when(ledgerUpdateExtension.getProof()).thenReturn(mock(LedgerProof.class));
     var ledgerUpdate =
         new LedgerUpdate(
-            ledgerUpdateExtension, ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
+            new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
+            ledgerUpdateExtension,
+            Optional.of(epochChange));
 
     // Act
     epochManager.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

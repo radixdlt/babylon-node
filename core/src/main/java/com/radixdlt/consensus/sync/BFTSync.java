@@ -636,11 +636,12 @@ public final class BFTSync implements BFTSyncer {
 
   // TODO: Verify headers match
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
+    final var proof = ledgerUpdate.proof();
+    log.trace("SYNC_STATE: update {}", proof);
 
-    this.currentLedgerHeader = ledgerUpdate.getTail().getHeader();
+    this.currentLedgerHeader = proof.getHeader();
 
-    var listeners = this.ledgerSyncing.headMap(ledgerUpdate.getTail().getHeader(), true).values();
+    var listeners = this.ledgerSyncing.headMap(proof.getHeader(), true).values();
     var listenersIterator = listeners.iterator();
 
     while (listenersIterator.hasNext()) {
@@ -657,7 +658,6 @@ public final class BFTSync implements BFTSyncer {
 
     syncing
         .entrySet()
-        .removeIf(
-            e -> e.getValue().highQC.highestQC().getRound().lte(ledgerUpdate.getTail().getRound()));
+        .removeIf(e -> e.getValue().highQC.highestQC().getRound().lte(proof.getRound()));
   }
 }

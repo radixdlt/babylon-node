@@ -963,7 +963,10 @@ where
     /// of invalid request).
     /// Persistently stores the transaction payloads and execution results, together with the
     /// associated proof and vertex store state.
-    pub fn commit(&self, commit_request: CommitRequest) -> Result<(), InvalidCommitRequestError> {
+    pub fn commit(
+        &self,
+        commit_request: CommitRequest,
+    ) -> Result<CommitSummary, InvalidCommitRequestError> {
         let commit_transactions_len = commit_request.transactions.len();
         if commit_transactions_len == 0 {
             panic!("broken invariant: no transactions in request {commit_request:?}");
@@ -1142,6 +1145,8 @@ where
         });
         drop(write_store);
 
+        let num_user_transactions = committed_user_transactions.len() as u32;
+
         self.mempool_manager.remove_committed(
             committed_user_transactions
                 .iter()
@@ -1158,13 +1163,17 @@ where
         self.ledger_metrics.update(
             commit_transactions_len,
             commit_state_version,
-            round_counters,
+            round_counters.clone(),
             proposer_timestamp_ms,
             commit_request.self_validator_address,
         );
         self.committed_transactions_metrics
             .update(transactions_metrics_data);
-        Ok(())
+
+        Ok(CommitSummary {
+            validator_round_counters: round_counters,
+            num_user_transactions,
+        })
     }
 
     /// Performs a simplified [`commit()`] flow meant for (internal) genesis transactions.

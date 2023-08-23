@@ -62,63 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors.consensus;
+package com.radixdlt.statecomputer.commit;
 
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.epoch.EpochRound;
-import com.radixdlt.harness.simulation.TestInvariant;
-import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Maybe;
-import io.reactivex.rxjava3.core.Observable;
-import java.time.Duration;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-/**
- * Checks that the first time a ledger update occurs on the network that it is close to the real
- * wall clock time.
- */
-public final class ConsensusTimestampChecker implements TestInvariant {
-
-  private final Duration acceptableTimeRange;
-
-  public ConsensusTimestampChecker(Duration acceptableTimeRange) {
-    this.acceptableTimeRange = acceptableTimeRange;
-  }
-
-  private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
-    final var now = System.currentTimeMillis();
-    final var proof = update.proof();
-    final var timestamp = proof.consensusParentRoundTimestamp();
-    // Initial rounds of Consensus can have a timestamp of 0
-    if (timestamp == 0) {
-      return Maybe.empty();
-    }
-    final var diff = now - timestamp;
-    if (0 <= diff && diff < acceptableTimeRange.toMillis()) {
-      return Maybe.empty();
-    } else {
-      return Maybe.just(
-          new TestInvariantError(
-              String.format(
-                  "Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
-                  now, now, diff, proof.getEpoch(), proof.getRound(), update)));
-    }
-  }
-
-  private static boolean isFirstRoundOfFirstEpoch(LedgerUpdate ledgerUpdate) {
-    return ledgerUpdate.proof().getEpoch() == 1
-        && ledgerUpdate.proof().getRound().equals(Round.of(1));
-  }
-
-  @Override
-  public Observable<TestInvariantError> check(RunningNetwork network) {
-    return network
-        .ledgerUpdates()
-        .map(Pair::getSecond)
-        // Test on only the first ledger update in the network
-        .distinct(update -> EpochRound.of(update.proof().getEpoch(), update.proof().getRound()))
-        .filter(l -> !isFirstRoundOfFirstEpoch(l))
-        .flatMapMaybe(this::checkCloseTimestamp);
+public record LeaderRoundCounter(UInt64 successful, UInt64 missedByFallback, UInt64 missedByGap) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LeaderRoundCounter.class,
+        codecs -> StructCodec.fromRecordComponents(LeaderRoundCounter.class, codecs));
   }
 }

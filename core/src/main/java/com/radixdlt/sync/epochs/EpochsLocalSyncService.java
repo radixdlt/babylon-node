@@ -110,16 +110,17 @@ public class EpochsLocalSyncService {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-    if (epochChange != null) {
-      this.currentEpoch = epochChange;
-
-      this.localSyncService =
-          localSyncServiceFactory.create(
-              new RemoteSyncResponseValidatorSetVerifier(
-                  epochChange.getBFTConfiguration().getValidatorSet()),
-              this.localSyncService.getSyncState());
-    }
+    ledgerUpdate
+        .maybeEpochChange()
+        .ifPresent(
+            epochChange -> {
+              this.currentEpoch = ledgerUpdate.maybeEpochChange().orElseThrow();
+              this.localSyncService =
+                  localSyncServiceFactory.create(
+                      new RemoteSyncResponseValidatorSetVerifier(
+                          epochChange.getBFTConfiguration().getValidatorSet()),
+                      this.localSyncService.getSyncState());
+            });
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
   }
 
