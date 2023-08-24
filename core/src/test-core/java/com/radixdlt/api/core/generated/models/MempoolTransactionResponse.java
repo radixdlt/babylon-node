@@ -85,11 +85,11 @@ public class MempoolTransactionResponse {
   }
 
    /**
-   * Get payloads
+   * An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. 
    * @return payloads
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. ")
   @JsonProperty(JSON_PROPERTY_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

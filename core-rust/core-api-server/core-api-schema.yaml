@@ -5952,6 +5952,10 @@ components:
           description: An integer giving the total count of payload hashes checked in the returned response.
         payloads:
           type: array
+          description: |
+            An array containing pairs of payload hash (query) and payload hex or error (response).
+            Note that this response is bounded - this means it is not guaranteed all queries will be processed.
+            Please query missing payload hashes again.
           items:
             type: object
             required:

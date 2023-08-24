@@ -16,6 +16,7 @@ pub struct MempoolTransactionResponse {
     /// An integer giving the total count of payload hashes checked in the returned response.
     #[serde(rename = "count")]
     pub count: i32,
+    /// An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. 
     #[serde(rename = "payloads")]
     pub payloads: Vec<crate::core_api::generated::models::MempoolTransactionResponsePayloadsInner>,
 }
