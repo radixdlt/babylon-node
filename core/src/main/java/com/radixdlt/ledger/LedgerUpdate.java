@@ -74,7 +74,7 @@ import java.util.Optional;
 public record LedgerUpdate(
     CommitSummary commitSummary,
     LedgerExtension ledgerExtension,
-    Optional<EpochChange> maybeEpochChange) {
+    Optional<EpochChange> epochChange) {
 
   public LedgerProof proof() {
     return ledgerExtension.getProof();

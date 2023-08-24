@@ -111,10 +111,10 @@ public class EpochsLocalSyncService {
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
     ledgerUpdate
-        .maybeEpochChange()
+        .epochChange()
         .ifPresent(
             epochChange -> {
-              this.currentEpoch = ledgerUpdate.maybeEpochChange().orElseThrow();
+              this.currentEpoch = ledgerUpdate.epochChange().orElseThrow();
               this.localSyncService =
                   localSyncServiceFactory.create(
                       new RemoteSyncResponseValidatorSetVerifier(

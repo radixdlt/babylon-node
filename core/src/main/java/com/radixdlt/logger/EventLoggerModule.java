@@ -186,9 +186,9 @@ public final class EventLoggerModule extends AbstractModule {
     logLedgerUpdate(
         ledgerUpdate,
         ledgerUpdate.commitSummary().numUserTransactions().toInt(),
-        calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.maybeEpochChange()));
+        calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
-    ledgerUpdate.maybeEpochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
+    ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
 
     self.bftValidatorId()
         .ifPresent(

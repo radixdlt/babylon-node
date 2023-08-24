@@ -325,7 +325,7 @@ public final class EpochManager {
     this.currentLedgerHeader = ledgerUpdate.proof().getHeader();
 
     ledgerUpdate
-        .maybeEpochChange()
+        .epochChange()
         .ifPresentOrElse(
             this::processEpochChange, () -> this.syncLedgerUpdateProcessor.process(ledgerUpdate));
   }
