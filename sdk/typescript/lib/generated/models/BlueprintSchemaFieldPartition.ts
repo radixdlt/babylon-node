@@ -19,6 +19,12 @@ import {
     FieldSchemaFromJSONTyped,
     FieldSchemaToJSON,
 } from './FieldSchema';
+import type { PartitionDescription } from './PartitionDescription';
+import {
+    PartitionDescriptionFromJSON,
+    PartitionDescriptionFromJSONTyped,
+    PartitionDescriptionToJSON,
+} from './PartitionDescription';
 
 /**
  * The fields partition of the blueprint.
@@ -27,11 +33,11 @@ import {
  */
 export interface BlueprintSchemaFieldPartition {
     /**
-     * The partition's offset from the Main module base (64)
-     * @type {number}
+     * 
+     * @type {PartitionDescription}
      * @memberof BlueprintSchemaFieldPartition
      */
-    partition_offset: number;
+    partition_description: PartitionDescription;
     /**
      * The field substates for this blueprint.
      * @type {Array<FieldSchema>}
@@ -45,7 +51,7 @@ export interface BlueprintSchemaFieldPartition {
  */
 export function instanceOfBlueprintSchemaFieldPartition(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "partition_offset" in value;
+    isInstance = isInstance && "partition_description" in value;
     isInstance = isInstance && "fields" in value;
 
     return isInstance;
@@ -61,7 +67,7 @@ export function BlueprintSchemaFieldPartitionFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
-        'partition_offset': json['partition_offset'],
+        'partition_description': PartitionDescriptionFromJSON(json['partition_description']),
         'fields': ((json['fields'] as Array<any>).map(FieldSchemaFromJSON)),
     };
 }
@@ -75,7 +81,7 @@ export function BlueprintSchemaFieldPartitionToJSON(value?: BlueprintSchemaField
     }
     return {
         
-        'partition_offset': value.partition_offset,
+        'partition_description': PartitionDescriptionToJSON(value.partition_description),
         'fields': ((value.fields as Array<any>).map(FieldSchemaToJSON)),
     };
 }

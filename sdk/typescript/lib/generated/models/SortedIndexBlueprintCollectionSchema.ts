@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { BlueprintPayloadDef } from './BlueprintPayloadDef';
+import {
+    BlueprintPayloadDefFromJSON,
+    BlueprintPayloadDefFromJSONTyped,
+    BlueprintPayloadDefToJSON,
+} from './BlueprintPayloadDef';
+
 /**
  * 
  * @export
@@ -25,6 +32,24 @@ export interface SortedIndexBlueprintCollectionSchema {
      * @memberof SortedIndexBlueprintCollectionSchema
      */
     type: SortedIndexBlueprintCollectionSchemaTypeEnum;
+    /**
+     * 
+     * @type {BlueprintPayloadDef}
+     * @memberof SortedIndexBlueprintCollectionSchema
+     */
+    key_type_ref: BlueprintPayloadDef;
+    /**
+     * 
+     * @type {BlueprintPayloadDef}
+     * @memberof SortedIndexBlueprintCollectionSchema
+     */
+    value_type_ref: BlueprintPayloadDef;
+    /**
+     * Whether the entries of the sorted index partition are allowed to own child nodes.
+     * @type {boolean}
+     * @memberof SortedIndexBlueprintCollectionSchema
+     */
+    allow_ownership: boolean;
 }
 
 
@@ -43,6 +68,9 @@ export type SortedIndexBlueprintCollectionSchemaTypeEnum = typeof SortedIndexBlu
 export function instanceOfSortedIndexBlueprintCollectionSchema(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "key_type_ref" in value;
+    isInstance = isInstance && "value_type_ref" in value;
+    isInstance = isInstance && "allow_ownership" in value;
 
     return isInstance;
 }
@@ -58,6 +86,9 @@ export function SortedIndexBlueprintCollectionSchemaFromJSONTyped(json: any, ign
     return {
         
         'type': json['type'],
+        'key_type_ref': BlueprintPayloadDefFromJSON(json['key_type_ref']),
+        'value_type_ref': BlueprintPayloadDefFromJSON(json['value_type_ref']),
+        'allow_ownership': json['allow_ownership'],
     };
 }
 
@@ -71,6 +102,9 @@ export function SortedIndexBlueprintCollectionSchemaToJSON(value?: SortedIndexBl
     return {
         
         'type': value.type,
+        'key_type_ref': BlueprintPayloadDefToJSON(value.key_type_ref),
+        'value_type_ref': BlueprintPayloadDefToJSON(value.value_type_ref),
+        'allow_ownership': value.allow_ownership,
     };
 }
 

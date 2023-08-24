@@ -39,6 +39,12 @@ export interface ExecutedScenarioTransaction {
      * @memberof ExecutedScenarioTransaction
      */
     intent_hash: string;
+    /**
+     * The Bech32m-encoded human readable `IntentHash`.
+     * @type {string}
+     * @memberof ExecutedScenarioTransaction
+     */
+    intent_hash_bech32m: string;
 }
 
 /**
@@ -49,6 +55,7 @@ export function instanceOfExecutedScenarioTransaction(value: object): boolean {
     isInstance = isInstance && "logical_name" in value;
     isInstance = isInstance && "state_version" in value;
     isInstance = isInstance && "intent_hash" in value;
+    isInstance = isInstance && "intent_hash_bech32m" in value;
 
     return isInstance;
 }
@@ -66,6 +73,7 @@ export function ExecutedScenarioTransactionFromJSONTyped(json: any, ignoreDiscri
         'logical_name': json['logical_name'],
         'state_version': json['state_version'],
         'intent_hash': json['intent_hash'],
+        'intent_hash_bech32m': json['intent_hash_bech32m'],
     };
 }
 
@@ -81,6 +89,7 @@ export function ExecutedScenarioTransactionToJSON(value?: ExecutedScenarioTransa
         'logical_name': value.logical_name,
         'state_version': value.state_version,
         'intent_hash': value.intent_hash,
+        'intent_hash_bech32m': value.intent_hash_bech32m,
     };
 }
 

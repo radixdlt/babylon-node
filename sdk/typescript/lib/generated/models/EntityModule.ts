@@ -20,9 +20,10 @@
 export const EntityModule = {
     TypeInfo: 'TypeInfo',
     Metadata: 'Metadata',
-    AccessRules: 'AccessRules',
+    RoleAssignment: 'RoleAssignment',
     Royalty: 'Royalty',
-    Main: 'Main'
+    Main: 'Main',
+    Schema: 'Schema'
 } as const;
 export type EntityModule = typeof EntityModule[keyof typeof EntityModule];
 

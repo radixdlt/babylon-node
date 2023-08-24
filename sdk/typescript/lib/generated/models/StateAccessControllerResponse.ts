@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { StateComponentDescendentNode } from './StateComponentDescendentNode';
 import {
     StateComponentDescendentNodeFromJSON,
@@ -38,6 +44,12 @@ import {
  * @interface StateAccessControllerResponse
  */
 export interface StateAccessControllerResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof StateAccessControllerResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * 
      * @type {Substate}
@@ -69,6 +81,7 @@ export interface StateAccessControllerResponse {
  */
 export function instanceOfStateAccessControllerResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "state" in value;
     isInstance = isInstance && "owner_role" in value;
     isInstance = isInstance && "vaults" in value;
@@ -87,6 +100,7 @@ export function StateAccessControllerResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'state': SubstateFromJSON(json['state']),
         'owner_role': SubstateFromJSON(json['owner_role']),
         'vaults': ((json['vaults'] as Array<any>).map(VaultBalanceFromJSON)),
@@ -103,6 +117,7 @@ export function StateAccessControllerResponseToJSON(value?: StateAccessControlle
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'state': SubstateToJSON(value.state),
         'owner_role': SubstateToJSON(value.owner_role),
         'vaults': ((value.vaults as Array<any>).map(VaultBalanceToJSON)),

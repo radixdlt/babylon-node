@@ -21,7 +21,7 @@ export const ObjectModuleId = {
     Main: 'Main',
     Metadata: 'Metadata',
     Royalty: 'Royalty',
-    AccessRules: 'AccessRules'
+    RoleAssignment: 'RoleAssignment'
 } as const;
 export type ObjectModuleId = typeof ObjectModuleId[keyof typeof ObjectModuleId];
 

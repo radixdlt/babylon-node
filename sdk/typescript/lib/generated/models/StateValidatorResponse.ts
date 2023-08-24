@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { StateComponentDescendentNode } from './StateComponentDescendentNode';
 import {
     StateComponentDescendentNodeFromJSON,
@@ -38,6 +44,12 @@ import {
  * @interface StateValidatorResponse
  */
 export interface StateValidatorResponse {
+    /**
+     * 
+     * @type {LedgerStateSummary}
+     * @memberof StateValidatorResponse
+     */
+    at_ledger_state: LedgerStateSummary;
     /**
      * The Bech32m-encoded human readable version of the component address
      * @type {string}
@@ -75,6 +87,7 @@ export interface StateValidatorResponse {
  */
 export function instanceOfStateValidatorResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "address" in value;
     isInstance = isInstance && "state" in value;
     isInstance = isInstance && "owner_role" in value;
@@ -94,6 +107,7 @@ export function StateValidatorResponseFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'address': json['address'],
         'state': SubstateFromJSON(json['state']),
         'owner_role': SubstateFromJSON(json['owner_role']),
@@ -111,6 +125,7 @@ export function StateValidatorResponseToJSON(value?: StateValidatorResponse | nu
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'address': value.address,
         'state': SubstateToJSON(value.state),
         'owner_role': SubstateToJSON(value.owner_role),
