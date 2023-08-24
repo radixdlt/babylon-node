@@ -13,19 +13,6 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { EntityReference } from './EntityReference';
-import {
-    EntityReferenceFromJSON,
-    EntityReferenceFromJSONTyped,
-    EntityReferenceToJSON,
-} from './EntityReference';
-import type { ObjectModuleId } from './ObjectModuleId';
-import {
-    ObjectModuleIdFromJSON,
-    ObjectModuleIdFromJSONTyped,
-    ObjectModuleIdToJSON,
-} from './ObjectModuleId';
-
 /**
  * 
  * @export
@@ -33,19 +20,13 @@ import {
  */
 export interface FunctionEventEmitterIdentifierAllOf {
     /**
-     * 
-     * @type {EntityReference}
+     * The Bech32m-encoded human readable version of the package address
+     * @type {string}
      * @memberof FunctionEventEmitterIdentifierAllOf
      */
-    entity: EntityReference;
+    package_address: string;
     /**
-     * 
-     * @type {ObjectModuleId}
-     * @memberof FunctionEventEmitterIdentifierAllOf
-     */
-    object_module_id: ObjectModuleId;
-    /**
-     * Blueprint name.
+     * The blueprint under the package which emitted the event.
      * @type {string}
      * @memberof FunctionEventEmitterIdentifierAllOf
      */
@@ -73,8 +54,7 @@ export type FunctionEventEmitterIdentifierAllOfTypeEnum = typeof FunctionEventEm
  */
 export function instanceOfFunctionEventEmitterIdentifierAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "entity" in value;
-    isInstance = isInstance && "object_module_id" in value;
+    isInstance = isInstance && "package_address" in value;
     isInstance = isInstance && "blueprint_name" in value;
 
     return isInstance;
@@ -90,8 +70,7 @@ export function FunctionEventEmitterIdentifierAllOfFromJSONTyped(json: any, igno
     }
     return {
         
-        'entity': EntityReferenceFromJSON(json['entity']),
-        'object_module_id': ObjectModuleIdFromJSON(json['object_module_id']),
+        'package_address': json['package_address'],
         'blueprint_name': json['blueprint_name'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
@@ -106,8 +85,7 @@ export function FunctionEventEmitterIdentifierAllOfToJSON(value?: FunctionEventE
     }
     return {
         
-        'entity': EntityReferenceToJSON(value.entity),
-        'object_module_id': ObjectModuleIdToJSON(value.object_module_id),
+        'package_address': value.package_address,
         'blueprint_name': value.blueprint_name,
         'type': value.type,
     };

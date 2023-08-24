@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { StateResourceManager } from './StateResourceManager';
 import {
     StateResourceManagerFromJSON,
@@ -34,6 +40,12 @@ import {
 export interface StateResourceResponse {
     /**
      * 
+     * @type {LedgerStateSummary}
+     * @memberof StateResourceResponse
+     */
+    at_ledger_state: LedgerStateSummary;
+    /**
+     * 
      * @type {StateResourceManager}
      * @memberof StateResourceResponse
      */
@@ -51,6 +63,7 @@ export interface StateResourceResponse {
  */
 export function instanceOfStateResourceResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "manager" in value;
     isInstance = isInstance && "owner_role" in value;
 
@@ -67,6 +80,7 @@ export function StateResourceResponseFromJSONTyped(json: any, ignoreDiscriminato
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'manager': StateResourceManagerFromJSON(json['manager']),
         'owner_role': SubstateFromJSON(json['owner_role']),
     };
@@ -81,6 +95,7 @@ export function StateResourceResponseToJSON(value?: StateResourceResponse | null
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'manager': StateResourceManagerToJSON(value.manager),
         'owner_role': SubstateToJSON(value.owner_role),
     };

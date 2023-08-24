@@ -13,6 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { LedgerStateSummary } from './LedgerStateSummary';
+import {
+    LedgerStateSummaryFromJSON,
+    LedgerStateSummaryFromJSONTyped,
+    LedgerStateSummaryToJSON,
+} from './LedgerStateSummary';
 import type { StateComponentDescendentNode } from './StateComponentDescendentNode';
 import {
     StateComponentDescendentNodeFromJSON,
@@ -40,6 +46,12 @@ import {
 export interface StateComponentResponse {
     /**
      * 
+     * @type {LedgerStateSummary}
+     * @memberof StateComponentResponse
+     */
+    at_ledger_state: LedgerStateSummary;
+    /**
+     * 
      * @type {Substate}
      * @memberof StateComponentResponse
      */
@@ -55,7 +67,7 @@ export interface StateComponentResponse {
      * @type {Substate}
      * @memberof StateComponentResponse
      */
-    royalty_accumulator: Substate;
+    royalty_accumulator?: Substate;
     /**
      * 
      * @type {Substate}
@@ -81,9 +93,9 @@ export interface StateComponentResponse {
  */
 export function instanceOfStateComponentResponse(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "info" in value;
     isInstance = isInstance && "state" in value;
-    isInstance = isInstance && "royalty_accumulator" in value;
     isInstance = isInstance && "owner_role" in value;
     isInstance = isInstance && "vaults" in value;
     isInstance = isInstance && "descendent_nodes" in value;
@@ -101,9 +113,10 @@ export function StateComponentResponseFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'info': SubstateFromJSON(json['info']),
         'state': SubstateFromJSON(json['state']),
-        'royalty_accumulator': SubstateFromJSON(json['royalty_accumulator']),
+        'royalty_accumulator': !exists(json, 'royalty_accumulator') ? undefined : SubstateFromJSON(json['royalty_accumulator']),
         'owner_role': SubstateFromJSON(json['owner_role']),
         'vaults': ((json['vaults'] as Array<any>).map(VaultBalanceFromJSON)),
         'descendent_nodes': ((json['descendent_nodes'] as Array<any>).map(StateComponentDescendentNodeFromJSON)),
@@ -119,6 +132,7 @@ export function StateComponentResponseToJSON(value?: StateComponentResponse | nu
     }
     return {
         
+        'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'info': SubstateToJSON(value.info),
         'state': SubstateToJSON(value.state),
         'royalty_accumulator': SubstateToJSON(value.royalty_accumulator),

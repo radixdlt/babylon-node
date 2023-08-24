@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { KeyValueStoreSchema } from './KeyValueStoreSchema';
+import type { TypeIdentifier } from './TypeIdentifier';
 import {
-    KeyValueStoreSchemaFromJSON,
-    KeyValueStoreSchemaFromJSONTyped,
-    KeyValueStoreSchemaToJSON,
-} from './KeyValueStoreSchema';
+    TypeIdentifierFromJSON,
+    TypeIdentifierFromJSONTyped,
+    TypeIdentifierToJSON,
+} from './TypeIdentifier';
 
 /**
  * 
@@ -28,10 +28,22 @@ import {
 export interface KeyValueStoreInfo {
     /**
      * 
-     * @type {KeyValueStoreSchema}
+     * @type {TypeIdentifier}
      * @memberof KeyValueStoreInfo
      */
-    kv_store_schema: KeyValueStoreSchema;
+    key_generic_substitution: TypeIdentifier;
+    /**
+     * 
+     * @type {TypeIdentifier}
+     * @memberof KeyValueStoreInfo
+     */
+    value_generic_substitution: TypeIdentifier;
+    /**
+     * Whether the entries of the key-value partition are allowed to own child nodes.
+     * @type {boolean}
+     * @memberof KeyValueStoreInfo
+     */
+    allow_ownership: boolean;
 }
 
 /**
@@ -39,7 +51,9 @@ export interface KeyValueStoreInfo {
  */
 export function instanceOfKeyValueStoreInfo(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "kv_store_schema" in value;
+    isInstance = isInstance && "key_generic_substitution" in value;
+    isInstance = isInstance && "value_generic_substitution" in value;
+    isInstance = isInstance && "allow_ownership" in value;
 
     return isInstance;
 }
@@ -54,7 +68,9 @@ export function KeyValueStoreInfoFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
-        'kv_store_schema': KeyValueStoreSchemaFromJSON(json['kv_store_schema']),
+        'key_generic_substitution': TypeIdentifierFromJSON(json['key_generic_substitution']),
+        'value_generic_substitution': TypeIdentifierFromJSON(json['value_generic_substitution']),
+        'allow_ownership': json['allow_ownership'],
     };
 }
 
@@ -67,7 +83,9 @@ export function KeyValueStoreInfoToJSON(value?: KeyValueStoreInfo | null): any {
     }
     return {
         
-        'kv_store_schema': KeyValueStoreSchemaToJSON(value.kv_store_schema),
+        'key_generic_substitution': TypeIdentifierToJSON(value.key_generic_substitution),
+        'value_generic_substitution': TypeIdentifierToJSON(value.value_generic_substitution),
+        'allow_ownership': value.allow_ownership,
     };
 }
 

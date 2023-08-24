@@ -19,6 +19,12 @@ import {
     BlueprintInterfaceFromJSONTyped,
     BlueprintInterfaceToJSON,
 } from './BlueprintInterface';
+import type { HookExport } from './HookExport';
+import {
+    HookExportFromJSON,
+    HookExportFromJSONTyped,
+    HookExportToJSON,
+} from './HookExport';
 import type { PackageExport } from './PackageExport';
 import {
     PackageExportFromJSON,
@@ -45,11 +51,12 @@ export interface BlueprintDefinition {
      */
     function_exports: { [key: string]: PackageExport; };
     /**
-     * A map from the engine system's virtualization module's function identifier to the package export of the function.
-     * @type {{ [key: string]: PackageExport; }}
+     * A map from certain object lifecycle hooks to a callback "package export".
+     * There is at most one callback registered for each `ObjectHook`.
+     * @type {Array<HookExport>}
      * @memberof BlueprintDefinition
      */
-    virtual_lazy_load_functions: { [key: string]: PackageExport; };
+    hook_exports: Array<HookExport>;
 }
 
 /**
@@ -59,7 +66,7 @@ export function instanceOfBlueprintDefinition(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "_interface" in value;
     isInstance = isInstance && "function_exports" in value;
-    isInstance = isInstance && "virtual_lazy_load_functions" in value;
+    isInstance = isInstance && "hook_exports" in value;
 
     return isInstance;
 }
@@ -76,7 +83,7 @@ export function BlueprintDefinitionFromJSONTyped(json: any, ignoreDiscriminator:
         
         '_interface': BlueprintInterfaceFromJSON(json['interface']),
         'function_exports': (mapValues(json['function_exports'], PackageExportFromJSON)),
-        'virtual_lazy_load_functions': (mapValues(json['virtual_lazy_load_functions'], PackageExportFromJSON)),
+        'hook_exports': ((json['hook_exports'] as Array<any>).map(HookExportFromJSON)),
     };
 }
 
@@ -91,7 +98,7 @@ export function BlueprintDefinitionToJSON(value?: BlueprintDefinition | null): a
         
         'interface': BlueprintInterfaceToJSON(value._interface),
         'function_exports': (mapValues(value.function_exports, PackageExportToJSON)),
-        'virtual_lazy_load_functions': (mapValues(value.virtual_lazy_load_functions, PackageExportToJSON)),
+        'hook_exports': ((value.hook_exports as Array<any>).map(HookExportToJSON)),
     };
 }
 

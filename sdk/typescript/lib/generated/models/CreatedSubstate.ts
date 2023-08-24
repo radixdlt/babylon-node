@@ -19,6 +19,12 @@ import {
     SubstateIdFromJSONTyped,
     SubstateIdToJSON,
 } from './SubstateId';
+import type { SubstateSystemStructure } from './SubstateSystemStructure';
+import {
+    SubstateSystemStructureFromJSON,
+    SubstateSystemStructureFromJSONTyped,
+    SubstateSystemStructureToJSON,
+} from './SubstateSystemStructure';
 import type { SubstateValue } from './SubstateValue';
 import {
     SubstateValueFromJSON,
@@ -44,6 +50,12 @@ export interface CreatedSubstate {
      * @memberof CreatedSubstate
      */
     value: SubstateValue;
+    /**
+     * 
+     * @type {SubstateSystemStructure}
+     * @memberof CreatedSubstate
+     */
+    system_structure: SubstateSystemStructure;
 }
 
 /**
@@ -53,6 +65,7 @@ export function instanceOfCreatedSubstate(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "substate_id" in value;
     isInstance = isInstance && "value" in value;
+    isInstance = isInstance && "system_structure" in value;
 
     return isInstance;
 }
@@ -69,6 +82,7 @@ export function CreatedSubstateFromJSONTyped(json: any, ignoreDiscriminator: boo
         
         'substate_id': SubstateIdFromJSON(json['substate_id']),
         'value': SubstateValueFromJSON(json['value']),
+        'system_structure': SubstateSystemStructureFromJSON(json['system_structure']),
     };
 }
 
@@ -83,6 +97,7 @@ export function CreatedSubstateToJSON(value?: CreatedSubstate | null): any {
         
         'substate_id': SubstateIdToJSON(value.substate_id),
         'value': SubstateValueToJSON(value.value),
+        'system_structure': SubstateSystemStructureToJSON(value.system_structure),
     };
 }
 

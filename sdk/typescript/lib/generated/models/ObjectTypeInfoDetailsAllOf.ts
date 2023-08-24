@@ -13,12 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { InstanceSchema } from './InstanceSchema';
+import type { BlueprintInfo } from './BlueprintInfo';
 import {
-    InstanceSchemaFromJSON,
-    InstanceSchemaFromJSONTyped,
-    InstanceSchemaToJSON,
-} from './InstanceSchema';
+    BlueprintInfoFromJSON,
+    BlueprintInfoFromJSONTyped,
+    BlueprintInfoToJSON,
+} from './BlueprintInfo';
+import type { ModuleVersion } from './ModuleVersion';
+import {
+    ModuleVersionFromJSON,
+    ModuleVersionFromJSONTyped,
+    ModuleVersionToJSON,
+} from './ModuleVersion';
 
 /**
  * 
@@ -27,47 +33,23 @@ import {
  */
 export interface ObjectTypeInfoDetailsAllOf {
     /**
-     * The Bech32m-encoded human readable version of the package address
-     * @type {string}
+     * 
+     * @type {Array<ModuleVersion>}
      * @memberof ObjectTypeInfoDetailsAllOf
      */
-    package_address: string;
+    module_versions: Array<ModuleVersion>;
     /**
      * 
-     * @type {string}
+     * @type {BlueprintInfo}
      * @memberof ObjectTypeInfoDetailsAllOf
      */
-    blueprint_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ObjectTypeInfoDetailsAllOf
-     */
-    blueprint_version: string;
+    blueprint_info: BlueprintInfo;
     /**
      * 
      * @type {boolean}
      * @memberof ObjectTypeInfoDetailsAllOf
      */
     global: boolean;
-    /**
-     * The Bech32m-encoded human readable version of any global address
-     * @type {string}
-     * @memberof ObjectTypeInfoDetailsAllOf
-     */
-    outer_object?: string;
-    /**
-     * 
-     * @type {InstanceSchema}
-     * @memberof ObjectTypeInfoDetailsAllOf
-     */
-    instance_schema?: InstanceSchema;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof ObjectTypeInfoDetailsAllOf
-     */
-    features: Array<string>;
     /**
      * 
      * @type {string}
@@ -91,11 +73,9 @@ export type ObjectTypeInfoDetailsAllOfTypeEnum = typeof ObjectTypeInfoDetailsAll
  */
 export function instanceOfObjectTypeInfoDetailsAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "package_address" in value;
-    isInstance = isInstance && "blueprint_name" in value;
-    isInstance = isInstance && "blueprint_version" in value;
+    isInstance = isInstance && "module_versions" in value;
+    isInstance = isInstance && "blueprint_info" in value;
     isInstance = isInstance && "global" in value;
-    isInstance = isInstance && "features" in value;
 
     return isInstance;
 }
@@ -110,13 +90,9 @@ export function ObjectTypeInfoDetailsAllOfFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
         
-        'package_address': json['package_address'],
-        'blueprint_name': json['blueprint_name'],
-        'blueprint_version': json['blueprint_version'],
+        'module_versions': ((json['module_versions'] as Array<any>).map(ModuleVersionFromJSON)),
+        'blueprint_info': BlueprintInfoFromJSON(json['blueprint_info']),
         'global': json['global'],
-        'outer_object': !exists(json, 'outer_object') ? undefined : json['outer_object'],
-        'instance_schema': !exists(json, 'instance_schema') ? undefined : InstanceSchemaFromJSON(json['instance_schema']),
-        'features': json['features'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -130,13 +106,9 @@ export function ObjectTypeInfoDetailsAllOfToJSON(value?: ObjectTypeInfoDetailsAl
     }
     return {
         
-        'package_address': value.package_address,
-        'blueprint_name': value.blueprint_name,
-        'blueprint_version': value.blueprint_version,
+        'module_versions': ((value.module_versions as Array<any>).map(ModuleVersionToJSON)),
+        'blueprint_info': BlueprintInfoToJSON(value.blueprint_info),
         'global': value.global,
-        'outer_object': value.outer_object,
-        'instance_schema': InstanceSchemaToJSON(value.instance_schema),
-        'features': value.features,
         'type': value.type,
     };
 }

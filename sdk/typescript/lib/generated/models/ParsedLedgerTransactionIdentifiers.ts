@@ -28,6 +28,12 @@ export interface ParsedLedgerTransactionIdentifiers {
      */
     intent_hash?: string;
     /**
+     * The Bech32m-encoded human readable `IntentHash`.
+     * @type {string}
+     * @memberof ParsedLedgerTransactionIdentifiers
+     */
+    intent_hash_bech32m?: string;
+    /**
      * The hex-encoded signed intent hash for a user transaction.
      * This hash identifies the transaction intent, plus additional signatures.
      * This hash is signed by the notary, to create the submittable NotarizedTransaction.
@@ -36,6 +42,12 @@ export interface ParsedLedgerTransactionIdentifiers {
      */
     signed_intent_hash?: string;
     /**
+     * The Bech32m-encoded human readable `SignedIntentHash`.
+     * @type {string}
+     * @memberof ParsedLedgerTransactionIdentifiers
+     */
+    signed_intent_hash_bech32m?: string;
+    /**
      * The hex-encoded notarized transaction hash for a user transaction.
      * This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
      * @type {string}
@@ -43,12 +55,24 @@ export interface ParsedLedgerTransactionIdentifiers {
      */
     payload_hash?: string;
     /**
+     * The Bech32m-encoded human readable `NotarizedTransactionHash`.
+     * @type {string}
+     * @memberof ParsedLedgerTransactionIdentifiers
+     */
+    payload_hash_bech32m?: string;
+    /**
      * The hex-encoded ledger payload transaction hash.
      * This is a wrapper for both user transactions, and system transactions such as genesis and round changes.
      * @type {string}
      * @memberof ParsedLedgerTransactionIdentifiers
      */
     ledger_hash: string;
+    /**
+     * The Bech32m-encoded human readable `LedgerPayloadHash`.
+     * @type {string}
+     * @memberof ParsedLedgerTransactionIdentifiers
+     */
+    ledger_hash_bech32m: string;
 }
 
 /**
@@ -57,6 +81,7 @@ export interface ParsedLedgerTransactionIdentifiers {
 export function instanceOfParsedLedgerTransactionIdentifiers(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "ledger_hash" in value;
+    isInstance = isInstance && "ledger_hash_bech32m" in value;
 
     return isInstance;
 }
@@ -72,9 +97,13 @@ export function ParsedLedgerTransactionIdentifiersFromJSONTyped(json: any, ignor
     return {
         
         'intent_hash': !exists(json, 'intent_hash') ? undefined : json['intent_hash'],
+        'intent_hash_bech32m': !exists(json, 'intent_hash_bech32m') ? undefined : json['intent_hash_bech32m'],
         'signed_intent_hash': !exists(json, 'signed_intent_hash') ? undefined : json['signed_intent_hash'],
+        'signed_intent_hash_bech32m': !exists(json, 'signed_intent_hash_bech32m') ? undefined : json['signed_intent_hash_bech32m'],
         'payload_hash': !exists(json, 'payload_hash') ? undefined : json['payload_hash'],
+        'payload_hash_bech32m': !exists(json, 'payload_hash_bech32m') ? undefined : json['payload_hash_bech32m'],
         'ledger_hash': json['ledger_hash'],
+        'ledger_hash_bech32m': json['ledger_hash_bech32m'],
     };
 }
 
@@ -88,9 +117,13 @@ export function ParsedLedgerTransactionIdentifiersToJSON(value?: ParsedLedgerTra
     return {
         
         'intent_hash': value.intent_hash,
+        'intent_hash_bech32m': value.intent_hash_bech32m,
         'signed_intent_hash': value.signed_intent_hash,
+        'signed_intent_hash_bech32m': value.signed_intent_hash_bech32m,
         'payload_hash': value.payload_hash,
+        'payload_hash_bech32m': value.payload_hash_bech32m,
         'ledger_hash': value.ledger_hash,
+        'ledger_hash_bech32m': value.ledger_hash_bech32m,
     };
 }
 
