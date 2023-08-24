@@ -72,7 +72,6 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -462,8 +461,8 @@ public final class DeterministicTest implements AutoCloseable {
     return timedMsg -> {
       final var message = timedMsg.value();
       if (message.message() instanceof final LedgerUpdate ledgerUpdate) {
-        var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-        return epochChange != null && epochChange.getNextEpoch() == epoch;
+        var epochChange = ledgerUpdate.epochChange();
+        return epochChange.isPresent() && epochChange.orElseThrow().getNextEpoch() == epoch;
       }
 
       return false;

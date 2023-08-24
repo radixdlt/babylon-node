@@ -64,7 +64,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -79,7 +79,9 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt32;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -118,7 +120,7 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public void commit(LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
-    var output =
+    final var maybeEpochChange =
         ledgerExtension
             .getProof()
             .getNextEpoch()
@@ -145,11 +147,13 @@ public final class MockedStateComputer implements StateComputer {
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);
-                })
-            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
-            .orElse(ImmutableClassToInstanceMap.of());
+                });
 
-    var ledgerUpdate = new LedgerUpdate(ledgerExtension, output);
+    var ledgerUpdate =
+        new LedgerUpdate(
+            new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
+            ledgerExtension,
+            maybeEpochChange);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

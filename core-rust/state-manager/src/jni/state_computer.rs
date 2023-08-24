@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::LedgerProof;
+use crate::{CommitSummary, LedgerProof};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -177,7 +177,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |commit_request: CommitRequest| -> Result<(), InvalidCommitRequestError> {
+        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
             let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
             state_computer.commit(commit_request)
         },

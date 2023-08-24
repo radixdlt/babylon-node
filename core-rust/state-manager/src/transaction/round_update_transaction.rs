@@ -228,7 +228,7 @@ impl LeaderRoundCountersBuilder {
 }
 
 /// A set of counters of rounds led by a concrete leader.
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LeaderRoundCounter {
     pub successful: usize,
     pub missed_by_fallback: usize,
