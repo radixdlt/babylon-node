@@ -2095,18 +2095,15 @@ components:
         - $ref: "#/components/schemas/SubstateKey"
         - type: object
           required:
-            - sort_prefix
+            - sort_prefix_hex
             - key_hex
           properties:
-            sort_prefix:
-              type: integer
-              format: int32
-              minimum: 0
-              maximum: 65535
-              description: The sort part of the substate key
+            sort_prefix_hex:
+              type: string
+              description: The hex-encoded bytes of the sorted part of the key
             key_hex:
               type: string
-              description: The hex-encoded bytes of the substate key
+              description: The hex-encoded remaining bytes of the key
     ResourceAddress:
       type: string
       description: The Bech32m-encoded human readable version of the resource address
@@ -3186,6 +3183,9 @@ components:
           $ref: '#/components/schemas/BlueprintPayloadDef'
         condition:
           $ref: '#/components/schemas/FieldSchemaFeatureCondition'
+        transient_default_value_hex:
+          type: string
+          description: The hex-encoded default value of this field. Only present if this field is transient.
     FieldSchemaFeatureConditionType:
       type: string
       enum:
@@ -3457,6 +3457,12 @@ components:
     EntityAddress:
       type: string
       description: Bech32m-encoded human readable version of the entity's address (ie the entity's node id)
+    ModuleId:
+      type: string
+      enum:
+        - Metadata
+        - Royalty
+        - RoleAssignment
     ObjectModuleId:
       type: string
       enum:
@@ -3803,7 +3809,7 @@ components:
         - version
       properties:
         module:
-          $ref: '#/components/schemas/ObjectModuleId'
+          $ref: '#/components/schemas/ModuleId'
         version:
           type: string
           description: A string of `Major.Minor.Patch` where Major, Minor and Patch are all u32s.
@@ -3812,12 +3818,15 @@ components:
       required:
         - package_address
         - blueprint_name
+        - blueprint_version
         - features
         - generic_substitutions
       properties:
         package_address:
           $ref: '#/components/schemas/PackageAddress'
         blueprint_name:
+          type: string
+        blueprint_version:
           type: string
         outer_object:
           $ref: '#/components/schemas/GlobalAddress'
@@ -5426,6 +5435,7 @@ components:
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
+          # TODO(during review): is this description still true? we have improved both fees and balance changes recently...
           description: |
             THE FEE ASSIGNMENT IS NOT CURRENTLY FULLY ACCURATE FOR SOME TRANSACTIONS. THIS WILL BE FIXED AT RCNET-V2.
             A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)

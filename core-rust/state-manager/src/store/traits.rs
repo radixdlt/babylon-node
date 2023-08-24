@@ -214,6 +214,10 @@ pub mod substate {
         /// Note: the returned reference is guaranteed to resolve to a [`GlobalAddress`].
         pub root: SubstateReference,
     }
+
+    /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
+    /// course share the same parent).
+    pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
 }
 
 pub mod transactions {
@@ -310,6 +314,7 @@ pub mod commit {
         pub state_tree_update: HashTreeUpdate,
         pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+        pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
     }
 
     pub struct SubstateStoreUpdate {

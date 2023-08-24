@@ -8,12 +8,12 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_package_royalty_accumulator_substate(
     context: &MappingContext,
-    substate: &FieldSubstate<PackageRoyaltyAccumulatorSubstate>,
+    substate: &PackageRoyaltyAccumulatorFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         PackageFieldRoyaltyAccumulator,
-        PackageRoyaltyAccumulatorSubstate { royalty_vault },
+        PackageRoyaltyAccumulator { royalty_vault },
         Value {
             vault_entity: Box::new(to_api_entity_reference(
                 context,
@@ -22,22 +22,28 @@ pub fn to_api_package_royalty_accumulator_substate(
         }
     ))
 }
+
 pub fn to_api_package_code_vm_type_entry_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<PackageVmTypeSubstate>,
+    substate: &PackageCodeVmTypeEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageVmTypeKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeVmTypeKeyValueEntry(PackageCodeVmTypeKeyPayload {
+                content: hash
+            })
+        ))
+    );
 
-    Ok(key_value_store_mandatory_substate!(
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageCodeVmTypeEntry,
         models::PackageCodeKey {
-            code_hash: to_api_hash(hash),
+            code_hash: to_api_code_hash(hash),
         },
-        PackageVmTypeSubstate { vm_type } => {
+        PackageCodeVmType { vm_type } => {
             vm_type: match vm_type {
                 VmType::Native => models::VmType::Native,
                 VmType::ScryptoV1 => models::VmType::ScryptoV1,
@@ -49,19 +55,24 @@ pub fn to_api_package_code_vm_type_entry_substate(
 pub fn to_api_package_code_original_code_entry_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<PackageOriginalCodeSubstate>,
+    substate: &PackageCodeOriginalCodeEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageOriginalCodeKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageOriginalCodeKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeOriginalCodeKeyValueEntry(
+                PackageCodeOriginalCodeKeyPayload { content: hash }
+            )
+        ))
+    );
 
-    Ok(key_value_store_mandatory_substate!(
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageCodeOriginalCodeEntry,
         models::PackageCodeKey {
-            code_hash: to_api_hash(hash),
+            code_hash: to_api_code_hash(hash),
         },
-        PackageOriginalCodeSubstate { code } => {
+        PackageCodeOriginalCode { code } => {
             code_hex: to_hex(code),
         }
     ))
@@ -70,20 +81,25 @@ pub fn to_api_package_code_original_code_entry_substate(
 pub fn to_api_package_code_instrumented_code_entry_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<PackageInstrumentedCodeSubstate>,
+    substate: &PackageCodeInstrumentedCodeEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageInstrumentedCodeKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeInstrumentedCodeKeyValueEntry(
+                PackageCodeInstrumentedCodeKeyPayload { content: hash }
+            )
+        ))
+    );
 
-    Ok(key_value_store_mandatory_substate!(
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageCodeInstrumentedCodeEntry,
         models::PackageCodeKey {
-            code_hash: to_api_hash(hash),
+            code_hash: to_api_code_hash(hash),
         },
-        PackageInstrumentedCodeSubstate { code } => {
-            code_hex: to_hex(code),
+        PackageCodeInstrumentedCode { instrumented_code } => {
+            code_hex: to_hex(instrumented_code),
         }
     ))
 }
@@ -93,14 +109,16 @@ pub fn to_api_schema_entry_substate(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<ScryptoSchema>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Schema Key".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(hash))
+    );
+
     Ok(key_value_store_mandatory_substate!(
         substate,
         SchemaEntry,
         models::SchemaKey {
-            schema_hash: to_api_hash(hash),
+            schema_hash: to_api_schema_hash(hash),
         },
         value => {
             schema: Box::new(to_api_scrypto_schema(context, value)?),
@@ -111,12 +129,20 @@ pub fn to_api_schema_entry_substate(
 pub fn to_api_package_blueprint_definition_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<BlueprintDefinition>,
+    substate: &PackageBlueprintVersionDefinitionEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(blueprint_version_key)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintKey".to_string() });
-    };
-    Ok(key_value_store_mandatory_substate!(
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionDefinitionKeyValueEntry(
+                PackageBlueprintVersionDefinitionKeyPayload {
+                    content: blueprint_version_key
+                }
+            )
+        ))
+    );
+
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageBlueprintDefinitionEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
@@ -129,20 +155,25 @@ pub fn to_api_package_blueprint_definition_entry(
 pub fn to_api_package_blueprint_dependencies_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<BlueprintDependencies>,
+    substate: &PackageBlueprintVersionDependenciesEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(blueprint_version_key)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintDependenciesKey".to_string() });
-    };
-    Ok(key_value_store_mandatory_substate!(
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionDependenciesKeyValueEntry(
+                PackageBlueprintVersionDependenciesKeyPayload {
+                    content: blueprint_version_key
+                }
+            )
+        ))
+    );
+
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageBlueprintDependenciesEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
         value => {
-            dependencies: Box::new(to_api_blueprint_dependencies(
-                context,
-                value,
-            )?),
+            dependencies: Box::new(to_api_blueprint_dependencies(context, value)?),
         }
     ))
 }
@@ -150,12 +181,20 @@ pub fn to_api_package_blueprint_dependencies_entry(
 pub fn to_api_package_blueprint_royalty_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<PackageRoyaltyConfig>,
+    substate: &PackageBlueprintVersionRoyaltyConfigEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(blueprint_version_key)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintRoyaltyKey".to_string() });
-    };
-    Ok(key_value_store_mandatory_substate!(
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionRoyaltyConfigKeyValueEntry(
+                PackageBlueprintVersionRoyaltyConfigKeyPayload {
+                    content: blueprint_version_key
+                }
+            )
+        ))
+    );
+
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageBlueprintRoyaltyEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
@@ -191,20 +230,24 @@ pub fn to_api_package_blueprint_royalty_config(
 pub fn to_api_package_auth_template_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<AuthConfig>,
+    substate: &PackageBlueprintVersionAuthConfigEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(blueprint_version_key)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "PackageBlueprintAuthTemplateKey".to_string() });
-    };
-    Ok(key_value_store_mandatory_substate!(
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionAuthConfigKeyValueEntry(
+                PackageBlueprintVersionAuthConfigKeyPayload {
+                    content: blueprint_version_key
+                }
+            )
+        ))
+    );
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         PackageBlueprintAuthTemplateEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
         value => {
-            auth_config: Box::new(to_api_auth_config(
-                context,
-                value,
-            )?),
+            auth_config: Box::new(to_api_auth_config(context, value)?),
         }
     ))
 }
@@ -389,7 +432,7 @@ pub fn to_api_package_export(
         export_name,
     } = package_export;
     Ok(models::PackageExport {
-        code_hash: to_api_hash(code_hash),
+        code_hash: to_api_code_hash(code_hash),
         export_name: export_name.to_string(),
     })
 }
@@ -494,7 +537,7 @@ pub fn to_api_type_identifier(
     type_identifier: &TypeIdentifier,
 ) -> Result<models::TypeIdentifier, MappingError> {
     Ok(models::TypeIdentifier {
-        schema_hash: to_api_hash(&type_identifier.0),
+        schema_hash: to_api_schema_hash(&type_identifier.0),
         local_type_index: Box::new(to_api_local_type_index(context, &type_identifier.1)?),
     })
 }
@@ -505,7 +548,7 @@ pub fn to_api_package_type_reference(
 ) -> Result<models::PackageTypeReference, MappingError> {
     Ok(models::PackageTypeReference {
         package_address: to_api_package_address(context, &reference.package_address)?,
-        schema_hash: to_api_hash(&reference.schema_hash),
+        schema_hash: to_api_schema_hash(&reference.schema_hash),
         local_type_index: Box::new(to_api_local_type_index(
             context,
             &reference.local_type_index,
@@ -587,7 +630,11 @@ pub fn to_api_blueprint_field_schema(
     context: &MappingContext,
     field_schema: &FieldSchema<BlueprintPayloadDef>,
 ) -> Result<models::FieldSchema, MappingError> {
-    let FieldSchema { field, condition } = field_schema;
+    let FieldSchema {
+        field,
+        condition,
+        transience,
+    } = field_schema;
     Ok(models::FieldSchema {
         field_type_ref: Some(to_api_blueprint_payload_def(context, field)?),
         condition: Some(Box::new(match condition {
@@ -599,6 +646,10 @@ pub fn to_api_blueprint_field_schema(
                 feature_name: feature.to_string(),
             },
         })),
+        transient_default_value_hex: match transience {
+            FieldTransience::NotTransient => None,
+            FieldTransience::TransientStatic { default_value } => Some(to_hex(default_value)),
+        },
     })
 }
 

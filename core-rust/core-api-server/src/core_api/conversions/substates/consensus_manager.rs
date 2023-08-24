@@ -11,9 +11,17 @@ pub fn to_api_registered_validators_by_stake_index_entry_substate(
     typed_key: &TypedSubstateKey,
     substate: &Validator,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey { divided_stake, validator_address })) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "ValidatorByStakeKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(
+                ValidatorByStakeKey {
+                    divided_stake,
+                    validator_address
+                }
+            )
+        )
+    );
     let validator = substate;
     Ok(index_substate!(
         substate,

@@ -34,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   FieldSchema.JSON_PROPERTY_FIELD_TYPE_REF,
-  FieldSchema.JSON_PROPERTY_CONDITION
+  FieldSchema.JSON_PROPERTY_CONDITION,
+  FieldSchema.JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FieldSchema {
@@ -43,6 +44,9 @@ public class FieldSchema {
 
   public static final String JSON_PROPERTY_CONDITION = "condition";
   private FieldSchemaFeatureCondition condition;
+
+  public static final String JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX = "transient_default_value_hex";
+  private String transientDefaultValueHex;
 
   public FieldSchema() { 
   }
@@ -99,6 +103,32 @@ public class FieldSchema {
   }
 
 
+  public FieldSchema transientDefaultValueHex(String transientDefaultValueHex) {
+    this.transientDefaultValueHex = transientDefaultValueHex;
+    return this;
+  }
+
+   /**
+   * The hex-encoded default value of this field. Only present if this field is transient.
+   * @return transientDefaultValueHex
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded default value of this field. Only present if this field is transient.")
+  @JsonProperty(JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTransientDefaultValueHex() {
+    return transientDefaultValueHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSIENT_DEFAULT_VALUE_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransientDefaultValueHex(String transientDefaultValueHex) {
+    this.transientDefaultValueHex = transientDefaultValueHex;
+  }
+
+
   /**
    * Return true if this FieldSchema object is equal to o.
    */
@@ -112,12 +142,13 @@ public class FieldSchema {
     }
     FieldSchema fieldSchema = (FieldSchema) o;
     return Objects.equals(this.fieldTypeRef, fieldSchema.fieldTypeRef) &&
-        Objects.equals(this.condition, fieldSchema.condition);
+        Objects.equals(this.condition, fieldSchema.condition) &&
+        Objects.equals(this.transientDefaultValueHex, fieldSchema.transientDefaultValueHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldTypeRef, condition);
+    return Objects.hash(fieldTypeRef, condition, transientDefaultValueHex);
   }
 
   @Override
@@ -126,6 +157,7 @@ public class FieldSchema {
     sb.append("class FieldSchema {\n");
     sb.append("    fieldTypeRef: ").append(toIndentedString(fieldTypeRef)).append("\n");
     sb.append("    condition: ").append(toIndentedString(condition)).append("\n");
+    sb.append("    transientDefaultValueHex: ").append(toIndentedString(transientDefaultValueHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

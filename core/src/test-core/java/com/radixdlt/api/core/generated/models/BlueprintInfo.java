@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   BlueprintInfo.JSON_PROPERTY_PACKAGE_ADDRESS,
   BlueprintInfo.JSON_PROPERTY_BLUEPRINT_NAME,
+  BlueprintInfo.JSON_PROPERTY_BLUEPRINT_VERSION,
   BlueprintInfo.JSON_PROPERTY_OUTER_OBJECT,
   BlueprintInfo.JSON_PROPERTY_FEATURES,
   BlueprintInfo.JSON_PROPERTY_GENERIC_SUBSTITUTIONS
@@ -47,6 +48,9 @@ public class BlueprintInfo {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_BLUEPRINT_VERSION = "blueprint_version";
+  private String blueprintVersion;
 
   public static final String JSON_PROPERTY_OUTER_OBJECT = "outer_object";
   private String outerObject;
@@ -109,6 +113,32 @@ public class BlueprintInfo {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setBlueprintName(String blueprintName) {
     this.blueprintName = blueprintName;
+  }
+
+
+  public BlueprintInfo blueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
+    return this;
+  }
+
+   /**
+   * Get blueprintVersion
+   * @return blueprintVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintVersion() {
+    return blueprintVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintVersion(String blueprintVersion) {
+    this.blueprintVersion = blueprintVersion;
   }
 
 
@@ -214,6 +244,7 @@ public class BlueprintInfo {
     BlueprintInfo blueprintInfo = (BlueprintInfo) o;
     return Objects.equals(this.packageAddress, blueprintInfo.packageAddress) &&
         Objects.equals(this.blueprintName, blueprintInfo.blueprintName) &&
+        Objects.equals(this.blueprintVersion, blueprintInfo.blueprintVersion) &&
         Objects.equals(this.outerObject, blueprintInfo.outerObject) &&
         Objects.equals(this.features, blueprintInfo.features) &&
         Objects.equals(this.genericSubstitutions, blueprintInfo.genericSubstitutions);
@@ -221,7 +252,7 @@ public class BlueprintInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, outerObject, features, genericSubstitutions);
+    return Objects.hash(packageAddress, blueprintName, blueprintVersion, outerObject, features, genericSubstitutions);
   }
 
   @Override
@@ -230,6 +261,7 @@ public class BlueprintInfo {
     sb.append("class BlueprintInfo {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    blueprintVersion: ").append(toIndentedString(blueprintVersion)).append("\n");
     sb.append("    outerObject: ").append(toIndentedString(outerObject)).append("\n");
     sb.append("    features: ").append(toIndentedString(features)).append("\n");
     sb.append("    genericSubstitutions: ").append(toIndentedString(genericSubstitutions)).append("\n");

@@ -80,7 +80,7 @@ public class Manifest {
     public String lockFeeLine(ComponentAddress address) {
       return String.format(
           """
-          CALL_METHOD Address("%s") "lock_fee" Decimal("100");""", encode(address));
+          CALL_METHOD Address("%s") "lock_fee" Decimal("1000");""", encode(address));
     }
 
     public String createProofOfValidatorOwnerBadge(

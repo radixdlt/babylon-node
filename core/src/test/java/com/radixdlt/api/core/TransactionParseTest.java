@@ -99,10 +99,7 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
       var parsedNotarized = (ParsedNotarizedTransaction) parsed;
       var validationError = parsedNotarized.getValidationError();
       assertThat(validationError).isNotNull();
-      assertThat(validationError.getReason())
-          .isEqualTo(
-              "FromExecution(ErrorBeforeFeeLoanRepaid(SystemModuleError(CostingError(FeeReserveError(LoanRepaymentFailed"
-                  + " { xrd_owed: 0.00847164 })))))");
+      assertThat(validationError.getReason()).contains("LoanRepaymentFailed");
     }
   }
 

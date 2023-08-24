@@ -486,6 +486,8 @@ pub mod method_event_emitter_identifier;
 pub use self::method_event_emitter_identifier::MethodEventEmitterIdentifier;
 pub mod method_event_emitter_identifier_all_of;
 pub use self::method_event_emitter_identifier_all_of::MethodEventEmitterIdentifierAllOf;
+pub mod module_id;
+pub use self::module_id::ModuleId;
 pub mod module_version;
 pub use self::module_version::ModuleVersion;
 pub mod multi_resource_pool_field_state_substate;

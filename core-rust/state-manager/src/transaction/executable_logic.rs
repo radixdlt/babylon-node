@@ -76,14 +76,7 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
-                        // Explanation: The first epoch change in Stokenet panicked with
-                        // `SystemModuleError(TransactionLimitsError(TooManyEntriesInTrack))` - so instead
-                        // we override these limits with the genesis limit until they can be fixed upstream.
-                        //
-                        // TODO(rcnet-v3) - Remove these down when we understand what the limit should be,
-                        // and have adjusted ExecutionConfig::for_system_transaction() in the engine.
-                        max_number_of_substates_in_track: 50_000,
-                        max_number_of_substates_in_heap: 50_000,
+                        // TODO(during review): were these "max number of substates" adjusted in the Engine?
                         max_number_of_events: 1_000_000,
                         ..ExecutionConfig::for_system_transaction().with_kernel_trace(trace)
                     },

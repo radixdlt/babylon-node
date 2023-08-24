@@ -10,9 +10,12 @@ pub fn to_api_metadata_value_substate(
     typed_key: &TypedSubstateKey,
     substate: &MetadataEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(entry_name)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "MetadataEntryKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
+            entry_name
+        ))
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         MetadataModuleEntry,

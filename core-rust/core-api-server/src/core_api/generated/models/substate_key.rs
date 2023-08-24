@@ -35,10 +35,10 @@ pub enum SubstateKey {
         /// The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
         #[serde(rename = "db_sort_key_hex")]
         db_sort_key_hex: String,
-        /// The sort part of the substate key
-        #[serde(rename = "sort_prefix")]
-        sort_prefix: i32,
-        /// The hex-encoded bytes of the substate key
+        /// The hex-encoded bytes of the sorted part of the key
+        #[serde(rename = "sort_prefix_hex")]
+        sort_prefix_hex: String,
+        /// The hex-encoded remaining bytes of the key
         #[serde(rename = "key_hex")]
         key_hex: String,
     },

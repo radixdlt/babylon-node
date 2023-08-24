@@ -4,8 +4,9 @@ use radix_engine_queries::typed_substate_layout::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 
 use radix_engine::transaction::{
-    CommitResult, CostingParameters, EventSystemStructure, FeeDestination, FeeSource,
-    StateUpdateSummary, SubstateSystemStructure, TransactionFeeSummary, TransactionOutcome,
+    BalanceChange, CommitResult, CostingParameters, EventSystemStructure, FeeDestination,
+    FeeSource, StateUpdateSummary, SubstateSystemStructure, TransactionFeeSummary,
+    TransactionOutcome,
 };
 use radix_engine::types::*;
 
@@ -168,6 +169,7 @@ pub struct LocalTransactionExecution {
     pub transaction_costing_parameters: TransactionCostingParameters,
     pub application_logs: Vec<(Level, String)>,
     pub state_update_summary: StateUpdateSummary,
+    pub global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
@@ -205,6 +207,7 @@ impl LocalTransactionReceipt {
     pub fn new(
         commit_result: CommitResult,
         substate_changes: BySubstate<ChangeAction>,
+        global_balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
         execution_fee_data: ExecutionFeeData,
     ) -> Self {
         let next_epoch = commit_result.next_epoch();
@@ -228,6 +231,7 @@ impl LocalTransactionReceipt {
                 transaction_costing_parameters: execution_fee_data.transaction_costing_parameters,
                 application_logs: commit_result.application_logs,
                 state_update_summary: commit_result.state_update_summary,
+                global_balance_changes,
                 substates_system_structure: BySubstate::wrap(
                     system_structure.substate_system_structures,
                 ),

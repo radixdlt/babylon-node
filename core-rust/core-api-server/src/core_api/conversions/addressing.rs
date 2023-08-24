@@ -105,7 +105,7 @@ pub fn to_api_substate_id(
     let api_substate_key = to_api_substate_key(substate_key);
 
     let (substate_type, partition_kind) = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
+        TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
             TypeInfoField::TypeInfo,
         )) => (
             SubstateType::TypeInfoModuleFieldTypeInfo,
@@ -137,8 +137,8 @@ pub fn to_api_substate_id(
             SubstateType::MetadataModuleEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageField(
-            PackageField::Royalty,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::Field(PackageField::RoyaltyAccumulator),
         )) => (
             SubstateType::PackageFieldRoyaltyAccumulator,
             models::PartitionKind::Field,
@@ -195,7 +195,7 @@ pub fn to_api_substate_id(
             return Err(MappingError::SubstateKey {
                 entity_address,
                 partition_number,
-                substate_key: api_substate_key,
+                substate_key: Box::new(api_substate_key),
                 message: "LockedFungible".to_string(),
             })
         }
@@ -217,7 +217,7 @@ pub fn to_api_substate_id(
             return Err(MappingError::SubstateKey {
                 entity_address,
                 partition_number,
-                substate_key: api_substate_key,
+                substate_key: Box::new(api_substate_key),
                 message: "LockedNonFungible".to_string(),
             })
         }
@@ -331,35 +331,45 @@ pub fn to_api_substate_id(
             SubstateType::MultiResourcePoolFieldState,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageBlueprintKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionDefinitionKeyValueEntry(_),
+        )) => (
             SubstateType::PackageBlueprintDefinitionEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(_),
-        ) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionDependenciesKeyValueEntry(_),
+        )) => (
             SubstateType::PackageBlueprintDependenciesEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageVmTypeKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeVmTypeKeyValueEntry(_),
+        )) => (
             SubstateType::PackageCodeVmTypeEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageOriginalCodeKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeOriginalCodeKeyValueEntry(_),
+        )) => (
             SubstateType::PackageCodeOriginalCodeEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(_)) => {
-            (
-                SubstateType::PackageCodeInstrumentedCodeEntry,
-                models::PartitionKind::KeyValue,
-            )
-        }
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageRoyaltyKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::CodeInstrumentedCodeKeyValueEntry(_),
+        )) => (
+            SubstateType::PackageCodeInstrumentedCodeEntry,
+            models::PartitionKind::KeyValue,
+        ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionRoyaltyConfigKeyValueEntry(_),
+        )) => (
             SubstateType::PackageBlueprintRoyaltyEntry,
             models::PartitionKind::KeyValue,
         ),
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::PackageAuthTemplateKey(_)) => (
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::BlueprintVersionAuthConfigKeyValueEntry(_),
+        )) => (
             SubstateType::PackageBlueprintAuthTemplateEntry,
             models::PartitionKind::KeyValue,
         ),
@@ -382,7 +392,7 @@ pub fn to_api_substate_id(
     };
 
     let entity_module = match typed_substate_key {
-        TypedSubstateKey::TypeInfoModule(_) => models::EntityModule::TypeInfo,
+        TypedSubstateKey::TypeInfo(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
         TypedSubstateKey::MetadataModule(_) => models::EntityModule::Metadata,
@@ -414,7 +424,7 @@ pub fn to_api_substate_key(substate_key: &SubstateKey) -> models::SubstateKey {
         },
         SubstateKey::Sorted((sort_key, map_key)) => models::SubstateKey::SortedSubstateKey {
             db_sort_key_hex,
-            sort_prefix: to_api_u16_as_i32(*sort_key),
+            sort_prefix_hex: to_hex(sort_key),
             key_hex: to_hex(map_key),
         },
     }
@@ -456,6 +466,14 @@ pub fn extract_non_fungible_id_from_simple_representation(
     simple_rep: &str,
 ) -> Result<NonFungibleLocalId, ExtractionError> {
     Ok(NonFungibleLocalId::from_str(simple_rep)?)
+}
+
+pub fn to_api_module_id(module_id: &ModuleId) -> models::ModuleId {
+    match module_id {
+        ModuleId::Metadata => models::ModuleId::Metadata,
+        ModuleId::Royalty => models::ModuleId::Royalty,
+        ModuleId::RoleAssignment => models::ModuleId::RoleAssignment,
+    }
 }
 
 pub fn to_api_object_module_id(object_module_id: &ObjectModuleId) -> models::ObjectModuleId {
