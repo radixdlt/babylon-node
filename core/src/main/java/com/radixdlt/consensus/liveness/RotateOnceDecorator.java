@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.utils.DeterministicShuffle;
 import com.radixdlt.utils.KeyComparator;
 import java.util.*;
 
@@ -99,12 +100,19 @@ public final class RotateOnceDecorator implements ProposerElection {
    * Decorates the given {@link ProposerElection}. Assumes that the underlying instance uses the
    * same {@link BFTValidatorSet} as passed here.
    */
-  public RotateOnceDecorator(BFTValidatorSet validatorSet, ProposerElection underlying) {
-    this.initialRoundsProposers =
+  public RotateOnceDecorator(
+      long epoch, BFTValidatorSet validatorSet, ProposerElection underlying) {
+    // First, collect the validators to an ordered array...
+    final var sortedValidators =
         validatorSet.getValidators().stream()
             .sorted(VALIDATOR_COMPARATOR)
             .map(BFTValidator::getValidatorId)
             .toArray(BFTValidatorId[]::new);
+
+    // ...and then deterministically shuffle (based on epoch number)
+    new DeterministicShuffle(epoch).shuffleArray(sortedValidators);
+
+    this.initialRoundsProposers = sortedValidators;
     this.underlying = underlying;
   }
 

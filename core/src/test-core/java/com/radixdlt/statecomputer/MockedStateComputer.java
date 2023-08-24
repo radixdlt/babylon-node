@@ -143,7 +143,8 @@ public final class MockedStateComputer implements StateComputer {
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
+                  var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);

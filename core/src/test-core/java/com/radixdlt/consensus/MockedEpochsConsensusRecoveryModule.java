@@ -153,7 +153,8 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     final var proposerElection =
         switch (this.proposerElectionMode) {
           case ONLY_WEIGHTED_BY_STAKE -> new WeightedRotatingLeaders(validatorSet, 10);
-          case WITH_INITIAL_ROUNDS_ITERATION -> ProposerElections.defaultRotation(validatorSet);
+          case WITH_INITIAL_ROUNDS_ITERATION -> ProposerElections.defaultRotation(
+              proof.getEpoch(), validatorSet);
         };
     return new BFTConfiguration(
         proposerElection,

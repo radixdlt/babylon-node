@@ -142,7 +142,7 @@ public class ConsensusModuleTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt192.ONE)));
     var vertexStoreState =
         VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
-    var proposerElection = ProposerElections.defaultRotation(validatorSet);
+    var proposerElection = ProposerElections.defaultRotation(0L, validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.selfKeyPair = ECKeyPair.generateNew();
     this.selfValidatorId =

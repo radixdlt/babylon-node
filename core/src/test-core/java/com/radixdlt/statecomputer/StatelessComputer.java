@@ -172,7 +172,8 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                       VertexStoreState.create(
                           HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = ProposerElections.defaultRotation(validatorSet);
+                  var proposerElection =
+                      ProposerElections.defaultRotation(nextEpoch.getEpoch(), validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
                   return new EpochChange(proof, bftConfiguration);

@@ -82,8 +82,8 @@ public abstract class ProposerElections {
    *       algorithm with a {@link #DEFAULT_CACHE_SIZE}.
    * </ul>
    */
-  public static ProposerElection defaultRotation(BFTValidatorSet validatorSet) {
+  public static ProposerElection defaultRotation(long epoch, BFTValidatorSet validatorSet) {
     return new RotateOnceDecorator(
-        validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
+        epoch, validatorSet, new WeightedRotatingLeaders(validatorSet, DEFAULT_CACHE_SIZE));
   }
 }

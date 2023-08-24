@@ -62,68 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.utils;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ProposerElections;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.rev2.LastEpochProof;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt192;
+import javax.annotation.concurrent.NotThreadSafe;
 
-public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
-  private final int numValidators;
+/** Fisher-Yates shuffle using LCG pseudorandom generator. */
+@NotThreadSafe
+public final class DeterministicShuffle {
+  // Same as glibc
+  private static final long LCG_MULTIPLIER = 1103515245L;
+  private static final long LCG_INCREMENT = 12345L;
+  private static final long LCG_MODULUS = 2L << 31;
 
-  public MockedNoEpochsConsensusRecoveryModule(int numValidators) {
-    this.numValidators = numValidators;
+  private long seed;
+
+  public DeterministicShuffle(long seed) {
+    this.seed = seed;
   }
 
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      BFTConfiguration configuration, ProposerElection proposerElection) {
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.getHighestRound().next();
-    final BFTValidatorId leader = proposerElection.getProposer(round);
-    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
-
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  public <T> void shuffleArray(T[] arr) {
+    for (int i = arr.length; i > 1; i--) {
+      final var rndIdx = nextInt(i);
+      final var tmp = arr[i - 1];
+      arr[i - 1] = arr[rndIdx];
+      arr[rndIdx] = tmp;
+    }
   }
 
-  @Provides
-  private BFTValidatorSet validatorSet() {
-    var validators =
-        PrivateKeys.numeric(1)
-            .limit(numValidators)
-            .map(k -> BFTValidatorId.withKeyAndFakeDeterministicAddress(k.getPublicKey()))
-            .map(n -> BFTValidator.from(n, UInt192.ONE));
-    return BFTValidatorSet.from(validators);
-  }
-
-  @Provides
-  private BFTConfiguration configuration(
-      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    VertexWithHash genesisVertex =
-        Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(0, LedgerHashes.zero(), validatorSet, 0, 0))
-            .withId(hasher);
-    LedgerHeader nextLedgerHeader =
-        LedgerHeader.create(
-            proof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            proof.getStateVersion(),
-            proof.getLedgerHashes(),
-            proof.consensusParentRoundTimestamp(),
-            proof.proposerTimestamp());
-    final var initialEpochQC =
-        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = ProposerElections.defaultRotation(proof.getEpoch(), validatorSet);
-    return new BFTConfiguration(
-        proposerElection,
-        validatorSet,
-        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
+  private int nextInt(int upperLimitExclusive) {
+    this.seed = (this.seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    return (int) (this.seed % upperLimitExclusive);
   }
 }

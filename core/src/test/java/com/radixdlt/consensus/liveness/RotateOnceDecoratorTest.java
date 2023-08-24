@@ -65,6 +65,8 @@
 package com.radixdlt.consensus.liveness;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,7 +82,10 @@ import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt192;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class RotateOnceDecoratorTest {
@@ -103,31 +108,69 @@ public class RotateOnceDecoratorTest {
               return id(seed, seed + 1);
             });
 
-    final var subject = new RotateOnceDecorator(BFTValidatorSet.from(validators), underlying);
+    // We will iterate over a few epochs and collect the results (order) for the initial rotation
+    // to make sure it's not always the same.
+    HashMap<Long, List<Integer>> iteratedValidatorIndicesByEpoch = new HashMap<>();
+    LongStream.range(0, 10)
+        .forEach(
+            epoch -> {
+              // For each epoch we perform the same "local" assertions
 
-    // happy-path on initial rounds:
-    final int[] iteratedValidatorIndices =
-        LongStream.range(0, 4)
-            .mapToObj(Round::of)
-            .map(subject::getProposer)
-            .mapToInt(Lists.transform(validators, BFTValidator::getValidatorId)::indexOf)
-            .toArray();
-    assertThat(iteratedValidatorIndices)
-        .containsExactly(
-            1, // wins by stake (33 is before 22)
-            3, // wins by key tie-breaker (5 is before 7)
-            0, // wins by address tie-breaker (null is before 1018)
-            2); // well, does not win
+              // Verify that n(=2) instances produce exactly the same values
+              // (deterministic ordering)
+              final var instances =
+                  Stream.generate(
+                          () ->
+                              new RotateOnceDecorator(
+                                  epoch, BFTValidatorSet.from(validators), underlying))
+                      .limit(2)
+                      .toList();
 
-    // right after the initial rounds - the underlying impl returns the first one from its sequence
-    assertThat(subject.getProposer(Round.of(4))).isEqualTo(id(0, 1));
+              final var iteratedValidatorIndicesFromAllInstances =
+                  instances.stream()
+                      .map(
+                          leaderElection ->
+                              LongStream.range(0, validators.size())
+                                  .mapToObj(Round::of)
+                                  .map(leaderElection::getProposer)
+                                  .map(
+                                      Lists.transform(validators, BFTValidator::getValidatorId)
+                                          ::indexOf)
+                                  .toList())
+                      .distinct() // All results should be equal (which we verify below)
+                      .toList();
 
-    // repeated "initial rounds" query
-    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
-    assertThat(subject.getProposer(Round.of(2))).isEqualTo(validators.get(0).getValidatorId());
+              assertEquals(iteratedValidatorIndicesFromAllInstances.size(), 1L);
 
-    // far outside the initial rounds - the underlying impl returns a `N - initial_rounds`-th one
-    assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
+              iteratedValidatorIndicesByEpoch.put(
+                  epoch, iteratedValidatorIndicesFromAllInstances.get(0));
+
+              iteratedValidatorIndicesFromAllInstances.forEach(
+                  indices -> assertThat(indices).containsExactlyInAnyOrder(0, 1, 2, 3));
+
+              instances.forEach(
+                  subject -> {
+                    // right after the initial rounds - the underlying impl returns the first one
+                    // from its sequence
+                    assertThat(subject.getProposer(Round.of(4))).isEqualTo(id(0, 1));
+
+                    // repeated "initial rounds" query
+                    final var roundTwoProposer = subject.getProposer(Round.of(2));
+                    assertThat(roundTwoProposer).isEqualTo(subject.getProposer(Round.of(2)));
+
+                    // far outside the initial rounds - the underlying impl returns a `N -
+                    // initial_rounds`-th one
+                    assertThat(subject.getProposer(Round.of(907))).isEqualTo(id(903, 904));
+                  });
+            });
+
+    final var distinctOrdersInEpochs =
+        iteratedValidatorIndicesByEpoch.values().stream().distinct().count();
+
+    // Verify that the order isn't always the same in all epochs.
+    // With just 4 validators it's likely that it will repeat,
+    // but this is just to make sure that it isn't always the same.
+    assertTrue(distinctOrdersInEpochs >= 3);
   }
 
   private static BFTValidatorId id(Integer addressBytes, int keySeed) {
