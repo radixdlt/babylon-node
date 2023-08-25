@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
@@ -112,11 +111,11 @@ public class RustStateComputer {
 
   private static native byte[] prepare(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  public Result<Tuple.Tuple0, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
+  public Result<CommitSummary, InvalidCommitRequestError> commit(CommitRequest commitRequest) {
     return commitFunc.call(commitRequest);
   }
 
-  private final Natives.Call1<CommitRequest, Result<Tuple.Tuple0, InvalidCommitRequestError>>
+  private final Natives.Call1<CommitRequest, Result<CommitSummary, InvalidCommitRequestError>>
       commitFunc;
 
   private static native byte[] commit(NodeRustEnvironment nodeRustEnvironment, byte[] payload);

@@ -580,7 +580,7 @@ public final class LocalSyncService {
   }
 
   private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
-    final var updatedHeader = ledgerUpdate.getTail();
+    final var updatedHeader = ledgerUpdate.proof();
     final var isNewerState =
         updatedHeader.getStateVersion() > currentState.getCurrentHeader().getStateVersion();
     if (isNewerState) {

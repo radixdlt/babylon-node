@@ -97,7 +97,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
             .<Set<RawLedgerTransaction>>scan(
                 new HashSet<>(),
                 (set, next) -> {
-                  set.addAll(next.getSecond().getNewTransactions());
+                  set.addAll(next.getSecond().transactions());
                   return set;
                 })
             .subscribe(committedTxns::onNext);

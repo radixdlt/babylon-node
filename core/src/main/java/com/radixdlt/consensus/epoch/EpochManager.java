@@ -322,15 +322,12 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.currentLedgerHeader = ledgerUpdate.getTail().getHeader();
+    this.currentLedgerHeader = ledgerUpdate.proof().getHeader();
 
-    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-
-    if (epochChange != null) {
-      this.processEpochChange(epochChange);
-    } else {
-      this.syncLedgerUpdateProcessor.process(ledgerUpdate);
-    }
+    ledgerUpdate
+        .epochChange()
+        .ifPresentOrElse(
+            this::processEpochChange, () -> this.syncLedgerUpdateProcessor.process(ledgerUpdate));
   }
 
   private void processEpochChange(EpochChange epochChange) {

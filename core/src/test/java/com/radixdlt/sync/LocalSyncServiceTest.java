@@ -69,7 +69,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
@@ -84,11 +83,13 @@ import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.PeersView.PeerInfo;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.*;
+import com.radixdlt.utils.UInt32;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
@@ -686,8 +687,9 @@ public class LocalSyncServiceTest {
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
     return new LedgerUpdate(
+        new CommitSummary(ImmutableList.of(), UInt32.fromNonNegativeInt(0)),
         LedgerExtension.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
-        ImmutableClassToInstanceMap.of());
+        Optional.empty());
   }
 
   private LedgerProof createHeaderAtStateVersion(long version) {

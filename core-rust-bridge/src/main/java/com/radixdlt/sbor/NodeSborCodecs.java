@@ -165,6 +165,8 @@ public final class NodeSborCodecs {
     NextEpoch.registerCodec(codecMap);
     ActiveValidatorInfo.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
+    CommitSummary.registerCodec(codecMap);
+    LeaderRoundCounter.registerCodec(codecMap);
     InvalidCommitRequestError.registerCodec(codecMap);
     DatabaseBackendConfig.registerCodec(codecMap);
     DatabaseFlags.registerCodec(codecMap);

@@ -90,7 +90,7 @@ public final class InMemorySystemInfo {
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      var ledgerProof = update.getTail();
+      var ledgerProof = update.proof();
       if (ledgerProof.getNextEpoch().isPresent()) {
         epochsLedgerProof.set(ledgerProof);
       }

@@ -130,19 +130,19 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
         update -> {
-          final LedgerProof headerAndProof = update.getTail();
+          final LedgerProof headerAndProof = update.proof();
           long stateVersion = headerAndProof.getStateVersion();
-          long firstVersion = stateVersion - update.getNewTransactions().size() + 1;
-          for (int i = 0; i < update.getNewTransactions().size(); i++) {
-            sharedCommittedTransactions.put(firstVersion + i, update.getNewTransactions().get(i));
+          long firstVersion = stateVersion - update.transactions().size() + 1;
+          for (int i = 0; i < update.transactions().size(); i++) {
+            sharedCommittedTransactions.put(firstVersion + i, update.transactions().get(i));
           }
 
           update
-              .getTail()
+              .proof()
               .getNextEpoch()
               .ifPresent(
                   nextEpoch -> {
-                    sharedEpochProofs.put(nextEpoch.getEpoch(), update.getTail());
+                    sharedEpochProofs.put(nextEpoch.getEpoch(), update.proof());
                   });
         });
   }

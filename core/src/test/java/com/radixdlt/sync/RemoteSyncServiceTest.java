@@ -192,10 +192,12 @@ public class RemoteSyncServiceTest {
     final var tail = mock(LedgerProof.class);
     final var ledgerUpdate = mock(LedgerUpdate.class);
     when(tail.getStateVersion()).thenReturn(2L);
-    when(ledgerUpdate.getTail()).thenReturn(tail);
+    when(ledgerUpdate.proof()).thenReturn(tail);
 
     final var validatorSet = mock(BFTValidatorSet.class);
-    when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+    final var proof = mock(LedgerProof.class);
+    when(proof.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+    when(ledgerUpdate.proof()).thenReturn(proof);
 
     when(this.localSyncService.getSyncState())
         .thenReturn(

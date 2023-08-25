@@ -178,7 +178,8 @@ public final class DeterministicNodes implements AutoCloseable {
                 install(
                     new EventLoggerModule(
                         new EventLoggerConfig(
-                            k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)))));
+                            k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)),
+                            v -> "Node" + addressBook.apply(NodeId.fromPublicKey(v.getKey())))));
                 bind(ECDSASecp256k1PublicKey.class)
                     .annotatedWith(Self.class)
                     .toInstance(config.key());

@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
@@ -294,11 +293,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             vertexStoreBytes,
             Option.from(selfValidatorAddress));
 
-    var result = stateComputer.commit(commitRequest);
-    result.onError(
-        error -> {
-          throw new InvalidCommitRequestException(error);
-        });
+    final var result = stateComputer.commit(commitRequest);
+    final var commitSummary =
+        result
+            .onError(
+                error -> {
+                  throw new InvalidCommitRequestException(error);
+                })
+            .unwrap();
 
     var epochChangeOptional =
         ledgerExtension
@@ -315,13 +317,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   return new EpochChange(header, bftConfiguration);
                 });
 
-    var outputBuilder = ImmutableClassToInstanceMap.builder();
     epochChangeOptional.ifPresent(
-        epochChange -> {
-          this.currentProposerElection.set(epochChange.getBFTConfiguration().getProposerElection());
-          outputBuilder.put(EpochChange.class, epochChange);
-        });
-    var ledgerUpdate = new LedgerUpdate(ledgerExtension, outputBuilder.build());
+        epochChange ->
+            this.currentProposerElection.set(
+                epochChange.getBFTConfiguration().getProposerElection()));
+
+    var ledgerUpdate = new LedgerUpdate(commitSummary, ledgerExtension, epochChangeOptional);
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

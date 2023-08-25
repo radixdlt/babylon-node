@@ -65,16 +65,20 @@
 package com.radixdlt.logger;
 
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.function.Function;
 
-public record EventLoggerConfig(Function<ECDSASecp256k1PublicKey, String> nodeKeyToString) {
+public record EventLoggerConfig(
+    Function<ECDSASecp256k1PublicKey, String> formatNodeAddress,
+    Function<BFTValidatorId, String> formatBftValidatorId) {
   public static EventLoggerConfig addressed(Addressing addressing) {
     return new EventLoggerConfig(
-        k -> {
-          var addr = addressing.encodeNodeAddress(k);
-          var len = addr.length();
+        key -> {
+          final var addr = addressing.encodeNodeAddress(key);
+          final var len = addr.length();
           return addr.substring(0, 2) + "..." + addr.substring(len - 9);
-        });
+        },
+        v -> addressing.encode(v.getValidatorAddress()));
   }
 }

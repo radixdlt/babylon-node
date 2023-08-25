@@ -308,8 +308,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) {
-    log.info("Closed: {}", this);
-
+    if (log.isTraceEnabled()) {
+      log.trace("Closed: {}", this);
+    }
     final var prevState = this.state;
     this.state = ChannelState.INACTIVE;
     this.inboundMessageSink.onComplete();
