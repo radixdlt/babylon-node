@@ -68,7 +68,6 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.TypeLiteral;
-import com.google.inject.spi.TypeListener;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;

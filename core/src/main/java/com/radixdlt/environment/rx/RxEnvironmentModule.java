@@ -85,15 +85,14 @@ import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Environment utilizing RxJava */
 public final class RxEnvironmentModule extends AbstractModule {
@@ -265,12 +264,19 @@ public final class RxEnvironmentModule extends AbstractModule {
                           .map(l -> e));
       processor.getProcessor(typeLiteral).ifPresent(p -> builder.add(events, p));
     } else {
-      log.info("TYPELIT Trying to add processor for {} {} {}", typeLiteral, processor.getTypeLiteral(), processor.getRunnerName());
+      log.info(
+          "TYPELIT Trying to add processor for {} {} {}",
+          typeLiteral,
+          processor.getTypeLiteral(),
+          processor.getRunnerName());
       final Observable<T> events = rxEnvironment.getObservable(typeLiteral);
-      processor.getProcessor(typeLiteral).ifPresent(p -> {
-        log.info("TYPELIT Processor for {} is present, adding to builder", typeLiteral);
-        builder.add(events, p, typeLiteral);
-      });
+      processor
+          .getProcessor(typeLiteral)
+          .ifPresent(
+              p -> {
+                log.info("TYPELIT Processor for {} is present, adding to builder", typeLiteral);
+                builder.add(events, p, typeLiteral);
+              });
     }
   }
 
@@ -293,10 +299,13 @@ public final class RxEnvironmentModule extends AbstractModule {
     } else {
       final Observable<T> events = rxEnvironment.getObservable(eventClass);
       log.info("Trying to add processor for {} {}", eventClass, processor.getEventClass());
-      processor.getProcessor(eventClass).ifPresent(p -> {
-        log.info("Processor for {} is present, adding to builder", eventClass);
-        builder.add(events, p, null);
-      });
+      processor
+          .getProcessor(eventClass)
+          .ifPresent(
+              p -> {
+                log.info("Processor for {} is present, adding to builder", eventClass);
+                builder.add(events, p, null);
+              });
     }
   }
 
