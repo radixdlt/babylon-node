@@ -88,6 +88,8 @@ import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Module which allows for consensus to have multiple epochs */
 public class EpochsConsensusModule extends AbstractModule {
@@ -135,12 +137,17 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, Proposal.class, epochManager::processConsensusEvent);
   }
 
+  private static final Logger log = LogManager.getLogger();
+
   @ProvidesIntoSet
   private EventProcessorOnRunner<?> epochTimeoutProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,
         new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {},
-        epochManager::processLocalTimeout);
+        ev -> {
+          log.warn("ASD processing local timeout...");
+          epochManager.processLocalTimeout(ev);
+        });
   }
 
   @ProvidesIntoSet
@@ -250,8 +257,10 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       EpochChange initialEpoch) {
     return localTimeout -> {
+      log.warn("ASD dispatch in initial timeout sender {}...", localTimeout);
       Epoched<ScheduledLocalTimeout> epochTimeout =
           Epoched.from(initialEpoch.getNextEpoch(), localTimeout);
+      log.warn("Dispatching epoched... {}", epochTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
@@ -334,8 +343,10 @@ public class EpochsConsensusModule extends AbstractModule {
             safetyRules,
             timeout ->
                 timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
-            (scheduledTimeout, ms) ->
-                localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
+            (scheduledTimeout, ms) -> {
+              log.info("ASD dispatch epoched timeout at epoch {} {}", epoch, scheduledTimeout);
+              localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms);
+            },
             timeoutCalculator,
             proposalGenerator,
             (n, m) -> {

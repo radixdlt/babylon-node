@@ -202,13 +202,15 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     final var currentRoundProposer = latestRoundUpdate.getLeader();
     if (this.self.equals(currentRoundProposer)) {
       log.info("Leader...");
-      generateProposal()
-          .ifPresent(
-              proposal -> {
-                log.trace("Broadcasting proposal: {}", proposal);
-                this.proposalDispatcher.dispatch(this.validatorSet.validators(), proposal);
-                this.metrics.bft().pacemaker().proposalsSent().inc();
-              });
+      /*
+           generateProposal()
+               .ifPresent(
+                   proposal -> {
+                     log.trace("Broadcasting proposal: {}", proposal);
+                     this.proposalDispatcher.dispatch(this.validatorSet.validators(), proposal);
+                     this.metrics.bft().pacemaker().proposalsSent().inc();
+                   });
+      */
     } else {
       log.info("Not a leader...");
       // We can immediately vote if there is a vertex for the current round

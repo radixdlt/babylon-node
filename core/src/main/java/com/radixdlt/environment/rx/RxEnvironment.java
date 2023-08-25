@@ -65,6 +65,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
@@ -77,6 +78,8 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Environment which utilizes RXJava to distribute events from dispatchers to processors. */
 public final class RxEnvironment implements Environment {
@@ -124,18 +127,46 @@ public final class RxEnvironment implements Environment {
 
   @Override
   public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-    return (e, millis) ->
-        getSubject(eventClass)
-            .ifPresent(
-                s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
+    return (e, millis) -> {
+      if (e instanceof ScheduledLocalTimeout) {
+        log.info("CCC local timeout has been scheduled ");
+      }
+      getSubject(eventClass)
+          .ifPresent(
+              s ->
+                  executorService.schedule(
+                      () -> {
+                        if (e instanceof ScheduledLocalTimeout) {
+                          log.info("CCC OnNext scheduled local timeout");
+                        }
+                        s.onNext(e);
+                      },
+                      millis,
+                      TimeUnit.MILLISECONDS));
+    };
   }
+
+  private static final Logger log = LogManager.getLogger();
 
   @Override
   public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
-    return (e, millis) ->
-        getSubject(typeLiteral)
-            .ifPresent(
-                s -> executorService.schedule(() -> s.onNext(e), millis, TimeUnit.MILLISECONDS));
+    return (e, millis) -> {
+      if (e instanceof ScheduledLocalTimeout) {
+        log.info("CCC local timeout has been scheduled ");
+      }
+      getSubject(typeLiteral)
+          .ifPresent(
+              s ->
+                  executorService.schedule(
+                      () -> {
+                        if (e instanceof ScheduledLocalTimeout) {
+                          log.info("OnNext scheduled local timeout");
+                        }
+                        s.onNext(e);
+                      },
+                      millis,
+                      TimeUnit.MILLISECONDS));
+    };
   }
 
   @Override
