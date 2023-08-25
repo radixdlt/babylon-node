@@ -22,8 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.MempoolTransactionResponsePayloadsInner;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -31,39 +34,74 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * MempoolTransactionResponse
  */
 @JsonPropertyOrder({
-  MempoolTransactionResponse.JSON_PROPERTY_PAYLOAD_HEX
+  MempoolTransactionResponse.JSON_PROPERTY_COUNT,
+  MempoolTransactionResponse.JSON_PROPERTY_PAYLOADS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MempoolTransactionResponse {
-  public static final String JSON_PROPERTY_PAYLOAD_HEX = "payload_hex";
-  private String payloadHex;
+  public static final String JSON_PROPERTY_COUNT = "count";
+  private Integer count;
+
+  public static final String JSON_PROPERTY_PAYLOADS = "payloads";
+  private List<MempoolTransactionResponsePayloadsInner> payloads = new ArrayList<>();
 
   public MempoolTransactionResponse() { 
   }
 
-  public MempoolTransactionResponse payloadHex(String payloadHex) {
-    this.payloadHex = payloadHex;
+  public MempoolTransactionResponse count(Integer count) {
+    this.count = count;
     return this;
   }
 
    /**
-   * The hex-encoded full notarized transaction payload.
-   * @return payloadHex
+   * An integer giving the total count of payload hashes checked in the returned response.
+   * @return count
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded full notarized transaction payload.")
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
+  @ApiModelProperty(required = true, value = "An integer giving the total count of payload hashes checked in the returned response.")
+  @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getPayloadHex() {
-    return payloadHex;
+  public Integer getCount() {
+    return count;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
+  @JsonProperty(JSON_PROPERTY_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPayloadHex(String payloadHex) {
-    this.payloadHex = payloadHex;
+  public void setCount(Integer count) {
+    this.count = count;
+  }
+
+
+  public MempoolTransactionResponse payloads(List<MempoolTransactionResponsePayloadsInner> payloads) {
+    this.payloads = payloads;
+    return this;
+  }
+
+  public MempoolTransactionResponse addPayloadsItem(MempoolTransactionResponsePayloadsInner payloadsItem) {
+    this.payloads.add(payloadsItem);
+    return this;
+  }
+
+   /**
+   * An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. 
+   * @return payloads
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An array containing pairs of payload hash (query) and payload hex or error (response). Note that this response is bounded - this means it is not guaranteed all queries will be processed. Please query missing payload hashes again. ")
+  @JsonProperty(JSON_PROPERTY_PAYLOADS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<MempoolTransactionResponsePayloadsInner> getPayloads() {
+    return payloads;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOADS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPayloads(List<MempoolTransactionResponsePayloadsInner> payloads) {
+    this.payloads = payloads;
   }
 
 
@@ -79,19 +117,21 @@ public class MempoolTransactionResponse {
       return false;
     }
     MempoolTransactionResponse mempoolTransactionResponse = (MempoolTransactionResponse) o;
-    return Objects.equals(this.payloadHex, mempoolTransactionResponse.payloadHex);
+    return Objects.equals(this.count, mempoolTransactionResponse.count) &&
+        Objects.equals(this.payloads, mempoolTransactionResponse.payloads);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(payloadHex);
+    return Objects.hash(count, payloads);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MempoolTransactionResponse {\n");
-    sb.append("    payloadHex: ").append(toIndentedString(payloadHex)).append("\n");
+    sb.append("    count: ").append(toIndentedString(count)).append("\n");
+    sb.append("    payloads: ").append(toIndentedString(payloads)).append("\n");
     sb.append("}");
     return sb.toString();
   }
