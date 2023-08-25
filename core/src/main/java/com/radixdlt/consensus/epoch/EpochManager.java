@@ -178,6 +178,7 @@ public final class EpochManager {
   }
 
   private void updateEpochState(InitialSafetyStateProvider initialSafetyStateProvider) {
+    log.info("Update epoch state");
     final var validatorSet = this.lastEpochChange.getBFTConfiguration().getValidatorSet();
 
     selfValidatorInfo
@@ -187,8 +188,10 @@ public final class EpochManager {
               if (validatorSet.containsValidator(selfValidatorId)) {
                 final var initialSafetyState =
                     initialSafetyStateProvider.initialSafetyState(selfValidatorId);
+                log.info("CONFIGURING AS ACTIVE VALIDATOR!");
                 configureAsActiveValidator(selfValidatorId, initialSafetyState);
               } else {
+                log.info("!!! CONFIGURING AS NON_VALIDATOR");
                 configureAsNonValidator();
               }
             },
@@ -413,10 +416,17 @@ public final class EpochManager {
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
+    log.info(
+        "Processing local timeout in epoch manager {} {} curr epoch {}",
+        localTimeout,
+        localTimeout.epoch(),
+        this.currentEpoch());
     if (localTimeout.epoch() != this.currentEpoch()) {
+      log.info("Ignoring local timeout in Epoch Manager, wrong epoch");
       return;
     }
 
+    log.info("Forwarding process local timeout to bft event processor");
     bftEventProcessor.processLocalTimeout(localTimeout.event());
   }
 

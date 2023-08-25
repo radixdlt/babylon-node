@@ -125,9 +125,15 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    log.info(
+        "Obsolete events filter processing local timeout (curr round {}) timeout round {}",
+        currentRound(),
+        scheduledLocalTimeout.round());
     if (scheduledLocalTimeout.round().equals(currentRound())) {
+      log.info("Processing...");
       forwardTo.processLocalTimeout(scheduledLocalTimeout);
     } else {
+      log.info("Ignoring obsolete timeout...");
       metrics.bft().obsoleteEventsIgnored().inc();
       log.trace(
           "Ignoring ScheduledLocalTimeout event for round {}, current round is {}",

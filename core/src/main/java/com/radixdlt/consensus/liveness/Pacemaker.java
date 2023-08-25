@@ -192,10 +192,16 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     final var timeoutMs =
         timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
     final var scheduledLocalTimeout = ScheduledLocalTimeout.create(latestRoundUpdate, timeoutMs);
+    log.info(
+        "Dispatching a scheduled local timeout {} {} {}",
+        timeoutMs,
+        scheduledLocalTimeout,
+        latestRoundUpdate);
     this.scheduledLocalTimeoutDispatcher.dispatch(scheduledLocalTimeout, timeoutMs);
 
     final var currentRoundProposer = latestRoundUpdate.getLeader();
     if (this.self.equals(currentRoundProposer)) {
+      log.info("Leader...");
       generateProposal()
           .ifPresent(
               proposal -> {
@@ -204,6 +210,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
                 this.metrics.bft().pacemaker().proposalsSent().inc();
               });
     } else {
+      log.info("Not a leader...");
       // We can immediately vote if there is a vertex for the current round
       // that we've already received while still being at a previous round
       this.insertedVertexCarriedOverFromPrevRound
@@ -319,9 +326,11 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
+    log.info("Processing local timeout in Pacemaker...");
     this.scheduledRoundTimeoutHasOccurred = true;
 
     if (canRoundTimeoutBeProlonged(scheduledTimeout)) {
+      log.info("Round can be prolonged...");
       // If the round can be prolonged, then do so.
       // Do not send any timeout votes and/or create fallback vertex yet.
       // Note that even though the round has been prolonged (i.e. a "real" round timeout delayed)
@@ -330,6 +339,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
       // See: `processBFTUpdate` and `dispatchVote`
       prolongRoundTimeout(scheduledTimeout);
     } else {
+      log.info("Rond can't be prolonged...");
       // The round can't be prolonged, so timeout for real
       this.roundStatus = RoundStatus.TIMED_OUT;
       updateTimeoutCounters(scheduledTimeout);
@@ -419,6 +429,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     metrics.bft().prolongedRoundTimeouts().inc();
     final var timeout = timeoutCalculator.additionalRoundTimeIfProposalReceivedMs();
     final var nextTimeout = originalScheduledLocalTimeout.prolong(timeout);
+    log.info("Dispatching prolonged timeout {} {}", timeout, nextTimeout);
     this.scheduledLocalTimeoutDispatcher.dispatch(nextTimeout, timeout);
   }
 
@@ -430,6 +441,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {
+    log.info("Reschedule timeout...");
     final var timeout =
         timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
     final var nextTimeout = scheduledTimeout.nextRetry(timeout);
