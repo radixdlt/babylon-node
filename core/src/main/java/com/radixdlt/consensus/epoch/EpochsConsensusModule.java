@@ -345,6 +345,9 @@ public class EpochsConsensusModule extends AbstractModule {
                 timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
             (scheduledTimeout, ms) -> {
               log.info("ASD dispatch epoched timeout at epoch {} {}", epoch, scheduledTimeout);
+
+              // to sie wywołuje...
+
               localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms);
             },
             timeoutCalculator,

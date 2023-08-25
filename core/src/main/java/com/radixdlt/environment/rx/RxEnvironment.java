@@ -65,6 +65,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
@@ -154,6 +155,11 @@ public final class RxEnvironment implements Environment {
       if (e instanceof ScheduledLocalTimeout) {
         log.info("CCC local timeout has been scheduled ");
       }
+      if (e instanceof Epoched epoched) {
+        if (epoched.event() instanceof ScheduledLocalTimeout) {
+          log.info("CCC epoched timeout has been scheduled on an executor");
+        }
+      }
       getSubject(typeLiteral)
           .ifPresent(
               s ->
@@ -161,6 +167,11 @@ public final class RxEnvironment implements Environment {
                       () -> {
                         if (e instanceof ScheduledLocalTimeout) {
                           log.info("OnNext scheduled local timeout");
+                        }
+                        if (e instanceof Epoched epoched) {
+                          if (epoched.event() instanceof ScheduledLocalTimeout) {
+                            log.info("CCC epoched timeout onNext");
+                          }
                         }
                         s.onNext(e);
                       },
