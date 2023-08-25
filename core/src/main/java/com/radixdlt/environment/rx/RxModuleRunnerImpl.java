@@ -67,6 +67,8 @@ package com.radixdlt.environment.rx;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -103,7 +105,21 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
 
   private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
     Disposable subscribe(Scheduler s, Consumer<Throwable> errorHandler) {
-      return o.observeOn(s).subscribe(p::process, errorHandler::accept);
+      return o.observeOn(s)
+          .subscribe(
+              e -> {
+                if (e instanceof ScheduledLocalTimeout) {
+                  logger.info("XXX Calling EventProcessor.process(scheduledLocalTimeout)");
+                }
+                if (e instanceof Epoched epoched) {
+                  if (epoched.event() instanceof ScheduledLocalTimeout) {
+                    logger.info(
+                        "XXX Calling EventProcessor.process(epoched scheduledLocalTimeout)");
+                  }
+                }
+                p.process(e);
+              },
+              errorHandler::accept);
     }
   }
 
