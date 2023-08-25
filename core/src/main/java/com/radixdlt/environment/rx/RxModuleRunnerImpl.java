@@ -67,6 +67,8 @@ package com.radixdlt.environment.rx;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.TypeLiteral;
+import com.google.inject.spi.TypeListener;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
@@ -103,8 +105,9 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   private final List<Subscription<?>> subscriptions;
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-  private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
+  private record Subscription<T>(Observable<T> o, EventProcessor<T> p, TypeLiteral type) {
     Disposable subscribe(Scheduler s, Consumer<Throwable> errorHandler) {
+      logger.info("Subscribing to {}", type);
       return o.observeOn(s)
           .subscribe(
               e -> {
@@ -146,18 +149,19 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
       return this;
     }
 
-    public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
-      subscriptionsBuilder.add(new Subscription<>(o, p));
+    public <T> Builder add(Observable<T> o, EventProcessor<T> p, TypeLiteral type) {
+      logger.info("WWWW this add here type {}", type);
+      subscriptionsBuilder.add(new Subscription<>(o, p, type));
       return this;
     }
 
     public <T> Builder add(Flowable<T> o, EventProcessor<T> p) {
-      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
+      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p, null));
       return this;
     }
 
     public <N, T> Builder add(Flowable<RemoteEvent<N, T>> o, RemoteEventProcessor<N, T> p) {
-      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
+      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process, null));
       return this;
     }
 

@@ -141,7 +141,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   @Override
   public void processVote(Vote vote) {
-    log.trace("Vote: Processing {}", vote);
+    log.info("Vote: Processing {}", vote);
     processVoteInternal(vote);
     forwardTo.processVote(vote);
   }
