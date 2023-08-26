@@ -370,7 +370,7 @@ pub fn to_api_lts_resultant_account_fungible_balances(
     _substate_changes: &BySubstate<ChangeAction>,
 ) -> Vec<models::LtsResultantAccountFungibleBalances> {
     // TODO(parallel PR): go through substate changes, collect fungible vaults' new values, resolve
-    // each into its global component owning the vault, retain only accounts.
+    // each into its global component owning the vault, retain only accounts, adjust API docs.
     vec![]
 }
 

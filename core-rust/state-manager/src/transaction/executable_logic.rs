@@ -76,7 +76,6 @@ impl ExecutionConfigurator {
                 (
                     ConfigType::OtherSystem,
                     ExecutionConfig {
-                        // TODO(during review): were these "max number of substates" adjusted in the Engine?
                         max_number_of_events: 1_000_000,
                         ..ExecutionConfig::for_system_transaction().with_kernel_trace(trace)
                     },
