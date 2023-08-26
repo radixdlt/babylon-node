@@ -118,6 +118,12 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
 
+pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
+    index.try_into().map_err(|_| MappingError::IntegerError {
+        message: "Index number too large".to_string(),
+    })
+}
+
 pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
     if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
         return Err(MappingError::IntegerError {

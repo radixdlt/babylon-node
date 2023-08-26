@@ -25,7 +25,7 @@ pub fn to_api_data_struct_from_scrypto_value(
 
 pub fn to_api_data_struct_from_scrypto_raw_value(
     context: &MappingContext,
-    scrypto_raw_value: &ScryptoRawValue<'_>,
+    scrypto_raw_value: &ScryptoOwnedRawValue,
 ) -> Result<models::DataStruct, MappingError> {
     let scrypto_value =
         IndexedScryptoValue::from_vec(scrypto_encode(scrypto_raw_value).unwrap()).unwrap();
@@ -125,6 +125,7 @@ pub fn to_api_sbor_data_from_bytes(
                                 custom_context: ScryptoValueDisplayContext::with_optional_bech32(
                                     Some(&context.address_encoder),
                                 ),
+                                depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
                             }),
                     )
                     .map_err(|err| MappingError::InvalidSbor {

@@ -1,5 +1,17 @@
 use super::super::*;
 use crate::core_api::models;
+use radix_engine::blueprints::account::{
+    AccountTypedFieldSubstateValue, AccountTypedSubstateValue,
+};
+use radix_engine::blueprints::pool::multi_resource_pool::{
+    MultiResourcePoolTypedFieldSubstateValue, MultiResourcePoolTypedSubstateValue,
+};
+use radix_engine::blueprints::pool::one_resource_pool::{
+    OneResourcePoolTypedFieldSubstateValue, OneResourcePoolTypedSubstateValue,
+};
+use radix_engine::blueprints::pool::two_resource_pool::{
+    TwoResourcePoolTypedFieldSubstateValue, TwoResourcePoolTypedSubstateValue,
+};
 
 use radix_engine::types::*;
 
@@ -37,110 +49,157 @@ pub fn to_api_substate(
                 substate,
             )),
         )) => to_api_package_royalty_accumulator_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
-            TypedFungibleResourceManagerFieldValue::Divisibility(
-                fungible_resource_manager_divisibility_substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResourceManager(
+            FungibleResourceManagerTypedSubstateValue::Field(
+                FungibleResourceManagerTypedFieldSubstateValue::Divisibility(substate),
             ),
-        )) => to_api_fungible_resource_manager_divisibility_substate(
-            fungible_resource_manager_divisibility_substate,
-        )?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResource(
-            TypedFungibleResourceManagerFieldValue::TotalSupply(
-                fungible_resource_manager_total_supply_substate,
+        )) => to_api_fungible_resource_manager_divisibility_substate(substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleResourceManager(
+            FungibleResourceManagerTypedSubstateValue::Field(
+                FungibleResourceManagerTypedFieldSubstateValue::TotalSupply(substate),
             ),
-        )) => to_api_fungible_resource_manager_total_supply_substate(
-            fungible_resource_manager_total_supply_substate,
-        )?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerFieldValue::IdType(
-                non_fungible_resource_manager_id_type_substate,
+        )) => to_api_fungible_resource_manager_total_supply_substate(substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateValue::Field(
+                    NonFungibleResourceManagerTypedFieldSubstateValue::IdType(substate),
+                ),
             ),
-        )) => to_api_non_fungible_resource_manager_id_type_substate(
-            non_fungible_resource_manager_id_type_substate,
-        )?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerFieldValue::TotalSupply(
-                non_fungible_resource_manager_total_supply_substate,
+        ) => to_api_non_fungible_resource_manager_id_type_substate(substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateValue::Field(
+                    NonFungibleResourceManagerTypedFieldSubstateValue::TotalSupply(substate),
+                ),
             ),
-        )) => to_api_non_fungible_resource_manager_total_supply_substate(
-            non_fungible_resource_manager_total_supply_substate,
-        )?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResource(
-            TypedNonFungibleResourceManagerFieldValue::MutableFields(substate),
-        )) => to_api_non_fungible_resource_manager_mutable_fields_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleResourceData(
-            substate,
-        )) => to_api_non_fungible_resource_manager_data_substate(
+        ) => to_api_non_fungible_resource_manager_total_supply_substate(substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateValue::Field(
+                    NonFungibleResourceManagerTypedFieldSubstateValue::MutableFields(substate),
+                ),
+            ),
+        ) => to_api_non_fungible_resource_manager_mutable_fields_substate(context, substate)?,
+        TypedSubstateValue::MainModule(
+            TypedMainModuleSubstateValue::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateValue::DataKeyValue(substate),
+            ),
+        ) => to_api_non_fungible_resource_manager_data_substate(
             context,
             typed_substate_key,
             substate,
         )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
-            TypedFungibleVaultFieldValue::Balance(fungible_vault_balance_substate),
+            FungibleVaultTypedSubstateValue::Field(FungibleVaultTypedFieldSubstateValue::Balance(
+                fungible_vault_balance_substate,
+            )),
         )) => to_api_fungible_vault_balance_substate(context, fungible_vault_balance_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
-            TypedFungibleVaultFieldValue::VaultFrozenFlag(substate),
-        )) => to_api_fungible_vault_frozen_status_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
-            TypedNonFungibleVaultFieldValue::Balance(substate),
-        )) => to_api_non_fungible_vault_balance_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVaultField(
-            TypedNonFungibleVaultFieldValue::VaultFrozenFlag(substate),
-        )) => to_api_non_fungible_vault_frozen_status_substate(context, substate)?,
-        TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(entry),
-        ) => to_api_non_fungible_vault_contents_entry_substate(context, typed_substate_key, entry)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::ConsensusManager(substate),
-        )) => to_api_consensus_manager_state_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::Config(substate),
-        )) => to_api_consensus_manager_config_substate(substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::CurrentValidatorSet(substate),
-        )) => to_api_current_validator_set_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::CurrentProposalStatistic(substate),
-        )) => to_api_current_proposal_statistic_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::CurrentTimeRoundedToMinutes(substate),
-        )) => to_api_current_time_rounded_to_minutes_substate(substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::CurrentTime(substate),
-        )) => to_api_current_time_substate(substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManagerField(
-            TypedConsensusManagerFieldValue::ValidatorRewards(substate),
-        )) => to_api_validator_rewards_substate(context, substate)?,
-        TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
-                substate,
+            FungibleVaultTypedSubstateValue::Field(
+                FungibleVaultTypedFieldSubstateValue::FreezeStatus(substate),
             ),
-        ) => to_api_registered_validators_by_stake_index_entry_substate(
+        )) => to_api_fungible_vault_frozen_status_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVault(
+            NonFungibleVaultTypedSubstateValue::Field(
+                NonFungibleVaultTypedFieldSubstateValue::Balance(substate),
+            ),
+        )) => to_api_non_fungible_vault_balance_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVault(
+            NonFungibleVaultTypedSubstateValue::Field(
+                NonFungibleVaultTypedFieldSubstateValue::FreezeStatus(substate),
+            ),
+        )) => to_api_non_fungible_vault_frozen_status_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVault(
+            NonFungibleVaultTypedSubstateValue::NonFungibleIndex(substate),
+        )) => to_api_non_fungible_vault_contents_entry_substate(
+            context,
+            typed_substate_key,
+            substate,
+        )?,
+        // TODO(during review): below (x2) I applied similar behavior to to_api_substate_id() - rightfully?
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::NonFungibleVault(
+            NonFungibleVaultTypedSubstateValue::Field(
+                NonFungibleVaultTypedFieldSubstateValue::LockedResource(_),
+            ),
+        )) => Err(MappingError::UnexpectedPersistedData {
+            message: "LockedNonFungible".to_owned(),
+        })?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::FungibleVault(
+            FungibleVaultTypedSubstateValue::Field(
+                FungibleVaultTypedFieldSubstateValue::LockedBalance(_),
+            ),
+        )) => Err(MappingError::UnexpectedPersistedData {
+            message: "LockedFungible".to_owned(),
+        })?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::State(substate),
+            ),
+        )) => to_api_consensus_manager_state_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::Configuration(substate),
+            ),
+        )) => to_api_consensus_manager_config_substate(substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::CurrentValidatorSet(substate),
+            ),
+        )) => to_api_current_validator_set_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::CurrentProposalStatistic(substate),
+            ),
+        )) => to_api_current_proposal_statistic_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::ProposerMinuteTimestamp(substate),
+            ),
+        )) => to_api_current_time_rounded_to_minutes_substate(substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::ProposerMilliTimestamp(substate),
+            ),
+        )) => to_api_current_time_substate(substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::Field(
+                ConsensusManagerTypedFieldSubstateValue::ValidatorRewards(substate),
+            ),
+        )) => to_api_validator_rewards_substate(context, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::ConsensusManager(
+            ConsensusManagerTypedSubstateValue::RegisteredValidatorByStakeSortedIndex(substate),
+        )) => to_api_registered_validators_by_stake_index_entry_substate(
             context,
             typed_substate_key,
             substate,
         )?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
-            TypedValidatorFieldValue::Validator(validator_substate),
+            ValidatorTypedSubstateValue::Field(ValidatorTypedFieldSubstateValue::State(
+                validator_substate,
+            )),
         )) => to_api_validator_substate(context, validator_substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Validator(
-            TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(substate),
+            ValidatorTypedSubstateValue::Field(
+                ValidatorTypedFieldSubstateValue::ProtocolUpdateReadinessSignal(substate),
+            ),
         )) => to_api_validator_protocol_update_readiness_signal_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
-            TypedAccountFieldValue::Account(substate),
+            AccountTypedSubstateValue::Field(AccountTypedFieldSubstateValue::DepositRule(substate)),
         )) => to_api_account_state_substate(context, substate)?,
-        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccountVaultEntry(
-            substate,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::ResourceVaultKeyValue(substate),
         )) => to_api_account_vault_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(substate),
-        ) => to_api_account_resource_preference_entry(context, typed_substate_key, substate)?,
-        TypedSubstateValue::MainModule(
-            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(substate),
-        ) => to_api_account_authorized_depositor_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::ResourcePreferenceKeyValue(substate),
+        )) => to_api_account_resource_preference_entry(context, typed_substate_key, substate)?,
+        TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::AuthorizedDepositorKeyValue(substate),
+        )) => to_api_account_authorized_depositor_entry(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::AccessController(
-            TypedAccessControllerFieldValue::AccessController(access_controller_substate),
-        )) => to_api_access_controller_substate(context, access_controller_substate)?,
+            AccessControllerTypedSubstateValue::Field(
+                AccessControllerTypedFieldSubstateValue::State(substate),
+            ),
+        )) => to_api_access_controller_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::GenericScryptoComponent(
             GenericScryptoComponentFieldValue::State(substate),
         )) => to_api_generic_scrypto_component_state_substate(context, substate)?,
@@ -148,13 +207,19 @@ pub fn to_api_substate(
             TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(substate),
         ) => to_api_generic_key_value_store_substate(context, typed_substate_key, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::OneResourcePool(
-            TypedOneResourcePoolFieldValue::OneResourcePool(substate),
+            OneResourcePoolTypedSubstateValue::Field(
+                OneResourcePoolTypedFieldSubstateValue::State(substate),
+            ),
         )) => to_api_one_resource_pool_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::TwoResourcePool(
-            TypedTwoResourcePoolFieldValue::TwoResourcePool(substate),
+            TwoResourcePoolTypedSubstateValue::Field(
+                TwoResourcePoolTypedFieldSubstateValue::State(substate),
+            ),
         )) => to_api_two_resource_pool_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::MultiResourcePool(
-            TypedMultiResourcePoolFieldValue::MultiResourcePool(substate),
+            MultiResourcePoolTypedSubstateValue::Field(
+                MultiResourcePoolTypedFieldSubstateValue::State(substate),
+            ),
         )) => to_api_multi_resource_pool_substate(context, substate)?,
         TypedSubstateValue::MainModule(TypedMainModuleSubstateValue::Package(
             PackageTypedSubstateValue::BlueprintVersionDefinitionKeyValue(substate),

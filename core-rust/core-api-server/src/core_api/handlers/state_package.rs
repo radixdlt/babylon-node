@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use radix_engine::blueprints::package::PackageField;
+use radix_engine::system::node_modules::role_assignment::RoleAssignmentField;
 use radix_engine::types::*;
 use state_manager::store::traits::QueryableProofStore;
 use std::ops::Deref;
@@ -20,8 +21,8 @@ pub(crate) async fn handle_state_package(
     let owner_role_substate = read_optional_substate(
         database.deref(),
         package_address.as_node_id(),
-        ROLE_ASSIGNMENT_FIELDS_PARTITION,
-        &RoleAssignmentField::OwnerRole.into(),
+        RoleAssignmentPartitionOffset::Field.as_partition(ROLE_ASSIGNMENT_BASE_PARTITION),
+        &RoleAssignmentField::Owner.into(),
     )
     .ok_or_else(|| not_found_error("Package not found".to_string()))?;
 

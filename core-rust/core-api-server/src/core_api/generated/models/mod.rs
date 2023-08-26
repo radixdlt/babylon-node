@@ -498,6 +498,8 @@ pub mod multi_resource_pool_field_state_substate_all_of;
 pub use self::multi_resource_pool_field_state_substate_all_of::MultiResourcePoolFieldStateSubstateAllOf;
 pub mod multi_resource_pool_field_state_value;
 pub use self::multi_resource_pool_field_state_value::MultiResourcePoolFieldStateValue;
+pub mod mutable_field;
+pub use self::mutable_field::MutableField;
 pub mod network_configuration_response;
 pub use self::network_configuration_response::NetworkConfigurationResponse;
 pub mod network_configuration_response_version;

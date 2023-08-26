@@ -1,6 +1,12 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::blueprints::account::{
+    AccountAuthorizedDepositorEntrySubstate, AccountAuthorizedDepositorKeyPayload,
+    AccountDepositRuleFieldSubstate, AccountResourcePreferenceEntrySubstate,
+    AccountResourcePreferenceKeyPayload, AccountResourceVaultEntrySubstate,
+    AccountResourceVaultKeyPayload, AccountSubstate, AccountTypedSubstateKey,
+};
 
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
@@ -8,9 +14,9 @@ use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_account_state_substate(
     _context: &MappingContext,
-    substate: &FieldSubstate<AccountSubstate>,
+    substate: &AccountDepositRuleFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         AccountFieldState,
         AccountSubstate {
@@ -29,15 +35,17 @@ pub fn to_api_account_state_substate(
 pub fn to_api_account_vault_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<Vault>,
+    substate: &AccountResourceVaultEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountVaultKey(
-            resource_address
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::ResourceVaultKeyValueEntry(AccountResourceVaultKeyPayload {
+                content: resource_address
+            })
         ))
     );
-    Ok(key_value_store_mandatory_substate!(
+    Ok(key_value_store_mandatory_substate_versioned!(
         substate,
         AccountVaultEntry,
         models::ResourceKey {
@@ -52,15 +60,19 @@ pub fn to_api_account_vault_entry(
 pub fn to_api_account_resource_preference_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<ResourcePreference>,
+    substate: &AccountResourcePreferenceEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
-            resource_address
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::ResourcePreferenceKeyValueEntry(
+                AccountResourcePreferenceKeyPayload {
+                    content: resource_address
+                }
+            )
         ))
     );
-    Ok(key_value_store_optional_substate!(
+    Ok(key_value_store_optional_substate_versioned!(
         substate,
         AccountResourcePreferenceEntry,
         models::ResourceKey {
@@ -78,15 +90,19 @@ pub fn to_api_account_resource_preference_entry(
 pub fn to_api_account_authorized_depositor_entry(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>,
+    substate: &AccountAuthorizedDepositorEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
-            authorized_depositor_badge
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::Account(
+            AccountTypedSubstateKey::AuthorizedDepositorKeyValueEntry(
+                AccountAuthorizedDepositorKeyPayload {
+                    content: authorized_depositor_badge
+                }
+            )
         ))
     );
-    Ok(key_value_store_optional_substate!(
+    Ok(key_value_store_optional_substate_versioned!(
         substate,
         AccountAuthorizedDepositorEntry,
         models::AuthorizedDepositorKey {

@@ -1,15 +1,16 @@
 use super::super::*;
 use super::*;
 use crate::core_api::models;
+use radix_engine::system::system_substates::SubstateMutability;
 
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::*;
 
 pub fn to_api_fungible_vault_balance_substate(
     _context: &MappingContext,
-    substate: &FieldSubstate<FungibleVaultBalanceSubstate>,
+    substate: &FungibleVaultBalanceFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         FungibleVaultFieldBalance,
         balance,
@@ -21,9 +22,9 @@ pub fn to_api_fungible_vault_balance_substate(
 
 pub fn to_api_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
-    substate: &FieldSubstate<VaultFrozenFlag>,
+    substate: &FungibleVaultFreezeStatusFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         FungibleVaultFieldFrozenStatus,
         VaultFrozenFlag { frozen },
@@ -46,12 +47,12 @@ pub fn to_api_frozen_status(vault_freeze_flags: &VaultFreezeFlags) -> models::Fr
 
 pub fn to_api_non_fungible_vault_balance_substate(
     _context: &MappingContext,
-    substate: &FieldSubstate<NonFungibleVaultBalanceSubstate>,
+    substate: &NonFungibleVaultBalanceFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         NonFungibleVaultFieldBalance,
-        NonFungibleVaultBalanceSubstate { amount },
+        NonFungibleVaultBalance { amount },
         Value {
             amount: to_api_decimal(amount),
         }
@@ -60,9 +61,9 @@ pub fn to_api_non_fungible_vault_balance_substate(
 
 pub fn to_api_non_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
-    substate: &FieldSubstate<VaultFrozenFlag>,
+    substate: &NonFungibleVaultFreezeStatusFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         FungibleVaultFieldFrozenStatus,
         VaultFrozenFlag { frozen },
@@ -75,13 +76,17 @@ pub fn to_api_non_fungible_vault_frozen_status_substate(
 pub fn to_api_non_fungible_vault_contents_entry_substate(
     _context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    _substate: &(),
+    _substate: &NonFungibleVaultNonFungibleEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
-        TypedSubstateKey::MainModule(
-            TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(non_fungible_local_id)
-        )
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::NonFungibleIndexEntry(
+                NonFungibleVaultNonFungibleKeyPayload {
+                    content: non_fungible_local_id
+                }
+            )
+        ))
     );
     Ok(index_substate!(
         substate,
@@ -96,9 +101,9 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
 }
 
 pub fn to_api_fungible_resource_manager_divisibility_substate(
-    substate: &FieldSubstate<FungibleResourceManagerDivisibilitySubstate>,
+    substate: &FungibleResourceManagerDivisibilityFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         FungibleResourceManagerFieldDivisibility,
         divisibility,
@@ -109,9 +114,9 @@ pub fn to_api_fungible_resource_manager_divisibility_substate(
 }
 
 pub fn to_api_fungible_resource_manager_total_supply_substate(
-    substate: &FieldSubstate<FungibleResourceManagerTotalSupplySubstate>,
+    substate: &FungibleResourceManagerTotalSupplyFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         FungibleResourceManagerFieldTotalSupply,
         total_supply,
@@ -122,9 +127,9 @@ pub fn to_api_fungible_resource_manager_total_supply_substate(
 }
 
 pub fn to_api_non_fungible_resource_manager_id_type_substate(
-    substate: &FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>,
+    substate: &NonFungibleResourceManagerIdTypeFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         NonFungibleResourceManagerFieldIdType,
         non_fungible_id_type,
@@ -135,9 +140,9 @@ pub fn to_api_non_fungible_resource_manager_id_type_substate(
 }
 
 pub fn to_api_non_fungible_resource_manager_total_supply_substate(
-    substate: &FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>,
+    substate: &NonFungibleResourceManagerTotalSupplyFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         NonFungibleResourceManagerFieldTotalSupply,
         total_supply,
@@ -148,19 +153,22 @@ pub fn to_api_non_fungible_resource_manager_total_supply_substate(
 }
 
 pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
-    _context: &MappingContext,
-    substate: &FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>,
+    context: &MappingContext,
+    substate: &NonFungibleResourceManagerMutableFieldsFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate!(
+    Ok(field_substate_versioned!(
         substate,
         NonFungibleResourceManagerFieldMutableFields,
-        NonFungibleResourceManagerMutableFieldsSubstate {
+        NonFungibleResourceManagerMutableFields {
             mutable_field_index
         },
         Value {
-            // TODO(RCnet-v3) - We didn't want to change this for RCnet-v2 phase 2
-            // So for RCnet-v3, fix this to map properly to include the field indices
-            mutable_fields: mutable_field_index.keys().cloned().collect(),
+            // TODO(during review): Please thoroughly review the feature change (i.e. my
+            // interpretation of "include the field indices").
+            mutable_fields: mutable_field_index
+                .iter()
+                .map(|(name, index)| to_api_mutable_field(context, name.as_str(), *index))
+                .collect::<Result<Vec<_>, _>>()?
         }
     ))
 }
@@ -168,12 +176,16 @@ pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
 pub fn to_api_non_fungible_resource_manager_data_substate(
     context: &MappingContext,
     typed_key: &TypedSubstateKey,
-    substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
+    substate: &NonFungibleResourceManagerDataEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     assert_key_type!(
         typed_key,
-        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(
-            non_fungible_local_id
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(
+            NonFungibleResourceManagerTypedSubstateKey::DataKeyValueEntry(
+                NonFungibleResourceManagerDataKeyPayload {
+                    content: non_fungible_local_id
+                }
+            )
         ))
     );
     Ok(key_value_store_optional_substate!(
@@ -182,10 +194,21 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
         models::LocalNonFungibleKey {
             non_fungible_local_id: Box::new(to_api_non_fungible_local_id(non_fungible_local_id)),
         },
-        value => {
-            data_struct: Box::new(to_api_data_struct_from_scrypto_raw_value(context, value)?),
+        NonFungibleResourceManagerDataEntryPayload { content: value } => {
+            data_struct: Box::new(to_api_data_struct_from_scrypto_value(context, value)?),
         }
     ))
+}
+
+pub fn to_api_mutable_field(
+    _context: &MappingContext,
+    name: &str,
+    index: usize,
+) -> Result<models::MutableField, MappingError> {
+    Ok(models::MutableField {
+        name: name.to_owned(),
+        index: to_api_index_as_i64(index)?,
+    })
 }
 
 pub fn to_api_fungible_resource_amount(

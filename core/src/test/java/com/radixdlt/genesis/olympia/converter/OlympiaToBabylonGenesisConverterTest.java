@@ -218,7 +218,7 @@ public final class OlympiaToBabylonGenesisConverterTest {
           new OlympiaStateIR.Validator(
               HashCode.fromBytes(publicKey.getBytes()),
               "Validator " + i,
-              "Validator " + i + " URL",
+              "https://validator" + i + ".com",
               acceptDelegatedStake,
               isRegistered,
               totalStakedXrd,

@@ -22,33 +22,56 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceChange;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * InstructionResourceChanges
+ * MutableField
  */
 @JsonPropertyOrder({
-  InstructionResourceChanges.JSON_PROPERTY_INDEX,
-  InstructionResourceChanges.JSON_PROPERTY_RESOURCE_CHANGES
+  MutableField.JSON_PROPERTY_NAME,
+  MutableField.JSON_PROPERTY_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InstructionResourceChanges {
+public class MutableField {
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
+
   public static final String JSON_PROPERTY_INDEX = "index";
   private Long index;
 
-  public static final String JSON_PROPERTY_RESOURCE_CHANGES = "resource_changes";
-  private List<ResourceChange> resourceChanges = new ArrayList<>();
-
-  public InstructionResourceChanges() { 
+  public MutableField() { 
   }
 
-  public InstructionResourceChanges index(Long index) {
+  public MutableField name(String name) {
+    this.name = name;
+    return this;
+  }
+
+   /**
+   * Get name
+   * @return name
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getName() {
+    return name;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setName(String name) {
+    this.name = name;
+  }
+
+
+  public MutableField index(Long index) {
     this.index = index;
     return this;
   }
@@ -76,39 +99,8 @@ public class InstructionResourceChanges {
   }
 
 
-  public InstructionResourceChanges resourceChanges(List<ResourceChange> resourceChanges) {
-    this.resourceChanges = resourceChanges;
-    return this;
-  }
-
-  public InstructionResourceChanges addResourceChangesItem(ResourceChange resourceChangesItem) {
-    this.resourceChanges.add(resourceChangesItem);
-    return this;
-  }
-
-   /**
-   * Get resourceChanges
-   * @return resourceChanges
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_CHANGES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<ResourceChange> getResourceChanges() {
-    return resourceChanges;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_RESOURCE_CHANGES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceChanges(List<ResourceChange> resourceChanges) {
-    this.resourceChanges = resourceChanges;
-  }
-
-
   /**
-   * Return true if this InstructionResourceChanges object is equal to o.
+   * Return true if this MutableField object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -118,22 +110,22 @@ public class InstructionResourceChanges {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InstructionResourceChanges instructionResourceChanges = (InstructionResourceChanges) o;
-    return Objects.equals(this.index, instructionResourceChanges.index) &&
-        Objects.equals(this.resourceChanges, instructionResourceChanges.resourceChanges);
+    MutableField mutableField = (MutableField) o;
+    return Objects.equals(this.name, mutableField.name) &&
+        Objects.equals(this.index, mutableField.index);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, resourceChanges);
+    return Objects.hash(name, index);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InstructionResourceChanges {\n");
+    sb.append("class MutableField {\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    index: ").append(toIndentedString(index)).append("\n");
-    sb.append("    resourceChanges: ").append(toIndentedString(resourceChanges)).append("\n");
     sb.append("}");
     return sb.toString();
   }

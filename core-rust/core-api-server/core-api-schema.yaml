@@ -2141,6 +2141,9 @@ components:
       properties:
         index:
           type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
         resource_changes:
           type: array
           items:
@@ -3583,7 +3586,6 @@ components:
         - NonFungibleVaultFieldBalance
         - NonFungibleVaultFieldFrozenStatus
         - NonFungibleVaultContentsIndexEntry
-        - ConsensusManager
         - ConsensusManagerFieldConfig
         - ConsensusManagerFieldState
         - ConsensusManagerFieldCurrentValidatorSet
@@ -4286,10 +4288,22 @@ components:
       properties:
         mutable_fields:
           type: array
-          description: |
-            The field names of the NF Metadata which are mutable.
+          description: The fields of the NF Metadata which are mutable.
           items:
-            type: string
+            $ref: '#/components/schemas/MutableField'
+    MutableField:
+      type: object
+      required:
+        - name
+        - index
+      properties:
+        name:
+          type: string
+        index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
     NonFungibleResourceManagerDataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
