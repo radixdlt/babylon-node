@@ -468,6 +468,8 @@ pub mod mempool_transaction_request;
 pub use self::mempool_transaction_request::MempoolTransactionRequest;
 pub mod mempool_transaction_response;
 pub use self::mempool_transaction_response::MempoolTransactionResponse;
+pub mod mempool_transaction_response_payloads_inner;
+pub use self::mempool_transaction_response_payloads_inner::MempoolTransactionResponsePayloadsInner;
 pub mod metadata_key;
 pub use self::metadata_key::MetadataKey;
 pub mod metadata_module_entry_substate;
