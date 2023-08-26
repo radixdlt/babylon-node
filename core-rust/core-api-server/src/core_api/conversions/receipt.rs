@@ -99,7 +99,7 @@ pub fn create_typed_substate_key(
             entity_address: to_api_entity_address(context, node_id)
                 .unwrap_or_else(|_| format!("NodeId[{}]", to_hex(node_id.as_bytes()))),
             partition_number,
-            substate_key: to_api_substate_key(substate_key),
+            substate_key: Box::new(to_api_substate_key(substate_key)),
             message: msg,
         }
     })
@@ -273,12 +273,12 @@ pub fn to_api_substate_system_structure(
                     context,
                     key_value_store_address.as_node_id(),
                 )?,
-                key_schema_hash: to_api_hash(key_schema_hash),
+                key_schema_hash: to_api_schema_hash(key_schema_hash),
                 key_local_type_index: Box::new(to_api_local_type_index(
                     context,
                     key_local_type_index,
                 )?),
-                value_schema_hash: to_api_hash(value_schema_hash),
+                value_schema_hash: to_api_schema_hash(value_schema_hash),
                 value_local_type_index: Box::new(to_api_local_type_index(
                     context,
                     value_local_type_index,
@@ -349,7 +349,7 @@ pub fn to_api_object_substate_type_reference(
             } = package;
             models::ObjectSubstateTypeReference::PackageObjectSubstateTypeReference {
                 package_address: to_api_entity_address(context, package_address.as_node_id())?,
-                schema_hash: to_api_hash(schema_hash),
+                schema_hash: to_api_schema_hash(schema_hash),
                 local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
             }
         }
@@ -362,7 +362,7 @@ pub fn to_api_object_substate_type_reference(
             } = instance;
             models::ObjectSubstateTypeReference::ObjectInstanceTypeReference {
                 entity_address: to_api_entity_address(context, entity_address)?,
-                schema_hash: to_api_hash(schema_hash),
+                schema_hash: to_api_schema_hash(schema_hash),
                 instance_type_index: to_api_u8_as_i32(*instance_type_index),
                 local_type_index: Box::new(to_api_local_type_index(context, local_type_index)?),
             }

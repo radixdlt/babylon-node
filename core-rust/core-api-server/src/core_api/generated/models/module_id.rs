@@ -9,37 +9,34 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum ModuleId {
+    #[serde(rename = "Metadata")]
+    Metadata,
+    #[serde(rename = "Royalty")]
+    Royalty,
+    #[serde(rename = "RoleAssignment")]
+    RoleAssignment,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintInfo {
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    #[serde(rename = "blueprint_version")]
-    pub blueprint_version: String,
-    /// The Bech32m-encoded human readable version of any global address
-    #[serde(rename = "outer_object", skip_serializing_if = "Option::is_none")]
-    pub outer_object: Option<String>,
-    #[serde(rename = "features")]
-    pub features: Vec<String>,
-    #[serde(rename = "generic_substitutions")]
-    pub generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>,
 }
 
-impl BlueprintInfo {
-    pub fn new(package_address: String, blueprint_name: String, blueprint_version: String, features: Vec<String>, generic_substitutions: Vec<crate::core_api::generated::models::TypeIdentifier>) -> BlueprintInfo {
-        BlueprintInfo {
-            package_address,
-            blueprint_name,
-            blueprint_version,
-            outer_object: None,
-            features,
-            generic_substitutions,
+impl ToString for ModuleId {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Metadata => String::from("Metadata"),
+            Self::Royalty => String::from("Royalty"),
+            Self::RoleAssignment => String::from("RoleAssignment"),
         }
     }
 }
+
+impl Default for ModuleId {
+    fn default() -> ModuleId {
+        Self::Metadata
+    }
+}
+
+
 
 

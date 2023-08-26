@@ -64,11 +64,11 @@ pub fn to_api_lts_committed_transaction_outcome(
             &local_execution.fee_summary,
             &local_execution.fee_source,
             &local_execution.fee_destination,
-            &local_execution.state_update_summary.balance_changes,
+            &local_execution.global_balance_changes, // TODO(during review): there is some convoluted logic there; does it need to change now?
         )?,
         resultant_account_fungible_balances: to_api_lts_resultant_account_fungible_balances(
+            database,
             context,
-            &local_execution.state_update_summary.balance_changes,
             &receipt.on_ledger.substate_changes,
         ),
         total_fee: to_api_decimal(&local_execution.fee_summary.total_cost()),
@@ -365,15 +365,12 @@ pub fn to_api_lts_fungible_resource_balance_change(
 }
 
 pub fn to_api_lts_resultant_account_fungible_balances(
+    _database: &StateManagerDatabase,
     _context: &MappingContext,
-    _balance_changes: &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     _substate_changes: &BySubstate<ChangeAction>,
 ) -> Vec<models::LtsResultantAccountFungibleBalances> {
-    // TODO - until we have the proper information from the engine, we need to do some guessing here about
-    // how to match up vault changes with balance changes.
-    // Also, for release/rcnet-v1 compatibility, we don't save _old_ state when we update substates.
-    // So we can't even compare diffs.
-    // So let's just give up and say in the docs that it'll be coming later.
+    // TODO(parallel PR): go through substate changes, collect fungible vaults' new values, resolve
+    // each into its global component owning the vault, retain only accounts, adjust API docs.
     vec![]
 }
 

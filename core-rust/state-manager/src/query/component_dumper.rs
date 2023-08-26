@@ -180,7 +180,7 @@ where
     let mut component_dump = ComponentStateDump::default();
     let mut state_tree_traverser =
         StateTreeTraverser::new(substate_store, &mut component_dump, 100);
-    state_tree_traverser.traverse_all_descendents(None, *node_id);
+    state_tree_traverser.traverse_subtree(None, *node_id);
 
     component_dump
 }

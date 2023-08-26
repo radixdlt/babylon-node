@@ -1044,10 +1044,12 @@ where
             return Err(InvalidCommitRequestError::TransactionRootMismatch);
         }
 
+        // TODO(after RCnet-v3): Refactor this group of fields into a "commit bundle builder"
         let mut committed_transaction_bundles = Vec::new();
         let mut transactions_metrics_data = Vec::new();
         let mut substate_store_update = SubstateStoreUpdate::new();
         let mut state_tree_update = HashTreeUpdate::new();
+        let mut new_node_ancestry_records = Vec::new();
         let epoch_accu_trees = EpochAwareAccuTreeFactory::new(
             series_executor.epoch_identifiers().state_version,
             series_executor.latest_state_version(),
@@ -1087,6 +1089,7 @@ where
                 series_executor.latest_state_version(),
                 hash_structures_diff.state_hash_tree_diff,
             );
+            new_node_ancestry_records.extend(commit.new_substate_node_ancestry_records);
             transaction_tree_slice_merger.append(hash_structures_diff.transaction_tree_diff.slice);
             receipt_tree_slice_merger.append(hash_structures_diff.receipt_tree_diff.slice);
 
@@ -1142,6 +1145,7 @@ where
             state_tree_update,
             transaction_tree_slice: transaction_tree_slice_merger.into_slice(),
             receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
+            new_substate_node_ancestry_records: new_node_ancestry_records,
         });
         drop(write_store);
 
@@ -1222,6 +1226,7 @@ where
             ),
             transaction_tree_slice: hash_structures_diff.transaction_tree_diff.slice,
             receipt_tree_slice: hash_structures_diff.receipt_tree_diff.slice,
+            new_substate_node_ancestry_records: commit.new_substate_node_ancestry_records,
         });
         drop(write_store);
 

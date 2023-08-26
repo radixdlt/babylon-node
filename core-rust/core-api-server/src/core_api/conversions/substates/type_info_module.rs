@@ -14,21 +14,25 @@ pub fn to_api_type_info_substate(
         TypeInfoModuleFieldTypeInfo,
         value => {
             let details = match value {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    module_versions,
-                    blueprint_info,
-                    global,
-                }) => models::TypeInfoDetails::ObjectTypeInfoDetails {
-                    module_versions: module_versions.iter()
-                        .map(|(object_module_id, version)| -> Result<_, MappingError> {
-                            Ok(models::ModuleVersion {
-                                module: to_api_object_module_id(object_module_id),
-                                version: to_api_blueprint_version(context, version)?,
+                TypeInfoSubstate::Object(ObjectInfo {blueprint_info, object_type}) => {
+                    let (global, module_versions) = match object_type {
+                        ObjectType::Global { modules } => (true, Some(modules)),
+                        ObjectType::Owned => (false, None)
+                    };
+                    models::TypeInfoDetails::ObjectTypeInfoDetails {
+                        module_versions: module_versions
+                            .iter()
+                            .flat_map(|modules| modules.iter())
+                            .map(|(module_id, version)| -> Result<_, MappingError> {
+                                Ok(models::ModuleVersion {
+                                    module: to_api_module_id(module_id),
+                                    version: to_api_blueprint_version(context, version)?,
+                                })
                             })
-                        })
-                        .collect::<Result<_, _>>()?,
-                    blueprint_info: Box::new(to_api_blueprint_info(context, blueprint_info)?),
-                    global: *global,
+                            .collect::<Result<_, _>>()?,
+                        blueprint_info: Box::new(to_api_blueprint_info(context, blueprint_info)?),
+                        global,
+                    }
                 },
                 TypeInfoSubstate::KeyValueStore(key_value_store_info) => {
                     models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
@@ -66,6 +70,7 @@ pub fn to_api_blueprint_info(
                 package_address,
                 blueprint_name,
             },
+        blueprint_version,
         outer_obj_info,
         features,
         generic_substitutions,
@@ -74,6 +79,7 @@ pub fn to_api_blueprint_info(
     Ok(models::BlueprintInfo {
         package_address: to_api_package_address(context, package_address)?,
         blueprint_name: blueprint_name.to_string(),
+        blueprint_version: to_api_blueprint_version(context, blueprint_version)?,
         outer_object: match outer_obj_info {
             OuterObjectInfo::Some { outer_object } => {
                 Some(to_api_global_address(context, outer_object)?)

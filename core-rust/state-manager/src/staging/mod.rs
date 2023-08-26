@@ -64,15 +64,17 @@
 
 mod cache;
 pub mod epoch_handling;
+mod node_ancestry_resolver;
+mod overlays;
 mod result;
 mod stage_tree;
-mod substate_overlay_iterator;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 
+use crate::store::traits::SubstateNodeAncestryStore;
 pub use cache::*;
 pub use result::*;
 
@@ -92,5 +94,11 @@ impl<T> ReadableHashStructuresStore for T where
 {
 }
 
-pub trait ReadableStore: SubstateDatabase + ReadableHashStructuresStore {}
-impl<T> ReadableStore for T where T: SubstateDatabase + ReadableHashStructuresStore {}
+pub trait ReadableStore:
+    SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+{
+}
+impl<T> ReadableStore for T where
+    T: SubstateDatabase + ReadableHashStructuresStore + SubstateNodeAncestryStore
+{
+}

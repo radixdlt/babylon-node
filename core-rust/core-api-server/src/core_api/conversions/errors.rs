@@ -15,13 +15,14 @@ pub enum MappingError {
     SubstateKey {
         entity_address: String,
         partition_number: PartitionNumber,
-        substate_key: models::SubstateKey,
+        substate_key: Box<models::SubstateKey>, // only for the variant's size reasons
         message: String,
     },
     SubstateValue {
         bytes: Vec<u8>,
         message: String,
     },
+    ObsoleteSubstateVersion,
     UnexpectedPersistedData {
         message: String,
     },
@@ -51,7 +52,8 @@ pub enum MappingError {
         message: String,
     },
     MismatchedSubstateKeyType {
-        message: String,
+        expected_match: String,
+        actual: String,
     },
     MismatchedTransactionIdentifiers {
         message: String,

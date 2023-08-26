@@ -31,9 +31,12 @@ pub fn to_api_access_rule_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<AccessRule>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(ModuleRoleKey{ module, key })) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Module Role Key".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(
+            ModuleRoleKey { module, key }
+        ))
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         RoleAssignmentModuleRuleEntry,

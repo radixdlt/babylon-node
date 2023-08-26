@@ -17,6 +17,9 @@ pub struct FieldSchema {
     pub field_type_ref: Option<crate::core_api::generated::models::BlueprintPayloadDef>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "condition", skip_serializing_if = "Option::is_none")]
     pub condition: Option<Box<crate::core_api::generated::models::FieldSchemaFeatureCondition>>,
+    /// The hex-encoded default value of this field. Only present if this field is transient.
+    #[serde(rename = "transient_default_value_hex", skip_serializing_if = "Option::is_none")]
+    pub transient_default_value_hex: Option<String>,
 }
 
 impl FieldSchema {
@@ -24,6 +27,7 @@ impl FieldSchema {
         FieldSchema {
             field_type_ref: Option::Some(field_type_ref),
             condition: None,
+            transient_default_value_hex: None,
         }
     }
 }

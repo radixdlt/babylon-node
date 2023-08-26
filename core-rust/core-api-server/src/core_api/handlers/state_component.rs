@@ -138,11 +138,6 @@ pub(crate) fn substate_key_to_hex(substate_key: &SubstateKey) -> String {
     match substate_key {
         SubstateKey::Field(field_key) => to_hex([*field_key]),
         SubstateKey::Map(map_key) => to_hex(map_key),
-        SubstateKey::Sorted((sort_key, map_key)) => {
-            let mut vec = Vec::with_capacity(2 + map_key.len());
-            vec.extend_from_slice(&sort_key.to_be_bytes());
-            vec.extend_from_slice(map_key);
-            to_hex(&vec)
-        }
+        SubstateKey::Sorted((sort_key, map_key)) => to_hex([sort_key, map_key.as_slice()].concat()),
     }
 }

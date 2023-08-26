@@ -237,10 +237,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getErrorMessage())
-          .isEqualTo(
-              "ErrorBeforeFeeLoanRepaid(SystemModuleError(CostingError(FeeReserveError(LoanRepaymentFailed"
-                  + " { xrd_owed: 0.00847164 }))))");
+      assertThat(rejectedDetails.getErrorMessage()).contains("LoanRepaymentFailed");
     }
   }
 

@@ -77,9 +77,12 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
     typed_key: &TypedSubstateKey,
     _substate: &(),
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(non_fungible_local_id)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "NonFungibleVaultContentsIndexKey".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(non_fungible_local_id)
+        )
+    );
     Ok(index_substate!(
         substate,
         NonFungibleVaultContentsIndexEntry,
@@ -167,9 +170,12 @@ pub fn to_api_non_fungible_resource_manager_data_substate(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<ScryptoRawValue<'_>>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(non_fungible_local_id)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "NonFungibleResourceData".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceData(
+            non_fungible_local_id
+        ))
+    );
     Ok(key_value_store_optional_substate!(
         substate,
         NonFungibleResourceManagerDataEntry,

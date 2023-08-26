@@ -18,20 +18,20 @@ pub struct SortedSubstateKey {
     /// The hex-encoded bytes of the partially-hashed DB sort key, under the given entity partition
     #[serde(rename = "db_sort_key_hex")]
     pub db_sort_key_hex: String,
-    /// The sort part of the substate key
-    #[serde(rename = "sort_prefix")]
-    pub sort_prefix: i32,
-    /// The hex-encoded bytes of the substate key
+    /// The hex-encoded bytes of the sorted part of the key
+    #[serde(rename = "sort_prefix_hex")]
+    pub sort_prefix_hex: String,
+    /// The hex-encoded remaining bytes of the key
     #[serde(rename = "key_hex")]
     pub key_hex: String,
 }
 
 impl SortedSubstateKey {
-    pub fn new(key_type: crate::core_api::generated::models::SubstateKeyType, db_sort_key_hex: String, sort_prefix: i32, key_hex: String) -> SortedSubstateKey {
+    pub fn new(key_type: crate::core_api::generated::models::SubstateKeyType, db_sort_key_hex: String, sort_prefix_hex: String, key_hex: String) -> SortedSubstateKey {
         SortedSubstateKey {
             key_type,
             db_sort_key_hex,
-            sort_prefix,
+            sort_prefix_hex,
             key_hex,
         }
     }

@@ -88,7 +88,7 @@ impl NodeAncestryResolver {
     pub fn batch_resolve<S: SubstateNodeAncestryStore>(
         ancestry_store: &S,
         substate_changes: impl Iterator<Item = (SubstateReference, impl Borrow<ChangeAction>)>,
-    ) -> impl Iterator<Item = (Vec<NodeId>, SubstateNodeAncestryRecord)> {
+    ) -> impl Iterator<Item = KeyedSubstateNodeAncestryRecord> {
         // Gather the Nodes owned by upserted parent Substates (using `IndexedScryptoValue`).
         // This effectively builds a forest of upserted nodes, using a "parent to child-list map" representation.
         let directly_owned_node_sets =

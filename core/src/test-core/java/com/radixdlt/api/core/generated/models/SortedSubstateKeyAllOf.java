@@ -31,13 +31,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * SortedSubstateKeyAllOf
  */
 @JsonPropertyOrder({
-  SortedSubstateKeyAllOf.JSON_PROPERTY_SORT_PREFIX,
+  SortedSubstateKeyAllOf.JSON_PROPERTY_SORT_PREFIX_HEX,
   SortedSubstateKeyAllOf.JSON_PROPERTY_KEY_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class SortedSubstateKeyAllOf {
-  public static final String JSON_PROPERTY_SORT_PREFIX = "sort_prefix";
-  private Integer sortPrefix;
+  public static final String JSON_PROPERTY_SORT_PREFIX_HEX = "sort_prefix_hex";
+  private String sortPrefixHex;
 
   public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
   private String keyHex;
@@ -45,31 +45,29 @@ public class SortedSubstateKeyAllOf {
   public SortedSubstateKeyAllOf() { 
   }
 
-  public SortedSubstateKeyAllOf sortPrefix(Integer sortPrefix) {
-    this.sortPrefix = sortPrefix;
+  public SortedSubstateKeyAllOf sortPrefixHex(String sortPrefixHex) {
+    this.sortPrefixHex = sortPrefixHex;
     return this;
   }
 
    /**
-   * The sort part of the substate key
-   * minimum: 0
-   * maximum: 65535
-   * @return sortPrefix
+   * The hex-encoded bytes of the sorted part of the key
+   * @return sortPrefixHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The sort part of the substate key")
-  @JsonProperty(JSON_PROPERTY_SORT_PREFIX)
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the sorted part of the key")
+  @JsonProperty(JSON_PROPERTY_SORT_PREFIX_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getSortPrefix() {
-    return sortPrefix;
+  public String getSortPrefixHex() {
+    return sortPrefixHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SORT_PREFIX)
+  @JsonProperty(JSON_PROPERTY_SORT_PREFIX_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSortPrefix(Integer sortPrefix) {
-    this.sortPrefix = sortPrefix;
+  public void setSortPrefixHex(String sortPrefixHex) {
+    this.sortPrefixHex = sortPrefixHex;
   }
 
 
@@ -79,11 +77,11 @@ public class SortedSubstateKeyAllOf {
   }
 
    /**
-   * The hex-encoded bytes of the substate key
+   * The hex-encoded remaining bytes of the key
    * @return keyHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the substate key")
+  @ApiModelProperty(required = true, value = "The hex-encoded remaining bytes of the key")
   @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -111,20 +109,20 @@ public class SortedSubstateKeyAllOf {
       return false;
     }
     SortedSubstateKeyAllOf sortedSubstateKeyAllOf = (SortedSubstateKeyAllOf) o;
-    return Objects.equals(this.sortPrefix, sortedSubstateKeyAllOf.sortPrefix) &&
+    return Objects.equals(this.sortPrefixHex, sortedSubstateKeyAllOf.sortPrefixHex) &&
         Objects.equals(this.keyHex, sortedSubstateKeyAllOf.keyHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sortPrefix, keyHex);
+    return Objects.hash(sortPrefixHex, keyHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class SortedSubstateKeyAllOf {\n");
-    sb.append("    sortPrefix: ").append(toIndentedString(sortPrefix)).append("\n");
+    sb.append("    sortPrefixHex: ").append(toIndentedString(sortPrefixHex)).append("\n");
     sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
     sb.append("}");
     return sb.toString();

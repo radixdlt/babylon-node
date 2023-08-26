@@ -34,9 +34,12 @@ pub fn to_api_transaction_tracker_collection_entry(
     typed_key: &TypedSubstateKey,
     substate: &KeyValueEntrySubstate<TransactionStatus>,
 ) -> Result<models::Substate, MappingError> {
-    let TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(intent_hash)) = typed_key else {
-        return Err(MappingError::MismatchedSubstateKeyType { message: "Transaction Tracker Collection Key".to_string() });
-    };
+    assert_key_type!(
+        typed_key,
+        TypedSubstateKey::MainModule(
+            TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(intent_hash)
+        )
+    );
     Ok(key_value_store_mandatory_substate!(
         substate,
         TransactionTrackerCollectionEntry,

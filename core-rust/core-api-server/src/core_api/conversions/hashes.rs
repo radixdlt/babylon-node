@@ -1,3 +1,4 @@
+use radix_engine_interface::blueprints::package::CodeHash;
 use state_manager::{transaction::*, ReceiptTreeHash, StateHash, TransactionTreeHash};
 use transaction::prelude::*;
 
@@ -41,7 +42,11 @@ pub fn to_api_receipt_tree_hash(receipt_tree_hash: &ReceiptTreeHash) -> String {
     to_hex(receipt_tree_hash)
 }
 
-pub fn to_api_hash(hash: &Hash) -> String {
+pub fn to_api_schema_hash(hash: &SchemaHash) -> String {
+    to_hex(hash)
+}
+
+pub fn to_api_code_hash(hash: &CodeHash) -> String {
     to_hex(hash)
 }
 
